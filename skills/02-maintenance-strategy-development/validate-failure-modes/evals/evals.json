@@ -1,0 +1,91 @@
+[
+  {
+    "id": "fm-eval-001",
+    "name": "Valid Combination - CORRODES + CHEMICAL_ATTACK",
+    "description": "Validate a known valid mechanism+cause combination",
+    "input": {
+      "mechanism": "CORRODES",
+      "cause": "CHEMICAL_ATTACK"
+    },
+    "expected": {
+      "valid": true
+    },
+    "assertions": [
+      "Result is valid=true",
+      "No error message returned"
+    ]
+  },
+  {
+    "id": "fm-eval-002",
+    "name": "Invalid Combination - WEARS + AGE",
+    "description": "Validate a combination that seems logical but is not in the 72-combo table",
+    "input": {
+      "mechanism": "WEARS",
+      "cause": "AGE"
+    },
+    "expected": {
+      "valid": false,
+      "valid_causes_for_mechanism": [
+        "BREAKDOWN_OF_LUBRICATION", "ENTRAINED_AIR", "EXCESSIVE_FLUID_VELOCITY",
+        "IMPACT_SHOCK_LOADING", "LOW_PRESSURE", "LUBRICANT_CONTAMINATION",
+        "MECHANICAL_OVERLOAD", "METAL_TO_METAL_CONTACT", "RELATIVE_MOVEMENT"
+      ]
+    },
+    "assertions": [
+      "Result is valid=false",
+      "Returns 9 valid causes for WEARS",
+      "AGE is NOT in valid causes list"
+    ]
+  },
+  {
+    "id": "fm-eval-003",
+    "name": "Invalid Mechanism Enum",
+    "description": "Attempt with a mechanism value not in the 18 valid enums",
+    "input": {
+      "mechanism": "RUSTS",
+      "cause": "AGE"
+    },
+    "expected": {
+      "error": true,
+      "message_contains": "Invalid mechanism"
+    },
+    "assertions": [
+      "Error returned for invalid mechanism",
+      "List of 18 valid mechanisms provided"
+    ]
+  },
+  {
+    "id": "fm-eval-004",
+    "name": "Case Sensitivity Check",
+    "description": "Lowercase mechanism should fail",
+    "input": {
+      "mechanism": "corrodes",
+      "cause": "CHEMICAL_ATTACK"
+    },
+    "expected": {
+      "error": true,
+      "message_contains": "Invalid mechanism"
+    },
+    "assertions": [
+      "Lowercase 'corrodes' is rejected",
+      "Case-sensitive matching enforced"
+    ]
+  },
+  {
+    "id": "fm-eval-005",
+    "name": "CORRODES Has 12 Valid Causes",
+    "description": "Verify CORRODES returns exactly 12 valid causes",
+    "input": {
+      "tool": "get_valid_fm_combinations",
+      "mechanism": "CORRODES"
+    },
+    "expected": {
+      "count": 12,
+      "causes_include": ["BIO_ORGANISMS", "CHEMICAL_ATTACK", "CORROSIVE_ENVIRONMENT", "CREVICE"]
+    },
+    "assertions": [
+      "Exactly 12 causes returned",
+      "Includes all expected corrosion-related causes"
+    ]
+  }
+]

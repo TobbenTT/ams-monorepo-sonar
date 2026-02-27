@@ -1,0 +1,153 @@
+[
+  {
+    "id": "crit-eval-001",
+    "name": "R8 Full Matrix - SAG Mill High Risk",
+    "description": "Assess criticality of SAG Mill with high consequence scores using R8 method",
+    "input": {
+      "assessment_id": "CRIT-2024-001",
+      "node_id": "BRY-SAG-ML-001",
+      "method": "FULL_MATRIX",
+      "criteria_scores": [
+        {"category": "SAFETY", "consequence_level": 4},
+        {"category": "HEALTH", "consequence_level": 2},
+        {"category": "ENVIRONMENT", "consequence_level": 3},
+        {"category": "PRODUCTION", "consequence_level": 5},
+        {"category": "OPERATING_COST", "consequence_level": 4},
+        {"category": "CAPITAL_COST", "consequence_level": 3},
+        {"category": "SCHEDULE", "consequence_level": 4},
+        {"category": "REVENUE", "consequence_level": 5},
+        {"category": "COMMUNICATIONS", "consequence_level": 2},
+        {"category": "COMPLIANCE", "consequence_level": 3},
+        {"category": "REPUTATION", "consequence_level": 2}
+      ],
+      "probability": 3
+    },
+    "expected": {
+      "max_consequence": 5,
+      "overall_score": 15.0,
+      "risk_class": "III_HIGH"
+    },
+    "assertions": [
+      "overall_score equals 15.0",
+      "risk_class equals III_HIGH",
+      "max_consequence equals 5",
+      "no missing_categories reported"
+    ]
+  },
+  {
+    "id": "crit-eval-002",
+    "name": "GFSN Mode - Crusher Moderate Band",
+    "description": "GFSN criticality assessment for crusher with moderate consequence",
+    "input": {
+      "assessment_id": "GFSN-2024-001",
+      "node_id": "JFC1-CRU-001",
+      "method": "GFSN",
+      "criteria_scores": [
+        {"category": "BUSINESS_IMPACT", "consequence_level": 4},
+        {"category": "OPERATIONAL_COST", "consequence_level": 3},
+        {"category": "INTERRUPTION", "consequence_level": 4},
+        {"category": "SAFETY", "consequence_level": 3},
+        {"category": "ENVIRONMENT", "consequence_level": 2},
+        {"category": "RSC", "consequence_level": 2}
+      ],
+      "probability": 4
+    },
+    "expected": {
+      "max_consequence": 4,
+      "overall_score": 16.0,
+      "band": "MODERADO"
+    },
+    "assertions": [
+      "overall_score equals 16.0",
+      "band equals MODERADO",
+      "max_consequence equals 4"
+    ]
+  },
+  {
+    "id": "crit-eval-003",
+    "name": "R8 Mode - Low Risk Equipment",
+    "description": "R8 assessment for low-consequence equipment with rare probability",
+    "input": {
+      "assessment_id": "CRIT-2024-003",
+      "node_id": "BRY-PU-AUX-003",
+      "method": "FULL_MATRIX",
+      "criteria_scores": [
+        {"category": "SAFETY", "consequence_level": 1},
+        {"category": "HEALTH", "consequence_level": 1},
+        {"category": "ENVIRONMENT", "consequence_level": 1},
+        {"category": "PRODUCTION", "consequence_level": 2},
+        {"category": "OPERATING_COST", "consequence_level": 2},
+        {"category": "CAPITAL_COST", "consequence_level": 1},
+        {"category": "SCHEDULE", "consequence_level": 1},
+        {"category": "REVENUE", "consequence_level": 2},
+        {"category": "COMMUNICATIONS", "consequence_level": 1},
+        {"category": "COMPLIANCE", "consequence_level": 1},
+        {"category": "REPUTATION", "consequence_level": 1}
+      ],
+      "probability": 2
+    },
+    "expected": {
+      "max_consequence": 2,
+      "overall_score": 4.0,
+      "risk_class": "I_LOW"
+    },
+    "assertions": [
+      "overall_score equals 4.0",
+      "risk_class equals I_LOW",
+      "score of exactly 4 maps to I_LOW not II_MEDIUM"
+    ]
+  },
+  {
+    "id": "crit-eval-004",
+    "name": "R8 Mode - Missing Categories Validation",
+    "description": "R8 assessment with incomplete categories should report missing ones",
+    "input": {
+      "assessment_id": "CRIT-2024-004",
+      "node_id": "BRY-CONV-001",
+      "method": "FULL_MATRIX",
+      "criteria_scores": [
+        {"category": "SAFETY", "consequence_level": 3},
+        {"category": "PRODUCTION", "consequence_level": 4}
+      ],
+      "probability": 3
+    },
+    "expected": {
+      "missing_categories": ["HEALTH", "ENVIRONMENT", "OPERATING_COST", "CAPITAL_COST", "SCHEDULE", "REVENUE", "COMMUNICATIONS", "COMPLIANCE", "REPUTATION"],
+      "should_not_finalize": true
+    },
+    "assertions": [
+      "must report 9 missing categories",
+      "must NOT compute a final risk class",
+      "must request the user to provide missing scores"
+    ]
+  },
+  {
+    "id": "crit-eval-005",
+    "name": "GFSN Mode - ALTO Band Critical",
+    "description": "GFSN assessment resulting in ALTO band with high scores",
+    "input": {
+      "assessment_id": "GFSN-2024-005",
+      "node_id": "JFC1-SAG-ML-001",
+      "method": "GFSN",
+      "criteria_scores": [
+        {"category": "BUSINESS_IMPACT", "consequence_level": 5},
+        {"category": "OPERATIONAL_COST", "consequence_level": 4},
+        {"category": "INTERRUPTION", "consequence_level": 5},
+        {"category": "SAFETY", "consequence_level": 4},
+        {"category": "ENVIRONMENT", "consequence_level": 3},
+        {"category": "RSC", "consequence_level": 3}
+      ],
+      "probability": 4
+    },
+    "expected": {
+      "max_consequence": 5,
+      "overall_score": 20.0,
+      "band": "ALTO"
+    },
+    "assertions": [
+      "overall_score equals 20.0",
+      "band equals ALTO",
+      "score of 20 >= 19 maps to ALTO"
+    ]
+  }
+]

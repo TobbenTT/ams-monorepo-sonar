@@ -1,0 +1,133 @@
+[
+  {
+    "id": 1,
+    "prompt": "Correlate criticality vs failures. Equipment: EQ-001 (A, rank 4, 8 failures), EQ-002 (B, rank 3, 3 failures), EQ-003 (C, rank 2, 1 failure), EQ-004 (A+, rank 5, 12 failures). Plant: OCP-JFC.",
+    "expected_output": "CorrelationResult with correlation_type=CRITICALITY_FAILURES, coefficient ~0.988, strength=STRONG, data_points=4, insight about higher criticality having more failures",
+    "assertions": [
+      {
+        "text": "correlation_type is CRITICALITY_FAILURES",
+        "type": "structural"
+      },
+      {
+        "text": "Coefficient is approximately 0.988 (rounded to 4 decimals)",
+        "type": "content"
+      },
+      {
+        "text": "Strength is STRONG (abs coefficient >= 0.7)",
+        "type": "content"
+      },
+      {
+        "text": "data_points is 4",
+        "type": "content"
+      },
+      {
+        "text": "Insight is 'Higher criticality equipment tends to have more failures' (r > 0.3)",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "prompt": "Correlate cost vs reliability. EQ-001 total cost 50000 MTBF 20 days, EQ-002 total cost 10000 MTBF 90 days, EQ-003 total cost 30000 MTBF 45 days. Plant: OCP-JFC.",
+    "expected_output": "CorrelationResult with correlation_type=COST_RELIABILITY, negative coefficient indicating inverse correlation, strength STRONG or MODERATE, data_points=3",
+    "assertions": [
+      {
+        "text": "correlation_type is COST_RELIABILITY",
+        "type": "structural"
+      },
+      {
+        "text": "Coefficient is negative (higher cost -> lower MTBF)",
+        "type": "content"
+      },
+      {
+        "text": "Only equipment present in BOTH cost and MTBF datasets are included",
+        "type": "content"
+      },
+      {
+        "text": "Insight references inverse correlation between cost and reliability (r < -0.3)",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "prompt": "Find bad actor overlap. Jack-Knife ACUTE: [EQ-001, EQ-003, EQ-004]. Pareto bad actors: [EQ-001, EQ-002, EQ-004]. RBI HIGH/CRITICAL: [EQ-001, EQ-004, EQ-005].",
+    "expected_output": "BadActorOverlap with total_unique=5, overlap_all_three=[EQ-001, EQ-004], overlap_any_two=[EQ-003] (JK+Pareto minus all_three... actually EQ-003 is only JK, not Pareto). Corrected: overlap_all_three=[EQ-001, EQ-004], any_two=[] (need to check pairwise), single_only=[EQ-002, EQ-003, EQ-005]",
+    "assertions": [
+      {
+        "text": "overlap_all_three contains EQ-001 and EQ-004 (present in all three)",
+        "type": "content"
+      },
+      {
+        "text": "total_unique_bad_actors is 5 (EQ-001 through EQ-005)",
+        "type": "content"
+      },
+      {
+        "text": "priority_action_list starts with EQ-001, EQ-004 (all_three, sorted)",
+        "type": "content"
+      },
+      {
+        "text": "EQ-002, EQ-003, EQ-005 appear after the all_three items in priority list",
+        "type": "content"
+      },
+      {
+        "text": "Lists within each priority tier are sorted alphabetically",
+        "type": "structural"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "prompt": "Generate cross-module summary for plant OCP-JFC. Correlations: CRITICALITY_FAILURES (r=0.85, STRONG), COST_RELIABILITY (r=-0.62, MODERATE), HEALTH_BACKLOG (r=-0.15, NONE). Bad actor overlap: 2 in all_three (EQ-001, EQ-004), 1 in any_two, total 5.",
+    "expected_output": "CrossModuleSummary with plant_id OCP-JFC, 3 correlations, key_insights from each correlation plus overlap insight, recommended_actions for STRONG and MODERATE correlations plus overlap action",
+    "assertions": [
+      {
+        "text": "plant_id is OCP-JFC",
+        "type": "structural"
+      },
+      {
+        "text": "key_insights includes insight from each of the 3 correlations",
+        "type": "content"
+      },
+      {
+        "text": "recommended_actions includes action for CRITICALITY_FAILURES (STRONG) and COST_RELIABILITY (MODERATE)",
+        "type": "content"
+      },
+      {
+        "text": "No recommended action for HEALTH_BACKLOG (strength NONE)",
+        "type": "content"
+      },
+      {
+        "text": "Overlap insight mentions 2 equipment flagged across all three analyses",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "prompt": "Correlate health score vs backlog. EQ-001 composite_score=85 backlog=1, EQ-002 composite_score=40 backlog=8, EQ-003 health_score=60 backlog=3 (uses fallback field name). EQ-004 has backlog items but no health score record (should be excluded). Plant: OCP-BRY.",
+    "expected_output": "CorrelationResult with correlation_type=HEALTH_BACKLOG, negative coefficient (low health -> more backlog), data_points=3 (EQ-004 excluded), composite_score fallback to health_score for EQ-003",
+    "assertions": [
+      {
+        "text": "correlation_type is HEALTH_BACKLOG",
+        "type": "structural"
+      },
+      {
+        "text": "data_points is 3 (EQ-004 excluded because no health score record)",
+        "type": "content"
+      },
+      {
+        "text": "EQ-003 uses health_score fallback since composite_score is absent",
+        "type": "content"
+      },
+      {
+        "text": "Coefficient is negative (lower health correlates with more backlog)",
+        "type": "content"
+      },
+      {
+        "text": "Backlog items with empty equipment_id are skipped",
+        "type": "content"
+      }
+    ]
+  }
+]

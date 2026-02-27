@@ -1,0 +1,133 @@
+# agents/reliability/skills.yaml
+# Skills asignados al Reliability Engineer Agent
+# Última actualización: 2026-02-24
+
+agent: reliability
+model: claude-opus-4-6
+
+skills:
+  # ── Milestone 1: Hierarchy + Criticality ─────────────────────
+  - name: build-equipment-hierarchy
+    path: skills/02-maintenance-strategy-development/build-equipment-hierarchy/CLAUDE.md
+    load_level: 2
+    milestone: 1
+    mandatory: true
+    references_to_preload:
+      - references/hierarchy-examples.md
+
+  - name: assess-criticality
+    path: skills/02-maintenance-strategy-development/assess-criticality/CLAUDE.md
+    load_level: 2
+    milestone: 1
+    mandatory: true
+    references_to_preload:
+      - references/consequence-tables.md
+
+  # ── Milestone 2: Failure Modes + RCM ─────────────────────────
+  - name: perform-fmeca
+    path: skills/02-maintenance-strategy-development/perform-fmeca/CLAUDE.md
+    load_level: 2
+    milestone: 2
+    mandatory: true
+    references_to_preload:
+      - references/fmeca-examples.md
+
+  - name: validate-failure-modes
+    path: skills/02-maintenance-strategy-development/validate-failure-modes/CLAUDE.md
+    load_level: 2
+    milestone: 2
+    mandatory: true
+    references_to_preload:
+      - references/72-combo-table.md
+
+  - name: run-rcm-decision-tree
+    path: skills/02-maintenance-strategy-development/run-rcm-decision-tree/CLAUDE.md
+    load_level: 2
+    milestone: 2
+    mandatory: true
+    references_to_preload:
+      - references/decision-tree-details.md
+
+  - name: assess-risk-based-inspection
+    path: skills/02-maintenance-strategy-development/assess-risk-based-inspection/CLAUDE.md
+    load_level: 3
+    milestone: 2
+    mandatory: false
+    references_to_preload:
+      - references/worked-example-3-static-equipment.md
+
+  # ── Milestone 3: Reliability Analysis ────────────────────────
+  - name: fit-weibull-distribution
+    path: skills/03-reliability-engineering-and- defect-elimination/fit-weibull-distribution/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+
+  - name: analyze-pareto
+    path: skills/03-reliability-engineering-and- defect-elimination/analyze-pareto/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+
+  - name: analyze-jackknife
+    path: skills/03-reliability-engineering-and- defect-elimination/analyze-jackknife/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+
+  - name: perform-rca
+    path: skills/03-reliability-engineering-and- defect-elimination/perform-rca/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+
+  # ── Cross-Agent Skills (compartidos con otros agentes) ────────
+  - name: validate-quality
+    path: skills/05-general-functionalities/validate-quality/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+    # Auto-validación interna antes de devolver resultados al Orchestrator
+
+  - name: resolve-equipment
+    path: skills/resolve-equipment/CLAUDE.md
+    load_level: 3
+    milestone: 1
+    mandatory: false
+    # Resolver descripciones de texto libre a tags registrados en M1
+
+  - name: calculate-kpis
+    path: skills/06-orchestation/calculate-kpis/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+    # MTBF/MTTR/OEE como input para análisis Weibull y Pareto
+
+  - name: manage-capa
+    path: skills/manage-capa/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+    # Crear CAPAs directamente desde resultados de perform-rca
+
+  - name: import-data
+    path: skills/05-general-functionalities/import-data/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+    # Importar historial de fallas para análisis de fiabilidad
+
+# ── Knowledge Base (siempre disponible, carga selectiva) ──────
+knowledge_base:
+  - path: skills/00-knowledge-base/methodologies/rcm-methodology-full.md
+    load_when: "Agent needs comprehensive RCM methodology reference"
+  - path: skills/00-knowledge-base/standards/iso-14224-plant-equipment-taxonomy.md
+    load_when: "Agent needs equipment taxonomy or failure coding reference"
+  - path: skills/00-knowledge-base/data-models/failure-modes/MASTER.md
+    load_when: "Agent needs to validate failure mode combinations, look up degradation processes, detection techniques, or maintenance strategies"
+  - path: skills/00-knowledge-base/methodologies/ref-01-maintenance-strategy-methodology.md
+    load_when: "Agent needs the overall maintenance strategy framework"
+  - path: skills/00-knowledge-base/data-models/ref-02-r8-data-model-entities.md
+    load_when: "Agent needs entity definitions for the R8 data model"
+  - path: skills/00-knowledge-base/quality/ref-04-quality-validation-rules.md
+    load_when: "Agent needs validation rule definitions"

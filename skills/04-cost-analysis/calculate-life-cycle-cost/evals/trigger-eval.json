@@ -1,0 +1,103 @@
+{
+  "skill": "calculate-life-cycle-cost",
+  "should_trigger": [
+    {
+      "query": "Calculate the life cycle cost for replacing pump PUMP-101A",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "Compare LCC between repairing the existing crusher vs buying new",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "What's the total cost of ownership for the ball mill over 20 years?",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "I need an NPV analysis for the motor replacement decision",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "Which alternative is cheaper over the asset lifetime - repair or replace?",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "Calcula el costo de ciclo de vida de la bomba de pulpa",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "What's the annualized cost of the SAG mill gearbox?",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "Do a cost comparison between 3 pump alternatives including NPV",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "Is it worth replacing the conveyor belt drive? Show me the LCC numbers",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "Calculate breakeven year for new vs refurbished equipment",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "What percentage of total cost comes from maintenance for this asset?",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    },
+    {
+      "query": "I need total cost of ownership analysis with 8% discount rate",
+      "reason": "Directly relevant to calculate-life-cycle-cost skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the KPIs for plant JFC-01 this quarter",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "Fit a Weibull distribution to the failure data",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "Compare availability across all OCP plants",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "Do a Pareto analysis of worst performing equipment",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "Classify equipment using the Jackknife diagram",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "What's the optimal PM interval for the pump?",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "Assess risk level for static equipment inspection",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "Build the equipment hierarchy for the grinding circuit",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "Run an RCM decision tree for the conveyor belt",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "Perform FMECA on the crusher gearbox",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "What's the MTBF for the SAG mill bearings?",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    },
+    {
+      "query": "Do a root cause analysis on the pump seal failure",
+      "reason": "Not related to calculate-life-cycle-cost functionality"
+    }
+  ]
+}

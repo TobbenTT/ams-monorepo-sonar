@@ -1,0 +1,87 @@
+{
+  "skill": "group-backlog",
+  "should_trigger": [
+    {
+      "query": "I need to group the SAG mill backlog items for next week",
+      "reason": "Directly relevant to group-backlog skill"
+    },
+    {
+      "query": "Can you organize our open work orders by equipment?",
+      "reason": "Directly relevant to group-backlog skill"
+    },
+    {
+      "query": "We have 50 backlog items in the crusher area, help me group them",
+      "reason": "Directly relevant to group-backlog skill"
+    },
+    {
+      "query": "Prioritize and group the shutdown work orders for Q2 turnaround",
+      "reason": "Directly relevant to group-backlog skill"
+    },
+    {
+      "query": "Show me the backlog stratification for plant BRY",
+      "reason": "Directly relevant to group-backlog skill"
+    },
+    {
+      "query": "Necesito agrupar las ordenes de trabajo pendientes del molino SAG",
+      "reason": "Spanish query relevant to group-backlog skill"
+    },
+    {
+      "query": "Priorizar los trabajos del backlog de mantenimiento por area",
+      "reason": "Spanish query relevant to group-backlog skill"
+    },
+    {
+      "query": "How should I bundle these work orders for the upcoming shutdown window?",
+      "reason": "Directly relevant to group-backlog skill"
+    },
+    {
+      "query": "Group all P1 and P2 backlog items that share the same equipment tag",
+      "reason": "Directly relevant to group-backlog skill"
+    },
+    {
+      "query": "What work order grouping strategies can we apply to reduce mobilization waste?",
+      "reason": "Directly relevant to group-backlog skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the MTBF for pump P-101",
+      "reason": "Not related to group-backlog functionality"
+    },
+    {
+      "query": "Generate a work instruction for the conveyor belt splice",
+      "reason": "Not related to group-backlog functionality"
+    },
+    {
+      "query": "What is the criticality rating of the SAG mill gearbox?",
+      "reason": "Not related to group-backlog functionality"
+    },
+    {
+      "query": "Create a SAP maintenance item for the crusher PM",
+      "reason": "Not related to group-backlog functionality"
+    },
+    {
+      "query": "Run an RCA on the bearing failure from last month",
+      "reason": "Not related to group-backlog functionality"
+    },
+    {
+      "query": "Show me the weekly schedule for next week",
+      "reason": "Not related to group-backlog functionality"
+    },
+    {
+      "query": "What PPE is required for offline maintenance?",
+      "reason": "Not related to group-backlog functionality"
+    },
+    {
+      "query": "Generate the monthly KPI report for March",
+      "reason": "Not related to group-backlog functionality"
+    },
+    {
+      "query": "How do I perform an FMECA on the conveyor system?",
+      "reason": "Not related to group-backlog functionality"
+    },
+    {
+      "query": "Submit a management of change request for the new gearbox type",
+      "reason": "Not related to group-backlog functionality"
+    }
+  ]
+}

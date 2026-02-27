@@ -1,0 +1,85 @@
+[
+  {
+    "id": "weibull-eval-01",
+    "name": "Full Weibull analysis with 5 data points",
+    "input": {
+      "failure_intervals": [450, 520, 380, 490, 410],
+      "current_age_days": 350,
+      "confidence_level": 0.9,
+      "description": "SAG mill pinion gear Weibull analysis"
+    },
+    "expected": {
+      "beta_approx": 5.2,
+      "eta_approx": 468.3,
+      "r_squared_min": 0.95,
+      "failure_pattern": "A_BATHTUB",
+      "urgency": "URGENT",
+      "status": "DRAFT"
+    },
+    "assertions": [
+      "Beta >= 3.5 classifies as A_BATHTUB",
+      "Risk score >= 80 triggers URGENT urgency",
+      "Output status is always DRAFT",
+      "Recommendation mentions fixed-time replacement"
+    ]
+  },
+  {
+    "id": "weibull-eval-02",
+    "name": "Insufficient data falls back to defaults",
+    "input": {
+      "failure_intervals": [120, 180],
+      "current_age_days": 100,
+      "description": "Only 2 data points - should use defaults"
+    },
+    "expected": {
+      "beta": 1.0,
+      "eta": 180.0,
+      "r_squared": 0.0,
+      "failure_pattern": "E_RANDOM"
+    },
+    "assertions": [
+      "With < 3 points, beta defaults to 1.0",
+      "eta defaults to max of intervals (180)",
+      "r_squared is 0.0 (no fit)",
+      "Agent notes insufficient sample size"
+    ]
+  },
+  {
+    "id": "weibull-eval-03",
+    "name": "Beta < 1 early life pattern detection",
+    "input": {
+      "failure_intervals": [5, 12, 8, 3, 15, 7, 10, 4],
+      "current_age_days": 20,
+      "description": "Equipment showing early-life failures"
+    },
+    "expected": {
+      "failure_pattern": "F_EARLY_LIFE",
+      "strategy": "Review installation/commissioning quality, NOT fixed-time replacement"
+    },
+    "assertions": [
+      "Beta < 0.8 indicates F_EARLY_LIFE",
+      "Recommendation does NOT suggest fixed-time replacement",
+      "Recommendation mentions installation or commissioning review"
+    ]
+  },
+  {
+    "id": "weibull-eval-04",
+    "name": "Predicted window is zero when past failure point",
+    "input": {
+      "failure_intervals": [100, 110, 105, 95, 108],
+      "current_age_days": 600,
+      "confidence_level": 0.9,
+      "description": "Equipment far past predicted life"
+    },
+    "expected": {
+      "predicted_failure_window_days": 0,
+      "risk_score": 100,
+      "urgency": "URGENT"
+    },
+    "assertions": [
+      "Predicted window is 0 days (already past)",
+      "Risk score capped at 100",
+      "Urgency is URGENT"
+    ]
+  }
+]

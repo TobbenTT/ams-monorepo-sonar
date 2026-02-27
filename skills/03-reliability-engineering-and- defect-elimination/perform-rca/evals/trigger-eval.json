@@ -1,0 +1,27 @@
+{
+  "skill": "perform-rca",
+  "should_trigger": [
+    {"query": "Conduct a root cause analysis on the SAG Mill bearing seizure at OCP", "reason": "Direct RCA request with equipment context"},
+    {"query": "Why did the pump fail? Let's do an RCA", "reason": "Why analysis / RCA trigger"},
+    {"query": "I need to build an Ishikawa diagram for the conveyor belt failure", "reason": "Ishikawa trigger"},
+    {"query": "Apply the 5W+2H analysis to the crusher shutdown event", "reason": "5W+2H trigger"},
+    {"query": "What are the root causes of the recurring gearbox failure?", "reason": "Root cause identification"},
+    {"query": "Hacer analisis de causa raiz de la falla del molino de bolas", "reason": "Spanish - root cause analysis trigger"},
+    {"query": "We need to investigate the defect elimination program KPIs for OCP-JFC1", "reason": "Defect elimination trigger"},
+    {"query": "The trunnion bearing failed again - let's start a failure investigation", "reason": "Failure investigation trigger"},
+    {"query": "Help me classify the evidence using the 5P framework for the pump failure", "reason": "5P evidence trigger"},
+    {"query": "Investigacion de falla del sistema de lubricacion - diagrama de espina de pescado", "reason": "Spanish - fishbone diagram trigger"}
+  ],
+  "should_not_trigger": [
+    {"query": "What is the criticality of the SAG Mill?", "reason": "Criticality is assess-criticality skill"},
+    {"query": "Run the RCM decision tree for the pump failure", "reason": "RCM is run-rcm-decision-tree skill"},
+    {"query": "Perform an FMECA for the crusher", "reason": "FMECA is perform-fmeca skill"},
+    {"query": "Validate the failure mode CORRODES + CHEMICAL_ATTACK", "reason": "FM validation is validate-failure-modes"},
+    {"query": "Build the equipment hierarchy for the grinding circuit", "reason": "Hierarchy is build-equipment-hierarchy"},
+    {"query": "What priority should this work order have?", "reason": "Priority is calculate-priority skill"},
+    {"query": "Calculate the health score for the SAG Mill", "reason": "Health score is calculate-health-score"},
+    {"query": "What is the MTBF for the slurry pump?", "reason": "Statistical reliability question"},
+    {"query": "Schedule the next preventive maintenance for the ball mill", "reason": "PM scheduling question"},
+    {"query": "How do I close a work order in SAP?", "reason": "SAP transaction question"}
+  ]
+}

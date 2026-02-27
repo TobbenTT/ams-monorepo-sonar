@@ -1,0 +1,87 @@
+{
+  "skill": "conduct-management-review",
+  "should_trigger": [
+    {
+      "query": "Prepare the quarterly management review for plant BRY",
+      "reason": "Directly relevant to conduct-management-review skill"
+    },
+    {
+      "query": "What is the health trend for our asset portfolio this quarter?",
+      "reason": "Directly relevant to conduct-management-review skill"
+    },
+    {
+      "query": "Conduct the ISO 55002 Section 9.3 management review",
+      "reason": "Directly relevant to conduct-management-review skill"
+    },
+    {
+      "query": "Generate the executive summary with key findings and actions",
+      "reason": "Directly relevant to conduct-management-review skill"
+    },
+    {
+      "query": "Show KPI trends vs last period for the management review",
+      "reason": "Directly relevant to conduct-management-review skill"
+    },
+    {
+      "query": "Preparar la revision gerencial trimestral para planta BRY",
+      "reason": "Spanish query relevant to conduct-management-review skill"
+    },
+    {
+      "query": "Realizar la revision de gestion ISO 55002 seccion 9.3",
+      "reason": "Spanish query relevant to conduct-management-review skill"
+    },
+    {
+      "query": "How many overdue CAPAs should be highlighted in the management review?",
+      "reason": "Directly relevant to conduct-management-review skill"
+    },
+    {
+      "query": "What are the recommended actions for management based on current performance?",
+      "reason": "Directly relevant to conduct-management-review skill"
+    },
+    {
+      "query": "Aggregate health scores and variance alerts for the portfolio review",
+      "reason": "Directly relevant to conduct-management-review skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the planning KPIs for Q1",
+      "reason": "Not related to conduct-management-review functionality"
+    },
+    {
+      "query": "Generate a work instruction for the pump",
+      "reason": "Not related to conduct-management-review functionality"
+    },
+    {
+      "query": "Export to SAP format",
+      "reason": "Not related to conduct-management-review functionality"
+    },
+    {
+      "query": "Group the backlog by area",
+      "reason": "Not related to conduct-management-review functionality"
+    },
+    {
+      "query": "Create a CAPA for the bearing failure",
+      "reason": "Not related to conduct-management-review functionality"
+    },
+    {
+      "query": "Schedule the weekly maintenance program",
+      "reason": "Not related to conduct-management-review functionality"
+    },
+    {
+      "query": "Generate the monthly KPI report",
+      "reason": "Not related to conduct-management-review functionality"
+    },
+    {
+      "query": "Check pending notifications",
+      "reason": "Not related to conduct-management-review functionality"
+    },
+    {
+      "query": "Plan the shutdown turnaround",
+      "reason": "Not related to conduct-management-review functionality"
+    },
+    {
+      "query": "Submit a management of change for the new motor",
+      "reason": "Not related to conduct-management-review functionality"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+[
+  {
+    "id": 1,
+    "prompt": "Optimize inventory for 3 parts at OCP-JFC: SP-001 (HIGH criticality, PRODUCTION_STOP, 15 moves/yr, $45000 annual, $1500 unit, 0.05 daily, 30 day LT, 12 on hand), SP-002 (MEDIUM, PRODUCTION_REDUCED, 6 moves/yr, $12000, $200, 0.02 daily, 14 day LT, 50 on hand), SP-003 (LOW, NONE, 0 moves/yr, $500, $50, 0.00 daily, 60 day LT, 25 on hand)",
+    "expected_output": "SP-001: VITAL/FAST/A_HIGH score=100; SP-002: ESSENTIAL/SLOW/C_LOW score=47.5; SP-003: DESIRABLE/NON/C_LOW score=17.5; reduction ~29.6%",
+    "assertions": [
+      {
+        "text": "SP-001 classified as VITAL, FAST_MOVING, A_HIGH with score 100.0",
+        "type": "content"
+      },
+      {
+        "text": "SP-003 classified as DESIRABLE, NON_MOVING with all stock levels = 0",
+        "type": "content"
+      },
+      {
+        "text": "Recommended reduction percentage is approximately 29.6%",
+        "type": "numerical"
+      },
+      {
+        "text": "SP-002 current stock (50) flagged as exceeding max stock",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "prompt": "A part has LOW equipment criticality but PRODUCTION_STOP failure impact. What VED class should it get?",
+    "expected_output": "VITAL - because failure_impact = PRODUCTION_STOP overrides LOW equipment criticality via OR logic",
+    "assertions": [
+      {
+        "text": "VED class is VITAL",
+        "type": "content"
+      },
+      {
+        "text": "OR-logic explanation: failure impact check triggers before desirable default",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "prompt": "Calculate stock levels for a part with daily consumption 0.05, lead time 30 days, service level 95%",
+    "expected_output": "safety_stock=1, reorder_point=2, EOQ=19, max_stock=21",
+    "assertions": [
+      {
+        "text": "Safety stock is 1 (max(1, round(1.645 * 0.015 * sqrt(30))))",
+        "type": "numerical"
+      },
+      {
+        "text": "Reorder point is 2 (round(0.05*30 + 1))",
+        "type": "numerical"
+      },
+      {
+        "text": "EOQ is 19 (round(sqrt(2*0.05*365*10)))",
+        "type": "numerical"
+      },
+      {
+        "text": "Max stock is 21 (reorder_point + EOQ)",
+        "type": "numerical"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "prompt": "I have a part with zero daily consumption. What should its stock levels be?",
+    "expected_output": "All stock levels = 0 (safety stock, reorder point, EOQ, max stock, min stock)",
+    "assertions": [
+      {
+        "text": "All stock levels are zero",
+        "type": "numerical"
+      },
+      {
+        "text": "Zero-demand rule applied regardless of VED criticality",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "prompt": "Run ABC classification on 3 parts: Part A ($80,000 annual), Part B ($15,000 annual), Part C ($5,000 annual). Total = $100,000.",
+    "expected_output": "Part A: A_HIGH (80% cumulative), Part B: B_MEDIUM (95% cumulative), Part C: C_LOW (100%)",
+    "assertions": [
+      {
+        "text": "Part A classified A_HIGH (80% cumulative <= 80% threshold)",
+        "type": "content"
+      },
+      {
+        "text": "Part B classified B_MEDIUM (95% cumulative <= 95% threshold)",
+        "type": "content"
+      },
+      {
+        "text": "Part C classified C_LOW (100% cumulative > 95%)",
+        "type": "content"
+      },
+      {
+        "text": "Classification based on cumulative percentage of sorted annual costs",
+        "type": "structural"
+      }
+    ]
+  }
+]

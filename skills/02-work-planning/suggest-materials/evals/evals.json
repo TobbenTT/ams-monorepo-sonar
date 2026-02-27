@@ -1,0 +1,109 @@
+[
+  {
+    "id": 1,
+    "prompt": "Suggest materials for a worn bearing on SAG Mill BRY-SAG-ML-001. The BOM registry has entry M-BRG-2210 (SKF 22210 Spherical Roller Bearing) for that equipment.",
+    "expected_output": "4 suggestions: 1 BOM match (confidence 0.95), 3 catalog matches (confidence 0.60)",
+    "assertions": [
+      {
+        "text": "BOM suggestion has material_code M-BRG-2210 and confidence 0.95",
+        "type": "content"
+      },
+      {
+        "text": "Catalog suggestions include bearing seal kit and lubricant",
+        "type": "content"
+      },
+      {
+        "text": "Catalog suggestions have confidence 0.60 (not 0.70) because equipment_id was provided",
+        "type": "numerical"
+      },
+      {
+        "text": "All suggestions are ordered BOM first then catalog",
+        "type": "structural"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "prompt": "What materials are needed for a REPLACE task on a broken impeller? No equipment ID available.",
+    "expected_output": "2 catalog suggestions at confidence 0.70: replacement impeller and impeller bolt set",
+    "assertions": [
+      {
+        "text": "Suggestions include replacement impeller and impeller bolt set",
+        "type": "content"
+      },
+      {
+        "text": "Both suggestions have confidence 0.70 (no equipment_id provided)",
+        "type": "numerical"
+      },
+      {
+        "text": "material_code is empty for catalog suggestions",
+        "type": "content"
+      },
+      {
+        "text": "T-16 validation passes because REPLACE task has materials",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "prompt": "Suggest materials for a corroded valve stem. No BOM registry and no catalog mapping for 'Valve Stem'.",
+    "expected_output": "No suggestion returned (None) because CORRODED is not in generic fallback mechanisms",
+    "assertions": [
+      {
+        "text": "No suggestions returned because component has no BOM or catalog match",
+        "type": "content"
+      },
+      {
+        "text": "CORRODED mechanism is not in generic fallback list (WORN/BROKEN/CRACKED/DEFORMED)",
+        "type": "content"
+      },
+      {
+        "text": "Result is None or empty list",
+        "type": "structural"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "prompt": "Validate T-16: I have an INSPECT task 'Inspect bearing for wear' with 2 materials assigned. Is this correct?",
+    "expected_output": "INFO-level note that inspection tasks normally do not have materials; verify intentional",
+    "assertions": [
+      {
+        "text": "INFO warning emitted for INSPECT task with materials",
+        "type": "content"
+      },
+      {
+        "text": "Does not produce ERROR for inspection with materials",
+        "type": "content"
+      },
+      {
+        "text": "Suggests human verification",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "prompt": "I need materials for a deformed liner component. There is no BOM or catalog entry for Liner + DEFORMED.",
+    "expected_output": "1 generic fallback suggestion: 'Replacement liner' at confidence 0.40",
+    "assertions": [
+      {
+        "text": "Generic fallback triggered because no BOM or catalog match",
+        "type": "content"
+      },
+      {
+        "text": "Suggestion description is 'Replacement liner' (lowercase component_type)",
+        "type": "content"
+      },
+      {
+        "text": "Confidence is exactly 0.40",
+        "type": "numerical"
+      },
+      {
+        "text": "Flagged for mandatory human review",
+        "type": "content"
+      }
+    ]
+  }
+]

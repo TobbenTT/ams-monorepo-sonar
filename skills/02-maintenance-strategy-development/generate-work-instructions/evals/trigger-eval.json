@@ -1,0 +1,87 @@
+{
+  "skill": "generate-work-instructions",
+  "should_trigger": [
+    {
+      "query": "Generate a work instruction for the SAG mill liner change",
+      "reason": "Directly relevant to generate-work-instructions skill"
+    },
+    {
+      "query": "Create a WI for the crusher bearing replacement",
+      "reason": "Directly relevant to generate-work-instructions skill"
+    },
+    {
+      "query": "What PPE is needed for an offline work instruction on the conveyor?",
+      "reason": "Directly relevant to generate-work-instructions skill"
+    },
+    {
+      "query": "Build the operation sequence for pump greasing procedure",
+      "reason": "Directly relevant to generate-work-instructions skill"
+    },
+    {
+      "query": "I need a work procedure for the ball mill motor inspection",
+      "reason": "Directly relevant to generate-work-instructions skill"
+    },
+    {
+      "query": "Generar una instruccion de trabajo para el cambio de revestimiento",
+      "reason": "Spanish query relevant to generate-work-instructions skill"
+    },
+    {
+      "query": "Crear un procedimiento de trabajo para la inspeccion del molino",
+      "reason": "Spanish query relevant to generate-work-instructions skill"
+    },
+    {
+      "query": "What isolation plan and LOTOTO requirements apply to this offline WI?",
+      "reason": "Directly relevant to generate-work-instructions skill"
+    },
+    {
+      "query": "Draft a work instruction with safety section for the gearbox overhaul",
+      "reason": "Directly relevant to generate-work-instructions skill"
+    },
+    {
+      "query": "Help me create the task operations and resource summary for WP-SAG-001",
+      "reason": "Directly relevant to generate-work-instructions skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the planning KPIs for this month",
+      "reason": "Not related to generate-work-instructions functionality"
+    },
+    {
+      "query": "Group the backlog items by area",
+      "reason": "Not related to generate-work-instructions functionality"
+    },
+    {
+      "query": "Export the work packages to SAP format",
+      "reason": "Not related to generate-work-instructions functionality"
+    },
+    {
+      "query": "Schedule the weekly maintenance program",
+      "reason": "Not related to generate-work-instructions functionality"
+    },
+    {
+      "query": "What is the criticality of this equipment?",
+      "reason": "Not related to generate-work-instructions functionality"
+    },
+    {
+      "query": "Run a root cause analysis on the pump failure",
+      "reason": "Not related to generate-work-instructions functionality"
+    },
+    {
+      "query": "Generate the monthly KPI report",
+      "reason": "Not related to generate-work-instructions functionality"
+    },
+    {
+      "query": "Create a CAPA for the corrective action",
+      "reason": "Not related to generate-work-instructions functionality"
+    },
+    {
+      "query": "Start a management of change request",
+      "reason": "Not related to generate-work-instructions functionality"
+    },
+    {
+      "query": "Plan the shutdown for Q2 turnaround",
+      "reason": "Not related to generate-work-instructions functionality"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+[
+  {
+    "test_id": "CAPA-001",
+    "name": "New CAPA starts in OPEN/PLAN",
+    "description": "A newly created CAPA should have status=OPEN and phase=PLAN",
+    "input": {
+      "capa_type": "CORRECTIVE",
+      "title": "Fix pump seal failure",
+      "plant_id": "PLANT-BRY"
+    },
+    "expected": {
+      "status": "OPEN",
+      "current_phase": "PLAN",
+      "effectiveness_verified": false
+    }
+  },
+  {
+    "test_id": "CAPA-002",
+    "name": "VERIFIED requires effectiveness_verified=True",
+    "description": "Attempting CLOSED->VERIFIED without effectiveness_verified=True should be rejected",
+    "input": {
+      "current_status": "CLOSED",
+      "target_status": "VERIFIED",
+      "effectiveness_verified": false
+    },
+    "expected": {
+      "transition_rejected": true,
+      "error_message": "Cannot verify: effectiveness_verified must be True"
+    }
+  },
+  {
+    "test_id": "CAPA-003",
+    "name": "VERIFIED is terminal state",
+    "description": "No transitions allowed from VERIFIED",
+    "input": {
+      "current_status": "VERIFIED",
+      "target_status": "IN_PROGRESS"
+    },
+    "expected": {
+      "transition_rejected": true,
+      "allowed_transitions": []
+    }
+  },
+  {
+    "test_id": "CAPA-004",
+    "name": "Overdue only for active CAPAs",
+    "description": "CLOSED CAPAs should not be flagged as overdue even if past target_date",
+    "input": {
+      "status": "CLOSED",
+      "target_date": "2024-01-01",
+      "reference_date": "2025-06-01"
+    },
+    "expected": {
+      "is_overdue": false
+    }
+  },
+  {
+    "test_id": "CAPA-005",
+    "name": "CHECK can loop back to DO",
+    "description": "CHECK->DO is valid for rework, but CHECK->PLAN is not",
+    "input": {
+      "current_phase": "CHECK"
+    },
+    "expected": {
+      "allowed_next_phases": [
+        "ACT",
+        "DO"
+      ],
+      "plan_not_allowed": true
+    }
+  }
+]

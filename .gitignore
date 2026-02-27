@@ -1,0 +1,93 @@
+# =============================================================
+# OCP Maintenance AI MVP — .gitignore
+# =============================================================
+
+# -------------------- Environment & Secrets --------------------
+.env
+.env.*
+*.env
+
+# -------------------- Python --------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# -------------------- Databases --------------------
+*.db
+*.sqlite
+*.sqlite3
+
+# -------------------- Temporary Files --------------------
+_tmp_*.txt
+nul
+*.tmp
+*.bak
+*.swp
+*~
+temp_pdf_images/
+
+# -------------------- Word temp files --------------------
+~$*.docx
+~$*.doc
+
+# -------------------- Claude Code --------------------
+.claude/
+
+# -------------------- IDE / Editors --------------------
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# -------------------- OS Files --------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# -------------------- Large Binary Files --------------------
+# Audio
+*.mp3
+*.wav
+*.flac
+
+# Videos
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# -------------------- Pytest / Coverage --------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# -------------------- Logs --------------------
+*.log
+
+# -------------------- Node / Frontend --------------------
+node_modules/
+frontend/dist/
+frontend/dist-ssr/

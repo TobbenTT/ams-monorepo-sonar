@@ -1,0 +1,111 @@
+[
+  {
+    "id": "prio-eval-001",
+    "name": "R8 Maximum Score - AA with All Flags",
+    "description": "AA criticality with all flags active should produce maximum score and EMERGENCY",
+    "input": {
+      "mode": "R8",
+      "equipment_criticality": "AA",
+      "has_safety_flags": true,
+      "failure_mode_detected": "Seal leak detected",
+      "production_impact_estimated": true,
+      "is_recurring": true,
+      "equipment_running": false
+    },
+    "expected": {
+      "score": 23,
+      "priority": "1_EMERGENCY",
+      "escalation_needed": true
+    },
+    "assertions": [
+      "Score = 10 + 5 + 3 + 2 + 3 = 23",
+      "23 >= 15 = EMERGENCY",
+      "Escalation: score >= 15 AND safety+AA"
+    ]
+  },
+  {
+    "id": "prio-eval-002",
+    "name": "R8 Minimum Score - D with No Flags",
+    "description": "D criticality with no flags should produce minimum score and PLANNED",
+    "input": {
+      "mode": "R8",
+      "equipment_criticality": "D",
+      "has_safety_flags": false,
+      "production_impact_estimated": false,
+      "is_recurring": false,
+      "equipment_running": true
+    },
+    "expected": {
+      "score": 1,
+      "priority": "4_PLANNED",
+      "escalation_needed": false
+    },
+    "assertions": [
+      "Score = 1 (D weight only)",
+      "1 < 5 = PLANNED",
+      "No escalation"
+    ]
+  },
+  {
+    "id": "prio-eval-003",
+    "name": "GFSN Matrix - MODERADO x HIGH",
+    "description": "GFSN mode with MODERADO band and consequence 4 (HIGH) should give ALTO",
+    "input": {
+      "mode": "GFSN",
+      "criticality_band": "MODERADO",
+      "max_consequence": 4
+    },
+    "expected": {
+      "priority": "ALTO",
+      "response_time": "Immediate"
+    },
+    "assertions": [
+      "Consequence 4 >= 4 = HIGH",
+      "MODERADO x HIGH = ALTO",
+      "Response time: Immediate"
+    ]
+  },
+  {
+    "id": "prio-eval-004",
+    "name": "Escalation Edge Case - A+ with Safety",
+    "description": "A+ with safety flags (score 13) triggers escalation via safety+A+ rule even though score < 15",
+    "input": {
+      "mode": "R8",
+      "equipment_criticality": "A+",
+      "has_safety_flags": true,
+      "production_impact_estimated": false,
+      "is_recurring": false,
+      "equipment_running": true
+    },
+    "expected": {
+      "score": 13,
+      "priority": "2_URGENT",
+      "escalation_needed": true
+    },
+    "assertions": [
+      "Score = 8 + 5 = 13",
+      "13 >= 10 = URGENT (not EMERGENCY)",
+      "Escalation YES because safety AND A+ in {AA, A+}"
+    ]
+  },
+  {
+    "id": "prio-eval-005",
+    "name": "Override Validation - Downgrade Warning",
+    "description": "Downgrading from EMERGENCY to NORMAL should produce warning",
+    "input": {
+      "mode": "override",
+      "ai_priority": "1_EMERGENCY",
+      "human_priority": "3_NORMAL"
+    },
+    "expected": {
+      "valid": true,
+      "downgraded": true,
+      "warning_contains": "Priority downgraded"
+    },
+    "assertions": [
+      "Override is always valid=true",
+      "downgraded=true because rank 3 > rank 1",
+      "Warning mentions safety review"
+    ]
+  }
+]

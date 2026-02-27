@@ -1,0 +1,27 @@
+{
+  "skill": "build-equipment-hierarchy",
+  "should_trigger": [
+    {"query": "Build the equipment hierarchy for a SAG Mill at OCP Jorf Lasfar", "reason": "Direct hierarchy building request"},
+    {"query": "Register a new ball mill in the BRY grinding area", "reason": "Equipment registration request"},
+    {"query": "Create the functional location structure for the flotation circuit", "reason": "Functional location trigger"},
+    {"query": "I need to set up the 6-level hierarchy for crusher CRU-001", "reason": "6 levels trigger"},
+    {"query": "Generate the tag naming for a slurry pump in area MIN", "reason": "Tag naming request"},
+    {"query": "Construir la jerarquia de equipos para el molino de bolas", "reason": "Spanish - equipment hierarchy trigger"},
+    {"query": "What sub-assemblies should a SAG Mill have in the plant hierarchy?", "reason": "Sub-assembly structure question"},
+    {"query": "Add a new conveyor belt to the equipment structure in SAP", "reason": "Equipment structure SAP request"},
+    {"query": "Build hierarchy for a 12000 kW FLSmidth SAG Mill, sequence 2", "reason": "Detailed hierarchy request with specs"},
+    {"query": "Crear la ubicacion funcional para la bomba de pulpa en OCP", "reason": "Spanish - functional location trigger"}
+  ],
+  "should_not_trigger": [
+    {"query": "What is the criticality of the SAG Mill?", "reason": "Criticality is assess-criticality skill"},
+    {"query": "Run the RCM decision tree for the pump", "reason": "RCM is run-rcm-decision-tree skill"},
+    {"query": "Perform an FMECA for the crusher", "reason": "FMECA is perform-fmeca skill"},
+    {"query": "Validate the failure mode WEARS + ABRASION", "reason": "FM validation is validate-failure-modes"},
+    {"query": "Calculate the priority for this work order", "reason": "Priority is calculate-priority skill"},
+    {"query": "Do a root cause analysis on the bearing failure", "reason": "RCA is perform-rca skill"},
+    {"query": "What is the health score for the SAG Mill?", "reason": "Health score is calculate-health-score"},
+    {"query": "How many work orders are pending for the grinding area?", "reason": "Work order status question"},
+    {"query": "What is the annual maintenance cost for the flotation circuit?", "reason": "Cost analysis question"},
+    {"query": "Show me the production metrics for last quarter", "reason": "Production metrics, not hierarchy"}
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "skill": "calculate-health-score",
+  "should_trigger": [
+    {"query": "Calculate the health score for SAG Mill BRY-SAG-ML-001 at OCP", "reason": "Direct health score request"},
+    {"query": "What is the asset health index for the crusher?", "reason": "Asset health index trigger"},
+    {"query": "Show me the health trend for the ball mill over the last quarter", "reason": "Health trend request"},
+    {"query": "Is the slurry pump in healthy or at-risk condition?", "reason": "Health classification question"},
+    {"query": "Run a condition assessment for the conveyor belt system", "reason": "Condition assessment trigger"},
+    {"query": "Calcular el puntaje de salud del molino SAG", "reason": "Spanish - health score trigger"},
+    {"query": "The SAG Mill composite score was 55 last month - what is it now?", "reason": "Trend comparison request"},
+    {"query": "Which equipment has the lowest health index in the grinding area?", "reason": "Equipment health comparison"},
+    {"query": "The backlog is growing on the crusher - how does that affect the health score?", "reason": "Dimension impact question"},
+    {"query": "Indice de salud del activo para la bomba de pulpa en OCP-JFC1", "reason": "Spanish - asset health index trigger"}
+  ],
+  "should_not_trigger": [
+    {"query": "What is the criticality of the SAG Mill?", "reason": "Criticality is assess-criticality skill"},
+    {"query": "Run the RCM decision tree for the pump failure", "reason": "RCM is run-rcm-decision-tree skill"},
+    {"query": "Perform an FMECA for the crusher", "reason": "FMECA is perform-fmeca skill"},
+    {"query": "Validate the failure mode CORRODES + CHEMICAL_ATTACK", "reason": "FM validation is validate-failure-modes"},
+    {"query": "Build the equipment hierarchy for plant OCP-JFC1", "reason": "Hierarchy is build-equipment-hierarchy"},
+    {"query": "What priority should this work order have?", "reason": "Priority is calculate-priority skill"},
+    {"query": "Conduct a root cause analysis on the bearing seizure", "reason": "RCA is perform-rca skill"},
+    {"query": "What is the production output of the grinding circuit?", "reason": "Production metrics question"},
+    {"query": "How do I create a maintenance plan in SAP?", "reason": "SAP configuration question"},
+    {"query": "What is the inventory level for crusher liners?", "reason": "Inventory management question"}
+  ]
+}

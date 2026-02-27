@@ -1,0 +1,87 @@
+{
+  "skill": "assemble-work-packages",
+  "should_trigger": [
+    {
+      "query": "Assemble the work package for SAG mill liner change",
+      "reason": "Directly relevant to assemble-work-packages skill"
+    },
+    {
+      "query": "Check if WP-SAG-001 has all 7 mandatory elements",
+      "reason": "Directly relevant to assemble-work-packages skill"
+    },
+    {
+      "query": "What is the readiness status of the crusher work package?",
+      "reason": "Directly relevant to assemble-work-packages skill"
+    },
+    {
+      "query": "Generate a compliance report for all work packages at plant BRY",
+      "reason": "Directly relevant to assemble-work-packages skill"
+    },
+    {
+      "query": "Which elements are missing from the conveyor belt splice package?",
+      "reason": "Directly relevant to assemble-work-packages skill"
+    },
+    {
+      "query": "Armar el paquete de trabajo para el cambio de revestimiento del molino",
+      "reason": "Spanish query relevant to assemble-work-packages skill"
+    },
+    {
+      "query": "Verificar estado del paquete de trabajo WP-CRU-002",
+      "reason": "Spanish query relevant to assemble-work-packages skill"
+    },
+    {
+      "query": "Is the safety plan for the shutdown work package ready or still in draft?",
+      "reason": "Directly relevant to assemble-work-packages skill"
+    },
+    {
+      "query": "Build a work package with all 7 elements for the pump overhaul",
+      "reason": "Directly relevant to assemble-work-packages skill"
+    },
+    {
+      "query": "How many work packages are fully compliant and ready for execution?",
+      "reason": "Directly relevant to assemble-work-packages skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Generate a work instruction for the SAG mill",
+      "reason": "Not related to assemble-work-packages functionality"
+    },
+    {
+      "query": "Calculate the planning KPIs for Q1",
+      "reason": "Not related to assemble-work-packages functionality"
+    },
+    {
+      "query": "Export the maintenance items to SAP",
+      "reason": "Not related to assemble-work-packages functionality"
+    },
+    {
+      "query": "Group the backlog by equipment",
+      "reason": "Not related to assemble-work-packages functionality"
+    },
+    {
+      "query": "What is the health score of pump P-101?",
+      "reason": "Not related to assemble-work-packages functionality"
+    },
+    {
+      "query": "Schedule next week's maintenance program",
+      "reason": "Not related to assemble-work-packages functionality"
+    },
+    {
+      "query": "Submit a CAPA for the bearing failure",
+      "reason": "Not related to assemble-work-packages functionality"
+    },
+    {
+      "query": "Run the RCM decision tree for the gearbox",
+      "reason": "Not related to assemble-work-packages functionality"
+    },
+    {
+      "query": "Generate the weekly maintenance report",
+      "reason": "Not related to assemble-work-packages functionality"
+    },
+    {
+      "query": "Start a management of change for the new motor type",
+      "reason": "Not related to assemble-work-packages functionality"
+    }
+  ]
+}

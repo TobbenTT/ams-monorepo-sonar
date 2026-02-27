@@ -1,0 +1,27 @@
+{
+  "skill": "validate-quality",
+  "should_trigger": [
+    {"query": "Run quality validation on the FMEA results before milestone 2 approval", "reason": "Direct quality validation request at gate"},
+    {"query": "Check if all task names follow the naming conventions", "reason": "Naming convention validation"},
+    {"query": "Are there any T-16 errors in the current work packages?", "reason": "Specific validation rule inquiry"},
+    {"query": "Validate the hierarchy nodes - I want to know if there are any ERROR-level issues", "reason": "Entity-specific validation with severity filtering"},
+    {"query": "Verificar calidad de los modos de falla antes de aprobar el milestone", "reason": "Spanish quality verification request"},
+    {"query": "Evaluate the AI confidence for the failure modes - are any below the mandatory review threshold?", "reason": "Confidence evaluation request"},
+    {"query": "Run the full QA gate check - I need the error, warning, and info counts", "reason": "Full QA validation with severity summary"},
+    {"query": "Check if work package names are ALL CAPS and under 40 characters", "reason": "WP naming validation"},
+    {"query": "Validacion: revisar que todas las tareas REPLACE tengan materiales asignados", "reason": "Spanish T-16 validation"},
+    {"query": "Does task 'INSPECT BEARING FOR WEAR' pass all naming rules?", "reason": "Specific task name validation"}
+  ],
+  "should_not_trigger": [
+    {"query": "Start the maintenance strategy development workflow for SAG Mill", "reason": "Workflow orchestration, not validation"},
+    {"query": "Suggest materials for a worn bearing", "reason": "Material suggestion, not quality validation"},
+    {"query": "Resolve equipment tag from the field operator description", "reason": "Equipment resolution, not validation"},
+    {"query": "Optimize spare parts inventory using VED/FSN/ABC", "reason": "Inventory optimization, not validation"},
+    {"query": "Export equipment hierarchy to Excel", "reason": "Data export, not validation"},
+    {"query": "Import failure history from the CSV file", "reason": "Data import, not validation"},
+    {"query": "Run cross-module correlation analysis", "reason": "Cross-module analysis, not quality validation"},
+    {"query": "Calculate the health score for the ball mill", "reason": "Health score calculation, not validation"},
+    {"query": "Generate work instructions for the SAG mill service", "reason": "Work instruction generation, not validation"},
+    {"query": "Create a Pareto chart of failure frequencies", "reason": "Pareto analysis, not quality validation"}
+  ]
+}

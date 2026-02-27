@@ -1,0 +1,91 @@
+[
+  {
+    "test_id": "NTF-001",
+    "name": "RBI overdue >90 days is CRITICAL",
+    "description": "Inspection overdue by more than 90 days should be CRITICAL",
+    "input": {
+      "rbi_assessments": [
+        {
+          "equipment_id": "EQ-001",
+          "next_inspection_date": "2024-10-01",
+          "risk_level": "HIGH"
+        }
+      ],
+      "reference_date": "2025-03-15"
+    },
+    "expected": {
+      "alert_level": "CRITICAL",
+      "days_overdue": 166
+    }
+  },
+  {
+    "test_id": "NTF-002",
+    "name": "CAPA overdue is always CRITICAL",
+    "description": "Active CAPAs past target date are always CRITICAL, never WARNING",
+    "input": {
+      "capas": [
+        {
+          "title": "Fix pump alignment",
+          "status": "IN_PROGRESS",
+          "target_date": "2025-01-15"
+        }
+      ],
+      "reference_date": "2025-03-15"
+    },
+    "expected": {
+      "alert_type": "CAPA_OVERDUE",
+      "alert_level": "CRITICAL"
+    }
+  },
+  {
+    "test_id": "NTF-003",
+    "name": "MoC stalled is always WARNING",
+    "description": "MoCs in DRAFT/SUBMITTED/REVIEWING for >30 days are WARNING",
+    "input": {
+      "mocs": [
+        {
+          "title": "Upgrade conveyor VFD",
+          "status": "SUBMITTED",
+          "created_at": "2024-12-01"
+        }
+      ],
+      "reference_date": "2025-03-15"
+    },
+    "expected": {
+      "alert_type": "MOC_OVERDUE",
+      "alert_level": "WARNING"
+    }
+  },
+  {
+    "test_id": "NTF-004",
+    "name": "None inputs produce no alerts",
+    "description": "Passing None for rbi_assessments should skip RBI check, not error",
+    "input": {
+      "plant_id": "PLANT-BRY",
+      "rbi_assessments": null,
+      "planning_kpis": null
+    },
+    "expected": {
+      "total_notifications": 0,
+      "no_errors": true
+    }
+  },
+  {
+    "test_id": "NTF-005",
+    "name": "Equipment risk CRITICAL at score 30 or below",
+    "description": "Health score of 25 should generate CRITICAL alert",
+    "input": {
+      "health_scores": [
+        {
+          "equipment_id": "EQ-003",
+          "composite_score": 25,
+          "health_class": "CRITICAL"
+        }
+      ]
+    },
+    "expected": {
+      "alert_type": "EQUIPMENT_RISK",
+      "alert_level": "CRITICAL"
+    }
+  }
+]

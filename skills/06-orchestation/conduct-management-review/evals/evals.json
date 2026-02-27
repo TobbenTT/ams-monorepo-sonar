@@ -1,0 +1,98 @@
+[
+  {
+    "test_id": "MR-001",
+    "name": "Health trend STABLE within 5-point delta",
+    "description": "A delta of -4.0 should be STABLE (within +/-5.0 threshold)",
+    "input": {
+      "avg_health": 56.0,
+      "previous_avg_health": 60.0
+    },
+    "expected": {
+      "delta": -4.0,
+      "health_trend": "STABLE"
+    }
+  },
+  {
+    "test_id": "MR-002",
+    "name": "Overdue CAPAs use period_end not today",
+    "description": "CAPA with target_date before period_end should be overdue",
+    "input": {
+      "period_end": "2025-03-31",
+      "capas": [
+        {
+          "status": "OPEN",
+          "target_date": "2025-02-15"
+        },
+        {
+          "status": "IN_PROGRESS",
+          "target_date": "2025-04-30"
+        },
+        {
+          "status": "VERIFIED",
+          "target_date": "2025-01-01"
+        }
+      ]
+    },
+    "expected": {
+      "open_capas": 2,
+      "overdue_capas": 1,
+      "reason": "Only first CAPA is overdue (target 2025-02-15 < period_end 2025-03-31)"
+    }
+  },
+  {
+    "test_id": "MR-003",
+    "name": "KPI trend uses 5% threshold",
+    "description": "A change of 2.5% from previous 80.0 should be STABLE (threshold = 4.0)",
+    "input": {
+      "current_schedule_compliance": 82.0,
+      "previous_schedule_compliance": 80.0
+    },
+    "expected": {
+      "diff": 2.0,
+      "threshold": 4.0,
+      "trend": "STABLE"
+    }
+  },
+  {
+    "test_id": "MR-004",
+    "name": "Lower-is-better KPI trend inversion",
+    "description": "MTTR decreasing should be IMPROVING, not DEGRADING",
+    "input": {
+      "current_mttr": 6.0,
+      "previous_mttr": 7.0
+    },
+    "expected": {
+      "diff": -1.0,
+      "trend": "IMPROVING",
+      "reason": "Lower MTTR is better, so negative diff = improving"
+    }
+  },
+  {
+    "test_id": "MR-005",
+    "name": "Critical assets capped at 3 in recommendations",
+    "description": "Even with 5 critical assets, only 3 should be listed in action",
+    "input": {
+      "critical_assets": [
+        {
+          "equipment_tag": "A"
+        },
+        {
+          "equipment_tag": "B"
+        },
+        {
+          "equipment_tag": "C"
+        },
+        {
+          "equipment_tag": "D"
+        },
+        {
+          "equipment_tag": "E"
+        }
+      ]
+    },
+    "expected": {
+      "listed_in_action": 3,
+      "total_critical": 5
+    }
+  }
+]

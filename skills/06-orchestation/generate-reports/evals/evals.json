@@ -1,0 +1,77 @@
+[
+  {
+    "test_id": "RPT-001",
+    "name": "Weekly report has mandatory sections",
+    "description": "Weekly report should always have WO Summary, Safety, and Backlog sections",
+    "input": {
+      "report_type": "WEEKLY_MAINTENANCE",
+      "plant_id": "PLANT-BRY",
+      "week_number": 12,
+      "year": 2025,
+      "safety_incidents": 0,
+      "backlog_hours": 320.0
+    },
+    "expected": {
+      "sections_minimum": 3,
+      "mandatory_sections": [
+        "Work Order Summary",
+        "Safety",
+        "Backlog"
+      ]
+    }
+  },
+  {
+    "test_id": "RPT-002",
+    "name": "Traffic light AMBER threshold at 80%",
+    "description": "KPI at 80% of target but not ON_TARGET should be AMBER, below 80% should be RED",
+    "input": {
+      "kpi": {
+        "name": "wo_completion",
+        "value": 72.0,
+        "target": 90.0,
+        "status": "BELOW_TARGET"
+      }
+    },
+    "expected": {
+      "traffic_light": "AMBER",
+      "reason": "72.0 >= 90.0 * 0.8 (72.0) but not ON_TARGET"
+    }
+  },
+  {
+    "test_id": "RPT-003",
+    "name": "Quarterly recommendations are rule-based",
+    "description": "Overdue RBI and CAPAs should generate specific recommendations",
+    "input": {
+      "rbi_summary": {
+        "overdue_count": 3
+      },
+      "bad_actors": [
+        {
+          "equipment_id": "EQ-001"
+        }
+      ],
+      "capas_summary": {
+        "overdue_count": 2
+      }
+    },
+    "expected": {
+      "recommendations_count": 3,
+      "recommendations_include": [
+        "Address 3 overdue RBI inspections",
+        "Focus on 1 identified bad actors for root cause analysis",
+        "Resolve 2 overdue CAPA actions"
+      ]
+    }
+  },
+  {
+    "test_id": "RPT-004",
+    "name": "Key Events section is conditional",
+    "description": "Key Events section should only appear if events are provided",
+    "input": {
+      "key_events": []
+    },
+    "expected": {
+      "key_events_section_present": false
+    }
+  }
+]

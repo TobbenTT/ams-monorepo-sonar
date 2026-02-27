@@ -1,0 +1,117 @@
+[
+  {
+    "id": "rcm-eval-001",
+    "name": "Hidden Safety - No Feasible Task - Redesign",
+    "description": "Hidden safety failure with no CBM or FT option must result in REDESIGN",
+    "input": {
+      "is_hidden": true,
+      "failure_consequence": "HIDDEN_SAFETY",
+      "cbm_technically_feasible": false,
+      "cbm_economically_viable": false,
+      "ft_feasible": false,
+      "failure_pattern": "E_RANDOM"
+    },
+    "expected": {
+      "strategy_type": "REDESIGN",
+      "path": "HIDDEN_REDESIGN",
+      "requires_secondary_task": false
+    },
+    "assertions": [
+      "strategy_type equals REDESIGN",
+      "path equals HIDDEN_REDESIGN",
+      "RTF must NOT be selected for hidden safety"
+    ]
+  },
+  {
+    "id": "rcm-eval-002",
+    "name": "Evident Operational - CBM Selected",
+    "description": "Evident operational failure with both CBM conditions met selects CONDITION_BASED",
+    "input": {
+      "is_hidden": false,
+      "failure_consequence": "EVIDENT_OPERATIONAL",
+      "cbm_technically_feasible": true,
+      "cbm_economically_viable": true,
+      "ft_feasible": true,
+      "failure_pattern": "B_AGE",
+      "cause": "ABRASION",
+      "frequency_unit": "OPERATING_HOURS"
+    },
+    "expected": {
+      "strategy_type": "CONDITION_BASED",
+      "path": "EVIDENT_OPERATIONAL_CBM",
+      "requires_secondary_task": true
+    },
+    "assertions": [
+      "CBM takes priority over FT even when both are feasible",
+      "secondary task required for CBM path",
+      "frequency unit OPERATING_HOURS valid for ABRASION cause"
+    ]
+  },
+  {
+    "id": "rcm-eval-003",
+    "name": "Evident Environmental - FT Not Applicable for Random Pattern",
+    "description": "Environmental failure with ft_feasible=true but E_RANDOM pattern must result in REDESIGN, not FT",
+    "input": {
+      "is_hidden": false,
+      "failure_consequence": "EVIDENT_ENVIRONMENTAL",
+      "cbm_technically_feasible": false,
+      "cbm_economically_viable": false,
+      "ft_feasible": true,
+      "failure_pattern": "E_RANDOM"
+    },
+    "expected": {
+      "strategy_type": "REDESIGN",
+      "path": "EVIDENT_ENVIRONMENTAL_REDESIGN",
+      "requires_secondary_task": false
+    },
+    "assertions": [
+      "FT not selected because E_RANDOM is not age-related",
+      "REDESIGN selected because environmental consequence never allows RTF",
+      "ft_feasible=true is overridden by non-age-related pattern"
+    ]
+  },
+  {
+    "id": "rcm-eval-004",
+    "name": "Evident Operational - Run to Failure Fallback",
+    "description": "Operational failure with no feasible proactive task falls through to RTF",
+    "input": {
+      "is_hidden": false,
+      "failure_consequence": "EVIDENT_OPERATIONAL",
+      "cbm_technically_feasible": false,
+      "cbm_economically_viable": false,
+      "ft_feasible": false,
+      "failure_pattern": "E_RANDOM"
+    },
+    "expected": {
+      "strategy_type": "RUN_TO_FAILURE",
+      "path": "EVIDENT_OPERATIONAL_RTF",
+      "requires_secondary_task": false
+    },
+    "assertions": [
+      "RTF is acceptable for operational consequence",
+      "no secondary task needed for RTF"
+    ]
+  },
+  {
+    "id": "rcm-eval-005",
+    "name": "Hidden Non-Safety - Fault Finding",
+    "description": "Hidden non-safety failure with no CBM or FT results in Fault Finding",
+    "input": {
+      "is_hidden": true,
+      "failure_consequence": "HIDDEN_NONSAFETY",
+      "cbm_technically_feasible": false,
+      "cbm_economically_viable": false,
+      "ft_feasible": false,
+      "failure_pattern": "E_RANDOM"
+    },
+    "expected": {
+      "strategy_type": "FAULT_FINDING",
+      "path": "HIDDEN_FFI",
+      "requires_secondary_task": true
+    },
+    "assertions": [
+      "Fault Finding selected for hidden non-safety",
+      "secondary task required for HIDDEN_FFI"
+    ]
+  }
+]

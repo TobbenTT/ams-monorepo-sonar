@@ -1,0 +1,113 @@
+[
+  {
+    "id": 1,
+    "prompt": "Start a maintenance strategy development workflow for SAG Mill 001 at plant OCP-JFC. Walk me through milestone 1.",
+    "expected_output": "Session initialized with UUID, milestone 1 (Hierarchy Decomposition) started, Reliability Agent delegated, hierarchy nodes and criticality assessments generated, validation run, gate summary presented with APPROVE/MODIFY/REJECT options",
+    "assertions": [
+      {
+        "text": "Session has unique session_id",
+        "type": "structural"
+      },
+      {
+        "text": "Milestone 1 delegates to Reliability Agent",
+        "type": "content"
+      },
+      {
+        "text": "Gate summary shows entity counts for hierarchy_nodes and criticality_assessments",
+        "type": "content"
+      },
+      {
+        "text": "Gate summary includes validation results (errors, warnings, info)",
+        "type": "structural"
+      },
+      {
+        "text": "Human approval prompt presented with APPROVE/MODIFY/REJECT",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "prompt": "I want to modify milestone 2 - the failure mode FM-12 has incorrect capitalization. Re-run with this feedback.",
+    "expected_output": "Gate transitions PRESENTED -> IN_PROGRESS, milestone re-runs with feedback included in instruction, new results presented",
+    "assertions": [
+      {
+        "text": "Gate status transitions from PRESENTED to IN_PROGRESS (modify)",
+        "type": "content"
+      },
+      {
+        "text": "Feedback about FM-12 capitalization included in re-run instruction",
+        "type": "content"
+      },
+      {
+        "text": "New validation runs after re-execution",
+        "type": "content"
+      },
+      {
+        "text": "Updated gate summary presented for re-approval",
+        "type": "structural"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "prompt": "Reject the current milestone - the hierarchy decomposition is fundamentally wrong and needs to start over",
+    "expected_output": "Gate transitions to REJECTED, entire workflow stops, session state preserved",
+    "assertions": [
+      {
+        "text": "Gate status is REJECTED",
+        "type": "content"
+      },
+      {
+        "text": "Workflow loop breaks - no further milestones executed",
+        "type": "content"
+      },
+      {
+        "text": "Rejection feedback is recorded",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "prompt": "Show me the expected entity counts after milestone 3 approval for a SAG mill strategy",
+    "expected_output": "After M3: hierarchy_nodes, criticality_assessments from M1; functions, functional_failures, failure_modes from M2; maintenance_tasks, work_packages from M3",
+    "assertions": [
+      {
+        "text": "Lists all entity types accumulated through milestones 1-3",
+        "type": "structural"
+      },
+      {
+        "text": "Milestone 3 involves Reliability + Planning + Spare Parts agents",
+        "type": "content"
+      },
+      {
+        "text": "Materials assigned to REPLACE tasks via Spare Parts agent",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "prompt": "Milestone 4 is complete. What safety rules apply to the SAP upload package?",
+    "expected_output": "All outputs are DRAFT, never auto-submit to SAP, human must approve final package",
+    "assertions": [
+      {
+        "text": "Explicitly states outputs are DRAFT",
+        "type": "content"
+      },
+      {
+        "text": "NEVER auto-submit to SAP rule enforced",
+        "type": "content"
+      },
+      {
+        "text": "Human approval required before any SAP action",
+        "type": "content"
+      },
+      {
+        "text": "SAP package includes Maintenance Item + Task List + Work Plan",
+        "type": "content"
+      }
+    ]
+  }
+]

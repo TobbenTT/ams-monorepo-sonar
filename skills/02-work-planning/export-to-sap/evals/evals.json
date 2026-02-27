@@ -1,0 +1,89 @@
+[
+  {
+    "test_id": "SAP-001",
+    "name": "Cross-references are valid",
+    "description": "Every $MI must reference a valid $TL and vice versa",
+    "input": {
+      "work_packages": [
+        {
+          "name": "SAG MILL GREASING",
+          "constraint": "ONLINE",
+          "frequency_value": 4,
+          "frequency_unit": "WEEKS"
+        },
+        {
+          "name": "CRUSHER INSPECTION",
+          "constraint": "OFFLINE",
+          "frequency_value": 26,
+          "frequency_unit": "WEEKS"
+        }
+      ]
+    },
+    "expected": {
+      "mi_refs": [
+        "$MI1",
+        "$MI2"
+      ],
+      "tl_refs": [
+        "$TL1",
+        "$TL2"
+      ],
+      "cross_reference_errors": []
+    }
+  },
+  {
+    "test_id": "SAP-002",
+    "name": "short_text truncated to 72 characters",
+    "description": "Task names longer than 72 chars should be truncated",
+    "input": {
+      "task_name": "This is a very long task name that exceeds seventy two characters and should be truncated by the SAP engine"
+    },
+    "expected": {
+      "short_text_length": 72,
+      "field_length_errors": []
+    }
+  },
+  {
+    "test_id": "SAP-003",
+    "name": "Minimum duration and workers enforced",
+    "description": "Tasks with no labour should get duration=0.5h and workers=1",
+    "input": {
+      "task_with_no_labour": {
+        "name": "Placeholder task",
+        "labour_resources": []
+      }
+    },
+    "expected": {
+      "duration_hours": 0.5,
+      "num_workers": 1
+    }
+  },
+  {
+    "test_id": "SAP-004",
+    "name": "Constraint mapping correctness",
+    "description": "ONLINE maps to 1 (Running), OFFLINE maps to 3 (Stopped)",
+    "input": {
+      "online_wp": {
+        "constraint": "ONLINE"
+      },
+      "offline_wp": {
+        "constraint": "OFFLINE"
+      }
+    },
+    "expected": {
+      "online_system_condition": 1,
+      "offline_system_condition": 3
+    }
+  },
+  {
+    "test_id": "SAP-005",
+    "name": "Empty work packages raises error",
+    "description": "Providing no work packages should raise a ValueError",
+    "input": {
+      "work_packages": []
+    },
+    "expected": {
+      "error": "ValueError: at least one work package required"
+    }
+  }
+]

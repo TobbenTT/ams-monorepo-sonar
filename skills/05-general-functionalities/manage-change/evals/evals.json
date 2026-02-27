@@ -1,0 +1,85 @@
+[
+  {
+    "test_id": "MOC-001",
+    "name": "CRITICAL risk always rejected",
+    "description": "Risk assessment with CRITICAL risk_level should produce reject recommendation",
+    "input": {
+      "risk_level": "CRITICAL",
+      "category": "EQUIPMENT_MODIFICATION",
+      "affected_equipment": [
+        "EQ-001"
+      ]
+    },
+    "expected": {
+      "risk_acceptable": false,
+      "recommendation": "Reject -- risk too high"
+    }
+  },
+  {
+    "test_id": "MOC-002",
+    "name": "Equipment modification adds engineering review condition",
+    "description": "EQUIPMENT_MODIFICATION category should always get engineering review condition",
+    "input": {
+      "category": "EQUIPMENT_MODIFICATION",
+      "risk_level": "LOW",
+      "affected_equipment": [
+        "EQ-001"
+      ]
+    },
+    "expected": {
+      "conditions_include": "Requires engineering review before implementation",
+      "recommendation": "Approve with conditions"
+    }
+  },
+  {
+    "test_id": "MOC-003",
+    "name": "Cannot skip lifecycle states",
+    "description": "DRAFT cannot go directly to APPROVED",
+    "input": {
+      "current_status": "DRAFT",
+      "target_status": "APPROVED"
+    },
+    "expected": {
+      "transition_rejected": true,
+      "allowed": [
+        "SUBMITTED"
+      ]
+    }
+  },
+  {
+    "test_id": "MOC-004",
+    "name": "Rejected MoC returns to DRAFT",
+    "description": "REJECTED -> DRAFT is valid, not REJECTED -> SUBMITTED",
+    "input": {
+      "current_status": "REJECTED"
+    },
+    "expected": {
+      "allowed_transitions": [
+        "DRAFT"
+      ],
+      "not_allowed": [
+        "SUBMITTED"
+      ]
+    }
+  },
+  {
+    "test_id": "MOC-005",
+    "name": "Equipment count threshold is > 5",
+    "description": "Exactly 5 affected equipment should NOT trigger high impact condition",
+    "input": {
+      "affected_equipment": [
+        "EQ-1",
+        "EQ-2",
+        "EQ-3",
+        "EQ-4",
+        "EQ-5"
+      ],
+      "risk_level": "LOW",
+      "category": "PROCEDURE_CHANGE"
+    },
+    "expected": {
+      "high_impact_condition": false,
+      "reason": "Exactly 5 does not trigger (threshold is > 5, i.e., 6+)"
+    }
+  }
+]

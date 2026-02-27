@@ -1,0 +1,103 @@
+{
+  "skill": "analyze-jackknife",
+  "should_trigger": [
+    {
+      "query": "Classify equipment into the 4 Jackknife zones for plant JFC-01",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "Show me the MTBF vs MTTR diagram for our equipment fleet",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "Which equipment is in the acute zone? Those are our worst performers",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "Do a Jack-Knife analysis for the grinding circuit equipment",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "I need to separate chronic from acute bad actors at Khouribga",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "Hazme un diagrama jack knife de los equipos de la planta",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "Plot equipment by reliability vs maintainability quadrants",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "Which equipment has both low MTBF and high MTTR?",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "Classify our pumps and conveyors into the 4 performance zones",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "Run the Jackknife diagram to find equipment needing immediate RCA",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "Show me the acute and chronic equipment at the phosphate plant",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    },
+    {
+      "query": "I want to see which equipment falls in each of the 4 zones",
+      "reason": "Directly relevant to analyze-jackknife skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate MTBF for the SAG mill from work orders",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "Fit a Weibull distribution to the bearing failures",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "Do a Pareto analysis of the top failing equipment",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "Compare plant performance across all OCP sites",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "What's the optimal PM interval for the crusher?",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "Calculate life cycle cost for pump replacement",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "Assess inspection risk for pressure vessel V-101",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "Build the equipment hierarchy for Jorf Lasfar",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "Run an RCM decision tree on the gearbox failure mode",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "What's the schedule compliance for our PM program?",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "Perform FMECA on the ball mill drive system",
+      "reason": "Not related to analyze-jackknife functionality"
+    },
+    {
+      "query": "How much does it cost to replace the conveyor belt?",
+      "reason": "Not related to analyze-jackknife functionality"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+[
+  {
+    "id": "variance-eval-01",
+    "name": "Detect WARNING level outlier",
+    "input": {
+      "snapshots": [
+        {"plant_id": "P-01", "plant_name": "Jorf Lasfar", "metric_name": "MTBF", "metric_value": 120.0},
+        {"plant_id": "P-02", "plant_name": "Safi", "metric_name": "MTBF", "metric_value": 130.0},
+        {"plant_id": "P-03", "plant_name": "Khouribga", "metric_name": "MTBF", "metric_value": 125.0},
+        {"plant_id": "P-04", "plant_name": "Benguerir", "metric_name": "MTBF", "metric_value": 128.0},
+        {"plant_id": "P-05", "plant_name": "Youssoufia", "metric_name": "MTBF", "metric_value": 40.0}
+      ],
+      "description": "5 plants where Youssoufia is a clear outlier"
+    },
+    "expected": {
+      "alert_count": 1,
+      "alerted_plant": "Youssoufia",
+      "variance_level": "WARNING",
+      "direction": "below"
+    },
+    "assertions": [
+      "Youssoufia triggers a WARNING alert",
+      "Z-score is approximately -2.03",
+      "Direction is 'below' the mean",
+      "Other 4 plants generate no alerts"
+    ]
+  },
+  {
+    "id": "variance-eval-02",
+    "name": "Minimum 3 plants required",
+    "input": {
+      "snapshots": [
+        {"plant_id": "P-01", "plant_name": "Plant A", "metric_name": "MTBF", "metric_value": 100.0},
+        {"plant_id": "P-02", "plant_name": "Plant B", "metric_name": "MTBF", "metric_value": 200.0}
+      ],
+      "description": "Only 2 plants - insufficient for analysis"
+    },
+    "expected": {
+      "alert_count": 0,
+      "explanation": "Fewer than 3 plants returns empty list"
+    },
+    "assertions": [
+      "Returns empty alert list",
+      "Does not flag either plant as outlier",
+      "Agent explains minimum 3-plant requirement"
+    ]
+  },
+  {
+    "id": "variance-eval-03",
+    "name": "Population std not sample std",
+    "input": {
+      "values": [120, 130, 125, 128, 45],
+      "description": "Verify population std (divide by n, not n-1) is used"
+    },
+    "expected": {
+      "mean": 109.6,
+      "std_population": 32.49,
+      "std_sample_wrong": 36.31,
+      "explanation": "Population std uses /n, sample std uses /(n-1)"
+    },
+    "assertions": [
+      "Standard deviation uses population formula (divide by n)",
+      "Does NOT use sample std (divide by n-1)",
+      "Mean rounded to 2 decimals, std to 4 decimals"
+    ]
+  },
+  {
+    "id": "variance-eval-04",
+    "name": "All identical values produce no alerts",
+    "input": {
+      "snapshots": [
+        {"plant_id": "P-01", "metric_name": "Availability", "metric_value": 95.0},
+        {"plant_id": "P-02", "metric_name": "Availability", "metric_value": 95.0},
+        {"plant_id": "P-03", "metric_name": "Availability", "metric_value": 95.0},
+        {"plant_id": "P-04", "metric_name": "Availability", "metric_value": 95.0}
+      ],
+      "description": "All plants identical - std = 0"
+    },
+    "expected": {
+      "alert_count": 0,
+      "explanation": "Zero std means no variance - no alerts generated"
+    },
+    "assertions": [
+      "Returns empty alert list",
+      "Handles zero standard deviation correctly"
+    ]
+  }
+]

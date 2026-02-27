@@ -1,0 +1,117 @@
+[
+  {
+    "id": "ocr-eval-01",
+    "name": "Standard OCR analysis reducing interval",
+    "input": {
+      "equipment_id": "PUMP-101A",
+      "failure_rate": 3.0,
+      "cost_per_failure": 45000,
+      "cost_per_pm": 1500,
+      "current_pm_interval_days": 90,
+      "beta": 2.0,
+      "description": "Pump with high failure rate and costly failures"
+    },
+    "expected": {
+      "optimal_interval_approx": 28,
+      "cost_at_optimal_approx": 25800,
+      "cost_at_current_approx": 64160,
+      "savings_pct_approx": 59.8,
+      "recommendation_direction": "Reduce"
+    },
+    "assertions": [
+      "Optimal interval is around 28 days (much shorter than current 90)",
+      "Savings are approximately 60%",
+      "Recommendation says to reduce interval",
+      "Risk at current (43%) is much higher than risk at optimal (5%)"
+    ]
+  },
+  {
+    "id": "ocr-eval-02",
+    "name": "Beta=1.0 random failures - PM ineffective",
+    "input": {
+      "equipment_id": "MOTOR-501",
+      "failure_rate": 1.0,
+      "cost_per_failure": 10000,
+      "cost_per_pm": 500,
+      "current_pm_interval_days": 90,
+      "beta": 1.0,
+      "description": "Random failures - beta=1 means PM timing has no effect"
+    },
+    "expected": {
+      "optimal_interval": "Near maximum (730 days)",
+      "explanation": "With beta=1, PM does not reduce failure probability. Cost curve favors longest interval."
+    },
+    "assertions": [
+      "Optimal interval is near the maximum range",
+      "PM cost dominates the total cost curve",
+      "Agent explains that PM is not effective for random failures",
+      "Agent may suggest condition-based monitoring instead"
+    ]
+  },
+  {
+    "id": "ocr-eval-03",
+    "name": "Auto-calculation of eta from failure rate",
+    "input": {
+      "failure_rate": 2.5,
+      "eta": null,
+      "description": "Eta not provided - should auto-calculate"
+    },
+    "expected": {
+      "eta_calculated": 146.0,
+      "explanation": "eta = 365.0 / 2.5 = 146.0 days"
+    },
+    "assertions": [
+      "Eta is auto-calculated as 365/failure_rate",
+      "Result is 146.0 days",
+      "Agent notes this is an approximation"
+    ]
+  },
+  {
+    "id": "ocr-eval-04",
+    "name": "Current interval already near optimal",
+    "input": {
+      "equipment_id": "VALVE-401",
+      "failure_rate": 0.5,
+      "cost_per_failure": 5000,
+      "cost_per_pm": 200,
+      "current_pm_interval_days": 180,
+      "beta": 2.0,
+      "description": "Low failure rate equipment - current may be near optimal"
+    },
+    "expected": {
+      "savings_pct": "Near 0%",
+      "recommendation": "Current interval near optimal"
+    },
+    "assertions": [
+      "Savings percentage is small or zero",
+      "Recommendation indicates current is near optimal",
+      "No dramatic change recommended"
+    ]
+  },
+  {
+    "id": "ocr-eval-05",
+    "name": "Total cost formula verification",
+    "input": {
+      "interval": 30,
+      "cost_per_pm": 1500,
+      "failure_rate": 3.0,
+      "cost_per_failure": 45000,
+      "beta": 2.0,
+      "eta": 121.67,
+      "description": "Verify cost formula at specific interval"
+    },
+    "expected": {
+      "pm_cost": 18250,
+      "reliability": 0.9410,
+      "failure_prob": 0.0590,
+      "failure_cost": 7965,
+      "total_cost": 26215
+    },
+    "assertions": [
+      "PM cost = 1500 * (365/30) = 18250",
+      "R(30) = exp(-(30/121.67)^2) = 0.9410",
+      "Failure cost = 3 * 45000 * 0.0590 = 7965",
+      "Total = 18250 + 7965 = 26215"
+    ]
+  }
+]

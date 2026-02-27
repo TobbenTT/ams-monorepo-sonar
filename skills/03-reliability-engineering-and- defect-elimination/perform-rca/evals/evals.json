@@ -1,0 +1,102 @@
+[
+  {
+    "id": "rca-eval-001",
+    "name": "Event Classification - Level 2",
+    "description": "Consequence 4 x Frequency 3 = 12 should classify as Level 2",
+    "input": {
+      "max_consequence": 4,
+      "frequency": 3
+    },
+    "expected": {
+      "score": 12,
+      "level": 2,
+      "min_team_size": 3
+    },
+    "assertions": [
+      "Score = 4 x 3 = 12",
+      "12 >= 8 and < 15 = Level 2",
+      "Minimum team size = 3"
+    ]
+  },
+  {
+    "id": "rca-eval-002",
+    "name": "Root Cause Chain - Level 2 Validation",
+    "description": "Level 2 RCA must have PHYSICAL and HUMAN root causes",
+    "input": {
+      "level": 2,
+      "causes": [
+        {"id": "C1", "level": "PHYSICAL"},
+        {"id": "C2", "level": "PHYSICAL"},
+        {"id": "C3", "level": "HUMAN"}
+      ]
+    },
+    "expected": {
+      "validation_passes": true,
+      "physical_present": true,
+      "human_present": true
+    },
+    "assertions": [
+      "PHYSICAL root cause present (C1, C2)",
+      "HUMAN root cause present (C3)",
+      "Level 2 requirements met"
+    ]
+  },
+  {
+    "id": "rca-eval-003",
+    "name": "Solution 5-Question Filter - One FALSE Fails",
+    "description": "Solution with 4 TRUE and 1 FALSE should fail the filter",
+    "input": {
+      "solution": {
+        "description": "Replace bearing with self-lubricating type",
+        "cost_benefit": 7.0,
+        "difficulty": 5.0
+      },
+      "five_questions": [true, true, true, true, false]
+    },
+    "expected": {
+      "passes_filter": false
+    },
+    "assertions": [
+      "Solution FAILS because question 5 is FALSE",
+      "All 5 must be TRUE to pass"
+    ]
+  },
+  {
+    "id": "rca-eval-004",
+    "name": "Solution Prioritization - Quadrant Assignment",
+    "description": "Three solutions should be assigned to correct quadrants",
+    "input": {
+      "solutions": [
+        {"description": "Add SOP", "cost_benefit": 8.0, "difficulty": 2.0},
+        {"description": "Install pump", "cost_benefit": 9.0, "difficulty": 6.0},
+        {"description": "Quick label fix", "cost_benefit": 3.0, "difficulty": 1.0}
+      ]
+    },
+    "expected": {
+      "quadrants": ["Q1", "Q2", "Q3"],
+      "ranks": [1, 2, 3]
+    },
+    "assertions": [
+      "SOP: benefit 8>=5, difficulty 2<=5 = Q1 DO FIRST",
+      "Pump: benefit 9>=5, difficulty 6>5 = Q2 PLAN CAREFULLY",
+      "Label: benefit 3<5, difficulty 1<=5 = Q3 QUICK WINS"
+    ]
+  },
+  {
+    "id": "rca-eval-005",
+    "name": "Lifecycle Enforcement - Invalid Transition",
+    "description": "Attempting to go from OPEN directly to COMPLETED should fail",
+    "input": {
+      "current_status": "OPEN",
+      "target_status": "COMPLETED"
+    },
+    "expected": {
+      "error": true,
+      "allowed_from_open": ["UNDER_INVESTIGATION"]
+    },
+    "assertions": [
+      "OPEN can only transition to UNDER_INVESTIGATION",
+      "Direct OPEN to COMPLETED is rejected"
+    ]
+  }
+]

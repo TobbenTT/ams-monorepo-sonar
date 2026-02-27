@@ -1,0 +1,27 @@
+{
+  "skill": "assess-criticality",
+  "should_trigger": [
+    {"query": "What is the criticality of our SAG Mill BRY-SAG-ML-001?", "reason": "Direct criticality question about a specific asset"},
+    {"query": "I need to assess the risk class for the OCP crusher JFC1-CRU-001", "reason": "Risk class assessment request with equipment ID"},
+    {"query": "Run the R8 matrix for the ball mill in the grinding area", "reason": "Explicit R8 matrix reference"},
+    {"query": "How critical is pump PU-301 in the flotation circuit?", "reason": "Casual criticality inquiry"},
+    {"query": "Calculate GFSN criticality for the thickener at Jorf Lasfar", "reason": "GFSN criticality request with client context"},
+    {"query": "Necesito evaluar la criticidad del molino SAG", "reason": "Spanish trigger - criticidad"},
+    {"query": "Which consequence category scores the highest for our conveyor?", "reason": "Consequence category discussion"},
+    {"query": "Can you help me determine the asset criticality band for the slurry pump?", "reason": "Asset criticality band assessment"},
+    {"query": "What risk class does equipment with consequence 4 and probability 3 fall into?", "reason": "Direct risk scoring question"},
+    {"query": "Evaluar clase de riesgo del equipo de molienda OCP", "reason": "Spanish - clase de riesgo trigger"}
+  ],
+  "should_not_trigger": [
+    {"query": "What maintenance strategy should I use for the SAG Mill?", "reason": "Strategy selection is run-rcm-decision-tree skill"},
+    {"query": "Build the equipment hierarchy for the grinding circuit", "reason": "Hierarchy building is a different skill"},
+    {"query": "What are the failure modes for the pump?", "reason": "Failure mode analysis is perform-fmeca"},
+    {"query": "Calculate the priority for work order WO-12345", "reason": "Priority calculation is calculate-priority skill"},
+    {"query": "Show me the health score trend for the crusher", "reason": "Health score is calculate-health-score skill"},
+    {"query": "How do I validate the failure mode naming convention?", "reason": "FM validation is validate-failure-modes skill"},
+    {"query": "Run a root cause analysis on the bearing failure", "reason": "RCA is perform-rca skill"},
+    {"query": "What is the OCP production target for Q4?", "reason": "Business question, not criticality assessment"},
+    {"query": "How do I configure the SAP PM module?", "reason": "SAP configuration question"},
+    {"query": "What is the weather forecast for the mine site?", "reason": "Unrelated to asset management"}
+  ]
+}

@@ -1,0 +1,118 @@
+[
+  {
+    "test_id": "WI-001",
+    "name": "Operation numbering increments by 10",
+    "description": "Three tasks should produce operations 10, 20, 30",
+    "input": {
+      "tasks": [
+        {
+          "name": "Task A",
+          "labour_resources": [
+            {
+              "specialty": "FITTER",
+              "quantity": 1,
+              "hours_per_person": 2.0
+            }
+          ]
+        },
+        {
+          "name": "Task B",
+          "labour_resources": [
+            {
+              "specialty": "FITTER",
+              "quantity": 1,
+              "hours_per_person": 1.0
+            }
+          ]
+        },
+        {
+          "name": "Task C",
+          "labour_resources": [
+            {
+              "specialty": "ELECTRICIAN",
+              "quantity": 1,
+              "hours_per_person": 1.5
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "operation_numbers": [
+        10,
+        20,
+        30
+      ]
+    }
+  },
+  {
+    "test_id": "WI-002",
+    "name": "Offline constraint requires LOTOTO and isolation",
+    "description": "WI with OFFLINE constraint must have isolation_required=true and LOTOTO permit",
+    "input": {
+      "constraint": "OFFLINE",
+      "tasks": [
+        {
+          "name": "Replace bearing",
+          "labour_resources": [
+            {
+              "specialty": "MECHANICAL",
+              "quantity": 2,
+              "hours_per_person": 4.0
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "isolation_required": true,
+      "permits_required": [
+        "LOTOTO"
+      ],
+      "environmental_controls": [
+        "Spill containment"
+      ]
+    }
+  },
+  {
+    "test_id": "WI-003",
+    "name": "Trade-specific PPE is additive",
+    "description": "LUBRICATOR trade should add chemical-resistant gloves and splash goggles to base PPE",
+    "input": {
+      "constraint": "ONLINE",
+      "tasks": [
+        {
+          "name": "Grease bearing",
+          "labour_resources": [
+            {
+              "specialty": "LUBRICATOR",
+              "quantity": 1,
+              "hours_per_person": 0.5
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "ppe_includes": [
+        "Hard hat",
+        "Safety glasses",
+        "Chemical-resistant gloves",
+        "Splash goggles"
+      ],
+      "ppe_count_minimum": 7
+    }
+  },
+  {
+    "test_id": "WI-004",
+    "name": "Empty operations list produces ERROR",
+    "description": "A WI with no tasks should produce a validation error",
+    "input": {
+      "constraint": "ONLINE",
+      "tasks": []
+    },
+    "expected": {
+      "validation_error": "Work instruction has no operations"
+    }
+  }
+]

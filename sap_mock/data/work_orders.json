@@ -1,0 +1,1682 @@
+[
+  {
+    "AUFNR": "WO-850800",
+    "AUART": "PM02",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-08-07",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-331148",
+    "AUART": "PM03",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-01-02",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-895667",
+    "AUART": "PM01",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-10",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-391369",
+    "AUART": "PM03",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-08-18",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-207175",
+    "AUART": "PM03",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-08-14",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-988662",
+    "AUART": "PM03",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-06-10",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-865179",
+    "AUART": "PM01",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-02-23",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-182627",
+    "AUART": "PM03",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-21",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-705397",
+    "AUART": "PM03",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-24",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-793384",
+    "AUART": "PM01",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-20",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-205907",
+    "AUART": "PM02",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-10-27",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-270555",
+    "AUART": "PM03",
+    "EQUNR": "BRY-SAG-ML-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-04-01",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on SAG Mill #1"
+  },
+  {
+    "AUFNR": "WO-835911",
+    "AUART": "PM03",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-03-22",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-660086",
+    "AUART": "PM02",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-02-05",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-383060",
+    "AUART": "PM03",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-11-13",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-817870",
+    "AUART": "PM02",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-12-23",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-944151",
+    "AUART": "PM01",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-02-03",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-321231",
+    "AUART": "PM01",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-01-25",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-787277",
+    "AUART": "PM02",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-10-09",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-249811",
+    "AUART": "PM03",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-08-01",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-883300",
+    "AUART": "PM03",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-04",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-479580",
+    "AUART": "PM03",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-10-27",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-195325",
+    "AUART": "PM03",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-10-18",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-930555",
+    "AUART": "PM02",
+    "EQUNR": "BRY-BAL-ML-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-04-25",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Ball Mill #2"
+  },
+  {
+    "AUFNR": "WO-503457",
+    "AUART": "PM01",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-02-02",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-680099",
+    "AUART": "PM03",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-04-02",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-814825",
+    "AUART": "PM01",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-03-19",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-216970",
+    "AUART": "PM03",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-08",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-103402",
+    "AUART": "PM03",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-01-02",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-632342",
+    "AUART": "PM02",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-02",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-260263",
+    "AUART": "PM02",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-06-24",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-728038",
+    "AUART": "PM01",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-03-25",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-480612",
+    "AUART": "PM01",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-02-02",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-694916",
+    "AUART": "PM02",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-01-16",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-955662",
+    "AUART": "PM03",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-05-27",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-234628",
+    "AUART": "PM02",
+    "EQUNR": "BRY-CLS-003",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-05-17",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Classifier #3"
+  },
+  {
+    "AUFNR": "WO-377932",
+    "AUART": "PM02",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-01-12",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-665492",
+    "AUART": "PM02",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-08-30",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-518373",
+    "AUART": "PM03",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-02-12",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-642717",
+    "AUART": "PM03",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-01-24",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-167136",
+    "AUART": "PM02",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-13",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-717024",
+    "AUART": "PM02",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-02-17",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-340062",
+    "AUART": "PM01",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-10-19",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-174299",
+    "AUART": "PM03",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-05-16",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-324643",
+    "AUART": "PM03",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-08-16",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-354801",
+    "AUART": "PM03",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-11",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-201639",
+    "AUART": "PM01",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-07-05",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-531071",
+    "AUART": "PM03",
+    "EQUNR": "FLT-FLC-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-01-11",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Flotation Cell #1"
+  },
+  {
+    "AUFNR": "WO-163556",
+    "AUART": "PM01",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-29",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-360735",
+    "AUART": "PM01",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-04-24",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-246991",
+    "AUART": "PM03",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-20",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-361941",
+    "AUART": "PM03",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-05-14",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-153045",
+    "AUART": "PM01",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-05-24",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-197793",
+    "AUART": "PM01",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-01-04",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-604740",
+    "AUART": "PM03",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-11-05",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-497382",
+    "AUART": "PM02",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-10-12",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-399105",
+    "AUART": "PM03",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-03-10",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-262316",
+    "AUART": "PM03",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-05-15",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-707314",
+    "AUART": "PM01",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-18",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-159942",
+    "AUART": "PM03",
+    "EQUNR": "FLT-CND-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-14",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Conditioner #2"
+  },
+  {
+    "AUFNR": "WO-159642",
+    "AUART": "PM02",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-04-28",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-171849",
+    "AUART": "PM02",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-08-10",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-523389",
+    "AUART": "PM02",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-11-07",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-749468",
+    "AUART": "PM01",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-07-08",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-373432",
+    "AUART": "PM03",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-05-30",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-350280",
+    "AUART": "PM03",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-10-03",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-579434",
+    "AUART": "PM03",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-04",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-751332",
+    "AUART": "PM03",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-01-25",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-630458",
+    "AUART": "PM02",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-10-05",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-356150",
+    "AUART": "PM01",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-04",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-974244",
+    "AUART": "PM03",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-03-21",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-800305",
+    "AUART": "PM01",
+    "EQUNR": "SED-THK-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-15",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Thickener #1"
+  },
+  {
+    "AUFNR": "WO-240814",
+    "AUART": "PM01",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-26",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-385577",
+    "AUART": "PM02",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-03",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-313487",
+    "AUART": "PM03",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-21",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-629959",
+    "AUART": "PM03",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-02-09",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-196781",
+    "AUART": "PM01",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-07-21",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-146228",
+    "AUART": "PM03",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-12-17",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-768061",
+    "AUART": "PM02",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-03-11",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-678478",
+    "AUART": "PM03",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-01",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-178898",
+    "AUART": "PM01",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-05-19",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-975136",
+    "AUART": "PM01",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-02-13",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-550664",
+    "AUART": "PM02",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-03-21",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-934794",
+    "AUART": "PM03",
+    "EQUNR": "FIL-BFT-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-07-16",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Belt Filter #1"
+  },
+  {
+    "AUFNR": "WO-799330",
+    "AUART": "PM02",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-04-17",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-750810",
+    "AUART": "PM03",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-06-21",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-938742",
+    "AUART": "PM02",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-08-13",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-872343",
+    "AUART": "PM02",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-05",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-379766",
+    "AUART": "PM02",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-02-11",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-140605",
+    "AUART": "PM03",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-08-18",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-466643",
+    "AUART": "PM03",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-07-02",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-792094",
+    "AUART": "PM01",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-01-14",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-172792",
+    "AUART": "PM03",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-21",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-812526",
+    "AUART": "PM03",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-18",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-373903",
+    "AUART": "PM01",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-08",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-213668",
+    "AUART": "PM01",
+    "EQUNR": "FIL-DFT-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-06",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Disc Filter #2"
+  },
+  {
+    "AUFNR": "WO-557592",
+    "AUART": "PM03",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-11-08",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-704596",
+    "AUART": "PM03",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-11-18",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-101773",
+    "AUART": "PM03",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-18",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-481913",
+    "AUART": "PM02",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-08-22",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-753425",
+    "AUART": "PM03",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-05-23",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-854717",
+    "AUART": "PM01",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-01-23",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-442027",
+    "AUART": "PM03",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-01-09",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-301158",
+    "AUART": "PM02",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-04-24",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-745414",
+    "AUART": "PM02",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-05-12",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-418635",
+    "AUART": "PM01",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-10-11",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-587575",
+    "AUART": "PM03",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-26",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-636004",
+    "AUART": "PM02",
+    "EQUNR": "SEQ-DRY-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-03",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Rotary Dryer #1"
+  },
+  {
+    "AUFNR": "WO-397571",
+    "AUART": "PM01",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-07-05",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-197923",
+    "AUART": "PM03",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-08-17",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-945742",
+    "AUART": "PM02",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-11-03",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-356736",
+    "AUART": "PM01",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-27",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-577538",
+    "AUART": "PM01",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-07-07",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-853240",
+    "AUART": "PM02",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-05-06",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-355836",
+    "AUART": "PM03",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-02-19",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-887443",
+    "AUART": "PM01",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-08-06",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-943170",
+    "AUART": "PM02",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-06-25",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-684482",
+    "AUART": "PM01",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-02-18",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-940346",
+    "AUART": "PM02",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-11-18",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-891937",
+    "AUART": "PM03",
+    "EQUNR": "CVY-CVR-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-26",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Belt Conveyor #1"
+  },
+  {
+    "AUFNR": "WO-970914",
+    "AUART": "PM03",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-04",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-571932",
+    "AUART": "PM03",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-20",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-903013",
+    "AUART": "PM03",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-11-28",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-387936",
+    "AUART": "PM02",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-08-23",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-345884",
+    "AUART": "PM03",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-01",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-245095",
+    "AUART": "PM01",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-11",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-840734",
+    "AUART": "PM02",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-08-09",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-446954",
+    "AUART": "PM03",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-10-13",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-316881",
+    "AUART": "PM01",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-14",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-998348",
+    "AUART": "PM01",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-05-12",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-468845",
+    "AUART": "PM01",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-10-18",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-664365",
+    "AUART": "PM03",
+    "EQUNR": "CVY-SCR-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-01-07",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Screw Conveyor #2"
+  },
+  {
+    "AUFNR": "WO-330080",
+    "AUART": "PM03",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-18",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-507746",
+    "AUART": "PM01",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-12",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-859359",
+    "AUART": "PM03",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-02-15",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-513160",
+    "AUART": "PM01",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-08-24",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-188025",
+    "AUART": "PM01",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-11-04",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-290556",
+    "AUART": "PM03",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-12-26",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-321941",
+    "AUART": "PM03",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-04-28",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-391773",
+    "AUART": "PM03",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-16",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-593152",
+    "AUART": "PM01",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-05-13",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-466960",
+    "AUART": "PM01",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-03-27",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-890870",
+    "AUART": "PM01",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-10-23",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-751517",
+    "AUART": "PM01",
+    "EQUNR": "STK-STK-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-04-08",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Stacker #1"
+  },
+  {
+    "AUFNR": "WO-801978",
+    "AUART": "PM03",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-08-11",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-833442",
+    "AUART": "PM03",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-07-03",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-915573",
+    "AUART": "PM01",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-11-25",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-427110",
+    "AUART": "PM01",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-08-22",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-849747",
+    "AUART": "PM03",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-10-18",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-206851",
+    "AUART": "PM02",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-27",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-934904",
+    "AUART": "PM01",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-02-19",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-793655",
+    "AUART": "PM03",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-10-08",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-113266",
+    "AUART": "PM03",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-03-22",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-479781",
+    "AUART": "PM03",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "1",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-05-12",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-556641",
+    "AUART": "PM02",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-12-18",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-745830",
+    "AUART": "PM03",
+    "EQUNR": "PMP-SLP-001",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-09-04",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Slurry Pump #1"
+  },
+  {
+    "AUFNR": "WO-965845",
+    "AUART": "PM03",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-09-10",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-971084",
+    "AUART": "PM02",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-11-04",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-886931",
+    "AUART": "PM02",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-06-04",
+    "DURATION_H": 8,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-452737",
+    "AUART": "PM03",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-06-26",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-290672",
+    "AUART": "PM03",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-04-06",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-456871",
+    "AUART": "PM03",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-07-20",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-682789",
+    "AUART": "PM03",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-12-19",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-353080",
+    "AUART": "PM01",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "2",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-03-18",
+    "DURATION_H": 16,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-824156",
+    "AUART": "PM02",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-04-28",
+    "DURATION_H": 12,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-569945",
+    "AUART": "PM03",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "4",
+    "STAT": "COMPLETED",
+    "ERDAT": "2025-07-08",
+    "DURATION_H": 24,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-524045",
+    "AUART": "PM02",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2024-03-25",
+    "DURATION_H": 2,
+    "KTEXT": "Maintenance on Water Pump #2"
+  },
+  {
+    "AUFNR": "WO-596249",
+    "AUART": "PM03",
+    "EQUNR": "PMP-WTP-002",
+    "PRIOK": "3",
+    "STAT": "COMPLETED",
+    "ERDAT": "2026-02-14",
+    "DURATION_H": 4,
+    "KTEXT": "Maintenance on Water Pump #2"
+  }
+]

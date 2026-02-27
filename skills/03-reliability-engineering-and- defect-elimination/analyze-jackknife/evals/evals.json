@@ -1,0 +1,91 @@
+[
+  {
+    "id": "jackknife-eval-01",
+    "name": "Standard 6-equipment zone classification",
+    "input": {
+      "plant_id": "PLANT-JFC-01",
+      "equipment_data": [
+        {"equipment_id": "EQ-001", "equipment_tag": "PUMP-101A", "failure_count": 8, "total_downtime_hours": 160, "operating_hours": 8760},
+        {"equipment_id": "EQ-002", "equipment_tag": "CONV-201", "failure_count": 6, "total_downtime_hours": 30, "operating_hours": 8760},
+        {"equipment_id": "EQ-003", "equipment_tag": "COMP-301", "failure_count": 2, "total_downtime_hours": 96, "operating_hours": 8760},
+        {"equipment_id": "EQ-004", "equipment_tag": "VALVE-401", "failure_count": 1, "total_downtime_hours": 4, "operating_hours": 8760},
+        {"equipment_id": "EQ-005", "equipment_tag": "MOTOR-501", "failure_count": 3, "total_downtime_hours": 12, "operating_hours": 8760},
+        {"equipment_id": "EQ-006", "equipment_tag": "CRUSHER-601", "failure_count": 0, "total_downtime_hours": 0, "operating_hours": 8760}
+      ],
+      "description": "Classify 6 equipment items into 4 zones"
+    },
+    "expected": {
+      "acute": ["PUMP-101A", "CONV-201"],
+      "chronic": ["MOTOR-501"],
+      "complex": ["COMP-301"],
+      "controlled": ["VALVE-401", "CRUSHER-601"],
+      "median_mtbf": 152.1,
+      "median_mttr": 4.5
+    },
+    "assertions": [
+      "PUMP-101A in ACUTE (low MTBF + high MTTR)",
+      "CONV-201 in ACUTE (low MTBF + MTTR slightly above median)",
+      "MOTOR-501 in CHRONIC (low MTBF + low MTTR)",
+      "COMP-301 in COMPLEX (high MTBF + high MTTR)",
+      "Zone counts sum to total equipment count"
+    ]
+  },
+  {
+    "id": "jackknife-eval-02",
+    "name": "Zero-failure equipment classification",
+    "input": {
+      "equipment_data": [
+        {"equipment_id": "EQ-001", "equipment_tag": "PUMP-A", "failure_count": 0, "total_downtime_hours": 0, "operating_hours": 8760}
+      ],
+      "description": "Equipment with no failures"
+    },
+    "expected": {
+      "mtbf_days": 365.0,
+      "mttr_hours": 0.0,
+      "explanation": "Zero failures means MTBF = operating_hours/24, MTTR = 0"
+    },
+    "assertions": [
+      "MTBF = 8760/24 = 365.0 days",
+      "MTTR = 0.0 hours",
+      "Equipment lands in CONTROLLED zone (high MTBF, low MTTR)"
+    ]
+  },
+  {
+    "id": "jackknife-eval-03",
+    "name": "MTBF is in days not hours",
+    "input": {
+      "equipment_data": [
+        {"equipment_id": "EQ-001", "equipment_tag": "PUMP-A", "failure_count": 8, "total_downtime_hours": 160, "operating_hours": 8760}
+      ],
+      "description": "Verify MTBF unit conversion"
+    },
+    "expected": {
+      "mtbf_days": 45.6,
+      "mtbf_hours_wrong": 1095.0,
+      "explanation": "MTBF = (8760/8)/24 = 45.6 days, NOT 8760/8 = 1095 hours"
+    },
+    "assertions": [
+      "MTBF is in DAYS not hours",
+      "Division by 24 is applied after per-failure calculation",
+      "MTTR remains in hours"
+    ]
+  },
+  {
+    "id": "jackknife-eval-04",
+    "name": "Median threshold not mean",
+    "input": {
+      "mtbf_values": [10, 20, 30, 40, 1000],
+      "description": "Outlier test - median should be used, not mean"
+    },
+    "expected": {
+      "median": 30,
+      "mean": 220,
+      "explanation": "Mean of 220 would be skewed by the 1000 outlier; median of 30 is robust"
+    },
+    "assertions": [
+      "Threshold uses median (30), not mean (220)",
+      "Single outlier does not skew the threshold",
+      "Median is robust to extreme values"
+    ]
+  }
+]

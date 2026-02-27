@@ -1,0 +1,121 @@
+[
+  {
+    "TPLNR": "OCP-JFC1",
+    "PLTXT": "Jorf Fertilizer Complex 1",
+    "FLTYP": "PLANT",
+    "TPLMA": null,
+    "LEVEL": 1
+  },
+  {
+    "TPLNR": "OCP-JFC1-BRY",
+    "PLTXT": "Grinding",
+    "FLTYP": "AREA",
+    "TPLMA": "b7c728b8-7155-4e9e-8e0d-4eefd5570202",
+    "LEVEL": 2
+  },
+  {
+    "TPLNR": "OCP-JFC1-BRY-SYS",
+    "PLTXT": "Grinding System",
+    "FLTYP": "SYSTEM",
+    "TPLMA": "2e19abb7-a797-474b-a6b7-c456fd9ebcc2",
+    "LEVEL": 3
+  },
+  {
+    "TPLNR": "OCP-JFC1-FLT",
+    "PLTXT": "Flotation",
+    "FLTYP": "AREA",
+    "TPLMA": "b7c728b8-7155-4e9e-8e0d-4eefd5570202",
+    "LEVEL": 2
+  },
+  {
+    "TPLNR": "OCP-JFC1-FLT-SYS",
+    "PLTXT": "Flotation System",
+    "FLTYP": "SYSTEM",
+    "TPLMA": "7de2ce48-21e7-4ee7-91d2-2f91e0d094b4",
+    "LEVEL": 3
+  },
+  {
+    "TPLNR": "OCP-JFC1-SED",
+    "PLTXT": "Sedimentation",
+    "FLTYP": "AREA",
+    "TPLMA": "b7c728b8-7155-4e9e-8e0d-4eefd5570202",
+    "LEVEL": 2
+  },
+  {
+    "TPLNR": "OCP-JFC1-SED-SYS",
+    "PLTXT": "Sedimentation System",
+    "FLTYP": "SYSTEM",
+    "TPLMA": "4467c7f1-a1ea-42ed-b567-2de627ec378a",
+    "LEVEL": 3
+  },
+  {
+    "TPLNR": "OCP-JFC1-FIL",
+    "PLTXT": "Filtration",
+    "FLTYP": "AREA",
+    "TPLMA": "b7c728b8-7155-4e9e-8e0d-4eefd5570202",
+    "LEVEL": 2
+  },
+  {
+    "TPLNR": "OCP-JFC1-FIL-SYS",
+    "PLTXT": "Filtration System",
+    "FLTYP": "SYSTEM",
+    "TPLMA": "67384e50-5abf-446a-8254-272774ef25d7",
+    "LEVEL": 3
+  },
+  {
+    "TPLNR": "OCP-JFC1-SEQ",
+    "PLTXT": "Drying",
+    "FLTYP": "AREA",
+    "TPLMA": "b7c728b8-7155-4e9e-8e0d-4eefd5570202",
+    "LEVEL": 2
+  },
+  {
+    "TPLNR": "OCP-JFC1-SEQ-SYS",
+    "PLTXT": "Drying System",
+    "FLTYP": "SYSTEM",
+    "TPLMA": "19f301e7-4562-4d2b-8f30-2d2255cd671c",
+    "LEVEL": 3
+  },
+  {
+    "TPLNR": "OCP-JFC1-CVY",
+    "PLTXT": "Conveying",
+    "FLTYP": "AREA",
+    "TPLMA": "b7c728b8-7155-4e9e-8e0d-4eefd5570202",
+    "LEVEL": 2
+  },
+  {
+    "TPLNR": "OCP-JFC1-CVY-SYS",
+    "PLTXT": "Conveying System",
+    "FLTYP": "SYSTEM",
+    "TPLMA": "a83d5522-349e-48e4-a8b6-a63e3f96497e",
+    "LEVEL": 3
+  },
+  {
+    "TPLNR": "OCP-JFC1-STK",
+    "PLTXT": "Storage",
+    "FLTYP": "AREA",
+    "TPLMA": "b7c728b8-7155-4e9e-8e0d-4eefd5570202",
+    "LEVEL": 2
+  },
+  {
+    "TPLNR": "OCP-JFC1-STK-SYS",
+    "PLTXT": "Storage System",
+    "FLTYP": "SYSTEM",
+    "TPLMA": "60f8d12e-40ea-405c-81d2-5b2ca6d9e6cb",
+    "LEVEL": 3
+  },
+  {
+    "TPLNR": "OCP-JFC1-PMP",
+    "PLTXT": "Pumping",
+    "FLTYP": "AREA",
+    "TPLMA": "b7c728b8-7155-4e9e-8e0d-4eefd5570202",
+    "LEVEL": 2
+  },
+  {
+    "TPLNR": "OCP-JFC1-PMP-SYS",
+    "PLTXT": "Pumping System",
+    "FLTYP": "SYSTEM",
+    "TPLMA": "2e1530ed-6375-48e3-aa91-9495536cf475",
+    "LEVEL": 3
+  }
+]

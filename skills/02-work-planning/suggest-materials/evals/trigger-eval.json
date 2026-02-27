@@ -1,0 +1,87 @@
+{
+  "skill": "suggest-materials",
+  "should_trigger": [
+    {
+      "query": "I need to find the right spare parts for a worn bearing on the SAG mill",
+      "reason": "Direct spare part suggestion for a specific failure mode"
+    },
+    {
+      "query": "What materials do I need for a REPLACE task on pump BRY-PMP-001?",
+      "reason": "Material suggestion for REPLACE task type"
+    },
+    {
+      "query": "The T-16 rule is flagging my task as missing materials, can you suggest what to add?",
+      "reason": "Explicit T-16 rule reference for material assignment"
+    },
+    {
+      "query": "Check the BOM for equipment BRY-SAG-ML-001 and suggest replacement parts for a cracked impeller",
+      "reason": "BOM lookup + material suggestion for specific component/mechanism"
+    },
+    {
+      "query": "Necesito repuestos para el sello mecanico que esta con fuga en la bomba de pulpa",
+      "reason": "Spanish query for spare parts on a leaking seal"
+    },
+    {
+      "query": "Assign materials to all the replacement tasks in work package WP-SAG-12W",
+      "reason": "Bulk material assignment for REPLACE tasks"
+    },
+    {
+      "query": "Que material de reemplazo necesito para el acoplamiento roto del molino de bolas?",
+      "reason": "Spanish query for replacement material on broken coupling"
+    },
+    {
+      "query": "Suggest materials for the filter blockage failure mode on the lube system",
+      "reason": "Direct material suggestion for specific component and mechanism"
+    },
+    {
+      "query": "I have a gearbox that's leaking oil - what spare parts should I stock?",
+      "reason": "Spare parts suggestion for gearbox leaking mechanism"
+    },
+    {
+      "query": "Map the worn belt failure mode to the right replacement parts from the catalog",
+      "reason": "Catalog material mapping for belt wear"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Run the FMEA analysis for the SAG mill drive system",
+      "reason": "FMEA analysis is a reliability skill, not material suggestion"
+    },
+    {
+      "query": "What is the criticality class of pump PMP-001?",
+      "reason": "Criticality assessment is a different skill"
+    },
+    {
+      "query": "Generate a weekly maintenance schedule for next week",
+      "reason": "Scheduling is a planning skill"
+    },
+    {
+      "query": "Export the equipment hierarchy to Excel",
+      "reason": "Data export is a shared skill"
+    },
+    {
+      "query": "Calculate the health score for the ball mill",
+      "reason": "Health score calculation is a reliability skill"
+    },
+    {
+      "query": "Optimize the spare parts inventory levels using VED analysis",
+      "reason": "Inventory optimization is a different spare parts skill"
+    },
+    {
+      "query": "Importar datos del historial de fallas desde el CSV",
+      "reason": "Data import is a shared skill"
+    },
+    {
+      "query": "Validate the quality of the work packages before milestone approval",
+      "reason": "Quality validation is an orchestration skill"
+    },
+    {
+      "query": "What is the MTBF for equipment EQ-001?",
+      "reason": "Reliability KPI calculation, not material suggestion"
+    },
+    {
+      "query": "Create a Pareto chart of the top 10 bad actors by failure count",
+      "reason": "Pareto analysis is a reliability skill"
+    }
+  ]
+}

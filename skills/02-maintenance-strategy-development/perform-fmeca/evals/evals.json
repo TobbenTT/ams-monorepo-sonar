@@ -1,0 +1,103 @@
+[
+  {
+    "id": "fmeca-eval-001",
+    "name": "Single Row FMECA - SAG Mill Pinion",
+    "description": "Complete single-row FMECA from function definition through RCM strategy",
+    "input": {
+      "equipment_id": "10045678",
+      "equipment_tag": "BRY-SAG-ML-001",
+      "equipment_name": "SAG Mill 36x20",
+      "analyst": "J. Martinez",
+      "rows": [
+        {
+          "function_description": "Transmit 12,000 kW from motor to mill shell via pinion-to-ring gear mesh at 9.5 RPM",
+          "functional_failure": "Unable to transmit required torque",
+          "failure_mode": "Pinion gear teeth worn beyond tolerance due to abrasion",
+          "failure_effect": "Mill stops, 8-hour replacement, $250K production loss",
+          "severity": 8,
+          "occurrence": 4,
+          "detection": 3,
+          "failure_consequence": "EVIDENT_OPERATIONAL"
+        }
+      ]
+    },
+    "expected": {
+      "rpn": 96,
+      "rpn_category": "MEDIUM",
+      "strategy_type": "CONDITION_BASED",
+      "rcm_path": "EVIDENT_OPERATIONAL_CBM"
+    },
+    "assertions": [
+      "RPN = 8 x 4 x 3 = 96",
+      "96 falls in MEDIUM range (50-99)",
+      "CBM selected because severity>=4 and occurrence>=3"
+    ]
+  },
+  {
+    "id": "fmeca-eval-002",
+    "name": "Stage Prerequisite Enforcement",
+    "description": "Attempting to advance from Stage 1 to Stage 3 should fail",
+    "input": {
+      "equipment_tag": "BRY-CONV-001",
+      "current_stage": "STAGE_1_FUNCTIONS",
+      "target_stage": "STAGE_3_EFFECTS"
+    },
+    "expected": {
+      "error": true,
+      "message": "Cannot skip stages. Must progress sequentially."
+    },
+    "assertions": [
+      "Stage advancement from 1 to 3 is rejected",
+      "Error message indicates sequential progression required"
+    ]
+  },
+  {
+    "id": "fmeca-eval-003",
+    "name": "Multi-Row RPN Distribution",
+    "description": "4-row FMECA with mixed RPN categories and strategies",
+    "input": {
+      "rows": [
+        {"severity": 8, "occurrence": 4, "detection": 3, "failure_consequence": "EVIDENT_OPERATIONAL"},
+        {"severity": 5, "occurrence": 6, "detection": 4, "failure_consequence": "EVIDENT_ENVIRONMENTAL"},
+        {"severity": 9, "occurrence": 2, "detection": 8, "failure_consequence": "HIDDEN_SAFETY"},
+        {"severity": 7, "occurrence": 2, "detection": 5, "failure_consequence": "EVIDENT_OPERATIONAL"}
+      ]
+    },
+    "expected": {
+      "rpns": [96, 120, 144, 70],
+      "categories": ["MEDIUM", "HIGH", "HIGH", "MEDIUM"],
+      "avg_rpn": 107.5,
+      "high_critical_count": 2
+    },
+    "assertions": [
+      "R-1: 8x4x3=96 MEDIUM",
+      "R-2: 5x6x4=120 HIGH",
+      "R-3: 9x2x8=144 HIGH",
+      "R-4: 7x2x5=70 MEDIUM",
+      "Average = (96+120+144+70)/4 = 107.5",
+      "HIGH+CRITICAL count = 2"
+    ]
+  },
+  {
+    "id": "fmeca-eval-004",
+    "name": "RPN Boundary Value Test",
+    "description": "Test exact boundary values for RPN categorization",
+    "input": {
+      "boundary_tests": [
+        {"severity": 7, "occurrence": 7, "detection": 1, "expected_rpn": 49, "expected_cat": "LOW"},
+        {"severity": 5, "occurrence": 5, "detection": 2, "expected_rpn": 50, "expected_cat": "MEDIUM"},
+        {"severity": 10, "occurrence": 10, "detection": 1, "expected_rpn": 100, "expected_cat": "HIGH"},
+        {"severity": 10, "occurrence": 10, "detection": 2, "expected_rpn": 200, "expected_cat": "CRITICAL"}
+      ]
+    },
+    "expected": {
+      "boundaries_correct": true
+    },
+    "assertions": [
+      "RPN 49 = LOW (upper boundary)",
+      "RPN 50 = MEDIUM (lower boundary)",
+      "RPN 100 = HIGH (lower boundary)",
+      "RPN 200 = CRITICAL (lower boundary)"
+    ]
+  }
+]

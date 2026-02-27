@@ -1,0 +1,103 @@
+{
+  "skill": "detect-variance",
+  "should_trigger": [
+    {
+      "query": "Compare the MTBF across all 15 OCP plants and flag any outliers",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Which plant has the worst availability compared to the portfolio?",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Run a multi-plant variance analysis on maintenance costs",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Are there any plants with Z-score above 2 sigma on downtime?",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Benchmark Jorf Lasfar against the other plants on reliability",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Detecta la varianza entre las plantas de OCP para el MTBF",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "I want to see which plants are outliers in terms of reactive ratio",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Do a sigma analysis comparing all plant KPIs",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Flag any plants that are performing significantly worse than peers",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Is Youssoufia an outlier compared to the portfolio mean?",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Run portfolio comparison for availability across all sites",
+      "reason": "Directly relevant to detect-variance skill"
+    },
+    {
+      "query": "Which plants need management attention based on statistical deviation?",
+      "reason": "Directly relevant to detect-variance skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the MTBF for the SAG mill at Jorf Lasfar",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "Fit a Weibull distribution to the failure data",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "Do a Pareto analysis of equipment failures",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "What's the optimal PM interval for the crusher?",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "Show me the Jackknife diagram for plant equipment",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "Calculate life cycle cost for pump replacement",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "Assess risk level for pressure vessel V-101",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "What failure pattern does the ball mill show?",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "Build the equipment hierarchy for the grinding circuit",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "Run an FMECA for the conveyor belt drive",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "What's our OEE for the processing line?",
+      "reason": "Not related to detect-variance functionality"
+    },
+    {
+      "query": "Perform root cause analysis on the bearing failure",
+      "reason": "Not related to detect-variance functionality"
+    }
+  ]
+}

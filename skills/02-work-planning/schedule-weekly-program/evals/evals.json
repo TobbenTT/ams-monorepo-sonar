@@ -1,0 +1,95 @@
+[
+  {
+    "test_id": "SWP-001",
+    "name": "Execution window is Thu-Sun",
+    "description": "Packages should be distributed across 4 days starting Thursday",
+    "input": {
+      "week_number": 12,
+      "year": 2025,
+      "work_packages": [
+        {
+          "package_id": "WP-001",
+          "total_duration_hours": 2.0
+        },
+        {
+          "package_id": "WP-002",
+          "total_duration_hours": 6.0
+        }
+      ]
+    },
+    "expected": {
+      "execution_days": 4,
+      "first_day": "Thursday",
+      "wp001_scheduled_day": "Thursday",
+      "wp002_scheduled_day": "Friday"
+    }
+  },
+  {
+    "test_id": "SWP-002",
+    "name": "Support tasks added to total hours",
+    "description": "Shutdown packages get LOTO+Guard Removal; all get cleaning+commissioning",
+    "input": {
+      "work_packages": [
+        {
+          "package_id": "WP-003",
+          "total_duration_hours": 10.0,
+          "shutdown_required": true,
+          "specialties": [
+            "MECHANICAL"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "support_tasks": [
+        "LOTO",
+        "GUARD_REMOVAL",
+        "CRANE",
+        "CLEANING",
+        "COMMISSIONING"
+      ],
+      "support_hours": 3.0,
+      "total_hours": 13.0
+    }
+  },
+  {
+    "test_id": "SWP-003",
+    "name": "Cannot finalize with unresolved conflicts",
+    "description": "DRAFT->FINAL transition should be rejected if conflicts exist",
+    "input": {
+      "status": "DRAFT",
+      "conflicts": [
+        {
+          "type": "AREA_INTERFERENCE",
+          "description": "Multiple crews in BRY-SAG"
+        }
+      ]
+    },
+    "expected": {
+      "finalization_rejected": true,
+      "error": "Cannot finalize: 1 unresolved conflict(s)"
+    }
+  },
+  {
+    "test_id": "SWP-004",
+    "name": "Specialist overallocation detected",
+    "description": "When specialty hours exceed 8.0h on a single date/shift, conflict is generated",
+    "input": {
+      "packages_on_same_shift": [
+        {
+          "specialty": "MECHANICAL",
+          "hours": 5.0
+        },
+        {
+          "specialty": "MECHANICAL",
+          "hours": 4.0
+        }
+      ]
+    },
+    "expected": {
+      "conflict_type": "SPECIALIST_OVERALLOCATION",
+      "total_hours": 9.0,
+      "threshold": 8.0
+    }
+  }
+]

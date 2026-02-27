@@ -1,0 +1,87 @@
+{
+  "skill": "import-data",
+  "should_trigger": [
+    {
+      "query": "Import the equipment hierarchy from this CSV file with columns asset_id, name, type",
+      "reason": "Direct equipment hierarchy import from CSV"
+    },
+    {
+      "query": "Load the failure history data - I have a file with event_date, fm, and asset_id columns",
+      "reason": "Failure history import with non-standard column names"
+    },
+    {
+      "query": "Upload the maintenance plan data from the Excel export",
+      "reason": "Maintenance plan data upload"
+    },
+    {
+      "query": "Can you auto-detect the column mapping for this CSV? Headers: tag, desc, category",
+      "reason": "Column auto-detection request"
+    },
+    {
+      "query": "Importar datos de historial de fallas desde el archivo CSV del sistema SAP",
+      "reason": "Spanish failure history import from SAP export"
+    },
+    {
+      "query": "I need to load equipment data into the system - columns are functional_location, equipment_name, and asset_type",
+      "reason": "Equipment data loading with alias columns"
+    },
+    {
+      "query": "Parse this CSV and validate the required fields for an equipment hierarchy import",
+      "reason": "CSV parsing with validation"
+    },
+    {
+      "query": "Cargar datos de la planilla de mantenimiento al sistema",
+      "reason": "Spanish maintenance plan data loading"
+    },
+    {
+      "query": "Map the column 'asset_id' to 'equipment_id' and import the failure records",
+      "reason": "Manual column mapping with import"
+    },
+    {
+      "query": "Upload 500 rows of equipment hierarchy data and tell me how many pass validation",
+      "reason": "Bulk import with validation summary"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Export the equipment hierarchy to Excel",
+      "reason": "Data export, not import"
+    },
+    {
+      "query": "Suggest materials for a worn bearing",
+      "reason": "Material suggestion, not data import"
+    },
+    {
+      "query": "Start the maintenance strategy workflow",
+      "reason": "Workflow orchestration, not import"
+    },
+    {
+      "query": "Validate the quality of failure modes",
+      "reason": "Quality validation, not data import"
+    },
+    {
+      "query": "Optimize spare parts inventory using ABC analysis",
+      "reason": "Inventory optimization, not import"
+    },
+    {
+      "query": "Resolve equipment tag BRY-SAG-ML-001",
+      "reason": "Equipment resolution, not import"
+    },
+    {
+      "query": "Show correlation between criticality and failure frequency",
+      "reason": "Cross-module analysis, not import"
+    },
+    {
+      "query": "Download the KPI report as PDF",
+      "reason": "Export/download, not import"
+    },
+    {
+      "query": "Run the Pareto analysis on failure costs",
+      "reason": "Analysis, not data import"
+    },
+    {
+      "query": "Generate work instructions for the pump service WP",
+      "reason": "Work instruction generation, not import"
+    }
+  ]
+}

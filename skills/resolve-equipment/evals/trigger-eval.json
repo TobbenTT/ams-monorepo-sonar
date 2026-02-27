@@ -1,0 +1,87 @@
+{
+  "skill": "resolve-equipment",
+  "should_trigger": [
+    {
+      "query": "I need to find the equipment tag for the big SAG mill in the broyage area",
+      "reason": "Equipment lookup from free-text description"
+    },
+    {
+      "query": "Resolve equipment BRY-SAG-ML-001 from this voice transcript: check the sag mill bearing",
+      "reason": "Explicit equipment resolution request"
+    },
+    {
+      "query": "Which equipment does tag BRY-PMP-002 belong to?",
+      "reason": "Direct tag resolution"
+    },
+    {
+      "query": "The operator said 'big SAG' - can you identify which equipment he means?",
+      "reason": "Alias-based equipment identification from operator slang"
+    },
+    {
+      "query": "Identificar equipo: bomba de pulpa principal en el area de flotacion",
+      "reason": "Spanish equipment identification request"
+    },
+    {
+      "query": "I typed BRY-SAG-ML-01 but it's not matching anything - can you find the right equipment?",
+      "reason": "Fuzzy tag match for typo correction"
+    },
+    {
+      "query": "Match this OCR text to an equipment record: 'BRY SAG ML 001'",
+      "reason": "OCR text to equipment matching"
+    },
+    {
+      "query": "Buscar equipo con tag similar a OCP-JFC-PMP en el registro",
+      "reason": "Spanish fuzzy equipment search"
+    },
+    {
+      "query": "Find the equipment for 'Broyeur SAG Primaire' in the French description field",
+      "reason": "Resolution via French description matching"
+    },
+    {
+      "query": "Resolve all equipment mentioned in this work order text: 'Service SAG Mill and Ball Mill at BRY area'",
+      "reason": "Multiple equipment resolution from work order text"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "What spare parts do I need for a worn bearing?",
+      "reason": "Material suggestion, not equipment resolution"
+    },
+    {
+      "query": "Run FMEA analysis for the SAG mill drive system",
+      "reason": "FMEA is a reliability skill"
+    },
+    {
+      "query": "Generate the SAP upload package for milestone 4",
+      "reason": "SAP export is a planning skill"
+    },
+    {
+      "query": "Calculate criticality for equipment EQ-001",
+      "reason": "Criticality assessment already has the equipment ID"
+    },
+    {
+      "query": "Export equipment hierarchy to Excel with criticality columns",
+      "reason": "Data export, not equipment resolution"
+    },
+    {
+      "query": "Optimize spare parts inventory for plant OCP-JFC",
+      "reason": "Inventory optimization, not equipment identification"
+    },
+    {
+      "query": "Importar datos del historial de fallas",
+      "reason": "Data import, not equipment resolution"
+    },
+    {
+      "query": "Validate the quality of the work packages",
+      "reason": "Quality validation skill"
+    },
+    {
+      "query": "Show me the correlation between criticality and failure frequency",
+      "reason": "Cross-module analysis, not equipment resolution"
+    },
+    {
+      "query": "Create a maintenance schedule for next week",
+      "reason": "Scheduling, not equipment resolution"
+    }
+  ]
+}

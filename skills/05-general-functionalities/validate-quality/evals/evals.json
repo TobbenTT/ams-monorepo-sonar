@@ -1,0 +1,113 @@
+[
+  {
+    "id": 1,
+    "prompt": "Validate these entities: Node EQUIPMENT 'SAG Mill' level 4 with no criticality; Node MI 'Drive Bearing' level 6 with empty component_lib_ref; Function 'Transfer' on MI; Failure Mode what='bearings' mechanism=WORN; Task 'REPLACE THE BEARING' type=REPLACE no materials no labour.",
+    "expected_output": "6 errors (H-02, C-01, FM-01, FM-02, T-11, T-16), 3 warnings (F-05, T-19, T-14), 1 info (C-03)",
+    "assertions": [
+      {
+        "text": "H-02 ERROR for MI without component library reference",
+        "type": "content"
+      },
+      {
+        "text": "FM-01 ERROR for 'bearings' not starting with capital correctly (should be singular)",
+        "type": "content"
+      },
+      {
+        "text": "FM-02 ERROR for plural 'bearings'",
+        "type": "content"
+      },
+      {
+        "text": "T-16 ERROR for REPLACE task without materials",
+        "type": "content"
+      },
+      {
+        "text": "T-19 WARNING for ALL CAPS task name",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "prompt": "Evaluate confidence 0.45 for entity_type 'failure_mode'. What review level is needed?",
+    "expected_output": "MANDATORY_REVIEW with should_flag=True because 0.45 is between auto_reject (0.20) and mandatory_review (0.60)",
+    "assertions": [
+      {
+        "text": "Review level is MANDATORY_REVIEW",
+        "type": "content"
+      },
+      {
+        "text": "should_flag is True",
+        "type": "content"
+      },
+      {
+        "text": "Confidence is above auto_reject threshold (0.20)",
+        "type": "numerical"
+      },
+      {
+        "text": "Confidence is below mandatory_review threshold (0.60)",
+        "type": "numerical"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "prompt": "Check work package name '12W SAG MILL MECH SERV ON' against naming conventions",
+    "expected_output": "Passes all WP naming rules: under 40 chars, ALL CAPS, first part is frequency, last part is valid constraint",
+    "assertions": [
+      {
+        "text": "Name passes WP-05 (under 40 chars, no special chars)",
+        "type": "content"
+      },
+      {
+        "text": "Name passes WP-06 (ALL CAPS)",
+        "type": "content"
+      },
+      {
+        "text": "Name passes WP-07 (first part 12W matches frequency, last part ON is valid constraint)",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "prompt": "Validate task name 'Inspect bearing for leaks' - should T-06 flag this?",
+    "expected_output": "T-06 WARNING: Use 'leakage' instead of 'leaks'. T-05 passes because pattern matches '^Inspect .+ for .+$'.",
+    "assertions": [
+      {
+        "text": "T-06 WARNING triggered for 'leaks' - should use 'leakage'",
+        "type": "content"
+      },
+      {
+        "text": "T-05 passes because name matches INSPECT pattern",
+        "type": "content"
+      },
+      {
+        "text": "No T-19 warning because name is not ALL CAPS",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "prompt": "Run full validation with only hierarchy nodes provided (no functions, no tasks). Which validators run?",
+    "expected_output": "Only validate_hierarchy runs. Function, criticality (partial), failure mode, task, and work package validators are skipped due to missing input data.",
+    "assertions": [
+      {
+        "text": "validate_hierarchy runs on the provided nodes",
+        "type": "content"
+      },
+      {
+        "text": "Function validator skipped (functions not provided)",
+        "type": "content"
+      },
+      {
+        "text": "Task validator skipped (tasks not provided)",
+        "type": "content"
+      },
+      {
+        "text": "Partial data correctly skips validators that need missing inputs",
+        "type": "structural"
+      }
+    ]
+  }
+]

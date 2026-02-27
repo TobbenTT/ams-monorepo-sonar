@@ -1,0 +1,103 @@
+{
+  "skill": "assess-risk-based-inspection",
+  "should_trigger": [
+    {
+      "query": "Assess the RBI risk level for pressure vessel V-101",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "What inspection technique should we use for the corroded piping?",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "Prioritize inspections for all static equipment at Jorf Lasfar",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "Run a risk-based inspection assessment for our heat exchangers",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "What's the recommended inspection interval for the storage tank?",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "Evalua la inspeccion basada en riesgo para los recipientes a presion",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "Which static equipment is overdue for inspection?",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "The vessel has corrosion and fatigue damage mechanisms - what's the risk?",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "Set up an RBI program for our piping systems in severe conditions",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "What inspection method should we use for stress corrosion cracking?",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "Calculate probability and consequence scores for our pressure vessels",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    },
+    {
+      "query": "Prioritize inspection schedule for 3 static equipment items",
+      "reason": "Directly relevant to assess-risk-based-inspection skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate maintenance KPIs for the plant",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "Fit a Weibull distribution to rotating equipment failures",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "Compare plant MTBF across the portfolio",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "Do a Pareto analysis of equipment failures",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "Classify equipment using the Jackknife diagram",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "What's the optimal PM interval for the pump?",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "Calculate life cycle cost for the crusher replacement",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "Build the equipment hierarchy for the grinding circuit",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "Run an RCM decision tree for the conveyor motor",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "Perform FMECA on the ball mill drive system",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "What's the OEE for the processing line?",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    },
+    {
+      "query": "How do we reduce the reactive maintenance ratio?",
+      "reason": "Not related to assess-risk-based-inspection functionality"
+    }
+  ]
+}

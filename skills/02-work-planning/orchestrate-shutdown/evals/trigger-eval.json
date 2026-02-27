@@ -1,0 +1,87 @@
+{
+  "skill": "orchestrate-shutdown",
+  "should_trigger": [
+    {
+      "query": "Plan the Q1 SAG mill major shutdown",
+      "reason": "Directly relevant to orchestrate-shutdown skill"
+    },
+    {
+      "query": "Start the shutdown event for the crusher area turnaround",
+      "reason": "Directly relevant to orchestrate-shutdown skill"
+    },
+    {
+      "query": "Update the shutdown progress with completed work orders",
+      "reason": "Directly relevant to orchestrate-shutdown skill"
+    },
+    {
+      "query": "What is the schedule compliance for the current outage?",
+      "reason": "Directly relevant to orchestrate-shutdown skill"
+    },
+    {
+      "query": "How many work orders are completed in the shutdown scope?",
+      "reason": "Directly relevant to orchestrate-shutdown skill"
+    },
+    {
+      "query": "Planificar la parada mayor del molino SAG para Q1",
+      "reason": "Spanish query relevant to orchestrate-shutdown skill"
+    },
+    {
+      "query": "Iniciar la parada de planta del area de chancado",
+      "reason": "Spanish query relevant to orchestrate-shutdown skill"
+    },
+    {
+      "query": "Record a 2-hour delay due to spare parts shortage during shutdown",
+      "reason": "Directly relevant to orchestrate-shutdown skill"
+    },
+    {
+      "query": "Complete the shutdown and calculate final metrics",
+      "reason": "Directly relevant to orchestrate-shutdown skill"
+    },
+    {
+      "query": "What is the planned vs actual ratio for the turnaround?",
+      "reason": "Directly relevant to orchestrate-shutdown skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the planning KPIs for this period",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    },
+    {
+      "query": "Generate a work instruction for the pump overhaul",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    },
+    {
+      "query": "Export work packages to SAP",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    },
+    {
+      "query": "Group the backlog by equipment",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    },
+    {
+      "query": "Create a CAPA for the bearing failure",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    },
+    {
+      "query": "Schedule the weekly maintenance program",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    },
+    {
+      "query": "Generate the monthly report",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    },
+    {
+      "query": "Check pending notifications",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    },
+    {
+      "query": "Conduct the management review",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    },
+    {
+      "query": "Submit a management of change request",
+      "reason": "Not related to orchestrate-shutdown functionality"
+    }
+  ]
+}

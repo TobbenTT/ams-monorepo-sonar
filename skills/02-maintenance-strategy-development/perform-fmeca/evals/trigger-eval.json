@@ -1,0 +1,27 @@
+{
+  "skill": "perform-fmeca",
+  "should_trigger": [
+    {"query": "I need to perform an FMECA for the SAG Mill at OCP", "reason": "Direct FMECA request"},
+    {"query": "What are the failure modes for pump PU-301?", "reason": "Failure mode identification request"},
+    {"query": "Calculate the RPN for the crusher bearing failure", "reason": "RPN calculation request"},
+    {"query": "Run an FMEA analysis on the ball mill drive system", "reason": "FMEA trigger with equipment context"},
+    {"query": "I need to assess severity, occurrence, and detection for conveyor belt failures", "reason": "S/O/D assessment trigger"},
+    {"query": "Quiero hacer un analisis de modos de falla para el molino SAG", "reason": "Spanish - FMECA trigger"},
+    {"query": "Start a failure analysis worksheet for equipment BRY-SAG-ML-001", "reason": "Failure analysis worksheet request"},
+    {"query": "What failure modes should I consider for a slurry pump in the OCP flotation circuit?", "reason": "Failure mode identification with client context"},
+    {"query": "The RPN for the gearbox failure is too high - what strategy should we assign?", "reason": "RPN-based strategy assignment"},
+    {"query": "Analisis de falla del sistema de lubricacion - severidad y ocurrencia", "reason": "Spanish - severity occurrence trigger"}
+  ],
+  "should_not_trigger": [
+    {"query": "What is the criticality of the SAG Mill?", "reason": "Criticality is assess-criticality skill"},
+    {"query": "Walk me through the RCM decision tree", "reason": "RCM decision is run-rcm-decision-tree skill"},
+    {"query": "Validate the failure mode combination WEARS + ABRASION", "reason": "FM validation is validate-failure-modes skill"},
+    {"query": "Build the hierarchy for the grinding circuit", "reason": "Hierarchy is build-equipment-hierarchy skill"},
+    {"query": "What is the priority for work order WO-5678?", "reason": "Priority is calculate-priority skill"},
+    {"query": "Conduct a root cause analysis on the bearing seizure", "reason": "RCA is perform-rca skill"},
+    {"query": "Calculate the health index for the crusher", "reason": "Health score is calculate-health-score skill"},
+    {"query": "What is the OCP annual maintenance budget?", "reason": "Budget question, not FMECA"},
+    {"query": "Show me the maintenance schedule for next quarter", "reason": "Scheduling question"},
+    {"query": "How do I create a purchase order in SAP?", "reason": "SAP procurement question"}
+  ]
+}

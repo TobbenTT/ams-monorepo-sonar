@@ -1,0 +1,113 @@
+[
+  {
+    "id": 1,
+    "prompt": "Export equipment hierarchy with include_criticality=True and include_health=False. Two equipment records: EQ-001 (SAG Mill, MILL, SYS-001, criticality A, risk 85) and EQ-002 (Ball Mill, MILL, SYS-001, criticality B, risk 60).",
+    "expected_output": "ExportResult with EXCEL format, 1 sheet 'Equipment' with 6 columns (no health), 2 data rows, metadata export_type='equipment' total_rows='2'",
+    "assertions": [
+      {
+        "text": "Headers are [Equipment ID, Description, Type, Parent ID, Criticality Class, Risk Score] - no Health columns",
+        "type": "structural"
+      },
+      {
+        "text": "Row 1 contains EQ-001, SAG Mill Primary, MILL, SYS-001, A, 85",
+        "type": "content"
+      },
+      {
+        "text": "Metadata total_rows is string '2'",
+        "type": "content"
+      },
+      {
+        "text": "Sheet name is 'Equipment'",
+        "type": "structural"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "prompt": "Export KPIs with planning_kpis provided (2 KPIs) and reliability_kpis provided (mtbf_days=45, mttr_hours=4). No DE KPIs.",
+    "expected_output": "2 sheets: 'Planning KPIs' (2 rows) and 'Reliability KPIs' (2 rows for mtbf and mttr). No DE KPIs sheet.",
+    "assertions": [
+      {
+        "text": "Planning KPIs sheet has 2 data rows with correct KPI names",
+        "type": "content"
+      },
+      {
+        "text": "Reliability KPIs sheet includes mtbf_days and mttr_hours rows",
+        "type": "content"
+      },
+      {
+        "text": "No DE KPIs sheet created because de_kpis is None",
+        "type": "structural"
+      },
+      {
+        "text": "Reliability KPI rows have empty Target, Unit, Status columns",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "prompt": "Export KPIs with no planning, no DE, and no reliability data provided.",
+    "expected_output": "Single sheet 'KPIs' with header ['No Data'] and empty rows",
+    "assertions": [
+      {
+        "text": "Fallback sheet 'KPIs' created with 'No Data' header",
+        "type": "structural"
+      },
+      {
+        "text": "No data rows in the sheet",
+        "type": "content"
+      },
+      {
+        "text": "Export still returns valid ExportResult (never empty)",
+        "type": "structural"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "prompt": "Export schedule with program data (program_id='P-2024-W12', week_number=12, status='ACTIVE') and 2 gantt rows.",
+    "expected_output": "2 sheets: 'Program Overview' with 3 property/value rows, 'Schedule' with 2 gantt detail rows",
+    "assertions": [
+      {
+        "text": "Program Overview sheet has Property/Value headers",
+        "type": "structural"
+      },
+      {
+        "text": "Schedule sheet has 7 columns: WO ID, Description, Start, End, Duration, Resource Group, Status",
+        "type": "structural"
+      },
+      {
+        "text": "Gantt row field fallbacks applied (wo_id if work_order_id missing)",
+        "type": "content"
+      },
+      {
+        "text": "Metadata export_type is 'schedule'",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "prompt": "Export a report with metadata (type='monthly', plant='OCP-JFC') and 2 sections. Report has wo_completed_count=45 and backlog_hours=120.",
+    "expected_output": "ExportResult with sections (metadata + 2 report sections) and Summary sheet with 2 rows (wo_completed_count, backlog_hours)",
+    "assertions": [
+      {
+        "text": "Metadata section content includes 'Type: monthly, Plant: OCP-JFC'",
+        "type": "content"
+      },
+      {
+        "text": "Summary sheet has Metric/Value headers",
+        "type": "structural"
+      },
+      {
+        "text": "Summary includes wo_completed_count=45 and backlog_hours=120",
+        "type": "content"
+      },
+      {
+        "text": "Format can be PDF for report exports",
+        "type": "structural"
+      }
+    ]
+  }
+]

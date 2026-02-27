@@ -1,0 +1,87 @@
+{
+  "skill": "analyze-cross-module",
+  "should_trigger": [
+    {
+      "query": "Correlate criticality data with failure frequency across all OCP-JFC equipment",
+      "reason": "Explicit criticality vs. failures correlation request"
+    },
+    {
+      "query": "Run a cross-module analysis to find bad actors appearing in multiple analyses",
+      "reason": "Cross-module analysis with bad actor overlap"
+    },
+    {
+      "query": "Show me the overlap between Jack-Knife acute, Pareto bad actors, and RBI high-risk equipment",
+      "reason": "Bad actor overlap across three analyses"
+    },
+    {
+      "query": "Correlate maintenance cost with equipment reliability MTBF for the phosphate washing plant",
+      "reason": "Cost vs. reliability correlation"
+    },
+    {
+      "query": "Hacer un analisis cruzado entre criticidad, fallas y costos para planta OCP-JFC",
+      "reason": "Spanish cross-analysis request across multiple modules"
+    },
+    {
+      "query": "Generate a cross-module summary with insights and recommended actions for plant BRY",
+      "reason": "Cross-module summary generation"
+    },
+    {
+      "query": "Identify bad actors that appear in both the Pareto analysis and RBI assessment",
+      "reason": "Bad actor identification across two analyses"
+    },
+    {
+      "query": "Correlacionar el health score de los equipos con el backlog de mantenimiento pendiente",
+      "reason": "Spanish health vs. backlog correlation"
+    },
+    {
+      "query": "Which equipment shows up as a bad actor in all three reliability analyses?",
+      "reason": "Bad actor overlap query for all three analyses"
+    },
+    {
+      "query": "Correlate data across the criticality, cost, and health modules for the SAG mill circuit",
+      "reason": "Multi-module data correlation request"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Run a Jack-Knife analysis on the SAG mill failure data",
+      "reason": "Single reliability analysis (Jack-Knife), not cross-module"
+    },
+    {
+      "query": "Calculate the health score for equipment EQ-001 based on condition data",
+      "reason": "Health score calculation, not cross-module correlation"
+    },
+    {
+      "query": "Export the equipment hierarchy with criticality columns to Excel",
+      "reason": "Data export, not cross-module analysis"
+    },
+    {
+      "query": "Build the 6-level equipment hierarchy for the ball mill system",
+      "reason": "Hierarchy building, not correlation analysis"
+    },
+    {
+      "query": "Suggest spare parts materials for a bearing replacement task",
+      "reason": "Material suggestion, not cross-module analysis"
+    },
+    {
+      "query": "Run Pareto analysis on the top cost contributors for the crushing plant",
+      "reason": "Single Pareto analysis, not cross-module correlation"
+    },
+    {
+      "query": "Import failure history from the CSV file uploaded",
+      "reason": "Data import, not cross-module analysis"
+    },
+    {
+      "query": "Validate the quality of failure modes and maintenance tasks",
+      "reason": "Quality validation, not cross-module correlation"
+    },
+    {
+      "query": "Start the maintenance strategy development workflow for the conveyor system",
+      "reason": "Workflow orchestration, not cross-module analysis"
+    },
+    {
+      "query": "Optimize spare parts inventory using VED/FSN/ABC classification",
+      "reason": "Spare parts optimization, not cross-module correlation"
+    }
+  ]
+}

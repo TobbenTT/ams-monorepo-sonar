@@ -1,0 +1,87 @@
+{
+  "skill": "calculate-planning-kpis",
+  "should_trigger": [
+    {
+      "query": "Calculate the planning KPIs for plant BRY this month",
+      "reason": "Directly relevant to calculate-planning-kpis skill"
+    },
+    {
+      "query": "What is our schedule compliance rate for Q1?",
+      "reason": "Directly relevant to calculate-planning-kpis skill"
+    },
+    {
+      "query": "How many weeks of backlog do we have?",
+      "reason": "Directly relevant to calculate-planning-kpis skill"
+    },
+    {
+      "query": "Show me the 11 GFSN planning metrics for January",
+      "reason": "Directly relevant to calculate-planning-kpis skill"
+    },
+    {
+      "query": "Is our planning health HEALTHY or AT_RISK right now?",
+      "reason": "Directly relevant to calculate-planning-kpis skill"
+    },
+    {
+      "query": "Calcular los KPI de planificacion para la planta BRY",
+      "reason": "Spanish query relevant to calculate-planning-kpis skill"
+    },
+    {
+      "query": "What is our reactive work percentage this period?",
+      "reason": "Directly relevant to calculate-planning-kpis skill"
+    },
+    {
+      "query": "Check if PM compliance meets the 95% target",
+      "reason": "Directly relevant to calculate-planning-kpis skill"
+    },
+    {
+      "query": "Run the planning efficiency KPI for March 2025",
+      "reason": "Directly relevant to calculate-planning-kpis skill"
+    },
+    {
+      "query": "Are we meeting the backlog age target of 4 weeks?",
+      "reason": "Directly relevant to calculate-planning-kpis skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Group the backlog items by equipment",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    },
+    {
+      "query": "Generate a work instruction for the pump overhaul",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    },
+    {
+      "query": "What is the criticality of the SAG mill?",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    },
+    {
+      "query": "Create a shutdown plan for the Q2 turnaround",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    },
+    {
+      "query": "Export the maintenance items to SAP format",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    },
+    {
+      "query": "Start a CAPA for the recurring bearing failure",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    },
+    {
+      "query": "Submit a management of change request",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    },
+    {
+      "query": "Generate the quarterly management review report",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    },
+    {
+      "query": "What notifications are pending for the crusher area?",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    },
+    {
+      "query": "Perform an FMECA on the conveyor drive system",
+      "reason": "Not related to calculate-planning-kpis functionality"
+    }
+  ]
+}

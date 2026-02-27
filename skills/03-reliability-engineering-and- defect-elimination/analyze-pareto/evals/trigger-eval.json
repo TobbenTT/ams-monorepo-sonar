@@ -1,0 +1,103 @@
+{
+  "skill": "analyze-pareto",
+  "should_trigger": [
+    {
+      "query": "Which equipment are the bad actors at Jorf Lasfar plant?",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "Run a Pareto analysis on failure counts for the grinding circuit",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "Show me the 80/20 analysis for maintenance costs at plant JFC-01",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "Identify the top failures causing most downtime",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "What are the worst performing equipment items by failure count?",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "Hazme un analisis Pareto de las fallas del ultimo trimestre",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "I need to find the vital few equipment causing 80% of breakdowns",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "Rank equipment by total downtime hours - who are the bad actors?",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "Which pumps and conveyors are causing the most maintenance cost?",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "Do a failure ranking for all equipment at the Khouribga plant",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "Show me the top 20% of equipment responsible for most failures",
+      "reason": "Directly relevant to analyze-pareto skill"
+    },
+    {
+      "query": "Identify bad actors by cost for the phosphate processing line",
+      "reason": "Directly relevant to analyze-pareto skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate MTBF and MTTR for the SAG mill",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "Fit a Weibull distribution to these failure intervals",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "Compare plant availability across the portfolio",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "What's the optimal PM interval for the pump?",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "Classify equipment into Jackknife zones",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "Calculate the life cycle cost of the crusher",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "Assess risk for static equipment inspections",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "Build an equipment hierarchy for the plant",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "Run an RCM decision tree on the gearbox",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "Perform FMECA on the conveyor belt system",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "What's the OEE for the ball mill this quarter?",
+      "reason": "Not related to analyze-pareto functionality"
+    },
+    {
+      "query": "Do a root cause analysis on the motor bearing failure",
+      "reason": "Not related to analyze-pareto functionality"
+    }
+  ]
+}

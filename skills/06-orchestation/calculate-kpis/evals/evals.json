@@ -1,0 +1,98 @@
+[
+  {
+    "id": "kpi-eval-01",
+    "name": "MTBF calculation with 3 failure events",
+    "input": {
+      "failure_dates": ["2024-01-15", "2024-04-22", "2024-09-10"],
+      "description": "Calculate MTBF from 3 failure dates"
+    },
+    "expected": {
+      "mtbf_days": 119.5,
+      "explanation": "Intervals: 98 days + 141 days = 239 / 2 = 119.5 days"
+    },
+    "assertions": [
+      "MTBF is calculated as average of intervals between consecutive failures",
+      "Result is rounded to 1 decimal place",
+      "At least 2 failure events are required"
+    ]
+  },
+  {
+    "id": "kpi-eval-02",
+    "name": "MTBF returns null with only 1 failure",
+    "input": {
+      "failure_dates": ["2024-06-15"],
+      "description": "Attempt MTBF with single failure"
+    },
+    "expected": {
+      "mtbf_days": null,
+      "explanation": "Less than 2 failure events means MTBF cannot be computed"
+    },
+    "assertions": [
+      "MTBF returns null, NOT zero",
+      "Agent explains insufficient data"
+    ]
+  },
+  {
+    "id": "kpi-eval-03",
+    "name": "OEE is multiplicative not additive",
+    "input": {
+      "availability_pct": 95.0,
+      "performance_pct": 85.0,
+      "quality_pct": 99.0,
+      "description": "Calculate OEE from three factors"
+    },
+    "expected": {
+      "oee_pct": 79.9,
+      "explanation": "OEE = (95/100) x (85/100) x (99/100) x 100 = 79.9%, NOT (95+85+99)/3"
+    },
+    "assertions": [
+      "OEE uses multiplicative formula",
+      "OEE is NOT the average of the three factors",
+      "Result is 79.9% not 93%"
+    ]
+  },
+  {
+    "id": "kpi-eval-04",
+    "name": "Reactive ratio interpretation with benchmarks",
+    "input": {
+      "corrective_count": 15,
+      "total_count": 65,
+      "description": "Calculate reactive ratio and assess"
+    },
+    "expected": {
+      "reactive_ratio_pct": 23.1,
+      "assessment": "Good (10-25% range)",
+      "explanation": "15/65 x 100 = 23.1%"
+    },
+    "assertions": [
+      "Ratio is 23.1%",
+      "Falls in 'Good' benchmark range (10-25%)",
+      "Industry benchmarks are cited"
+    ]
+  },
+  {
+    "id": "kpi-eval-05",
+    "name": "Full batch processing from work order records",
+    "input": {
+      "plant_id": "OCP-JFC1",
+      "period": "Q4 2024 (92 days)",
+      "records": "7 work orders with PM01, PM02, PM03 types",
+      "description": "Compute all 7 KPIs from batch data"
+    },
+    "expected": {
+      "mtbf_days": 38.0,
+      "mttr_hours": 18.0,
+      "availability_pct": 97.6,
+      "oee_pct": 97.6,
+      "schedule_compliance_pct": 85.7,
+      "pm_compliance_pct": 100.0,
+      "reactive_ratio_pct": 42.9
+    },
+    "assertions": [
+      "All 7 KPIs are calculated",
+      "Each KPI matches expected value",
+      "Null handling is correct for any edge cases",
+      "Schedule compliance uses actual_start <= planned_end definition"
+    ]
+  }
+]

@@ -1,0 +1,77 @@
+[
+  {
+    "test_id": "SD-001",
+    "name": "Schedule compliance capped at 100%",
+    "description": "Finishing early should produce 100%, not higher",
+    "input": {
+      "planned_hours": 84.0,
+      "actual_hours": 72.0
+    },
+    "expected": {
+      "schedule_compliance_pct": 100.0,
+      "reason": "Capped at 100% even though planned/actual ratio > 1"
+    }
+  },
+  {
+    "test_id": "SD-002",
+    "name": "Only in-scope WOs count toward completion",
+    "description": "Completing a WO not in the original scope should not increase completion_pct",
+    "input": {
+      "work_orders": [
+        "WO-001",
+        "WO-002",
+        "WO-003"
+      ],
+      "completed_wos": [
+        "WO-001",
+        "WO-002",
+        "WO-999"
+      ]
+    },
+    "expected": {
+      "completed_count": 2,
+      "completion_pct": 66.7,
+      "reason": "WO-999 not in original scope, ignored"
+    }
+  },
+  {
+    "test_id": "SD-003",
+    "name": "Delay hours accumulate across updates",
+    "description": "Two progress updates with 2.0h and 1.5h delay should produce 3.5h total",
+    "input": {
+      "updates": [
+        {
+          "delay_hours": 2.0,
+          "delay_reasons": [
+            "Crane not available"
+          ]
+        },
+        {
+          "delay_hours": 1.5,
+          "delay_reasons": [
+            "Gasket rework"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "total_delay_hours": 3.5,
+      "total_delay_reasons": 2
+    }
+  },
+  {
+    "test_id": "SD-004",
+    "name": "Cannot cancel in-progress shutdown",
+    "description": "IN_PROGRESS -> CANCELLED is not a valid transition",
+    "input": {
+      "current_status": "IN_PROGRESS",
+      "target_status": "CANCELLED"
+    },
+    "expected": {
+      "transition_rejected": true,
+      "allowed": [
+        "COMPLETED"
+      ]
+    }
+  }
+]

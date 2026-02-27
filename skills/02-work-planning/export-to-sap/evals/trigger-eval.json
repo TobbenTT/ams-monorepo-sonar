@@ -1,0 +1,87 @@
+{
+  "skill": "export-to-sap",
+  "should_trigger": [
+    {
+      "query": "Export the SAG mill work packages to SAP format",
+      "reason": "Directly relevant to export-to-sap skill"
+    },
+    {
+      "query": "Generate SAP maintenance items for the Q2 PM plan",
+      "reason": "Directly relevant to export-to-sap skill"
+    },
+    {
+      "query": "Create a SAP task list for the crusher inspection work package",
+      "reason": "Directly relevant to export-to-sap skill"
+    },
+    {
+      "query": "Upload the maintenance plan to SAP PM module",
+      "reason": "Directly relevant to export-to-sap skill"
+    },
+    {
+      "query": "Prepare the SAP export template for plant BRY work orders",
+      "reason": "Directly relevant to export-to-sap skill"
+    },
+    {
+      "query": "Exportar los paquetes de trabajo a formato SAP",
+      "reason": "Spanish query relevant to export-to-sap skill"
+    },
+    {
+      "query": "Crear plantilla SAP para el plan de mantenimiento",
+      "reason": "Spanish query relevant to export-to-sap skill"
+    },
+    {
+      "query": "What SAP maintenance items are generated from WP-SAG-001 and WP-CRU-002?",
+      "reason": "Directly relevant to export-to-sap skill"
+    },
+    {
+      "query": "Generate the $MI and $TL cross-references for the annual PM plan",
+      "reason": "Directly relevant to export-to-sap skill"
+    },
+    {
+      "query": "Build SAP upload package with task list operations for the pump overhaul",
+      "reason": "Directly relevant to export-to-sap skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the planning KPIs for this period",
+      "reason": "Not related to export-to-sap functionality"
+    },
+    {
+      "query": "Generate a work instruction for the liner change",
+      "reason": "Not related to export-to-sap functionality"
+    },
+    {
+      "query": "Assemble the work package elements for WP-SAG-001",
+      "reason": "Not related to export-to-sap functionality"
+    },
+    {
+      "query": "Group the backlog items by area",
+      "reason": "Not related to export-to-sap functionality"
+    },
+    {
+      "query": "What is the criticality of the conveyor drive?",
+      "reason": "Not related to export-to-sap functionality"
+    },
+    {
+      "query": "Schedule the weekly maintenance program",
+      "reason": "Not related to export-to-sap functionality"
+    },
+    {
+      "query": "Submit a CAPA for the motor failure",
+      "reason": "Not related to export-to-sap functionality"
+    },
+    {
+      "query": "Generate the monthly report",
+      "reason": "Not related to export-to-sap functionality"
+    },
+    {
+      "query": "Plan the Q2 shutdown turnaround",
+      "reason": "Not related to export-to-sap functionality"
+    },
+    {
+      "query": "Perform an FMECA on the grinding circuit",
+      "reason": "Not related to export-to-sap functionality"
+    }
+  ]
+}

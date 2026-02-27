@@ -1,0 +1,109 @@
+[
+  {
+    "id": 1,
+    "prompt": "Resolve equipment from exact tag: BRY-SAG-ML-001",
+    "expected_output": "Exact match with confidence 1.0, method EXACT_MATCH, no alternatives",
+    "assertions": [
+      {
+        "text": "confidence is exactly 1.0",
+        "type": "numerical"
+      },
+      {
+        "text": "method is EXACT_MATCH",
+        "type": "content"
+      },
+      {
+        "text": "alternatives list is empty",
+        "type": "structural"
+      },
+      {
+        "text": "equipment_tag matches BRY-SAG-ML-001",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "prompt": "The operator said 'Check the big sag mill at broyage'. Registry has alias 'BIG SAG' for EQ-001 (BRY-SAG-ML-001).",
+    "expected_output": "Resolution via description match (HIERARCHY_SEARCH) with confidence around 0.44 if alias not matched first",
+    "assertions": [
+      {
+        "text": "Equipment resolves to EQ-001 / BRY-SAG-ML-001",
+        "type": "content"
+      },
+      {
+        "text": "Method is ALIAS_MATCH or HIERARCHY_SEARCH depending on alias configuration",
+        "type": "content"
+      },
+      {
+        "text": "Low confidence results include alternatives",
+        "type": "structural"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "prompt": "Resolve: 'BRY-SAG-ML-01' (note the missing zero - should be BRY-SAG-ML-001)",
+    "expected_output": "Fuzzy TAG match with confidence >= 0.7, method FUZZY_MATCH",
+    "assertions": [
+      {
+        "text": "Resolves to BRY-SAG-ML-001 via fuzzy matching",
+        "type": "content"
+      },
+      {
+        "text": "Method is FUZZY_MATCH",
+        "type": "content"
+      },
+      {
+        "text": "Confidence is >= 0.7",
+        "type": "numerical"
+      },
+      {
+        "text": "Alternatives may include other similar tags",
+        "type": "structural"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "prompt": "Resolve: 'xyz unknown equipment 12345'. No matching tags, aliases, or descriptions in registry.",
+    "expected_output": "Resolution returns None (total failure)",
+    "assertions": [
+      {
+        "text": "Result is None",
+        "type": "content"
+      },
+      {
+        "text": "System indicates resolution failed",
+        "type": "content"
+      },
+      {
+        "text": "Operator must manually select equipment",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "prompt": "Resolve from French description: 'Broyeur SAG Primaire Broyage'",
+    "expected_output": "HIERARCHY_SEARCH match via description_fr with confidence = raw_score * 0.8",
+    "assertions": [
+      {
+        "text": "Matches via French description field",
+        "type": "content"
+      },
+      {
+        "text": "Method is HIERARCHY_SEARCH",
+        "type": "content"
+      },
+      {
+        "text": "Confidence has 0.8x penalty applied",
+        "type": "numerical"
+      },
+      {
+        "text": "Both English and French descriptions were checked",
+        "type": "content"
+      }
+    ]
+  }
+]

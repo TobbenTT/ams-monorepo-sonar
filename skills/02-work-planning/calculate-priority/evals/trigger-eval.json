@@ -1,0 +1,27 @@
+{
+  "skill": "calculate-priority",
+  "should_trigger": [
+    {"query": "What priority should I assign to this work order for the SAG Mill?", "reason": "Work order priority request"},
+    {"query": "Calculate the priority score for the OCP pump seal leak", "reason": "Priority score calculation"},
+    {"query": "Is this an emergency or urgent work request for the crusher?", "reason": "Emergency vs urgent classification"},
+    {"query": "The equipment criticality is AA and we have safety flags - what priority?", "reason": "R8 scoring with specific inputs"},
+    {"query": "Use the GFSN priority matrix for criticality band ALTO and consequence 4", "reason": "GFSN priority matrix request"},
+    {"query": "Cual es la prioridad para esta orden de trabajo del molino?", "reason": "Spanish - priority trigger"},
+    {"query": "Should this work request be escalated to management?", "reason": "Escalation question"},
+    {"query": "The operator downgraded the priority from emergency to normal - is that valid?", "reason": "Override validation request"},
+    {"query": "What response time does MODERADO priority require?", "reason": "Response time for priority level"},
+    {"query": "Calcular puntaje de prioridad para bomba con criticidad A+ y falla de seguridad", "reason": "Spanish - priority score with context"}
+  ],
+  "should_not_trigger": [
+    {"query": "What is the criticality class of the SAG Mill?", "reason": "Criticality is assess-criticality skill"},
+    {"query": "Run the RCM decision tree for the pump failure", "reason": "RCM is run-rcm-decision-tree skill"},
+    {"query": "Perform an FMECA for the crusher", "reason": "FMECA is perform-fmeca skill"},
+    {"query": "Validate the failure mode CORRODES + CHEMICAL_ATTACK", "reason": "FM validation is validate-failure-modes"},
+    {"query": "Build the equipment hierarchy for plant OCP-JFC1", "reason": "Hierarchy is build-equipment-hierarchy"},
+    {"query": "Conduct a root cause analysis on the bearing seizure", "reason": "RCA is perform-rca skill"},
+    {"query": "Calculate the health score for the SAG Mill", "reason": "Health score is calculate-health-score"},
+    {"query": "What is the maintenance budget for next quarter?", "reason": "Budget question"},
+    {"query": "How do I create a notification in SAP PM?", "reason": "SAP usage question"},
+    {"query": "What PPE is required for the grinding area?", "reason": "Safety PPE question, not priority"}
+  ]
+}

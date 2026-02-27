@@ -1,0 +1,103 @@
+{
+  "skill": "fit-weibull-distribution",
+  "should_trigger": [
+    {
+      "query": "Fit a Weibull distribution to the SAG mill pinion gear failures",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "What's the beta parameter for the crusher bearing failure data?",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "Analyze the failure pattern for pump PUMP-101A using Weibull",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "I have failure intervals for the conveyor belt - can you do a reliability analysis?",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "What failure distribution does the ball mill gearbox follow?",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "Necesito un analisis Weibull para la distribucion de falla del motor",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "Calculate the shape and scale parameters for these life data points",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "Is this equipment showing early life or wear-out failures? Run a Weibull",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "What's the predicted failure window for the SAG mill at 90% confidence?",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "Run a Weibull fit on these time-to-failure values: 120, 180, 95, 210",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "Dame el patron de falla del reductor del molino de bolas",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    },
+    {
+      "query": "Classify the failure pattern using beta parameter analysis",
+      "reason": "Directly relevant to fit-weibull-distribution skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "What are the maintenance KPIs for the plant this quarter?",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "Do a Pareto analysis to find the bad actors",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "Compare MTBF across all OCP plants",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "What's the optimal PM interval for the pump?",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "Calculate the life cycle cost of the new crusher",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "Build an equipment hierarchy for the grinding circuit",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "Assess the risk level for our pressure vessels",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "What's the reactive ratio for corrective work orders?",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "Run an RCM decision tree for the conveyor belt",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "Perform root cause analysis on the motor failure",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "Show me the Jackknife diagram for plant equipment",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    },
+    {
+      "query": "How should we schedule inspections for the piping?",
+      "reason": "Not related to fit-weibull-distribution functionality"
+    }
+  ]
+}

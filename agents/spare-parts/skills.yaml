@@ -1,0 +1,37 @@
+# agents/spare-parts/skills.yaml
+# Skills asignados al Spare Parts Specialist Agent
+# Última actualización: 2026-02-24
+
+agent: spare-parts
+model: claude-haiku-4-5-20251001
+
+skills:
+  # ── Milestone 3: Material Assignment ─────────────────────────
+  - name: suggest-materials
+    path: skills/02-work-planning/suggest-materials/CLAUDE.md
+    load_level: 2
+    milestone: 3
+    mandatory: true
+    references_to_preload:
+      - references/component-mechanism-mapping.md
+
+  - name: resolve-equipment
+    path: skills/resolve-equipment/CLAUDE.md
+    load_level: 2
+    milestone: 3
+    mandatory: true
+
+  - name: optimize-spare-parts-inventory
+    path: skills/02-work-planning/optimize-spare-parts-inventory/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+
+# ── Knowledge Base (siempre disponible, carga selectiva) ──────
+knowledge_base:
+  - path: skills/00-knowledge-base/data-models/component-library.md
+    load_when: "Agent needs component type and typical spare parts reference"
+  - path: skills/00-knowledge-base/data-models/equipment-library.md
+    load_when: "Agent needs to resolve equipment descriptions to registered assets"
+  - path: skills/00-knowledge-base/data-models/spare-parts-criticality-template.md
+    load_when: "Agent needs spare parts criticality scoring reference"

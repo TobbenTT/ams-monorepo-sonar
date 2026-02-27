@@ -1,0 +1,27 @@
+{
+  "skill": "run-rcm-decision-tree",
+  "should_trigger": [
+    {"query": "What maintenance strategy should I use for this SAG Mill failure mode?", "reason": "Maintenance strategy selection request"},
+    {"query": "Run the RCM decision tree for the pump bearing failure", "reason": "Explicit RCM decision tree request"},
+    {"query": "Should we use CBM or fixed-time replacement for the OCP conveyor belt?", "reason": "CBM vs FT comparison question"},
+    {"query": "The failure consequence is evident operational - what strategy applies?", "reason": "Failure consequence classification trigger"},
+    {"query": "Is run-to-failure acceptable for this environmental failure mode?", "reason": "RTF feasibility question for environmental consequence"},
+    {"query": "Que tipo de estrategia de mantenimiento debo seleccionar?", "reason": "Spanish - strategy type selection"},
+    {"query": "Walk me through the decision tree for a hidden safety failure on the protective relay", "reason": "Decision tree walkthrough request"},
+    {"query": "The failure pattern is E_RANDOM - can we still do fixed-time replacement?", "reason": "Failure pattern vs FT feasibility"},
+    {"query": "Help me decide between condition-based and time-based maintenance for the crusher", "reason": "Strategy selection for specific equipment"},
+    {"query": "Seleccion de estrategia para el molino de bolas con falla evidente operacional", "reason": "Spanish - arbol de decision trigger with context"}
+  ],
+  "should_not_trigger": [
+    {"query": "What is the criticality of our SAG Mill?", "reason": "Criticality assessment is assess-criticality skill"},
+    {"query": "Perform an FMECA analysis for the grinding circuit", "reason": "FMECA is perform-fmeca skill"},
+    {"query": "Validate the failure mode WEARS + ABRASION", "reason": "FM validation is validate-failure-modes skill"},
+    {"query": "Build the equipment hierarchy for the plant", "reason": "Hierarchy building is a different skill"},
+    {"query": "What is the priority score for this work order?", "reason": "Priority is calculate-priority skill"},
+    {"query": "Conduct a root cause analysis on the bearing seizure", "reason": "RCA is perform-rca skill"},
+    {"query": "Calculate the health score for equipment BRY-SAG-ML-001", "reason": "Health score is calculate-health-score skill"},
+    {"query": "What spare parts do we need for the pump overhaul?", "reason": "Spare parts management question"},
+    {"query": "Schedule the next planned outage for the OCP plant", "reason": "Scheduling question, not strategy selection"},
+    {"query": "How many work orders are overdue this month?", "reason": "Work order management question"}
+  ]
+}

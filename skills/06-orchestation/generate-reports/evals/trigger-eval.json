@@ -1,0 +1,87 @@
+{
+  "skill": "generate-reports",
+  "should_trigger": [
+    {
+      "query": "Generate the weekly maintenance report for week 12",
+      "reason": "Directly relevant to generate-reports skill"
+    },
+    {
+      "query": "Create the monthly KPI report for March 2025",
+      "reason": "Directly relevant to generate-reports skill"
+    },
+    {
+      "query": "Build the quarterly management review report for Q1",
+      "reason": "Directly relevant to generate-reports skill"
+    },
+    {
+      "query": "Show me the traffic light status for all planning KPIs",
+      "reason": "Directly relevant to generate-reports skill"
+    },
+    {
+      "query": "What trends do we see in this month's report vs last month?",
+      "reason": "Directly relevant to generate-reports skill"
+    },
+    {
+      "query": "Generar el informe semanal de mantenimiento",
+      "reason": "Spanish query relevant to generate-reports skill"
+    },
+    {
+      "query": "Crear el reporte mensual de KPIs de planificacion",
+      "reason": "Spanish query relevant to generate-reports skill"
+    },
+    {
+      "query": "What are the strategic recommendations for the quarterly review?",
+      "reason": "Directly relevant to generate-reports skill"
+    },
+    {
+      "query": "Produce the weekly report sections including backlog and safety",
+      "reason": "Directly relevant to generate-reports skill"
+    },
+    {
+      "query": "Generate a monthly report with KPI trend analysis",
+      "reason": "Directly relevant to generate-reports skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the planning KPIs for this period",
+      "reason": "Not related to generate-reports functionality"
+    },
+    {
+      "query": "Group the backlog items by area",
+      "reason": "Not related to generate-reports functionality"
+    },
+    {
+      "query": "Generate a work instruction for the pump overhaul",
+      "reason": "Not related to generate-reports functionality"
+    },
+    {
+      "query": "Export work packages to SAP format",
+      "reason": "Not related to generate-reports functionality"
+    },
+    {
+      "query": "Create a CAPA for the bearing failure",
+      "reason": "Not related to generate-reports functionality"
+    },
+    {
+      "query": "Schedule the weekly maintenance program",
+      "reason": "Not related to generate-reports functionality"
+    },
+    {
+      "query": "What notifications are pending?",
+      "reason": "Not related to generate-reports functionality"
+    },
+    {
+      "query": "Plan the shutdown for Q2",
+      "reason": "Not related to generate-reports functionality"
+    },
+    {
+      "query": "Submit a management of change request",
+      "reason": "Not related to generate-reports functionality"
+    },
+    {
+      "query": "What is the criticality of the SAG mill?",
+      "reason": "Not related to generate-reports functionality"
+    }
+  ]
+}

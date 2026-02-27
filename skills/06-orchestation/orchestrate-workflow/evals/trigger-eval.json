@@ -1,0 +1,27 @@
+{
+  "skill": "orchestrate-workflow",
+  "should_trigger": [
+    {"query": "Start the maintenance strategy development workflow for SAG Mill 001 at plant OCP-JFC", "reason": "Direct MSD workflow initiation"},
+    {"query": "Run milestone 2 - FMEA Completion for the current session", "reason": "Specific milestone execution request"},
+    {"query": "I want to develop a complete maintenance strategy for the ball mill, all 4 milestones", "reason": "Full 4-milestone strategy development request"},
+    {"query": "Approve milestone 1 and proceed to the next gate", "reason": "Gate approval action within workflow"},
+    {"query": "Iniciar flujo de desarrollo de estrategia de mantenimiento para el molino SAG", "reason": "Spanish workflow initiation"},
+    {"query": "What is the status of the current MSD workflow? Which milestone are we on?", "reason": "Workflow status inquiry"},
+    {"query": "Modify milestone 3 - I want to add more work packages before approving", "reason": "Milestone modification request"},
+    {"query": "Necesito el desarrollo de estrategia completo para la bomba de pulpa, desde jerarquia hasta SAP", "reason": "Spanish end-to-end strategy development request"},
+    {"query": "Reject the current milestone and stop the workflow - the hierarchy is incorrect", "reason": "Milestone rejection action"},
+    {"query": "Run the gate validation for milestone 3 before presenting results", "reason": "Pre-gate validation execution"}
+  ],
+  "should_not_trigger": [
+    {"query": "Suggest materials for a worn bearing REPLACE task", "reason": "Material suggestion, not workflow orchestration"},
+    {"query": "Resolve equipment tag BRY-SAG-ML-001", "reason": "Equipment resolution, not workflow"},
+    {"query": "Calculate VED/FSN/ABC classification for spare parts", "reason": "Inventory optimization, not workflow orchestration"},
+    {"query": "Export the equipment hierarchy to Excel format", "reason": "Data export skill"},
+    {"query": "Import failure history data from the CSV file", "reason": "Data import skill"},
+    {"query": "Run Pareto analysis for the top 10 bad actors", "reason": "Reliability analysis, not workflow orchestration"},
+    {"query": "Validate the naming conventions of task names", "reason": "Quality validation skill (validate-quality), not orchestration"},
+    {"query": "Show cross-module correlation between criticality and failures", "reason": "Cross-module analysis, not workflow"},
+    {"query": "Generate the weekly maintenance schedule for week 12", "reason": "Scheduling, not strategy development workflow"},
+    {"query": "Calculate the health score for equipment EQ-001", "reason": "Health score is a reliability skill"}
+  ]
+}

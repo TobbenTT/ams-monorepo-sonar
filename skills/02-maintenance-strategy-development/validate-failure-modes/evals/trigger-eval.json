@@ -1,0 +1,27 @@
+{
+  "skill": "validate-failure-modes",
+  "should_trigger": [
+    {"query": "Is WEARS + ABRASION a valid failure mode combination?", "reason": "Direct FM validation question"},
+    {"query": "Validate the failure mode mechanism CORRODES with cause CHEMICAL_ATTACK", "reason": "Explicit validation request"},
+    {"query": "What are the valid causes for the WEARS mechanism?", "reason": "Mechanism lookup request"},
+    {"query": "Show me all 72 valid combinations for failure modes", "reason": "72 combinations trigger"},
+    {"query": "Is it valid to use AGE as a cause for WEARS?", "reason": "Specific invalid combination check"},
+    {"query": "Check the failure mode naming convention for the OCP pump casing corrosion", "reason": "FM naming validation"},
+    {"query": "How should I name the failure mode for bearing wear on the SAG Mill?", "reason": "Failure mode naming request"},
+    {"query": "Validar modo de falla CORRODES + CREVICE", "reason": "Spanish - FM validation trigger"},
+    {"query": "Can I use OVERHEATS_MELTS with RUBBING as a cause for the crusher bearing?", "reason": "Mechanism cause validation with equipment context"},
+    {"query": "Que combinaciones de mecanismo y causa son validas para DEGRADES?", "reason": "Spanish - mechanism cause lookup"}
+  ],
+  "should_not_trigger": [
+    {"query": "What is the criticality of the SAG Mill?", "reason": "Criticality is assess-criticality skill"},
+    {"query": "Run the RCM decision tree for this failure mode", "reason": "RCM decision is a different skill"},
+    {"query": "Perform an FMECA for the grinding circuit", "reason": "FMECA is perform-fmeca skill"},
+    {"query": "Build the equipment hierarchy for plant OCP-JFC1", "reason": "Hierarchy is build-equipment-hierarchy"},
+    {"query": "What priority should this work order have?", "reason": "Priority is calculate-priority skill"},
+    {"query": "Conduct root cause analysis on the pump failure", "reason": "RCA is perform-rca skill"},
+    {"query": "Calculate the health index for the crusher", "reason": "Health score is calculate-health-score"},
+    {"query": "What is the Weibull beta for bearing failures?", "reason": "Statistical analysis question"},
+    {"query": "Order spare parts for the gearbox overhaul", "reason": "Procurement question"},
+    {"query": "When is the next planned shutdown at OCP?", "reason": "Scheduling question"}
+  ]
+}

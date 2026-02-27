@@ -1,0 +1,87 @@
+{
+  "skill": "manage-notifications",
+  "should_trigger": [
+    {
+      "query": "What alerts are pending for plant BRY?",
+      "reason": "Directly relevant to manage-notifications skill"
+    },
+    {
+      "query": "Check for overdue RBI inspections in the concentrator area",
+      "reason": "Directly relevant to manage-notifications skill"
+    },
+    {
+      "query": "Are there any critical notifications this week?",
+      "reason": "Directly relevant to manage-notifications skill"
+    },
+    {
+      "query": "Show me all equipment risk alerts for low health score equipment",
+      "reason": "Directly relevant to manage-notifications skill"
+    },
+    {
+      "query": "Which backlog items have been aging for more than 90 days?",
+      "reason": "Directly relevant to manage-notifications skill"
+    },
+    {
+      "query": "Verificar notificaciones pendientes de la planta BRY",
+      "reason": "Spanish query relevant to manage-notifications skill"
+    },
+    {
+      "query": "Que alertas criticas hay esta semana?",
+      "reason": "Spanish query relevant to manage-notifications skill"
+    },
+    {
+      "query": "Check if any CAPAs are overdue and need immediate attention",
+      "reason": "Directly relevant to manage-notifications skill"
+    },
+    {
+      "query": "Are there any stalled MoC requests that need follow-up?",
+      "reason": "Directly relevant to manage-notifications skill"
+    },
+    {
+      "query": "Generate the notification summary with critical and warning counts",
+      "reason": "Directly relevant to manage-notifications skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the planning KPIs for Q1",
+      "reason": "Not related to manage-notifications functionality"
+    },
+    {
+      "query": "Generate a work instruction for the pump overhaul",
+      "reason": "Not related to manage-notifications functionality"
+    },
+    {
+      "query": "Group the backlog by equipment",
+      "reason": "Not related to manage-notifications functionality"
+    },
+    {
+      "query": "Export to SAP format",
+      "reason": "Not related to manage-notifications functionality"
+    },
+    {
+      "query": "Create a CAPA for the bearing failure",
+      "reason": "Not related to manage-notifications functionality"
+    },
+    {
+      "query": "Schedule the weekly program",
+      "reason": "Not related to manage-notifications functionality"
+    },
+    {
+      "query": "Generate the monthly report",
+      "reason": "Not related to manage-notifications functionality"
+    },
+    {
+      "query": "Conduct the management review",
+      "reason": "Not related to manage-notifications functionality"
+    },
+    {
+      "query": "Plan the shutdown turnaround",
+      "reason": "Not related to manage-notifications functionality"
+    },
+    {
+      "query": "Submit a management of change request",
+      "reason": "Not related to manage-notifications functionality"
+    }
+  ]
+}

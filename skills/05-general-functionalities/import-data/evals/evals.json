@@ -1,0 +1,105 @@
+[
+  {
+    "id": 1,
+    "prompt": "Import failure history: headers ['asset_id', 'event_date', 'fm', 'downtime', 'repair_cost']. Rows: [{'asset_id':'EQ-001','event_date':'2024-03-15','fm':'WORN','downtime':4,'repair_cost':1500}, {'asset_id':'EQ-002','event_date':'not-a-date','fm':'LEAKING','downtime':8,'repair_cost':3000}, {'asset_id':'','event_date':'2024-04-01','fm':'BROKEN','downtime':12,'repair_cost':5000}]",
+    "expected_output": "Auto-mapping confidence 1.0 (3/3 columns mapped). 1 valid row, 2 error rows. Row 2: invalid date. Row 3: empty equipment_id.",
+    "assertions": [
+      {
+        "text": "Auto-detection maps asset_id->equipment_id, event_date->failure_date, fm->failure_mode with confidence 1.0",
+        "type": "content"
+      },
+      {
+        "text": "Row 1 passes all validation",
+        "type": "content"
+      },
+      {
+        "text": "Row 2 fails date validation: 'not-a-date' is not ISO format",
+        "type": "content"
+      },
+      {
+        "text": "Row 3 fails required field: equipment_id is empty",
+        "type": "content"
+      },
+      {
+        "text": "valid_pct is 33.3%",
+        "type": "numerical"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "prompt": "Import equipment hierarchy with manual mapping: {'asset_id': 'equipment_id', 'name': 'description', 'category': 'equipment_type'}. 10 rows all with valid data.",
+    "expected_output": "10 valid rows, 0 errors, manual mapping applied (auto-detection skipped)",
+    "assertions": [
+      {
+        "text": "All 10 rows pass validation",
+        "type": "numerical"
+      },
+      {
+        "text": "Manual mapping used instead of auto-detection",
+        "type": "content"
+      },
+      {
+        "text": "valid_pct is 100.0%",
+        "type": "numerical"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "prompt": "Import with empty rows list. Target: EQUIPMENT_HIERARCHY.",
+    "expected_output": "ImportResult with total_rows=0, valid_rows=0, error_rows=0, no errors",
+    "assertions": [
+      {
+        "text": "All counts are zero",
+        "type": "numerical"
+      },
+      {
+        "text": "No errors generated",
+        "type": "content"
+      },
+      {
+        "text": "This is not flagged as an error condition",
+        "type": "content"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "prompt": "Auto-detect columns from headers: ['tag', 'desc', 'type', 'parent'] for EQUIPMENT_HIERARCHY import",
+    "expected_output": "Mapping: tag->equipment_id (via 'tag' alias), desc->description (via 'desc' alias), type->equipment_type (via 'type' alias). Confidence = 1.0.",
+    "assertions": [
+      {
+        "text": "tag maps to equipment_id",
+        "type": "content"
+      },
+      {
+        "text": "desc maps to description",
+        "type": "content"
+      },
+      {
+        "text": "type maps to equipment_type",
+        "type": "content"
+      },
+      {
+        "text": "Confidence is 1.0 (3/3 required columns mapped)",
+        "type": "numerical"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "prompt": "Import failure history with date '2024-03-15T10:30:00'. Does it pass date validation?",
+    "expected_output": "Yes - only first 10 characters are parsed as ISO date. '2024-03-15' parses successfully.",
+    "assertions": [
+      {
+        "text": "Date validation passes by parsing first 10 chars: '2024-03-15'",
+        "type": "content"
+      },
+      {
+        "text": "Time component is truncated/ignored",
+        "type": "content"
+      }
+    ]
+  }
+]

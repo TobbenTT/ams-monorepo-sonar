@@ -1,0 +1,136 @@
+[
+  {
+    "test_id": "WP-001",
+    "name": "All 7 elements READY produces READY overall",
+    "description": "When all 7 mandatory elements are READY, overall readiness should be READY",
+    "input": {
+      "package_id": "WP-SAG-001",
+      "name": "SAG MILL LINER CHANGE",
+      "element_data": [
+        {
+          "element_type": "WORK_INSTRUCTION",
+          "status": "READY"
+        },
+        {
+          "element_type": "SAFETY_PLAN",
+          "status": "READY"
+        },
+        {
+          "element_type": "RESOURCE_PLAN",
+          "status": "READY"
+        },
+        {
+          "element_type": "MATERIALS_LIST",
+          "status": "READY"
+        },
+        {
+          "element_type": "TOOLS_LIST",
+          "status": "READY"
+        },
+        {
+          "element_type": "QUALITY_CRITERIA",
+          "status": "READY"
+        },
+        {
+          "element_type": "DRAWINGS",
+          "status": "READY"
+        }
+      ]
+    },
+    "expected": {
+      "ready_count": 7,
+      "readiness_pct": 100.0,
+      "overall_readiness": "READY"
+    }
+  },
+  {
+    "test_id": "WP-002",
+    "name": "EXPIRED element blocks entire package",
+    "description": "Even with 6 READY elements, one EXPIRED makes overall BLOCKED",
+    "input": {
+      "package_id": "WP-CON-003",
+      "name": "CONVEYOR BELT SPLICE",
+      "element_data": [
+        {
+          "element_type": "WORK_INSTRUCTION",
+          "status": "READY"
+        },
+        {
+          "element_type": "SAFETY_PLAN",
+          "status": "EXPIRED"
+        },
+        {
+          "element_type": "RESOURCE_PLAN",
+          "status": "READY"
+        },
+        {
+          "element_type": "MATERIALS_LIST",
+          "status": "READY"
+        },
+        {
+          "element_type": "TOOLS_LIST",
+          "status": "READY"
+        },
+        {
+          "element_type": "QUALITY_CRITERIA",
+          "status": "READY"
+        },
+        {
+          "element_type": "DRAWINGS",
+          "status": "READY"
+        }
+      ]
+    },
+    "expected": {
+      "ready_count": 6,
+      "readiness_pct": 85.7,
+      "overall_readiness": "BLOCKED"
+    }
+  },
+  {
+    "test_id": "WP-003",
+    "name": "Missing elements default to MISSING status",
+    "description": "Elements not provided in element_data should appear as MISSING",
+    "input": {
+      "package_id": "WP-CRU-002",
+      "name": "CRUSHER LINER REPLACE",
+      "element_data": [
+        {
+          "element_type": "WORK_INSTRUCTION",
+          "status": "READY"
+        },
+        {
+          "element_type": "SAFETY_PLAN",
+          "status": "DRAFT"
+        }
+      ]
+    },
+    "expected": {
+      "ready_count": 1,
+      "missing_elements": [
+        "RESOURCE_PLAN",
+        "MATERIALS_LIST",
+        "TOOLS_LIST",
+        "QUALITY_CRITERIA",
+        "DRAWINGS"
+      ],
+      "overall_readiness": "PARTIAL"
+    }
+  },
+  {
+    "test_id": "WP-004",
+    "name": "Invalid status defaults to MISSING",
+    "description": "An element with status 'APPROVED' should be treated as MISSING",
+    "input": {
+      "element_data": [
+        {
+          "element_type": "WORK_INSTRUCTION",
+          "status": "APPROVED"
+        }
+      ]
+    },
+    "expected": {
+      "effective_status": "MISSING"
+    }
+  }
+]

@@ -1,0 +1,103 @@
+{
+  "skill": "optimize-cost-risk",
+  "should_trigger": [
+    {
+      "query": "Find the optimal PM interval for pump PUMP-101A",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "What's the cost-risk optimization for the SAG mill pinion gear?",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "Run an OCR analysis to see if we should change the PM frequency",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "Our current PM interval is 90 days - is that optimal?",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "Calculate the total cost curve for different PM intervals on the crusher",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "Haz una optimizacion costo riesgo para el intervalo de mantenimiento",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "What PM frequency minimizes total annual maintenance cost?",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "Should we do PM more or less often on the conveyor belt drive?",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "Run cost-risk optimization with Weibull beta=2.0 for the ball mill",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "How much can we save by optimizing the preventive maintenance interval?",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "Find the sweet spot between PM cost and failure cost for the motor",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    },
+    {
+      "query": "What's the optimal maintenance interval for equipment with 3 failures/year?",
+      "reason": "Directly relevant to optimize-cost-risk skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate MTBF and MTTR for the plant this quarter",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Fit a Weibull distribution to the failure intervals",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Compare plant performance across all OCP sites",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Do a Pareto analysis of worst performing equipment",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Classify equipment using the Jackknife diagram",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Calculate life cycle cost for pump replacement",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Assess risk level for pressure vessel inspection",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Build the equipment hierarchy for Jorf Lasfar",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Run an RCM decision tree for the gearbox",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Perform FMECA on the conveyor belt system",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "What's the availability for the processing line?",
+      "reason": "Not related to optimize-cost-risk functionality"
+    },
+    {
+      "query": "Do a root cause analysis on the bearing failure",
+      "reason": "Not related to optimize-cost-risk functionality"
+    }
+  ]
+}

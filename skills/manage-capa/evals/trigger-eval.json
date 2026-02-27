@@ -1,0 +1,87 @@
+{
+  "skill": "manage-capa",
+  "should_trigger": [
+    {
+      "query": "Create a CAPA for the recurring pump seal failure",
+      "reason": "Directly relevant to manage-capa skill"
+    },
+    {
+      "query": "What corrective actions are overdue at plant BRY?",
+      "reason": "Directly relevant to manage-capa skill"
+    },
+    {
+      "query": "Advance the PDCA cycle for CAPA-2025-001 from PLAN to DO",
+      "reason": "Directly relevant to manage-capa skill"
+    },
+    {
+      "query": "Verify effectiveness of the bearing alignment corrective action",
+      "reason": "Directly relevant to manage-capa skill"
+    },
+    {
+      "query": "Show me the CAPA summary by status and type",
+      "reason": "Directly relevant to manage-capa skill"
+    },
+    {
+      "query": "Crear una accion correctiva para la falla recurrente de la bomba",
+      "reason": "Spanish query relevant to manage-capa skill"
+    },
+    {
+      "query": "Registrar una accion preventiva con ciclo PDCA",
+      "reason": "Spanish query relevant to manage-capa skill"
+    },
+    {
+      "query": "Close the CAPA and mark it as effectiveness verified",
+      "reason": "Directly relevant to manage-capa skill"
+    },
+    {
+      "query": "How many open CAPAs are in the CHECK phase?",
+      "reason": "Directly relevant to manage-capa skill"
+    },
+    {
+      "query": "Set the root cause for CAPA-2025-003 as misalignment",
+      "reason": "Directly relevant to manage-capa skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the planning KPIs for Q1",
+      "reason": "Not related to manage-capa functionality"
+    },
+    {
+      "query": "Generate a work instruction for the pump overhaul",
+      "reason": "Not related to manage-capa functionality"
+    },
+    {
+      "query": "Export the work packages to SAP format",
+      "reason": "Not related to manage-capa functionality"
+    },
+    {
+      "query": "Group the backlog items by equipment",
+      "reason": "Not related to manage-capa functionality"
+    },
+    {
+      "query": "Schedule the weekly maintenance program",
+      "reason": "Not related to manage-capa functionality"
+    },
+    {
+      "query": "What is the criticality of the SAG mill?",
+      "reason": "Not related to manage-capa functionality"
+    },
+    {
+      "query": "Generate the quarterly management review report",
+      "reason": "Not related to manage-capa functionality"
+    },
+    {
+      "query": "Submit a management of change request for the new gearbox",
+      "reason": "Not related to manage-capa functionality"
+    },
+    {
+      "query": "Plan the Q2 shutdown turnaround",
+      "reason": "Not related to manage-capa functionality"
+    },
+    {
+      "query": "What notifications are pending this week?",
+      "reason": "Not related to manage-capa functionality"
+    }
+  ]
+}

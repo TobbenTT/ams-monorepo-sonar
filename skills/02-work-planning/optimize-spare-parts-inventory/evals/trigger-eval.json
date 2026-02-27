@@ -1,0 +1,87 @@
+{
+  "skill": "optimize-spare-parts-inventory",
+  "should_trigger": [
+    {
+      "query": "Run VED analysis on the spare parts for the SAG mill circuit",
+      "reason": "Direct VED analysis request for spare parts"
+    },
+    {
+      "query": "Calculate safety stock and reorder points for all spare parts at plant OCP-JFC",
+      "reason": "Stock level calculation request"
+    },
+    {
+      "query": "What is the optimal EOQ for bearing SP-BRG-001?",
+      "reason": "EOQ calculation for specific spare part"
+    },
+    {
+      "query": "Classify our spare parts using ABC analysis - which ones are the top 80% of spend?",
+      "reason": "ABC Pareto cost analysis request"
+    },
+    {
+      "query": "Optimizar el inventario de repuestos para la planta JFC, necesito saber que esta sobreinventariado",
+      "reason": "Spanish inventory optimization with overstock focus"
+    },
+    {
+      "query": "How much can we reduce inventory? We have 500 spare parts and I think many are overstocked",
+      "reason": "Inventory reduction analysis"
+    },
+    {
+      "query": "Run the FSN analysis to identify non-moving spare parts that we should dispose of",
+      "reason": "FSN analysis for non-moving parts"
+    },
+    {
+      "query": "Necesito la clasificacion VED, FSN y ABC para todos los repuestos del area de molienda",
+      "reason": "Spanish multi-criteria classification request"
+    },
+    {
+      "query": "Which spare parts are VITAL but currently understocked?",
+      "reason": "VED classification combined with stock analysis"
+    },
+    {
+      "query": "Calculate the weighted criticality score for the top 20 most expensive spare parts",
+      "reason": "Criticality score calculation for spare parts"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Suggest materials for a worn bearing REPLACE task",
+      "reason": "Material suggestion skill, not inventory optimization"
+    },
+    {
+      "query": "Resolve equipment tag BRY-SAG-ML-001",
+      "reason": "Equipment resolution, not inventory"
+    },
+    {
+      "query": "Run FMEA analysis for the pump system",
+      "reason": "FMEA is a reliability skill"
+    },
+    {
+      "query": "Generate weekly maintenance schedule",
+      "reason": "Scheduling is a planning skill"
+    },
+    {
+      "query": "Export equipment hierarchy to Excel",
+      "reason": "Data export, not inventory optimization"
+    },
+    {
+      "query": "Calculate the health score for ball mill BRY-BAL-ML-001",
+      "reason": "Health score is a reliability skill"
+    },
+    {
+      "query": "Validate the quality of the FMEA results",
+      "reason": "Quality validation, not inventory"
+    },
+    {
+      "query": "Import failure history data from CSV file",
+      "reason": "Data import, not spare parts inventory"
+    },
+    {
+      "query": "Show the correlation between cost and reliability across equipment",
+      "reason": "Cross-module analysis, not inventory optimization"
+    },
+    {
+      "query": "Start the MSD workflow for SAG Mill 001",
+      "reason": "Workflow orchestration, not inventory"
+    }
+  ]
+}

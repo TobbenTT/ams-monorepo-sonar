@@ -1,0 +1,88 @@
+[
+  {
+    "id": "pareto-eval-01",
+    "name": "Standard 80/20 analysis with 5 equipment items",
+    "input": {
+      "plant_id": "PLANT-JFC-01",
+      "aggregated_data": [
+        {"equipment_id": "EQ-001", "equipment_tag": "PUMP-101A", "failure_count": 5},
+        {"equipment_id": "EQ-002", "equipment_tag": "CONV-201", "failure_count": 3},
+        {"equipment_id": "EQ-003", "equipment_tag": "COMP-301", "failure_count": 2},
+        {"equipment_id": "EQ-004", "equipment_tag": "VALVE-401", "failure_count": 1},
+        {"equipment_id": "EQ-005", "equipment_tag": "MOTOR-501", "failure_count": 1}
+      ],
+      "description": "Identify bad actors by failure count"
+    },
+    "expected": {
+      "bad_actor_count": 2,
+      "bad_actors": ["PUMP-101A", "CONV-201"],
+      "bad_actor_pct_of_total": 40.0,
+      "cumulative_pct_at_bad_actors": 66.7
+    },
+    "assertions": [
+      "PUMP-101A and CONV-201 are marked as bad actors",
+      "COMP-301 is NOT a bad actor (cumulative 83.3% > 80%)",
+      "bad_actor_pct_of_total is 40% (2 out of 5 items)"
+    ]
+  },
+  {
+    "id": "pareto-eval-02",
+    "name": "Single dominant item exceeding 80%",
+    "input": {
+      "data": [
+        {"equipment_id": "EQ-001", "equipment_tag": "PUMP-101A", "failure_count": 12},
+        {"equipment_id": "EQ-002", "equipment_tag": "CONV-201", "failure_count": 1}
+      ],
+      "description": "One item causes >80% - special rank-1 rule"
+    },
+    "expected": {
+      "bad_actor_count": 1,
+      "bad_actors": ["PUMP-101A"],
+      "explanation": "rank==1 special rule marks it as bad actor despite cum_pct > 80%"
+    },
+    "assertions": [
+      "PUMP-101A marked as bad actor via rank==1 special rule",
+      "CONV-201 is NOT a bad actor"
+    ]
+  },
+  {
+    "id": "pareto-eval-03",
+    "name": "Empty data returns empty result",
+    "input": {
+      "plant_id": "PLANT-JFC-01",
+      "data": [],
+      "description": "No data provided"
+    },
+    "expected": {
+      "bad_actor_count": 0,
+      "items": []
+    },
+    "assertions": [
+      "Returns ParetoResult with no items",
+      "Not an error condition"
+    ]
+  },
+  {
+    "id": "pareto-eval-04",
+    "name": "Cost aggregation mode",
+    "input": {
+      "mode": "cost",
+      "raw_records": [
+        {"equipment_id": "EQ-001", "equipment_tag": "PUMP-101A", "cost": 15000},
+        {"equipment_id": "EQ-001", "equipment_tag": "PUMP-101A", "cost": 25000},
+        {"equipment_id": "EQ-002", "equipment_tag": "CONV-201", "cost": 5000}
+      ],
+      "description": "Cost aggregation across multiple records per equipment"
+    },
+    "expected": {
+      "pump_total_cost": 40000,
+      "conv_total_cost": 5000,
+      "bad_actors": ["PUMP-101A"]
+    },
+    "assertions": [
+      "Costs are aggregated per equipment_id",
+      "PUMP-101A total = 15000 + 25000 = 40000",
+      "PUMP-101A is the bad actor (88.9% of total)"
+    ]
+  }
+]

@@ -1,0 +1,94 @@
+# agents/orchestrator/skills.yaml
+# Skills asignados al Orchestrator Agent
+# Última actualización: 2026-02-24
+
+agent: orchestrator
+model: claude-sonnet-4-5-20250929
+
+skills:
+  # ── Cross-Milestone (siempre activos) ────────────────────────
+  - name: orchestrate-workflow
+    path: skills/06-orchestation/orchestrate-workflow/CLAUDE.md
+    load_level: 2
+    milestone: all
+    mandatory: true
+    references_to_preload: []
+
+  - name: validate-quality
+    path: skills/05-general-functionalities/validate-quality/CLAUDE.md
+    load_level: 2
+    milestone: all
+    mandatory: true
+    references_to_preload:
+      - references/validation-rules-complete.md
+      - references/naming-conventions.md
+      - references/confidence-thresholds.md
+
+  - name: analyze-cross-module
+    path: skills/analyze-cross-module/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+  # ── General Functionalities ──────────────────────────────────
+  - name: import-data
+    path: skills/05-general-functionalities/import-data/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+  - name: export-data
+    path: skills/05-general-functionalities/export-data/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+  - name: manage-notifications
+    path: skills/05-general-functionalities/manage-notifications/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+  - name: manage-change
+    path: skills/05-general-functionalities/manage-change/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+  # ── Reporting & Executive ────────────────────────────────────
+  - name: generate-reports
+    path: skills/06-orchestation/generate-reports/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+  - name: conduct-management-review
+    path: skills/06-orchestation/conduct-management-review/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+  - name: calculate-kpis
+    path: skills/06-orchestation/calculate-kpis/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+  - name: calculate-health-score
+    path: skills/06-orchestation/calculate-health-score/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+  - name: detect-variance
+    path: skills/06-orchestation/detect-variance/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+
+# ── Knowledge Base (siempre disponible, carga selectiva) ──────
+knowledge_base:
+  - path: skills/00-knowledge-base/architecture/ref-06-software-architecture-vision.md
+    load_when: "Agent needs system architecture context"
+  - path: skills/00-knowledge-base/architecture/ref-08-user-guide-step-by-step.md
+    load_when: "Agent needs to guide operators through the workflow"

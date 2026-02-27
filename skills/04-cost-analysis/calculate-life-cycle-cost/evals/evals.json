@@ -1,0 +1,99 @@
+[
+  {
+    "id": "lcc-eval-01",
+    "name": "Repair existing pump LCC calculation",
+    "input": {
+      "acquisition_cost": 0,
+      "installation_cost": 5000,
+      "annual_operating_cost": 15000,
+      "annual_maintenance_cost": 25000,
+      "expected_life_years": 10,
+      "discount_rate": 0.08,
+      "salvage_value": 0,
+      "description": "Alternative A: repair existing pump"
+    },
+    "expected": {
+      "total_lcc": 273404.00,
+      "annualized_cost": 27340.40,
+      "maintenance_pct": 61.4,
+      "recommendation": "Maintenance-dominant"
+    },
+    "assertions": [
+      "Total LCC approximately $273,404",
+      "Maintenance percentage is dominant (>50%)",
+      "Recommendation mentions maintenance-dominant",
+      "Annuity factor for 8%/10yr = 6.7101 is applied correctly"
+    ]
+  },
+  {
+    "id": "lcc-eval-02",
+    "name": "New premium pump LCC with salvage value",
+    "input": {
+      "acquisition_cost": 120000,
+      "installation_cost": 20000,
+      "annual_operating_cost": 8000,
+      "annual_maintenance_cost": 6000,
+      "expected_life_years": 20,
+      "discount_rate": 0.08,
+      "salvage_value": 15000,
+      "description": "Alternative B: new premium pump with salvage"
+    },
+    "expected": {
+      "total_lcc": 274235.32,
+      "annualized_cost": 13711.77,
+      "acquisition_pct": 51.1,
+      "recommendation": "Capital-dominant"
+    },
+    "assertions": [
+      "Salvage value is SUBTRACTED from total",
+      "Salvage is discounted: 15000 / 1.08^20",
+      "Capital cost is dominant (>50%)",
+      "Annualized cost is about half of Alternative A"
+    ]
+  },
+  {
+    "id": "lcc-eval-03",
+    "name": "Comparison uses annualized cost for different lifespans",
+    "input": {
+      "alt_a": {"total_lcc": 273404, "life": 10, "annualized": 27340},
+      "alt_b": {"total_lcc": 274235, "life": 20, "annualized": 13712},
+      "description": "Compare alternatives with different lifespans"
+    },
+    "expected": {
+      "preferred_by_total": "Alt A (barely)",
+      "preferred_by_annualized": "Alt B (clearly)",
+      "explanation": "Annualized cost is the fair comparison for different lifespans"
+    },
+    "assertions": [
+      "Agent uses annualized_cost for fair comparison",
+      "Agent does NOT compare total LCC directly across different lifespans",
+      "Agent explains why annualized is preferred"
+    ]
+  },
+  {
+    "id": "lcc-eval-04",
+    "name": "Zero discount rate edge case",
+    "input": {
+      "acquisition_cost": 100000,
+      "installation_cost": 10000,
+      "annual_operating_cost": 5000,
+      "annual_maintenance_cost": 3000,
+      "expected_life_years": 10,
+      "discount_rate": 0.0,
+      "salvage_value": 5000,
+      "description": "Zero discount rate simplifies to cost * years"
+    },
+    "expected": {
+      "npv_operating": 50000,
+      "npv_maintenance": 30000,
+      "total_lcc": 185000,
+      "explanation": "With r=0: NPV = cost * years (no discounting)"
+    },
+    "assertions": [
+      "NPV_operating = 5000 * 10 = 50000 (no discount)",
+      "NPV_maintenance = 3000 * 10 = 30000",
+      "Salvage = 5000 (no discounting)",
+      "Total = 100000 + 10000 + 50000 + 30000 - 5000 = 185000"
+    ]
+  }
+]

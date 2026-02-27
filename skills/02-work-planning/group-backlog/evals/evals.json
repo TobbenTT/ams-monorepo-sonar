@@ -1,0 +1,167 @@
+[
+  {
+    "test_id": "GB-001",
+    "name": "Minimum group size enforcement",
+    "description": "Verify that groups with fewer than 2 items are discarded",
+    "input": {
+      "backlog_items": [
+        {
+          "backlog_id": "BL-001",
+          "equipment_tag": "BRY-SAG-ML-001",
+          "priority": "P2",
+          "specialties_required": [
+            "MECHANICAL"
+          ],
+          "shutdown_required": false,
+          "materials_ready": true,
+          "estimated_hours": 4.0
+        }
+      ]
+    },
+    "expected": {
+      "groups_count": 0,
+      "reason": "Single item cannot form a group"
+    }
+  },
+  {
+    "test_id": "GB-002",
+    "name": "Equipment grouping with deduplication",
+    "description": "Verify items on same equipment are grouped and dedup removes smaller overlapping groups",
+    "input": {
+      "backlog_items": [
+        {
+          "backlog_id": "BL-001",
+          "equipment_tag": "BRY-SAG-ML-001",
+          "priority": "P2",
+          "specialties_required": [
+            "MECHANICAL"
+          ],
+          "shutdown_required": true,
+          "materials_ready": true,
+          "estimated_hours": 4.0
+        },
+        {
+          "backlog_id": "BL-002",
+          "equipment_tag": "BRY-SAG-ML-001",
+          "priority": "P3",
+          "specialties_required": [
+            "MECHANICAL"
+          ],
+          "shutdown_required": true,
+          "materials_ready": true,
+          "estimated_hours": 2.0
+        },
+        {
+          "backlog_id": "BL-003",
+          "equipment_tag": "BRY-SAG-EL-002",
+          "priority": "P2",
+          "specialties_required": [
+            "ELECTRICIAN"
+          ],
+          "shutdown_required": false,
+          "materials_ready": true,
+          "estimated_hours": 3.0
+        }
+      ]
+    },
+    "expected": {
+      "no_duplicate_items": true,
+      "area_group_includes": [
+        "BL-001",
+        "BL-002",
+        "BL-003"
+      ],
+      "dedup_removes_smaller_groups": true
+    }
+  },
+  {
+    "test_id": "GB-003",
+    "name": "Shutdown strategy pre-filter",
+    "description": "Verify shutdown grouping only includes items with shutdown_required=true AND materials_ready=true",
+    "input": {
+      "backlog_items": [
+        {
+          "backlog_id": "BL-001",
+          "equipment_tag": "BRY-SAG-ML-001",
+          "priority": "P2",
+          "specialties_required": [
+            "MECHANICAL"
+          ],
+          "shutdown_required": true,
+          "materials_ready": true,
+          "estimated_hours": 4.0
+        },
+        {
+          "backlog_id": "BL-002",
+          "equipment_tag": "BRY-SAG-ML-001",
+          "priority": "P3",
+          "specialties_required": [
+            "MECHANICAL"
+          ],
+          "shutdown_required": true,
+          "materials_ready": false,
+          "estimated_hours": 2.0
+        }
+      ]
+    },
+    "expected": {
+      "shutdown_group_items": [
+        "BL-001"
+      ],
+      "shutdown_group_discarded": true,
+      "reason": "BL-002 excluded (materials_ready=false), only 1 item remains so group discarded"
+    }
+  },
+  {
+    "test_id": "GB-004",
+    "name": "Area code parsing correctness",
+    "description": "Verify area code is first 2 hyphen-delimited segments",
+    "input": {
+      "equipment_tag": "BRY-SAG-ML-001"
+    },
+    "expected": {
+      "area_code": "BRY-SAG",
+      "not": [
+        "BRY",
+        "BRY-SAG-ML"
+      ]
+    }
+  },
+  {
+    "test_id": "GB-005",
+    "name": "Stratification schedulable_now count",
+    "description": "Verify schedulable_now only counts items where materials_ready=true AND shutdown_required=false",
+    "input": {
+      "backlog_items": [
+        {
+          "backlog_id": "BL-001",
+          "shutdown_required": true,
+          "materials_ready": true,
+          "estimated_hours": 4.0
+        },
+        {
+          "backlog_id": "BL-002",
+          "shutdown_required": false,
+          "materials_ready": true,
+          "estimated_hours": 3.0
+        },
+        {
+          "backlog_id": "BL-003",
+          "shutdown_required": false,
+          "materials_ready": false,
+          "estimated_hours": 5.0
+        },
+        {
+          "backlog_id": "BL-004",
+          "shutdown_required": false,
+          "materials_ready": true,
+          "estimated_hours": 2.0
+        }
+      ]
+    },
+    "expected": {
+      "schedulable_now": 2,
+      "reason": "BL-002 and BL-004 meet both conditions"
+    }
+  }
+]

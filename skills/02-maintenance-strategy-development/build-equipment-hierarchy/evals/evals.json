@@ -1,0 +1,98 @@
+[
+  {
+    "id": "hier-eval-001",
+    "name": "SAG Mill Full Hierarchy Build",
+    "description": "Build complete hierarchy for a SAG Mill with library match",
+    "input": {
+      "plant_id": "OCP-JFC1",
+      "area_code": "BRY",
+      "equipment_type": "SAG_MILL",
+      "model": "36x20",
+      "manufacturer": "FLSmidth",
+      "power_kw": 12000,
+      "sequence": 1
+    },
+    "expected": {
+      "equipment_tag": "BRY-SAG-ML-001",
+      "criticality_suggestion": "AA",
+      "has_sub_assemblies": true,
+      "has_failure_modes": true,
+      "has_task_templates": true,
+      "warnings": []
+    },
+    "assertions": [
+      "Tag follows BRY-SAG-ML-001 convention",
+      "Criticality AA from library (not power-based)",
+      "Sub-assemblies generated from library",
+      "Failure modes attached to MIs",
+      "No warnings for known equipment type"
+    ]
+  },
+  {
+    "id": "hier-eval-002",
+    "name": "Unknown Equipment Type - Minimal Node",
+    "description": "Unknown equipment type should create minimal node with warning",
+    "input": {
+      "plant_id": "OCP-JFC1",
+      "area_code": "MIN",
+      "equipment_type": "CUSTOM_WIDGET",
+      "power_kw": 250,
+      "sequence": 1
+    },
+    "expected": {
+      "equipment_tag": "MIN-CUS-001",
+      "criticality_suggestion": "A",
+      "has_sub_assemblies": false,
+      "warnings_not_empty": true
+    },
+    "assertions": [
+      "Tag uses first 3 chars: CUS",
+      "Criticality A from power 250 >= 100",
+      "No sub-assemblies (type not in library)",
+      "Warning about unknown equipment type"
+    ]
+  },
+  {
+    "id": "hier-eval-003",
+    "name": "Power-Based Criticality Fallback",
+    "description": "Test all power-based criticality thresholds",
+    "input": {
+      "test_cases": [
+        {"power_kw": 6000, "expected_class": "AA"},
+        {"power_kw": 3000, "expected_class": "A+"},
+        {"power_kw": 750, "expected_class": "A"},
+        {"power_kw": 200, "expected_class": "B"},
+        {"power_kw": 50, "expected_class": "C"}
+      ]
+    },
+    "expected": {
+      "all_thresholds_correct": true
+    },
+    "assertions": [
+      "6000 >= 5000 = AA",
+      "3000 >= 2000 = A+",
+      "750 >= 500 = A",
+      "200 >= 100 = B",
+      "50 < 100 = C"
+    ]
+  },
+  {
+    "id": "hier-eval-004",
+    "name": "Alias Resolution - SLURRY_PUMP",
+    "description": "Equipment type alias should resolve correctly",
+    "input": {
+      "plant_id": "OCP-JFC1",
+      "area_code": "FLT",
+      "equipment_type": "SLURRY_PUMP",
+      "sequence": 3
+    },
+    "expected": {
+      "alias_resolved": true,
+      "library_key_used": "SLURRY"
+    },
+    "assertions": [
+      "SLURRY_PUMP alias maps to SLURRY library key",
+      "Equipment type found in library via alias"
+    ]
+  }
+]

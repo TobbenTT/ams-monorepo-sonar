@@ -1,0 +1,87 @@
+{
+  "skill": "export-data",
+  "should_trigger": [
+    {
+      "query": "Export the equipment hierarchy to Excel with criticality columns included",
+      "reason": "Direct equipment hierarchy export to Excel"
+    },
+    {
+      "query": "Download the KPI dashboard data as a spreadsheet",
+      "reason": "KPI export/download request"
+    },
+    {
+      "query": "Generate a CSV export of all maintenance tasks for the SAG mill",
+      "reason": "CSV export of maintenance tasks"
+    },
+    {
+      "query": "I need to export the weekly schedule program overview to Excel",
+      "reason": "Schedule/program export"
+    },
+    {
+      "query": "Exportar datos de equipos con criticidad y health score a Excel",
+      "reason": "Spanish equipment export with optional columns"
+    },
+    {
+      "query": "Create a PDF report from the monthly maintenance report data",
+      "reason": "PDF report export"
+    },
+    {
+      "query": "Download the reliability KPIs including MTBF and MTTR as a spreadsheet",
+      "reason": "Reliability KPI export"
+    },
+    {
+      "query": "Descargar reporte de planificacion con KPIs en formato Excel",
+      "reason": "Spanish planning KPI report download"
+    },
+    {
+      "query": "Export the Gantt schedule data with work order details to Excel",
+      "reason": "Schedule detail export with gantt rows"
+    },
+    {
+      "query": "Generate an export of equipment without health scores, only criticality",
+      "reason": "Selective column export (criticality yes, health no)"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Import the failure history from this CSV file",
+      "reason": "Data import, not export"
+    },
+    {
+      "query": "Suggest materials for a worn bearing REPLACE task",
+      "reason": "Material suggestion, not export"
+    },
+    {
+      "query": "Resolve equipment tag BRY-SAG-ML-001 from operator description",
+      "reason": "Equipment resolution, not export"
+    },
+    {
+      "query": "Start the maintenance strategy development workflow",
+      "reason": "Workflow orchestration, not export"
+    },
+    {
+      "query": "Validate the quality of failure modes and tasks",
+      "reason": "Quality validation, not export"
+    },
+    {
+      "query": "Run VED/FSN/ABC analysis on spare parts inventory",
+      "reason": "Inventory optimization, not export"
+    },
+    {
+      "query": "Calculate the cross-module correlation between cost and reliability",
+      "reason": "Cross-module analysis, not export"
+    },
+    {
+      "query": "Run Pareto analysis on the top bad actors",
+      "reason": "Reliability analysis, not export"
+    },
+    {
+      "query": "Build the 6-level equipment hierarchy for the ball mill",
+      "reason": "Hierarchy building, not exporting"
+    },
+    {
+      "query": "Calculate the health score for equipment EQ-001",
+      "reason": "Health score calculation, not export"
+    }
+  ]
+}

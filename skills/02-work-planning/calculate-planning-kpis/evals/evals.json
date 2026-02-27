@@ -1,0 +1,88 @@
+[
+  {
+    "test_id": "KPI-001",
+    "name": "All 11 KPIs on target produces HEALTHY",
+    "description": "When all KPIs meet targets, overall health should be HEALTHY",
+    "input": {
+      "wo_planned": 100,
+      "wo_completed": 92,
+      "manhours_planned": 800,
+      "manhours_actual": 880,
+      "pm_planned": 40,
+      "pm_executed": 39,
+      "backlog_hours": 900,
+      "weekly_capacity_hours": 240,
+      "corrective_count": 18,
+      "total_wo": 100,
+      "schedule_compliance_planned": 90,
+      "schedule_compliance_executed": 80,
+      "release_horizon_days": 5,
+      "pending_notices": 10,
+      "total_notices": 80,
+      "scheduled_capacity_hours": 210,
+      "total_capacity_hours": 240,
+      "proactive_wo": 75,
+      "planned_wo": 88
+    },
+    "expected": {
+      "kpi_count": 11,
+      "on_target_count": 11,
+      "overall_health": "HEALTHY"
+    }
+  },
+  {
+    "test_id": "KPI-002",
+    "name": "Division by zero produces None and BELOW_TARGET",
+    "description": "When denominator is zero, value should be None and status BELOW_TARGET",
+    "input": {
+      "wo_planned": 0,
+      "wo_completed": 0,
+      "manhours_planned": 0,
+      "manhours_actual": 0,
+      "total_wo": 0
+    },
+    "expected": {
+      "wo_completion_value": null,
+      "wo_completion_status": "BELOW_TARGET",
+      "manhour_compliance_value": null
+    }
+  },
+  {
+    "test_id": "KPI-003",
+    "name": "Range KPI above upper bound is ABOVE_TARGET",
+    "description": "Man-hour compliance at 120% should be ABOVE_TARGET",
+    "input": {
+      "manhours_planned": 100,
+      "manhours_actual": 120
+    },
+    "expected": {
+      "manhour_compliance_value": 120.0,
+      "manhour_compliance_status": "ABOVE_TARGET"
+    }
+  },
+  {
+    "test_id": "KPI-004",
+    "name": "Health classification thresholds",
+    "description": "5 on-target should produce CRITICAL (< 6)",
+    "input": {
+      "description": "Scenario where only 5 of 11 KPIs meet target"
+    },
+    "expected": {
+      "on_target_count": 5,
+      "overall_health": "CRITICAL"
+    }
+  },
+  {
+    "test_id": "KPI-005",
+    "name": "Lower-is-better KPI correctly evaluated",
+    "description": "Backlog weeks of 3.8 should be ON_TARGET (<=4.0), but 5.0 should be ABOVE_TARGET",
+    "input": {
+      "backlog_hours": 900,
+      "weekly_capacity_hours": 240
+    },
+    "expected": {
+      "backlog_weeks_value": 3.8,
+      "backlog_weeks_status": "ON_TARGET"
+    }
+  }
+]

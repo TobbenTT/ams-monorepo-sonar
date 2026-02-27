@@ -1,0 +1,524 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Mic,
+  Camera,
+  FileText,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  Edit3,
+  ChevronRight,
+  X,
+  Loader2,
+  Settings,
+  Info,
+  Wrench,
+  Plus,
+  Trash2,
+  Clock,
+  Users,
+  Layout,
+  Search
+} from 'lucide-react';
+
+const App = () => {
+  const [step, setStep] = useState('input');
+  const [isRecording, setIsRecording] = useState(false);
+  const [photos, setPhotos] = useState([]);
+  const [textInput, setTextInput] = useState("");
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // Estructura completa de datos basada en el Excel, convertida a inglés
+  const [formData, setFormData] = useState({
+    assetDescription: {
+      "General Description": "Lubricant leak and excessive vibration detected in motor 4",
+      "Equipment (Name)": "Conveyor Belt Motor 4",
+    },
+    assetIdentification: {
+      "Equipment TAG": "01-CV-004",
+      "Component": "Coupling Side Bearing / Winding",
+      "Component TAG": "BRG-CV004-DE",
+      "Technical Location": "PLANT-AREA1-LINE2",
+    },
+    failureDiagnosis: {
+      "Symptom / Observation": "Excessive vibration and intermittent metallic noise at the coupling end.",
+      "Failure Mode": "Mechanical Seal",
+      "Failure Mechanism": "Worn Out",
+      "Failure Cause": "Abrasion",
+      "Failure Category": "Mechanical", // Deseable
+      "Suggested Priority": "High", // Options: Low, Medium, High, Urgent
+      "Current Equipment Status": "Operating", // Options: Operating, Stopped
+    },
+    requiredIntervention: {
+      "Intervention Type": "Replace mechanical seal",
+      "Equipment Status for Work": "Stopped", // Options: Operating, Stopped
+      "Major Shutdown Required": "No", // Options: Yes, No
+      "Intervention Description": "Change bearing and seal. Verify alignment after installation.",
+      "Primary Manpower": "Mechanic (2 persons)",
+      "Required Previous Tasks": [
+        { id: 1, task: "Energy Isolation [Elec]", people: 2, specialty: "Electrician", time: 10 },
+        { id: 2, task: "Scaffolding Assembly", people: 4, specialty: "Mechanic", time: 30 }
+      ],
+      "Additional Support": "Crane for component movement",
+      "Spare Parts Required": "Yes", // Options: Yes, No
+      "Spare Parts List": [
+        { id: 1, description: "Mechanical Seal 2 inch", code: "SEL-004-X", quantity: 1 },
+        { id: 2, description: "SKF LGHP 2 Grease", code: "GRS-SKF-01", quantity: 2 }
+      ],
+      "Deadline for Intervention": "30 days"
+    }
+  });
+
+  // Simulación de análisis de IA
+  const startAIAnalysis = () => {
+    setStep('processing');
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      setLoadingProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        setStep('review');
+      }
+    }, 80);
+  };
+
+  const handleEditField = (group, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [group]: { ...prev[group], [field]: value }
+    }));
+  };
+
+  // Funciones para Tareas Previas
+  const addTask = () => {
+    const newTask = { id: Date.now(), task: "", people: 1, specialty: "", time: 15 };
+    setFormData(prev => ({
+      ...prev,
+      requiredIntervention: {
+        ...prev.requiredIntervention,
+        "Required Previous Tasks": [...prev.requiredIntervention["Required Previous Tasks"], newTask]
+      }
+    }));
+  };
+
+  const removeTask = (id) => {
+    setFormData(prev => ({
+      ...prev,
+      requiredIntervention: {
+        ...prev.requiredIntervention,
+        "Required Previous Tasks": prev.requiredIntervention["Required Previous Tasks"].filter(t => t.id !== id)
+      }
+    }));
+  };
+
+  // Funciones para Repuestos
+  const addPart = () => {
+    const newPart = { id: Date.now(), description: "", code: "", quantity: 1 };
+    setFormData(prev => ({
+      ...prev,
+      requiredIntervention: {
+        ...prev.requiredIntervention,
+        "Spare Parts List": [...prev.requiredIntervention["Spare Parts List"], newPart]
+      }
+    }));
+  };
+
+  const removePart = (id) => {
+    setFormData(prev => ({
+      ...prev,
+      requiredIntervention: {
+        ...prev.requiredIntervention,
+        "Spare Parts List": prev.requiredIntervention["Spare Parts List"].filter(p => p.id !== id)
+      }
+    }));
+  };
+
+  // Componentes de UI Reutilizables
+  const CustomRadio = ({ label, value, options, onChange }) => (
+    <div className="p-4 border-b border-slate-50">
+      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">{label}</label>
+      <div className="flex gap-6">
+        {options.map(opt => (
+          <button
+            key={opt}
+            onClick={() => onChange(opt)}
+            className="flex items-center gap-2 group outline-none"
+          >
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${value === opt ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+              {value === opt && <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-in zoom-in-50" />}
+            </div>
+            <span className={`text-xs font-bold ${value === opt ? 'text-slate-900' : 'text-slate-400'}`}>{opt}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const EditableField = ({ label, value, onChange, placeholder = "N/A" }) => (
+    <div className="p-4 group hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-none">
+      <div className="flex justify-between items-start mb-0.5">
+        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
+        <Edit3 className="w-3 h-3 text-slate-200 group-hover:text-blue-500" />
+      </div>
+      <input
+        className="w-full text-xs font-bold text-slate-700 bg-transparent border-none p-0 focus:ring-0 placeholder:text-slate-200"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+
+  const renderInputScreen = () => (
+    <div className="flex flex-col h-full bg-slate-50">
+      <header className="bg-slate-900 text-white p-6 shadow-lg">
+        <h1 className="text-xl font-bold flex items-center gap-2">
+          <Layout className="w-6 h-6 text-yellow-500" />
+          New Work Request
+        </h1>
+        <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest font-bold">Industrial Inspection Unit</p>
+      </header>
+
+      <main className="flex-1 p-5 overflow-y-auto space-y-6">
+        <div className="bg-blue-600 p-5 rounded-[30px] shadow-lg shadow-blue-100 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Info className="w-20 h-20 text-white" />
+          </div>
+          <h3 className="text-white font-bold text-sm mb-2">Voice & Photo Instructions</h3>
+          <p className="text-blue-100 text-xs leading-relaxed">
+            Please state the <strong>equipment name</strong>, the <strong>failure</strong> you found,
+            which <strong>component</strong> is affected, and if <strong>spare parts</strong> are needed.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => setIsRecording(!isRecording)}
+            className={`flex flex-col items-center justify-center p-8 rounded-[35px] transition-all border-2 ${isRecording ? 'bg-red-50 border-red-500 animate-pulse' : 'bg-white border-white shadow-sm active:scale-95'}`}
+          >
+            <div className={`p-4 rounded-full ${isRecording ? 'bg-red-500' : 'bg-blue-50'}`}>
+              <Mic className={`w-8 h-8 ${isRecording ? 'text-white' : 'text-blue-600'}`} />
+            </div>
+            <span className={`mt-3 font-black text-[10px] uppercase tracking-widest ${isRecording ? 'text-red-600' : 'text-slate-500'}`}>
+              {isRecording ? 'Recording...' : 'Voice Report'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setPhotos([...photos, 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=200'])}
+            className="flex flex-col items-center justify-center p-8 rounded-[35px] bg-white border-white shadow-sm active:scale-95 transition-all"
+          >
+            <div className="p-4 rounded-full bg-blue-50">
+              <Camera className="w-8 h-8 text-blue-600" />
+            </div>
+            <span className="mt-3 font-black text-[10px] uppercase tracking-widest text-slate-500">Take Photo</span>
+          </button>
+        </div>
+
+        <div className="bg-white p-5 rounded-[35px] shadow-sm border border-white">
+          <div className="flex items-center gap-2 mb-3 text-slate-400 font-black text-[10px] uppercase tracking-widest">
+            <FileText className="w-4 h-4 text-blue-500" />
+            Text Notes (Optional)
+          </div>
+          <textarea
+            className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 min-h-[140px] text-sm text-slate-800"
+            placeholder="Describe the deviation in detail..."
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+          />
+        </div>
+
+        {photos.length > 0 && (
+          <div className="px-1">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Captured Evidence ({photos.length})</h4>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {photos.map((url, idx) => (
+                <div key={idx} className="relative flex-shrink-0">
+                  <img src={url} className="w-24 h-24 object-cover rounded-3xl border-2 border-white shadow-md" />
+                  <button onClick={() => setPhotos(photos.filter((_, i) => i !== idx))} className="absolute -top-1 -right-1 bg-white text-red-500 rounded-full p-1.5 shadow-lg border border-slate-100">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
+
+      <footer className="p-6 bg-white border-t rounded-t-[50px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <button onClick={startAIAnalysis} disabled={!textInput && !isRecording && photos.length === 0} className="w-full bg-blue-600 disabled:bg-slate-200 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-blue-100 active:scale-95 transition-all">
+          Process with AI <ChevronRight className="w-4 h-4" />
+        </button>
+      </footer>
+    </div>
+  );
+
+  const renderReviewScreen = () => {
+    return (
+      <div className="flex flex-col h-full bg-slate-50">
+        <header className="bg-white px-6 py-4 border-b flex justify-between items-center sticky top-0 z-10">
+          <div>
+            <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">AI Reliability Analysis</h2>
+            <span className="text-[9px] text-blue-600 font-bold uppercase tracking-tighter">Draft Review</span>
+          </div>
+          <button onClick={() => setStep('input')} className="p-2 bg-slate-100 rounded-full text-slate-400">
+            <X className="w-5 h-5" />
+          </button>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-4 space-y-4">
+
+          {/* Section: Asset Description & ID */}
+          <div className="bg-white rounded-[30px] shadow-sm border border-slate-100 overflow-hidden">
+            <div className="bg-slate-50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
+              <Info className="w-4 h-4 text-slate-400" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">Asset Information</h3>
+            </div>
+            <div className="divide-y divide-slate-50">
+              <EditableField label="General Description" value={formData.assetDescription["General Description"]} onChange={(v) => handleEditField('assetDescription', 'General Description', v)} />
+              <EditableField label="Equipment (Name)" value={formData.assetDescription["Equipment (Name)"]} onChange={(v) => handleEditField('assetDescription', 'Equipment (Name)', v)} />
+              <EditableField label="Equipment TAG" value={formData.assetIdentification["Equipment TAG"]} onChange={(v) => handleEditField('assetIdentification', 'Equipment TAG', v)} />
+              <EditableField label="Component" value={formData.assetIdentification["Component"]} onChange={(v) => handleEditField('assetIdentification', 'Component', v)} />
+              <EditableField label="Component TAG" value={formData.assetIdentification["Component TAG"]} onChange={(v) => handleEditField('assetIdentification', 'Component TAG', v)} />
+              <EditableField label="Technical Location" value={formData.assetIdentification["Technical Location"]} onChange={(v) => handleEditField('assetIdentification', 'Technical Location', v)} />
+            </div>
+          </div>
+
+          {/* Section: Failure Diagnosis */}
+          <div className="bg-white rounded-[30px] shadow-sm border border-slate-100 overflow-hidden">
+            <div className="bg-red-50/50 px-5 py-3 border-b border-red-100 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-500" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-red-600">Failure Diagnosis</h3>
+            </div>
+            <div className="divide-y divide-slate-50">
+              <EditableField label="Symptom / Observation" value={formData.failureDiagnosis["Symptom / Observation"]} onChange={(v) => handleEditField('failureDiagnosis', 'Symptom / Observation', v)} />
+              <EditableField label="Failure Mode" value={formData.failureDiagnosis["Failure Mode"]} onChange={(v) => handleEditField('failureDiagnosis', 'Failure Mode', v)} />
+              <EditableField label="Failure Mechanism" value={formData.failureDiagnosis["Failure Mechanism"]} onChange={(v) => handleEditField('failureDiagnosis', 'Failure Mechanism', v)} />
+              <EditableField label="Failure Cause" value={formData.failureDiagnosis["Failure Cause"]} onChange={(v) => handleEditField('failureDiagnosis', 'Failure Cause', v)} />
+              <EditableField label="Failure Category" value={formData.failureDiagnosis["Failure Category"]} onChange={(v) => handleEditField('failureDiagnosis', 'Failure Category', v)} />
+
+              <div className="p-4 border-b border-slate-50">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Suggested Priority</label>
+                <select
+                  className="w-full bg-slate-50 text-xs font-bold p-3 rounded-xl border-none focus:ring-0 appearance-none"
+                  value={formData.failureDiagnosis["Suggested Priority"]}
+                  onChange={(e) => handleEditField('failureDiagnosis', 'Suggested Priority', e.target.value)}
+                >
+                  {["Low", "Medium", "High", "Urgent"].map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+
+              <CustomRadio
+                label="Current Equipment Status"
+                value={formData.failureDiagnosis["Current Equipment Status"]}
+                options={["Operating", "Stopped"]}
+                onChange={(v) => handleEditField('failureDiagnosis', 'Current Equipment Status', v)}
+              />
+            </div>
+          </div>
+
+          {/* Section: Required Intervention */}
+          <div className="bg-white rounded-[30px] shadow-sm border border-slate-100 overflow-hidden">
+            <div className="bg-emerald-50/50 px-5 py-3 border-b border-emerald-100 flex items-center gap-2">
+              <Wrench className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Required Intervention</h3>
+            </div>
+            <div className="divide-y divide-slate-50">
+              <EditableField label="Intervention Type" value={formData.requiredIntervention["Intervention Type"]} onChange={(v) => handleEditField('requiredIntervention', 'Intervention Type', v)} />
+              <CustomRadio
+                label="Equipment Status for Work"
+                value={formData.requiredIntervention["Equipment Status for Work"]}
+                options={["Operating", "Stopped"]}
+                onChange={(v) => handleEditField('requiredIntervention', 'Equipment Status for Work', v)}
+              />
+              <CustomRadio
+                label="Major Shutdown Required?"
+                value={formData.requiredIntervention["Major Shutdown Required"]}
+                options={["Yes", "No"]}
+                onChange={(v) => handleEditField('requiredIntervention', 'Major Shutdown Required', v)}
+              />
+              <EditableField label="Primary Manpower" value={formData.requiredIntervention["Primary Manpower"]} onChange={(v) => handleEditField('requiredIntervention', 'Primary Manpower', v)} />
+              <EditableField label="Additional Support" value={formData.requiredIntervention["Additional Support"]} onChange={(v) => handleEditField('requiredIntervention', 'Additional Support', v)} />
+              <EditableField label="Intervention Description" value={formData.requiredIntervention["Intervention Description"]} onChange={(v) => handleEditField('requiredIntervention', 'Intervention Description', v)} />
+
+              {/* Dynamic Previous Tasks */}
+              <div className="p-4 bg-slate-50/50">
+                <div className="flex justify-between items-center mb-4">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Required Previous Tasks</label>
+                  <button onClick={addTask} className="text-[9px] font-bold text-blue-600 flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm">
+                    <Plus className="w-3 h-3" /> Add Task
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {formData.requiredIntervention["Required Previous Tasks"].map((task) => (
+                    <div key={task.id} className="bg-white p-4 rounded-2xl shadow-sm relative border border-slate-100">
+                      <button onClick={() => removeTask(task.id)} className="absolute top-2 right-2 text-slate-300 hover:text-red-500 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <input
+                        className="w-full text-xs font-bold text-slate-800 bg-transparent border-none p-0 mb-3 focus:ring-0"
+                        placeholder="Task description..."
+                        defaultValue={task.task}
+                      />
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[8px] font-black text-slate-300 uppercase">People</label>
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-3 h-3 text-blue-400" />
+                            <input type="number" className="w-full text-[10px] bg-slate-50 rounded-lg p-1.5 border-none font-bold" defaultValue={task.people} />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[8px] font-black text-slate-300 uppercase">Specialty</label>
+                          <input className="w-full text-[10px] bg-slate-50 rounded-lg p-1.5 border-none font-bold" defaultValue={task.specialty} />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[8px] font-black text-slate-300 uppercase">Time (min)</label>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3 h-3 text-blue-400" />
+                            <input type="number" className="w-full text-[10px] bg-slate-50 rounded-lg p-1.5 border-none font-bold" defaultValue={task.time} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Spare Parts Logic */}
+              <CustomRadio
+                label="Spare Parts Required?"
+                value={formData.requiredIntervention["Spare Parts Required"]}
+                options={["Yes", "No"]}
+                onChange={(v) => handleEditField('requiredIntervention', 'Spare Parts Required', v)}
+              />
+
+              {formData.requiredIntervention["Spare Parts Required"] === "Yes" && (
+                <div className="p-4 bg-blue-50/30">
+                  <div className="flex justify-between items-center mb-4">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Spare Parts List</label>
+                    <button onClick={addPart} className="text-[9px] font-bold text-blue-600 flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-sm">
+                      <Plus className="w-3 h-3" /> Add Part
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {formData.requiredIntervention["Spare Parts List"].map((part) => (
+                      <div key={part.id} className="bg-white p-3 rounded-2xl relative border border-slate-100">
+                        <button onClick={() => removePart(part.id)} className="absolute top-2 right-2 text-slate-200 hover:text-red-500">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                        <div className="grid grid-cols-12 gap-2 pr-6">
+                          <div className="col-span-6">
+                            <label className="text-[7px] font-bold text-slate-300 uppercase block">Description</label>
+                            <input className="w-full text-[10px] font-bold bg-transparent p-0 border-none focus:ring-0" defaultValue={part.description} />
+                          </div>
+                          <div className="col-span-4">
+                            <label className="text-[7px] font-bold text-slate-300 uppercase block">Code</label>
+                            <input className="w-full text-[10px] font-bold bg-transparent p-0 border-none focus:ring-0" defaultValue={part.code} />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[7px] font-bold text-slate-300 uppercase block">Qty</label>
+                            <input type="number" className="w-full text-[10px] font-bold bg-transparent p-0 border-none focus:ring-0" defaultValue={part.quantity} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <EditableField label="Deadline for Intervention" value={formData.requiredIntervention["Deadline for Intervention"]} onChange={(v) => handleEditField('requiredIntervention', 'Deadline for Intervention', v)} />
+            </div>
+          </div>
+
+          <div className="h-28" />
+        </main>
+
+        <footer className="p-6 bg-white border-t rounded-t-[50px] shadow-[0_-15px_40px_rgba(0,0,0,0.08)]">
+          <button
+            onClick={() => setShowConfirmModal(true)}
+            className="w-full bg-emerald-600 text-white py-5 rounded-[25px] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-emerald-100 active:scale-95 transition-all"
+          >
+            Submit to Planner <Send className="w-4 h-4" />
+          </button>
+        </footer>
+
+        {/* Modal de Confirmación Estilo Industrial */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-end p-6">
+            <div className="bg-white w-full rounded-[45px] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300">
+              <div className="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Send className="w-10 h-10 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-black text-center text-slate-900 mb-2 uppercase tracking-tight">Confirm Submission</h3>
+              <p className="text-slate-500 text-center text-[11px] mb-8 font-bold uppercase tracking-widest leading-relaxed">
+                The structured data and photos will be sent to the maintenance planning office.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => { setStep('success'); setShowConfirmModal(false); }}
+                  className="w-full py-5 rounded-3xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-200"
+                >
+                  Yes, Send Now
+                </button>
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="w-full py-5 rounded-3xl bg-slate-100 text-slate-500 font-black text-xs uppercase tracking-widest"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderSuccessScreen = () => (
+    <div className="flex flex-col h-full bg-white p-12 text-center items-center justify-center">
+      <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-8 text-emerald-600">
+        <CheckCircle2 className="w-14 h-14" />
+      </div>
+      <h2 className="text-3xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Report Sent!</h2>
+      <p className="text-slate-400 text-xs mb-12 leading-relaxed font-bold uppercase tracking-widest">
+        Work Request #WO-2024-0892 has been registered in the system.
+      </p>
+      <button
+        onClick={() => { setPhotos([]); setTextInput(""); setStep('input'); }}
+        className="w-full py-6 bg-slate-900 text-white rounded-[30px] font-black text-xs uppercase tracking-widest shadow-2xl shadow-slate-200 active:scale-95 transition-all"
+      >
+        New Inspection
+      </button>
+    </div>
+  );
+
+  const renderProcessingScreen = () => (
+    <div className="flex flex-col items-center justify-center h-full bg-slate-900 text-white p-12 text-center">
+      <div className="relative mb-10">
+        <Loader2 className="w-20 h-20 text-blue-500 animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center font-black text-[12px] text-blue-400">{loadingProgress}%</div>
+      </div>
+      <h2 className="text-2xl font-black mb-4 tracking-tighter uppercase">AI Evidence Analysis</h2>
+      <p className="text-slate-500 text-[10px] max-w-[220px] leading-relaxed uppercase font-black tracking-widest">
+        Identifying components, mechanical modes, and intervention urgency from audio and visual data...
+      </p>
+    </div>
+  );
+
+  return (
+    <div className="max-w-md mx-auto h-[90vh] bg-white shadow-2xl overflow-hidden rounded-[60px] border-[12px] border-slate-900 relative my-auto shadow-slate-300">
+      {/* Dynamic Notch */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-7 bg-slate-900 rounded-b-3xl z-50"></div>
+
+      {step === 'input' && renderInputScreen()}
+      {step === 'processing' && renderProcessingScreen()}
+      {step === 'review' && renderReviewScreen()}
+      {step === 'success' && renderSuccessScreen()}
+    </div>
+  );
+};
+
+export default App;

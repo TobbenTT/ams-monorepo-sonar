@@ -1,0 +1,1193 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Phosphate Processing Equipment Type Library — OCP Maintenance AI MVP",
+    "source": "Industry data for phosphate beneficiation plants (OCP Group, Morocco)",
+    "equipment_count": 15,
+    "fm_validation": "All failure modes validated against 72-combo VALID_FM_COMBINATIONS (SRC-09)"
+  },
+  "equipment_types": [
+    {
+      "equipment_type_id": "ET-SAG-MILL",
+      "name": "SAG Mill",
+      "name_fr": "Broyeur SAG",
+      "name_ar": "طاحونة SAG",
+      "category": "MILL",
+      "tag_convention": "{area}-SAG-ML-{seq:03d}",
+      "typical_power_kw": 8500,
+      "power_range_kw": [5000, 12000],
+      "typical_weight_kg": 450000,
+      "operational_hours_annual": 7500,
+      "expected_life_years": 30,
+      "criticality_class": "AA",
+      "manufacturers": ["FLSmidth", "Metso Outotec", "ThyssenKrupp"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System",
+          "name_fr": "Système d'entraînement",
+          "order": 1,
+          "maintainable_items": [
+            {
+              "name": "Main Drive Motor",
+              "name_fr": "Moteur d'entraînement principal",
+              "component_lib_ref": "CL-MOTOR-HV",
+              "failure_modes": [
+                {
+                  "what": "Motor winding insulation degrades over time",
+                  "mechanism": "DEGRADES",
+                  "cause": "AGE",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Measure winding insulation resistance",
+                  "task_type": "TEST",
+                  "frequency_value": 6,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "ONLINE",
+                  "weibull_beta": 3.2,
+                  "weibull_eta": 2190
+                },
+                {
+                  "what": "Motor bearing overheats due to lubricant contamination",
+                  "mechanism": "OVERHEATS_MELTS",
+                  "cause": "CONTAMINATION",
+                  "failure_pattern": "E_RANDOM",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Measure motor bearing vibration and temperature",
+                  "task_type": "INSPECT",
+                  "frequency_value": 1,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "ONLINE",
+                  "weibull_beta": 1.2,
+                  "weibull_eta": 1460
+                },
+                {
+                  "what": "Motor thermally overloads due to overcurrent",
+                  "mechanism": "THERMALLY_OVERLOADS",
+                  "cause": "OVERCURRENT",
+                  "failure_pattern": "E_RANDOM",
+                  "failure_consequence": "EVIDENT_SAFETY",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Check motor current draw and protection relay settings",
+                  "task_type": "TEST",
+                  "frequency_value": 3,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "ONLINE",
+                  "weibull_beta": 1.0,
+                  "weibull_eta": 2555
+                }
+              ]
+            },
+            {
+              "name": "Main Gearbox",
+              "name_fr": "Réducteur principal",
+              "component_lib_ref": "CL-GEARBOX-PLANETARY",
+              "failure_modes": [
+                {
+                  "what": "Gearbox gears wear due to metal-to-metal contact",
+                  "mechanism": "WEARS",
+                  "cause": "METAL_TO_METAL_CONTACT",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Analyze gearbox oil sample for metal particles",
+                  "task_type": "INSPECT",
+                  "frequency_value": 3,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "ONLINE",
+                  "weibull_beta": 2.8,
+                  "weibull_eta": 2555
+                },
+                {
+                  "what": "Gearbox seal degrades with age",
+                  "mechanism": "DEGRADES",
+                  "cause": "AGE",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "FIXED_TIME",
+                  "typical_task": "Replace gearbox seals",
+                  "task_type": "REPLACE",
+                  "frequency_value": 24,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 3.5,
+                  "weibull_eta": 730
+                }
+              ]
+            },
+            {
+              "name": "Drive Coupling",
+              "name_fr": "Accouplement d'entraînement",
+              "component_lib_ref": "CL-COUPLING-FLEX",
+              "failure_modes": [
+                {
+                  "what": "Coupling element degrades with age",
+                  "mechanism": "DEGRADES",
+                  "cause": "AGE",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "FIXED_TIME",
+                  "typical_task": "Replace coupling flex element",
+                  "task_type": "REPLACE",
+                  "frequency_value": 36,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 3.0,
+                  "weibull_eta": 1095
+                },
+                {
+                  "what": "Coupling loses preload due to vibration",
+                  "mechanism": "LOOSES_PRELOAD",
+                  "cause": "VIBRATION",
+                  "failure_pattern": "E_RANDOM",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Inspect coupling alignment and bolt torque",
+                  "task_type": "INSPECT",
+                  "frequency_value": 6,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 1.1,
+                  "weibull_eta": 1825
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Grinding System",
+          "name_fr": "Système de broyage",
+          "order": 2,
+          "maintainable_items": [
+            {
+              "name": "Mill Liner",
+              "name_fr": "Blindage du broyeur",
+              "component_lib_ref": "CL-LINER-MILL",
+              "failure_modes": [
+                {
+                  "what": "Liner wears due to impact shock loading from ore",
+                  "mechanism": "WEARS",
+                  "cause": "IMPACT_SHOCK_LOADING",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "FIXED_TIME",
+                  "typical_task": "Measure liner thickness using ultrasonic testing",
+                  "task_type": "INSPECT",
+                  "frequency_value": 3,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 3.8,
+                  "weibull_eta": 365
+                },
+                {
+                  "what": "Liner cracks due to impact shock loading",
+                  "mechanism": "CRACKS",
+                  "cause": "IMPACT_SHOCK_LOADING",
+                  "failure_pattern": "D_STRESS",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Inspect liner for cracks during shutdown",
+                  "task_type": "INSPECT",
+                  "frequency_value": 6,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 1.5,
+                  "weibull_eta": 547
+                }
+              ]
+            },
+            {
+              "name": "Lifter Bar",
+              "name_fr": "Barre de relevage",
+              "component_lib_ref": "CL-LIFTER-MILL",
+              "failure_modes": [
+                {
+                  "what": "Lifter bar wears due to impact shock loading",
+                  "mechanism": "WEARS",
+                  "cause": "IMPACT_SHOCK_LOADING",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "FIXED_TIME",
+                  "typical_task": "Measure lifter bar height during reline",
+                  "task_type": "INSPECT",
+                  "frequency_value": 6,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 4.0,
+                  "weibull_eta": 365
+                }
+              ]
+            },
+            {
+              "name": "Mill Shell",
+              "name_fr": "Virole du broyeur",
+              "component_lib_ref": "CL-SHELL-MILL",
+              "failure_modes": [
+                {
+                  "what": "Shell cracks due to cyclic loading",
+                  "mechanism": "CRACKS",
+                  "cause": "CYCLIC_LOADING",
+                  "failure_pattern": "C_FATIGUE",
+                  "failure_consequence": "EVIDENT_SAFETY",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Perform shell NDT inspection for fatigue cracks",
+                  "task_type": "INSPECT",
+                  "frequency_value": 12,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 2.0,
+                  "weibull_eta": 3650
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Feed System",
+          "name_fr": "Système d'alimentation",
+          "order": 3,
+          "maintainable_items": [
+            {
+              "name": "Feed Chute",
+              "name_fr": "Goulotte d'alimentation",
+              "component_lib_ref": "CL-CHUTE",
+              "failure_modes": [
+                {
+                  "what": "Feed chute liner wears due to impact shock from ore",
+                  "mechanism": "WEARS",
+                  "cause": "IMPACT_SHOCK_LOADING",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "FIXED_TIME",
+                  "typical_task": "Inspect feed chute liner wear",
+                  "task_type": "INSPECT",
+                  "frequency_value": 3,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 3.0,
+                  "weibull_eta": 365
+                }
+              ]
+            },
+            {
+              "name": "Feed Trunnion",
+              "name_fr": "Tourillon d'alimentation",
+              "component_lib_ref": "CL-TRUNNION",
+              "failure_modes": [
+                {
+                  "what": "Trunnion bearing wears due to mechanical overload",
+                  "mechanism": "WEARS",
+                  "cause": "MECHANICAL_OVERLOAD",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Measure trunnion bearing vibration",
+                  "task_type": "INSPECT",
+                  "frequency_value": 1,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "ONLINE",
+                  "weibull_beta": 2.5,
+                  "weibull_eta": 1825
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Discharge System",
+          "name_fr": "Système de décharge",
+          "order": 4,
+          "maintainable_items": [
+            {
+              "name": "Trommel Screen",
+              "name_fr": "Trommel",
+              "component_lib_ref": "CL-SCREEN-TROMMEL",
+              "failure_modes": [
+                {
+                  "what": "Screen panel wears due to impact shock loading",
+                  "mechanism": "WEARS",
+                  "cause": "IMPACT_SHOCK_LOADING",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "FIXED_TIME",
+                  "typical_task": "Inspect and replace worn trommel screen panels",
+                  "task_type": "INSPECT",
+                  "frequency_value": 3,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 3.5,
+                  "weibull_eta": 270
+                },
+                {
+                  "what": "Screen blocks due to excessive particle size",
+                  "mechanism": "BLOCKS",
+                  "cause": "EXCESSIVE_PARTICLE_SIZE",
+                  "failure_pattern": "E_RANDOM",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Check trommel discharge for oversized material",
+                  "task_type": "INSPECT",
+                  "frequency_value": 1,
+                  "frequency_unit": "WEEKS",
+                  "constraint": "ONLINE",
+                  "weibull_beta": 1.0,
+                  "weibull_eta": 180
+                }
+              ]
+            },
+            {
+              "name": "Discharge Trunnion",
+              "name_fr": "Tourillon de décharge",
+              "component_lib_ref": "CL-TRUNNION",
+              "failure_modes": [
+                {
+                  "what": "Trunnion seal degrades with age",
+                  "mechanism": "DEGRADES",
+                  "cause": "AGE",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "FIXED_TIME",
+                  "typical_task": "Replace discharge trunnion seal",
+                  "task_type": "REPLACE",
+                  "frequency_value": 18,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 3.0,
+                  "weibull_eta": 547
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Lubrication System",
+          "name_fr": "Système de lubrification",
+          "order": 5,
+          "maintainable_items": [
+            {
+              "name": "Lube Oil Pump",
+              "name_fr": "Pompe à huile",
+              "component_lib_ref": "CL-PUMP-LUBE",
+              "failure_modes": [
+                {
+                  "what": "Lube pump wears due to lubricant contamination",
+                  "mechanism": "WEARS",
+                  "cause": "LUBRICANT_CONTAMINATION",
+                  "failure_pattern": "D_STRESS",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Check lube oil pump discharge pressure",
+                  "task_type": "INSPECT",
+                  "frequency_value": 1,
+                  "frequency_unit": "WEEKS",
+                  "constraint": "ONLINE",
+                  "weibull_beta": 1.8,
+                  "weibull_eta": 1095
+                }
+              ]
+            },
+            {
+              "name": "Oil Filter",
+              "name_fr": "Filtre à huile",
+              "component_lib_ref": "CL-FILTER-OIL",
+              "failure_modes": [
+                {
+                  "what": "Oil filter blocks due to contamination",
+                  "mechanism": "BLOCKS",
+                  "cause": "CONTAMINATION",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "FIXED_TIME",
+                  "typical_task": "Replace lube oil filter element",
+                  "task_type": "REPLACE",
+                  "frequency_value": 3,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "ONLINE",
+                  "weibull_beta": 2.5,
+                  "weibull_eta": 120
+                }
+              ]
+            },
+            {
+              "name": "Oil Cooler",
+              "name_fr": "Refroidisseur d'huile",
+              "component_lib_ref": "CL-COOLER-OIL",
+              "failure_modes": [
+                {
+                  "what": "Cooler tubes corrode in corrosive environment",
+                  "mechanism": "CORRODES",
+                  "cause": "CORROSIVE_ENVIRONMENT",
+                  "failure_pattern": "B_AGE",
+                  "failure_consequence": "EVIDENT_OPERATIONAL",
+                  "is_hidden": false,
+                  "strategy_type": "CONDITION_BASED",
+                  "typical_task": "Check oil cooler temperature differential",
+                  "task_type": "INSPECT",
+                  "frequency_value": 3,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "ONLINE",
+                  "weibull_beta": 2.0,
+                  "weibull_eta": 1825
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Instrumentation",
+          "name_fr": "Instrumentation",
+          "order": 6,
+          "maintainable_items": [
+            {
+              "name": "Vibration Sensor",
+              "name_fr": "Capteur de vibration",
+              "component_lib_ref": "CL-SENSOR-VIBRATION",
+              "failure_modes": [
+                {
+                  "what": "Vibration sensor drifts due to use",
+                  "mechanism": "DRIFTS",
+                  "cause": "USE",
+                  "failure_pattern": "E_RANDOM",
+                  "failure_consequence": "HIDDEN_NONSAFETY",
+                  "is_hidden": true,
+                  "strategy_type": "FAULT_FINDING",
+                  "typical_task": "Calibrate vibration sensor against reference",
+                  "task_type": "CALIBRATE",
+                  "frequency_value": 12,
+                  "frequency_unit": "MONTHS",
+                  "constraint": "OFFLINE",
+                  "weibull_beta": 1.0,
+                  "weibull_eta": 2190
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-BALL-MILL",
+      "name": "Ball Mill",
+      "name_fr": "Broyeur à boulets",
+      "name_ar": "طاحونة كروية",
+      "category": "MILL",
+      "tag_convention": "{area}-BAL-ML-{seq:03d}",
+      "typical_power_kw": 5000,
+      "power_range_kw": [2000, 8000],
+      "typical_weight_kg": 280000,
+      "operational_hours_annual": 7500,
+      "expected_life_years": 30,
+      "criticality_class": "AA",
+      "manufacturers": ["FLSmidth", "Metso Outotec", "CITIC"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System",
+          "name_fr": "Système d'entraînement",
+          "order": 1,
+          "maintainable_items": [
+            {"name": "Main Drive Motor", "name_fr": "Moteur principal", "component_lib_ref": "CL-MOTOR-HV",
+             "failure_modes": [
+               {"what": "Motor winding degrades with age", "mechanism": "DEGRADES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Test motor insulation resistance", "task_type": "TEST", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 3.0, "weibull_eta": 2190},
+               {"what": "Motor bearing overheats from lack of lubrication", "mechanism": "OVERHEATS_MELTS", "cause": "LACK_OF_LUBRICATION", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Monitor motor bearing temperature", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 1.1, "weibull_eta": 1460}
+             ]},
+            {"name": "Gearbox", "name_fr": "Réducteur", "component_lib_ref": "CL-GEARBOX-HELICAL",
+             "failure_modes": [
+               {"what": "Gearbox wears due to breakdown of lubrication", "mechanism": "WEARS", "cause": "BREAKDOWN_OF_LUBRICATION", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Analyze gearbox oil for wear metals", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 2555}
+             ]},
+            {"name": "Coupling", "name_fr": "Accouplement", "component_lib_ref": "CL-COUPLING-FLEX",
+             "failure_modes": [
+               {"what": "Coupling element degrades with age", "mechanism": "DEGRADES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace coupling element", "task_type": "REPLACE", "frequency_value": 36, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.0, "weibull_eta": 1095}
+             ]}
+          ]
+        },
+        {
+          "name": "Grinding System",
+          "name_fr": "Système de broyage",
+          "order": 2,
+          "maintainable_items": [
+            {"name": "Mill Liner", "name_fr": "Blindage", "component_lib_ref": "CL-LINER-MILL",
+             "failure_modes": [
+               {"what": "Liner wears from impact shock loading", "mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Measure liner thickness", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.5, "weibull_eta": 365}
+             ]},
+            {"name": "Grinding Media", "name_fr": "Corps broyants", "component_lib_ref": "CL-MEDIA-BALL",
+             "failure_modes": [
+               {"what": "Grinding media wears from impact shock loading", "mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Measure ball charge level and add media", "task_type": "INSPECT", "frequency_value": 2, "frequency_unit": "WEEKS", "constraint": "ONLINE", "weibull_beta": 4.0, "weibull_eta": 60}
+             ]}
+          ]
+        },
+        {
+          "name": "Lubrication System",
+          "name_fr": "Système de lubrification",
+          "order": 3,
+          "maintainable_items": [
+            {"name": "Lube Pump", "name_fr": "Pompe de lubrification", "component_lib_ref": "CL-PUMP-LUBE",
+             "failure_modes": [
+               {"what": "Lube pump wears from lubricant contamination", "mechanism": "WEARS", "cause": "LUBRICANT_CONTAMINATION", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check lube pump pressure and flow", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "WEEKS", "constraint": "ONLINE", "weibull_beta": 1.8, "weibull_eta": 1095}
+             ]},
+            {"name": "Oil Filter", "name_fr": "Filtre à huile", "component_lib_ref": "CL-FILTER-OIL",
+             "failure_modes": [
+               {"what": "Filter blocks from contamination", "mechanism": "BLOCKS", "cause": "CONTAMINATION", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace oil filter element", "task_type": "REPLACE", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 120}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-ROD-MILL",
+      "name": "Rod Mill",
+      "name_fr": "Broyeur à barres",
+      "name_ar": "طاحونة قضبان",
+      "category": "MILL",
+      "tag_convention": "{area}-ROD-ML-{seq:03d}",
+      "typical_power_kw": 3000,
+      "power_range_kw": [1500, 5000],
+      "typical_weight_kg": 180000,
+      "operational_hours_annual": 7200,
+      "expected_life_years": 25,
+      "criticality_class": "A+",
+      "manufacturers": ["Metso Outotec", "FLSmidth"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 1,
+          "maintainable_items": [
+            {"name": "Motor", "name_fr": "Moteur", "component_lib_ref": "CL-MOTOR-HV",
+             "failure_modes": [
+               {"what": "Motor winding degrades with age", "mechanism": "DEGRADES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Test motor insulation resistance", "task_type": "TEST", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 3.0, "weibull_eta": 2190}
+             ]},
+            {"name": "Gearbox", "name_fr": "Réducteur", "component_lib_ref": "CL-GEARBOX-HELICAL",
+             "failure_modes": [
+               {"what": "Gearbox gear teeth wear from metal-to-metal contact", "mechanism": "WEARS", "cause": "METAL_TO_METAL_CONTACT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Analyze gearbox oil sample", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 2555}
+             ]}
+          ]
+        },
+        {
+          "name": "Grinding System", "name_fr": "Système de broyage", "order": 2,
+          "maintainable_items": [
+            {"name": "Rods", "name_fr": "Barres", "component_lib_ref": "CL-MEDIA-ROD",
+             "failure_modes": [
+               {"what": "Rods wear from impact shock loading", "mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Check rod charge level and replace worn rods", "task_type": "INSPECT", "frequency_value": 2, "frequency_unit": "WEEKS", "constraint": "ONLINE", "weibull_beta": 4.0, "weibull_eta": 45}
+             ]},
+            {"name": "Liner", "name_fr": "Blindage", "component_lib_ref": "CL-LINER-MILL",
+             "failure_modes": [
+               {"what": "Liner wears from impact shock loading", "mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Measure liner thickness during reline", "task_type": "INSPECT", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.5, "weibull_eta": 365}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-SLURRY-PUMP",
+      "name": "Slurry Pump",
+      "name_fr": "Pompe à boue",
+      "name_ar": "مضخة الطين",
+      "category": "PUMP",
+      "tag_convention": "{area}-SLP-{seq:03d}",
+      "typical_power_kw": 250,
+      "power_range_kw": [75, 500],
+      "typical_weight_kg": 8000,
+      "operational_hours_annual": 8000,
+      "expected_life_years": 20,
+      "criticality_class": "A+",
+      "manufacturers": ["Weir Minerals", "Metso Outotec", "KSB"],
+      "sub_assemblies": [
+        {
+          "name": "Wet End", "name_fr": "Partie hydraulique", "order": 1,
+          "maintainable_items": [
+            {"name": "Impeller", "name_fr": "Roue", "component_lib_ref": "CL-IMPELLER-SLURRY",
+             "failure_modes": [
+               {"what": "Impeller wears from excessive fluid velocity", "mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Measure pump discharge pressure and flow", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "WEEKS", "constraint": "ONLINE", "weibull_beta": 2.8, "weibull_eta": 180},
+               {"what": "Impeller corrodes from chemical attack", "mechanism": "CORRODES", "cause": "CHEMICAL_ATTACK", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check impeller condition during wet end inspection", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 1.8, "weibull_eta": 365}
+             ]},
+            {"name": "Volute Liner", "name_fr": "Chemise de volute", "component_lib_ref": "CL-LINER-PUMP",
+             "failure_modes": [
+               {"what": "Volute liner wears from excessive fluid velocity", "mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace volute liner", "task_type": "REPLACE", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.0, "weibull_eta": 270}
+             ]},
+            {"name": "Throat Bush", "name_fr": "Bague d'étranglement", "component_lib_ref": "CL-BUSH-THROAT",
+             "failure_modes": [
+               {"what": "Throat bush wears from excessive fluid velocity", "mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace throat bush", "task_type": "REPLACE", "frequency_value": 4, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.2, "weibull_eta": 180}
+             ]}
+          ]
+        },
+        {
+          "name": "Bearing Assembly", "name_fr": "Ensemble palier", "order": 2,
+          "maintainable_items": [
+            {"name": "Drive End Bearing", "name_fr": "Roulement côté entraînement", "component_lib_ref": "CL-BEARING-DE",
+             "failure_modes": [
+               {"what": "Bearing wears from breakdown of lubrication", "mechanism": "WEARS", "cause": "BREAKDOWN_OF_LUBRICATION", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Measure bearing vibration", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 730}
+             ]},
+            {"name": "Non-Drive End Bearing", "name_fr": "Roulement côté libre", "component_lib_ref": "CL-BEARING-NDE",
+             "failure_modes": [
+               {"what": "Bearing overheats from lack of lubrication", "mechanism": "OVERHEATS_MELTS", "cause": "LACK_OF_LUBRICATION", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Monitor bearing temperature", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 1.2, "weibull_eta": 730}
+             ]}
+          ]
+        },
+        {
+          "name": "Sealing System", "name_fr": "Système d'étanchéité", "order": 3,
+          "maintainable_items": [
+            {"name": "Mechanical Seal", "name_fr": "Garniture mécanique", "component_lib_ref": "CL-SEAL-MECH",
+             "failure_modes": [
+               {"what": "Seal wears from relative movement", "mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace mechanical seal", "task_type": "REPLACE", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.8, "weibull_eta": 365},
+               {"what": "Seal degrades from chemical attack", "mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_ENVIRONMENTAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check seal leak rate", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "WEEKS", "constraint": "ONLINE", "weibull_beta": 1.5, "weibull_eta": 270}
+             ]}
+          ]
+        },
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 4,
+          "maintainable_items": [
+            {"name": "Motor", "name_fr": "Moteur", "component_lib_ref": "CL-MOTOR-LV",
+             "failure_modes": [
+               {"what": "Motor thermally overloads from overcurrent", "mechanism": "THERMALLY_OVERLOADS", "cause": "OVERCURRENT", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check motor current draw", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 1.0, "weibull_eta": 1825}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-FLOTATION-CELL",
+      "name": "Flotation Cell",
+      "name_fr": "Cellule de flottation",
+      "name_ar": "خلية التعويم",
+      "category": "SEPARATOR",
+      "tag_convention": "{area}-FLC-{seq:03d}",
+      "typical_power_kw": 250,
+      "power_range_kw": [100, 400],
+      "typical_weight_kg": 35000,
+      "operational_hours_annual": 8000,
+      "expected_life_years": 20,
+      "criticality_class": "A+",
+      "manufacturers": ["Metso Outotec", "FLSmidth", "Eriez"],
+      "sub_assemblies": [
+        {
+          "name": "Agitator System", "name_fr": "Système d'agitation", "order": 1,
+          "maintainable_items": [
+            {"name": "Agitator Motor", "name_fr": "Moteur d'agitation", "component_lib_ref": "CL-MOTOR-LV",
+             "failure_modes": [
+               {"what": "Motor winding degrades from excessive temperature", "mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Monitor motor winding temperature", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 1.5, "weibull_eta": 1825}
+             ]},
+            {"name": "Impeller", "name_fr": "Turbine", "component_lib_ref": "CL-IMPELLER-AGITATOR",
+             "failure_modes": [
+               {"what": "Impeller corrodes from chemical attack", "mechanism": "CORRODES", "cause": "CHEMICAL_ATTACK", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect impeller condition", "task_type": "INSPECT", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 1.8, "weibull_eta": 547},
+               {"what": "Impeller wears from excessive fluid velocity", "mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace impeller", "task_type": "REPLACE", "frequency_value": 18, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.5, "weibull_eta": 547}
+             ]},
+            {"name": "Agitator Shaft", "name_fr": "Arbre d'agitateur", "component_lib_ref": "CL-SHAFT",
+             "failure_modes": [
+               {"what": "Shaft cracks from cyclic loading", "mechanism": "CRACKS", "cause": "CYCLIC_LOADING", "failure_pattern": "C_FATIGUE", "failure_consequence": "EVIDENT_SAFETY", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect shaft for fatigue cracks using NDT", "task_type": "INSPECT", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.0, "weibull_eta": 2555}
+             ]}
+          ]
+        },
+        {
+          "name": "Air System", "name_fr": "Système d'air", "order": 2,
+          "maintainable_items": [
+            {"name": "Blower", "name_fr": "Soufflante", "component_lib_ref": "CL-BLOWER",
+             "failure_modes": [
+               {"what": "Blower bearing wears from breakdown of lubrication", "mechanism": "WEARS", "cause": "BREAKDOWN_OF_LUBRICATION", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Monitor blower vibration and temperature", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 1095}
+             ]},
+            {"name": "Sparger", "name_fr": "Diffuseur d'air", "component_lib_ref": "CL-SPARGER",
+             "failure_modes": [
+               {"what": "Sparger blocks from contamination", "mechanism": "BLOCKS", "cause": "CONTAMINATION", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Clean sparger orifices", "task_type": "CLEAN", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 1.2, "weibull_eta": 180}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-BELT-CONVEYOR",
+      "name": "Belt Conveyor",
+      "name_fr": "Convoyeur à bande",
+      "name_ar": "ناقل حزامي",
+      "category": "CONVEYOR",
+      "tag_convention": "{area}-CVR-{seq:03d}",
+      "typical_power_kw": 200,
+      "power_range_kw": [30, 500],
+      "typical_weight_kg": 45000,
+      "operational_hours_annual": 7500,
+      "expected_life_years": 20,
+      "criticality_class": "A",
+      "manufacturers": ["Rulmeca", "Martin Engineering", "Continental", "Fenner Dunlop"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 1,
+          "maintainable_items": [
+            {"name": "Drive Motor", "name_fr": "Moteur d'entraînement", "component_lib_ref": "CL-MOTOR-LV",
+             "failure_modes": [
+               {"what": "Motor winding degrades with age", "mechanism": "DEGRADES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Test motor insulation resistance", "task_type": "TEST", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 3.0, "weibull_eta": 2555}
+             ]},
+            {"name": "Gearbox", "name_fr": "Réducteur", "component_lib_ref": "CL-GEARBOX-HELICAL",
+             "failure_modes": [
+               {"what": "Gearbox seal degrades with age", "mechanism": "DEGRADES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace gearbox seals", "task_type": "REPLACE", "frequency_value": 24, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.5, "weibull_eta": 730}
+             ]}
+          ]
+        },
+        {
+          "name": "Head Pulley", "name_fr": "Tambour de tête", "order": 2,
+          "maintainable_items": [
+            {"name": "Pulley", "name_fr": "Tambour", "component_lib_ref": "CL-PULLEY",
+             "failure_modes": [
+               {"what": "Pulley lagging wears from relative movement", "mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect pulley lagging condition", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.5, "weibull_eta": 365}
+             ]},
+            {"name": "Bearing", "name_fr": "Roulement", "component_lib_ref": "CL-BEARING-DE",
+             "failure_modes": [
+               {"what": "Pulley bearing wears from lubricant contamination", "mechanism": "WEARS", "cause": "LUBRICANT_CONTAMINATION", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Measure pulley bearing vibration", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 1095}
+             ]}
+          ]
+        },
+        {
+          "name": "Belt", "name_fr": "Bande", "order": 3,
+          "maintainable_items": [
+            {"name": "Belt Splice", "name_fr": "Jonction de bande", "component_lib_ref": "CL-SPLICE",
+             "failure_modes": [
+               {"what": "Belt splice breaks from mechanical overload", "mechanism": "BREAKS_FRACTURE_SEPARATES", "cause": "MECHANICAL_OVERLOAD", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect belt splice condition", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 1.5, "weibull_eta": 547}
+             ]},
+            {"name": "Belt Scraper", "name_fr": "Racleur de bande", "component_lib_ref": "CL-SCRAPER",
+             "failure_modes": [
+               {"what": "Scraper blade wears from relative movement", "mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace belt scraper blade", "task_type": "REPLACE", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.0, "weibull_eta": 120}
+             ]}
+          ]
+        },
+        {
+          "name": "Idlers", "name_fr": "Rouleaux", "order": 4,
+          "maintainable_items": [
+            {"name": "Carry Idler", "name_fr": "Rouleau porteur", "component_lib_ref": "CL-IDLER",
+             "failure_modes": [
+               {"what": "Idler bearing immobilised from contamination", "mechanism": "IMMOBILISED", "cause": "CONTAMINATION", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Walk belt line and inspect for seized idlers", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "WEEKS", "constraint": "ONLINE", "weibull_beta": 1.0, "weibull_eta": 730}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-THICKENER",
+      "name": "Thickener",
+      "name_fr": "Épaississeur",
+      "name_ar": "مكثف",
+      "category": "SEPARATOR",
+      "tag_convention": "{area}-THK-{seq:03d}",
+      "typical_power_kw": 45,
+      "power_range_kw": [15, 90],
+      "typical_weight_kg": 80000,
+      "operational_hours_annual": 8500,
+      "expected_life_years": 25,
+      "criticality_class": "A",
+      "manufacturers": ["FLSmidth", "Metso Outotec", "WesTech"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 1,
+          "maintainable_items": [
+            {"name": "Drive Motor", "name_fr": "Moteur", "component_lib_ref": "CL-MOTOR-LV",
+             "failure_modes": [
+               {"what": "Motor winding degrades with age", "mechanism": "DEGRADES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Test motor insulation resistance", "task_type": "TEST", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 3.0, "weibull_eta": 2555}
+             ]},
+            {"name": "Gearbox", "name_fr": "Réducteur", "component_lib_ref": "CL-GEARBOX-PLANETARY",
+             "failure_modes": [
+               {"what": "Gearbox wears from breakdown of lubrication", "mechanism": "WEARS", "cause": "BREAKDOWN_OF_LUBRICATION", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Analyze gearbox oil sample", "task_type": "INSPECT", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 2555}
+             ]}
+          ]
+        },
+        {
+          "name": "Rake Mechanism", "name_fr": "Mécanisme de râteau", "order": 2,
+          "maintainable_items": [
+            {"name": "Rake Arms", "name_fr": "Bras de râteau", "component_lib_ref": "CL-RAKE",
+             "failure_modes": [
+               {"what": "Rake arm corrodes in corrosive environment", "mechanism": "CORRODES", "cause": "CORROSIVE_ENVIRONMENT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect rake arms for corrosion", "task_type": "INSPECT", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.0, "weibull_eta": 1825}
+             ]},
+            {"name": "Feedwell", "name_fr": "Puits d'alimentation", "component_lib_ref": "CL-FEEDWELL",
+             "failure_modes": [
+               {"what": "Feedwell corrodes from chemical attack", "mechanism": "CORRODES", "cause": "CHEMICAL_ATTACK", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect feedwell liner condition", "task_type": "INSPECT", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.0, "weibull_eta": 1825}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-BELT-FILTER",
+      "name": "Belt Filter",
+      "name_fr": "Filtre à bande",
+      "name_ar": "مرشح حزامي",
+      "category": "FILTER",
+      "tag_convention": "{area}-BFT-{seq:03d}",
+      "typical_power_kw": 45,
+      "power_range_kw": [20, 75],
+      "typical_weight_kg": 15000,
+      "operational_hours_annual": 7500,
+      "expected_life_years": 15,
+      "criticality_class": "A+",
+      "manufacturers": ["FLSmidth", "Andritz", "BHS-Sonthofen"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 1,
+          "maintainable_items": [
+            {"name": "Motor", "name_fr": "Moteur", "component_lib_ref": "CL-MOTOR-LV",
+             "failure_modes": [
+               {"what": "Motor degrades from excessive temperature", "mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check motor temperature", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 1.5, "weibull_eta": 1825}
+             ]}
+          ]
+        },
+        {
+          "name": "Filter Media", "name_fr": "Média filtrant", "order": 2,
+          "maintainable_items": [
+            {"name": "Filter Cloth", "name_fr": "Toile filtrante", "component_lib_ref": "CL-CLOTH-FILTER",
+             "failure_modes": [
+               {"what": "Filter cloth degrades from chemical attack", "mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace filter cloth", "task_type": "REPLACE", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.0, "weibull_eta": 180},
+               {"what": "Filter cloth blocks from contamination", "mechanism": "BLOCKS", "cause": "CONTAMINATION", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check filter cake moisture content", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "DAYS", "constraint": "ONLINE", "weibull_beta": 1.0, "weibull_eta": 60}
+             ]}
+          ]
+        },
+        {
+          "name": "Vacuum System", "name_fr": "Système de vide", "order": 3,
+          "maintainable_items": [
+            {"name": "Vacuum Pump", "name_fr": "Pompe à vide", "component_lib_ref": "CL-PUMP-VACUUM",
+             "failure_modes": [
+               {"what": "Vacuum pump wears from entrained air", "mechanism": "WEARS", "cause": "ENTRAINED_AIR", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Monitor vacuum pump pressure and temperature", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "WEEKS", "constraint": "ONLINE", "weibull_beta": 1.8, "weibull_eta": 730}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-ROTARY-DRYER",
+      "name": "Rotary Dryer",
+      "name_fr": "Sécheur rotatif",
+      "name_ar": "مجفف دوار",
+      "category": "DRYER",
+      "tag_convention": "{area}-DRY-{seq:03d}",
+      "typical_power_kw": 500,
+      "power_range_kw": [200, 1000],
+      "typical_weight_kg": 120000,
+      "operational_hours_annual": 7000,
+      "expected_life_years": 25,
+      "criticality_class": "A+",
+      "manufacturers": ["FLSmidth", "Metso Outotec", "Feeco"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 1,
+          "maintainable_items": [
+            {"name": "Motor", "name_fr": "Moteur", "component_lib_ref": "CL-MOTOR-HV",
+             "failure_modes": [
+               {"what": "Motor winding degrades from excessive temperature", "mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Test motor insulation resistance", "task_type": "TEST", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.0, "weibull_eta": 1825}
+             ]},
+            {"name": "Gearbox", "name_fr": "Réducteur", "component_lib_ref": "CL-GEARBOX-HELICAL",
+             "failure_modes": [
+               {"what": "Gearbox wears from metal-to-metal contact", "mechanism": "WEARS", "cause": "METAL_TO_METAL_CONTACT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Analyze gearbox oil sample", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 2555}
+             ]}
+          ]
+        },
+        {
+          "name": "Shell Assembly", "name_fr": "Ensemble virole", "order": 2,
+          "maintainable_items": [
+            {"name": "Shell", "name_fr": "Virole", "component_lib_ref": "CL-SHELL-DRYER",
+             "failure_modes": [
+               {"what": "Shell cracks from thermal stresses", "mechanism": "CRACKS", "cause": "THERMAL_STRESSES", "failure_pattern": "C_FATIGUE", "failure_consequence": "EVIDENT_SAFETY", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect shell for cracks using NDT", "task_type": "INSPECT", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.0, "weibull_eta": 3650}
+             ]},
+            {"name": "Trunnion Bearing", "name_fr": "Palier de tourillon", "component_lib_ref": "CL-BEARING-TRUNNION",
+             "failure_modes": [
+               {"what": "Trunnion bearing wears from mechanical overload", "mechanism": "WEARS", "cause": "MECHANICAL_OVERLOAD", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Measure trunnion bearing vibration and temperature", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 1825}
+             ]},
+            {"name": "Shell Seal", "name_fr": "Joint de virole", "component_lib_ref": "CL-SEAL-SHELL",
+             "failure_modes": [
+               {"what": "Shell seal degrades from excessive temperature", "mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_ENVIRONMENTAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace shell seal", "task_type": "REPLACE", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.0, "weibull_eta": 365}
+             ]}
+          ]
+        },
+        {
+          "name": "Burner System", "name_fr": "Système de brûleur", "order": 3,
+          "maintainable_items": [
+            {"name": "Burner", "name_fr": "Brûleur", "component_lib_ref": "CL-BURNER",
+             "failure_modes": [
+               {"what": "Burner nozzle blocks from contamination", "mechanism": "BLOCKS", "cause": "CONTAMINATION", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Clean burner nozzle and inspect flame pattern", "task_type": "CLEAN", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 1.2, "weibull_eta": 180}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-CRUSHER",
+      "name": "Crusher",
+      "name_fr": "Concasseur",
+      "name_ar": "كسارة",
+      "category": "CRUSHER",
+      "tag_convention": "{area}-CRS-{seq:03d}",
+      "typical_power_kw": 350,
+      "power_range_kw": [150, 750],
+      "typical_weight_kg": 85000,
+      "operational_hours_annual": 6500,
+      "expected_life_years": 25,
+      "criticality_class": "A+",
+      "manufacturers": ["Metso Outotec", "FLSmidth", "ThyssenKrupp", "Sandvik"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 1,
+          "maintainable_items": [
+            {"name": "Motor", "name_fr": "Moteur", "component_lib_ref": "CL-MOTOR-HV",
+             "failure_modes": [
+               {"what": "Motor winding degrades with age", "mechanism": "DEGRADES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Test motor insulation resistance", "task_type": "TEST", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 3.0, "weibull_eta": 2190}
+             ]}
+          ]
+        },
+        {
+          "name": "Crushing Chamber", "name_fr": "Chambre de concassage", "order": 2,
+          "maintainable_items": [
+            {"name": "Mantle", "name_fr": "Manteau", "component_lib_ref": "CL-MANTLE",
+             "failure_modes": [
+               {"what": "Mantle wears from impact shock loading", "mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Measure mantle wear profile", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.5, "weibull_eta": 270}
+             ]},
+            {"name": "Concave", "name_fr": "Concave", "component_lib_ref": "CL-CONCAVE",
+             "failure_modes": [
+               {"what": "Concave wears from impact shock loading", "mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Measure concave wear profile", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.5, "weibull_eta": 365}
+             ]},
+            {"name": "Eccentric", "name_fr": "Excentrique", "component_lib_ref": "CL-ECCENTRIC",
+             "failure_modes": [
+               {"what": "Eccentric bearing wears from mechanical overload", "mechanism": "WEARS", "cause": "MECHANICAL_OVERLOAD", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Monitor eccentric bearing vibration and oil analysis", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 1460}
+             ]}
+          ]
+        },
+        {
+          "name": "Lubrication System", "name_fr": "Système de lubrification", "order": 3,
+          "maintainable_items": [
+            {"name": "Oil Filter", "name_fr": "Filtre à huile", "component_lib_ref": "CL-FILTER-OIL",
+             "failure_modes": [
+               {"what": "Filter blocks from contamination", "mechanism": "BLOCKS", "cause": "CONTAMINATION", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace oil filter element", "task_type": "REPLACE", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.5, "weibull_eta": 120}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-SCREEN",
+      "name": "Vibrating Screen",
+      "name_fr": "Crible vibrant",
+      "name_ar": "غربال اهتزازي",
+      "category": "SCREEN",
+      "tag_convention": "{area}-SCR-{seq:03d}",
+      "typical_power_kw": 150,
+      "power_range_kw": [30, 300],
+      "typical_weight_kg": 12000,
+      "operational_hours_annual": 7000,
+      "expected_life_years": 15,
+      "criticality_class": "A",
+      "manufacturers": ["Metso Outotec", "Schenck Process", "Derrick"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 1,
+          "maintainable_items": [
+            {"name": "Vibrator Motor", "name_fr": "Moteur vibrateur", "component_lib_ref": "CL-MOTOR-VIBRATOR",
+             "failure_modes": [
+               {"what": "Vibrator motor overheats from rubbing", "mechanism": "OVERHEATS_MELTS", "cause": "RUBBING", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check vibrator motor temperature and clearances", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 1.2, "weibull_eta": 1095}
+             ]}
+          ]
+        },
+        {
+          "name": "Screen Deck", "name_fr": "Grille de criblage", "order": 2,
+          "maintainable_items": [
+            {"name": "Screen Panels", "name_fr": "Panneaux de criblage", "component_lib_ref": "CL-PANEL-SCREEN",
+             "failure_modes": [
+               {"what": "Screen panel wears from impact shock loading", "mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Inspect and replace worn screen panels", "task_type": "INSPECT", "frequency_value": 2, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.0, "weibull_eta": 90},
+               {"what": "Screen panel blocks from excessive particle size", "mechanism": "BLOCKS", "cause": "EXCESSIVE_PARTICLE_SIZE", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check screen efficiency and clean blocked panels", "task_type": "INSPECT", "frequency_value": 1, "frequency_unit": "WEEKS", "constraint": "ONLINE", "weibull_beta": 1.0, "weibull_eta": 60}
+             ]},
+            {"name": "Springs", "name_fr": "Ressorts", "component_lib_ref": "CL-SPRING",
+             "failure_modes": [
+               {"what": "Spring breaks from cyclic loading", "mechanism": "BREAKS_FRACTURE_SEPARATES", "cause": "CYCLIC_LOADING", "failure_pattern": "C_FATIGUE", "failure_consequence": "EVIDENT_SAFETY", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace screen springs", "task_type": "REPLACE", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.5, "weibull_eta": 547}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-CYCLONE",
+      "name": "Hydrocyclone",
+      "name_fr": "Hydrocyclone",
+      "name_ar": "سيكلون مائي",
+      "category": "SEPARATOR",
+      "tag_convention": "{area}-CYC-{seq:03d}",
+      "typical_power_kw": 0,
+      "power_range_kw": [0, 0],
+      "typical_weight_kg": 2000,
+      "operational_hours_annual": 8000,
+      "expected_life_years": 10,
+      "criticality_class": "B",
+      "manufacturers": ["Weir Minerals", "Metso Outotec", "FLSmidth"],
+      "sub_assemblies": [
+        {
+          "name": "Inlet Section", "name_fr": "Section d'entrée", "order": 1,
+          "maintainable_items": [
+            {"name": "Inlet Liner", "name_fr": "Chemise d'entrée", "component_lib_ref": "CL-LINER-CYCLONE",
+             "failure_modes": [
+               {"what": "Inlet liner wears from excessive fluid velocity", "mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Inspect and replace inlet liner", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.0, "weibull_eta": 180}
+             ]}
+          ]
+        },
+        {
+          "name": "Vortex Finder", "name_fr": "Tube de vortex", "order": 2,
+          "maintainable_items": [
+            {"name": "Vortex Finder", "name_fr": "Tube de vortex", "component_lib_ref": "CL-VORTEX",
+             "failure_modes": [
+               {"what": "Vortex finder wears from excessive fluid velocity", "mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace vortex finder", "task_type": "REPLACE", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.0, "weibull_eta": 270}
+             ]}
+          ]
+        },
+        {
+          "name": "Apex Section", "name_fr": "Section apex", "order": 3,
+          "maintainable_items": [
+            {"name": "Apex Valve", "name_fr": "Buse d'apex", "component_lib_ref": "CL-APEX",
+             "failure_modes": [
+               {"what": "Apex valve wears from excessive fluid velocity", "mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace apex valve", "task_type": "REPLACE", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.5, "weibull_eta": 120}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-AGITATOR",
+      "name": "Agitator",
+      "name_fr": "Agitateur",
+      "name_ar": "محرك تقليب",
+      "category": "MIXER",
+      "tag_convention": "{area}-AGT-{seq:03d}",
+      "typical_power_kw": 150,
+      "power_range_kw": [30, 350],
+      "typical_weight_kg": 5000,
+      "operational_hours_annual": 8000,
+      "expected_life_years": 20,
+      "criticality_class": "A",
+      "manufacturers": ["Lightnin (SPX)", "Milton Roy", "EKATO"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 1,
+          "maintainable_items": [
+            {"name": "Motor", "name_fr": "Moteur", "component_lib_ref": "CL-MOTOR-LV",
+             "failure_modes": [
+               {"what": "Motor degrades with age", "mechanism": "DEGRADES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Test motor insulation resistance", "task_type": "TEST", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 3.0, "weibull_eta": 2555}
+             ]},
+            {"name": "Gearbox", "name_fr": "Réducteur", "component_lib_ref": "CL-GEARBOX-HELICAL",
+             "failure_modes": [
+               {"what": "Gearbox seal degrades with age", "mechanism": "DEGRADES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace gearbox seals", "task_type": "REPLACE", "frequency_value": 24, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.5, "weibull_eta": 730}
+             ]}
+          ]
+        },
+        {
+          "name": "Mixing System", "name_fr": "Système de mélange", "order": 2,
+          "maintainable_items": [
+            {"name": "Impeller", "name_fr": "Turbine", "component_lib_ref": "CL-IMPELLER-AGITATOR",
+             "failure_modes": [
+               {"what": "Impeller corrodes from chemical attack", "mechanism": "CORRODES", "cause": "CHEMICAL_ATTACK", "failure_pattern": "D_STRESS", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect impeller condition during shutdown", "task_type": "INSPECT", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 1.8, "weibull_eta": 730}
+             ]},
+            {"name": "Shaft", "name_fr": "Arbre", "component_lib_ref": "CL-SHAFT",
+             "failure_modes": [
+               {"what": "Shaft cracks from cyclic loading", "mechanism": "CRACKS", "cause": "CYCLIC_LOADING", "failure_pattern": "C_FATIGUE", "failure_consequence": "EVIDENT_SAFETY", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect shaft for cracks using NDT", "task_type": "INSPECT", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.0, "weibull_eta": 2555}
+             ]},
+            {"name": "Shaft Seal", "name_fr": "Garniture d'arbre", "component_lib_ref": "CL-SEAL-MECH",
+             "failure_modes": [
+               {"what": "Shaft seal wears from relative movement", "mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_ENVIRONMENTAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace shaft seal", "task_type": "REPLACE", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.8, "weibull_eta": 365}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-COMPRESSOR",
+      "name": "Compressor",
+      "name_fr": "Compresseur",
+      "name_ar": "ضاغط",
+      "category": "COMPRESSOR",
+      "tag_convention": "{area}-CMP-{seq:03d}",
+      "typical_power_kw": 350,
+      "power_range_kw": [100, 750],
+      "typical_weight_kg": 15000,
+      "operational_hours_annual": 8000,
+      "expected_life_years": 20,
+      "criticality_class": "A+",
+      "manufacturers": ["Atlas Copco", "Ingersoll Rand", "Sullair"],
+      "sub_assemblies": [
+        {
+          "name": "Drive System", "name_fr": "Système d'entraînement", "order": 1,
+          "maintainable_items": [
+            {"name": "Motor", "name_fr": "Moteur", "component_lib_ref": "CL-MOTOR-HV",
+             "failure_modes": [
+               {"what": "Motor thermally overloads from overcurrent", "mechanism": "THERMALLY_OVERLOADS", "cause": "OVERCURRENT", "failure_pattern": "E_RANDOM", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check motor current draw and protection settings", "task_type": "TEST", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 1.0, "weibull_eta": 2555}
+             ]}
+          ]
+        },
+        {
+          "name": "Compression Stage", "name_fr": "Étage de compression", "order": 2,
+          "maintainable_items": [
+            {"name": "Intake Valve", "name_fr": "Soupape d'admission", "component_lib_ref": "CL-VALVE-INTAKE",
+             "failure_modes": [
+               {"what": "Valve seat wears from impact shock loading", "mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace intake valve", "task_type": "REPLACE", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.5, "weibull_eta": 365}
+             ]},
+            {"name": "Discharge Valve", "name_fr": "Soupape de refoulement", "component_lib_ref": "CL-VALVE-DISCHARGE",
+             "failure_modes": [
+               {"what": "Valve seat wears from impact shock loading", "mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace discharge valve", "task_type": "REPLACE", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.5, "weibull_eta": 365}
+             ]}
+          ]
+        },
+        {
+          "name": "Cooling System", "name_fr": "Système de refroidissement", "order": 3,
+          "maintainable_items": [
+            {"name": "Aftercooler", "name_fr": "Refroidisseur final", "component_lib_ref": "CL-COOLER",
+             "failure_modes": [
+               {"what": "Cooler tubes corrode in corrosive environment", "mechanism": "CORRODES", "cause": "CORROSIVE_ENVIRONMENT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Check cooler temperature differential and clean", "task_type": "INSPECT", "frequency_value": 3, "frequency_unit": "MONTHS", "constraint": "ONLINE", "weibull_beta": 2.0, "weibull_eta": 1825}
+             ]}
+          ]
+        }
+      ]
+    },
+    {
+      "equipment_type_id": "ET-HEAT-EXCHANGER",
+      "name": "Heat Exchanger",
+      "name_fr": "Échangeur de chaleur",
+      "name_ar": "مبادل حراري",
+      "category": "HEAT_EXCHANGER",
+      "tag_convention": "{area}-HEX-{seq:03d}",
+      "typical_power_kw": 0,
+      "power_range_kw": [0, 0],
+      "typical_weight_kg": 8000,
+      "operational_hours_annual": 8500,
+      "expected_life_years": 20,
+      "criticality_class": "B",
+      "manufacturers": ["Alfa Laval", "Kelvion", "GEA"],
+      "sub_assemblies": [
+        {
+          "name": "Tube Bundle", "name_fr": "Faisceau tubulaire", "order": 1,
+          "maintainable_items": [
+            {"name": "Tubes", "name_fr": "Tubes", "component_lib_ref": "CL-TUBE-HEX",
+             "failure_modes": [
+               {"what": "Tubes corrode from corrosive environment", "mechanism": "CORRODES", "cause": "CORROSIVE_ENVIRONMENT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_ENVIRONMENTAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Perform tube wall thickness measurement", "task_type": "INSPECT", "frequency_value": 12, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.0, "weibull_eta": 1825},
+               {"what": "Tubes block from contamination buildup", "mechanism": "BLOCKS", "cause": "CONTAMINATION", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Clean tube bundle", "task_type": "CLEAN", "frequency_value": 6, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.5, "weibull_eta": 270}
+             ]},
+            {"name": "Gaskets", "name_fr": "Joints", "component_lib_ref": "CL-GASKET",
+             "failure_modes": [
+               {"what": "Gasket expires with age", "mechanism": "EXPIRES", "cause": "AGE", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_ENVIRONMENTAL", "is_hidden": false, "strategy_type": "FIXED_TIME", "typical_task": "Replace gaskets during service", "task_type": "REPLACE", "frequency_value": 24, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 3.5, "weibull_eta": 730}
+             ]}
+          ]
+        },
+        {
+          "name": "Baffle System", "name_fr": "Système de chicanes", "order": 2,
+          "maintainable_items": [
+            {"name": "Baffles", "name_fr": "Chicanes", "component_lib_ref": "CL-BAFFLE",
+             "failure_modes": [
+               {"what": "Baffle corrodes from corrosive environment", "mechanism": "CORRODES", "cause": "CORROSIVE_ENVIRONMENT", "failure_pattern": "B_AGE", "failure_consequence": "EVIDENT_OPERATIONAL", "is_hidden": false, "strategy_type": "CONDITION_BASED", "typical_task": "Inspect baffles during bundle pull", "task_type": "INSPECT", "frequency_value": 24, "frequency_unit": "MONTHS", "constraint": "OFFLINE", "weibull_beta": 2.0, "weibull_eta": 2555}
+             ]}
+          ]
+        }
+      ]
+    }
+  ]
+}

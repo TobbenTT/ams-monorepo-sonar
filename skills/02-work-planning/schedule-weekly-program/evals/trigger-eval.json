@@ -1,0 +1,87 @@
+{
+  "skill": "schedule-weekly-program",
+  "should_trigger": [
+    {
+      "query": "Create the weekly maintenance schedule for week 12",
+      "reason": "Directly relevant to schedule-weekly-program skill"
+    },
+    {
+      "query": "Level the resources for next week's program",
+      "reason": "Directly relevant to schedule-weekly-program skill"
+    },
+    {
+      "query": "Are there any scheduling conflicts in the week 15 program?",
+      "reason": "Directly relevant to schedule-weekly-program skill"
+    },
+    {
+      "query": "Finalize the weekly program and move it from DRAFT to FINAL",
+      "reason": "Directly relevant to schedule-weekly-program skill"
+    },
+    {
+      "query": "What support tasks are needed for the shutdown packages this week?",
+      "reason": "Directly relevant to schedule-weekly-program skill"
+    },
+    {
+      "query": "Crear el programa semanal de mantenimiento para la semana 12",
+      "reason": "Spanish query relevant to schedule-weekly-program skill"
+    },
+    {
+      "query": "Nivelar recursos para el programa de la proxima semana",
+      "reason": "Spanish query relevant to schedule-weekly-program skill"
+    },
+    {
+      "query": "Split the SAG mill package across multiple days due to capacity limits",
+      "reason": "Directly relevant to schedule-weekly-program skill"
+    },
+    {
+      "query": "Assign shifts for the weekly maintenance program at plant BRY",
+      "reason": "Directly relevant to schedule-weekly-program skill"
+    },
+    {
+      "query": "Mark the week 10 program as COMPLETED",
+      "reason": "Directly relevant to schedule-weekly-program skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Group the backlog items by equipment",
+      "reason": "Not related to schedule-weekly-program functionality"
+    },
+    {
+      "query": "Calculate the planning KPIs",
+      "reason": "Not related to schedule-weekly-program functionality"
+    },
+    {
+      "query": "Generate a work instruction for the pump overhaul",
+      "reason": "Not related to schedule-weekly-program functionality"
+    },
+    {
+      "query": "Export the work packages to SAP",
+      "reason": "Not related to schedule-weekly-program functionality"
+    },
+    {
+      "query": "Create a CAPA for the bearing failure",
+      "reason": "Not related to schedule-weekly-program functionality"
+    },
+    {
+      "query": "What is the criticality of the conveyor drive?",
+      "reason": "Not related to schedule-weekly-program functionality"
+    },
+    {
+      "query": "Generate the monthly KPI report",
+      "reason": "Not related to schedule-weekly-program functionality"
+    },
+    {
+      "query": "Conduct the quarterly management review",
+      "reason": "Not related to schedule-weekly-program functionality"
+    },
+    {
+      "query": "Submit a management of change request",
+      "reason": "Not related to schedule-weekly-program functionality"
+    },
+    {
+      "query": "Plan the annual shutdown turnaround",
+      "reason": "Not related to schedule-weekly-program functionality"
+    }
+  ]
+}

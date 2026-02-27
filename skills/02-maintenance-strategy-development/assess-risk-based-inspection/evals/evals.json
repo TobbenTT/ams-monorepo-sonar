@@ -1,0 +1,108 @@
+[
+  {
+    "id": "rbi-eval-01",
+    "name": "CRITICAL risk pressure vessel assessment",
+    "input": {
+      "equipment_id": "V-101",
+      "equipment_type": "PRESSURE_VESSEL",
+      "damage_mechanisms": ["CORROSION", "FATIGUE"],
+      "age_years": 20,
+      "design_life_years": 25,
+      "operating_conditions": "SEVERE",
+      "last_inspection_date": "2023-06-15",
+      "description": "Aging pressure vessel with multiple damage mechanisms in severe conditions"
+    },
+    "expected": {
+      "probability_score": 5,
+      "consequence_score": 5,
+      "risk_score": 25,
+      "risk_level": "CRITICAL",
+      "technique": "ULTRASONIC_THICKNESS",
+      "interval_months": 6,
+      "is_overdue": true
+    },
+    "assertions": [
+      "Probability = 5 (age_ratio 0.80 = base 4, + dm_factor 3 - 1 = 6, capped at 5)",
+      "Consequence = 5 (PRESSURE_VESSEL)",
+      "Risk = 25 = CRITICAL",
+      "Technique is ULTRASONIC_THICKNESS (primary mechanism = CORROSION)",
+      "Inspection interval is 6 months for CRITICAL",
+      "Equipment is overdue (last inspection + 6 months < today)"
+    ]
+  },
+  {
+    "id": "rbi-eval-02",
+    "name": "LOW risk young piping",
+    "input": {
+      "equipment_id": "P-301",
+      "equipment_type": "PIPING",
+      "damage_mechanisms": ["EROSION"],
+      "age_years": 5,
+      "design_life_years": 30,
+      "operating_conditions": "NORMAL",
+      "last_inspection_date": null,
+      "description": "Young piping with single damage mechanism"
+    },
+    "expected": {
+      "probability_score": 1,
+      "consequence_score": 3,
+      "risk_score": 3,
+      "risk_level": "LOW",
+      "interval_months": 60,
+      "next_inspection": "today"
+    },
+    "assertions": [
+      "Probability = 1 (age_ratio 0.167 < 0.30)",
+      "Consequence = 3 (PIPING)",
+      "Risk = 3 = LOW",
+      "No prior inspection means next_inspection = today",
+      "60-month interval for LOW risk"
+    ]
+  },
+  {
+    "id": "rbi-eval-03",
+    "name": "Batch prioritization order",
+    "input": {
+      "equipment_list": [
+        {"id": "V-101", "risk_score": 25, "overdue": true},
+        {"id": "HX-201", "risk_score": 8, "overdue": false},
+        {"id": "P-301", "risk_score": 3, "overdue": false}
+      ],
+      "description": "Prioritize inspection order for 3 items"
+    },
+    "expected": {
+      "priority_order": ["V-101", "HX-201", "P-301"],
+      "explanation": "Overdue items first, then by risk score descending"
+    },
+    "assertions": [
+      "V-101 first (overdue + highest risk)",
+      "HX-201 second (not overdue, risk 8)",
+      "P-301 last (not overdue, risk 3)",
+      "high_risk_count = 1 (only CRITICAL/HIGH counted)"
+    ]
+  },
+  {
+    "id": "rbi-eval-04",
+    "name": "Operating conditions keyword matching",
+    "input": {
+      "operating_conditions_tests": [
+        {"value": "SEVERE", "adds_factor": true},
+        {"value": "HARSH", "adds_factor": true},
+        {"value": "AGGRESSIVE", "adds_factor": true},
+        {"value": "MODERATE", "adds_factor": false},
+        {"value": "NORMAL", "adds_factor": false},
+        {"value": "CHALLENGING", "adds_factor": false}
+      ],
+      "description": "Only specific keywords trigger the +1 dm_factor"
+    },
+    "expected": {
+      "trigger_keywords": ["SEVERE", "HARSH", "AGGRESSIVE"],
+      "non_trigger": ["MODERATE", "NORMAL", "CHALLENGING"]
+    },
+    "assertions": [
+      "Only SEVERE, HARSH, AGGRESSIVE add +1 to dm_factor",
+      "Matching is case-insensitive",
+      "Other descriptors have no effect"
+    ]
+  }
+]

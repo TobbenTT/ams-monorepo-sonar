@@ -1,0 +1,87 @@
+{
+  "skill": "manage-change",
+  "should_trigger": [
+    {
+      "query": "Submit a management of change request for the new SAG mill gearbox type",
+      "reason": "Directly relevant to manage-change skill"
+    },
+    {
+      "query": "Start the MoC review for the conveyor VFD upgrade",
+      "reason": "Directly relevant to manage-change skill"
+    },
+    {
+      "query": "What is the risk assessment for changing the pump seal material?",
+      "reason": "Directly relevant to manage-change skill"
+    },
+    {
+      "query": "Approve the MoC for the crusher liner modification",
+      "reason": "Directly relevant to manage-change skill"
+    },
+    {
+      "query": "Reject the MoC due to high risk and send back for rework",
+      "reason": "Directly relevant to manage-change skill"
+    },
+    {
+      "query": "Crear una solicitud de gestion de cambio para el nuevo tipo de motor",
+      "reason": "Spanish query relevant to manage-change skill"
+    },
+    {
+      "query": "Evaluar el riesgo del cambio de procedimiento de lubricacion",
+      "reason": "Spanish query relevant to manage-change skill"
+    },
+    {
+      "query": "Track the status of MoC-2025-001 through the approval process",
+      "reason": "Directly relevant to manage-change skill"
+    },
+    {
+      "query": "Close the management of change after successful implementation",
+      "reason": "Directly relevant to manage-change skill"
+    },
+    {
+      "query": "What conditions are required for the equipment modification MoC?",
+      "reason": "Directly relevant to manage-change skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Calculate the planning KPIs for Q1",
+      "reason": "Not related to manage-change functionality"
+    },
+    {
+      "query": "Generate a work instruction for the pump overhaul",
+      "reason": "Not related to manage-change functionality"
+    },
+    {
+      "query": "Export to SAP format",
+      "reason": "Not related to manage-change functionality"
+    },
+    {
+      "query": "Group the backlog by area",
+      "reason": "Not related to manage-change functionality"
+    },
+    {
+      "query": "Create a CAPA for the bearing failure",
+      "reason": "Not related to manage-change functionality"
+    },
+    {
+      "query": "Schedule the weekly program",
+      "reason": "Not related to manage-change functionality"
+    },
+    {
+      "query": "Generate the monthly report",
+      "reason": "Not related to manage-change functionality"
+    },
+    {
+      "query": "Check pending notifications",
+      "reason": "Not related to manage-change functionality"
+    },
+    {
+      "query": "Conduct the management review",
+      "reason": "Not related to manage-change functionality"
+    },
+    {
+      "query": "Plan the shutdown turnaround",
+      "reason": "Not related to manage-change functionality"
+    }
+  ]
+}

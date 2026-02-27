@@ -1,0 +1,103 @@
+{
+  "skill": "calculate-kpis",
+  "should_trigger": [
+    {
+      "query": "Calculate the MTBF and MTTR for our SAG mill at Jorf Lasfar",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "What are the KPIs for plant OCP-JFC1 in Q4 2024?",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "I need the availability and OEE for the crusher line",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "Can you compute reliability metrics from these work orders?",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "Dame los indicadores de mantenimiento para la planta de Khouribga",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "What's the schedule compliance for our PM program this quarter?",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "Show me the reactive ratio for all corrective work orders",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "I have work order data - calculate performance indicators please",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "Need PM compliance numbers for the conveyor belt maintenance program",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "Cuantas fallas tuvo el molino SAG? Necesito el MTBF",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "Run the KPI calculations on the last 6 months of PM03 orders",
+      "reason": "Directly relevant to calculate-kpis skill"
+    },
+    {
+      "query": "What's our OEE looking like for the ball mill?",
+      "reason": "Directly relevant to calculate-kpis skill"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "What Weibull distribution fits the SAG mill failures?",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "Compare plant performance across all 15 OCP sites",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "Do a Pareto analysis of the worst equipment",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "Run an RCM decision tree for the conveyor belt",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "What's the risk level for pressure vessel V-101?",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "Can you build the equipment hierarchy for Jorf Lasfar?",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "Perform an FMECA for the crusher gearbox",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "What's the optimal PM interval for the pump?",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "Calculate the life cycle cost of replacing the motor",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "Show me the Jackknife diagram for the plant equipment",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "How do I create a maintenance strategy?",
+      "reason": "Not related to calculate-kpis functionality"
+    },
+    {
+      "query": "Assess the criticality of the ball mill drive system",
+      "reason": "Not related to calculate-kpis functionality"
+    }
+  ]
+}

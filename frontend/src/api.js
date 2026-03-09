@@ -61,7 +61,9 @@ async function request(method, path, data, params) {
     } else {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
-      window.location.href = '/login';
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
       throw new Error('Sesion expirada');
     }
   }

@@ -20,20 +20,23 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let cancelled = false;
         if (token) {
             fetchMe(token)
-                .then(u => setUser(u))
+                .then(u => { if (!cancelled) setUser(u); })
                 .catch(() => {
+                    if (cancelled) return;
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
                     setToken(null);
                     setUser(null);
                 })
-                .finally(() => setLoading(false));
+                .finally(() => { if (!cancelled) setLoading(false); });
         } else {
             setLoading(false);
         }
-    }, []);
+        return () => { cancelled = true; };
+    }, [token]);
 
     const login = useCallback(async (username, password) => {
         const res = await fetch('/api/v1/auth/login', {

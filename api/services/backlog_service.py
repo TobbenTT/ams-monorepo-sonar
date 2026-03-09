@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from api.database.models import (
     BacklogItemModel, WorkRequestModel, OptimizedBacklogModel,
-    WorkforceModel, ShutdownCalendarModel,
+    WorkforceModel, ShutdownCalendarModel, WorkPackageModel,
+    HierarchyNodeModel,
 )
 from api.services.audit_service import log_action
 from tools.processors.backlog_optimizer import BacklogOptimizer
@@ -30,7 +31,7 @@ def add_to_backlog(db: Session, work_request_id: str) -> dict | None:
         equipment_tag=wr.equipment_tag,
         priority=priority,
         wo_type=wo_type,
-        status="AWAITING_APPROVAL",
+        status="READY",
         estimated_hours=ai.get("estimated_duration_hours", 4.0),
         specialties=ai.get("required_specialties", ["MECHANICAL"]),
         materials_ready=True,
@@ -42,6 +43,9 @@ def add_to_backlog(db: Session, work_request_id: str) -> dict | None:
     log_action(db, "backlog_item", item.backlog_id, "CREATE")
     db.commit()
     db.refresh(item)
+
+    # Auto-create a draft Work Package from this backlog item
+    _auto_create_work_package(db, item, wr)
 
     return _item_to_dict(item)
 
@@ -187,6 +191,11 @@ def _to_schema_item(item: BacklogItemModel) -> BacklogItem:
 
 
 def _item_to_dict(item: BacklogItemModel) -> dict:
+    # Compute age_days dynamically from created_at
+    age = item.age_days or 0
+    if item.created_at:
+        age = max(0, (datetime.now() - item.created_at).days)
+
     return {
         "backlog_id": item.backlog_id,
         "work_request_id": item.work_request_id,
@@ -200,5 +209,55 @@ def _item_to_dict(item: BacklogItemModel) -> dict:
         "specialties": item.specialties,
         "materials_ready": item.materials_ready,
         "shutdown_required": item.shutdown_required,
-        "age_days": item.age_days,
+        "age_days": age,
+        "plant": getattr(item, "plant_id", None) or "",
+        "group_id": None,
+        "created_at": item.created_at.isoformat() if item.created_at else None,
     }
+
+
+def _auto_create_work_package(db: Session, item: BacklogItemModel, wr: WorkRequestModel):
+    """Create a draft Work Package from a backlog item."""
+    # Find a hierarchy node for this equipment/plant
+    node = db.query(HierarchyNodeModel).filter(
+        HierarchyNodeModel.tag == item.equipment_tag
+    ).first()
+    if not node:
+        # Fallback to the plant root node
+        node = db.query(HierarchyNodeModel).filter(
+            HierarchyNodeModel.node_type == "PLANT"
+        ).first()
+    if not node:
+        return  # Cannot create WP without a hierarchy node
+
+    ai = wr.ai_classification or {}
+    desc = wr.problem_description or "Maintenance task"
+    tag = item.equipment_tag or "EQUIPMENT"
+    code = f"WP-{item.backlog_id[:8].upper()}"
+
+    tasks = [{
+        "task_id": f"TASK-{item.backlog_id[:8]}",
+        "description": desc,
+        "task_type": item.wo_type or "PM01",
+        "duration_hours": item.estimated_hours or 4.0,
+        "specialty": (item.specialties or ["MECHANICAL"])[0],
+    }]
+
+    wp = WorkPackageModel(
+        name=f"{tag} - {desc[:30]}",
+        code=code,
+        node_id=node.node_id,
+        frequency_value=ai.get("frequency_value", 1.0),
+        frequency_unit=ai.get("frequency_unit", "WEEKS"),
+        constraint="ONLINE" if not item.shutdown_required else "OFFLINE",
+        work_package_type="STANDALONE",
+        allocated_tasks=tasks,
+        labour_summary={
+            "total_duration_hours": item.estimated_hours or 4.0,
+            "trades_required": item.specialties or ["MECHANICAL"],
+        },
+        status="DRAFT",
+    )
+    db.add(wp)
+    log_action(db, "work_package", wp.work_package_id, "AUTO_CREATE")
+    db.commit()

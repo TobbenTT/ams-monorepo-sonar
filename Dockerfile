@@ -29,3 +29,6 @@ RUN mkdir -p /app/data \
 USER appuser
 
 EXPOSE 8000
+
+# Start server (tables created via lifespan, seed via POST /api/v1/admin/seed)
+CMD ["gunicorn", "api.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120"]

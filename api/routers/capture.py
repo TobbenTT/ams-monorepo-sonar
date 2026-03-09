@@ -43,6 +43,19 @@ def list_captures(db: Session = Depends(get_db)):
     return result
 
 
+@router.delete("/{capture_id}")
+def delete_capture(capture_id: str, db: Session = Depends(get_db)):
+    from api.database.models import FieldCaptureModel, WorkRequestModel
+    c = db.query(FieldCaptureModel).filter(FieldCaptureModel.capture_id == capture_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Capture not found")
+    # Also delete linked work request if exists
+    db.query(WorkRequestModel).filter(WorkRequestModel.source_capture_id == capture_id).delete()
+    db.delete(c)
+    db.commit()
+    return {"deleted": capture_id}
+
+
 @router.get("/{capture_id}")
 def get_capture(capture_id: str, db: Session = Depends(get_db)):
     c = capture_service.get_capture(db, capture_id)

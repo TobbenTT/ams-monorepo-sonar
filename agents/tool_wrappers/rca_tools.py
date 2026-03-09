@@ -1,6 +1,7 @@
 """MCP tool wrappers for RCAEngine (Phase 4A)."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from datetime import date
 from agents.tool_wrappers.registry import tool
 from tools.engines.rca_engine import RCAEngine
@@ -22,7 +23,7 @@ from tools.models.schemas import (
 )
 def classify_rca_event(max_consequence: int, frequency: int) -> str:
     level, team_req = RCAEngine.classify_event(max_consequence, frequency)
-    return json.dumps({"level": level.value, "team_requirements": team_req})
+    return json_compact({"level": level.value, "team_requirements": team_req})
 
 
 @tool(
@@ -40,7 +41,7 @@ def create_rca_analysis(input_json: str) -> str:
         level=level,
         team_members=data.get("team_members"),
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -54,7 +55,7 @@ def run_rca_5w2h(input_json: str) -> str:
         what=data["what"], when=data["when"], where=data["where"],
         who=data["who"], why=data["why"], how=data["how"], how_much=data["how_much"],
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -67,7 +68,7 @@ def add_rca_cause(analysis_json: str, cause_text: str, evidence_type: str, paren
     ev_type = EvidenceType(evidence_type)
     parent = parent_cause_id if parent_cause_id else None
     updated = RCAEngine.add_cause(analysis, cause_text, ev_type, parent)
-    return json.dumps(updated.model_dump(), default=str)
+    return json_compact(updated.model_dump(), default=str)
 
 
 @tool(
@@ -79,7 +80,7 @@ def classify_root_cause(analysis_json: str, cause_id: str, level: str) -> str:
     analysis = RCAAnalysis(**json.loads(analysis_json))
     rc_level = RootCauseLevel(level)
     updated = RCAEngine.classify_root_cause_level(analysis, cause_id, rc_level)
-    return json.dumps(updated.model_dump(), default=str)
+    return json_compact(updated.model_dump(), default=str)
 
 
 @tool(
@@ -90,7 +91,7 @@ def classify_root_cause(analysis_json: str, cause_id: str, level: str) -> str:
 def validate_rca_chain(analysis_json: str) -> str:
     analysis = RCAAnalysis(**json.loads(analysis_json))
     errors = RCAEngine.validate_root_cause_chain(analysis)
-    return json.dumps({"valid": len(errors) == 0, "errors": errors})
+    return json_compact({"valid": len(errors) == 0, "errors": errors})
 
 
 @tool(
@@ -102,7 +103,7 @@ def collect_rca_evidence(analysis_json: str, category: str, description: str, so
     analysis = RCAAnalysis(**json.loads(analysis_json))
     cat = Evidence5PCategory(category)
     updated = RCAEngine.collect_evidence_5p(analysis, cat, description, source, fragility_score)
-    return json.dumps(updated.model_dump(), default=str)
+    return json_compact(updated.model_dump(), default=str)
 
 
 @tool(
@@ -114,7 +115,7 @@ def evaluate_rca_solution(solution_json: str, five_questions: str) -> str:
     solution = Solution(**json.loads(solution_json))
     questions = json.loads(five_questions)
     passes = RCAEngine.evaluate_solution(solution, questions)
-    return json.dumps({"passes": passes, "solution": solution.model_dump()}, default=str)
+    return json_compact({"passes": passes, "solution": solution.model_dump()}, default=str)
 
 
 @tool(
@@ -125,7 +126,7 @@ def evaluate_rca_solution(solution_json: str, five_questions: str) -> str:
 def prioritize_rca_solutions(solutions_json: str) -> str:
     solutions = [Solution(**s) for s in json.loads(solutions_json)]
     result = RCAEngine.prioritize_solutions(solutions)
-    return json.dumps([r.model_dump() for r in result], default=str)
+    return json_compact([r.model_dump() for r in result], default=str)
 
 
 @tool(
@@ -137,7 +138,7 @@ def advance_rca_status(analysis_json: str, target_status: str) -> str:
     analysis = RCAAnalysis(**json.loads(analysis_json))
     target = RCAStatus(target_status)
     updated, message = RCAEngine.advance_status(analysis, target)
-    return json.dumps({"analysis": updated.model_dump(), "message": message}, default=str)
+    return json_compact({"analysis": updated.model_dump(), "message": message}, default=str)
 
 
 @tool(
@@ -162,4 +163,4 @@ def compute_de_kpis(input_json: str) -> str:
         failures_current=data["failures_current"],
         failures_previous=data["failures_previous"],
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)

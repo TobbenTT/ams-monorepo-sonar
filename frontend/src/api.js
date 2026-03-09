@@ -1,25 +1,79 @@
 /* API Client — OCP Maintenance AI MVP */
 const BASE = '/api/v1';
 
-async function get(path, params) {
+function getToken() {
+  return localStorage.getItem('access_token');
+}
+
+function authHeaders() {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const apiKey = localStorage.getItem('api_key');
+  if (apiKey) headers['X-API-Key'] = apiKey;
+  return headers;
+}
+
+let isRefreshing = false;
+let refreshPromise = null;
+
+async function tryRefresh() {
+  if (isRefreshing) return refreshPromise;
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    const rt = localStorage.getItem('refresh_token');
+    if (!rt) return null;
+    try {
+      const res = await fetch(`${BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rt }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      return data.access_token;
+    } catch {
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
+async function request(method, path, data, params) {
   const url = new URL(`${BASE}${path}`, window.location.origin);
   if (params) Object.entries(params).forEach(([k, v]) => { if (v != null) url.searchParams.set(k, v); });
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`GET ${path} → ${r.status}`);
+
+  const opts = { method, headers: authHeaders() };
+  if (data !== undefined && method !== 'GET') opts.body = JSON.stringify(data);
+
+  let r = await fetch(url, opts);
+
+  if (r.status === 401 && getToken()) {
+    const newToken = await tryRefresh();
+    if (newToken) {
+      opts.headers = authHeaders();
+      r = await fetch(url, opts);
+    } else {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      window.location.href = '/login';
+      throw new Error('Sesion expirada');
+    }
+  }
+
+  if (!r.ok) throw new Error(`${method} ${path} → ${r.status}`);
   return r.json();
 }
 
-async function post(path, data) {
-  const r = await fetch(`${BASE}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data || {}) });
-  if (!r.ok) throw new Error(`POST ${path} → ${r.status}`);
-  return r.json();
-}
-
-async function put(path, data) {
-  const r = await fetch(`${BASE}${path}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data || {}) });
-  if (!r.ok) throw new Error(`PUT ${path} → ${r.status}`);
-  return r.json();
-}
+async function get(path, params) { return request('GET', path, undefined, params); }
+async function post(path, data) { return request('POST', path, data || {}); }
+async function put(path, data) { return request('PUT', path, data || {}); }
+async function del(path) { return request('DELETE', path); }
 
 // ── Hierarchy ──
 export const listPlants = () => get('/hierarchy/plants');
@@ -47,6 +101,16 @@ export const validateFmCombo = (m, c) => get('/fmea/validate-fm', { mechanism: m
 export const getFmCombinations = (m) => get('/fmea/fm-combinations', { mechanism: m });
 export const rcmDecide = (d) => post('/fmea/rcm-decide', d);
 
+// ── FMECA ──
+export const listFmecaWorksheets = (p) => get('/fmea/fmeca/worksheets', p);
+export const getFmecaWorksheet = (id) => get(`/fmea/fmeca/worksheets/${id}`);
+export const createFmecaWorksheet = (d) => post('/fmea/fmeca/worksheets', d);
+export const calculateRPN = (d) => post('/fmea/fmeca/rpn', d);
+export const getFmecaSummary = (id) => get(`/fmea/fmeca/worksheets/${id}/summary`);
+export const addFmecaRow = (id, d) => post(`/fmea/fmeca/worksheets/${id}/rows`, d);
+export const runFmecaDecisions = (id) => put(`/fmea/fmeca/worksheets/${id}/run-decisions`);
+export const generateFmecaTasks = (id) => post(`/fmea/fmeca/worksheets/${id}/generate-tasks`);
+
 // ── Tasks ──
 export const createTask = (d) => post('/tasks', d);
 export const getTask = (id) => get(`/tasks/${id}`);
@@ -64,6 +128,7 @@ export const generateWorkInstruction = (id, d) => post(`/work-packages/${id}/wor
 export const listSapUploads = (p) => get('/sap/uploads', p);
 export const approveSapUpload = (id) => put(`/sap/uploads/${id}/approve`);
 export const getSapMock = (t) => get(`/sap/mock/${t}`);
+export const generateSapUpload = (d) => post('/sap/generate-upload', d);
 
 // ── Analytics ──
 export const calculateHealthScore = (d) => post('/analytics/health-score', d);
@@ -71,6 +136,8 @@ export const calculateKpis = (d) => post('/analytics/kpis', d);
 export const fitWeibull = (d) => post('/analytics/weibull-fit', d);
 export const predictFailure = (d) => post('/analytics/weibull-predict', d);
 export const getVarianceAlerts = () => get('/analytics/variance-alerts');
+export const getAssetHealth = (p) => get('/analytics/asset-health', p);
+export const getAnalyticsPageData = (plantId) => get(`/analytics/page-data/${plantId}`);
 
 // ── Admin ──
 export const seedDatabase = () => post('/admin/seed-database');
@@ -81,18 +148,24 @@ export const getAuditLog = (p) => get('/admin/audit-log', p);
 export const submitCapture = (d) => post('/capture/', d);
 export const listCaptures = () => get('/capture/');
 export const getCapture = (id) => get(`/capture/${id}`);
+export const deleteCapture = (id) => del(`/capture/${id}`);
 
 // ── Work Requests ──
-export const listWorkRequests = (p) => get('/work-requests', p);
+export const listWorkRequests = (p) => get('/work-requests/', p);
 export const getWorkRequest = (id) => get(`/work-requests/${id}`);
 export const validateWorkRequest = (id, d) => put(`/work-requests/${id}/validate`, d);
+export const checkDuplicates = (d) => post('/work-requests/check-duplicates', d);
+export const createWRFromHierarchy = (d) => post('/work-requests/from-hierarchy', d);
+export const deleteWorkRequest = (id) => del(`/work-requests/${id}`);
+export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);
 
 // ── Planner ──
 export const generateRecommendation = (id) => post(`/planner/recommend/${id}`);
 export const getRecommendation = (id) => get(`/planner/recommendations/${id}`);
+export const applyRecommendationAction = (id, d) => put(`/planner/recommendations/${id}/action`, d);
 
 // ── Backlog ──
-export const listBacklog = (p) => get('/backlog', p);
+export const listBacklog = (p) => get('/backlog/', p);
 export const addToBacklog = (id) => post(`/backlog/add/${id}`);
 export const optimizeBacklog = (d) => post('/backlog/optimize', d);
 export const getSchedule = () => get('/backlog/schedule');
@@ -102,6 +175,8 @@ export const createProgram = (d) => post('/scheduling/programs', d);
 export const listPrograms = (p) => get('/scheduling/programs', p);
 export const getProgram = (id) => get(`/scheduling/programs/${id}`);
 export const finalizeProgram = (id) => put(`/scheduling/programs/${id}/finalize`);
+export const activateProgram = (id) => put(`/scheduling/programs/${id}/activate`);
+export const completeProgram = (id) => put(`/scheduling/programs/${id}/complete`);
 export const getGantt = (id) => get(`/scheduling/programs/${id}/gantt`);
 
 // ── Reliability ──
@@ -132,6 +207,18 @@ export const run5w2h = (id, d) => post(`/rca/analyses/${id}/5w2h`, d);
 export const advanceRca = (id, d) => put(`/rca/analyses/${id}/advance`, d);
 export const listPlanningKpis = (p) => get('/rca/planning-kpis', p);
 export const listDeKpis = (p) => get('/rca/de-kpis', p);
+
+// ── Auth ──
+export const authLogin = (d) => post('/auth/login', d);
+export const authRefresh = (d) => post('/auth/refresh', d);
+export const authMe = () => get('/auth/me');
+export const authUpdateProfile = (d) => put('/auth/me', d);
+export const authRegister = (d) => post('/auth/register', d);
+export const authChangePassword = (d) => put('/auth/change-password', d);
+export const authListUsers = (p) => get('/auth/users', p);
+export const authUpdateRole = (id, d) => put(`/auth/users/${id}/role`, d);
+export const authDeactivate = (id) => put(`/auth/users/${id}/deactivate`);
+export const authActivate = (id) => put(`/auth/users/${id}/activate`);
 
 // ── Health check ──
 export const healthCheck = () => fetch('/health').then(r => r.json());

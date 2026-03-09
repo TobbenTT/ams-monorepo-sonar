@@ -1,6 +1,7 @@
 """MCP tool wrappers for PlanningKPIEngine (Phase 4A)."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.planning_kpi_engine import PlanningKPIEngine
 from tools.models.schemas import PlanningKPIInput
@@ -15,7 +16,7 @@ def calculate_planning_kpis(input_json: str) -> str:
     data = json.loads(input_json)
     input_data = PlanningKPIInput(**data)
     result = PlanningKPIEngine.calculate(input_data)
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -37,4 +38,4 @@ def get_planning_kpi_targets() -> str:
         {"name": "proactive_work", "target": 70.0, "unit": "%", "direction": ">=", "description": "(PM + PdM) / total WOs"},
         {"name": "planning_efficiency", "target": 85.0, "unit": "%", "direction": ">=", "description": "Planned WOs / total WOs"},
     ]
-    return json.dumps(targets)
+    return json_compact(targets)

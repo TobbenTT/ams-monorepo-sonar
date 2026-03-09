@@ -1,6 +1,7 @@
 """MCP tool wrappers for PriorityEngine."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.priority_engine import PriorityEngine, PriorityInput
 
@@ -15,7 +16,7 @@ def calculate_priority(input_json: str) -> str:
     input_data = PriorityInput(**data)
     result = PriorityEngine.calculate_priority(input_data)
     from dataclasses import asdict
-    return json.dumps(asdict(result), default=str)
+    return json_compact(asdict(result), default=str)
 
 
 @tool(
@@ -25,4 +26,4 @@ def calculate_priority(input_json: str) -> str:
 )
 def validate_priority_override(ai_priority: str, human_priority: str) -> str:
     result = PriorityEngine.validate_priority_override(ai_priority, human_priority)
-    return json.dumps(result)
+    return json_compact(result)

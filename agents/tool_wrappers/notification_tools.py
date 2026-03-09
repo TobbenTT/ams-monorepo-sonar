@@ -1,6 +1,7 @@
 """MCP tool wrappers for Phase 6 — Notifications & Cross-Module Analytics."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.notification_engine import NotificationEngine
 from tools.engines.cross_module_engine import CrossModuleEngine
@@ -26,7 +27,7 @@ def generate_all_notifications(input_json: str) -> str:
         capas=data.get("capas"),
         mocs=data.get("mocs"),
     )
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -37,7 +38,7 @@ def generate_all_notifications(input_json: str) -> str:
 def check_rbi_overdue(input_json: str) -> str:
     data = json.loads(input_json)
     alerts = NotificationEngine.check_rbi_overdue(data.get("assessments", []))
-    return json.dumps([a.model_dump(mode="json") for a in alerts], default=str)
+    return json_compact([a.model_dump(mode="json") for a in alerts], default=str)
 
 
 @tool(
@@ -52,7 +53,7 @@ def check_kpi_breaches(input_json: str) -> str:
         de_kpis=data.get("de_kpis"),
         reliability_kpis=data.get("reliability_kpis"),
     )
-    return json.dumps([a.model_dump(mode="json") for a in alerts], default=str)
+    return json_compact([a.model_dump(mode="json") for a in alerts], default=str)
 
 
 @tool(
@@ -66,7 +67,7 @@ def check_backlog_aging(input_json: str) -> str:
         data.get("backlog_items", []),
         aging_threshold_days=data.get("aging_threshold_days", 30),
     )
-    return json.dumps([a.model_dump(mode="json") for a in alerts], default=str)
+    return json_compact([a.model_dump(mode="json") for a in alerts], default=str)
 
 
 # ── Cross-Module ────────────────────────────────────────────────────
@@ -103,7 +104,7 @@ def run_cross_module_analysis(input_json: str) -> str:
     summary = CrossModuleEngine.generate_cross_module_summary(
         data["plant_id"], correlations, overlap,
     )
-    return json.dumps(summary.model_dump(mode="json"), default=str)
+    return json_compact(summary.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -118,4 +119,4 @@ def find_bad_actor_overlap(input_json: str) -> str:
         pareto_result=data.get("pareto_result"),
         rbi_result=data.get("rbi_result"),
     )
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)

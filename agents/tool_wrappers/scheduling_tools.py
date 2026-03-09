@@ -1,6 +1,7 @@
 """MCP tool wrappers for SchedulingEngine (Phase 4B)."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.scheduling_engine import SchedulingEngine
 from tools.models.schemas import (
@@ -33,7 +34,7 @@ def create_weekly_program(input_json: str) -> str:
     program = SchedulingEngine.create_weekly_program(
         data["plant_id"], data["week_number"], data["year"], pkgs,
     )
-    return json.dumps(program.model_dump(), default=str)
+    return json_compact(program.model_dump(), default=str)
 
 
 @tool(
@@ -46,7 +47,7 @@ def level_program_resources(input_json: str) -> str:
     program = WeeklyProgram(**data["program"])
     workforce = data.get("workforce", [])
     program = SchedulingEngine.level_resources(program, workforce)
-    return json.dumps({
+    return json_compact({
         "resource_slots": [s.model_dump(mode="json") for s in program.resource_slots],
         "total_slots": len(program.resource_slots),
     }, default=str)
@@ -61,7 +62,7 @@ def detect_scheduling_conflicts(input_json: str) -> str:
     data = json.loads(input_json)
     program = WeeklyProgram(**data)
     conflicts = SchedulingEngine.detect_conflicts(program)
-    return json.dumps({
+    return json_compact({
         "conflicts": [c.model_dump(mode="json") for c in conflicts],
         "total_conflicts": len(conflicts),
     }, default=str)
@@ -83,7 +84,7 @@ def validate_wp_elements(input_json: str) -> str:
         for e in data.get("elements", [])
     ]
     result = SchedulingEngine.validate_work_package_elements(data["package_id"], elements)
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -95,7 +96,7 @@ def finalize_weekly_program(input_json: str) -> str:
     data = json.loads(input_json)
     program = WeeklyProgram(**data)
     program, msg = SchedulingEngine.finalize_program(program)
-    return json.dumps({"status": program.status.value, "message": msg}, default=str)
+    return json_compact({"status": program.status.value, "message": msg}, default=str)
 
 
 @tool(
@@ -108,7 +109,7 @@ def generate_gantt(input_json: str) -> str:
     data = json.loads(input_json)
     program = WeeklyProgram(**data)
     rows = GanttGenerator.generate_gantt_data(program)
-    return json.dumps([r.model_dump(mode="json") for r in rows], default=str)
+    return json_compact([r.model_dump(mode="json") for r in rows], default=str)
 
 
 # --- Phase 7: Enhanced Resource Leveling (G15) ---
@@ -126,7 +127,7 @@ def level_resources_enhanced(input_json: str) -> str:
     program = WeeklyProgram(**data["program"])
     capacities = [TradeCapacity(**tc) for tc in data.get("trade_capacities", [])]
     result = SchedulingEngine.level_resources_enhanced(program, capacities)
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -140,7 +141,7 @@ def suggest_conflict_resolutions(input_json: str) -> str:
     program = WeeklyProgram(**data["program"])
     capacities = [TradeCapacity(**tc) for tc in data.get("trade_capacities", [])]
     resolutions = SchedulingEngine.suggest_conflict_resolutions(conflicts, program, capacities)
-    return json.dumps({
+    return json_compact({
         "resolutions": [r.model_dump() for r in resolutions],
         "total": len(resolutions),
     }, default=str)

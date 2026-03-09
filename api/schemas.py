@@ -2,56 +2,63 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Any
+import re
+
+# ── Max length constants ──────────────────────────────────────────────
+_MAX_SHORT = 100    # IDs, tags, codes
+_MAX_MEDIUM = 500   # Names, descriptions
+_MAX_LONG = 5000    # Free text, comments
+_MAX_LIST = 1000    # Max items in lists
 
 
 # ── Admin ────────────────────────────────────────────────────────────
 
 class FeedbackCreate(BaseModel):
-    page: str = "unknown"
+    page: str = Field(default="unknown", max_length=_MAX_SHORT)
     rating: int = Field(default=3, ge=1, le=5)
-    comment: str = ""
+    comment: str = Field(default="", max_length=_MAX_LONG)
 
 
 # ── Analytics ────────────────────────────────────────────────────────
 
 class HealthScoreRequest(BaseModel):
-    node_id: str
-    plant_id: str
-    equipment_tag: str
-    risk_class: str
-    pending_backlog_hours: float = 0.0
-    capacity_hours_per_week: float = 40.0
-    total_failure_modes: int = 0
-    fm_with_strategy: int = 0
-    active_alerts: int = 0
-    critical_alerts: int = 0
-    planned_wo: int = 0
-    executed_on_time: int = 0
+    node_id: str = Field(max_length=_MAX_SHORT)
+    plant_id: str = Field(max_length=_MAX_SHORT)
+    equipment_tag: str = Field(max_length=_MAX_SHORT)
+    risk_class: str = Field(max_length=20)
+    pending_backlog_hours: float = Field(default=0.0, ge=0, le=100000)
+    capacity_hours_per_week: float = Field(default=40.0, ge=0, le=10000)
+    total_failure_modes: int = Field(default=0, ge=0, le=10000)
+    fm_with_strategy: int = Field(default=0, ge=0, le=10000)
+    active_alerts: int = Field(default=0, ge=0, le=10000)
+    critical_alerts: int = Field(default=0, ge=0, le=10000)
+    planned_wo: int = Field(default=0, ge=0, le=100000)
+    executed_on_time: int = Field(default=0, ge=0, le=100000)
 
 
 class KPIRequest(BaseModel):
-    plant_id: str
-    failure_dates: list[str] | None = None
-    total_period_hours: float | None = None
-    total_downtime_hours: float | None = None
+    plant_id: str = Field(max_length=_MAX_SHORT)
+    failure_dates: list[str] | None = Field(default=None, max_length=_MAX_LIST)
+    total_period_hours: float | None = Field(default=None, ge=0, le=1e8)
+    total_downtime_hours: float | None = Field(default=None, ge=0, le=1e8)
 
 
 class WeibullFitRequest(BaseModel):
-    failure_intervals: list[float]
+    failure_intervals: list[float] = Field(max_length=_MAX_LIST)
 
 
 class WeibullPredictRequest(BaseModel):
-    equipment_id: str
-    equipment_tag: str
-    failure_intervals: list[float]
-    current_age_days: float
-    confidence_level: float = 0.9
+    equipment_id: str = Field(max_length=_MAX_SHORT)
+    equipment_tag: str = Field(max_length=_MAX_SHORT)
+    failure_intervals: list[float] = Field(max_length=_MAX_LIST)
+    current_age_days: float = Field(ge=0, le=1e6)
+    confidence_level: float = Field(default=0.9, ge=0.01, le=0.99)
 
 
 class VarianceDetectRequest(BaseModel):
-    snapshots: list[dict[str, Any]]
+    snapshots: list[dict[str, Any]] = Field(max_length=_MAX_LIST)
 
 
 # ── Backlog ──────────────────────────────────────────────────────────
@@ -412,3 +419,62 @@ class WorkInstructionRequest(BaseModel):
 class WRValidateRequest(BaseModel):
     action: str
     modifications: dict[str, Any] | None = None
+
+
+# ── Auth ────────────────────────────────────────────────────────────
+
+class UserRegister(BaseModel):
+    email: str = Field(max_length=254)
+    username: str = Field(min_length=3, max_length=50, pattern=r'^[a-zA-Z0-9_.-]+$')
+    password: str = Field(min_length=8, max_length=128)
+    full_name: str = Field(default="", max_length=200)
+    role: str = Field(default="tecnico", max_length=20)
+    plant_id: str | None = Field(default=None, max_length=_MAX_SHORT)
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', v):
+            raise ValueError('Invalid email format')
+        return v.lower().strip()
+
+    @field_validator('password')
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one digit')
+        return v
+
+
+class UserLogin(BaseModel):
+    username: str = Field(max_length=254)
+    password: str = Field(max_length=128)
+
+
+class PasswordChange(BaseModel):
+    current_password: str = Field(max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one digit')
+        return v
+
+
+class UserRoleUpdate(BaseModel):
+    role: str = Field(max_length=20)
+
+
+class UserProfileUpdate(BaseModel):
+    full_name: str | None = Field(default=None, max_length=200)
+    email: str | None = Field(default=None, max_length=254)
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(max_length=2048)

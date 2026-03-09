@@ -9,8 +9,12 @@ Usage:
     result = call_tool("rcm_decide", {"input_json": "..."})
 """
 
+import logging
+
 # Import registry
 from agents.tool_wrappers.registry import TOOL_REGISTRY, call_tool, list_tools
+
+log = logging.getLogger(__name__)
 
 # Import all tool modules to trigger @tool decorator registration
 import agents.tool_wrappers.criticality_tools  # noqa: F401
@@ -131,8 +135,14 @@ AGENT_TOOL_MAP = {
 def get_tools_for_agent(agent_type: str) -> list[dict]:
     """Return tool metadata for a specific agent type."""
     tool_names = AGENT_TOOL_MAP.get(agent_type, [])
-    return [
-        {"name": name, "description": TOOL_REGISTRY[name]["description"], "input_schema": TOOL_REGISTRY[name]["input_schema"]}
-        for name in tool_names
-        if name in TOOL_REGISTRY
-    ]
+    tools = []
+    for name in tool_names:
+        if name in TOOL_REGISTRY:
+            tools.append({
+                "name": name,
+                "description": TOOL_REGISTRY[name]["description"],
+                "input_schema": TOOL_REGISTRY[name]["input_schema"],
+            })
+        else:
+            log.warning("Tool '%s' mapped to agent '%s' but not found in registry", name, agent_type)
+    return tools

@@ -94,6 +94,23 @@ def create_program(
     # Detect conflicts
     SchedulingEngine.detect_conflicts(program)
 
+    # Build a lookup from backlog_id → item for enrichment
+    item_lookup = {i.backlog_id: i for i in schedulable}
+
+    # Enrich work_packages with equipment_tag and wo_type from backlog items
+    enriched_wps = []
+    for p in program.work_packages:
+        wp_dict = dict(p) if isinstance(p, dict) else p
+        # Try to find the source backlog item for this WP
+        grouped = wp_dict.get("grouped_items", [])
+        if grouped and grouped[0] in item_lookup:
+            src = item_lookup[grouped[0]]
+            wp_dict["equipment_tag"] = src.equipment_tag
+            wp_dict["wo_type"] = src.work_order_type.value if hasattr(src.work_order_type, 'value') else str(src.work_order_type)
+            wp_dict["priority"] = src.priority.value if hasattr(src.priority, 'value') else str(src.priority)
+            wp_dict["description"] = f"{src.equipment_tag} - {src.work_order_type.value if hasattr(src.work_order_type, 'value') else src.work_order_type}"
+        enriched_wps.append(wp_dict)
+
     # Persist
     model = WeeklyProgramModel(
         program_id=program.program_id,
@@ -101,7 +118,7 @@ def create_program(
         week_number=week_number,
         year=year,
         status=program.status.value,
-        work_packages=[p for p in program.work_packages],
+        work_packages=enriched_wps,
         total_hours=program.total_hours,
         resource_slots=[s.model_dump(mode="json") for s in program.resource_slots],
         conflicts=[c.model_dump(mode="json") for c in program.conflicts],
@@ -249,6 +266,21 @@ def _to_schema_item(item: BacklogItemModel) -> BacklogItem:
 
 
 def _program_to_dict(model: WeeklyProgramModel) -> dict:
+    raw_wps = model.work_packages if isinstance(model.work_packages, list) else []
+    work_packages = []
+    for wp in raw_wps:
+        if isinstance(wp, dict):
+            work_packages.append({
+                "work_package_id": wp.get("package_id") or wp.get("work_package_id", ""),
+                "name": wp.get("name", ""),
+                "equipment_tag": wp.get("equipment_tag", ""),
+                "wo_type": wp.get("wo_type", ""),
+                "estimated_hours": wp.get("total_duration_hours", 0),
+                "specialties": wp.get("assigned_team") or wp.get("specialties", []),
+                "scheduled_date": wp.get("scheduled_date", ""),
+                "scheduled_shift": wp.get("scheduled_shift", ""),
+            })
+
     return {
         "program_id": model.program_id,
         "plant_id": model.plant_id,
@@ -256,7 +288,8 @@ def _program_to_dict(model: WeeklyProgramModel) -> dict:
         "year": model.year,
         "status": model.status,
         "total_hours": model.total_hours,
-        "work_packages_count": len(model.work_packages) if model.work_packages else 0,
+        "work_packages": work_packages,
+        "work_packages_count": len(work_packages),
         "conflicts_count": len(model.conflicts) if model.conflicts else 0,
         "support_tasks_count": len(model.support_tasks) if model.support_tasks else 0,
         "created_at": model.created_at.isoformat() if model.created_at else None,

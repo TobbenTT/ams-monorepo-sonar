@@ -111,7 +111,66 @@ def rcm_decide(data: dict) -> dict:
 
 from api.database.models import FMECAWorksheetModel
 from tools.engines.fmeca_engine import FMECAEngine
-from tools.models.schemas import FMECAWorksheet
+from tools.models.schemas import FMECAWorksheet, FMECARow
+
+
+def list_fmeca_worksheets(db: Session, equipment_id: str | None = None, plant_id: str | None = None, status: str | None = None) -> list[dict]:
+    q = db.query(FMECAWorksheetModel)
+    if equipment_id:
+        q = q.filter(FMECAWorksheetModel.equipment_id == equipment_id)
+    elif plant_id:
+        from api.database.models import HierarchyNodeModel
+        equip_ids = [
+            n.node_id for n in db.query(HierarchyNodeModel).filter(
+                HierarchyNodeModel.plant_id == plant_id,
+                HierarchyNodeModel.node_type == "EQUIPMENT",
+            ).all()
+        ]
+        if equip_ids:
+            q = q.filter(FMECAWorksheetModel.equipment_id.in_(equip_ids))
+        else:
+            return []
+    if status:
+        q = q.filter(FMECAWorksheetModel.status == status)
+    db_rows = q.order_by(FMECAWorksheetModel.created_at.desc()).all()
+
+    # Flatten worksheet rows into individual failure mode records for the frontend
+    result = []
+    for obj in db_rows:
+        ws_rows = obj.rows or []
+        for r in ws_rows:
+            if isinstance(r, dict):
+                result.append({
+                    "id": r.get("row_id", ""),
+                    "worksheet_id": obj.worksheet_id,
+                    "equipment_id": obj.equipment_id,
+                    "equipment_tag": obj.equipment_tag,
+                    "equipment_name": obj.equipment_name,
+                    "function": r.get("function_description", ""),
+                    "failure_mode": r.get("failure_mode", ""),
+                    "failure_effect_local": r.get("failure_effect", ""),
+                    "failure_effect_system": r.get("failure_consequence", ""),
+                    "severity": r.get("severity", 1),
+                    "occurrence": r.get("occurrence", 1),
+                    "detectability": r.get("detection", 1),
+                    "rpn": r.get("rpn", 0),
+                    "task_type": r.get("strategy_type", ""),
+                    "current_controls": r.get("current_controls", ""),
+                    "recommended_action": r.get("recommended_action", ""),
+                })
+        # If no rows yet, include the worksheet as a placeholder
+        if not ws_rows:
+            result.append({
+                "id": obj.worksheet_id,
+                "worksheet_id": obj.worksheet_id,
+                "equipment_id": obj.equipment_id,
+                "equipment_tag": obj.equipment_tag,
+                "equipment_name": obj.equipment_name,
+                "status": obj.status,
+                "current_stage": obj.current_stage,
+                "_is_empty_worksheet": True,
+            })
+    return result
 
 
 def create_fmeca_worksheet(db: Session, data: dict) -> dict:
@@ -142,6 +201,39 @@ def create_fmeca_worksheet(db: Session, data: dict) -> dict:
         "status": obj.status,
         "current_stage": obj.current_stage,
     }
+
+
+def add_fmeca_row(db: Session, worksheet_id: str, row_data: dict) -> dict:
+    obj = db.query(FMECAWorksheetModel).filter(
+        FMECAWorksheetModel.worksheet_id == worksheet_id,
+    ).first()
+    if not obj:
+        return {"error": "Worksheet not found"}
+
+    ws = FMECAWorksheet(
+        worksheet_id=obj.worksheet_id,
+        equipment_id=obj.equipment_id,
+        status=obj.status,
+        current_stage=obj.current_stage,
+        rows=[FMECARow(**r) for r in (obj.rows or []) if isinstance(r, dict)],
+        stage_completion=obj.stage_completion or {},
+    )
+    ws = FMECAEngine.add_row(ws, row_data)
+
+    obj.rows = [_row_to_dict(r) for r in ws.rows]
+    obj.status = ws.status.value
+    log_action(db, "fmeca_worksheet", obj.worksheet_id, "ADD_ROW")
+    db.commit()
+
+    added = obj.rows[-1] if obj.rows else {}
+    return {"worksheet_id": obj.worksheet_id, "row": added, "total_rows": len(obj.rows)}
+
+
+def _row_to_dict(r) -> dict:
+    """Convert an FMECARow pydantic model to a plain dict."""
+    if hasattr(r, "model_dump"):
+        return r.model_dump(mode="json")
+    return dict(r) if not isinstance(r, dict) else r
 
 
 def get_fmeca_worksheet(db: Session, worksheet_id: str) -> dict | None:
@@ -192,6 +284,74 @@ def run_fmeca_decisions(db: Session, worksheet_id: str) -> dict:
     log_action(db, "fmeca_worksheet", obj.worksheet_id, "UPDATE", {"action": "run_decisions"})
     db.commit()
     return {"worksheet_id": obj.worksheet_id, "rows_processed": len(ws.rows)}
+
+
+def generate_tasks_from_fmeca(db: Session, worksheet_id: str) -> dict:
+    """Generate maintenance tasks from FMECA worksheet rows that have strategies."""
+    from api.database.models import MaintenanceTaskModel
+    from uuid import uuid4
+
+    obj = db.query(FMECAWorksheetModel).filter(
+        FMECAWorksheetModel.worksheet_id == worksheet_id,
+    ).first()
+    if not obj:
+        return {"error": "Worksheet not found"}
+
+    STRATEGY_TASK_MAP = {
+        "CONDITION_BASED": {"constraint": "ONLINE", "freq": 30, "unit": "DAYS", "prefix": "CBM"},
+        "FIXED_TIME": {"constraint": "OFFLINE", "freq": 90, "unit": "DAYS", "prefix": "TBM"},
+        "FAULT_FINDING": {"constraint": "ONLINE", "freq": 180, "unit": "DAYS", "prefix": "FF"},
+        "REDESIGN": {"constraint": "OFFLINE", "freq": 365, "unit": "DAYS", "prefix": "RDS"},
+    }
+
+    # Check for existing tasks from this worksheet to avoid duplicates
+    existing_tasks = db.query(MaintenanceTaskModel).filter(
+        MaintenanceTaskModel.origin.contains(worksheet_id),
+    ).all()
+    existing_origins = {(t.origin, t.task_type) for t in existing_tasks}
+
+    created = []
+    skipped = 0
+    for r in (obj.rows or []):
+        if not isinstance(r, dict):
+            continue
+        strategy = r.get("strategy_type", "")
+        if not strategy or strategy == "RUN_TO_FAILURE":
+            continue
+
+        origin_val = f"{obj.equipment_tag}|{obj.equipment_id}|{worksheet_id}"
+        if (origin_val, strategy) in existing_origins:
+            skipped += 1
+            continue
+
+        cfg = STRATEGY_TASK_MAP.get(strategy, {"constraint": "ONLINE", "freq": 90, "unit": "DAYS", "prefix": strategy[:3]})
+        fm_desc = r.get("failure_mode", "Unknown")
+        task_id = f"TSK-{uuid4().hex[:8].upper()}"
+
+        task = MaintenanceTaskModel(
+            task_id=task_id,
+            name=f"{cfg['prefix']}: {obj.equipment_tag} — {fm_desc[:50]}",
+            name_fr="",
+            task_type=strategy,
+            constraint=cfg["constraint"],
+            frequency_value=cfg["freq"],
+            frequency_unit=cfg["unit"],
+            origin=f"{obj.equipment_tag}|{obj.equipment_id}|{worksheet_id}",
+            status="ACTIVE",
+            ai_generated=True,
+            ai_confidence=0.85,
+        )
+        db.add(task)
+        created.append({"task_id": task_id, "name": task.name, "task_type": strategy})
+
+    if created:
+        log_action(db, "fmeca_worksheet", worksheet_id, "GENERATE_TASKS", {"count": len(created)})
+        db.commit()
+
+    result = {"worksheet_id": worksheet_id, "tasks_created": len(created), "tasks": created}
+    if skipped:
+        result["skipped_duplicates"] = skipped
+    return result
 
 
 def get_fmeca_summary(db: Session, worksheet_id: str) -> dict:

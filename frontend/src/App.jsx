@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ErrorBoundary from './components/ErrorBoundary';
+import UpdateBanner from './components/UpdateBanner';
 import { listPlants } from './api';
 
 export default function App() {
@@ -13,15 +14,16 @@ export default function App() {
     useEffect(() => { listPlants().then(setPlants).catch(() => { }); }, []);
 
     return (
-        <div className="app-layout">
+        <div className="flex h-screen bg-background overflow-hidden">
+            <UpdateBanner />
             <Sidebar mobileOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
-            <div className="main-area">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 <Header plant={plant} onPlantChange={setPlant} plants={plants} onMenuToggle={() => setMobileMenuOpen(v => !v)} />
-                <div className="page-content">
+                <main className="flex-1 overflow-y-auto p-5">
                     <ErrorBoundary>
                         <Outlet context={{ plant, plants }} />
                     </ErrorBoundary>
-                </div>
+                </main>
             </div>
         </div>
     );

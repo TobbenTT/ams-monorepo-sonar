@@ -68,7 +68,7 @@ def assess_de_program_health(data: ReportingDEKPIRequest, db: Session = Depends(
 @router.post("/notifications/generate")
 def generate_notifications(data: NotificationRequest, db: Session = Depends(get_db)):
     d = data.model_dump()
-    plant_id = d.pop("plant_id", "BRY")
+    plant_id = d.pop("plant_id", None)
     return reporting_service.generate_notifications(db, plant_id, d)
 
 
@@ -110,5 +110,5 @@ def export_data(data: ExportRequest, db: Session = Depends(get_db)):
 @router.post("/cross-module/analyze")
 def run_cross_module_analysis(data: CrossModuleRequest, db: Session = Depends(get_db)):
     d = data.model_dump()
-    plant_id = d.pop("plant_id", "BRY")
+    plant_id = d.pop("plant_id", None)
     return reporting_service.run_cross_module_analysis(db, plant_id, d)

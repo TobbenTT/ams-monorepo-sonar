@@ -1,6 +1,7 @@
 """MCP tool wrappers for Work Package Assembly Engine (Phase 7 — G5)."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.work_package_assembly_engine import WorkPackageAssemblyEngine
 from tools.models.schemas import AssembledWorkPackage
@@ -20,7 +21,7 @@ def assemble_work_package(input_json: str) -> str:
         element_data=data.get("elements", []),
         assembled_by=data.get("assembled_by", ""),
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -32,7 +33,7 @@ def check_wp_element_readiness(input_json: str) -> str:
     data = json.loads(input_json)
     package = AssembledWorkPackage(**data)
     issues = WorkPackageAssemblyEngine.check_element_readiness(package)
-    return json.dumps({"issues": issues, "total_issues": len(issues)})
+    return json_compact({"issues": issues, "total_issues": len(issues)})
 
 
 @tool(
@@ -46,4 +47,4 @@ def generate_wp_compliance_report(input_json: str) -> str:
     report = WorkPackageAssemblyEngine.generate_compliance_report(
         packages, plant_id=data.get("plant_id", ""),
     )
-    return json.dumps(report.model_dump(), default=str)
+    return json_compact(report.model_dump(), default=str)

@@ -1,6 +1,7 @@
 """MCP tool wrappers for WeibullEngine."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.weibull_engine import WeibullEngine
 from tools.models.schemas import WeibullParameters
@@ -14,7 +15,7 @@ from tools.models.schemas import WeibullParameters
 def fit_weibull(failure_intervals: str) -> str:
     intervals = json.loads(failure_intervals)
     result = WeibullEngine.fit_parameters(intervals)
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -31,7 +32,7 @@ def predict_failure(input_json: str) -> str:
         current_age_days=data["current_age_days"],
         confidence_level=data.get("confidence_level", 0.9),
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -45,7 +46,7 @@ def weibull_reliability(t: float, beta: float, eta: float, gamma: float = 0.0) -
     f = WeibullEngine.failure_probability(t, params)
     h = WeibullEngine.hazard_rate(t, params)
     pattern = WeibullEngine.classify_failure_pattern(beta)
-    return json.dumps({
+    return json_compact({
         "time": t, "reliability": round(r, 6), "failure_probability": round(f, 6),
         "hazard_rate": round(h, 6), "failure_pattern": pattern.value,
     })

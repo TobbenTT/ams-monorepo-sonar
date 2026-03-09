@@ -1,10 +1,25 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { cn } from './ui/utils';
 
 const ToastContext = createContext();
 
 export function useToast() {
     return useContext(ToastContext);
 }
+
+const TOAST_STYLES = {
+    success: 'border-l-green-600',
+    error: 'border-l-red-600',
+    warning: 'border-l-amber-500',
+    info: 'border-l-blue-600',
+};
+
+const ICONS = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️',
+};
 
 export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([]);
@@ -29,12 +44,24 @@ export function ToastProvider({ children }) {
     return (
         <ToastContext.Provider value={toast}>
             {children}
-            <div className="toast-container" role="status" aria-live="polite">
+            <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none" role="status" aria-live="polite">
                 {toasts.map(t => (
-                    <div key={t.id} className={`toast toast-${t.type}`}>
-                        <span>{t.type === 'success' ? '✅' : t.type === 'error' ? '❌' : t.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
-                        <span style={{ flex: 1 }}>{t.message}</span>
-                        <button className="toast-close" onClick={() => removeToast(t.id)} aria-label="Dismiss">×</button>
+                    <div
+                        key={t.id}
+                        className={cn(
+                            "pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-lg bg-card shadow-lg border-l-4 text-sm min-w-[280px] max-w-[420px] animate-in slide-in-from-right-5 border border-border",
+                            TOAST_STYLES[t.type]
+                        )}
+                    >
+                        <span>{ICONS[t.type]}</span>
+                        <span className="flex-1 text-foreground">{t.message}</span>
+                        <button
+                            className="text-muted-foreground hover:text-foreground text-lg leading-none p-0.5"
+                            onClick={() => removeToast(t.id)}
+                            aria-label="Dismiss"
+                        >
+                            ×
+                        </button>
                     </div>
                 ))}
             </div>

@@ -17,6 +17,7 @@ from api.database.models import (
     AuditLogModel,
     WorkforceModel, InventoryItemModel, ShutdownCalendarModel,
     WorkRequestModel, FieldCaptureModel, BacklogItemModel,
+    UserModel,
 )
 from tools.generators.synthetic_data import SyntheticDataGenerator
 from sap_mock.generate_mock_data import generate_all as generate_sap_mock
@@ -159,9 +160,12 @@ def seed_all(db: Session) -> dict:
     # 7. Seed M1-3 data: workforce, inventory, shutdowns, work requests, backlog
     m13_stats = _seed_m13_data(db, nodes)
 
+    # 8. Seed default users
+    user_count = _seed_users(db)
+
     db.commit()
 
-    # 8. Generate SAP mock JSON files
+    # 9. Generate SAP mock JSON files
     sap_stats = generate_sap_mock()
 
     stats = gen.get_statistics(nodes)
@@ -173,6 +177,7 @@ def seed_all(db: Session) -> dict:
         "total_hierarchy_nodes": stats["total_nodes"],
         "node_types": stats["by_type"],
         "sap_mock_files": sap_stats,
+        "users": user_count,
         **m13_stats,
     }
 
@@ -334,6 +339,35 @@ def _seed_m13_data(db: Session, nodes: list[dict]) -> dict:
         "work_requests": wr_count,
         "backlog_items": bl_count,
     }
+
+
+def _seed_users(db: Session) -> int:
+    """Seed default users (4 roles). Idempotent."""
+    from api.services.auth_service import hash_password
+
+    default_users = [
+        {"username": "admin", "email": "admin@ocp.ma", "full_name": "Administrador Sistema", "role": "admin", "plant_id": None},
+        {"username": "manager", "email": "manager@ocp.ma", "full_name": "Ahmed Mansouri", "role": "manager", "plant_id": "OCP-JFC1"},
+        {"username": "planner", "email": "planner@ocp.ma", "full_name": "Fatima Benali", "role": "planner", "plant_id": "OCP-JFC1"},
+        {"username": "tecnico", "email": "tecnico@ocp.ma", "full_name": "Omar Tazi", "role": "tecnico", "plant_id": "OCP-JFC1"},
+    ]
+
+    count = 0
+    for u in default_users:
+        if db.query(UserModel).filter(UserModel.username == u["username"]).first():
+            continue
+        db.add(UserModel(
+            email=u["email"],
+            username=u["username"],
+            hashed_password=hash_password("password123"),
+            full_name=u["full_name"],
+            role=u["role"],
+            plant_id=u["plant_id"],
+            is_active=True,
+        ))
+        count += 1
+
+    return count
 
 
 def main():

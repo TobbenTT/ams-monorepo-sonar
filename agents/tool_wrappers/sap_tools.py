@@ -1,6 +1,7 @@
 """MCP tool wrappers for SAPExportEngine."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.sap_export_engine import SAPExportEngine
 from tools.models.schemas import WorkPackage, MaintenanceTask
@@ -20,7 +21,7 @@ def generate_sap_upload(input_json: str) -> str:
     result = SAPExportEngine.generate_upload_package(
         wps, data["plant_code"], data.get("plan_description", ""), tasks
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -32,7 +33,7 @@ def validate_sap_cross_references(input_json: str) -> str:
     from tools.models.schemas import SAPUploadPackage
     package = SAPUploadPackage(**json.loads(input_json))
     errors = SAPExportEngine.validate_cross_references(package)
-    return json.dumps({"errors": errors, "valid": len(errors) == 0})
+    return json_compact({"errors": errors, "valid": len(errors) == 0})
 
 
 @tool(
@@ -44,4 +45,4 @@ def validate_sap_field_lengths(input_json: str) -> str:
     from tools.models.schemas import SAPUploadPackage
     package = SAPUploadPackage(**json.loads(input_json))
     errors = SAPExportEngine.validate_sap_field_lengths(package)
-    return json.dumps({"errors": errors, "valid": len(errors) == 0})
+    return json_compact({"errors": errors, "valid": len(errors) == 0})

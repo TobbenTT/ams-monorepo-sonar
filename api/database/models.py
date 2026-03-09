@@ -20,6 +20,28 @@ def _uuid() -> str:
     return str(uuid.uuid4())
 
 
+# ── User ──────────────────────────────────────────────────────────────
+
+class UserModel(Base):
+    __tablename__ = "users"
+
+    user_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    username: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    full_name: Mapped[str] = mapped_column(String(200), default="")
+    role: Mapped[str] = mapped_column(String(20), default="tecnico")
+    plant_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_users_role", "role"),
+        Index("ix_users_active_role", "is_active", "role"),
+    )
+
+
 # ── Plant ──────────────────────────────────────────────────────────────
 
 class PlantModel(Base):

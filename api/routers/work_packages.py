@@ -13,7 +13,13 @@ router = APIRouter(prefix="/work-packages", tags=["work-packages"])
 @router.post("/")
 def create_work_package(data: WPCreate, db: Session = Depends(get_db)):
     obj = work_package_service.create_work_package(db, data.model_dump())
-    return {"work_package_id": obj.work_package_id, "name": obj.name, "code": obj.code, "status": obj.status}
+    labour = obj.labour_summary or {}
+    return {
+        "work_package_id": obj.work_package_id, "name": obj.name, "code": obj.code,
+        "status": obj.status, "constraint": obj.constraint,
+        "tasks": len(obj.allocated_tasks or []),
+        "total_hours": labour.get("total_hours", 0),
+    }
 
 
 @router.get("/{wp_id}")
@@ -31,9 +37,33 @@ def get_work_package(wp_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/")
-def list_work_packages(node_id: str | None = None, status: str | None = None, db: Session = Depends(get_db)):
+def list_work_packages(node_id: str | None = None, status: str | None = None, plant_id: str | None = None, db: Session = Depends(get_db)):
     wps = work_package_service.list_work_packages(db, node_id=node_id, status=status)
-    return [{"work_package_id": wp.work_package_id, "name": wp.name, "code": wp.code, "status": wp.status} for wp in wps]
+    results = []
+    for wp in wps:
+        tasks_raw = wp.allocated_tasks if isinstance(wp.allocated_tasks, list) else []
+        labour = wp.labour_summary if isinstance(wp.labour_summary, dict) else {}
+        total_hours = labour.get("total_duration_hours", sum(t.get("duration_hours", 0) for t in tasks_raw if isinstance(t, dict)))
+        tasks = [
+            {
+                "task_id": t.get("task_id", f"TASK-{i}"),
+                "description": t.get("description", ""),
+                "task_type": t.get("task_type") or t.get("wo_type", ""),
+                "duration_hours": t.get("duration_hours", 0),
+            }
+            for i, t in enumerate(tasks_raw) if isinstance(t, dict)
+        ]
+        results.append({
+            "work_package_id": wp.work_package_id,
+            "name": wp.name,
+            "code": wp.code,
+            "status": wp.status,
+            "plant_id": wp.node_id or "",
+            "task_count": len(tasks),
+            "total_duration_hours": total_hours,
+            "tasks": tasks,
+        })
+    return results
 
 
 @router.put("/{wp_id}/approve")

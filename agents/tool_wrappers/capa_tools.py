@@ -1,6 +1,7 @@
 """MCP tool wrappers for CAPAEngine."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from datetime import date
 from agents.tool_wrappers.registry import tool
 from tools.engines.capa_engine import CAPAEngine
@@ -26,7 +27,7 @@ def create_capa(input_json: str) -> str:
         equipment_id=data.get("equipment_id"),
         target_date=target,
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -38,7 +39,7 @@ def advance_capa_phase(capa_json: str, target_phase: str) -> str:
     capa = CAPAItem(**json.loads(capa_json))
     phase = PDCAPhase(target_phase)
     updated, message = CAPAEngine.advance_phase(capa, phase)
-    return json.dumps({"capa": updated.model_dump(), "message": message}, default=str)
+    return json_compact({"capa": updated.model_dump(), "message": message}, default=str)
 
 
 @tool(
@@ -50,7 +51,7 @@ def update_capa_status(capa_json: str, new_status: str, effectiveness_verified: 
     capa = CAPAItem(**json.loads(capa_json))
     status = CAPAStatus(new_status)
     updated, message = CAPAEngine.update_status(capa, status, effectiveness_verified)
-    return json.dumps({"capa": updated.model_dump(), "message": message}, default=str)
+    return json_compact({"capa": updated.model_dump(), "message": message}, default=str)
 
 
 @tool(
@@ -61,7 +62,7 @@ def update_capa_status(capa_json: str, new_status: str, effectiveness_verified: 
 def add_capa_action(capa_json: str, action: str, completed: bool = False) -> str:
     capa = CAPAItem(**json.loads(capa_json))
     updated = CAPAEngine.add_action(capa, action, completed)
-    return json.dumps(updated.model_dump(), default=str)
+    return json_compact(updated.model_dump(), default=str)
 
 
 @tool(
@@ -72,7 +73,7 @@ def add_capa_action(capa_json: str, action: str, completed: bool = False) -> str
 def set_capa_root_cause(capa_json: str, root_cause: str) -> str:
     capa = CAPAItem(**json.loads(capa_json))
     updated = CAPAEngine.set_root_cause(capa, root_cause)
-    return json.dumps(updated.model_dump(), default=str)
+    return json_compact(updated.model_dump(), default=str)
 
 
 @tool(
@@ -84,7 +85,7 @@ def check_capa_overdue(capa_json: str, reference_date: str = "") -> str:
     capa = CAPAItem(**json.loads(capa_json))
     ref = date.fromisoformat(reference_date) if reference_date else None
     overdue = CAPAEngine.is_overdue(capa, ref)
-    return json.dumps({"overdue": overdue, "capa_id": capa.capa_id})
+    return json_compact({"overdue": overdue, "capa_id": capa.capa_id})
 
 
 @tool(
@@ -96,4 +97,4 @@ def get_capa_summary(capas_json: str, reference_date: str = "") -> str:
     capas = [CAPAItem(**c) for c in json.loads(capas_json)]
     ref = date.fromisoformat(reference_date) if reference_date else None
     result = CAPAEngine.get_summary(capas, ref)
-    return json.dumps(result, default=str)
+    return json_compact(result, default=str)

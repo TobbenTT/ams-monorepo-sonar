@@ -1,6 +1,7 @@
 """MCP tool wrappers for VarianceDetector."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.variance_detector import VarianceDetector
 from tools.models.schemas import PlantMetricSnapshot
@@ -18,7 +19,7 @@ def _parse_snapshots(json_str: str) -> list[PlantMetricSnapshot]:
 def detect_variance(snapshots_json: str, warning_threshold: float = 2.0, critical_threshold: float = 3.0) -> str:
     snapshots = _parse_snapshots(snapshots_json)
     alerts = VarianceDetector.detect_variance(snapshots, warning_threshold, critical_threshold)
-    return json.dumps([a.model_dump() for a in alerts], default=str)
+    return json_compact([a.model_dump() for a in alerts], default=str)
 
 
 @tool(
@@ -30,7 +31,7 @@ def detect_multi_metric_variance(input_json: str) -> str:
     data = json.loads(input_json)
     all_snapshots = {k: [PlantMetricSnapshot(**s) for s in v] for k, v in data.items()}
     alerts = VarianceDetector.detect_multi_metric(all_snapshots)
-    return json.dumps([a.model_dump() for a in alerts], default=str)
+    return json_compact([a.model_dump() for a in alerts], default=str)
 
 
 @tool(
@@ -41,4 +42,4 @@ def detect_multi_metric_variance(input_json: str) -> str:
 def rank_plants(snapshots_json: str) -> str:
     snapshots = _parse_snapshots(snapshots_json)
     ranking = VarianceDetector.rank_plants(snapshots)
-    return json.dumps(ranking, default=str)
+    return json_compact(ranking, default=str)

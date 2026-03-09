@@ -109,6 +109,16 @@ def create_functional_failure(data: FunctionalFailureCreate, db: Session = Depen
 
 # ── Phase 7: FMECA Worksheet Endpoints ──────────────────────────────
 
+@router.get("/fmeca/worksheets")
+def list_fmeca_worksheets(
+    equipment_id: str | None = None,
+    plant_id: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db),
+):
+    return fmea_service.list_fmeca_worksheets(db, equipment_id=equipment_id, plant_id=plant_id, status=status)
+
+
 @router.post("/fmeca/worksheets")
 def create_fmeca_worksheet(data: FMECAWorksheetCreate, db: Session = Depends(get_db)):
     return fmea_service.create_fmeca_worksheet(db, data.model_dump())
@@ -119,6 +129,14 @@ def get_fmeca_worksheet(worksheet_id: str, db: Session = Depends(get_db)):
     result = fmea_service.get_fmeca_worksheet(db, worksheet_id)
     if not result:
         raise HTTPException(status_code=404, detail="FMECA worksheet not found")
+    return result
+
+
+@router.post("/fmeca/worksheets/{worksheet_id}/rows")
+def add_fmeca_row(worksheet_id: str, data: dict, db: Session = Depends(get_db)):
+    result = fmea_service.add_fmeca_row(db, worksheet_id, data)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 
@@ -134,6 +152,14 @@ def calculate_rpn(data: RPNRequest):
 @router.put("/fmeca/worksheets/{worksheet_id}/run-decisions")
 def run_fmeca_decisions(worksheet_id: str, db: Session = Depends(get_db)):
     result = fmea_service.run_fmeca_decisions(db, worksheet_id)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.post("/fmeca/worksheets/{worksheet_id}/generate-tasks")
+def generate_fmeca_tasks(worksheet_id: str, db: Session = Depends(get_db)):
+    result = fmea_service.generate_tasks_from_fmeca(db, worksheet_id)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result

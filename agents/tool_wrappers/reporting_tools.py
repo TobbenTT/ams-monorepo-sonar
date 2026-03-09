@@ -1,6 +1,7 @@
 """MCP tool wrappers for Phase 6 — Reporting, Import/Export, DE KPIs."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.reporting_engine import ReportingEngine
 from tools.engines.de_kpi_engine import DEKPIEngine
@@ -27,7 +28,7 @@ def generate_weekly_report(input_json: str) -> str:
         backlog_hours=data.get("backlog_hours", 0.0),
         key_events=data.get("key_events"),
     )
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -44,7 +45,7 @@ def generate_monthly_kpi_report(input_json: str) -> str:
         reliability_kpis=data.get("reliability_kpis"),
         health_summary=data.get("health_summary"),
     )
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -62,7 +63,7 @@ def generate_quarterly_review(input_json: str) -> str:
         bad_actors=data.get("bad_actors"),
         capas_summary=data.get("capas_summary"),
     )
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 # ── DE KPIs ─────────────────────────────────────────────────────────
@@ -76,7 +77,7 @@ def calculate_de_kpis_standalone(input_json: str) -> str:
     data = json.loads(input_json)
     inp = DEKPIInput(**data)
     result = DEKPIEngine.calculate(inp)
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -89,7 +90,7 @@ def assess_de_program_health(input_json: str) -> str:
     inp = DEKPIInput(**data)
     de_kpis = DEKPIEngine.calculate(inp)
     health = DEKPIEngine.assess_program_health(inp.plant_id, de_kpis)
-    return json.dumps(health.model_dump(mode="json"), default=str)
+    return json_compact(health.model_dump(mode="json"), default=str)
 
 
 # ── Import ──────────────────────────────────────────────────────────
@@ -109,7 +110,7 @@ def validate_import_data(input_json: str) -> str:
         result = DataImportEngine.validate_failure_history(rows)
     else:
         result = DataImportEngine.validate_maintenance_plan(rows)
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 # ── Export ──────────────────────────────────────────────────────────
@@ -126,7 +127,7 @@ def export_equipment_data(input_json: str) -> str:
         include_criticality=data.get("include_criticality", True),
         include_health=data.get("include_health", True),
     )
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -141,7 +142,7 @@ def export_kpi_data(input_json: str) -> str:
         de_kpis=data.get("de_kpis"),
         reliability_kpis=data.get("reliability_kpis"),
     )
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -154,7 +155,7 @@ def export_report_data(input_json: str) -> str:
     result = DataExportEngine.prepare_report_export(
         data.get("report", {}),
     )
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -168,4 +169,4 @@ def export_schedule_data(input_json: str) -> str:
         data.get("program", {}),
         gantt_rows=data.get("gantt_rows"),
     )
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)

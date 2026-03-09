@@ -8,7 +8,7 @@ Each agent wraps the Anthropic Messages API in an agentic tool-use loop:
 
 from __future__ import annotations
 
-import json
+import logging
 import pathlib
 import time
 from dataclasses import dataclass, field
@@ -21,20 +21,23 @@ from anthropic.types import Message, ToolUseBlock, TextBlock
 
 from agents.tool_wrappers.registry import call_tool
 from agents.tool_wrappers.server import get_tools_for_agent
-try:
-    from core.skills.loader import (
-        load_skills_for_agent,
-        load_shared_skills,
-        format_skills_block,
-    )
-except ModuleNotFoundError:
-    # core/ was removed — fall back to agents._shared equivalents
-    from agents._shared.loader import load_skills_for_agent  # type: ignore[assignment]
 
-    def load_shared_skills():  # type: ignore[misc]
+log = logging.getLogger(__name__)
+
+# Skill loading: prefer core.skills.loader, fall back to agents._shared
+try:
+    from core.skills.loader import load_skills_for_agent, load_shared_skills, format_skills_block
+except ModuleNotFoundError:
+    try:
+        from agents._shared.loader import load_skills_for_agent  # type: ignore[assignment]
+    except ModuleNotFoundError:
+        def load_skills_for_agent(_agent_type: str) -> list:  # type: ignore[misc]
+            return []
+
+    def load_shared_skills() -> list:  # type: ignore[misc]
         return []
 
-    def format_skills_block(skills):  # type: ignore[misc]
+    def format_skills_block(skills: list) -> str:  # type: ignore[misc]
         if not skills:
             return ""
         lines = ["<loaded_skills>"]
@@ -44,6 +47,14 @@ except ModuleNotFoundError:
             lines.append(f"Mandatory: {skill.mandatory}")
         lines.append("\n</loaded_skills>")
         return "\n".join(lines)
+
+# API errors worth retrying (transient failures)
+_RETRYABLE_ERRORS = (
+    anthropic.APITimeoutError,
+    anthropic.RateLimitError,
+    anthropic.APIConnectionError,
+    anthropic.InternalServerError,
+)
 
 PROMPTS_DIR = pathlib.Path(__file__).parent / "prompts"
 
@@ -187,7 +198,7 @@ class Agent:
         return "\n".join(text_parts) if text_parts else "[Agent reached max turns without final response]"
 
     def _call_api(self, messages: list[dict]) -> Message:
-        """API call to Anthropic Messages with timeout retry."""
+        """API call to Anthropic Messages with retry on transient errors."""
         kwargs: dict[str, Any] = {
             "model": self.config.model,
             "max_tokens": 8192,
@@ -201,9 +212,15 @@ class Agent:
         for attempt in range(self.config.api_max_retries + 1):
             try:
                 return self.client.messages.create(**kwargs)
-            except anthropic.APITimeoutError:
+            except _RETRYABLE_ERRORS as exc:
                 if attempt < self.config.api_max_retries:
-                    time.sleep(2 ** attempt)
+                    delay = 2 ** attempt
+                    log.warning(
+                        "%s on attempt %d/%d — retrying in %ds",
+                        type(exc).__name__, attempt + 1,
+                        self.config.api_max_retries + 1, delay,
+                    )
+                    time.sleep(delay)
                     continue
                 raise
 

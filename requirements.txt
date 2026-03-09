@@ -13,9 +13,13 @@ uvicorn[standard]==0.41.0
 sqlalchemy==2.0.47
 python-dotenv==1.2.1
 httpx==0.28.1
-streamlit==1.54.0
 plotly==6.5.2
 openpyxl==3.1.5
 
 # Production server
 gunicorn==25.1.0
+
+# Authentication
+PyJWT[crypto]==2.9.0
+bcrypt==4.2.1
+psycopg2-binary==2.9.9

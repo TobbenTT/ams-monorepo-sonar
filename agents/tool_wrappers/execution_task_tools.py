@@ -1,6 +1,7 @@
 """MCP tool wrappers for Execution Task Engine (Phase 7 — G6)."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.execution_task_engine import ExecutionTaskEngine
 
@@ -17,7 +18,7 @@ def build_execution_sequence(input_json: str) -> str:
         support_tasks=data.get("support_tasks", []),
         package_attributes=data.get("package_attributes"),
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -27,4 +28,4 @@ def build_execution_sequence(input_json: str) -> str:
 )
 def get_loto_removal_checklist(input_json: str) -> str:
     checklist = ExecutionTaskEngine.get_loto_removal_checklist()
-    return json.dumps({"checklist": checklist, "total_items": len(checklist)})
+    return json_compact({"checklist": checklist, "total_items": len(checklist)})

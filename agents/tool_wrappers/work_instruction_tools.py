@@ -1,6 +1,7 @@
 """MCP tool wrappers for WorkInstructionGenerator."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.work_instruction_generator import WorkInstructionGenerator
 
@@ -24,7 +25,7 @@ def generate_work_instruction(input_json: str) -> str:
         post_shutdown=data.get("post_shutdown", ""),
     )
     from dataclasses import asdict
-    return json.dumps(asdict(result), default=str)
+    return json_compact(asdict(result), default=str)
 
 
 @tool(
@@ -36,4 +37,4 @@ def validate_work_instruction(input_json: str) -> str:
     from tools.engines.work_instruction_generator import WorkInstruction
     wi = WorkInstruction(**json.loads(input_json))
     errors = WorkInstructionGenerator.validate_work_instruction(wi)
-    return json.dumps({"errors": errors, "valid": len(errors) == 0})
+    return json_compact({"errors": errors, "valid": len(errors) == 0})

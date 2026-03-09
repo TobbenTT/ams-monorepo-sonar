@@ -1,6 +1,7 @@
 """MCP tool wrappers for StateMachine."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.state_machine import StateMachine
 
@@ -12,7 +13,7 @@ from tools.engines.state_machine import StateMachine
 )
 def validate_state_transition(entity_type: str, current_state: str, target_state: str) -> str:
     valid = StateMachine.validate_transition(entity_type, current_state, target_state)
-    return json.dumps({"valid": valid, "entity_type": entity_type, "from": current_state, "to": target_state})
+    return json_compact({"valid": valid, "entity_type": entity_type, "from": current_state, "to": target_state})
 
 
 @tool(
@@ -22,7 +23,7 @@ def validate_state_transition(entity_type: str, current_state: str, target_state
 )
 def get_valid_transitions(entity_type: str, current_state: str) -> str:
     transitions = StateMachine.get_valid_transitions(entity_type, current_state)
-    return json.dumps({"entity_type": entity_type, "current_state": current_state, "valid_next_states": sorted(transitions)})
+    return json_compact({"entity_type": entity_type, "current_state": current_state, "valid_next_states": sorted(transitions)})
 
 
 @tool(
@@ -32,4 +33,4 @@ def get_valid_transitions(entity_type: str, current_state: str) -> str:
 )
 def get_all_entity_states(entity_type: str) -> str:
     states = StateMachine.get_all_states(entity_type)
-    return json.dumps({"entity_type": entity_type, "states": states})
+    return json_compact({"entity_type": entity_type, "states": states})

@@ -1,6 +1,7 @@
 """MCP tool wrappers for KPIEngine."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from datetime import date
 from agents.tool_wrappers.registry import tool
 from tools.engines.kpi_engine import KPIEngine, WorkOrderRecord
@@ -14,7 +15,7 @@ from tools.engines.kpi_engine import KPIEngine, WorkOrderRecord
 def calculate_mtbf(failure_dates: str) -> str:
     dates = [date.fromisoformat(d) for d in json.loads(failure_dates)]
     result = KPIEngine.calculate_mtbf(dates)
-    return json.dumps({"mtbf_days": result})
+    return json_compact({"mtbf_days": result})
 
 
 @tool(
@@ -25,7 +26,7 @@ def calculate_mtbf(failure_dates: str) -> str:
 def calculate_mttr(repair_durations: str) -> str:
     durations = json.loads(repair_durations)
     result = KPIEngine.calculate_mttr(durations)
-    return json.dumps({"mttr_hours": result})
+    return json_compact({"mttr_hours": result})
 
 
 @tool(
@@ -35,7 +36,7 @@ def calculate_mttr(repair_durations: str) -> str:
 )
 def calculate_availability(total_period_hours: float, total_downtime_hours: float) -> str:
     result = KPIEngine.calculate_availability(total_period_hours, total_downtime_hours)
-    return json.dumps({"availability_pct": result})
+    return json_compact({"availability_pct": result})
 
 
 @tool(
@@ -45,7 +46,7 @@ def calculate_availability(total_period_hours: float, total_downtime_hours: floa
 )
 def calculate_oee(availability_pct: float, performance_pct: float = 100.0, quality_pct: float = 100.0) -> str:
     result = KPIEngine.calculate_oee(availability_pct, performance_pct, quality_pct)
-    return json.dumps({"oee_pct": result})
+    return json_compact({"oee_pct": result})
 
 
 @tool(
@@ -64,4 +65,4 @@ def calculate_kpis_from_records(input_json: str) -> str:
         equipment_id=data.get("equipment_id"),
         total_period_hours=data.get("total_period_hours"),
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)

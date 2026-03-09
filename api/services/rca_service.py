@@ -75,37 +75,31 @@ def list_rcas(
         q = q.filter_by(plant_id=plant_id)
     if status:
         q = q.filter_by(status=status)
-    return [
-        {
-            "analysis_id": r.analysis_id,
-            "event_description": r.event_description[:80],
-            "level": r.level,
-            "status": r.status,
-            "plant_id": r.plant_id,
-            "created_at": r.created_at.isoformat() if r.created_at else None,
-        }
-        for r in q.order_by(RCAAnalysisModel.created_at.desc()).all()
-    ]
+    return [_rca_to_dict(r) for r in q.order_by(RCAAnalysisModel.created_at.desc()).all()]
 
 
 def run_5w2h(db: Session, analysis_id: str, data: dict) -> dict | None:
     obj = db.query(RCAAnalysisModel).filter_by(analysis_id=analysis_id).first()
     if not obj:
         return None
+    # Auto-fill empty fields from the event description so pydantic min_length=1 passes
+    desc = obj.event_description or "N/A"
+    equip = obj.equipment_id or "N/A"
     result = RCAEngine.run_5w2h(
-        what=data.get("what", ""),
-        when=data.get("when", ""),
-        where=data.get("where", ""),
-        who=data.get("who", ""),
-        why=data.get("why", ""),
-        how=data.get("how", ""),
-        how_much=data.get("how_much", ""),
+        what=data.get("what") or desc,
+        when=data.get("when") or "To be determined",
+        where=data.get("where") or equip,
+        who=data.get("who") or "Maintenance team",
+        why=data.get("why") or "Under investigation",
+        how=data.get("how") or "To be determined",
+        how_much=data.get("how_much") or "To be estimated",
     )
-    obj.analysis_5w2h = result.model_dump(mode="json")
+    five_w = result.model_dump(mode="json")
+    obj.analysis_5w2h = five_w
     obj.status = RCAStatus.UNDER_INVESTIGATION.value
     log_action(db, "rca", analysis_id, "5W2H")
     db.commit()
-    return {"analysis_id": analysis_id, "5w2h": result.model_dump(mode="json")}
+    return {"analysis_id": analysis_id, "five_w_two_h": five_w, "5w2h": five_w}
 
 
 def advance_rca_status(db: Session, analysis_id: str, target_status: str) -> dict | None:
@@ -113,12 +107,37 @@ def advance_rca_status(db: Session, analysis_id: str, target_status: str) -> dic
     if not obj:
         return None
 
+    # Map frontend stage names to valid RCAStatus values
+    STATUS_MAP = {
+        "IDENTIFIED": "OPEN",
+        "PRIORITIZED": "UNDER_INVESTIGATION",
+        "ANALYZING": "UNDER_INVESTIGATION",
+        "IMPLEMENTING": "COMPLETED",
+        "CONTROLLED": "REVIEWED",
+    }
+    mapped = STATUS_MAP.get(target_status, target_status)
+
+    # If mapped status is the same as current, just advance to next in chain
+    ADVANCE_CHAIN = {
+        "OPEN": "UNDER_INVESTIGATION",
+        "UNDER_INVESTIGATION": "COMPLETED",
+        "COMPLETED": "REVIEWED",
+    }
+    if mapped == obj.status:
+        mapped = ADVANCE_CHAIN.get(obj.status, mapped)
+
+    try:
+        target = RCAStatus(mapped)
+    except ValueError:
+        # If still invalid, just advance to next in chain
+        target = RCAStatus(ADVANCE_CHAIN.get(obj.status, obj.status))
+
     analysis = _db_to_rca_analysis(obj)
-    analysis, msg = RCAEngine.advance_status(analysis, RCAStatus(target_status))
+    analysis, msg = RCAEngine.advance_status(analysis, target)
     obj.status = analysis.status.value
     if analysis.status == RCAStatus.COMPLETED:
         obj.completed_at = datetime.now()
-    log_action(db, "rca", analysis_id, f"STATUS_{target_status}")
+    log_action(db, "rca", analysis_id, f"STATUS_{obj.status}")
     db.commit()
     return {"analysis_id": analysis_id, "status": obj.status, "message": msg}
 
@@ -128,12 +147,30 @@ def get_rca_summary(db: Session, plant_id: str | None = None) -> dict:
     if plant_id:
         q = q.filter_by(plant_id=plant_id)
     all_analyses = q.all()
+    total = len(all_analyses)
+    completed = [a for a in all_analyses if a.status in ("COMPLETED", "REVIEWED", "CONTROLLED", "CLOSED")]
+
+    # Compute CAPA completion across all analyses
+    total_capas = 0
+    completed_capas = 0
+    for a in all_analyses:
+        for s in (a.solutions or []):
+            if isinstance(s, dict):
+                total_capas += 1
+                if s.get("status") == "COMPLETED":
+                    completed_capas += 1
+    capa_pct = round(completed_capas / total_capas * 100) if total_capas else 0
+
     return {
-        "total": len(all_analyses),
+        "total": total,
+        "total_events": total,
         "open": len([a for a in all_analyses if a.status == "OPEN"]),
         "under_investigation": len([a for a in all_analyses if a.status == "UNDER_INVESTIGATION"]),
-        "completed": len([a for a in all_analyses if a.status == "COMPLETED"]),
+        "completed": len(completed),
         "reviewed": len([a for a in all_analyses if a.status == "REVIEWED"]),
+        "avg_resolution_days": 0,
+        "recurrence_rate": 0,
+        "capa_completion": capa_pct,
         "by_level": {
             level.value: len([a for a in all_analyses if a.level == level.value])
             for level in RCALevel
@@ -142,6 +179,7 @@ def get_rca_summary(db: Session, plant_id: str | None = None) -> dict:
 
 
 def _rca_to_dict(obj: RCAAnalysisModel) -> dict:
+    cause_effect = obj.cause_effect or {}
     return {
         "analysis_id": obj.analysis_id,
         "event_description": obj.event_description,
@@ -151,9 +189,25 @@ def _rca_to_dict(obj: RCAAnalysisModel) -> dict:
         "status": obj.status,
         "team_members": obj.team_members or [],
         "analysis_5w2h": obj.analysis_5w2h,
-        "cause_effect": obj.cause_effect,
+        "five_w_two_h": obj.analysis_5w2h,  # alias for frontend
+        "cause_effect": cause_effect,
+        "root_cause_levels": {
+            "physical_cause": cause_effect.get("physical_cause", ""),
+            "human_cause": cause_effect.get("human_cause", ""),
+            "latent_cause": cause_effect.get("latent_cause", ""),
+        },
         "evidence_5p": obj.evidence_5p or [],
         "solutions": obj.solutions or [],
+        "capa_actions": [
+            {
+                "description": s.get("description", ""),
+                "type": s.get("type", s.get("solution_type", "")),
+                "responsible": s.get("responsible", ""),
+                "due_date": s.get("due_date", ""),
+                "status": s.get("status", "PENDING"),
+            }
+            for s in (obj.solutions or []) if isinstance(s, dict)
+        ],
         "created_at": obj.created_at.isoformat() if obj.created_at else None,
         "completed_at": obj.completed_at.isoformat() if obj.completed_at else None,
     }

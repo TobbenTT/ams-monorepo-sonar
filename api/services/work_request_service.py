@@ -52,7 +52,29 @@ def validate_work_request(
     db.commit()
     db.refresh(wr)
 
+    # Auto-add to backlog after commit so there's no transaction conflict
+    if action == "APPROVE":
+        from api.services import backlog_service
+        backlog_service.add_to_backlog(db, request_id)
+
     return _to_dict(wr)
+
+
+def delete_work_request(db: Session, request_id: str) -> bool:
+    """Delete a work request and its linked field capture permanently."""
+    from api.database.models import FieldCaptureModel
+    wr = get_work_request(db, request_id)
+    if not wr:
+        return False
+    log_action(db, "work_request", request_id, "DELETE")
+    # Also delete the source capture if it exists
+    if wr.source_capture_id:
+        db.query(FieldCaptureModel).filter(
+            FieldCaptureModel.capture_id == wr.source_capture_id
+        ).delete()
+    db.delete(wr)
+    db.commit()
+    return True
 
 
 def classify_work_request(db: Session, request_id: str) -> dict | None:

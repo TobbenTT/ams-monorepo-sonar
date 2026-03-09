@@ -1,6 +1,7 @@
 """MCP tool wrappers for EquipmentResolver."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.equipment_resolver import EquipmentResolver
 
@@ -15,6 +16,6 @@ def resolve_equipment(input_text: str, registry: str) -> str:
     resolver = EquipmentResolver(registry_list)
     result = resolver.resolve(input_text)
     if result is None:
-        return json.dumps({"matched": False, "result": None})
+        return json_compact({"matched": False, "result": None})
     from dataclasses import asdict
-    return json.dumps({"matched": True, "result": asdict(result)}, default=str)
+    return json_compact({"matched": True, "result": asdict(result)}, default=str)

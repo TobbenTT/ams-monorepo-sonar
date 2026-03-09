@@ -8,6 +8,8 @@ to expose tools to agents.
 import json
 from typing import Callable
 
+from agents.tool_wrappers.compact_json import dumps as json_compact
+
 # Global tool registry: name -> {function, description, input_schema}
 TOOL_REGISTRY: dict[str, dict] = {}
 
@@ -36,12 +38,12 @@ def call_tool(name: str, arguments: dict) -> str:
     Returns JSON string result or error message.
     """
     if name not in TOOL_REGISTRY:
-        return json.dumps({"error": f"Unknown tool: {name}"})
+        return json_compact({"error": f"Unknown tool: {name}"})
     try:
         result = TOOL_REGISTRY[name]["function"](**arguments)
-        return result if isinstance(result, str) else json.dumps(result, default=str)
+        return result if isinstance(result, str) else json_compact(result, default=str)
     except Exception as e:
-        return json.dumps({"error": str(e), "tool": name})
+        return json_compact({"error": str(e), "tool": name})
 
 
 def list_tools() -> list[dict]:
@@ -66,7 +68,7 @@ def call_tool_strict(name: str, arguments: dict) -> str:
         raise ToolExecutionError(name, f"Unknown tool: {name}")
     try:
         result = TOOL_REGISTRY[name]["function"](**arguments)
-        return result if isinstance(result, str) else json.dumps(result, default=str)
+        return result if isinstance(result, str) else json_compact(result, default=str)
     except Exception as e:
         raise ToolExecutionError(name, str(e)) from e
 

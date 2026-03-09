@@ -1,6 +1,7 @@
 """MCP tool wrappers for ManagementReviewEngine."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from datetime import date
 from agents.tool_wrappers.registry import tool
 from tools.engines.management_review_engine import ManagementReviewEngine
@@ -32,4 +33,4 @@ def generate_management_review(input_json: str) -> str:
         previous_avg_health=data.get("previous_avg_health"),
         previous_kpis=prev_kpis,
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)

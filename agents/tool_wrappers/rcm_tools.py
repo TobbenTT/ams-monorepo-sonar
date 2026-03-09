@@ -1,6 +1,7 @@
 """MCP tool wrappers for RCMDecisionEngine."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.rcm_decision_engine import RCMDecisionEngine, RCMDecisionInput
 
@@ -15,7 +16,7 @@ def rcm_decide(input_json: str) -> str:
     input_data = RCMDecisionInput(**data)
     result = RCMDecisionEngine.decide(input_data)
     from dataclasses import asdict
-    return json.dumps(asdict(result), default=str)
+    return json_compact(asdict(result), default=str)
 
 
 @tool(
@@ -28,4 +29,4 @@ def validate_frequency_unit(cause: str, frequency_unit: str) -> str:
     cause_enum = Cause(cause)
     freq_enum = FrequencyUnit(frequency_unit)
     warnings = RCMDecisionEngine.validate_frequency_unit(cause_enum, freq_enum)
-    return json.dumps({"warnings": warnings, "valid": len(warnings) == 0})
+    return json_compact({"warnings": warnings, "valid": len(warnings) == 0})

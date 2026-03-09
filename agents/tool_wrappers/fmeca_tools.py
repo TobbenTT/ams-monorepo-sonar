@@ -1,6 +1,7 @@
 """MCP tool wrappers for FMECA Engine (Phase 7 — G18)."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.fmeca_engine import FMECAEngine
 from tools.models.schemas import FMECAWorksheet
@@ -19,7 +20,7 @@ def create_fmeca_worksheet(input_json: str) -> str:
         equipment_name=data.get("equipment_name", ""),
         analyst=data.get("analyst", ""),
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -34,7 +35,7 @@ def calculate_rpn(input_json: str) -> str:
         occurrence=data["occurrence"],
         detection=data["detection"],
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -46,4 +47,4 @@ def generate_fmeca_summary(input_json: str) -> str:
     data = json.loads(input_json)
     worksheet = FMECAWorksheet(**data)
     result = FMECAEngine.generate_summary(worksheet)
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)

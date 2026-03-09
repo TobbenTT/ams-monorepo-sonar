@@ -1,6 +1,7 @@
 """MCP tool wrappers for MaterialMapper."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.material_mapper import MaterialMapper
 
@@ -15,7 +16,7 @@ def suggest_materials(component_type: str, mechanism: str, equipment_id: str = "
     mapper = MaterialMapper(bom)
     results = mapper.suggest_materials(component_type, mechanism, equipment_id or None)
     from dataclasses import asdict
-    return json.dumps([asdict(r) for r in results], default=str)
+    return json_compact([asdict(r) for r in results], default=str)
 
 
 @tool(
@@ -26,4 +27,4 @@ def suggest_materials(component_type: str, mechanism: str, equipment_id: str = "
 def validate_task_materials(task_type: str, materials: str) -> str:
     material_list = json.loads(materials)
     errors = MaterialMapper.validate_task_materials(task_type, material_list)
-    return json.dumps({"errors": errors, "valid": len(errors) == 0})
+    return json_compact({"errors": errors, "valid": len(errors) == 0})

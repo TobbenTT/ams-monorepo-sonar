@@ -9,6 +9,7 @@ from api.database.connection import get_db
 from api.database.models import AuditLogModel, UserFeedbackModel
 from api.schemas import FeedbackCreate
 from api.services import hierarchy_service, agent_service
+from api.dependencies.auth import get_current_user, require_role
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -16,7 +17,7 @@ _ADMIN_KEY = os.getenv("ADMIN_API_KEY", "")
 
 
 def _require_admin(x_admin_key: str = Header(default="")):
-    """Verify admin API key for destructive operations."""
+    """Verify admin API key for destructive operations (bootstrap fallback)."""
     if _ADMIN_KEY and x_admin_key != _ADMIN_KEY:
         raise HTTPException(status_code=403, detail="Forbidden")
 
@@ -28,7 +29,7 @@ def seed_database(db: Session = Depends(get_db)):
     return result
 
 
-@router.get("/audit-log")
+@router.get("/audit-log", dependencies=[Depends(require_role("admin", "manager"))])
 def get_audit_log(entity_type: str | None = None, limit: int = 100, db: Session = Depends(get_db)):
     q = db.query(AuditLogModel)
     if entity_type:
@@ -42,7 +43,7 @@ def get_audit_log(entity_type: str | None = None, limit: int = 100, db: Session 
     ]
 
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(get_current_user)])
 def get_stats(db: Session = Depends(get_db)):
     node_counts = hierarchy_service.count_nodes_by_type(db)
     plants = hierarchy_service.list_plants(db)
@@ -98,7 +99,7 @@ def submit_feedback(data: FeedbackCreate, db: Session = Depends(get_db)):
     return {"feedback_id": fb.feedback_id, "status": "received"}
 
 
-@router.get("/feedback")
+@router.get("/feedback", dependencies=[Depends(require_role("admin", "manager"))])
 def list_feedback(page: str | None = None, limit: int = 50, db: Session = Depends(get_db)):
     q = db.query(UserFeedbackModel)
     if page:

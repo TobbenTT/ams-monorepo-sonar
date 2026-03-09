@@ -1,6 +1,7 @@
 """MCP tool wrappers for QualityValidator, ConfidenceValidator, NamingValidator."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.validators.quality_validator import QualityValidator
 from tools.validators.confidence_validator import ConfidenceValidator
@@ -16,7 +17,7 @@ def _parse_list(json_str: str, cls):
 
 
 def _serialize_results(results) -> str:
-    return json.dumps(
+    return json_compact(
         [{"rule_id": r.rule_id, "severity": r.severity, "message": r.message, "entity_id": r.entity_id} for r in results],
         default=str,
     )
@@ -136,7 +137,7 @@ def run_full_validation(input_json: str) -> str:
 def evaluate_confidence(confidence: float, entity_type: str = "default") -> str:
     from dataclasses import asdict
     result = ConfidenceValidator.evaluate(confidence, entity_type)
-    return json.dumps(asdict(result), default=str)
+    return json_compact(asdict(result), default=str)
 
 
 @tool(
@@ -147,7 +148,7 @@ def evaluate_confidence(confidence: float, entity_type: str = "default") -> str:
 def batch_evaluate_confidence(items_json: str) -> str:
     items = json.loads(items_json)
     result = ConfidenceValidator.batch_evaluate(items)
-    return json.dumps(result, default=str)
+    return json_compact(result, default=str)
 
 
 # --- NamingValidator ---
@@ -159,7 +160,7 @@ def batch_evaluate_confidence(items_json: str) -> str:
 )
 def validate_wp_name(name: str) -> str:
     issues = NamingValidator.validate_wp_name(name)
-    return json.dumps({"issues": issues, "valid": len(issues) == 0})
+    return json_compact({"issues": issues, "valid": len(issues) == 0})
 
 
 @tool(
@@ -169,7 +170,7 @@ def validate_wp_name(name: str) -> str:
 )
 def validate_task_name(name: str, task_type: str) -> str:
     issues = NamingValidator.validate_task_name(name, task_type)
-    return json.dumps({"issues": issues, "valid": len(issues) == 0})
+    return json_compact({"issues": issues, "valid": len(issues) == 0})
 
 
 @tool(
@@ -179,4 +180,4 @@ def validate_task_name(name: str, task_type: str) -> str:
 )
 def validate_fm_what(what: str) -> str:
     issues = NamingValidator.validate_fm_what(what)
-    return json.dumps({"issues": issues, "valid": len(issues) == 0})
+    return json_compact({"issues": issues, "valid": len(issues) == 0})

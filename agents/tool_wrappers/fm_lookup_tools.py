@@ -1,6 +1,7 @@
 """MCP tool wrappers for Failure Mode lookup table (SRC-09, 72 valid combinations)."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.models.schemas import Mechanism, Cause, VALID_FM_COMBINATIONS
 
@@ -14,18 +15,18 @@ def validate_fm_combination(mechanism: str, cause: str) -> str:
     try:
         mech = Mechanism(mechanism)
     except ValueError:
-        return json.dumps({"valid": False, "error": f"Invalid mechanism: {mechanism}", "valid_mechanisms": [m.value for m in Mechanism]})
+        return json_compact({"valid": False, "error": f"Invalid mechanism: {mechanism}", "valid_mechanisms": [m.value for m in Mechanism]})
     try:
         cause_enum = Cause(cause)
     except ValueError:
-        return json.dumps({"valid": False, "error": f"Invalid cause: {cause}", "valid_causes": [c.value for c in Cause]})
+        return json_compact({"valid": False, "error": f"Invalid cause: {cause}", "valid_causes": [c.value for c in Cause]})
 
     is_valid = (mech, cause_enum) in VALID_FM_COMBINATIONS
     result = {"valid": is_valid, "mechanism": mechanism, "cause": cause}
     if not is_valid:
         valid_causes = get_valid_causes_for_mechanism(mechanism)
         result["valid_causes_for_mechanism"] = json.loads(valid_causes)["causes"]
-    return json.dumps(result)
+    return json_compact(result)
 
 
 @tool(
@@ -37,10 +38,10 @@ def get_valid_causes_for_mechanism(mechanism: str) -> str:
     try:
         mech = Mechanism(mechanism)
     except ValueError:
-        return json.dumps({"error": f"Invalid mechanism: {mechanism}", "valid_mechanisms": [m.value for m in Mechanism]})
+        return json_compact({"error": f"Invalid mechanism: {mechanism}", "valid_mechanisms": [m.value for m in Mechanism]})
 
     causes = [cause.value for mech_val, cause in VALID_FM_COMBINATIONS if mech_val == mech]
-    return json.dumps({"mechanism": mechanism, "causes": causes, "count": len(causes)})
+    return json_compact({"mechanism": mechanism, "causes": causes, "count": len(causes)})
 
 
 @tool(
@@ -49,7 +50,7 @@ def get_valid_causes_for_mechanism(mechanism: str) -> str:
     {"type": "object", "properties": {}},
 )
 def list_all_mechanisms() -> str:
-    return json.dumps({"mechanisms": [m.value for m in Mechanism], "count": len(Mechanism)})
+    return json_compact({"mechanisms": [m.value for m in Mechanism], "count": len(Mechanism)})
 
 
 @tool(
@@ -58,4 +59,4 @@ def list_all_mechanisms() -> str:
     {"type": "object", "properties": {}},
 )
 def list_all_causes() -> str:
-    return json.dumps({"causes": [c.value for c in Cause], "count": len(Cause)})
+    return json_compact({"causes": [c.value for c in Cause], "count": len(Cause)})

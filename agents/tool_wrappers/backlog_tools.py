@@ -1,6 +1,7 @@
 """MCP tool wrappers for BacklogGrouper."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.backlog_grouper import BacklogGrouper, BacklogEntry
 
@@ -11,7 +12,7 @@ def _parse_backlog_items(input_json: str) -> list[BacklogEntry]:
 
 def _serialize_groups(groups) -> str:
     from dataclasses import asdict
-    return json.dumps([asdict(g) for g in groups], default=str)
+    return json_compact([asdict(g) for g in groups], default=str)
 
 
 @tool(
@@ -62,4 +63,4 @@ def find_all_groups(input_json: str) -> str:
 def stratify_backlog(input_json: str) -> str:
     items = _parse_backlog_items(input_json)
     result = BacklogGrouper.stratify(items)
-    return json.dumps(result, default=str)
+    return json_compact(result, default=str)

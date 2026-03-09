@@ -11,6 +11,8 @@ import json
 import uuid
 from typing import Callable
 
+from agents.tool_wrappers.compact_json import dumps as json_compact
+
 from anthropic import Anthropic
 
 from agents.definitions.orchestrator import create_orchestrator, OrchestratorAgent
@@ -21,13 +23,19 @@ from agents.orchestration.milestones import (
     ValidationSummary,
     create_milestone_gates,
 )
-from agents.tool_wrappers.registry import call_tool
+import logging
 
+from agents.tool_wrappers.registry import call_tool, is_tool_error
+
+log = logging.getLogger(__name__)
 
 # Type alias for human approval callback
 # Receives: milestone number, gate summary text
 # Returns: ("approve", feedback) | ("modify", feedback) | ("reject", feedback)
 HumanApprovalFn = Callable[[int, str], tuple[str, str]]
+
+# Valid human actions at a gate (case-insensitive)
+_VALID_ACTIONS = {"approve", "modify", "reject"}
 
 
 def _run_validation(session: SessionState) -> ValidationSummary:
@@ -36,8 +44,26 @@ def _run_validation(session: SessionState) -> ValidationSummary:
     if not validation_input:
         return ValidationSummary()
 
-    result_json = call_tool("run_full_validation", {"input_json": json.dumps(validation_input)})
+    result_json = call_tool("run_full_validation", {"input_json": json_compact(validation_input)})
+
+    # Guard: call_tool may return an error dict instead of a list
+    if is_tool_error(result_json):
+        log.warning("Validation tool returned error: %s", result_json[:200])
+        return ValidationSummary(
+            errors=1,
+            warnings=0,
+            info=0,
+            details=[{"severity": "ERROR", "rule_id": "VALIDATION_TOOL_ERROR",
+                       "message": f"Validation engine failed: {result_json[:200]}"}],
+        )
+
     results = json.loads(result_json)
+    if not isinstance(results, list):
+        log.warning("Validation returned non-list: %s", type(results).__name__)
+        return ValidationSummary(
+            errors=1, details=[{"severity": "ERROR", "rule_id": "VALIDATION_BAD_RESPONSE",
+                                "message": "Validation returned unexpected format"}],
+        )
 
     errors = sum(1 for r in results if r.get("severity") == "ERROR")
     warnings = sum(1 for r in results if r.get("severity") == "WARNING")
@@ -110,7 +136,7 @@ class StrategyWorkflow:
         self,
         human_approval_fn: HumanApprovalFn,
         client: Anthropic | None = None,
-        strict_validation: bool = False,
+        strict_validation: bool = True,
         max_modify_retries: int = 5,
         checkpoint_dir: str | None = None,
     ):
@@ -169,7 +195,13 @@ class StrategyWorkflow:
             gate.present(validation)
 
             summary = _format_gate_summary(gate, self.session, validation)
-            action, feedback = self.human_approval_fn(gate.number, summary)
+            raw_action, feedback = self.human_approval_fn(gate.number, summary)
+            action = raw_action.strip().lower()
+
+            if action not in _VALID_ACTIONS:
+                log.warning("Unknown action '%s' at milestone %d — treating as 'modify'", raw_action, gate.number)
+                gate.modify(f"Invalid action '{raw_action}'. Please choose: approve / modify / reject.")
+                continue
 
             if action == "approve":
                 if self.strict_validation and validation.has_errors:

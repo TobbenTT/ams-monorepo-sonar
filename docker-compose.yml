@@ -4,7 +4,6 @@ services:
   ocp-backend:
     build: .
     container_name: ocp-backend
-    command: gunicorn api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --timeout 120
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     env_file: .env
@@ -27,9 +26,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
     container_name: ocp-frontend
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-5173}:5173"
     depends_on:
       ocp-backend:
         condition: service_healthy

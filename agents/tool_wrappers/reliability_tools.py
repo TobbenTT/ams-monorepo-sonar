@@ -1,6 +1,7 @@
 """MCP tool wrappers for Phase 5 — Advanced Reliability Engineering."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.spare_parts_engine import SparePartsEngine
 from tools.engines.shutdown_engine import ShutdownEngine
@@ -28,7 +29,7 @@ from tools.models.schemas import (
 def analyze_spare_parts(input_json: str) -> str:
     data = json.loads(input_json)
     result = SparePartsEngine.optimize_inventory(data["plant_id"], data.get("parts", []))
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -42,7 +43,7 @@ def calculate_stock_levels(input_json: str) -> str:
         data["daily_consumption"], data["lead_time_days"],
         data.get("service_level", 0.95),
     )
-    return json.dumps(result)
+    return json_compact(result)
 
 
 # ── Shutdowns ────────────────────────────────────────────────────────
@@ -61,7 +62,7 @@ def create_shutdown(input_json: str) -> str:
         datetime.fromisoformat(data["planned_end"]),
         data.get("work_orders", []),
     )
-    return json.dumps(event.model_dump(mode="json"), default=str)
+    return json_compact(event.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -76,7 +77,7 @@ def update_shutdown_progress(input_json: str) -> str:
         event, data.get("completed_wos", []),
         data.get("delay_hours", 0), data.get("delay_reasons"),
     )
-    return json.dumps(event.model_dump(mode="json"), default=str)
+    return json_compact(event.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -88,7 +89,7 @@ def complete_shutdown(input_json: str) -> str:
     data = json.loads(input_json)
     event = ShutdownEvent(**data)
     event, msg = ShutdownEngine.complete_shutdown(event)
-    return json.dumps({"status": event.status.value, "message": msg}, default=str)
+    return json_compact({"status": event.status.value, "message": msg}, default=str)
 
 
 @tool(
@@ -100,7 +101,7 @@ def calculate_shutdown_metrics(input_json: str) -> str:
     data = json.loads(input_json)
     event = ShutdownEvent(**data)
     metrics = ShutdownEngine.calculate_metrics(event)
-    return json.dumps(metrics.model_dump(mode="json"), default=str)
+    return json_compact(metrics.model_dump(mode="json"), default=str)
 
 
 # ── MoC ──────────────────────────────────────────────────────────────
@@ -119,7 +120,7 @@ def create_moc(input_json: str) -> str:
         data.get("affected_equipment"),
         risk_level=RiskLevel(data.get("risk_level", "LOW")),
     )
-    return json.dumps(moc.model_dump(mode="json"), default=str)
+    return json_compact(moc.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -141,9 +142,9 @@ def advance_moc(input_json: str) -> str:
     }
     handler = actions.get(action.lower())
     if not handler:
-        return json.dumps({"error": f"Unknown action: {action}"})
+        return json_compact({"error": f"Unknown action: {action}"})
     moc, msg = handler()
-    return json.dumps({"status": moc.status.value, "message": msg}, default=str)
+    return json_compact({"status": moc.status.value, "message": msg}, default=str)
 
 
 @tool(
@@ -155,7 +156,7 @@ def assess_moc_risk(input_json: str) -> str:
     data = json.loads(input_json)
     moc = MoCRequest(**data["moc"])
     result = MoCEngine.assess_risk(moc, data.get("impact_analysis", ""))
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 # ── OCR ──────────────────────────────────────────────────────────────
@@ -169,7 +170,7 @@ def calculate_ocr(input_json: str) -> str:
     data = json.loads(input_json)
     inp = OCRAnalysisInput(**data)
     result = OCREngine.calculate_optimal_interval(inp)
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 # ── Jack-Knife ───────────────────────────────────────────────────────
@@ -182,7 +183,7 @@ def calculate_ocr(input_json: str) -> str:
 def analyze_jackknife(input_json: str) -> str:
     data = json.loads(input_json)
     result = JackKnifeEngine.analyze(data["plant_id"], data.get("equipment_data", []))
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 # ── Pareto ───────────────────────────────────────────────────────────
@@ -203,7 +204,7 @@ def analyze_pareto(input_json: str) -> str:
         result = ParetoEngine.analyze_downtime(data["plant_id"], data.get("records", []))
     else:
         result = ParetoEngine.analyze(data["plant_id"], data.get("records", []), metric_field=metric_type, metric_type=metric_type)
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 # ── LCC ──────────────────────────────────────────────────────────────
@@ -217,7 +218,7 @@ def calculate_lcc(input_json: str) -> str:
     data = json.loads(input_json)
     inp = LCCInput(**data)
     result = LCCEngine.calculate(inp)
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -229,7 +230,7 @@ def compare_lcc_alternatives(input_json: str) -> str:
     data = json.loads(input_json)
     inputs = [LCCInput(**a) for a in data.get("alternatives", [])]
     results = LCCEngine.compare_alternatives(inputs)
-    return json.dumps([r.model_dump(mode="json") for r in results], default=str)
+    return json_compact([r.model_dump(mode="json") for r in results], default=str)
 
 
 # ── RBI ──────────────────────────────────────────────────────────────
@@ -242,7 +243,7 @@ def compare_lcc_alternatives(input_json: str) -> str:
 def assess_rbi(input_json: str) -> str:
     data = json.loads(input_json)
     result = RBIEngine.batch_assess(data["plant_id"], data.get("equipment_list", []))
-    return json.dumps(result.model_dump(mode="json"), default=str)
+    return json_compact(result.model_dump(mode="json"), default=str)
 
 
 @tool(
@@ -255,4 +256,4 @@ def prioritize_inspections(input_json: str) -> str:
     data = json.loads(input_json)
     result = RBIResult(**data)
     prioritized = RBIEngine.prioritize_inspections(result)
-    return json.dumps([a.model_dump(mode="json") for a in prioritized], default=str)
+    return json_compact([a.model_dump(mode="json") for a in prioritized], default=str)

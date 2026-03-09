@@ -1,6 +1,7 @@
 """MCP tool wrappers for HealthScoreEngine."""
 
 import json
+from agents.tool_wrappers.compact_json import dumps as json_compact
 from agents.tool_wrappers.registry import tool
 from tools.engines.health_score_engine import HealthScoreEngine
 from tools.models.schemas import RiskClass
@@ -28,7 +29,7 @@ def calculate_health_score(input_json: str) -> str:
         planned_wo=data.get("planned_wo", 0),
         executed_on_time=data.get("executed_on_time", 0),
     )
-    return json.dumps(result.model_dump(), default=str)
+    return json_compact(result.model_dump(), default=str)
 
 
 @tool(
@@ -38,4 +39,4 @@ def calculate_health_score(input_json: str) -> str:
 )
 def determine_health_trend(current_score: float, previous_score: float) -> str:
     trend = HealthScoreEngine.determine_trend(current_score, previous_score)
-    return json.dumps({"trend": trend, "current": current_score, "previous": previous_score, "delta": round(current_score - previous_score, 2)})
+    return json_compact({"trend": trend, "current": current_score, "previous": previous_score, "delta": round(current_score - previous_score, 2)})

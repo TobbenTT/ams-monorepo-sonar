@@ -189,7 +189,6 @@ export default function Login() {
                         </button>
                     </form>
 
-                    {import.meta.env.DEV && (
                     <div className="mt-8 p-4 bg-muted/50 rounded-xl border border-border">
                         <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t('auth.demoUsers')}</div>
                         <div className="grid grid-cols-2 gap-2">
@@ -217,7 +216,6 @@ export default function Login() {
                         </div>
                         <div className="text-[0.65rem] text-muted-foreground text-center mt-2">Password: password123</div>
                     </div>
-                    )}
                 </div>
             </div>
         </div>

@@ -65,5 +65,5 @@ def approve_schedule(optimization_id: str, db: Session = Depends(get_db)):
 def get_schedule(db: Session = Depends(get_db)):
     result = backlog_service.get_schedule(db)
     if not result:
-        return {"message": "No optimizations found"}
+        return {"status": "empty", "items": [], "total_hours": 0, "message": "No hay optimizaciones disponibles"}
     return result

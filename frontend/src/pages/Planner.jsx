@@ -3,7 +3,7 @@ import { BrainCircuit, Send, Bot, User, Loader, CheckCircle, AlertCircle } from 
 import * as api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 
-function getAIResponse(text, t) {
+function getKeywordResponse(text, t) {
   const lower = text.toLowerCase();
   if (lower.includes('molienda') || lower.includes('grinding') || lower.includes('agrupar') || lower.includes('group') || lower.includes('طحن'))
     return t('planner.responses.grinding');
@@ -11,7 +11,31 @@ function getAIResponse(text, t) {
     return t('planner.responses.sag');
   if (lower.includes('resumen') || lower.includes('summary') || lower.includes('ejecutivo') || lower.includes('executive') || lower.includes('ملخص'))
     return t('planner.responses.summary');
-  return t('planner.responses.default');
+  return null;
+}
+
+function extractWRId(text) {
+  const match = text.match(/\b(WR-[\w-]+)\b/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
+function formatRecommendation(rec, t) {
+  const lines = [];
+  lines.push(`**${t('planner.recTitle') || 'Recomendación para'}** ${rec.work_request_id || ''}`);
+  lines.push(`**${t('planner.action') || 'Acción'}:** ${rec.planner_action || '—'}`);
+  lines.push(`**${t('planner.confidence') || 'Confianza IA'}:** ${rec.ai_confidence ? Math.round(rec.ai_confidence * 100) + '%' : '—'}`);
+  if (rec.risk_level) lines.push(`**${t('planner.riskLevel') || 'Riesgo'}:** ${rec.risk_level}`);
+  if (rec.recommended_date) lines.push(`**${t('planner.recDate') || 'Fecha sugerida'}:** ${rec.recommended_date}`);
+  const res = rec.resource_analysis;
+  if (res) {
+    if (res.estimated_duration) lines.push(`**${t('planner.duration') || 'Duración estimada'}:** ${res.estimated_duration}`);
+    if (res.specialties?.length) lines.push(`**${t('planner.specialties') || 'Especialidades'}:** ${res.specialties.join(', ')}`);
+  }
+  const sched = rec.scheduling_suggestion;
+  if (sched?.justification) lines.push(`\n${sched.justification}`);
+  const risk = rec.risk_assessment;
+  if (risk?.factors?.length) lines.push(`\n**${t('planner.riskFactors') || 'Factores de riesgo'}:** ${risk.factors.join(', ')}`);
+  return lines.join('\n');
 }
 
 function formatText(text) {
@@ -78,7 +102,27 @@ export default function Planner() {
     ]);
     setLoading(true);
 
-    const response = getAIResponse(userText, t);
+    let response;
+    const wrId = extractWRId(userText);
+    if (wrId) {
+      try {
+        const rec = await api.generateRecommendation(wrId);
+        response = formatRecommendation(rec, t);
+      } catch {
+        response = `${t('planner.wrNotFound') || 'No se encontró la solicitud'} **${wrId}**. ${t('planner.checkId') || 'Verifica el ID e intenta de nuevo.'}`;
+      }
+    } else {
+      response = getKeywordResponse(userText, t);
+      if (!response) {
+        // Enrich default response with real counts
+        const defaultMsg = t('planner.responses.default') || '';
+        response = defaultMsg
+          .replace('{backlog}', String(backlogCount))
+          .replace('{pending}', String(pendingValidation))
+          .replace('{critical}', String(criticalP1));
+      }
+    }
+
     setLoading(false);
     setMessages((prev) => [
       ...prev,

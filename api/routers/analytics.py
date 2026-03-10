@@ -77,8 +77,9 @@ def get_variance_alerts(db: Session = Depends(get_db)):
 
 @router.get("/asset-health")
 def get_asset_health_scores(plant_id: str | None = None, db: Session = Depends(get_db)):
-    """Get asset health scores for all equipment. Health = weighted(availability, OEE, MTBF)."""
-    from api.database.models import HierarchyNodeModel
+    """Get asset health scores for all equipment from real DB data."""
+    from api.database.models import HierarchyNodeModel, HealthScoreModel, KPIMetricsModel
+
     nodes = db.query(HierarchyNodeModel).filter(
         HierarchyNodeModel.node_type == "EQUIPMENT"
     )
@@ -86,27 +87,59 @@ def get_asset_health_scores(plant_id: str | None = None, db: Session = Depends(g
         nodes = nodes.filter(HierarchyNodeModel.plant_id == plant_id)
     nodes = nodes.all()
 
+    # Index latest health scores and KPI metrics by node_id
+    health_map: dict[str, HealthScoreModel] = {}
+    kpi_map: dict[str, KPIMetricsModel] = {}
+    for node in nodes:
+        hs = db.query(HealthScoreModel).filter(
+            HealthScoreModel.node_id == node.node_id
+        ).order_by(HealthScoreModel.calculated_at.desc()).first()
+        if hs:
+            health_map[node.node_id] = hs
+        km = db.query(KPIMetricsModel).filter(
+            KPIMetricsModel.equipment_id == node.node_id
+        ).order_by(KPIMetricsModel.calculated_at.desc()).first()
+        if km:
+            kpi_map[node.node_id] = km
+
     results = []
     for node in nodes:
+        hs = health_map.get(node.node_id)
+        km = kpi_map.get(node.node_id)
         meta = node.metadata_json or {}
-        availability = meta.get("availability", 95 + (hash(node.node_id) % 5))
-        oee = meta.get("oee", 80 + (hash(node.name) % 15))
-        mtbf = meta.get("mtbf", 200 + (hash(node.node_id) % 2000))
-        mttr = meta.get("mttr", 4 + (hash(node.name) % 40))
-        trend = meta.get("trend", ["STABLE", "IMPROVING", "WORSENING"][hash(node.node_id) % 3])
 
-        health = round(availability * 0.3 + oee * 0.3 + min(mtbf / 20, 100) * 0.4, 1)
+        availability = (km.availability_pct if km and km.availability_pct is not None
+                        else meta.get("availability"))
+        oee = (km.oee_pct if km and km.oee_pct is not None
+               else meta.get("oee"))
+        mtbf = (km.mtbf_days if km and km.mtbf_days is not None
+                else meta.get("mtbf"))
+        mttr = (km.mttr_hours if km and km.mttr_hours is not None
+                else meta.get("mttr"))
+        trend = (hs.trend if hs and hs.trend else meta.get("trend"))
+        health = (hs.composite_score if hs and hs.composite_score
+                  else None)
+
+        # Only include equipment with at least some real data
+        if availability is None and oee is None and mtbf is None and health is None:
+            continue
+
+        if health is None and availability is not None:
+            health = round(
+                (availability or 0) * 0.3 + (oee or 0) * 0.3
+                + min((mtbf or 0) / 20, 100) * 0.4, 1)
+
         results.append({
             "equipment_tag": node.node_id,
             "equipment_name": node.name,
             "health_score": health,
-            "availability": round(availability, 1),
-            "oee": round(oee, 1),
-            "mtbf": round(mtbf, 1),
-            "mttr": round(mttr, 1),
-            "trend": trend,
+            "availability": round(availability, 1) if availability is not None else None,
+            "oee": round(oee, 1) if oee is not None else None,
+            "mtbf": round(mtbf, 1) if mtbf is not None else None,
+            "mttr": round(mttr, 1) if mttr is not None else None,
+            "trend": trend or "STABLE",
         })
-    return {"count": len(results), "assets": sorted(results, key=lambda x: x["health_score"])}
+    return {"count": len(results), "assets": sorted(results, key=lambda x: x["health_score"] or 0)}
 
 
 @router.get("/page-data/{plant_id}")
@@ -114,42 +147,63 @@ def get_analytics_page_data(plant_id: str, db: Session = Depends(get_db)):
     """All-in-one endpoint for Analytics page: KPIs, charts, reliability table."""
     from api.database.models import (
         HierarchyNodeModel, FMECAWorksheetModel, WorkPackageModel,
-        WorkRequestModel, RCAAnalysisModel,
+        WorkRequestModel, KPIMetricsModel, HealthScoreModel,
     )
 
-    # ── Equipment metrics (reuse asset-health logic) ──
+    # ── Equipment metrics from real DB data ──
     nodes = db.query(HierarchyNodeModel).filter(
         HierarchyNodeModel.node_type == "EQUIPMENT",
         HierarchyNodeModel.plant_id == plant_id,
     ).all()
 
     equipment_kpis = []
-    total_mtbf = total_mttr = total_avail = total_oee = 0
+    total_mtbf = total_mttr = total_avail = total_oee = 0.0
+    counted = 0
     for node in nodes:
         meta = node.metadata_json or {}
-        avail = meta.get("availability", 95 + (hash(node.node_id) % 5))
-        oee = meta.get("oee", 80 + (hash(node.name) % 15))
-        mtbf = meta.get("mtbf", 200 + (hash(node.node_id) % 2000))
-        mttr = meta.get("mttr", 4 + (hash(node.name) % 40))
-        trend = meta.get("trend", ["STABLE", "IMPROVING", "WORSENING"][hash(node.node_id) % 3])
+        km = db.query(KPIMetricsModel).filter(
+            KPIMetricsModel.equipment_id == node.node_id
+        ).order_by(KPIMetricsModel.calculated_at.desc()).first()
+        hs = db.query(HealthScoreModel).filter(
+            HealthScoreModel.node_id == node.node_id
+        ).order_by(HealthScoreModel.calculated_at.desc()).first()
+
+        avail = (km.availability_pct if km and km.availability_pct is not None
+                 else meta.get("availability"))
+        oee = (km.oee_pct if km and km.oee_pct is not None
+               else meta.get("oee"))
+        mtbf = (km.mtbf_days if km and km.mtbf_days is not None
+                else meta.get("mtbf"))
+        mttr = (km.mttr_hours if km and km.mttr_hours is not None
+                else meta.get("mttr"))
+        trend = (hs.trend if hs and hs.trend else meta.get("trend", "STABLE"))
+
+        if avail is None and oee is None and mtbf is None:
+            continue
+
+        counted += 1
+        total_avail += avail or 0; total_oee += oee or 0
+        total_mtbf += mtbf or 0; total_mttr += mttr or 0
         equipment_kpis.append({
             "equipment_tag": node.node_id, "equipment_name": node.name,
-            "mtbf": round(mtbf, 1), "mttr": round(mttr, 1),
-            "availability": round(avail, 1), "oee": round(oee, 1), "trend": trend,
+            "mtbf": round(mtbf, 1) if mtbf is not None else None,
+            "mttr": round(mttr, 1) if mttr is not None else None,
+            "availability": round(avail, 1) if avail is not None else None,
+            "oee": round(oee, 1) if oee is not None else None,
+            "trend": trend,
         })
-        total_mtbf += mtbf; total_mttr += mttr
-        total_avail += avail; total_oee += oee
 
-    n_eq = max(len(nodes), 1)
+    n_eq = max(counted, 1)
     avg_mtbf = round(total_mtbf / n_eq, 1)
     avg_mttr = round(total_mttr / n_eq, 1)
     avg_avail = round(total_avail / n_eq, 1)
     avg_oee = round(total_oee / n_eq, 1)
 
     # ── Failure modes pareto (from FMECA rows) ──
+    node_ids = [n.node_id for n in nodes]
     worksheets = db.query(FMECAWorksheetModel).filter(
-        FMECAWorksheetModel.equipment_id.in_([n.node_id for n in nodes])
-    ).all()
+        FMECAWorksheetModel.equipment_id.in_(node_ids)
+    ).all() if node_ids else []
     fm_counts: dict[str, int] = {}
     for ws in worksheets:
         for row in (ws.rows or []):
@@ -168,8 +222,8 @@ def get_analytics_page_data(plant_id: str, db: Session = Depends(get_db)):
 
     # ── Work orders by type (from work packages + work requests) ──
     wps = db.query(WorkPackageModel).filter(
-        WorkPackageModel.node_id.in_([n.node_id for n in nodes])
-    ).all()
+        WorkPackageModel.node_id.in_(node_ids)
+    ).all() if node_ids else []
     wrs = db.query(WorkRequestModel).all()
     type_map = {"PREVENTIVE": 0, "CORRECTIVE": 0, "PREDICTIVE": 0}
     for wp in wps:
@@ -186,32 +240,62 @@ def get_analytics_page_data(plant_id: str, db: Session = Depends(get_db)):
         for t, c in type_map.items() if c > 0
     ]
 
-    # ── Cost by area (derive from hierarchy areas) ──
-    areas: dict[str, dict] = {}
-    for node in nodes:
-        area = (node.name or "General").split(" ")[0]
-        if area not in areas:
-            areas[area] = {"material": 0, "labor": 0}
-        areas[area]["material"] += 15000 + (hash(node.node_id) % 10000)
-        areas[area]["labor"] += 8000 + (hash(node.name) % 5000)
-    cost_by_area = [{"area": a, **v} for a, v in areas.items()]
-
-    # ── KPI history (synthetic 6-month trend from current values) ──
-    months = ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"]
+    # ── KPI history (from real KPI records, grouped by month) ──
+    kpi_records = db.query(KPIMetricsModel).filter(
+        KPIMetricsModel.plant_id == plant_id
+    ).order_by(KPIMetricsModel.period_end.desc()).limit(6).all()
     kpi_history = []
-    for i, m in enumerate(months):
-        factor = 0.85 + (i * 0.03)
-        kpi_history.append({
-            "month": m,
-            "schedule_adherence": round(min(avg_avail * factor, 99), 1),
-            "oee_avg": round(min(avg_oee * factor, 99), 1),
-            "planning_time_avg": round(150 - (i * 15), 0),
-        })
+    if kpi_records:
+        for rec in reversed(kpi_records):
+            kpi_history.append({
+                "month": rec.period_end.strftime("%b") if rec.period_end else "—",
+                "schedule_adherence": round(rec.schedule_compliance_pct or 0, 1),
+                "oee_avg": round(rec.oee_pct or 0, 1),
+                "planning_time_avg": round(rec.backlog_hours or 0, 0),
+            })
+
+    # ── Cost by area (from work packages grouped by parent hierarchy node) ──
+    LABOR_RATE = 250  # MAD per hour
+    MATERIAL_FACTOR = 0.6  # material cost ≈ 60% of labor
+    area_costs: dict[str, dict] = {}
+    for wp in wps:
+        # Determine area: use parent node or equipment tag prefix
+        parent = db.query(HierarchyNodeModel).filter(
+            HierarchyNodeModel.node_id == wp.node_id
+        ).first()
+        area_name = "General"
+        if parent:
+            # Try to get the parent (system/area) name
+            parent_node = db.query(HierarchyNodeModel).filter(
+                HierarchyNodeModel.node_id == parent.parent_id
+            ).first() if parent.parent_id else None
+            area_name = (parent_node.name if parent_node else parent.name) or "General"
+
+        hours = 0.0
+        ls = wp.labour_summary
+        if isinstance(ls, dict):
+            hours = sum(v for v in ls.values() if isinstance(v, (int, float)))
+        elif isinstance(ls, (int, float)):
+            hours = float(ls)
+        if hours <= 0:
+            hours = float(wp.estimated_hours or 4)
+
+        if area_name not in area_costs:
+            area_costs[area_name] = {"labor": 0.0, "material": 0.0}
+        area_costs[area_name]["labor"] += hours * LABOR_RATE
+        area_costs[area_name]["material"] += hours * LABOR_RATE * MATERIAL_FACTOR
+
+    cost_by_area = [
+        {"area": area[:20], "labor": round(v["labor"]), "material": round(v["material"])}
+        for area, v in sorted(area_costs.items(), key=lambda x: x[1]["labor"], reverse=True)
+    ]
 
     return {
         "kpis": {
-            "mtbf": f"{avg_mtbf}h", "mttr": f"{avg_mttr}h",
-            "availability": f"{avg_avail}%", "oee": f"{avg_oee}%",
+            "mtbf": f"{avg_mtbf}h" if counted else "—",
+            "mttr": f"{avg_mttr}h" if counted else "—",
+            "availability": f"{avg_avail}%" if counted else "—",
+            "oee": f"{avg_oee}%" if counted else "—",
         },
         "kpi_history": kpi_history,
         "failure_modes_pareto": failure_modes_pareto,

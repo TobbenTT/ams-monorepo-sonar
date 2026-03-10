@@ -223,9 +223,20 @@ def export_gantt_excel(db: Session, program_id: str) -> str | None:
     rows = GanttGenerator.generate_gantt_data(program)
 
     tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", prefix="gantt_", delete=False)
+    tmp_path = tmp.name
     tmp.close()
-    GanttGenerator.export_gantt_excel(rows, tmp.name)
-    return tmp.name
+    GanttGenerator.export_gantt_excel(rows, tmp_path)
+
+    # Schedule cleanup after 60 seconds
+    import threading
+    def _cleanup():
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+    threading.Timer(60, _cleanup).start()
+
+    return tmp_path
 
 
 def _model_to_schema(model: WeeklyProgramModel) -> WeeklyProgram:

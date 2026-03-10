@@ -159,6 +159,10 @@ export default {
         totalNodes: 'Total Nodes',
         reportsGenerated: 'Reports Generated',
         backendConnection: 'Backend Connection',
+        noAlerts: 'No active alerts',
+        notifications: 'Notifications',
+        connected: 'Connected',
+        disconnected: 'Disconnected',
     },
 
     // ─── Field Capture ─────────────────────────────────────
@@ -624,6 +628,16 @@ export default {
         ],
         disclaimer: 'AI recommendations always require human validation before execution.',
         analyzing: 'Analyzing data...',
+        recTitle: 'Recommendation for',
+        action: 'Action',
+        confidence: 'AI Confidence',
+        riskLevel: 'Risk',
+        recDate: 'Suggested date',
+        duration: 'Estimated duration',
+        specialties: 'Specialties',
+        riskFactors: 'Risk factors',
+        wrNotFound: 'Work request not found',
+        checkId: 'Check the ID and try again.',
         welcomeMessage: 'Hello! I am the OCP AI Planning Assistant. I can help you prioritize the backlog, optimize the weekly program, identify grouping opportunities, and analyze failure trends. How can I help you?',
         responses: {
             default: `**Priority Analysis — Week W09-2026**

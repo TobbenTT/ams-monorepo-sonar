@@ -29,7 +29,15 @@ def _compute_kpis(db: Session, plant_id: str) -> dict:
             "backlog_age": f"{kpi.backlog_hours:.0f}h" if kpi.backlog_hours else "—",
             "iso_compliance": f"{kpi.pm_compliance_pct:.0f}%" if kpi.pm_compliance_pct is not None else "—",
         }
-    return {}
+    return {
+        "schedule_adherence": "—",
+        "oee": "—",
+        "equipment_health": "—",
+        "mtbf": "—",
+        "mttr": "—",
+        "backlog_age": "—",
+        "iso_compliance": "—",
+    }
 
 
 def _compute_completions(db: Session, plant_id: str) -> dict:
@@ -42,10 +50,10 @@ def _compute_completions(db: Session, plant_id: str) -> dict:
         wrs = db.query(WorkRequestModel).count()
         programs = db.query(WeeklyProgramModel).count()
 
-        strategy = min(95, (crits * 5) + (funcs * 3)) if (crits > 0 or funcs > 0) else 0
-        planning = min(95, (programs * 10)) if programs > 0 else 0
-        field = min(95, (wrs * 2)) if wrs > 0 else 0
-        analytics = min(95, (crits * 5)) if crits > 0 else 0
+        strategy = min(100, (crits * 5) + (funcs * 3)) if (crits > 0 or funcs > 0) else 0
+        planning = min(100, (programs * 10)) if programs > 0 else 0
+        field = min(100, (wrs * 2)) if wrs > 0 else 0
+        analytics = min(100, (crits * 5)) if crits > 0 else 0
     except Exception:
         strategy, planning, field, analytics = 0, 0, 0, 0
 

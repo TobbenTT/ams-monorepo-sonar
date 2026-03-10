@@ -37,8 +37,8 @@ def get_upload(package_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/uploads")
-def list_uploads(plant_code: str | None = None, db: Session = Depends(get_db)):
-    uploads = sap_service.list_uploads(db, plant_code=plant_code)
+def list_uploads(plant_code: str | None = None, plant_id: str | None = None, db: Session = Depends(get_db)):
+    uploads = sap_service.list_uploads(db, plant_code=plant_code or plant_id)
     return [{"package_id": u.package_id, "plant_code": u.plant_code, "status": u.status} for u in uploads]
 
 

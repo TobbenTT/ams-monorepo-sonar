@@ -159,6 +159,10 @@ export default {
         totalNodes: 'Nodos Totales',
         reportsGenerated: 'Reportes Generados',
         backendConnection: 'Conexión Backend',
+        noAlerts: 'Sin alertas activas',
+        notifications: 'Notificaciones',
+        connected: 'Conectado',
+        disconnected: 'Desconectado',
     },
 
     // ─── Field Capture ─────────────────────────────────────
@@ -620,6 +624,16 @@ export default {
         ],
         disclaimer: 'Las recomendaciones de IA siempre requieren validación humana antes de ejecución.',
         analyzing: 'Analizando datos...',
+        recTitle: 'Recomendación para',
+        action: 'Acción',
+        confidence: 'Confianza IA',
+        riskLevel: 'Riesgo',
+        recDate: 'Fecha sugerida',
+        duration: 'Duración estimada',
+        specialties: 'Especialidades',
+        riskFactors: 'Factores de riesgo',
+        wrNotFound: 'No se encontró la solicitud',
+        checkId: 'Verifica el ID e intenta de nuevo.',
         welcomeMessage: '¡Hola! Soy el Asistente de Planificación IA de OCP. Puedo ayudarte a priorizar el backlog, optimizar el programa semanal, identificar oportunidades de agrupación y analizar tendencias de fallas. ¿Cómo puedo ayudarte?',
         responses: {
             default: `**Análisis de Prioridades — Semana W09-2026**\n\nBasándome en el backlog actual y los datos de criticidad, mis recomendaciones son:\n\n**1. Trabajos Críticos P1 — Acción Inmediata**\n- **BL-005** (JFC1-CO-001): Compresor de Aire en espera de aprobación. Riesgo térmico activo (95°C vs límite 80°C). Prioridad máxima.\n\n**2. Agrupación Recomendada — Área Molienda**\n- Grupo GRP-GRIND-01 incluye BL-001 (SAG Mill) y BL-003 (Ball Mill #2).\n- Agrupar en parada coordinada ahorra ~12 horas de preparación logística.\n\n**3. Trabajos en Espera de Materiales**\n- BL-002 (Rotary Dryer) y BL-007 (Slurry Pump): Confirmar disponibilidad de repuestos antes de programar.\n\n**Recomendación de Carga W09-2026:**\n- Lunes-Martes: Reparación compresor (6h) + Inspección SAG Mill (8h)\n- Miércoles: Grupo flotación GRP-FLOAT-01 (24h combinadas)\n- Jueves-Viernes: Mantenimiento preventivo restante\n\n¿Desea que genere el programa detallado con asignación de técnicos?`,

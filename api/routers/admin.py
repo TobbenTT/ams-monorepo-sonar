@@ -17,8 +17,10 @@ _ADMIN_KEY = os.getenv("ADMIN_API_KEY", "")
 
 
 def _require_admin(x_admin_key: str = Header(default="")):
-    """Verify admin API key for destructive operations (bootstrap fallback)."""
-    if _ADMIN_KEY and x_admin_key != _ADMIN_KEY:
+    """Verify admin API key for destructive operations (fail-closed)."""
+    if not _ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="ADMIN_API_KEY not configured")
+    if x_admin_key != _ADMIN_KEY:
         raise HTTPException(status_code=403, detail="Forbidden")
 
 

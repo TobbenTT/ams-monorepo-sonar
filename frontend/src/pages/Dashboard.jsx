@@ -332,7 +332,7 @@ export default function Dashboard() {
                                 <div className="text-2xl mb-4 opacity-40">
                                     <CheckCircle className="mx-auto" size={32} />
                                 </div>
-                                <h3>No active alerts</h3>
+                                <h3>{t('dashboard.noAlerts') || 'Sin alertas activas'}</h3>
                             </div>
                         )}
                     </div>
@@ -365,12 +365,12 @@ export default function Dashboard() {
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">{dash?.total_reports || 0}</span>
                     </div>
                     <div className="flex items-center justify-between py-2 border-b border-border/50">
-                        <span>Notifications</span>
+                        <span>{t('dashboard.notifications') || 'Notificaciones'}</span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">{dash?.total_notifications || 0}</span>
                     </div>
                     <div className="flex items-center justify-between py-2">
                         <span>{t('dashboard.backendConnection')}</span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">{stats ? 'Connected' : 'Disconnected'}</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">{stats ? (t('dashboard.connected') || 'Conectado') : (t('dashboard.disconnected') || 'Desconectado')}</span>
                     </div>
                 </div>
             </div>

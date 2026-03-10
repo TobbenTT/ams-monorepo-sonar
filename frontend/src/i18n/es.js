@@ -423,6 +423,7 @@ export default {
         sapUploadDesc: 'Genera archivos de carga compatibles con SAP (PM01/PM02/PM03) desde tus planes de mantenimiento y paquetes de trabajo.',
         generateSapFile: 'Generar Archivo SAP',
         sapGenerated: 'Archivo de carga SAP generado exitosamente',
+        sapError: 'Error al generar archivo de carga SAP',
         sapReady: 'Archivo SAP listo para cargar',
     },
 

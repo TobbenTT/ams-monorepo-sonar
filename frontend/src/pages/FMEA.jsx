@@ -439,7 +439,7 @@ function WorkPackagesTab({ tasks, t }) {
 /* ═══════════════════════════════════════════════════════════
    SAP UPLOAD TAB
    ═══════════════════════════════════════════════════════════ */
-function SapUploadTab({ t }) {
+function SapUploadTab({ t, plant }) {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const toast = useToast();
@@ -447,11 +447,16 @@ function SapUploadTab({ t }) {
   async function handleGenerate() {
     setUploading(true);
     try {
-      const result = await api.generateSapUpload({ format: 'PM01' });
+      const result = await api.generateSapUpload({
+        plant_code: plant || 'OCP-JFC1',
+        maintenance_plan: {},
+        maintenance_items: [],
+        task_lists: [],
+      });
       setUploadResult(result);
       toast.success(t('fmea.sapGenerated'));
     } catch {
-      toast.error(t('fmea.sapError') || 'Error generating SAP upload');
+      toast.error(t('fmea.sapError'));
     } finally {
       setUploading(false);
     }
@@ -925,7 +930,7 @@ export default function FMEA() {
           {activeTab === 'fmeca' && <FmecaOverviewTab records={filteredRecords} t={t} />}
           {activeTab === 'tasks' && <TasksTab tasks={filteredTasks} selectedEquipment={selectedEquipment} t={t} />}
           {activeTab === 'workPackages' && <WorkPackagesTab tasks={tasks} t={t} />}
-          {activeTab === 'sapUpload' && <SapUploadTab t={t} />}
+          {activeTab === 'sapUpload' && <SapUploadTab t={t} plant={plant} />}
         </div>
 
         {/* Detail sidebar */}

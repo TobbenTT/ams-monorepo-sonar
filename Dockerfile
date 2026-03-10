@@ -21,6 +21,9 @@ COPY --from=builder /install /usr/local
 # Copy application code
 COPY . .
 
+# Stamp build time so /health build hash changes on every deploy
+RUN date +%s > /app/.build_timestamp
+
 # Create data directory and non-root user
 RUN mkdir -p /app/data \
     && useradd -m -u 1000 appuser \

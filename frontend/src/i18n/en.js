@@ -423,6 +423,7 @@ export default {
         sapUploadDesc: 'Generate SAP-compatible upload files (PM01/PM02/PM03) from your maintenance plans and work packages.',
         generateSapFile: 'Generate SAP File',
         sapGenerated: 'SAP upload file generated successfully',
+        sapError: 'Error generating SAP upload file',
         sapReady: 'SAP file ready for upload',
     },
 

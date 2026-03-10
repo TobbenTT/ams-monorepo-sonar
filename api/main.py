@@ -184,14 +184,15 @@ def create_app() -> FastAPI:
             ],
         }
 
-    # Build hash — stable across all Gunicorn workers, changes only on deploy
+    # Build hash — stable across all Gunicorn workers, changes on every deploy
     import hashlib as _hashlib
-    _hash_source = __file__
+    _stamp_path = os.path.join(os.path.dirname(__file__), '..', '.build_timestamp')
     try:
-        _mtime = str(os.path.getmtime(__file__))
+        with open(_stamp_path) as _f:
+            _stamp = _f.read().strip()
     except Exception:
-        _mtime = "0"
-    _build_hash = _hashlib.md5((_hash_source + _mtime).encode()).hexdigest()[:12]
+        _stamp = str(os.path.getmtime(__file__))
+    _build_hash = _hashlib.md5(_stamp.encode()).hexdigest()[:12]
 
     @app.get("/health")
     def health():

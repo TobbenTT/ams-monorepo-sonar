@@ -197,33 +197,33 @@ def _suggest_schedule(
     all_workforce_ok = all(w.technicians_available > 0 for w in workforce)
     if not all_workforce_ok:
         earliest = date.today() + timedelta(days=3)
-        conflicts.append("Workforce not immediately available")
+        conflicts.append("Fuerza laboral no disponible inmediatamente")
 
     if not materials.all_available:
         earliest = date.today() + timedelta(days=14)
-        conflicts.append(f"{len(materials.missing_items)} material(s) not in stock")
+        conflicts.append(f"{len(materials.missing_items)} material(es) sin stock")
 
     # Emergency overrides scheduling
     if wr.ai_classification.priority_suggested == Priority.EMERGENCY:
         earliest = date.today()
-        conflicts = [c for c in conflicts if "Workforce" not in c]
+        conflicts = [c for c in conflicts if "Fuerza laboral" not in c]
 
     reasoning_parts = []
     if wr.ai_classification.priority_suggested in (Priority.EMERGENCY, Priority.URGENT):
-        reasoning_parts.append(f"Priority {wr.ai_classification.priority_suggested.value} requires expedited scheduling.")
+        reasoning_parts.append(f"Prioridad {wr.ai_classification.priority_suggested.value} requiere programación expedita.")
     if materials.all_available:
-        reasoning_parts.append("All materials available.")
+        reasoning_parts.append("Todos los materiales disponibles.")
     else:
-        reasoning_parts.append("Materials procurement needed.")
+        reasoning_parts.append("Se requiere adquisición de materiales.")
     if all_workforce_ok:
-        reasoning_parts.append("Workforce available.")
+        reasoning_parts.append("Fuerza laboral disponible.")
     if groupable:
-        reasoning_parts.append(f"Can be grouped with {len(groupable)} backlog item(s).")
+        reasoning_parts.append(f"Se puede agrupar con {len(groupable)} elemento(s) del backlog.")
 
     return SchedulingSuggestion(
         recommended_date=earliest,
         recommended_shift=ShiftType.MORNING,
-        reasoning=" ".join(reasoning_parts) if reasoning_parts else "Standard scheduling.",
+        reasoning=" ".join(reasoning_parts) if reasoning_parts else "Programación estándar.",
         conflicts=conflicts,
         groupable_with=groupable,
     )
@@ -242,13 +242,13 @@ def _assess_risk(
     workforce_short = any(w.technicians_available == 0 for w in workforce)
 
     if has_safety:
-        risk_factors.append("Safety flags present — requires immediate attention")
+        risk_factors.append("Alertas de seguridad presentes — requiere atención inmediata")
     if is_high_priority:
-        risk_factors.append(f"High priority ({wr.ai_classification.priority_suggested.value})")
+        risk_factors.append(f"Prioridad alta ({wr.ai_classification.priority_suggested.value})")
     if materials_missing:
-        risk_factors.append(f"{len(materials.missing_items)} material(s) unavailable")
+        risk_factors.append(f"{len(materials.missing_items)} material(es) no disponible(s)")
     if workforce_short:
-        risk_factors.append("Required specialty has no available technicians")
+        risk_factors.append("Especialidad requerida sin técnicos disponibles")
 
     # Determine risk level
     score = sum([
@@ -260,17 +260,17 @@ def _assess_risk(
 
     if score >= 5:
         level = RiskLevel.CRITICAL
-        rec = "Immediate escalation required. Safety and resource issues must be resolved."
+        rec = "Escalamiento inmediato requerido. Problemas de seguridad y recursos deben resolverse."
     elif score >= 3:
         level = RiskLevel.HIGH
-        rec = "Expedite material procurement and workforce allocation."
+        rec = "Expeditar adquisición de materiales y asignación de fuerza laboral."
     elif score >= 1:
         level = RiskLevel.MEDIUM
-        rec = "Monitor material arrival and workforce scheduling."
+        rec = "Monitorear llegada de materiales y programación de personal."
     else:
         level = RiskLevel.LOW
-        rec = "Standard processing. No significant risk factors identified."
-        risk_factors.append("No significant risk factors")
+        rec = "Procesamiento estándar. Sin factores de riesgo significativos."
+        risk_factors.append("Sin factores de riesgo significativos")
 
     return RiskAssessment(
         risk_level=level,

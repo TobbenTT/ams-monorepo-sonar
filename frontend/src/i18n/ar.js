@@ -423,6 +423,7 @@ export default {
         sapUploadDesc: 'إنشاء ملفات تحميل متوافقة مع SAP (PM01/PM02/PM03) من خطط الصيانة وحزم العمل.',
         generateSapFile: 'إنشاء ملف SAP',
         sapGenerated: 'تم إنشاء ملف تحميل SAP بنجاح',
+        sapError: 'خطأ في إنشاء ملف تحميل SAP',
         sapReady: 'ملف SAP جاهز للتحميل',
     },
 

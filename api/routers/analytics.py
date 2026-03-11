@@ -4,13 +4,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import (
     HealthScoreRequest, KPIRequest, WeibullFitRequest,
     WeibullPredictRequest, VarianceDetectRequest,
 )
 from api.services import analytics_service
 
-router = APIRouter(prefix="/analytics", tags=["analytics"])
+router = APIRouter(prefix="/analytics", tags=["analytics"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/health-score")

@@ -1,8 +1,6 @@
 """Admin router — seed database, audit log, stats, agent status."""
 
-import os
-
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
@@ -11,20 +9,10 @@ from api.schemas import FeedbackCreate
 from api.services import hierarchy_service, agent_service
 from api.dependencies.auth import get_current_user, require_role
 
-router = APIRouter(prefix="/admin", tags=["admin"])
-
-_ADMIN_KEY = os.getenv("ADMIN_API_KEY", "")
+router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_user)])
 
 
-def _require_admin(x_admin_key: str = Header(default="")):
-    """Verify admin API key for destructive operations (fail-closed)."""
-    if not _ADMIN_KEY:
-        raise HTTPException(status_code=403, detail="ADMIN_API_KEY not configured")
-    if x_admin_key != _ADMIN_KEY:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-
-@router.post("/seed-database", dependencies=[Depends(_require_admin)])
+@router.post("/seed-database", dependencies=[Depends(require_role("admin"))])
 def seed_database(db: Session = Depends(get_db)):
     from api.seed import seed_all
     result = seed_all(db)
@@ -56,7 +44,7 @@ def get_stats(db: Session = Depends(get_db)):
     }
 
 
-@router.delete("/reset-database", dependencies=[Depends(_require_admin)])
+@router.delete("/reset-database", dependencies=[Depends(require_role("admin"))])
 def reset_database(db: Session = Depends(get_db)):
     from api.database.models import (
         VarianceAlertModel, HealthScoreModel, KPIMetricsModel,

@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import WPCreate, WPGroupRequest, WorkInstructionRequest
 from api.services import work_package_service
 
-router = APIRouter(prefix="/work-packages", tags=["work-packages"])
+router = APIRouter(prefix="/work-packages", tags=["work-packages"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/")

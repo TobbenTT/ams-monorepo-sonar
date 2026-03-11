@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import SAPUploadRequest, SAPTransitionRequest
 from api.services import sap_service
 
-router = APIRouter(prefix="/sap", tags=["sap"])
+router = APIRouter(prefix="/sap", tags=["sap"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/generate-upload")

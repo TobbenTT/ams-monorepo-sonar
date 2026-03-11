@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import CaptureCreate
 from api.services import capture_service
 
-router = APIRouter(prefix="/capture", tags=["capture"])
+router = APIRouter(prefix="/capture", tags=["capture"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/")

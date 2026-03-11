@@ -4,13 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import (
     FailureModeCreate, RCMDecideRequest,
     FunctionCreate, FunctionalFailureCreate, FMECAWorksheetCreate, RPNRequest,
 )
 from api.services import fmea_service
 
-router = APIRouter(prefix="/fmea", tags=["fmea"])
+router = APIRouter(prefix="/fmea", tags=["fmea"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/failure-modes")

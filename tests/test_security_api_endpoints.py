@@ -8,11 +8,25 @@ Uses FastAPI TestClient — no server startup needed.
 import pytest
 from fastapi.testclient import TestClient
 
+from api.database.models import UserModel
+from api.dependencies.auth import get_current_user
 from api.main import app
 
 pytestmark = pytest.mark.security
 
-client = TestClient(app)
+
+@pytest.fixture
+def client():
+    """TestClient with auth override to test non-auth behaviour."""
+    async def _override():
+        return UserModel(
+            user_id="sec-test-001", username="secadmin",
+            hashed_password="x", role="admin", is_active=True,
+        )
+    app.dependency_overrides[get_current_user] = _override
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 class TestCORSConfiguration:
@@ -69,7 +83,7 @@ class TestDestructiveEndpointsNoAuth:
 class TestEndpointResponseSafety:
     """Verify endpoints don't leak sensitive information."""
 
-    def test_health_no_sensitive_data(self):
+    def test_health_no_sensitive_data(self, client):
         """Health endpoint should return status without leaking secrets."""
         resp = client.get("/health")
         assert resp.status_code == 200
@@ -82,7 +96,7 @@ class TestEndpointResponseSafety:
         assert "password" not in text.lower()
         assert "secret" not in text.lower()
 
-    def test_root_no_internal_paths(self):
+    def test_root_no_internal_paths(self, client):
         """Root endpoint should not expose filesystem paths."""
         resp = client.get("/")
         assert resp.status_code == 200
@@ -91,12 +105,12 @@ class TestEndpointResponseSafety:
         assert "/home/" not in text
         assert "/Users/" not in text
 
-    def test_unknown_route_returns_404(self):
+    def test_unknown_route_returns_404(self, client):
         """Non-existent route should return 404, not 500."""
         resp = client.get("/api/v1/nonexistent-endpoint-xyz")
         assert resp.status_code == 404
 
-    def test_error_response_no_stack_trace(self):
+    def test_error_response_no_stack_trace(self, client):
         """Invalid request should not expose Python traceback."""
         resp = client.post(
             "/api/v1/sap/generate-upload",
@@ -120,7 +134,7 @@ class TestRouteStructure:
             assert route.startswith("/api/v1"), \
                 f"Route {route} is not under /api/v1 prefix"
 
-    def test_post_without_json_returns_422(self):
+    def test_post_without_json_returns_422(self, client):
         """POST with non-JSON body should return 422, not 500."""
         resp = client.post(
             "/api/v1/admin/feedback",

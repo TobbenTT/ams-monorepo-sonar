@@ -9,10 +9,8 @@ from dotenv import load_dotenv
 _project_root = Path(__file__).resolve().parent.parent
 load_dotenv(_project_root / ".env")
 
-# Generate a strong random JWT secret if none is configured
+# JWT secret — MUST be set explicitly via env var or .env
 _default_jwt_secret = os.getenv("JWT_SECRET_KEY", "")
-if not _default_jwt_secret or _default_jwt_secret.startswith("ocp-maintenance"):
-    _default_jwt_secret = secrets.token_urlsafe(64)
 
 
 class Settings:

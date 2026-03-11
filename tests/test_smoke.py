@@ -14,7 +14,9 @@ from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
 from api.database.connection import Base, get_db
+from api.database.models import UserModel
 import api.database.models  # noqa: F401
+from api.dependencies.auth import get_current_user
 from api.main import app, create_app
 
 
@@ -62,7 +64,14 @@ def client(db_session):
         finally:
             pass
 
+    async def _override_get_current_user():
+        return UserModel(
+            user_id="test-user-001", username="testadmin",
+            hashed_password="x", role="admin", is_active=True,
+        )
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user] = _override_get_current_user
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

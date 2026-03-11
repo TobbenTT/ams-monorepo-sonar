@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import BacklogOptimizeRequest
 from api.services import backlog_service
 
-router = APIRouter(prefix="/backlog", tags=["backlog"])
+router = APIRouter(prefix="/backlog", tags=["backlog"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/")

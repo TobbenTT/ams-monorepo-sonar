@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import WRValidateRequest
 from api.services import work_request_service
 
@@ -34,7 +35,7 @@ class WRFromHierarchyRequest(BaseModel):
     priority: str = "P3"
 
 
-router = APIRouter(prefix="/work-requests", tags=["work-requests"])
+router = APIRouter(prefix="/work-requests", tags=["work-requests"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/")

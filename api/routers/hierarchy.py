@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import PlantCreate, NodeCreate, VendorBuildRequest
 from api.services import hierarchy_service
 from api.services.hierarchy_builder_service import build_hierarchy_from_vendor
 
-router = APIRouter(prefix="/hierarchy", tags=["hierarchy"])
+router = APIRouter(prefix="/hierarchy", tags=["hierarchy"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/plants")

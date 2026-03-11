@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import (
     WeeklyReportRequest, MonthlyReportRequest, QuarterlyReportRequest,
     ReportingDEKPIRequest, NotificationRequest, ImportValidateRequest,
@@ -11,7 +12,7 @@ from api.schemas import (
 )
 from api.services import reporting_service
 
-router = APIRouter(prefix="/reporting", tags=["reporting"])
+router = APIRouter(prefix="/reporting", tags=["reporting"], dependencies=[Depends(get_current_user)])
 
 
 # ── Reports ─────────────────────────────────────────────────────────

@@ -4,13 +4,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.services import reporting_service
 from api.database.models import (
     KPIMetricsModel, BacklogItemModel, WorkRequestModel,
     HierarchyNodeModel, WeeklyProgramModel,
 )
 
-router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["dashboard"], dependencies=[Depends(get_current_user)])
 
 
 def _compute_kpis(db: Session, plant_id: str) -> dict:

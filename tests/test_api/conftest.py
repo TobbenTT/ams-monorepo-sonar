@@ -7,7 +7,9 @@ from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
 from api.database.connection import Base, get_db
+from api.database.models import UserModel
 import api.database.models  # noqa: F401 — register all ORM models with Base.metadata
+from api.dependencies.auth import get_current_user
 from api.main import app
 
 # In-memory SQLite for tests — StaticPool ensures all connections share one DB
@@ -47,16 +49,31 @@ def db_session():
         session.close()
 
 
+def _make_test_user(role="admin"):
+    """Create a fake UserModel for test authentication."""
+    return UserModel(
+        user_id="test-user-001",
+        username="testadmin",
+        hashed_password="not-used-in-tests",
+        role=role,
+        is_active=True,
+    )
+
+
 @pytest.fixture
 def client(db_session):
-    """FastAPI TestClient with overridden DB dependency."""
+    """FastAPI TestClient with overridden DB and auth dependencies."""
     def _override_get_db():
         try:
             yield db_session
         finally:
             pass
 
+    async def _override_get_current_user():
+        return _make_test_user("admin")
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user] = _override_get_current_user
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

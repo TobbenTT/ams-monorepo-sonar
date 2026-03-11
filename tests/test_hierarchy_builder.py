@@ -213,7 +213,17 @@ class TestHierarchyBuilderAPI:
             finally:
                 s.close()
 
+        from api.database.models import UserModel
+        from api.dependencies.auth import get_current_user
+
+        async def _override_auth():
+            return UserModel(
+                user_id="test-user-001", username="testadmin",
+                hashed_password="x", role="admin", is_active=True,
+            )
+
         app.dependency_overrides[get_db] = _override
+        app.dependency_overrides[get_current_user] = _override_auth
         c = TestClient(app)
 
         # Create test plant

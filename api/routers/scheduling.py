@@ -5,10 +5,11 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import ProgramCreate
 from api.services import scheduling_service
 
-router = APIRouter(prefix="/scheduling", tags=["scheduling"])
+router = APIRouter(prefix="/scheduling", tags=["scheduling"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/programs")

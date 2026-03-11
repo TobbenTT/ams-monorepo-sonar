@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.schemas import RCACreate, FiveW2HRequest, RCAAdvance, PlanningKPIRequest, DEKPIRequest
 from api.services import rca_service
 
-router = APIRouter(prefix="/rca", tags=["rca"])
+router = APIRouter(prefix="/rca", tags=["rca"], dependencies=[Depends(get_current_user)])
 
 
 # ── RCA Analyses ──────────────────────────────────────────────────────

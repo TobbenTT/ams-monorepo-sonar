@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.config import settings
+# Note: JWT auth enforcement is handled at router-level via
+# dependencies=[Depends(get_current_user)], NOT middleware.
 from api.database.connection import create_all_tables
 
 logging.basicConfig(
@@ -25,40 +27,6 @@ from api.routers import (
     reporting, dashboard,
     auth,
 )
-
-
-# ── Security: JWT auth middleware ─────────────────────────────────────────
-_PUBLIC_PATHS = {
-    "/", "/health", "/docs", "/openapi.json", "/redoc",
-    "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/refresh",
-}
-_PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi")
-
-
-class JWTAuthMiddleware(BaseHTTPMiddleware):
-    """Enforce Bearer JWT on all non-public endpoints when REQUIRE_AUTH is set."""
-
-    async def dispatch(self, request, call_next):
-        # Always allow OPTIONS (CORS preflight)
-        if request.method == "OPTIONS":
-            return await call_next(request)
-        # Allow public paths
-        path = request.url.path
-        if path in _PUBLIC_PATHS or any(path.startswith(p) for p in _PUBLIC_PREFIXES):
-            return await call_next(request)
-        # Only enforce if REQUIRE_AUTH is enabled
-        if not settings.REQUIRE_AUTH:
-            return await call_next(request)
-        # Check Authorization header
-        auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
-            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
-        token = auth_header[7:]
-        from api.services.auth_service import decode_token
-        payload = decode_token(token)
-        if not payload or payload.get("type") != "access":
-            return JSONResponse(status_code=401, content={"detail": "Invalid or expired token"})
-        return await call_next(request)
 
 
 # ── Security: response headers ────────────────────────────────────────────
@@ -84,9 +52,11 @@ _RATE_LIMIT_MAX = 120     # requests per window
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Simple in-memory rate limiting per IP."""
+    """Simple in-memory rate limiting per IP (skipped in test/debug mode)."""
 
     async def dispatch(self, request, call_next):
+        if settings.DEBUG or os.getenv("TESTING"):
+            return await call_next(request)
         client_ip = request.client.host if request.client else "unknown"
         now = time.time()
         # Clean old entries
@@ -108,6 +78,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if not settings.JWT_SECRET_KEY:
+        raise RuntimeError(
+            "JWT_SECRET_KEY environment variable is not set. "
+            "The server cannot start without a secure JWT secret. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+        )
     create_all_tables()
     yield
 
@@ -134,14 +110,13 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-API-Key"],
     )
 
-    # Security middleware stack (order: outermost runs first)
+    # Security middleware stack
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RateLimitMiddleware)
-    app.add_middleware(JWTAuthMiddleware)
 
     # Include all routers under /api/v1
     prefix = settings.API_V1_PREFIX

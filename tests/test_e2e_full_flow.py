@@ -29,7 +29,9 @@ from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
 from api.database.connection import Base, get_db
+from api.database.models import UserModel
 import api.database.models  # noqa: F401 — ensure all models are imported
+from api.dependencies.auth import get_current_user
 from api.main import app
 
 
@@ -74,7 +76,29 @@ def db_session():
 
 @pytest.fixture
 def client(db_session):
-    """HTTP client with test DB injected."""
+    """HTTP client with test DB and auth injected."""
+    def _override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    async def _override_get_current_user():
+        return UserModel(
+            user_id="test-user-001", username="testadmin",
+            hashed_password="x", role="admin", is_active=True,
+        )
+
+    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user] = _override_get_current_user
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def auth_client(db_session):
+    """HTTP client with test DB but NO auth override (for testing real auth flow)."""
     def _override_get_db():
         try:
             yield db_session
@@ -128,8 +152,9 @@ class TestFullWorkflow:
 
     # ── 1. AUTH ────────────────────────────────────────────────────────
 
-    def test_01_auth_register_login(self, client, db_session):
+    def test_01_auth_register_login(self, auth_client, db_session):
         """Register admin, login, verify JWT works."""
+        client = auth_client
         _create_admin_user(db_session)
         login_data = _login(client)
 
@@ -180,8 +205,9 @@ class TestFullWorkflow:
         assert "refresh_token" in new_tokens
         assert new_tokens["user"]["username"] == "admin_e2e"
 
-    def test_04_auth_change_password(self, client, db_session):
+    def test_04_auth_change_password(self, auth_client, db_session):
         """Change password and verify new password works."""
+        client = auth_client
         _create_admin_user(db_session)
         login_data = _login(client)
         headers = _auth_headers(login_data["access_token"])
@@ -1170,7 +1196,8 @@ class TestErrorHandling:
         })
         assert resp.status_code == 401
 
-    def test_auth_missing_token(self, client):
+    def test_auth_missing_token(self, auth_client):
+        client = auth_client
         resp = client.get("/api/v1/auth/me")
         assert resp.status_code == 401
 

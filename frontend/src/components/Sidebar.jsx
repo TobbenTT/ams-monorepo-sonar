@@ -5,7 +5,8 @@ import {
     BarChart3, Search, FileText, Settings,
     ChevronLeft, ChevronRight, User, LogOut,
     ClipboardList, Archive, Calendar, BrainCircuit,
-    Activity, Bug, Award, Database, ClipboardCheck, Cpu
+    Activity, Bug, Award, Database, ClipboardCheck, Cpu,
+    DollarSign, Wrench, MessageSquare, GraduationCap, ListChecks
 } from 'lucide-react';
 import { cn } from './ui/utils';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,11 +30,13 @@ const navSections = (t) => [
             { to: '/scheduling', icon: Calendar, label: t('nav.weeklyScheduling'), roles: PLAN },
             { to: '/planner', icon: BrainCircuit, label: t('nav.aiPlanner'), roles: PLAN },
             { to: '/planning', icon: ClipboardCheck, label: t('nav.planning') || 'Planning', roles: PLAN },
+            { to: '/execution-checklists', icon: ListChecks, label: 'Checklists', roles: FIELD },
         ],
     },
     {
         section: t('nav.reliability'),
         items: [
+            { to: '/troubleshooting', icon: Wrench, label: 'Troubleshooting', roles: ALL },
             { to: '/hierarchy', icon: Network, label: t('nav.assetHierarchy'), roles: ALL },
             { to: '/criticality', icon: Gauge, label: t('nav.criticalityAnalysis'), roles: PLAN },
             { to: '/fmea', icon: Microscope, label: t('nav.fmea'), roles: PLAN },
@@ -42,6 +45,8 @@ const navSections = (t) => [
             { to: '/rca', icon: Search, label: t('nav.rca'), roles: ENGR },
             { to: '/defect-elimination', icon: Bug, label: t('nav.defectElimination'), roles: ENGR },
             { to: '/ai-agents', icon: Cpu, label: 'Agentes IA', roles: ENGR },
+            { to: '/equipment-chat', icon: MessageSquare, label: 'Equipment Chat', roles: ALL },
+            { to: '/expert-knowledge', icon: GraduationCap, label: 'Expert Portal', roles: ENGR },
         ],
     },
     {
@@ -50,6 +55,7 @@ const navSections = (t) => [
             { to: '/analytics', icon: BarChart3, label: t('nav.analytics'), roles: MGMT },
             { to: '/executive', icon: Award, label: t('nav.executiveDashboard'), roles: MGMT },
             { to: '/reports', icon: FileText, label: t('nav.reports'), roles: MGMT },
+            { to: '/financial', icon: DollarSign, label: 'Financial ROI', roles: MGMT },
             { to: '/sap-review', icon: Database, label: t('nav.sapIntegration'), roles: MGMT },
             { to: '/admin', icon: Settings, label: t('nav.administration'), roles: ['admin'] },
         ],

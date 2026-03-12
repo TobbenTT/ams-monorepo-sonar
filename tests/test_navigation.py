@@ -51,7 +51,7 @@ class TestReactPageFilesExist:
     def test_total_page_count(self):
         pages_dir = Path("frontend/src/pages")
         page_files = sorted(pages_dir.glob("*.jsx"))
-        assert len(page_files) == 24, f"Expected 24 pages, found {len(page_files)}"
+        assert len(page_files) == 28, f"Expected 28 pages, found {len(page_files)}"
 
 
 # ════════════════════════════════════════════════════════════════════════

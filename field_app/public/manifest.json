@@ -1,0 +1,22 @@
+{
+  "name": "AMS Field App",
+  "short_name": "AMS Field",
+  "description": "Offline-first field companion for Asset Management",
+  "start_url": "/field/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1B5E20",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/field/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/field/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

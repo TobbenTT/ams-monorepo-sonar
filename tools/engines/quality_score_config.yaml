@@ -1,0 +1,43 @@
+# Quality Score Configuration — Phase 9
+# Dimension weights (must sum to 1.0 when intent_alignment weight is excluded)
+
+default_weights:
+  technical_accuracy: 0.30
+  completeness: 0.25
+  consistency: 0.15
+  format: 0.10
+  actionability: 0.10
+  traceability: 0.10
+  intent_alignment: 0.00   # 0 unless intent profile exists
+
+weights_with_intent:
+  technical_accuracy: 0.25
+  completeness: 0.20
+  consistency: 0.13
+  format: 0.09
+  actionability: 0.09
+  traceability: 0.09
+  intent_alignment: 0.15
+
+thresholds:
+  ams_pass: 85.0
+  or_pass: 91.0
+  warning: 70.0
+  critical: 50.0
+
+grade_boundaries:
+  A: 91.0
+  B: 80.0
+  C: 70.0
+  D: 50.0
+
+deliverable_overrides:
+  fmeca:
+    technical_accuracy: 0.35
+    completeness: 0.20
+  sap_upload:
+    format: 0.20
+    technical_accuracy: 0.20
+  hierarchy:
+    traceability: 0.15
+    actionability: 0.05

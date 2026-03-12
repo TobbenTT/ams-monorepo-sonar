@@ -44,6 +44,13 @@ import agents.tool_wrappers.wp_assembly_tools  # noqa: F401
 import agents.tool_wrappers.execution_task_tools  # noqa: F401
 import agents.tool_wrappers.fmeca_tools  # noqa: F401
 import agents.tool_wrappers.hierarchy_builder_tools  # noqa: F401
+import agents.tool_wrappers.quality_score_tools  # noqa: F401
+import agents.tool_wrappers.execution_checklist_tools  # noqa: F401
+import agents.tool_wrappers.financial_tools  # noqa: F401
+import agents.tool_wrappers.troubleshooting_tools  # noqa: F401
+import agents.tool_wrappers.assignment_tools  # noqa: F401
+import agents.tool_wrappers.import_tools  # noqa: F401
+import agents.tool_wrappers.expert_knowledge_tools  # noqa: F401
 
 
 def get_all_tools() -> list[dict]:
@@ -74,6 +81,12 @@ AGENT_TOOL_MAP = {
         "generate_weekly_report", "generate_monthly_kpi_report", "generate_quarterly_review",
         "generate_all_notifications", "run_cross_module_analysis",
         "suggest_conflict_resolutions", "get_loto_removal_checklist",
+        "get_all_entity_states",
+        "validate_hierarchy", "validate_functions", "validate_criticality_data",
+        "score_deliverable_quality", "score_session_quality",
+        "calculate_roi", "compare_roi_scenarios", "calculate_man_hours_saved",
+        "detect_budget_alerts", "generate_financial_summary",
+        "parse_import_file", "detect_import_columns", "parse_and_validate_import",
     ],
     "reliability": [
         "assess_criticality", "calculate_criticality_score", "determine_risk_class",
@@ -97,6 +110,13 @@ AGENT_TOOL_MAP = {
         "check_rbi_overdue", "check_kpi_breaches",
         "find_bad_actor_overlap",
         "create_fmeca_worksheet", "calculate_rpn", "generate_fmeca_summary",
+        "calculate_financial_impact",
+        "create_troubleshooting_session", "add_troubleshooting_symptom",
+        "get_recommended_diagnostic_tests", "record_troubleshooting_test_result",
+        "get_equipment_troubleshooting_info",
+        "match_expert_for_diagnosis", "create_expert_consultation",
+        "apply_expert_guidance", "extract_expert_contribution", "promote_expert_knowledge",
+        "build_hierarchy_from_vendor", "get_equipment_types", "auto_assign_criticality",
     ],
     "planning": [
         "group_by_equipment", "group_by_area", "group_by_shutdown",
@@ -114,6 +134,8 @@ AGENT_TOOL_MAP = {
         "finalize_weekly_program", "generate_gantt",
         "analyze_spare_parts", "calculate_stock_levels",
         "create_shutdown", "update_shutdown_progress", "complete_shutdown", "calculate_shutdown_metrics",
+        "generate_shutdown_daily_report", "generate_shutdown_shift_report",
+        "generate_shutdown_final_summary", "suggest_shutdown_next_shift", "generate_shutdown_schedule",
         "create_moc", "advance_moc", "assess_moc_risk",
         "calculate_ocr", "analyze_jackknife", "analyze_pareto",
         "calculate_lcc", "compare_lcc_alternatives",
@@ -124,6 +146,13 @@ AGENT_TOOL_MAP = {
         "assemble_work_package", "check_wp_element_readiness", "generate_wp_compliance_report",
         "build_execution_sequence", "level_resources_enhanced",
         "build_hierarchy_from_vendor", "get_equipment_types", "auto_assign_criticality",
+        "generate_execution_checklist", "complete_checklist_step",
+        "skip_checklist_step", "get_checklist_status", "close_execution_checklist",
+        "calculate_roi", "calculate_financial_impact", "track_budget", "forecast_budget",
+        "optimize_work_assignments", "reoptimize_assignments",
+        "score_technician_match", "get_assignment_summary",
+        "parse_import_file", "detect_import_columns", "parse_and_validate_import",
+        "list_import_sources", "import_data_file", "get_import_history",
     ],
     "spare_parts": [
         "suggest_materials", "validate_task_materials",

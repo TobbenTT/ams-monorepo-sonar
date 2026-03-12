@@ -7,21 +7,17 @@ model: claude-sonnet-4-5-20250929
 
 skills:
   # ── Milestone 3: Strategy + Tasks + Resources ────────────────
-  - name: assemble-work-packages
+  - name: prepare-work-packages
     path: skills/02-maintenance-strategy-development/assemble-work-packages/CLAUDE.md
     load_level: 2
     milestone: 3
     mandatory: true
     references_to_preload:
       - references/element-types.md
-
-  - name: generate-work-instructions
-    path: skills/02-maintenance-strategy-development/generate-work-instructions/CLAUDE.md
-    load_level: 2
-    milestone: 3
-    mandatory: true
-    references_to_preload:
       - references/ppe-matrix.md
+    # Includes integrated WI generation (formerly generate-work-instructions)
+
+  # generate-work-instructions: DEPRECATED — merged into prepare-work-packages Phase 2 (v0.2, 2026-03-11)
 
   - name: group-backlog
     path: skills/02-work-planning/group-backlog/CLAUDE.md
@@ -63,6 +59,13 @@ skills:
     milestone: 3
     mandatory: false
 
+  - name: generate-execution-checklists
+    path: skills/02-work-planning/generate-execution-checklists/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+    # GAP-W06: Digital execution checklists with gate enforcement
+
   # ── Milestone 4: SAP Upload ──────────────────────────────────
   - name: export-to-sap
     path: skills/02-work-planning/export-to-sap/CLAUDE.md
@@ -85,6 +88,13 @@ skills:
     milestone: 3
     mandatory: false
 
+  - name: track-budget
+    path: skills/04-cost-analysis/track-budget/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+    # GAP-W04: Budget tracking, variance alerts, spend forecast
+
   # ── Cross-Agent Skills (compartidos con otros agentes) ────────
   - name: validate-quality
     path: skills/05-general-functionalities/validate-quality/CLAUDE.md
@@ -99,6 +109,13 @@ skills:
     milestone: all
     mandatory: false
     # Importar backlog y calendarios de mantenimiento
+
+  - name: identify-work-request
+    path: skills/01-work-identification/identify-work-request/CLAUDE.md
+    load_level: 1
+    milestone: all
+    mandatory: false
+    # Reference only — planner understands incoming structured work requests
 
 # ── Knowledge Base (siempre disponible, carga selectiva) ──────
 knowledge_base:

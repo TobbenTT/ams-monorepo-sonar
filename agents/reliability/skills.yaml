@@ -31,6 +31,7 @@ skills:
     mandatory: true
     references_to_preload:
       - references/fmeca-examples.md
+    # Includes integrated RCM decision tree (16-path algorithm, formerly run-rcm-decision-tree)
 
   - name: validate-failure-modes
     path: skills/02-maintenance-strategy-development/validate-failure-modes/CLAUDE.md
@@ -40,13 +41,7 @@ skills:
     references_to_preload:
       - references/72-combo-table.md
 
-  - name: run-rcm-decision-tree
-    path: skills/02-maintenance-strategy-development/run-rcm-decision-tree/CLAUDE.md
-    load_level: 2
-    milestone: 2
-    mandatory: true
-    references_to_preload:
-      - references/decision-tree-details.md
+  # run-rcm-decision-tree: DEPRECATED — merged into perform-fmeca Stage 4 (v0.4, 2026-03-11)
 
   - name: assess-risk-based-inspection
     path: skills/02-maintenance-strategy-development/assess-risk-based-inspection/CLAUDE.md
@@ -80,6 +75,30 @@ skills:
     load_level: 3
     milestone: 3
     mandatory: false
+
+  # ── Skills from OR SYSTEM (Phase 5 transfer) ───────────────────
+  - name: model-ram-simulation
+    path: skills/03-reliability-engineering-and-defect-elimination/model-ram-simulation/CLAUDE.md
+    load_level: 3
+    milestone: 3
+    mandatory: false
+    # Monte Carlo RAM simulation — from OR SYSTEM B-RAM-007
+
+  # ── Troubleshooting (GAP-W02) ───────────────────────────────────
+  - name: guide-troubleshooting
+    path: skills/02-maintenance-strategy-development/guide-troubleshooting/CLAUDE.md
+    load_level: 2
+    milestone: all
+    mandatory: false
+    # Structured troubleshooting: symptom→diagnosis→test→corrective action
+
+  # ── Expert Knowledge Capture (GAP-W13) ──────────────────────────
+  - name: capture-expert-knowledge
+    path: "skills/03-reliability-engineering-and- defect-elimination/capture-expert-knowledge/CLAUDE.md"
+    load_level: 3
+    milestone: all
+    mandatory: false
+    # Expert flywheel: escalate stuck diagnosis → consult retired expert → extract + validate → promote to KB
 
   # ── Cross-Agent Skills (compartidos con otros agentes) ────────
   - name: validate-quality

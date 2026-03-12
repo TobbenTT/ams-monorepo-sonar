@@ -30,6 +30,15 @@ skills:
     milestone: all
     mandatory: false
 
+  # ── Work Identification ─────────────────────────────────────
+  - name: identify-work-request
+    path: skills/01-work-identification/identify-work-request/CLAUDE.md
+    load_level: 2
+    milestone: 1
+    mandatory: false
+    references_to_preload:
+      - references/field-to-structured-mapping.md
+
   # ── General Functionalities ──────────────────────────────────
   - name: import-data
     path: skills/05-general-functionalities/import-data/CLAUDE.md
@@ -85,6 +94,35 @@ skills:
     load_level: 3
     milestone: all
     mandatory: false
+
+  - name: calculate-roi
+    path: skills/04-cost-analysis/calculate-roi/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+    # GAP-W04: ROI calculation, payback, BCR for maintenance investments
+
+  # ── Skills from OR SYSTEM (Phase 5 transfer) ───────────────────
+  - name: benchmark-maintenance-kpis
+    path: skills/06-orchestation/benchmark-maintenance-kpis/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+    # SMRP benchmarking framework — from OR SYSTEM MAINT-04
+
+  - name: assess-am-maturity
+    path: skills/02-maintenance-strategy-development/assess-am-maturity/CLAUDE.md
+    load_level: 3
+    milestone: 1
+    mandatory: false
+    # ISO 55000 maturity assessment — from OR SYSTEM O-01
+
+  - name: develop-samp
+    path: skills/02-maintenance-strategy-development/develop-samp/CLAUDE.md
+    load_level: 3
+    milestone: all
+    mandatory: false
+    # Strategic Asset Management Plan — from OR SYSTEM O-02
 
 # ── Knowledge Base (siempre disponible, carga selectiva) ──────
 knowledge_base:

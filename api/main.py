@@ -20,12 +20,17 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("ocp_maintenance")
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+
 from api.routers import (
     hierarchy, criticality, fmea, tasks, work_packages, sap, analytics, admin,
     capture, work_requests, planner, backlog, scheduling,
     reliability, rca,
     reporting, dashboard,
     auth, ai_agents,
+    sync, troubleshooting, execution_checklists, deliverables,
+    assignments, expert_knowledge, financial, workflow, media, imports,
 )
 
 
@@ -146,6 +151,31 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix=prefix)
     # AI Agents (CORTEX)
     app.include_router(ai_agents.router, prefix=prefix)
+    # GAP-W03 — Offline Sync
+    app.include_router(sync.router, prefix=prefix)
+    # GAP-W02 — Troubleshooting / Diagnostic Assistant
+    app.include_router(troubleshooting.router, prefix=prefix)
+    # GAP-W06 — Execution Checklists
+    app.include_router(execution_checklists.router, prefix=prefix)
+    # GAP-W10 — Deliverable Tracking
+    app.include_router(deliverables.router, prefix=prefix)
+    # GAP-W09 — Competency-Based Work Assignment
+    app.include_router(assignments.router, prefix=prefix)
+    # GAP-W13 — Expert Knowledge Capture
+    app.include_router(expert_knowledge.router, prefix=prefix)
+    # GAP-W04 — Financial / ROI Tracking
+    app.include_router(financial.router, prefix=prefix)
+    # G-17 — Agent Workflow via API
+    app.include_router(workflow.router, prefix=prefix)
+    # G-08 — Voice + Image Media Processing
+    app.include_router(media.router, prefix=prefix)
+    # G-18 / Phase B — Data Import Pipeline
+    app.include_router(imports.router, prefix=prefix)
+
+    # GAP-W03 — Serve Field PWA at /field/
+    field_dist = Path("field_app/dist")
+    if field_dist.is_dir():
+        app.mount("/field", StaticFiles(directory=str(field_dist), html=True), name="field-app")
 
     @app.get("/")
     def root():
@@ -158,6 +188,9 @@ def create_app() -> FastAPI:
                 "sap", "analytics", "admin",
                 "capture", "work-requests", "planner", "backlog", "scheduling",
                 "reliability", "reporting", "dashboard", "rca", "auth",
+                "ai-agents",
+                "sync", "troubleshooting", "execution-checklists", "deliverables",
+                "assignments", "expert-knowledge", "financial", "workflow", "media", "imports",
             ],
         }
 

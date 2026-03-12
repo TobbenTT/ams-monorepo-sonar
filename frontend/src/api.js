@@ -234,8 +234,56 @@ export const milestoneAction = (sid, mNum, d) => post(`/ai/sessions/${sid}/miles
 export const runTroubleshooting = (d) => post('/ai/troubleshoot', d);
 export const listDiagnostics = (p) => get('/ai/troubleshoot', p);
 export const generateChecklist = (d) => post('/ai/checklists', d);
-export const getChecklist = (id) => get(`/ai/checklists/${id}`);
+export const getAiChecklist = (id) => get(`/ai/checklists/${id}`);
 export const updateChecklistItem = (id, d) => put(`/ai/checklists/${id}/items`, d);
+
+// ── Financial / ROI (GAP-W04) ──
+export const calculateRoi = (d) => post('/financial/roi', d);
+export const compareRoiScenarios = (d) => post('/financial/roi/compare', d);
+export const getFinancialSummary = (p) => get('/financial/summary', p);
+export const getBudgetStatus = (p) => get('/financial/budget', p);
+
+// ── Troubleshooting (GAP-W02) ──
+export const createTroubleshootingSession = (d) => post('/troubleshooting/sessions', d);
+export const getTroubleshootingSession = (id) => get(`/troubleshooting/sessions/${id}`);
+export const listTroubleshootingSessions = (p) => get('/troubleshooting/sessions', p);
+export const addSymptom = (id, d) => post(`/troubleshooting/sessions/${id}/symptoms`, d);
+export const getDiagnosticTests = (id) => get(`/troubleshooting/sessions/${id}/tests`);
+export const recordTestResult = (id, d) => post(`/troubleshooting/sessions/${id}/test-results`, d);
+export const completeTroubleshooting = (id, d) => put(`/troubleshooting/sessions/${id}/complete`, d);
+
+// ── Expert Knowledge (GAP-W13) ──
+export const listExperts = (p) => get('/expert-knowledge/experts', p);
+export const getExpert = (id) => get(`/expert-knowledge/experts/${id}`);
+export const createConsultation = (d) => post('/expert-knowledge/consultations', d);
+export const listConsultations = (p) => get('/expert-knowledge/consultations', p);
+export const respondConsultation = (id, d) => put(`/expert-knowledge/consultations/${id}/respond`, d);
+export const listContributions = (p) => get('/expert-knowledge/contributions', p);
+export const promoteContribution = (id) => put(`/expert-knowledge/contributions/${id}/promote`);
+
+// ── Execution Checklists (GAP-W06) ──
+export const createChecklist = (d) => post('/execution-checklists/', d);
+export const listChecklists = (p) => get('/execution-checklists/', p);
+export const getChecklist = (id) => get(`/execution-checklists/${id}`);
+export const completeChecklistStep = (id, d) => put(`/execution-checklists/${id}/steps`, d);
+export const closeChecklist = (id, d) => put(`/execution-checklists/${id}/close`, d);
+
+// ── Deliverables (GAP-W10) ──
+export const listDeliverables = (p) => get('/deliverables/', p);
+export const getDeliverable = (id) => get(`/deliverables/${id}`);
+
+// ── Assignments (GAP-W09) ──
+export const optimizeAssignments = (d) => post('/assignments/optimize', d);
+export const getAssignmentSummary = (p) => get('/assignments/summary', p);
+
+// ── Workflow (G-17) ──
+export const startWorkflow = (d) => post('/workflow/sessions', d);
+export const getWorkflowSession = (id) => get(`/workflow/sessions/${id}`);
+export const advanceWorkflow = (id) => post(`/workflow/sessions/${id}/advance`);
+
+// ── Imports (G-18) ──
+export const importFile = (d) => post('/imports/upload', d);
+export const listImportHistory = (p) => get('/imports/history', p);
 
 // ── Health check ──
 export const healthCheck = () => fetch('/health').then(r => r.json());

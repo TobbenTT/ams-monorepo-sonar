@@ -54,6 +54,34 @@ def list_tools() -> list[dict]:
     ]
 
 
+def json_tool(name: str, description: str, input_model: type | None = None):
+    """Higher-level decorator: JSON parse → validate → call → serialize."""
+    schema = {"type": "object", "properties": {"input_json": {"type": "string"}}, "required": ["input_json"]}
+
+    def decorator(func: Callable) -> Callable:
+        @tool(name, description, schema)
+        def wrapper(input_json: str) -> str:
+            try:
+                data = json.loads(input_json)
+            except json.JSONDecodeError as e:
+                return json_compact({"error": f"Invalid JSON: {e}", "tool": name})
+            try:
+                if input_model is not None:
+                    validated = input_model(**data)
+                    result = func(validated)
+                else:
+                    result = func(data)
+                if hasattr(result, "model_dump"):
+                    return json_compact(result.model_dump(), default=str)
+                if isinstance(result, str):
+                    return result
+                return json_compact(result, default=str)
+            except Exception as e:
+                return json_compact({"error": str(e), "tool": name, "type": type(e).__name__})
+        return wrapper
+    return decorator
+
+
 class ToolExecutionError(Exception):
     """Raised by call_tool_strict when a tool fails."""
 

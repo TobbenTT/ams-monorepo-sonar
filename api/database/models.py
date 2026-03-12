@@ -78,6 +78,9 @@ class HierarchyNodeModel(Base):
     sap_equipment_nr: Mapped[str | None] = mapped_column(String(100), nullable=True)
     order: Mapped[int] = mapped_column(Integer, default=1)
     metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # NodeMetadata
+    # G-08: GPS coordinates for proximity matching
+    gps_lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gps_lon: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     plant: Mapped["PlantModel | None"] = relationship(back_populates="nodes")
     children: Mapped[list["HierarchyNodeModel"]] = relationship(back_populates="parent", foreign_keys=[parent_node_id])
@@ -383,6 +386,12 @@ class ExpertCardModel(Base):
     last_active: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     contact_method: Mapped[str] = mapped_column(String(200), default="")
     languages: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # GAP-W13: Expert knowledge capture fields
+    is_retired: Mapped[bool] = mapped_column(Boolean, default=False)
+    retired_at: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    hourly_rate_usd: Mapped[float] = mapped_column(Float, default=50.0)
+    availability_hours: Mapped[str] = mapped_column(String(200), default="")
+    preferred_contact: Mapped[str] = mapped_column(String(20), default="IN_APP")
 
 
 # ── Audit Log ─────────────────────────────────────────────────────────
@@ -418,6 +427,16 @@ class FieldCaptureModel(Base):
     equipment_tag_manual: Mapped[str | None] = mapped_column(String(100), nullable=True)
     location_hint: Mapped[str | None] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    # GAP-W03: Sync version tracking
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    modified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)
+    # G-08: Audio + GPS + Vision fields
+    audio_file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    audio_transcription: Mapped[str | None] = mapped_column(Text, nullable=True)
+    gps_lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gps_lon: Mapped[float | None] = mapped_column(Float, nullable=True)
+    image_analysis_result: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 # ── Work Request ─────────────────────────────────────────────────────
@@ -438,6 +457,10 @@ class WorkRequestModel(Base):
     image_analysis: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     validation: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    # GAP-W03: Sync version tracking
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    modified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)
 
     __table_args__ = (
         Index("ix_work_requests_status", "status"),
@@ -516,6 +539,12 @@ class WorkforceModel(Base):
     plant_id: Mapped[str] = mapped_column(String(50))
     available: Mapped[bool] = mapped_column(Boolean, default=True)
     certifications: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # GAP-W09: Competency-based assignment fields
+    competency_level: Mapped[str] = mapped_column(String(1), default="B")
+    years_experience: Mapped[int] = mapped_column(Integer, default=0)
+    equipment_expertise: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    safety_training_current: Mapped[bool] = mapped_column(Boolean, default=True)
+    competencies: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
 
 # ── Shutdown Calendar ────────────────────────────────────────────────
@@ -690,6 +719,11 @@ class NotificationModel(Base):
     acknowledged: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # GAP-W13: Expert consultation notification fields
+    recipient_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    consultation_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    channel: Mapped[str] = mapped_column(String(20), default="IN_APP")
+    read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -850,24 +884,51 @@ class TroubleshootingDiagnosticModel(Base):
     )
 
 
+# ══════════════════════════════════════════════════════════════════════
+# GAP Modules — Execution Checklists, Sync, Troubleshooting, etc.
+# ══════════════════════════════════════════════════════════════════════
+
+# ── Execution Checklists (GAP-W06) ──────────────────────────────────
+
 class ExecutionChecklistModel(Base):
     """GAP-W06: AI-generated execution checklists for work orders."""
     __tablename__ = "execution_checklists"
 
     checklist_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
     work_package_id: Mapped[str] = mapped_column(String(50), index=True)
+    work_package_name: Mapped[str] = mapped_column(String(200), default="")
+    work_package_code: Mapped[str] = mapped_column(String(100), default="")
     equipment_tag: Mapped[str] = mapped_column(String(100), default="")
+    equipment_name: Mapped[str] = mapped_column(String(300), default="")
     task_type: Mapped[str] = mapped_column(String(30), default="")
+    steps: Mapped[list | None] = mapped_column(JSON, nullable=True)
     checklist_items: Mapped[list | None] = mapped_column(JSON, nullable=True)
     safety_items: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    safety_section: Mapped[list | None] = mapped_column(JSON, nullable=True)
     loto_steps: Mapped[list | None] = mapped_column(JSON, nullable=True)
     ppe_requirements: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    pre_task_notes: Mapped[str] = mapped_column(Text, default="")
+    post_task_notes: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(20), default="DRAFT")
+    assigned_to: Mapped[str] = mapped_column(String(100), default="")
+    supervisor: Mapped[str] = mapped_column(String(100), default="")
+    supervisor_signature: Mapped[str | None] = mapped_column(Text, nullable=True)
+    closure_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     completed_items: Mapped[int] = mapped_column(Integer, default=0)
     total_items: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+    __table_args__ = (
+        Index("ix_exec_checklists_wp", "work_package_id"),
+        Index("ix_exec_checklists_status", "status"),
+        Index("ix_exec_checklists_assigned", "assigned_to"),
+    )
+
+
+# ── Work Assignments (GAP-W09) ──────────────────────────────────────
 
 class WorkAssignmentModel(Base):
     """GAP-W09: AI-optimized work assignments by competency."""
@@ -884,3 +945,190 @@ class WorkAssignmentModel(Base):
     estimated_hours: Mapped[float] = mapped_column(Float, default=0.0)
     status: Mapped[str] = mapped_column(String(20), default="PENDING")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+# ── Sync Conflicts (GAP-W03) ───────────────────────────────────────
+
+class SyncConflictModel(Base):
+    __tablename__ = "sync_conflicts"
+
+    conflict_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    entity_type: Mapped[str] = mapped_column(String(30))
+    entity_id: Mapped[str] = mapped_column(String(50))
+    field: Mapped[str] = mapped_column(String(100))
+    local_value: Mapped[str] = mapped_column(Text, default="")
+    server_value: Mapped[str] = mapped_column(Text, default="")
+    local_modified_at: Mapped[datetime] = mapped_column(DateTime)
+    server_modified_at: Mapped[datetime] = mapped_column(DateTime)
+    resolution: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    device_id: Mapped[str] = mapped_column(String(100), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+# ── Troubleshooting Sessions (GAP-W02) ─────────────────────────────
+
+class TroubleshootingSessionModel(Base):
+    __tablename__ = "troubleshooting_sessions"
+
+    session_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    equipment_type_id: Mapped[str] = mapped_column(String(100), index=True)
+    equipment_tag: Mapped[str] = mapped_column(String(100), default="")
+    plant_id: Mapped[str] = mapped_column(String(50), default="")
+    status: Mapped[str] = mapped_column(String(20), default="IN_PROGRESS")
+    symptoms: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tests_performed: Mapped[str | None] = mapped_column(Text, nullable=True)
+    candidate_diagnoses: Mapped[str | None] = mapped_column(Text, nullable=True)
+    final_fm_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    final_mechanism: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    final_cause: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    final_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    actual_cause_feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+    technician_id: Mapped[str] = mapped_column(String(100), default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expert_consultation_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    __table_args__ = (
+        Index("ix_troubleshooting_equipment", "equipment_type_id"),
+        Index("ix_troubleshooting_status", "status"),
+    )
+
+
+# ── Deliverables (GAP-W10) ─────────────────────────────────────────
+
+class DeliverableModel(Base):
+    __tablename__ = "deliverables"
+
+    deliverable_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(200))
+    name_fr: Mapped[str] = mapped_column(String(200), default="")
+    category: Mapped[str] = mapped_column(String(30))
+    milestone: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(20), default="DRAFT")
+    execution_plan_stage_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    quality_score_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    estimated_hours: Mapped[float] = mapped_column(Float, default=0.0)
+    actual_hours: Mapped[float] = mapped_column(Float, default=0.0)
+    artifact_paths: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    client_slug: Mapped[str] = mapped_column(String(50), default="", index=True)
+    project_slug: Mapped[str] = mapped_column(String(50), default="", index=True)
+    assigned_agent: Mapped[str] = mapped_column(String(30), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    client_feedback: Mapped[str] = mapped_column(Text, default="")
+    consultant_notes: Mapped[str] = mapped_column(Text, default="")
+
+    __table_args__ = (
+        Index("ix_deliverables_project", "client_slug", "project_slug"),
+        Index("ix_deliverables_milestone", "milestone"),
+        Index("ix_deliverables_status", "status"),
+    )
+
+
+# ── Time Logs (GAP-W10) ────────────────────────────────────────────
+
+class TimeLogModel(Base):
+    __tablename__ = "time_logs"
+
+    log_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    deliverable_id: Mapped[str] = mapped_column(
+        String(50), ForeignKey("deliverables.deliverable_id")
+    )
+    hours: Mapped[float] = mapped_column(Float)
+    description: Mapped[str] = mapped_column(Text, default="")
+    logged_by: Mapped[str] = mapped_column(String(100), default="consultant")
+    logged_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    activity_type: Mapped[str] = mapped_column(String(30), default="analysis")
+
+    __table_args__ = (
+        Index("ix_time_logs_deliverable", "deliverable_id"),
+    )
+
+
+# ── Expert Consultations (GAP-W13) ─────────────────────────────────
+
+class ExpertConsultationModel(Base):
+    __tablename__ = "expert_consultations"
+
+    consultation_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    session_id: Mapped[str] = mapped_column(String(50), index=True)
+    expert_id: Mapped[str] = mapped_column(String(50), index=True)
+    technician_id: Mapped[str] = mapped_column(String(100), default="")
+    equipment_type_id: Mapped[str] = mapped_column(String(100), default="")
+    equipment_tag: Mapped[str] = mapped_column(String(100), default="")
+    plant_id: Mapped[str] = mapped_column(String(50), default="")
+    symptoms_snapshot: Mapped[str | None] = mapped_column(Text, nullable=True)
+    candidates_snapshot: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_suggestion: Mapped[str] = mapped_column(Text, default="")
+    expert_guidance: Mapped[str] = mapped_column(Text, default="")
+    expert_fm_codes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    expert_confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    status: Mapped[str] = mapped_column(String(20), default="REQUESTED")
+    token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    token_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    viewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    response_time_minutes: Mapped[float] = mapped_column(Float, default=0.0)
+    compensation_status: Mapped[str] = mapped_column(String(20), default="PENDING")
+    language: Mapped[str] = mapped_column(String(5), default="fr")
+    notes: Mapped[str] = mapped_column(Text, default="")
+
+    __table_args__ = (
+        Index("ix_consultation_status", "status"),
+    )
+
+
+# ── Expert Contributions (GAP-W13) ─────────────────────────────────
+
+class ExpertContributionModel(Base):
+    __tablename__ = "expert_contributions"
+
+    contribution_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    consultation_id: Mapped[str] = mapped_column(String(50), index=True)
+    expert_id: Mapped[str] = mapped_column(String(50), index=True)
+    equipment_type_id: Mapped[str] = mapped_column(String(100), default="")
+    fm_codes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    symptom_descriptions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    diagnostic_steps: Mapped[str | None] = mapped_column(Text, nullable=True)
+    corrective_actions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tips: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(20), default="RAW")
+    validated_by: Mapped[str] = mapped_column(String(100), default="")
+    validated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    promoted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    promoted_targets: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    __table_args__ = (
+        Index("ix_contribution_status", "status"),
+    )
+
+
+# ── Import History (G-18) ──────────────────────────────────────────
+
+class ImportHistoryModel(Base):
+    __tablename__ = "import_history"
+
+    import_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    plant_id: Mapped[str] = mapped_column(String(50), default="")
+    source: Mapped[str] = mapped_column(String(50))
+    filename: Mapped[str] = mapped_column(String(255))
+    file_size_kb: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_rows: Mapped[int] = mapped_column(Integer, default=0)
+    valid_rows: Mapped[int] = mapped_column(Integer, default=0)
+    error_rows: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20))
+    errors_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    imported_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    imported_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    __table_args__ = (
+        Index("ix_import_history_plant", "plant_id"),
+        Index("ix_import_history_source", "source"),
+    )

@@ -34,6 +34,11 @@ const SAPReview = lazy(() => import('./pages/SAPReview'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AIAgents = lazy(() => import('./pages/AIAgents'));
 const Profile = lazy(() => import('./pages/Profile'));
+const Financial = lazy(() => import('./pages/Financial'));
+const Troubleshooting = lazy(() => import('./pages/Troubleshooting'));
+const EquipmentChat = lazy(() => import('./pages/EquipmentChat'));
+const ExpertKnowledge = lazy(() => import('./pages/ExpertKnowledge'));
+const ExecutionChecklists = lazy(() => import('./pages/ExecutionChecklists'));
 
 const ALL = ['admin', 'manager', 'planner', 'tecnico', 'engineer'];
 const MGMT = ['admin', 'manager'];
@@ -80,6 +85,11 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="executive" element={<P roles={MGMT}><S><ExecutiveDashboard /></S></P>} />
                                     <Route path="reports" element={<P roles={MGMT}><S><Reports /></S></P>} />
                                     <Route path="sap-review" element={<P roles={MGMT}><S><SAPReview /></S></P>} />
+                                    <Route path="financial" element={<P roles={MGMT}><S><Financial /></S></P>} />
+                                    <Route path="troubleshooting" element={<P roles={ALL}><S><Troubleshooting /></S></P>} />
+                                    <Route path="equipment-chat" element={<P roles={ALL}><S><EquipmentChat /></S></P>} />
+                                    <Route path="expert-knowledge" element={<P roles={ENGR}><S><ExpertKnowledge /></S></P>} />
+                                    <Route path="execution-checklists" element={<P roles={FIELD}><S><ExecutionChecklists /></S></P>} />
                                     <Route path="admin" element={<P roles={['admin']}><S><Admin /></S></P>} />
                                     <Route path="ai-agents" element={<P roles={ENGR}><S><AIAgents /></S></P>} />
                                     <Route path="profile" element={<S><Profile /></S>} />

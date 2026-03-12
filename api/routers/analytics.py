@@ -243,7 +243,8 @@ def get_analytics_page_data(plant_id: str, db: Session = Depends(get_db)):
 
     # ── KPI history (from real KPI records, grouped by month) ──
     kpi_records = db.query(KPIMetricsModel).filter(
-        KPIMetricsModel.plant_id == plant_id
+        KPIMetricsModel.plant_id == plant_id,
+        KPIMetricsModel.equipment_id.is_(None),
     ).order_by(KPIMetricsModel.period_end.desc()).limit(6).all()
     kpi_history = []
     if kpi_records:
@@ -268,8 +269,8 @@ def get_analytics_page_data(plant_id: str, db: Session = Depends(get_db)):
         if parent:
             # Try to get the parent (system/area) name
             parent_node = db.query(HierarchyNodeModel).filter(
-                HierarchyNodeModel.node_id == parent.parent_id
-            ).first() if parent.parent_id else None
+                HierarchyNodeModel.node_id == parent.parent_node_id
+            ).first() if parent.parent_node_id else None
             area_name = (parent_node.name if parent_node else parent.name) or "General"
 
         hours = 0.0

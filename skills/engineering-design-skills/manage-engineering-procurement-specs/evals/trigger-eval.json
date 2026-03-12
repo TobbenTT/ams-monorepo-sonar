@@ -1,0 +1,66 @@
+{
+  "skill_name": "manage-engineering-procurement-specs",
+  "version": "1.0.0",
+  "test_cases": [
+    {
+      "id": 1,
+      "query": "/manage-engineering-procurement-specs",
+      "should_trigger": true,
+      "notes": "Direct slash command invocation of the skill"
+    },
+    {
+      "id": 2,
+      "query": "Assemble procurement package for the HVAC and building services",
+      "should_trigger": true,
+      "notes": "English natural language request with specific context"
+    },
+    {
+      "id": 3,
+      "query": "Gestionar especificaciones de adquisicion para la planta",
+      "should_trigger": true,
+      "notes": "Spanish natural language request (bilingual support)"
+    },
+    {
+      "id": 4,
+      "query": "Manage engineering procurement specifications for long-lead equipment and bulk materials for the flotation circuit design",
+      "should_trigger": true,
+      "notes": "Domain-specific terminology variation"
+    },
+    {
+      "id": 5,
+      "query": "We need to get the equipment specifications to procurement before the lead times slip further",
+      "should_trigger": true,
+      "notes": "Partial/implicit trigger - user describes need without naming the skill"
+    },
+    {
+      "id": 6,
+      "query": "What movies won the Oscar for Best Picture in 2024?",
+      "should_trigger": false,
+      "notes": "Completely unrelated query - different domain entirely"
+    },
+    {
+      "id": 7,
+      "query": "Analyze P&ID documents for instrument specifications",
+      "should_trigger": false,
+      "notes": "Same domain but targets a different skill"
+    },
+    {
+      "id": 8,
+      "query": "Describe the concept of asset criticality",
+      "should_trigger": false,
+      "notes": "Generic domain knowledge question - not an actionable skill request"
+    },
+    {
+      "id": 9,
+      "query": "Fix this CSS grid layout issue",
+      "should_trigger": false,
+      "notes": "Software development request - outside OR domain"
+    },
+    {
+      "id": 10,
+      "query": "Coordinate subcontractors on the civil works package",
+      "should_trigger": false,
+      "notes": "Request from a different OR domain - should trigger a different agent's skill"
+    }
+  ]
+}

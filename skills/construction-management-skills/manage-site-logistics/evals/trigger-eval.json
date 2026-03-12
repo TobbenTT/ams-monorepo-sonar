@@ -1,0 +1,66 @@
+{
+  "skill_name": "manage-site-logistics",
+  "version": "1.0.0",
+  "test_cases": [
+    {
+      "id": 1,
+      "query": "/manage-site-logistics",
+      "should_trigger": true,
+      "notes": "Direct slash command invocation of the skill"
+    },
+    {
+      "id": 2,
+      "query": "Plan the construction site logistics layout",
+      "should_trigger": true,
+      "notes": "English natural language request with specific context"
+    },
+    {
+      "id": 3,
+      "query": "Gestionar logistica de sitio para la planta",
+      "should_trigger": true,
+      "notes": "Spanish natural language request (bilingual support)"
+    },
+    {
+      "id": 4,
+      "query": "Manage site logistics including material laydown, heavy transport routes, and crane plans for the conveyor gallery",
+      "should_trigger": true,
+      "notes": "Domain-specific terminology variation"
+    },
+    {
+      "id": 5,
+      "query": "Materials keep arriving with nowhere to store them and heavy lifts are conflicting with each other",
+      "should_trigger": true,
+      "notes": "Partial/implicit trigger - user describes need without naming the skill"
+    },
+    {
+      "id": 6,
+      "query": "What is the weather forecast for Santiago this weekend?",
+      "should_trigger": false,
+      "notes": "Completely unrelated query - different domain entirely"
+    },
+    {
+      "id": 7,
+      "query": "Monitor construction safety compliance on site",
+      "should_trigger": false,
+      "notes": "Same domain but targets a different skill"
+    },
+    {
+      "id": 8,
+      "query": "Explain the concept of RCM to me",
+      "should_trigger": false,
+      "notes": "Generic domain knowledge question - not an actionable skill request"
+    },
+    {
+      "id": 9,
+      "query": "Fix this CSS grid layout issue",
+      "should_trigger": false,
+      "notes": "Software development request - outside OR domain"
+    },
+    {
+      "id": 10,
+      "query": "Design a predictive maintenance program using vibration analysis",
+      "should_trigger": false,
+      "notes": "Request from a different OR domain - should trigger a different agent's skill"
+    }
+  ]
+}

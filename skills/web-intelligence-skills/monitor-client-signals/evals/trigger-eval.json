@@ -1,0 +1,66 @@
+{
+  "skill_name": "monitor-client-signals",
+  "version": "1.0.0",
+  "test_cases": [
+    {
+      "id": 1,
+      "query": "/monitor-client-signals",
+      "should_trigger": true,
+      "notes": "Direct slash command invocation of the skill"
+    },
+    {
+      "id": 2,
+      "query": "I need to monitor client signals for the industry conference presenters",
+      "should_trigger": true,
+      "notes": "English natural language request with specific context"
+    },
+    {
+      "id": 3,
+      "query": "Monitor senales del cliente para la planta",
+      "should_trigger": true,
+      "notes": "Spanish natural language request (bilingual support)"
+    },
+    {
+      "id": 4,
+      "query": "Monitor client signals from news, job postings, regulatory filings and social media for business development",
+      "should_trigger": true,
+      "notes": "Domain-specific terminology variation"
+    },
+    {
+      "id": 5,
+      "query": "Our existing client posted several job ads for commissioning engineers - are they starting a new project?",
+      "should_trigger": true,
+      "notes": "Partial/implicit trigger - user describes need without naming the skill"
+    },
+    {
+      "id": 6,
+      "query": "Write a haiku about the ocean",
+      "should_trigger": false,
+      "notes": "Completely unrelated query - different domain entirely"
+    },
+    {
+      "id": 7,
+      "query": "Discover company intent from annual reports and filings",
+      "should_trigger": false,
+      "notes": "Same domain but targets a different skill"
+    },
+    {
+      "id": 8,
+      "query": "What does PSSR stand for?",
+      "should_trigger": false,
+      "notes": "Generic domain knowledge question - not an actionable skill request"
+    },
+    {
+      "id": 9,
+      "query": "Build a machine learning pipeline in scikit-learn",
+      "should_trigger": false,
+      "notes": "Software development request - outside OR domain"
+    },
+    {
+      "id": 10,
+      "query": "Build NotebookLM context from project documents",
+      "should_trigger": false,
+      "notes": "Request from a different OR domain - should trigger a different agent's skill"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "skill_name": "manage-industrial-relations",
+  "version": "1.0.0",
+  "test_cases": [
+    {
+      "id": 1,
+      "query": "/manage-industrial-relations",
+      "should_trigger": true,
+      "notes": "Direct slash command invocation of the skill"
+    },
+    {
+      "id": 2,
+      "query": "Prepare for the upcoming collective bargaining negotiation",
+      "should_trigger": true,
+      "notes": "English natural language request with specific context"
+    },
+    {
+      "id": 3,
+      "query": "Gestionar relaciones laborales para la planta",
+      "should_trigger": true,
+      "notes": "Spanish natural language request (bilingual support)"
+    },
+    {
+      "id": 4,
+      "query": "Manage industrial relations including union negotiations and collective agreement compliance",
+      "should_trigger": true,
+      "notes": "Domain-specific terminology variation"
+    },
+    {
+      "id": 5,
+      "query": "The union is requesting a meeting about the new shift roster and we need to prepare our position",
+      "should_trigger": true,
+      "notes": "Partial/implicit trigger - user describes need without naming the skill"
+    },
+    {
+      "id": 6,
+      "query": "What is the capital of New Zealand?",
+      "should_trigger": false,
+      "notes": "Completely unrelated query - different domain entirely"
+    },
+    {
+      "id": 7,
+      "query": "Manage labor compliance with collective agreements",
+      "should_trigger": false,
+      "notes": "Same domain but targets a different skill"
+    },
+    {
+      "id": 8,
+      "query": "Explain the concept of RCM to me",
+      "should_trigger": false,
+      "notes": "Generic domain knowledge question - not an actionable skill request"
+    },
+    {
+      "id": 9,
+      "query": "Write me a Python function to sort a list",
+      "should_trigger": false,
+      "notes": "Software development request - outside OR domain"
+    },
+    {
+      "id": 10,
+      "query": "Manage invoice workflows for contractor payments",
+      "should_trigger": false,
+      "notes": "Request from a different OR domain - should trigger a different agent's skill"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "skill_name": "create-engineering-dossier",
+  "version": "1.0.0",
+  "test_cases": [
+    {
+      "id": 1,
+      "query": "/create-engineering-dossier",
+      "should_trigger": true,
+      "notes": "Direct slash command invocation of the skill"
+    },
+    {
+      "id": 2,
+      "query": "Compile engineering dossier for the instrumentation and control system",
+      "should_trigger": true,
+      "notes": "English natural language request with specific context"
+    },
+    {
+      "id": 3,
+      "query": "Crear dossier de ingenieria para la planta",
+      "should_trigger": true,
+      "notes": "Spanish natural language request (bilingual support)"
+    },
+    {
+      "id": 4,
+      "query": "Compile the engineering dossier with all design calculations, drawings and certifications for the structural steel package",
+      "should_trigger": true,
+      "notes": "Domain-specific terminology variation"
+    },
+    {
+      "id": 5,
+      "query": "The regulator wants all our design calculations and certifications compiled into one package",
+      "should_trigger": true,
+      "notes": "Partial/implicit trigger - user describes need without naming the skill"
+    },
+    {
+      "id": 6,
+      "query": "What is the capital of New Zealand?",
+      "should_trigger": false,
+      "notes": "Completely unrelated query - different domain entirely"
+    },
+    {
+      "id": 7,
+      "query": "Analyze P&ID documents for instrument specifications",
+      "should_trigger": false,
+      "notes": "Same domain but targets a different skill"
+    },
+    {
+      "id": 8,
+      "query": "What are the ISO 55000 standards about?",
+      "should_trigger": false,
+      "notes": "Generic domain knowledge question - not an actionable skill request"
+    },
+    {
+      "id": 9,
+      "query": "Fix this CSS grid layout issue",
+      "should_trigger": false,
+      "notes": "Software development request - outside OR domain"
+    },
+    {
+      "id": 10,
+      "query": "Manage the preservation program for installed equipment",
+      "should_trigger": false,
+      "notes": "Request from a different OR domain - should trigger a different agent's skill"
+    }
+  ]
+}

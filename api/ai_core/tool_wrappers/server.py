@@ -44,6 +44,10 @@ import api.ai_core.tool_wrappers.wp_assembly_tools  # noqa: F401
 import api.ai_core.tool_wrappers.execution_task_tools  # noqa: F401
 import api.ai_core.tool_wrappers.fmeca_tools  # noqa: F401
 import api.ai_core.tool_wrappers.hierarchy_builder_tools  # noqa: F401
+# OR System tool wrappers
+import api.ai_core.tool_wrappers.or_document_tools  # noqa: F401
+import api.ai_core.tool_wrappers.or_ops_tools  # noqa: F401
+import api.ai_core.tool_wrappers.or_project_tools  # noqa: F401
 
 
 def get_all_tools() -> list[dict]:
@@ -146,3 +150,91 @@ def get_tools_for_agent(agent_type: str) -> list[dict]:
         else:
             log.warning("Tool '%s' mapped to agent '%s' but not found in registry", name, agent_type)
     return tools
+
+
+# ── OR System Agents — extended AGENT_TOOL_MAP entries ────────────────
+# These 9 agents are added by the OR System integration.
+# They share tools already registered in the AMS tool registry.
+
+_OR_DOC_TOOLS = [
+    "generate_word_document", "generate_excel_workbook",
+    "generate_presentation", "list_deliverables",
+]
+
+AGENT_TOOL_MAP["operations"] = [
+    "generate_org_chart", "calculate_staffing_plan", "create_sop",
+    "generate_rampup_plan",
+    "generate_weekly_report", "run_cross_module_analysis",
+    "generate_all_notifications",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["hse"] = [
+    "validate_tasks", "run_cross_module_analysis",
+    "check_rbi_overdue",
+    "score_deliverable_quality",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["contracts"] = [
+    "run_cross_module_analysis", "generate_weekly_report",
+    "score_deliverable_quality",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["execution"] = [
+    "create_moc", "advance_moc", "assess_moc_risk",
+    "validate_tasks", "validate_wp_elements",
+    "run_cross_module_analysis",
+    "score_deliverable_quality",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["project_orchestrator"] = [
+    "assess_fel_gate", "calculate_evm",
+    "update_risk_register",
+    "generate_management_review",
+    "generate_quarterly_review",
+    "run_cross_module_analysis",
+    "detect_variance", "detect_multi_metric_variance",
+    "score_deliverable_quality",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["engineering"] = [
+    "validate_cross_entity",
+    "create_moc", "advance_moc",
+    "run_cross_module_analysis",
+    "score_deliverable_quality",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["construction"] = [
+    "build_execution_sequence",
+    "validate_wp_elements",
+    "run_cross_module_analysis",
+    "score_deliverable_quality",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["finance"] = [
+    "calculate_lcc", "compare_lcc_alternatives",
+    "generate_cash_flow", "calculate_roi",
+    "detect_variance", "detect_multi_metric_variance",
+    "calculate_planning_kpis",
+    "generate_monthly_kpi_report",
+    "run_cross_module_analysis",
+    "score_deliverable_quality",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["hr_talent"] = [
+    "calculate_staffing_plan",
+    "assess_labor_compliance",
+    "generate_org_chart",
+    "run_cross_module_analysis",
+    "score_deliverable_quality",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["it_ot"] = [
+    "validate_sap_cross_references",
+    "run_cross_module_analysis",
+    "score_deliverable_quality",
+] + _OR_DOC_TOOLS
+
+AGENT_TOOL_MAP["web_intelligence"] = [
+    "generate_management_review",
+    "run_cross_module_analysis",
+] + _OR_DOC_TOOLS

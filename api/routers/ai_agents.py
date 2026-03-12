@@ -105,10 +105,16 @@ def get_ai_status():
 
     tool_count = 0
     agent_tools = {}
+    all_agents = [
+        "orchestrator", "reliability", "planning", "spare_parts",
+        "operations", "hse", "contracts", "execution",
+        "project_orchestrator", "engineering", "construction",
+        "finance", "hr_talent", "it_ot", "web_intelligence",
+    ]
     try:
         import api.ai_core.tool_wrappers.server as server
         tool_count = server.get_tool_count()
-        for agent_type in ["orchestrator", "reliability", "planning", "spare_parts"]:
+        for agent_type in all_agents:
             agent_tools[agent_type] = len(server.get_tools_for_agent(agent_type))
     except Exception as e:
         log.warning("Failed to load AI tools: %s", e)
@@ -118,12 +124,19 @@ def get_ai_status():
         "anthropic_key_configured": has_key,
         "total_tools": tool_count,
         "agent_tools": agent_tools,
-        "agents": ["orchestrator", "reliability", "planning", "spare_parts"],
+        "agents": all_agents,
+        "agent_teams": {
+            "team_b_operations_assets": ["reliability", "planning", "spare_parts", "operations", "hse", "execution"],
+            "team_a_project_delivery": ["orchestrator", "project_orchestrator", "engineering", "construction", "contracts"],
+            "team_c_corporate": ["finance", "hr_talent", "it_ot"],
+            "team_d_intelligence": ["web_intelligence"],
+        },
         "milestones": [
-            {"number": 1, "name": "Hierarchy Decomposition"},
-            {"number": 2, "name": "FMEA Completion"},
-            {"number": 3, "name": "Strategy + Tasks + Resources"},
-            {"number": 4, "name": "SAP Upload Package"},
+            {"number": 0, "name": "G0 — Scope & Context"},
+            {"number": 1, "name": "G1 — Hierarchy & Criticality"},
+            {"number": 2, "name": "G2 — Strategy & Planning"},
+            {"number": 3, "name": "G3 — Execution Readiness"},
+            {"number": 4, "name": "G4 — Operational Readiness"},
         ],
     }
 

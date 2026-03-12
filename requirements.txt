@@ -16,6 +16,10 @@ httpx==0.28.1
 plotly==6.5.2
 openpyxl==3.1.5
 
+# OR System — document generation (Word, PowerPoint)
+python-docx==1.1.2
+python-pptx==1.0.2
+
 # File uploads (UploadFile / Form)
 python-multipart==0.0.20
 

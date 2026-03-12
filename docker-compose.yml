@@ -12,6 +12,7 @@ services:
     volumes:
       - ocp_db_data:/app/data
       - ocp_sap_data:/app/sap_mock/data
+      - ocp_or_deliverables:/app/or_deliverables
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
       interval: 30s
@@ -64,3 +65,5 @@ volumes:
     name: ocp_db_data
   ocp_sap_data:
     name: ocp_sap_data
+  ocp_or_deliverables:
+    name: ocp_or_deliverables

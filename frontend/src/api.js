@@ -287,3 +287,12 @@ export const listImportHistory = (p) => get('/imports/history', p);
 
 // ── Health check ──
 export const healthCheck = () => fetch('/health').then(r => r.json());
+
+// ── OR Projects (CORTEX OR System) ──
+export const createORProject = (d) => post('/or/projects', d);
+export const listORProjects = () => get('/or/projects');
+export const getORProject = (id) => get(`/or/projects/${id}`);
+export const updateORProject = (id, d) => put(`/or/projects/${id}`, d);
+export const advanceORGate = (id) => post(`/or/projects/${id}/advance-gate`);
+export const listORProjectDeliverables = (id) => get(`/or/projects/${id}/deliverables`);
+export const listORDeliverables = () => get('/or/deliverables');

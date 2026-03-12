@@ -1134,3 +1134,50 @@ class ImportHistoryModel(Base):
         Index("ix_import_history_plant", "plant_id"),
         Index("ix_import_history_source", "source"),
     )
+
+
+# ── OR System Models ───────────────────────────────────────────────
+
+class ORProjectModel(Base):
+    """Proyecto de Operational Readiness — coordina los 13 agentes CORTEX."""
+    __tablename__ = "or_projects"
+
+    project_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    client_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    plant_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    project_type: Mapped[str] = mapped_column(String(50), default="greenfield")
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
+    current_gate: Mapped[str] = mapped_column(String(10), default="G0")
+    gate_status: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    active_agents: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    __table_args__ = (
+        Index("ix_or_projects_user", "user_id"),
+        Index("ix_or_projects_status", "status"),
+    )
+
+
+class ORDeliverableModel(Base):
+    """Entregable generado por agentes CORTEX (docx, xlsx, pptx)."""
+    __tablename__ = "or_deliverables"
+
+    deliverable_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    project_id: Mapped[str | None] = mapped_column(String(50), ForeignKey("or_projects.project_id"), nullable=True)
+    agent_type: Mapped[str] = mapped_column(String(50))
+    name: Mapped[str] = mapped_column(String(200))
+    file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    file_type: Mapped[str] = mapped_column(String(10), default="docx")
+    status: Mapped[str] = mapped_column(String(20), default="DRAFT")
+    quality_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    quality_dimensions: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    gate: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    __table_args__ = (
+        Index("ix_or_deliverables_project", "project_id"),
+        Index("ix_or_deliverables_agent", "agent_type"),
+    )

@@ -31,6 +31,7 @@ from api.routers import (
     auth, ai_agents,
     sync, troubleshooting, execution_checklists, deliverables,
     assignments, expert_knowledge, financial, workflow, media, imports,
+    or_projects,
 )
 
 
@@ -174,6 +175,7 @@ def create_app() -> FastAPI:
     app.include_router(media.router, prefix=prefix)
     # G-18 / Phase B — Data Import Pipeline
     app.include_router(imports.router, prefix=prefix)
+    app.include_router(or_projects.router, prefix=prefix)
 
     # GAP-W03 — Serve Field PWA at /field/
     field_dist = Path("field_app/dist")

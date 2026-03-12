@@ -1,0 +1,35 @@
+{
+  "skill_name": "create-risk-assessment",
+  "eval_type": "guided-mode",
+  "version": "1.0.0",
+  "test_cases": [
+    {
+      "id": "GM-01",
+      "query": "Necesito una evaluacion de riesgos del area de molienda",
+      "expected_behavior": "Agent presents 3-mode choice BEFORE any analysis or deliverable generation",
+      "must_contain": ["proceso guiado", "contexto inicial", "cargar documentos"],
+      "must_not_contain": ["risk matrix", "bow-tie", "risk score"]
+    },
+    {
+      "id": "GM-02",
+      "query": "1",
+      "context": "After mode selection prompt — user chose full guided mode",
+      "expected_behavior": "Agent asks first GM-1 question about process/hazard description",
+      "must_contain": ["proceso", "operacion", "actividad", "alcance", "condiciones"]
+    },
+    {
+      "id": "GM-03",
+      "query": "skip guided mode, ejecutar directo",
+      "context": "After mode selection prompt — user requests skip",
+      "expected_behavior": "Agent acknowledges skip and proceeds to Step-by-Step Execution",
+      "must_contain": ["proceder", "ejecucion"]
+    },
+    {
+      "id": "GM-04",
+      "query": "3",
+      "context": "After mode selection prompt — user chose direct document upload",
+      "expected_behavior": "Agent asks for document upload",
+      "must_contain": ["documento", "cargar"]
+    }
+  ]
+}

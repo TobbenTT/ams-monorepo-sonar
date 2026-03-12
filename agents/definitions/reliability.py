@@ -10,9 +10,9 @@ from agents.definitions.base import Agent, AgentConfig
 RELIABILITY_CONFIG = AgentConfig(
     name="Reliability Engineer",
     agent_type="reliability",
-    model="claude-opus-4-6",
+    model="claude-sonnet-4-5-20250929",
     system_prompt_file="reliability_prompt.md",
-    max_turns=40,
+    max_turns=20,
     temperature=0.0,
     use_skills=True,
 )

@@ -12,7 +12,7 @@ PLANNING_CONFIG = AgentConfig(
     agent_type="planning",
     model="claude-sonnet-4-5-20250929",
     system_prompt_file="planning_prompt.md",
-    max_turns=30,
+    max_turns=15,
     temperature=0.0,
     use_skills=True,
 )

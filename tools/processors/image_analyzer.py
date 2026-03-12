@@ -61,7 +61,7 @@ class ImageAnalysisService:
         result = service.analyze(image_bytes, mime_type="image/jpeg", context_hint="SAG Mill bearing")
     """
 
-    def __init__(self, api_key: str, model: str = "claude-sonnet-4-6") -> None:
+    def __init__(self, api_key: str, model: str = "claude-haiku-4-5-20251001") -> None:
         if not api_key:
             raise ValueError(
                 "ANTHROPIC_API_KEY is required for image analysis. "

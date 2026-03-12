@@ -17,9 +17,9 @@ from agents.definitions.spare_parts import create_spare_parts_agent
 ORCHESTRATOR_CONFIG = AgentConfig(
     name="Orchestrator",
     agent_type="orchestrator",
-    model="claude-sonnet-4-5-20250929",
+    model="claude-haiku-4-5-20251001",
     system_prompt_file="orchestrator_prompt.md",
-    max_turns=20,
+    max_turns=10,
     temperature=0.0,
     use_skills=True,
 )

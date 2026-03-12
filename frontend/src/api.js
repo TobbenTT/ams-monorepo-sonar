@@ -222,5 +222,20 @@ export const authUpdateRole = (id, d) => put(`/auth/users/${id}/role`, d);
 export const authDeactivate = (id) => put(`/auth/users/${id}/deactivate`);
 export const authActivate = (id) => put(`/auth/users/${id}/activate`);
 
+// ── AI Agents (CORTEX) ──
+export const getAiStatus = () => get('/ai/status');
+export const listAiTools = () => get('/ai/tools');
+export const callAiTool = (d) => post('/ai/tools/call', d);
+export const createAiSession = (d) => post('/ai/sessions', d);
+export const listAiSessions = (p) => get('/ai/sessions', p);
+export const getAiSession = (id) => get(`/ai/sessions/${id}`);
+export const advanceAiMilestone = (id) => post(`/ai/sessions/${id}/advance`);
+export const milestoneAction = (sid, mNum, d) => post(`/ai/sessions/${sid}/milestone/${mNum}/action`, d);
+export const runTroubleshooting = (d) => post('/ai/troubleshoot', d);
+export const listDiagnostics = (p) => get('/ai/troubleshoot', p);
+export const generateChecklist = (d) => post('/ai/checklists', d);
+export const getChecklist = (id) => get(`/ai/checklists/${id}`);
+export const updateChecklistItem = (id, d) => put(`/ai/checklists/${id}/items`, d);
+
 // ── Health check ──
 export const healthCheck = () => fetch('/health').then(r => r.json());

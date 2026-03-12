@@ -786,3 +786,101 @@ class FMECAWorksheetModel(Base):
     analyst: Mapped[str] = mapped_column(String(100), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+# ── AI Agent Sessions (CORTEX integration) ────────────────────────────
+
+class AISessionModel(Base):
+    """Tracks a multi-agent strategy development session."""
+    __tablename__ = "ai_sessions"
+
+    session_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(50), index=True)
+    equipment_tag: Mapped[str] = mapped_column(String(100), default="")
+    plant_id: Mapped[str] = mapped_column(String(50), default="")
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
+    current_milestone: Mapped[int] = mapped_column(Integer, default=0)
+    session_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    milestone_gates: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_ai_sessions_user", "user_id"),
+        Index("ix_ai_sessions_status", "status"),
+    )
+
+
+class AIInteractionModel(Base):
+    """Audit log for individual agent interactions within a session."""
+    __tablename__ = "ai_interactions"
+
+    interaction_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    session_id: Mapped[str] = mapped_column(String(50), ForeignKey("ai_sessions.session_id"), index=True)
+    agent_type: Mapped[str] = mapped_column(String(30))
+    milestone: Mapped[int] = mapped_column(Integer, default=0)
+    instruction: Mapped[str] = mapped_column(Text, default="")
+    response_summary: Mapped[str] = mapped_column(Text, default="")
+    tool_calls: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    tokens_used: Mapped[int] = mapped_column(Integer, default=0)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class TroubleshootingDiagnosticModel(Base):
+    """GAP-W02: AI-assisted troubleshooting diagnostic results."""
+    __tablename__ = "troubleshooting_diagnostics"
+
+    diagnostic_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    equipment_tag: Mapped[str] = mapped_column(String(100), index=True)
+    plant_id: Mapped[str] = mapped_column(String(50), index=True)
+    symptom_description: Mapped[str] = mapped_column(Text, default="")
+    ai_diagnosis: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    probable_causes: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    recommended_actions: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    confidence_score: Mapped[float] = mapped_column(Float, default=0.0)
+    resolved: Mapped[bool] = mapped_column(Boolean, default=False)
+    resolution_notes: Mapped[str] = mapped_column(Text, default="")
+    created_by: Mapped[str] = mapped_column(String(50), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    __table_args__ = (
+        Index("ix_diag_equipment", "equipment_tag", "plant_id"),
+    )
+
+
+class ExecutionChecklistModel(Base):
+    """GAP-W06: AI-generated execution checklists for work orders."""
+    __tablename__ = "execution_checklists"
+
+    checklist_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    work_package_id: Mapped[str] = mapped_column(String(50), index=True)
+    equipment_tag: Mapped[str] = mapped_column(String(100), default="")
+    task_type: Mapped[str] = mapped_column(String(30), default="")
+    checklist_items: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    safety_items: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    loto_steps: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    ppe_requirements: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="DRAFT")
+    completed_items: Mapped[int] = mapped_column(Integer, default=0)
+    total_items: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class WorkAssignmentModel(Base):
+    """GAP-W09: AI-optimized work assignments by competency."""
+    __tablename__ = "work_assignments"
+
+    assignment_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    work_package_id: Mapped[str] = mapped_column(String(50), index=True)
+    plant_id: Mapped[str] = mapped_column(String(50), index=True)
+    assigned_to: Mapped[str] = mapped_column(String(50), default="")
+    required_competencies: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    matched_competencies: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    competency_match_score: Mapped[float] = mapped_column(Float, default=0.0)
+    scheduled_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    estimated_hours: Mapped[float] = mapped_column(Float, default=0.0)
+    status: Mapped[str] = mapped_column(String(20), default="PENDING")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

@@ -420,7 +420,7 @@ class TestReactFrontendFiles:
         from pathlib import Path
         pages_dir = Path("frontend/src/pages")
         page_files = sorted(pages_dir.glob("*.jsx"))
-        assert len(page_files) == 23, f"Expected 23 pages, found {len(page_files)}"
+        assert len(page_files) == 24, f"Expected 24 pages, found {len(page_files)}"
 
     def test_react_components_exist(self):
         from pathlib import Path

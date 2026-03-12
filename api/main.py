@@ -25,7 +25,7 @@ from api.routers import (
     capture, work_requests, planner, backlog, scheduling,
     reliability, rca,
     reporting, dashboard,
-    auth,
+    auth, ai_agents,
 )
 
 
@@ -144,6 +144,8 @@ def create_app() -> FastAPI:
     app.include_router(rca.router, prefix=prefix)
     # Auth
     app.include_router(auth.router, prefix=prefix)
+    # AI Agents (CORTEX)
+    app.include_router(ai_agents.router, prefix=prefix)
 
     @app.get("/")
     def root():

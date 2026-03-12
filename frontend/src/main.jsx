@@ -32,6 +32,7 @@ const DefectElimination = lazy(() => import('./pages/DefectElimination'));
 const Reports = lazy(() => import('./pages/Reports'));
 const SAPReview = lazy(() => import('./pages/SAPReview'));
 const Admin = lazy(() => import('./pages/Admin'));
+const AIAgents = lazy(() => import('./pages/AIAgents'));
 const Profile = lazy(() => import('./pages/Profile'));
 
 const ALL = ['admin', 'manager', 'planner', 'tecnico', 'engineer'];
@@ -80,6 +81,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="reports" element={<P roles={MGMT}><S><Reports /></S></P>} />
                                     <Route path="sap-review" element={<P roles={MGMT}><S><SAPReview /></S></P>} />
                                     <Route path="admin" element={<P roles={['admin']}><S><Admin /></S></P>} />
+                                    <Route path="ai-agents" element={<P roles={ENGR}><S><AIAgents /></S></P>} />
                                     <Route path="profile" element={<S><Profile /></S>} />
                                 </Route>
                             </Routes>

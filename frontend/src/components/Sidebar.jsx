@@ -5,7 +5,7 @@ import {
     BarChart3, Search, FileText, Settings,
     ChevronLeft, ChevronRight, User, LogOut,
     ClipboardList, Archive, Calendar, BrainCircuit,
-    Activity, Bug, Award, Database, ClipboardCheck
+    Activity, Bug, Award, Database, ClipboardCheck, Cpu
 } from 'lucide-react';
 import { cn } from './ui/utils';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,6 +41,7 @@ const navSections = (t) => [
             { to: '/reliability', icon: Activity, label: t('nav.reliabilityEng'), roles: ENGR },
             { to: '/rca', icon: Search, label: t('nav.rca'), roles: ENGR },
             { to: '/defect-elimination', icon: Bug, label: t('nav.defectElimination'), roles: ENGR },
+            { to: '/ai-agents', icon: Cpu, label: 'Agentes IA', roles: ENGR },
         ],
     },
     {

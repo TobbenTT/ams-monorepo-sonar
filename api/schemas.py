@@ -478,3 +478,47 @@ class UserProfileUpdate(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(max_length=2048)
+
+
+# ── AI Agents (CORTEX integration) ──────────────────────────────────
+
+class AISessionCreate(BaseModel):
+    equipment_tag: str = Field(max_length=_MAX_SHORT)
+    plant_id: str = Field(default="OCP", max_length=_MAX_SHORT)
+
+
+class AIMilestoneAction(BaseModel):
+    action: str = Field(max_length=20)  # approve, modify, reject
+    feedback: str = Field(default="", max_length=_MAX_LONG)
+
+    @field_validator("action")
+    @classmethod
+    def validate_action(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in {"approve", "modify", "reject"}:
+            raise ValueError("action must be one of: approve, modify, reject")
+        return v
+
+
+class TroubleshootingRequest(BaseModel):
+    equipment_tag: str = Field(max_length=_MAX_SHORT)
+    plant_id: str = Field(default="OCP", max_length=_MAX_SHORT)
+    symptom_description: str = Field(max_length=_MAX_LONG)
+
+
+class ChecklistGenerateRequest(BaseModel):
+    work_package_id: str = Field(max_length=_MAX_SHORT)
+    equipment_tag: str = Field(default="", max_length=_MAX_SHORT)
+    task_type: str = Field(default="", max_length=30)
+
+
+class ChecklistItemUpdate(BaseModel):
+    item_index: int = Field(ge=0)
+    completed: bool = True
+    notes: str = Field(default="", max_length=_MAX_MEDIUM)
+
+
+class AIToolCallRequest(BaseModel):
+    """Direct tool invocation for advanced users."""
+    tool_name: str = Field(max_length=_MAX_SHORT)
+    arguments: dict[str, Any] = Field(default_factory=dict)

@@ -2827,3 +2827,671 @@ class FMECASummary(BaseModel):
     avg_rpn: float = 0.0
     high_critical_count: int = 0
     recommendations: list[str] = Field(default_factory=list)
+
+
+# ============================================================
+# SYNC / OFFLINE MODE (GAP-W03)
+# ============================================================
+
+class SyncEntityType(str, Enum):
+    """Entity types that support offline sync."""
+    CAPTURES = "captures"
+    WORK_REQUESTS = "work_requests"
+    WORK_ORDERS = "work_orders"
+    CHECKLIST_PROGRESS = "checklist_progress"
+    HIERARCHY_NODES = "hierarchy_nodes"
+
+
+class SyncDeltaItem(BaseModel):
+    """A single item in a sync delta response."""
+    id: str
+    action: str  # "created" | "updated" | "deleted"
+    data: dict
+    version: int
+    modified_at: datetime
+
+
+class SyncPullRequest(BaseModel):
+    """Request to pull changes since a given timestamp."""
+    entity_types: list[SyncEntityType]
+    since: datetime
+    limit: int = Field(default=100, ge=1, le=1000)
+
+
+class SyncPullResponse(BaseModel):
+    """Response containing delta items for a single entity type."""
+    entity_type: SyncEntityType
+    items: list[SyncDeltaItem]
+    server_timestamp: datetime
+    has_more: bool = False
+
+
+class SyncPushItem(BaseModel):
+    """A single item pushed from the offline client."""
+    entity_type: SyncEntityType
+    local_id: str
+    action: str  # "create" | "update"
+    data: dict
+    offline_created_at: datetime
+
+
+class SyncPushRequest(BaseModel):
+    """Batch push of offline changes."""
+    items: list[SyncPushItem]
+    device_id: str
+
+
+class ConflictRecord(BaseModel):
+    """Describes a sync conflict between local and server versions."""
+    conflict_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    entity_type: SyncEntityType
+    entity_id: str
+    field: str
+    local_value: str
+    server_value: str
+    local_modified_at: datetime
+    server_modified_at: datetime
+    resolution: Optional[str] = None  # "LOCAL_WINS" | "SERVER_WINS"
+
+
+class SyncPushResponse(BaseModel):
+    """Result of a push operation."""
+    accepted: int = 0
+    conflicts: list[ConflictRecord] = Field(default_factory=list)
+    server_ids: dict[str, str] = Field(default_factory=dict)  # local_id -> server_id
+
+
+# ============================================================
+# SYNC CONFLICT RESOLUTION (GAP-W03)
+# ============================================================
+
+
+class SyncConflictResolution(BaseModel):
+    """Request to resolve a sync conflict."""
+    conflict_id: str
+    strategy: str  # "LOCAL_WINS" | "SERVER_WINS"
+
+
+# ============================================================
+# MEDIA / AUDIO (GAP-W07)
+# ============================================================
+
+
+class AudioTranscriptionResult(BaseModel):
+    """Result of voice-to-text transcription via Whisper."""
+    text: str
+    language_detected: str  # ISO code: "fr", "en", "ar", "es"
+    duration_seconds: Optional[float] = None
+    confidence: float = 1.0  # 0-1; Whisper doesn't expose this natively, defaults to 1.0
+
+
+# ============================================================
+# EXECUTION CHECKLISTS (GAP-W01)
+# ============================================================
+
+
+class ChecklistStatus(str, Enum):
+    """Lifecycle of an execution checklist."""
+    DRAFT = "DRAFT"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CLOSED = "CLOSED"
+    CANCELLED = "CANCELLED"
+
+
+class StepStatus(str, Enum):
+    """Status of a single execution step."""
+    PENDING = "PENDING"
+    BLOCKED = "BLOCKED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    SKIPPED = "SKIPPED"
+    FAILED = "FAILED"
+
+
+class ConditionCode(int, Enum):
+    """Anglo American condition codes (REF-07 templates)."""
+    NO_FAULT_FOUND = 1
+    FAULT_FOUND_AND_FIXED = 2
+    DEFECT_FOUND_NOT_FIXED = 3
+
+
+class StepType(str, Enum):
+    """Type of execution step."""
+    SAFETY_CHECK = "SAFETY_CHECK"
+    INSPECTION = "INSPECTION"
+    TASK_OPERATION = "TASK_OPERATION"
+    QUALITY_GATE = "QUALITY_GATE"
+    COMMISSIONING = "COMMISSIONING"
+    HANDOVER = "HANDOVER"
+
+
+class StepObservation(BaseModel):
+    """Field observation recorded during step execution."""
+    observed_at: datetime = Field(default_factory=datetime.now)
+    observed_by: str = ""
+    condition_code: ConditionCode = ConditionCode.NO_FAULT_FOUND
+    measured_value: Optional[str] = None
+    notes: str = ""
+    photo_ref: Optional[str] = None
+    defect_created: bool = False
+    defect_ref: Optional[str] = None
+
+
+class ExecutionStep(BaseModel):
+    """A single step in an execution checklist."""
+    step_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    step_number: str = ""
+    step_type: StepType = StepType.TASK_OPERATION
+    description: str = ""
+    description_fr: str = ""
+    acceptable_limits: Optional[str] = None
+    corrective_action: Optional[str] = None
+    trade: str = ""
+    duration_minutes: int = 0
+    materials: list[str] = Field(default_factory=list)
+
+    # Gate logic
+    is_gate: bool = False
+    gate_question: Optional[str] = None
+    predecessor_step_ids: list[str] = Field(default_factory=list)
+
+    # Source traceability
+    source_task_id: Optional[str] = None
+    source_operation_number: Optional[int] = None
+
+    # Execution state
+    status: StepStatus = StepStatus.PENDING
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    completed_by: Optional[str] = None
+    observation: Optional[StepObservation] = None
+
+
+class ChecklistClosureSummary(BaseModel):
+    """Summary generated when checklist is completed."""
+    total_steps: int = 0
+    completed_steps: int = 0
+    skipped_steps: int = 0
+    failed_steps: int = 0
+    condition_distribution: dict[str, int] = Field(default_factory=dict)
+    defects_raised: int = 0
+    defect_refs: list[str] = Field(default_factory=list)
+    total_duration_minutes: int = 0
+    actual_duration_minutes: int = 0
+    completion_pct: float = 0.0
+
+
+class ExecutionChecklist(BaseModel):
+    """Interactive execution checklist generated from a WorkPackage."""
+    checklist_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    work_package_id: str = ""
+    work_package_name: str = ""
+    work_package_code: str = ""
+    equipment_tag: str = ""
+    equipment_name: str = ""
+
+    # Checklist content
+    steps: list[ExecutionStep] = Field(default_factory=list)
+    safety_section: list[str] = Field(default_factory=list)
+    pre_task_notes: str = ""
+    post_task_notes: str = ""
+
+    # Lifecycle
+    status: ChecklistStatus = ChecklistStatus.DRAFT
+    created_at: datetime = Field(default_factory=datetime.now)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+
+    # Personnel
+    assigned_to: str = ""
+    supervisor: str = ""
+    supervisor_signature: Optional[str] = None
+
+    # Closure
+    closure_summary: Optional[ChecklistClosureSummary] = None
+
+    # AI metadata
+    ai_generated: bool = True
+    ai_confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+
+
+# ============================================================
+# TROUBLESHOOTING / DIAGNOSTIC ASSISTANT (GAP-W02)
+# ============================================================
+
+
+class DiagnosticTestType(str, Enum):
+    """Types of diagnostic tests ordered by estimated cost."""
+    SENSORY = "SENSORY"
+    PROCESS_CHECK = "PROCESS_CHECK"
+    PORTABLE_INSTRUMENT = "PORTABLE_INSTRUMENT"
+    VIBRATION_ANALYSIS = "VIBRATION_ANALYSIS"
+    OIL_ANALYSIS = "OIL_ANALYSIS"
+    THERMOGRAPHY = "THERMOGRAPHY"
+    ULTRASONIC = "ULTRASONIC"
+    NDT_INSPECTION = "NDT_INSPECTION"
+    SPECIALIST_ANALYSIS = "SPECIALIST_ANALYSIS"
+
+
+class DiagnosisStatus(str, Enum):
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    ESCALATED = "ESCALATED"
+    ABANDONED = "ABANDONED"
+
+
+# Cost lookup for minimum-cost-first ordering
+DIAGNOSTIC_TEST_COSTS: dict[str, float] = {
+    DiagnosticTestType.SENSORY: 0,
+    DiagnosticTestType.PROCESS_CHECK: 0,
+    DiagnosticTestType.PORTABLE_INSTRUMENT: 50,
+    DiagnosticTestType.VIBRATION_ANALYSIS: 200,
+    DiagnosticTestType.OIL_ANALYSIS: 300,
+    DiagnosticTestType.THERMOGRAPHY: 500,
+    DiagnosticTestType.ULTRASONIC: 500,
+    DiagnosticTestType.NDT_INSPECTION: 1000,
+    DiagnosticTestType.SPECIALIST_ANALYSIS: 2000,
+}
+
+
+class SymptomEntry(BaseModel):
+    """A single symptom observed by the technician."""
+    symptom_id: str = Field(default_factory=lambda: f"SYM-{uuid.uuid4().hex[:8]}")
+    description: str = Field(..., description="Free-text symptom description")
+    description_normalized: str = Field("", description="Engine-normalized text")
+    category: str = Field("", description="vibration, noise, temperature, leak, etc.")
+    severity: str = Field("MEDIUM", description="LOW, MEDIUM, HIGH, CRITICAL")
+    observed_at: Optional[datetime] = None
+
+
+class DiagnosticTest(BaseModel):
+    """A single diagnostic test to perform."""
+    test_id: str = Field(default_factory=lambda: f"TST-{uuid.uuid4().hex[:8]}")
+    test_type: DiagnosticTestType = DiagnosticTestType.SENSORY
+    description: str = Field("", description="What to check, plain language")
+    description_fr: str = Field("", description="French translation")
+    expected_normal: str = Field("", description="What normal looks like")
+    expected_abnormal: str = Field("", description="What abnormal looks like")
+    estimated_cost_usd: float = Field(0.0, ge=0)
+    estimated_time_minutes: int = Field(15, ge=1)
+    requires_shutdown: bool = False
+    threshold: str = Field("", description="Actionable threshold from FM MASTER")
+
+
+class DiagnosticPath(BaseModel):
+    """A ranked candidate diagnosis with supporting evidence."""
+    fm_code: str = Field(..., description="FM-01 through FM-72")
+    mechanism: str = ""
+    cause: str = ""
+    confidence: float = Field(0.0, ge=0.0, le=1.0)
+    matched_symptoms: list[str] = Field(default_factory=list)
+    recommended_tests: list[DiagnosticTest] = Field(default_factory=list)
+    corrective_action: str = ""
+    corrective_action_fr: str = ""
+    strategy_type: str = ""
+    equipment_context: str = Field("", description="Which maintainable item this FM applies to")
+
+
+class DiagnosisSession(BaseModel):
+    """A complete troubleshooting session for one equipment item."""
+    session_id: str = Field(default_factory=lambda: f"DIAG-{uuid.uuid4().hex[:8].upper()}")
+    equipment_type_id: str = Field(..., description="From equipment library, e.g. ET-SAG-MILL")
+    equipment_tag: str = Field("", description="Specific equipment tag")
+    plant_id: str = Field("")
+    status: DiagnosisStatus = DiagnosisStatus.IN_PROGRESS
+    symptoms: list[SymptomEntry] = Field(default_factory=list)
+    tests_performed: list[dict] = Field(default_factory=list, description="test_id + result pairs")
+    candidate_diagnoses: list[DiagnosticPath] = Field(default_factory=list)
+    final_diagnosis: Optional[DiagnosticPath] = None
+    actual_cause_feedback: Optional[str] = Field(None, description="Post-repair: actual cause")
+    created_at: datetime = Field(default_factory=datetime.now)
+    completed_at: Optional[datetime] = None
+    technician_id: str = ""
+    notes: str = ""
+
+
+# ============================================================
+# DELIVERABLES TRACKING (GAP-W10)
+# ============================================================
+
+
+class DeliverableStatus(str, Enum):
+    """Lifecycle states for a project deliverable.
+
+    State machine:
+    DRAFT -> IN_PROGRESS -> SUBMITTED -> UNDER_REVIEW -> APPROVED (terminal)
+    UNDER_REVIEW -> REJECTED -> IN_PROGRESS (rework cycle)
+    """
+
+    DRAFT = "DRAFT"
+    IN_PROGRESS = "IN_PROGRESS"
+    SUBMITTED = "SUBMITTED"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class DeliverableCategory(str, Enum):
+    """Categories matching DELIVERABLES_INDEX milestone structure."""
+
+    HIERARCHY = "HIERARCHY"
+    CRITICALITY = "CRITICALITY"
+    FMECA = "FMECA"
+    RCM_DECISIONS = "RCM_DECISIONS"
+    TASKS = "TASKS"
+    WORK_PACKAGES = "WORK_PACKAGES"
+    WORK_INSTRUCTIONS = "WORK_INSTRUCTIONS"
+    MATERIALS = "MATERIALS"
+    SAP_UPLOAD = "SAP_UPLOAD"
+    QUALITY_REPORT = "QUALITY_REPORT"
+    VALIDATION_REPORT = "VALIDATION_REPORT"
+    CUSTOM = "CUSTOM"
+
+
+class DeliverableTrackingSummary(BaseModel):
+    """Aggregate summary for project-level deliverable tracking."""
+
+    total_deliverables: int = 0
+    by_status: dict[str, int] = Field(default_factory=dict)
+    by_milestone: dict[int, int] = Field(default_factory=dict)
+    total_estimated_hours: float = 0.0
+    total_actual_hours: float = 0.0
+    variance_hours: float = 0.0
+    variance_pct: float = 0.0
+    overall_completion_pct: float = 0.0
+
+
+# ============================================================
+# COMPETENCY-BASED WORK ASSIGNMENT (GAP-W09)
+# ============================================================
+
+
+class CompetencyLevel(str, Enum):
+    """Technician competency level per specialty per equipment type.
+
+    A = Senior — complex diagnostics, all equipment types
+    B = Standard — routine PM, simple corrective (default)
+    C = Junior — assisted tasks only, needs A/B oversight
+    """
+    A = "A"
+    B = "B"
+    C = "C"
+
+
+class AssignmentStatus(str, Enum):
+    """Work assignment lifecycle status."""
+    SUGGESTED = "SUGGESTED"
+    CONFIRMED = "CONFIRMED"
+    MODIFIED = "MODIFIED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+
+
+class TaskCompetencyRequirement(BaseModel):
+    """Minimum competency needed to execute a maintenance task (GAP-W09)."""
+    specialty: LabourSpecialty
+    min_level: CompetencyLevel = CompetencyLevel.B
+    equipment_type: Optional[str] = None
+    requires_certification: bool = False
+    supervision_required: bool = False
+
+
+class TechnicianCompetency(BaseModel):
+    """Competency rating for a technician on a specific specialty + equipment type."""
+    specialty: LabourSpecialty
+    equipment_type: str  # Equipment type TAG (e.g., "SAG_MILL", "CONVEYOR")
+    level: CompetencyLevel
+    certified: bool = False
+    certified_date: Optional[date] = None
+    notes: str = ""
+
+
+class TechnicianProfile(BaseModel):
+    """Full technician profile with competency matrix for assignment optimization."""
+    worker_id: str
+    name: str
+    specialty: LabourSpecialty
+    shift: str  # MORNING, AFTERNOON, NIGHT
+    plant_id: str
+    available: bool = True
+    competencies: list[TechnicianCompetency] = Field(default_factory=list)
+    years_experience: int = 0
+    equipment_expertise: list[str] = Field(default_factory=list)
+    certifications: list[str] = Field(default_factory=list)
+    safety_training_current: bool = True
+    notes: str = ""
+
+
+class WorkAssignment(BaseModel):
+    """Assignment of a technician to a work package / task.
+
+    Lifecycle: SUGGESTED -> CONFIRMED/MODIFIED -> IN_PROGRESS -> COMPLETED
+    """
+    assignment_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    work_package_id: str
+    task_id: Optional[str] = None
+    worker_id: str
+    worker_name: str
+    specialty: LabourSpecialty
+    competency_level: CompetencyLevel
+    scheduled_date: date
+    scheduled_shift: str
+    estimated_hours: float
+    status: AssignmentStatus = AssignmentStatus.SUGGESTED
+    match_score: float = Field(default=0.0, ge=0.0, le=100.0)
+    match_reasons: list[str] = Field(default_factory=list)
+    supervisor_notes: str = ""
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
+class AssignmentSummary(BaseModel):
+    """Supervisor-friendly summary of crew assignments for a shift."""
+    date: date
+    shift: str
+    plant_id: str
+    total_technicians: int = 0
+    available_technicians: int = 0
+    absent_technicians: int = 0
+    total_tasks: int = 0
+    assigned_tasks: int = 0
+    unassigned_tasks: int = 0
+    underqualified_assignments: int = 0
+    crew_utilization_pct: float = 0.0
+    assignments: list[WorkAssignment] = Field(default_factory=list)
+    unassigned_task_ids: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+# ============================================================
+# FINANCIAL / ROI TRACKING (GAP-W04)
+# ============================================================
+
+
+class FinancialCategory(str, Enum):
+    """Categories for financial line items."""
+    LABOR = "LABOR"
+    MATERIALS = "MATERIALS"
+    CONTRACTORS = "CONTRACTORS"
+    EQUIPMENT_RENTAL = "EQUIPMENT_RENTAL"
+    DOWNTIME_COST = "DOWNTIME_COST"
+    PRODUCTION_LOSS = "PRODUCTION_LOSS"
+    SAFETY_PENALTY = "SAFETY_PENALTY"
+    OVERHEAD = "OVERHEAD"
+
+
+class BudgetStatus(str, Enum):
+    """Lifecycle of a budget line item."""
+    PLANNED = "PLANNED"
+    APPROVED = "APPROVED"
+    IN_EXECUTION = "IN_EXECUTION"
+    CLOSED = "CLOSED"
+
+
+class ROIStatus(str, Enum):
+    """Maturity of an ROI calculation."""
+    PROJECTED = "PROJECTED"
+    VALIDATED = "VALIDATED"
+    REALIZED = "REALIZED"
+
+
+class CurrencyCode(str, Enum):
+    """Supported currencies."""
+    USD = "USD"
+    MAD = "MAD"  # Moroccan Dirham (OCP)
+    EUR = "EUR"
+
+
+class BudgetItem(BaseModel):
+    """Individual budget line item with planned vs. actual tracking."""
+    item_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    plant_id: str = ""
+    equipment_id: str = ""
+    cost_center: str = ""
+    category: FinancialCategory = FinancialCategory.LABOR
+    description: str = ""
+    planned_amount: float = Field(default=0.0, ge=0.0)
+    actual_amount: float = Field(default=0.0, ge=0.0)
+    variance: float = 0.0
+    variance_pct: float = 0.0
+    currency: CurrencyCode = CurrencyCode.USD
+    period_start: Optional[date] = None
+    period_end: Optional[date] = None
+    status: BudgetStatus = BudgetStatus.PLANNED
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    notes: str = ""
+
+
+class BudgetSummary(BaseModel):
+    """Aggregated budget view per plant/period."""
+    plant_id: str = ""
+    period_start: Optional[date] = None
+    period_end: Optional[date] = None
+    total_planned: float = Field(default=0.0, ge=0.0)
+    total_actual: float = Field(default=0.0, ge=0.0)
+    total_variance: float = 0.0
+    variance_pct: float = 0.0
+    by_category: dict[str, dict] = Field(default_factory=dict)
+    currency: CurrencyCode = CurrencyCode.USD
+    items: list[BudgetItem] = Field(default_factory=list)
+    over_budget_categories: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+
+
+class ROIInput(BaseModel):
+    """Input for ROI calculation -- investment vs. avoided costs."""
+    project_id: str = ""
+    plant_id: str = ""
+    description: str = ""
+    investment_cost: float = Field(default=0.0, ge=0.0)
+    annual_avoided_downtime_hours: float = Field(default=0.0, ge=0.0)
+    hourly_production_value: float = Field(default=0.0, ge=0.0)
+    annual_labor_savings_hours: float = Field(default=0.0, ge=0.0)
+    labor_cost_per_hour: float = Field(default=50.0, ge=0.0)
+    annual_material_savings: float = Field(default=0.0, ge=0.0)
+    annual_operating_cost_increase: float = Field(default=0.0, ge=0.0)
+    analysis_horizon_years: int = Field(default=5, ge=1, le=30)
+    discount_rate: float = Field(default=0.08, ge=0.0, le=1.0)
+    currency: CurrencyCode = CurrencyCode.USD
+
+
+class ROIResult(BaseModel):
+    """Output of ROI calculation."""
+    project_id: str = ""
+    plant_id: str = ""
+    calculated_at: datetime = Field(default_factory=datetime.now)
+    investment_cost: float = Field(default=0.0, ge=0.0)
+    annual_gross_savings: float = Field(default=0.0, ge=0.0)
+    annual_net_savings: float = 0.0
+    npv: float = 0.0
+    payback_period_years: Optional[float] = None
+    bcr: float = Field(default=0.0)
+    irr_pct: Optional[float] = None
+    roi_pct: float = 0.0
+    cumulative_savings_by_year: list[float] = Field(default_factory=list)
+    status: ROIStatus = ROIStatus.PROJECTED
+    confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+    recommendation: str = ""
+    currency: CurrencyCode = CurrencyCode.USD
+
+
+class FinancialImpact(BaseModel):
+    """Per-equipment or per-failure-mode financial impact."""
+    impact_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    equipment_id: str = ""
+    failure_mode_id: str = ""
+    annual_failure_cost: float = Field(default=0.0, ge=0.0)
+    annual_pm_cost: float = Field(default=0.0, ge=0.0)
+    annual_downtime_hours: float = Field(default=0.0, ge=0.0)
+    production_loss_per_hour: float = Field(default=0.0, ge=0.0)
+    annual_production_loss: float = Field(default=0.0, ge=0.0)
+    total_annual_impact: float = Field(default=0.0, ge=0.0)
+    man_hours_saved: float = Field(default=0.0, ge=0.0)
+    confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+    notes: str = ""
+
+
+class FinancialSummary(BaseModel):
+    """Plant-level financial roll-up for executive reporting."""
+    plant_id: str = ""
+    calculated_at: datetime = Field(default_factory=datetime.now)
+    total_maintenance_budget: float = Field(default=0.0, ge=0.0)
+    total_actual_spend: float = Field(default=0.0, ge=0.0)
+    budget_variance_pct: float = 0.0
+    total_avoided_cost: float = Field(default=0.0, ge=0.0)
+    total_man_hours_saved: float = Field(default=0.0, ge=0.0)
+    resource_productivity_multiplier: float = Field(default=1.0, ge=0.0)
+    roi_summary: Optional[ROIResult] = None
+    top_cost_drivers: list[FinancialImpact] = Field(default_factory=list)
+    budget_summary: Optional[BudgetSummary] = None
+    currency: CurrencyCode = CurrencyCode.USD
+    recommendations: list[str] = Field(default_factory=list)
+
+
+class BudgetVarianceAlert(BaseModel):
+    """Alert when a budget category exceeds threshold."""
+    alert_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    plant_id: str = ""
+    category: FinancialCategory = FinancialCategory.LABOR
+    planned: float = 0.0
+    actual: float = 0.0
+    variance_pct: float = 0.0
+    threshold_pct: float = 10.0
+    severity: str = "WARNING"
+    message: str = ""
+
+
+class ManHourSavingsReport(BaseModel):
+    """Man-hours saved report -- 'horas hombre ahorradas' metric."""
+    plant_id: str = ""
+    period_start: Optional[date] = None
+    period_end: Optional[date] = None
+    traditional_man_hours: float = Field(default=0.0, ge=0.0)
+    ai_assisted_man_hours: float = Field(default=0.0, ge=0.0)
+    hours_saved: float = Field(default=0.0, ge=0.0)
+    savings_pct: float = 0.0
+    cost_equivalent: float = Field(default=0.0, ge=0.0)
+    currency: CurrencyCode = CurrencyCode.USD
+    by_activity: dict[str, float] = Field(default_factory=dict)
+
+
+# ============================================================
+# IMPORTS (GAP-W06)
+# ============================================================
+
+
+class ImportHistoryEntry(BaseModel):
+    """Persisted record of a file import operation."""
+    import_id: str
+    plant_id: str = ""
+    source: ImportSource
+    filename: str
+    file_size_kb: Optional[int] = None
+    total_rows: int = 0
+    valid_rows: int = 0
+    error_rows: int = 0
+    status: str  # "success" | "partial" | "failed"
+    errors: list[ImportValidationError] = Field(default_factory=list)
+    imported_by: Optional[str] = None
+    imported_at: datetime = Field(default_factory=datetime.now)

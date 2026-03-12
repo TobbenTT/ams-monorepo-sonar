@@ -1,12 +1,13 @@
 """Financial router — ROI, budget tracking, financial impact (GAP-W04)."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from api.dependencies.auth import get_current_user
 from tools.engines.roi_engine import ROIEngine
 from tools.engines.budget_engine import BudgetEngine
 from tools.models.schemas import BudgetItem, ROIInput
 
-router = APIRouter(prefix="/financial", tags=["financial"])
+router = APIRouter(prefix="/financial", tags=["financial"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/roi")

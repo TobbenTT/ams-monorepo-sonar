@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.services import execution_checklist_service
 
-router = APIRouter(prefix="/execution-checklists", tags=["execution-checklists"])
+router = APIRouter(prefix="/execution-checklists", tags=["execution-checklists"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/")

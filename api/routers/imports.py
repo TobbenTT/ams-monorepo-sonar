@@ -6,10 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.services import import_service
 from tools.models.schemas import ImportSource
 
-router = APIRouter(prefix="/import", tags=["import"])
+router = APIRouter(prefix="/import", tags=["import"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/file")
@@ -45,6 +46,14 @@ async def import_file(
     file_bytes = await file.read()
     if not file_bytes:
         raise HTTPException(status_code=422, detail="Uploaded file is empty.")
+
+    # Validate MIME type via magic bytes (not just extension)
+    if filename.lower().endswith(".xlsx") and file_bytes[:4] != b"PK\x03\x04":
+        raise HTTPException(status_code=422, detail="File extension is .xlsx but content is not a valid Office document.")
+    if filename.lower().endswith(".csv") and not all(b < 128 for b in file_bytes[:1024]):
+        raise HTTPException(status_code=422, detail="File extension is .csv but content contains non-text bytes.")
+    if len(file_bytes) > 50_000_000:
+        raise HTTPException(status_code=422, detail="File too large. Maximum size is 50 MB.")
 
     try:
         entry = import_service.import_file(

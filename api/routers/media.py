@@ -6,9 +6,10 @@ POST /media/analyze-image — Analyze equipment photo via Claude Vision
 
 import logging
 
-from fastapi import APIRouter, HTTPException, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, Form
 from fastapi.responses import JSONResponse
 
+from api.dependencies.auth import get_current_user
 from tools.processors.audio_transcription import (
     TranscriptionNotConfiguredError,
     UnsupportedAudioFormatError,
@@ -18,7 +19,7 @@ from tools.processors.image_analyzer import get_image_analysis_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/media", tags=["media"])
+router = APIRouter(prefix="/media", tags=["media"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/transcribe")

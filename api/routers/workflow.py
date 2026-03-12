@@ -19,12 +19,14 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+from api.dependencies.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/workflow", tags=["Workflow"])
+router = APIRouter(prefix="/workflow", tags=["Workflow"], dependencies=[Depends(get_current_user)])
 
 
 # ---------------------------------------------------------------------------

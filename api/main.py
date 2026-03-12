@@ -83,10 +83,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if not settings.JWT_SECRET_KEY:
+    if not settings.JWT_SECRET_KEY or len(settings.JWT_SECRET_KEY) < 32:
         raise RuntimeError(
-            "JWT_SECRET_KEY environment variable is not set. "
-            "The server cannot start without a secure JWT secret. "
+            "JWT_SECRET_KEY must be at least 32 characters. "
             "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
         )
     create_all_tables()
@@ -110,7 +109,11 @@ def create_app() -> FastAPI:
         logger.error("Internal error on %s %s: %s", request.method, request.url.path, exc)
         return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
-    allowed_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",")]
+    allowed_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+    if not settings.DEBUG:
+        for origin in allowed_origins:
+            if "localhost" in origin or "127.0.0.1" in origin:
+                logger.warning("CORS origin '%s' contains localhost — unsafe in production", origin)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,

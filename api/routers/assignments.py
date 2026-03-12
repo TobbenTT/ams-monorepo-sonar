@@ -6,9 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.services import assignment_service
 
-router = APIRouter(prefix="/assignments", tags=["assignments"])
+router = APIRouter(prefix="/assignments", tags=["assignments"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/technicians")

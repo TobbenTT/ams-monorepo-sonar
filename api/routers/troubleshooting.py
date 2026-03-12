@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.services import troubleshooting_service
 
-router = APIRouter(prefix="/troubleshooting", tags=["troubleshooting"])
+router = APIRouter(prefix="/troubleshooting", tags=["troubleshooting"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/sessions")

@@ -9,9 +9,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.services import deliverable_service
 
-router = APIRouter(prefix="/deliverables", tags=["deliverables"])
+router = APIRouter(prefix="/deliverables", tags=["deliverables"], dependencies=[Depends(get_current_user)])
 
 
 # ---------------------------------------------------------------------------

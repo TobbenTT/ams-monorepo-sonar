@@ -1,5 +1,7 @@
 """Auth service — user CRUD, password hashing, JWT token management."""
 
+import logging
+import time
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
@@ -11,7 +13,14 @@ from jwt.exceptions import PyJWTError as JWTError
 from api.config import settings
 from api.database.models import UserModel
 
+logger = logging.getLogger(__name__)
+
 VALID_ROLES = {"admin", "manager", "planner", "tecnico"}
+
+# Brute-force protection: {username: [(timestamp, failed), ...]}
+_login_attempts: dict[str, list[float]] = {}
+_LOCKOUT_WINDOW = 300  # 5 minutes
+_MAX_FAILED_ATTEMPTS = 5
 
 
 def hash_password(password: str) -> str:
@@ -77,14 +86,43 @@ def register_user(
     return user
 
 
+def _check_lockout(username: str) -> bool:
+    """Return True if username is locked out due to too many failed attempts."""
+    now = time.time()
+    if username in _login_attempts:
+        _login_attempts[username] = [t for t in _login_attempts[username] if now - t < _LOCKOUT_WINDOW]
+        if len(_login_attempts[username]) >= _MAX_FAILED_ATTEMPTS:
+            return True
+    return False
+
+
+def _record_failed_attempt(username: str) -> None:
+    """Record a failed login attempt."""
+    if username not in _login_attempts:
+        _login_attempts[username] = []
+    _login_attempts[username].append(time.time())
+    logger.warning("Failed login attempt for '%s' (%d/%d)", username, len(_login_attempts[username]), _MAX_FAILED_ATTEMPTS)
+
+
+def _clear_attempts(username: str) -> None:
+    """Clear failed attempts on successful login."""
+    _login_attempts.pop(username, None)
+
+
 def authenticate_user(db: Session, username: str, password: str) -> UserModel | None:
+    if _check_lockout(username):
+        logger.warning("Login locked out for '%s' — too many failed attempts", username)
+        return None
     user = db.query(UserModel).filter(
         or_(UserModel.username == username, UserModel.email == username)
     ).first()
     if not user or not user.is_active:
+        _record_failed_attempt(username)
         return None
     if not verify_password(password, user.hashed_password):
+        _record_failed_attempt(username)
         return None
+    _clear_attempts(username)
     user.last_login = datetime.now()
     db.commit()
     return user

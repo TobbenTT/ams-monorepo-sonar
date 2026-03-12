@@ -10,9 +10,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.services import expert_knowledge_service as svc
 
-router = APIRouter(prefix="/expert-knowledge", tags=["expert-knowledge"])
+router = APIRouter(prefix="/expert-knowledge", tags=["expert-knowledge"], dependencies=[Depends(get_current_user)])
 
 
 # ── Consultations ────────────────────────────────────────────────────

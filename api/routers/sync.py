@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from api.dependencies.auth import get_current_user
 from api.services import sync_service
 from tools.models.schemas import (
     SyncPullRequest,
@@ -13,7 +14,7 @@ from tools.models.schemas import (
     SyncConflictResolution,
 )
 
-router = APIRouter(prefix="/sync", tags=["sync"])
+router = APIRouter(prefix="/sync", tags=["sync"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/pull", response_model=list[SyncPullResponse])

@@ -1,0 +1,13 @@
+{
+  "skill": "track-budget",
+  "test_cases": [
+    {"input": "Track the maintenance budget variance for this quarter", "expected": true},
+    {"input": "Are we over budget on contractor costs?", "expected": true},
+    {"input": "Forecast the maintenance spend for the next 3 months", "expected": true},
+    {"input": "Seguimiento del presupuesto de mantenimiento", "expected": true},
+    {"input": "Análisis de varianza de costos por categoría", "expected": true},
+    {"input": "Build the equipment hierarchy for the SAG mill", "expected": false},
+    {"input": "What are the failure modes for bearings?", "expected": false},
+    {"input": "Generate the SAP upload package", "expected": false}
+  ]
+}

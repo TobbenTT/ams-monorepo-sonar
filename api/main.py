@@ -203,7 +203,7 @@ def create_app() -> FastAPI:
     try:
         with open(_stamp_path) as _f:
             _stamp = _f.read().strip()
-    except Exception:
+    except (FileNotFoundError, OSError):
         _stamp = str(os.path.getmtime(__file__))
     _build_hash = _hashlib.md5(_stamp.encode()).hexdigest()[:12]
 

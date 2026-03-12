@@ -1,0 +1,112 @@
+{
+  "skill": "identify-work-request",
+  "version": "0.1",
+  "type": "trigger",
+  "cases": [
+    {
+      "id": "T-IWR-01",
+      "input": "The operator reports excessive vibration on conveyor motor CV-BRY-MTR-004. Bearings sound rough.",
+      "should_trigger": true,
+      "language": "en",
+      "rationale": "Classic field observation: symptom + equipment TAG + component"
+    },
+    {
+      "id": "T-IWR-02",
+      "input": "Il y a une fuite d'huile importante sur la pompe centrifuge PMP-003. La garniture mécanique semble endommagée.",
+      "should_trigger": true,
+      "language": "fr",
+      "rationale": "French voice transcription describing oil leak on pump"
+    },
+    {
+      "id": "T-IWR-03",
+      "input": "I just took photos of corrosion on the pipeline section near the acid storage tank in Zone A",
+      "should_trigger": true,
+      "language": "en",
+      "rationale": "Photo-based field capture with location hint and observed damage"
+    },
+    {
+      "id": "T-IWR-04",
+      "input": "El operador encontró una grieta en la estructura del chute de descarga. Se necesita intervención urgente.",
+      "should_trigger": true,
+      "language": "es",
+      "rationale": "Spanish operator finding: crack in discharge chute, urgency flagged"
+    },
+    {
+      "id": "T-IWR-05",
+      "input": "Need to create a work request from this voice recording: motor is making strange noise and smells burnt",
+      "should_trigger": true,
+      "language": "en",
+      "rationale": "Explicit work request creation from voice observation"
+    },
+    {
+      "id": "T-IWR-06",
+      "input": "Field inspector noticed the SAG Mill discharge pump seal is leaking slurry. Equipment is still running but we should plan maintenance.",
+      "should_trigger": true,
+      "language": "en",
+      "rationale": "Inspector finding with equipment context and maintenance planning need"
+    },
+    {
+      "id": "T-IWR-07",
+      "input": "Captura de campo: la válvula de control FCV-201 no responde a las señales del DCS. Posible falla eléctrica.",
+      "should_trigger": true,
+      "language": "es",
+      "rationale": "Spanish field capture with control valve failure and electrical fault suspicion"
+    },
+    {
+      "id": "T-IWR-08",
+      "input": "الفني اكتشف تسرب زيت في المضخة رقم ٣. يحتاج إصلاح عاجل",
+      "should_trigger": true,
+      "language": "ar",
+      "rationale": "Arabic technician report: oil leak on pump 3, urgent repair needed"
+    },
+    {
+      "id": "T-IWR-09",
+      "input": "I have 3 photos of equipment damage from today's walkdown. Can you structure this into a maintenance notification?",
+      "should_trigger": true,
+      "language": "en",
+      "rationale": "Photo-based field observation requesting structured maintenance notification"
+    },
+    {
+      "id": "T-IWR-10",
+      "input": "Pre-populate a work order from this observation: belt conveyor CV-012 has misaligned rollers causing material spillage",
+      "should_trigger": true,
+      "language": "en",
+      "rationale": "Explicit pre-populate request with equipment, symptom, and consequence"
+    },
+    {
+      "id": "T-IWR-11",
+      "input": "Calculate the criticality of the SAG Mill using R8 Full Matrix methodology",
+      "should_trigger": false,
+      "language": "en",
+      "rationale": "Criticality assessment skill, not work identification"
+    },
+    {
+      "id": "T-IWR-12",
+      "input": "Export the work packages to SAP PM format for upload",
+      "should_trigger": false,
+      "language": "en",
+      "rationale": "SAP export skill, not work identification"
+    },
+    {
+      "id": "T-IWR-13",
+      "input": "Generate a KPI report for maintenance performance this quarter",
+      "should_trigger": false,
+      "language": "en",
+      "rationale": "KPI/reporting skill, not work identification"
+    },
+    {
+      "id": "T-IWR-14",
+      "input": "Perform FMECA analysis on the ball mill BM-001 including all failure modes",
+      "should_trigger": false,
+      "language": "en",
+      "rationale": "FMECA skill, not work identification"
+    },
+    {
+      "id": "T-IWR-15",
+      "input": "What is the optimal spare parts inventory level for the crusher bearings?",
+      "should_trigger": false,
+      "language": "en",
+      "rationale": "Spare parts optimization skill, not work identification"
+    }
+  ]
+}

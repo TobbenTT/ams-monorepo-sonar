@@ -1,0 +1,17 @@
+{
+  "skill": "calculate-roi",
+  "functional_tests": [
+    {
+      "name": "basic_roi_calculation",
+      "input": "Calculate ROI for a $100,000 vibration monitoring investment that avoids 200 hours of downtime per year at $500/hr production value",
+      "expected_tool_calls": ["calculate_roi"],
+      "expected_output_contains": ["npv", "payback", "bcr"]
+    },
+    {
+      "name": "scenario_comparison",
+      "input": "Compare ROI of 3 options: basic monitoring ($50k), advanced monitoring ($150k), and full predictive ($300k)",
+      "expected_tool_calls": ["compare_roi_scenarios"],
+      "expected_output_contains": ["sorted", "npv"]
+    }
+  ]
+}

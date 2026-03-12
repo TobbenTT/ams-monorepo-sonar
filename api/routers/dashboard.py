@@ -1,7 +1,10 @@
 """Dashboard router — executive dashboard data aggregation."""
 
+import logging
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user
@@ -55,7 +58,8 @@ def _compute_completions(db: Session, plant_id: str) -> dict:
         planning = min(100, (programs * 10)) if programs > 0 else 0
         field = min(100, (wrs * 2)) if wrs > 0 else 0
         analytics = min(100, (crits * 5)) if crits > 0 else 0
-    except Exception:
+    except Exception as e:
+        logger.warning("Error computing module completions for %s: %s", plant_id, e)
         strategy, planning, field, analytics = 0, 0, 0, 0
 
     return {

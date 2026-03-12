@@ -1,0 +1,13 @@
+{
+  "skill": "calculate-roi",
+  "test_cases": [
+    {"input": "Calculate the ROI for our vibration monitoring investment", "expected": true},
+    {"input": "What is the payback period for the new CMMS?", "expected": true},
+    {"input": "Is the maintenance improvement project financially justified?", "expected": true},
+    {"input": "Calcula el retorno de inversión del proyecto de monitoreo", "expected": true},
+    {"input": "Cuál es el beneficio-costo de implementar CBM?", "expected": true},
+    {"input": "Build the equipment hierarchy for the SAG mill", "expected": false},
+    {"input": "Perform FMECA on the pump system", "expected": false},
+    {"input": "What are the failure modes for bearings?", "expected": false}
+  ]
+}

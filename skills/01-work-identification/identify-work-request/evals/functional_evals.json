@@ -1,0 +1,113 @@
+{
+  "skill": "identify-work-request",
+  "version": "0.1",
+  "type": "functional",
+  "cases": [
+    {
+      "id": "F-IWR-01",
+      "name": "Voice + Photo: Pump Leak (French)",
+      "input": {
+        "capture_type": "VOICE+IMAGE",
+        "language_detected": "fr",
+        "raw_voice_text": "Il y a une fuite d'huile importante sur la pompe centrifuge PMP-003 dans la zone de broyage. La garniture mécanique semble endommagée.",
+        "images": [{"file_path": "leak_pmp003.jpg", "gps_coordinates": "32.123,-6.456"}],
+        "technician_id": "TECH-042",
+        "technician_name": "Ahmed B."
+      },
+      "expected": {
+        "equipment_tag": "PMP-003",
+        "resolution_method": "EXACT_MATCH",
+        "confidence_gte": 0.9,
+        "failure_mechanism": "WEARS",
+        "failure_mode_valid_72_combo": true,
+        "work_order_type": "PM03_CORRECTIVE",
+        "priority_in": ["1_EMERGENCY", "2_URGENT"],
+        "safety_flags_include": ["LOCKOUT_TAGOUT"],
+        "spare_parts_count_gte": 1,
+        "structured_description_max_chars": 72,
+        "status": "DRAFT"
+      },
+      "checks": [
+        "Equipment TAG PMP-003 resolved via EXACT_MATCH",
+        "Failure mode is a valid 72-combo pair involving WEARS mechanism",
+        "Work order type is PM03 (active leak = corrective)",
+        "Priority is EMERGENCY or URGENT (pump leak in crushing zone)",
+        "LOCKOUT_TAGOUT safety flag present (rotating equipment)",
+        "At least 1 spare part suggested (mechanical seal — T-16 rule)",
+        "Structured description <= 72 characters",
+        "Status is DRAFT"
+      ]
+    },
+    {
+      "id": "F-IWR-02",
+      "name": "Text: Motor Vibration (English)",
+      "input": {
+        "capture_type": "TEXT",
+        "language_detected": "en",
+        "raw_text_input": "Excessive vibration on conveyor belt motor CV-BRY-MTR-004. Bearings sound rough. Has been getting worse over the last 2 weeks. No shutdown yet but close.",
+        "technician_id": "TECH-018",
+        "technician_name": "Carlos M."
+      },
+      "expected": {
+        "equipment_tag": "CV-BRY-MTR-004",
+        "resolution_method": "EXACT_MATCH",
+        "confidence_gte": 0.9,
+        "failure_mechanism": "WEARS",
+        "failure_mode_valid_72_combo": true,
+        "work_order_type": "PM02_PREVENTIVE",
+        "priority_in": ["2_URGENT", "3_NORMAL"],
+        "safety_flags_include": ["LOCKOUT_TAGOUT"],
+        "spare_parts_count_gte": 1,
+        "structured_description_max_chars": 72,
+        "status": "DRAFT"
+      },
+      "checks": [
+        "Equipment TAG CV-BRY-MTR-004 resolved via EXACT_MATCH",
+        "Failure mode involves WEARS mechanism (bearing degradation)",
+        "Work order type is PM02 (degrading but not failed)",
+        "Priority is URGENT or NORMAL (progressive failure, not yet down)",
+        "LOCKOUT_TAGOUT present (motor = rotating + electrical)",
+        "At least 1 spare part suggested (bearing — T-16 for WEARS)",
+        "Structured description <= 72 characters",
+        "Status is DRAFT"
+      ]
+    },
+    {
+      "id": "F-IWR-03",
+      "name": "Photo Only: Pipeline Corrosion (Arabic, low confidence)",
+      "input": {
+        "capture_type": "IMAGE",
+        "language_detected": "ar",
+        "images": [
+          {"file_path": "corrosion_pipe_01.jpg"},
+          {"file_path": "corrosion_pipe_02.jpg"}
+        ],
+        "location_hint": "Zone A, pipeline section near acid tank",
+        "technician_id": "TECH-056",
+        "technician_name": "Youssef K."
+      },
+      "expected": {
+        "equipment_tag_or_unresolved": true,
+        "confidence_lt": 0.7,
+        "failure_mechanism": "CORRODES",
+        "failure_mode_valid_72_combo": true,
+        "work_order_type": "PM01_INSPECTION",
+        "priority_in": ["3_NORMAL", "4_PLANNED"],
+        "safety_flags_include": ["HAZARDOUS_SUBSTANCE"],
+        "structured_description_max_chars": 72,
+        "status": "DRAFT"
+      },
+      "checks": [
+        "Equipment resolution attempted but low confidence (no TAG provided, image only)",
+        "Equipment flagged as REQUIRES_REVIEW (confidence < 0.7)",
+        "Failure mechanism is CORRODES (corrosion detected in images near acid tank)",
+        "Work order type is PM01 (inspection finding, not yet failure)",
+        "Priority is NORMAL or PLANNED (inspection, no immediate danger)",
+        "HAZARDOUS_SUBSTANCE flag present (near acid tank)",
+        "Spare parts NOT required (inspection, not replacement)",
+        "Structured description <= 72 characters",
+        "Status is DRAFT"
+      ]
+    }
+  ]
+}

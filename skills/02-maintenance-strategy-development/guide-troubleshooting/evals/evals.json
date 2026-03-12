@@ -1,0 +1,100 @@
+[
+  {
+    "id": "troubleshoot-eval-001",
+    "name": "SAG Mill Vibration Diagnosis",
+    "description": "Diagnose excessive vibration on SAG Mill drive end — should match bearing-related FMs",
+    "input": {
+      "equipment_type_id": "ET-SAG-MILL",
+      "equipment_tag": "BRY-SAG-ML-001",
+      "symptoms": [
+        {"description": "Excessive vibration from drive end bearing", "category": "vibration", "severity": "HIGH"},
+        {"description": "Grinding noise at low speed", "category": "noise", "severity": "MEDIUM"}
+      ]
+    },
+    "expected": {
+      "candidate_fm_codes_include": ["FM-71", "FM-72", "FM-51"],
+      "first_test_type": "SENSORY",
+      "diagnosis_maps_to_72_combo": true
+    },
+    "assertions": [
+      "Candidates include bearing wear or lubrication-related FMs",
+      "First recommended test is SENSORY (zero cost)",
+      "All candidate FM codes are valid 72-combo entries"
+    ]
+  },
+  {
+    "id": "troubleshoot-eval-002",
+    "name": "Pump Overheating Diagnosis",
+    "description": "Diagnose overheating pump — should match thermal or lubrication FMs",
+    "input": {
+      "equipment_type_id": "ET-CENTRIFUGAL-PUMP",
+      "symptoms": [
+        {"description": "Bearing housing temperature above 95°C", "category": "temperature", "severity": "HIGH"},
+        {"description": "Oil discolored and smells burnt", "category": "contamination", "severity": "MEDIUM"}
+      ]
+    },
+    "expected": {
+      "candidate_fm_codes_include": ["FM-51", "FM-49"],
+      "minimum_cost_ordering": true
+    },
+    "assertions": [
+      "Candidates include OVERHEATS/MELTS + Lack of lubrication (FM-51) or Contamination (FM-49)",
+      "Tests ordered by increasing cost",
+      "Corrective action includes lubrication check or replacement"
+    ]
+  },
+  {
+    "id": "troubleshoot-eval-003",
+    "name": "Confidence Update After Test",
+    "description": "Verify confidence increases when test confirms suspected FM",
+    "input": {
+      "session_with_candidates": true,
+      "test_result": "ABNORMAL",
+      "expected_abnormal_matched": true
+    },
+    "expected": {
+      "confidence_increased": true,
+      "confidence_delta": 0.15
+    },
+    "assertions": [
+      "Confidence for matching candidate increases by ~0.15",
+      "Confidence stays clamped within [0, 1]"
+    ]
+  },
+  {
+    "id": "troubleshoot-eval-004",
+    "name": "Escalation After Low Confidence",
+    "description": "After 3 tests with no clear match, system should recommend escalation",
+    "input": {
+      "all_candidates_below_0_5": true,
+      "tests_performed": 3
+    },
+    "expected": {
+      "recommendation": "ESCALATE",
+      "status": "ESCALATED"
+    },
+    "assertions": [
+      "Session status changes to ESCALATED or escalation is recommended",
+      "Specialist consultation is suggested"
+    ]
+  },
+  {
+    "id": "troubleshoot-eval-005",
+    "name": "Decision Tree Navigation",
+    "description": "Use SAG Mill vibration decision tree for structured diagnosis",
+    "input": {
+      "equipment_type_id": "ET-SAG-MILL",
+      "symptom_category": "vibration"
+    },
+    "expected": {
+      "tree_loaded": true,
+      "entry_node_exists": true,
+      "nodes_have_questions": true
+    },
+    "assertions": [
+      "Decision tree loads for SAG Mill vibration category",
+      "Entry node V-001 exists",
+      "Nodes have bilingual questions (EN/FR)"
+    ]
+  }
+]

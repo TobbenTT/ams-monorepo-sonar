@@ -286,6 +286,8 @@ def _program_to_dict(model: WeeklyProgramModel) -> dict:
                 "name": wp.get("name", ""),
                 "equipment_tag": wp.get("equipment_tag", ""),
                 "wo_type": wp.get("wo_type", ""),
+                "description": wp.get("description", ""),
+                "priority": wp.get("priority", "P3"),
                 "estimated_hours": wp.get("total_duration_hours", 0),
                 "specialties": wp.get("assigned_team") or wp.get("specialties", []),
                 "scheduled_date": wp.get("scheduled_date", ""),

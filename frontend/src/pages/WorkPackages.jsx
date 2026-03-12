@@ -54,7 +54,7 @@ export default function WorkPackages() {
         const ok = await confirm(t('workPackages.sendToSAP'), t('workPackages.sendConfirm', { name: selected.name || selected.work_package_id?.slice(0, 12) }));
         if (!ok) return;
         try {
-            await api.exportData({ format: 'sap', work_package_id: selected.work_package_id, plant_id: plant });
+            await api.exportData({ export_type: 'sap', work_package_id: selected.work_package_id, plant_id: plant });
             toast.success(t('workPackages.sentToSAP'));
             const uploads = await api.listSapUploads({ plant_id: plant });
             setSapUploads(Array.isArray(uploads) ? uploads : []);

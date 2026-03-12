@@ -1,0 +1,17 @@
+{
+  "skill": "track-budget",
+  "functional_tests": [
+    {
+      "name": "basic_budget_tracking",
+      "input": "Track the maintenance budget with these items: Labor planned 500k actual 480k, Materials planned 300k actual 350k",
+      "expected_tool_calls": ["track_budget"],
+      "expected_output_contains": ["variance", "category"]
+    },
+    {
+      "name": "variance_alert_detection",
+      "input": "Check if any budget categories are over the 10% threshold",
+      "expected_tool_calls": ["detect_budget_alerts"],
+      "expected_output_contains": ["severity", "WARNING"]
+    }
+  ]
+}

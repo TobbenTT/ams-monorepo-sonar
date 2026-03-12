@@ -1,0 +1,29 @@
+{
+  "skill": "guide-troubleshooting",
+  "should_trigger": [
+    {"query": "The SAG Mill is vibrating excessively, what could be wrong?", "reason": "Vibration symptom on specific equipment"},
+    {"query": "I need to troubleshoot a pump that keeps overheating", "reason": "Direct troubleshoot request with symptom"},
+    {"query": "What's causing the noise from the crusher gearbox?", "reason": "Noise symptom diagnosis request"},
+    {"query": "Diagnose the failure on conveyor CV-301 — belt keeps slipping", "reason": "Diagnose keyword with equipment context"},
+    {"query": "El molino SAG tiene un ruido anormal en el extremo de accionamiento", "reason": "Spanish - abnormal noise symptom"},
+    {"query": "The motor tripped again, need to find out why", "reason": "Tripping symptom investigation"},
+    {"query": "We have a leak from the slurry pump seal", "reason": "Leak symptom on equipment"},
+    {"query": "Le broyeur vibre beaucoup, quel est le probleme?", "reason": "French - vibration troubleshooting"},
+    {"query": "Equipment BRY-SAG-ML-001 is showing abnormal temperature readings", "reason": "Temperature symptom with tag"},
+    {"query": "The ball mill is not starting, what should I check?", "reason": "Not starting symptom"},
+    {"query": "Need to do fault finding on the VFD — it keeps faulting on overcurrent", "reason": "Fault finding with electrical symptom"},
+    {"query": "Diagnosticar falla en bomba de pulpa — caudal bajo", "reason": "Spanish - diagnose pump failure"}
+  ],
+  "should_not_trigger": [
+    {"query": "What is the criticality of the SAG Mill?", "reason": "Criticality is assess-criticality skill"},
+    {"query": "Perform an FMECA for the ball mill drive", "reason": "FMECA is perform-fmeca skill"},
+    {"query": "Build the equipment hierarchy for the grinding circuit", "reason": "Hierarchy is build-equipment-hierarchy skill"},
+    {"query": "Validate the failure mode WEARS + ABRASION", "reason": "FM validation is validate-failure-modes skill"},
+    {"query": "What is the Weibull distribution for bearing failures?", "reason": "Weibull is fit-weibull-distribution skill"},
+    {"query": "Conduct a root cause analysis on last month's crusher failure", "reason": "Historical RCA is perform-rca skill"},
+    {"query": "Calculate the health score for the conveyor system", "reason": "Health score is calculate-health-score skill"},
+    {"query": "Export the maintenance tasks to SAP", "reason": "SAP export is export-to-sap skill"},
+    {"query": "What is the OCP annual maintenance budget?", "reason": "Budget question, not troubleshooting"},
+    {"query": "Show me the Pareto chart of failures for 2025", "reason": "Pareto analysis is analyze-pareto skill"}
+  ]
+}

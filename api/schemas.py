@@ -524,3 +524,10 @@ class AIToolCallRequest(BaseModel):
     """Direct tool invocation for advanced users."""
     tool_name: str = Field(max_length=_MAX_SHORT)
     arguments: dict[str, Any] = Field(default_factory=dict)
+
+
+class EquipmentChatRequest(BaseModel):
+    """Equipment AI assistant — contextual chat about a specific asset."""
+    equipment_tag: str = Field(max_length=_MAX_SHORT)
+    question: str = Field(max_length=_MAX_LONG)
+    conversation_history: list[dict[str, str]] = Field(default_factory=list, max_length=50)

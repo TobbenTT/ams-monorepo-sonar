@@ -236,6 +236,7 @@ export const listDiagnostics = (p) => get('/ai/troubleshoot', p);
 export const generateChecklist = (d) => post('/ai/checklists', d);
 export const getAiChecklist = (id) => get(`/ai/checklists/${id}`);
 export const updateChecklistItem = (id, d) => put(`/ai/checklists/${id}/items`, d);
+export const equipmentChat = (d) => post('/ai/equipment-chat', d);
 
 // ── Financial / ROI (GAP-W04) ──
 export const calculateRoi = (d) => post('/financial/roi', d);

@@ -26,6 +26,7 @@ from api.schemas import (
     AISessionCreate, AIMilestoneAction,
     TroubleshootingRequest, ChecklistGenerateRequest,
     ChecklistItemUpdate, AIToolCallRequest,
+    EquipmentChatRequest,
 )
 
 log = logging.getLogger(__name__)
@@ -570,3 +571,29 @@ def list_ai_tools():
         }
     except Exception as e:
         return {"count": 0, "tools": [], "error": str(e)[:200]}
+
+
+# ── Equipment Chat — Contextual AI Assistant ─────────────────────────
+
+@router.post("/equipment-chat")
+def equipment_chat(
+    data: EquipmentChatRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """AI chat about a specific equipment — uses full DB context."""
+    _check_anthropic_key()
+
+    from api.services.equipment_chat_service import chat_with_equipment
+
+    result = chat_with_equipment(
+        db=db,
+        equipment_tag=data.equipment_tag,
+        question=data.question,
+        conversation_history=data.conversation_history,
+    )
+
+    if result.get("error") and not result.get("response"):
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    return result

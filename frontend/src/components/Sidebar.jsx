@@ -45,7 +45,7 @@ const navSections = (t) => [
             { to: '/rca', icon: Search, label: t('nav.rca'), roles: ENGR },
             { to: '/defect-elimination', icon: Bug, label: t('nav.defectElimination'), roles: ENGR },
             { to: '/ai-agents', icon: Cpu, label: 'Agentes IA', roles: ENGR },
-            { to: '/equipment-chat', icon: MessageSquare, label: 'Equipment Chat', roles: ALL },
+            { to: '/equipment-chat', icon: MessageSquare, label: t('equipmentChat.title'), roles: ALL },
             { to: '/expert-knowledge', icon: GraduationCap, label: 'Expert Portal', roles: ENGR },
         ],
     },

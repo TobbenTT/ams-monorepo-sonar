@@ -1291,4 +1291,32 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         trend: 'Trend',
         varianceAlerts: 'Variance Alerts',
     },
+
+    // ─── Equipment Chat ─────────────────────────────────────
+    equipmentChat: {
+        title: 'Equipment Assistant',
+        subtitle: 'AI chat about equipment history and status',
+        selectEquipment: 'Select equipment...',
+        searchEquipment: 'Search equipment by tag or name...',
+        placeholder: 'Ask about the equipment...',
+        send: 'Send',
+        thinking: 'Analyzing equipment data...',
+        noEquipment: 'Select an equipment to start chatting',
+        welcome: 'Hi! I\'m the maintenance assistant. Ask me about this equipment — I have access to its full history: work requests, criticality, FMEA, tasks, diagnostics, and more.',
+        contextLoaded: 'Equipment context loaded',
+        workRequests: 'work requests',
+        tasks: 'maint. tasks',
+        diagnostics: 'diagnostics',
+        criticality: 'Criticality',
+        fmea: 'FMEA',
+        noHistory: 'No history',
+        clearChat: 'Clear chat',
+        errorApi: 'Error communicating with AI',
+        suggestions: {
+            status: 'What is the current status of this equipment?',
+            failures: 'What are the most frequent failure modes?',
+            recommendations: 'What maintenance do you recommend?',
+            history: 'What work requests have been generated recently?',
+        },
+    },
 };

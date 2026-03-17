@@ -1215,4 +1215,32 @@ export default {
         trend: 'Tendencia',
         varianceAlerts: 'Alertas de Variación',
     },
+
+    // ─── Equipment Chat ─────────────────────────────────────
+    equipmentChat: {
+        title: 'Asistente de Equipo',
+        subtitle: 'Chat con IA sobre el historial y estado del equipo',
+        selectEquipment: 'Seleccionar equipo...',
+        searchEquipment: 'Buscar equipo por tag o nombre...',
+        placeholder: 'Pregunta sobre el equipo...',
+        send: 'Enviar',
+        thinking: 'Analizando datos del equipo...',
+        noEquipment: 'Selecciona un equipo para iniciar el chat',
+        welcome: '¡Hola! Soy el asistente de mantenimiento. Pregúntame sobre este equipo — tengo acceso a su historial completo: avisos, criticidad, FMEA, tareas, diagnósticos, y más.',
+        contextLoaded: 'Contexto del equipo cargado',
+        workRequests: 'avisos de trabajo',
+        tasks: 'tareas de mtto',
+        diagnostics: 'diagnósticos',
+        criticality: 'Criticidad',
+        fmea: 'FMEA',
+        noHistory: 'Sin historial',
+        clearChat: 'Limpiar chat',
+        errorApi: 'Error al comunicarse con la IA',
+        suggestions: {
+            status: '¿Cuál es el estado actual de este equipo?',
+            failures: '¿Cuáles son los modos de falla más frecuentes?',
+            recommendations: '¿Qué mantenimiento recomiendas para este equipo?',
+            history: '¿Qué avisos de trabajo se han generado recientemente?',
+        },
+    },
 };

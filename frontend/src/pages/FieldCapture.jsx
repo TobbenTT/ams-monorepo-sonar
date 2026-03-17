@@ -411,6 +411,13 @@ export default function FieldCapture() {
                         {t('capture.step2')} — {t('capture.aiResults')}
                     </div>
 
+                    {/* Captured photo preview */}
+                    {capturedImage && (
+                        <div className="mb-5 rounded-lg overflow-hidden border border-border">
+                            <img src={capturedImage} alt="Captured" className="w-full max-h-[250px] object-contain bg-muted/30" />
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                         {/* Left: Editable AI fields */}
                         <div className="space-y-3">

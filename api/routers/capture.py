@@ -1,12 +1,16 @@
 """Capture router — field capture submission and retrieval."""
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user
 from api.schemas import CaptureCreate
 from api.services import capture_service
+from api.services.capture_service import PHOTO_DIR
 
 router = APIRouter(prefix="/capture", tags=["capture"], dependencies=[Depends(get_current_user)])
 
@@ -57,6 +61,22 @@ def delete_capture(capture_id: str, db: Session = Depends(get_db)):
     return {"deleted": capture_id}
 
 
+@router.get("/photos/{filename}")
+def get_capture_photo(filename: str):
+    """Serve a saved capture photo."""
+    # Sanitize filename to prevent path traversal
+    safe_name = Path(filename).name
+    filepath = PHOTO_DIR / safe_name
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="Photo not found")
+    media_type = "image/jpeg"
+    if safe_name.endswith(".png"):
+        media_type = "image/png"
+    elif safe_name.endswith(".webp"):
+        media_type = "image/webp"
+    return FileResponse(filepath, media_type=media_type)
+
+
 @router.get("/{capture_id}")
 def get_capture(capture_id: str, db: Session = Depends(get_db)):
     c = capture_service.get_capture(db, capture_id)
@@ -71,5 +91,6 @@ def get_capture(capture_id: str, db: Session = Depends(get_db)):
         "raw_voice_text": c.raw_voice_text,
         "equipment_tag_manual": c.equipment_tag_manual,
         "location_hint": c.location_hint,
+        "photos": c.images or [],
         "created_at": c.created_at.isoformat() if c.created_at else None,
     }

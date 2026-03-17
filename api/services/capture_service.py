@@ -10,9 +10,11 @@ Pipeline:
 
 import base64
 import logging
+import os
 import re
 import uuid
 from datetime import datetime
+from pathlib import Path
 from sqlalchemy.orm import Session
 
 from api.database.models import FieldCaptureModel, WorkRequestModel
@@ -51,6 +53,24 @@ def _extract_equipment_tag(text: str) -> str | None:
     """Extract equipment tag from free text using common industrial patterns."""
     match = re.search(r'\b([A-Z]{1,5}(?:-[A-Z0-9]{1,6}){1,5})\b', text)
     return match.group(1) if match else None
+
+
+PHOTO_DIR = Path(os.environ.get("CAPTURE_PHOTO_DIR", "data/capture_photos"))
+
+
+def _save_capture_photo(image_data: str, capture_id: str) -> str | None:
+    """Save a base64 data-URL image to disk. Returns the relative URL path."""
+    parsed = _parse_data_url(image_data)
+    if not parsed:
+        return None
+    image_bytes, mime_type = parsed
+    ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}.get(mime_type, "jpg")
+    filename = f"{capture_id}.{ext}"
+    PHOTO_DIR.mkdir(parents=True, exist_ok=True)
+    filepath = PHOTO_DIR / filename
+    filepath.write_bytes(image_bytes)
+    logger.info("Saved capture photo: %s (%d bytes)", filepath, len(image_bytes))
+    return f"/api/v1/capture/photos/{filename}"
 
 
 def _parse_data_url(data_url: str) -> tuple[bytes, str] | None:
@@ -146,9 +166,13 @@ def process_capture(db: Session, data: dict) -> dict:
     capture_type = data.get("capture_type", "TEXT")
     image_data = data.get("image_data")  # base64 data-URL from camera
 
-    # ── Step 1: Analyze image with Claude Vision if present ──
+    # ── Step 1: Save photo + analyze with Claude Vision if present ──
     image_analysis_result = None
+    saved_photos = []
     if image_data and capture_type == "IMAGE":
+        photo_url = _save_capture_photo(image_data, capture_id)
+        if photo_url:
+            saved_photos.append(photo_url)
         image_analysis_result = _run_image_analysis(image_data, context_hint=equip_manual)
 
     # Persist raw capture
@@ -159,7 +183,7 @@ def process_capture(db: Session, data: dict) -> dict:
         language=data.get("language", "en"),
         raw_text=raw_text,
         raw_voice_text=data.get("raw_voice_text"),
-        images=None,
+        images=saved_photos or None,
         equipment_tag_manual=equip_manual,
         location_hint=data.get("location_hint"),
         created_at=datetime.now(),

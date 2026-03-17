@@ -40,10 +40,19 @@ router = APIRouter(prefix="/work-requests", tags=["work-requests"], dependencies
 
 @router.get("/")
 def list_work_requests(status: str | None = None, limit: int = 200, offset: int = 0, db: Session = Depends(get_db)):
+    from api.database.models import FieldCaptureModel
     items = work_request_service.list_work_requests(db, status, limit=limit, offset=offset)
+    # Batch-load photos from linked captures
+    capture_ids = [wr.source_capture_id for wr in items if wr.source_capture_id]
+    captures_map = {}
+    if capture_ids:
+        captures = db.query(FieldCaptureModel).filter(FieldCaptureModel.capture_id.in_(capture_ids)).all()
+        captures_map = {c.capture_id: c.images or [] for c in captures}
+
     results = []
     for wr in items:
         ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+        photos = captures_map.get(wr.source_capture_id, [])
         results.append({
             "request_id": wr.request_id,
             "status": wr.status,
@@ -58,6 +67,7 @@ def list_work_requests(status: str | None = None, limit: int = 200, offset: int 
             "problem_description": wr.problem_description,
             "ai_classification": wr.ai_classification,
             "spare_parts": wr.spare_parts,
+            "photos": photos,
             "created_by": ai.get("technician_id") or ai.get("source", ""),
             "created_at": wr.created_at.isoformat() if wr.created_at else None,
         })
@@ -66,9 +76,15 @@ def list_work_requests(status: str | None = None, limit: int = 200, offset: int 
 
 @router.get("/{request_id}")
 def get_work_request(request_id: str, db: Session = Depends(get_db)):
+    from api.database.models import FieldCaptureModel
     wr = work_request_service.get_work_request(db, request_id)
     if not wr:
         raise HTTPException(status_code=404, detail="Work request not found")
+    photos = []
+    if wr.source_capture_id:
+        cap = db.query(FieldCaptureModel).filter(FieldCaptureModel.capture_id == wr.source_capture_id).first()
+        if cap and cap.images:
+            photos = cap.images
     return {
         "request_id": wr.request_id,
         "source_capture_id": wr.source_capture_id,
@@ -81,6 +97,7 @@ def get_work_request(request_id: str, db: Session = Depends(get_db)):
         "spare_parts": wr.spare_parts,
         "image_analysis": wr.image_analysis,
         "validation": wr.validation,
+        "photos": photos,
         "created_at": wr.created_at.isoformat() if wr.created_at else None,
     }
 

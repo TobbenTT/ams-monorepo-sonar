@@ -168,6 +168,7 @@ export default function FieldCapture() {
                 raw_text_input: rawText || (capturedImage ? 'Image observation' : undefined),
                 equipment_tag_manual: equipTag,
                 plant_id: plant,
+                image_data: capturedImage || undefined,
             });
             setResult(res);
             toast.success(t('capture.aiResults'));

@@ -1,6 +1,16 @@
-"""Capture service — processes field captures into structured work requests."""
+"""Capture service — processes field captures into structured work requests.
 
+Pipeline:
+  1. Persist raw capture
+  2. If image attached → Claude Vision (ImageAnalysisService)
+  3. Deterministic processor (FieldCaptureProcessor)
+  4. If low confidence → Claude LLM enhancement (LLMCaptureEnhancer)
+  5. Persist WorkRequest
+"""
+
+import base64
 import logging
+import re
 import uuid
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -20,15 +30,67 @@ except Exception as exc:
     logger.warning("Field capture processor not available: %s — using fallback", exc)
     _PROCESSOR_AVAILABLE = False
 
+# Try importing LLM enhancer (Claude for low-confidence captures)
+try:
+    from tools.processors.llm_capture_enhancer import LLMCaptureEnhancer, get_llm_enhancer
+    _LLM_ENHANCER_AVAILABLE = True
+except Exception as exc:
+    logger.warning("LLM capture enhancer not available: %s", exc)
+    _LLM_ENHANCER_AVAILABLE = False
+
+# Try importing image analyzer (Claude Vision)
+try:
+    from tools.processors.image_analyzer import ImageAnalysisService, get_image_analysis_service
+    _IMAGE_ANALYZER_AVAILABLE = True
+except Exception as exc:
+    logger.warning("Image analyzer not available: %s", exc)
+    _IMAGE_ANALYZER_AVAILABLE = False
+
 
 def _extract_equipment_tag(text: str) -> str | None:
-    """Extract equipment tag from free text using common industrial patterns.
-    Matches patterns like: P-1201A, BRY-SAG-ML-001, PP-210, CV-3301B, etc."""
-    import re
-    # Common patterns: letters-numbers, optionally with suffix letter
-    # e.g. P-1201A, CV-3301B, BRY-SAG-ML-001, PP-210, FN-4501
+    """Extract equipment tag from free text using common industrial patterns."""
     match = re.search(r'\b([A-Z]{1,5}(?:-[A-Z0-9]{1,6}){1,5})\b', text)
     return match.group(1) if match else None
+
+
+def _parse_data_url(data_url: str) -> tuple[bytes, str] | None:
+    """Parse a base64 data-URL into (bytes, mime_type). Returns None on failure."""
+    try:
+        # Format: data:image/jpeg;base64,/9j/4AAQ...
+        match = re.match(r'^data:(image/\w+);base64,(.+)$', data_url, re.DOTALL)
+        if not match:
+            return None
+        mime_type = match.group(1)
+        image_bytes = base64.b64decode(match.group(2))
+        return image_bytes, mime_type
+    except Exception:
+        return None
+
+
+def _run_image_analysis(image_data: str, context_hint: str | None = None) -> dict | None:
+    """Run Claude Vision on a base64 image. Returns ImageAnalysis dict or None."""
+    if not _IMAGE_ANALYZER_AVAILABLE:
+        logger.info("Image analyzer not available, skipping image analysis")
+        return None
+
+    parsed = _parse_data_url(image_data)
+    if not parsed:
+        logger.warning("Could not parse image data URL")
+        return None
+
+    image_bytes, mime_type = parsed
+    try:
+        service = get_image_analysis_service()
+        result = service.analyze(image_bytes, mime_type, context_hint=context_hint)
+        logger.info(
+            "Image analysis complete: component=%s, anomalies=%d, severity=%s",
+            result.component_identified, len(result.anomalies_detected),
+            result.severity_visual.value if result.severity_visual else "unknown",
+        )
+        return result
+    except Exception as exc:
+        logger.warning("Image analysis failed: %s", exc)
+        return None
 
 
 def _fallback_process(data: dict, capture_id: str) -> dict:
@@ -82,6 +144,12 @@ def process_capture(db: Session, data: dict) -> dict:
     raw_text = data.get("raw_text_input") or data.get("raw_voice_text") or ""
     equip_manual = data.get("equipment_tag_manual") or _extract_equipment_tag(raw_text)
     capture_type = data.get("capture_type", "TEXT")
+    image_data = data.get("image_data")  # base64 data-URL from camera
+
+    # ── Step 1: Analyze image with Claude Vision if present ──
+    image_analysis_result = None
+    if image_data and capture_type == "IMAGE":
+        image_analysis_result = _run_image_analysis(image_data, context_hint=equip_manual)
 
     # Persist raw capture
     capture_model = FieldCaptureModel(
@@ -99,7 +167,7 @@ def process_capture(db: Session, data: dict) -> dict:
     db.add(capture_model)
     log_action(db, "field_capture", capture_id, "CREATE")
 
-    # Try full processor; fall back to simple keyword engine
+    # ── Step 2: Deterministic processor ──
     if _PROCESSOR_AVAILABLE:
         try:
             capture_input = FieldCaptureInput(
@@ -158,6 +226,20 @@ def process_capture(db: Session, data: dict) -> dict:
             processor = FieldCaptureProcessor(equipment_registry)
             wr = processor.process(capture_input)
 
+            # ── Step 3: Attach image analysis from Claude Vision ──
+            if image_analysis_result:
+                wr = wr.model_copy(update={"image_analysis": image_analysis_result})
+
+            # ── Step 4: LLM Enhancement if low confidence ──
+            if _LLM_ENHANCER_AVAILABLE:
+                try:
+                    enhancer = get_llm_enhancer()
+                    if enhancer.needs_enhancement(wr):
+                        logger.info("Low confidence detected — triggering Claude LLM enhancement")
+                        wr = enhancer.enhance(capture_input, wr, image_analysis_result)
+                except Exception as exc:
+                    logger.warning("LLM enhancer skipped: %s", exc)
+
             wr_model = WorkRequestModel(
                 request_id=wr.request_id,
                 source_capture_id=capture_id,
@@ -201,6 +283,12 @@ def process_capture(db: Session, data: dict) -> dict:
                     }
                     for sp in wr.spare_parts_suggested
                 ],
+                "image_analysis": {
+                    "component_identified": wr.image_analysis.component_identified,
+                    "anomalies_detected": wr.image_analysis.anomalies_detected,
+                    "severity_visual": wr.image_analysis.severity_visual.value if wr.image_analysis.severity_visual else None,
+                } if wr.image_analysis else None,
+                "llm_enhanced": wr.equipment_identification.resolution_method.value == "LLM_ENHANCED",
             }
         except Exception as exc:
             logger.warning("Full processor failed: %s — using fallback", exc)

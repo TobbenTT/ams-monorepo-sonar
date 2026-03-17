@@ -79,6 +79,8 @@ class CaptureCreate(BaseModel):
     raw_text_input: str | None = None
     equipment_tag_manual: str | None = None
     location_hint: str | None = None
+    image_data: str | None = None  # base64 data-URL from camera capture
+    plant_id: str | None = None
 
 
 # ── Criticality ──────────────────────────────────────────────────────

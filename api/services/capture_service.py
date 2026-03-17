@@ -170,14 +170,18 @@ def process_capture(db: Session, data: dict) -> dict:
     # ── Step 2: Deterministic processor ──
     if _PROCESSOR_AVAILABLE:
         try:
+            # Use TEXT type for the deterministic processor even if image was
+            # attached — images are analyzed separately by Claude Vision.
+            # The FieldCaptureInput validator rejects IMAGE type with empty images list.
+            processor_type = CaptureType.TEXT if raw_text else CaptureType(capture_type)
             capture_input = FieldCaptureInput(
                 timestamp=datetime.now(),
                 technician_id=data.get("technician_id", "UNKNOWN"),
                 technician_name=data.get("technician_name", "Unknown"),
-                capture_type=CaptureType(capture_type),
+                capture_type=processor_type,
                 language_detected=Language(data.get("language", "en")),
                 raw_voice_text=data.get("raw_voice_text"),
-                raw_text_input=raw_text,
+                raw_text_input=raw_text or "Image observation",
                 images=[],
                 equipment_tag_manual=equip_manual,
                 location_hint=data.get("location_hint"),

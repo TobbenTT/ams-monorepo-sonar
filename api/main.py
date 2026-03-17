@@ -138,6 +138,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics.router, prefix=prefix)
     app.include_router(admin.router, prefix=prefix)
     # Phase 3 — Modules 1-3
+    app.include_router(capture.photos_router, prefix=prefix)  # public (no auth) — serves photos for <img> tags
     app.include_router(capture.router, prefix=prefix)
     app.include_router(work_requests.router, prefix=prefix)
     app.include_router(planner.router, prefix=prefix)

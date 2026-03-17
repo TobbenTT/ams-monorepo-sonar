@@ -14,6 +14,24 @@ from api.services.capture_service import PHOTO_DIR
 
 router = APIRouter(prefix="/capture", tags=["capture"], dependencies=[Depends(get_current_user)])
 
+# Public router for serving photos (no auth — used by <img> tags)
+photos_router = APIRouter(prefix="/capture", tags=["capture"])
+
+
+@photos_router.get("/photos/{filename}")
+def get_capture_photo(filename: str):
+    """Serve a saved capture photo (public — no auth required)."""
+    safe_name = Path(filename).name
+    filepath = PHOTO_DIR / safe_name
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="Photo not found")
+    media_type = "image/jpeg"
+    if safe_name.endswith(".png"):
+        media_type = "image/png"
+    elif safe_name.endswith(".webp"):
+        media_type = "image/webp"
+    return FileResponse(filepath, media_type=media_type)
+
 
 @router.post("/")
 def submit_capture(data: CaptureCreate, db: Session = Depends(get_db)):
@@ -59,22 +77,6 @@ def delete_capture(capture_id: str, db: Session = Depends(get_db)):
     db.delete(c)
     db.commit()
     return {"deleted": capture_id}
-
-
-@router.get("/photos/{filename}")
-def get_capture_photo(filename: str):
-    """Serve a saved capture photo."""
-    # Sanitize filename to prevent path traversal
-    safe_name = Path(filename).name
-    filepath = PHOTO_DIR / safe_name
-    if not filepath.exists():
-        raise HTTPException(status_code=404, detail="Photo not found")
-    media_type = "image/jpeg"
-    if safe_name.endswith(".png"):
-        media_type = "image/png"
-    elif safe_name.endswith(".webp"):
-        media_type = "image/webp"
-    return FileResponse(filepath, media_type=media_type)
 
 
 @router.get("/{capture_id}")

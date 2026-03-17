@@ -76,12 +76,17 @@ def delete_work_request(db: Session, request_id: str) -> bool:
     db.query(PlannerRecommendationModel).filter(
         PlannerRecommendationModel.work_request_id == request_id
     ).delete()
-    # Also delete the source capture if it exists
-    if wr.source_capture_id:
-        db.query(FieldCaptureModel).filter(
-            FieldCaptureModel.capture_id == wr.source_capture_id
-        ).delete()
+    # Save capture id before clearing the FK (to avoid constraint conflict)
+    capture_id = wr.source_capture_id
+    if capture_id:
+        wr.source_capture_id = None
+        db.flush()
     db.delete(wr)
+    # Now safe to delete the orphaned capture
+    if capture_id:
+        db.query(FieldCaptureModel).filter(
+            FieldCaptureModel.capture_id == capture_id
+        ).delete()
     db.commit()
     return True
 

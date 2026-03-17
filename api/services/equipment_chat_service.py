@@ -50,7 +50,7 @@ def _gather_equipment_context(db: Session, equipment_tag: str) -> dict:
         # 2. Criticality
         crit = db.query(CriticalityAssessmentModel).filter(
             CriticalityAssessmentModel.node_id == node.node_id
-        ).order_by(CriticalityAssessmentModel.created_at.desc()).first()
+        ).order_by(CriticalityAssessmentModel.assessed_at.desc()).first()
         if crit:
             context["criticality"] = {
                 "risk_class": crit.risk_class,

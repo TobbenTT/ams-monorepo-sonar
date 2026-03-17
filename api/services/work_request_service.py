@@ -61,12 +61,21 @@ def validate_work_request(
 
 
 def delete_work_request(db: Session, request_id: str) -> bool:
-    """Delete a work request and its linked field capture permanently."""
-    from api.database.models import FieldCaptureModel
+    """Delete a work request and all linked records permanently."""
+    from api.database.models import (
+        FieldCaptureModel, BacklogItemModel, PlannerRecommendationModel,
+    )
     wr = get_work_request(db, request_id)
     if not wr:
         return False
     log_action(db, "work_request", request_id, "DELETE")
+    # Delete child records that have FK to work_requests
+    db.query(BacklogItemModel).filter(
+        BacklogItemModel.work_request_id == request_id
+    ).delete()
+    db.query(PlannerRecommendationModel).filter(
+        PlannerRecommendationModel.work_request_id == request_id
+    ).delete()
     # Also delete the source capture if it exists
     if wr.source_capture_id:
         db.query(FieldCaptureModel).filter(

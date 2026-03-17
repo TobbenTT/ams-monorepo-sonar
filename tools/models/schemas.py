@@ -89,6 +89,7 @@ class ResolutionMethod(str, Enum):
     FUZZY_MATCH = "FUZZY_MATCH"
     IMAGE_OCR = "IMAGE_OCR"
     MANUAL = "MANUAL"
+    LLM_ENHANCED = "LLM_ENHANCED"
 
 
 class AvailabilityStatus(str, Enum):

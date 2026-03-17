@@ -208,8 +208,12 @@ class LLMCaptureEnhancer:
         return response.content[0].text.strip()
 
     def _parse_json(self, raw: str) -> dict:
-        """Parse Claude's JSON response."""
+        """Parse Claude's JSON response, extracting first valid JSON object."""
         cleaned = re.sub(r"```(?:json)?\s*|\s*```", "", raw).strip()
+        # Find the first { ... } block (Claude sometimes adds text after JSON)
+        match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', cleaned, re.DOTALL)
+        if match:
+            return json.loads(match.group(0))
         return json.loads(cleaned)
 
     def _apply_improvements(

@@ -10,8 +10,26 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { LoadingSpinner } from './components/Shared';
 import './styles/index.css';
 
-const Login = lazy(() => import('./pages/Login'));
+// ── New Design Pages ──────────────────────────────────────────
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const WorkOrdersPage = lazy(() => import('./pages/WorkOrdersPage'));
+const FailuresEvents = lazy(() => import('./pages/FailuresEvents'));
+const ImprovementActionsPage = lazy(() => import('./pages/ImprovementActionsPage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const TeamPage = lazy(() => import('./pages/TeamPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+
+// ── Existing Pages (secondary routes) ─────────────────────────
+const Login = lazy(() => import('./pages/Login'));
+const HomeRouter = lazy(() => import('./pages/HomeRouter'));
+const MobileHome = lazy(() => import('./pages/mobile/MobileHome'));
+const MobileCreateWR = lazy(() => import('./pages/mobile/MobileCreateWR'));
+const MobileWorkRequests = lazy(() => import('./pages/mobile/MobileWorkRequests'));
+const MobileTaskExecution = lazy(() => import('./pages/mobile/MobileTaskExecution'));
+const MobileDashboard = lazy(() => import('./pages/mobile/MobileDashboard'));
+const MobileWorkOrders = lazy(() => import('./pages/mobile/MobileWorkOrders'));
+const MobileWRDetail = lazy(() => import('./pages/mobile/MobileWRDetail'));
 const Hierarchy = lazy(() => import('./pages/Hierarchy'));
 const Criticality = lazy(() => import('./pages/Criticality'));
 const FMEA = lazy(() => import('./pages/FMEA'));
@@ -25,11 +43,8 @@ const Planner = lazy(() => import('./pages/Planner'));
 const Planning = lazy(() => import('./pages/Planning'));
 const FieldCapture = lazy(() => import('./pages/FieldCapture'));
 const Reliability = lazy(() => import('./pages/Reliability'));
-const Analytics = lazy(() => import('./pages/Analytics'));
-const ExecutiveDashboard = lazy(() => import('./pages/ExecutiveDashboard'));
 const RCA = lazy(() => import('./pages/RCA'));
 const DefectElimination = lazy(() => import('./pages/DefectElimination'));
-const Reports = lazy(() => import('./pages/Reports'));
 const SAPReview = lazy(() => import('./pages/SAPReview'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AIAgents = lazy(() => import('./pages/AIAgents'));
@@ -65,7 +80,25 @@ createRoot(document.getElementById('root')).render(
                                 <Route path="login" element={<S><Login /></S>} />
 
                                 <Route element={<P roles={ALL}><App /></P>}>
+                                    {/* ── New Design Routes (primary navigation) ── */}
                                     <Route index element={<S><Dashboard /></S>} />
+                                    <Route path="work-orders" element={<S><WorkOrdersPage /></S>} />
+                                    <Route path="failures-events" element={<S><FailuresEvents /></S>} />
+                                    <Route path="improvement-actions" element={<S><ImprovementActionsPage /></S>} />
+                                    <Route path="analytics" element={<S><AnalyticsPage /></S>} />
+                                    <Route path="reports" element={<S><ReportsPage /></S>} />
+                                    <Route path="team" element={<S><TeamPage /></S>} />
+                                    <Route path="settings" element={<S><SettingsPage /></S>} />
+
+                                    {/* ── Mobile routes ── */}
+                                    <Route path="m/tareas" element={<S><MobileWorkOrders /></S>} />
+                                    <Route path="m/crear-wr" element={<S><MobileCreateWR /></S>} />
+                                    <Route path="m/avisos" element={<S><MobileWorkRequests /></S>} />
+                                    <Route path="m/wr/:id" element={<S><MobileWRDetail /></S>} />
+                                    <Route path="m/tarea/:id" element={<S><MobileTaskExecution /></S>} />
+                                    <Route path="m/dashboard" element={<S><MobileDashboard /></S>} />
+
+                                    {/* ── Existing operational routes (accessible via search/URL) ── */}
                                     <Route path="field-capture" element={<P roles={FIELD}><S><FieldCapture /></S></P>} />
                                     <Route path="work-requests" element={<S><WorkRequests /></S>} />
                                     <Route path="work-packages" element={<P roles={PLAN}><S><WorkPackages /></S></P>} />
@@ -81,9 +114,6 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="reliability" element={<P roles={ENGR}><S><Reliability /></S></P>} />
                                     <Route path="rca" element={<P roles={ENGR}><S><RCA /></S></P>} />
                                     <Route path="defect-elimination" element={<P roles={ENGR}><S><DefectElimination /></S></P>} />
-                                    <Route path="analytics" element={<P roles={MGMT}><S><Analytics /></S></P>} />
-                                    <Route path="executive" element={<P roles={MGMT}><S><ExecutiveDashboard /></S></P>} />
-                                    <Route path="reports" element={<P roles={MGMT}><S><Reports /></S></P>} />
                                     <Route path="sap-review" element={<P roles={MGMT}><S><SAPReview /></S></P>} />
                                     <Route path="financial" element={<P roles={MGMT}><S><Financial /></S></P>} />
                                     <Route path="troubleshooting" element={<P roles={ALL}><S><Troubleshooting /></S></P>} />

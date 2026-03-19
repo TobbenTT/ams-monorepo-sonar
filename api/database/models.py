@@ -463,9 +463,20 @@ class WorkRequestModel(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
     synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     modified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)
+    # Jorge Work Management: priority, SLA, approval flow
+    priority_code: Mapped[str] = mapped_column(String(5), default="P3")  # P1,P2,P3,P4
+    work_class: Mapped[str] = mapped_column(String(20), default="PROGRAMADO")  # PROGRAMADO, NO_PROGRAMADO
+    sla_deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    approver_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    approval_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         Index("ix_work_requests_status", "status"),
+        Index("ix_work_requests_priority", "priority_code"),
+        Index("ix_work_requests_equipment", "equipment_tag"),
     )
 
 
@@ -1180,4 +1191,53 @@ class ORDeliverableModel(Base):
     __table_args__ = (
         Index("ix_or_deliverables_project", "project_id"),
         Index("ix_or_deliverables_agent", "agent_type"),
+    )
+
+
+# ── Improvement Actions ──────────────────────────────────────────────
+
+class ImprovementActionModel(Base):
+    """Tracked improvement actions from RCA, deviations, or manual creation."""
+    __tablename__ = "improvement_actions"
+
+    action_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    title: Mapped[str] = mapped_column(String(300))
+    description: Mapped[str] = mapped_column(Text, default="")
+    plant_id: Mapped[str] = mapped_column(String(50), default="")
+    equipment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    equipment_tag: Mapped[str] = mapped_column(String(100), default="")
+
+    # Source tracking
+    source_type: Mapped[str] = mapped_column(String(30), default="MANUAL")  # MANUAL, RCA, DEVIATION, WORK_REQUEST, CAPA
+    source_ref: Mapped[str | None] = mapped_column(String(100), nullable=True)  # e.g. RCA-xxx, WR-xxx
+
+    # Classification
+    action_type: Mapped[str] = mapped_column(String(30), default="CORRECTIVE")  # CORRECTIVE, PREVENTIVE, IMPROVEMENT
+    priority: Mapped[str] = mapped_column(String(10), default="MEDIUM")  # LOW, MEDIUM, HIGH, CRITICAL
+    category: Mapped[str] = mapped_column(String(50), default="")  # Planning, Spare Parts, Procedures, Training, etc.
+
+    # Assignment
+    assigned_to: Mapped[str] = mapped_column(String(100), default="")
+    created_by: Mapped[str] = mapped_column(String(100), default="")
+
+    # Dates
+    target_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    # Status lifecycle: OPEN → IN_PROGRESS → COMPLETED → VERIFIED / CANCELLED
+    status: Mapped[str] = mapped_column(String(20), default="OPEN")
+
+    # AI flags
+    ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
+    ai_suggestion: Mapped[str] = mapped_column(Text, default="")
+
+    # Notes / evidence
+    notes: Mapped[str] = mapped_column(Text, default="")
+    resolution: Mapped[str] = mapped_column(Text, default="")
+
+    __table_args__ = (
+        Index("ix_improvement_actions_plant_status", "plant_id", "status"),
+        Index("ix_improvement_actions_assigned", "assigned_to"),
     )

@@ -44,8 +44,44 @@ def get_db():
 
 
 def create_all_tables():
-    """Create all tables in the database."""
-    Base.metadata.create_all(bind=engine)
+    """Create all tables in the database (safe for concurrent workers)."""
+    try:
+        Base.metadata.create_all(bind=engine, checkfirst=True)
+    except Exception:
+        # Another worker may have created tables concurrently — safe to ignore
+        pass
+    # Run lightweight ALTER TABLE migrations for new columns on existing tables
+    _run_column_migrations()
+
+
+def _run_column_migrations():
+    """Add missing columns to existing tables (SQLite ALTER TABLE)."""
+    from sqlalchemy import text, inspect
+    inspector = inspect(engine)
+
+    migrations = [
+        # (table, column, sql_type, default)
+        ("work_requests", "priority_code", "VARCHAR(5)", "'P3'"),
+        ("work_requests", "work_class", "VARCHAR(20)", "'PROGRAMADO'"),
+        ("work_requests", "sla_deadline", "DATETIME", None),
+        ("work_requests", "created_by", "VARCHAR(50)", None),
+        ("work_requests", "approver_id", "VARCHAR(50)", None),
+        ("work_requests", "approved_at", "DATETIME", None),
+        ("work_requests", "approval_comment", "TEXT", None),
+        ("work_requests", "rejection_reason", "TEXT", None),
+    ]
+
+    with engine.begin() as conn:
+        for table, column, col_type, default in migrations:
+            try:
+                existing = [c["name"] for c in inspector.get_columns(table)]
+                if column not in existing:
+                    default_clause = f" DEFAULT {default}" if default else ""
+                    conn.execute(text(
+                        f"ALTER TABLE {table} ADD COLUMN {column} {col_type}{default_clause}"
+                    ))
+            except Exception:
+                pass  # Column already exists or table doesn't exist yet
 
 
 def drop_all_tables():

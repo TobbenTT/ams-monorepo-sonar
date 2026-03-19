@@ -31,7 +31,7 @@ from api.routers import (
     auth, ai_agents,
     sync, troubleshooting, execution_checklists, deliverables,
     assignments, expert_knowledge, financial, workflow, media, imports,
-    or_projects,
+    or_projects, improvement_actions,
 )
 
 
@@ -90,6 +90,18 @@ async def lifespan(app: FastAPI):
             "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
         )
     create_all_tables()
+    # Auto-seed users if DB is empty (prevents losing creds on rebuild)
+    try:
+        from api.database.connection import SessionLocal
+        from api.database.models import UserModel
+        db = SessionLocal()
+        if db.query(UserModel).count() == 0:
+            logger.info("No users found — auto-seeding default users + demo data")
+            from api.seed import seed_all
+            seed_all(db)
+        db.close()
+    except Exception as e:
+        logger.warning("Auto-seed failed: %s", e)
     yield
 
 
@@ -177,6 +189,8 @@ def create_app() -> FastAPI:
     # G-18 / Phase B — Data Import Pipeline
     app.include_router(imports.router, prefix=prefix)
     app.include_router(or_projects.router, prefix=prefix)
+    # Improvement Actions
+    app.include_router(improvement_actions.router, prefix=prefix)
 
     # GAP-W03 — Serve Field PWA at /field/
     field_dist = Path("field_app/dist")

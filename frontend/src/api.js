@@ -156,6 +156,9 @@ export const deleteCapture = (id) => del(`/capture/${id}`);
 export const listWorkRequests = (p) => get('/work-requests/', p);
 export const getWorkRequest = (id) => get(`/work-requests/${id}`);
 export const validateWorkRequest = (id, d) => put(`/work-requests/${id}/validate`, d);
+export const approveWorkRequest = (id, d) => put(`/work-requests/${id}/approve`, d);
+export const rejectWorkRequest = (id, d) => put(`/work-requests/${id}/reject`, d);
+export const getEquipmentHistory = (tag, excludeId) => get(`/work-requests/equipment-history/${encodeURIComponent(tag)}`, { exclude_id: excludeId });
 export const checkDuplicates = (d) => post('/work-requests/check-duplicates', d);
 export const createWRFromHierarchy = (d) => post('/work-requests/from-hierarchy', d);
 export const deleteWorkRequest = (id) => del(`/work-requests/${id}`);
@@ -274,6 +277,8 @@ export const listDeliverables = (p) => get('/deliverables/', p);
 export const getDeliverable = (id) => get(`/deliverables/${id}`);
 
 // ── Assignments (GAP-W09) ──
+export const listTechnicians = (p) => get('/assignments/technicians', p);
+export const assignWorkRequest = (id, d) => put(`/work-requests/${id}/assign`, d);
 export const optimizeAssignments = (d) => post('/assignments/optimize', d);
 export const getAssignmentSummary = (p) => get('/assignments/summary', p);
 
@@ -297,3 +302,12 @@ export const updateORProject = (id, d) => put(`/or/projects/${id}`, d);
 export const advanceORGate = (id) => post(`/or/projects/${id}/advance-gate`);
 export const listORProjectDeliverables = (id) => get(`/or/projects/${id}/deliverables`);
 export const listORDeliverables = () => get('/or/deliverables');
+
+// ── Improvement Actions ──
+export const listImprovementActions = (p) => get('/improvement-actions/', p);
+export const getImprovementAction = (id) => get(`/improvement-actions/${id}`);
+export const createImprovementAction = (d) => post('/improvement-actions/', d);
+export const updateImprovementAction = (id, d) => put(`/improvement-actions/${id}`, d);
+export const deleteImprovementAction = (id) => del(`/improvement-actions/${id}`);
+export const getImprovementActionsSummary = (p) => get('/improvement-actions/summary', p);
+export const analyzeDeviations = (plantId) => post(`/improvement-actions/analyze-deviations?plant_id=${plantId || 'OCP-JFC1'}`);

@@ -327,6 +327,50 @@ def process_capture(db: Session, data: dict) -> dict:
     # Fallback path
     fb = _fallback_process(data, capture_id)
 
+    # Build structured problem_description from mobile form fields
+    problem_desc = {
+        "original_text": raw_text,
+        "structured_description": fb["structured_description"],
+        "failure_mode_detected": fb["failure_mode_detected"],
+    }
+    if data.get("suggested_action"):
+        problem_desc["suggested_action"] = data["suggested_action"]
+    if data.get("resources"):
+        problem_desc["resources"] = data["resources"]
+    if data.get("materials"):
+        problem_desc["materials"] = data["materials"]
+    if data.get("special_equipment"):
+        problem_desc["special_equipment"] = data["special_equipment"]
+    if data.get("failure_category"):
+        problem_desc["failure_catalog"] = {
+            "category": data.get("failure_category"),
+            "symptom": data.get("failure_symptom"),
+            "object_part": data.get("failure_object_part"),
+            "cause": data.get("failure_cause"),
+        }
+
+    # Build ai_classification with SAP PM priority & classification
+    form_priority = data.get("priority", "P3")
+    # SAP PM: Priority → Clase OT mapping
+    clase_ot_map = {"P1": "PM03", "P2": "PM03", "P3": "PM01", "P4": "PM01"}
+    clase_ot = clase_ot_map.get(form_priority, "PM01")
+
+    ai_class = {
+        "work_order_type": clase_ot,
+        "priority_suggested": form_priority,
+        "clase_ot": clase_ot,
+        "activity_class": data.get("activity_class", "CR"),
+        "estimated_duration_hours": float(data.get("estimated_duration") or fb["estimated_duration"]),
+        "required_specialties": ["MECHANICAL"],
+        "safety_flags": [],
+        "plant_id": data.get("plant_id", ""),
+        "technician_id": data.get("technician_id", ""),
+        "technician_name": data.get("technician_name", ""),
+        "plant_condition": data.get("plant_condition", ""),
+        "technical_location": data.get("technical_location", ""),
+        "technical_location_code": data.get("technical_location_code", ""),
+    }
+
     wr_model = WorkRequestModel(
         request_id=fb["request_id"],
         source_capture_id=capture_id,
@@ -335,8 +379,8 @@ def process_capture(db: Session, data: dict) -> dict:
         equipment_tag=fb["equipment_tag"],
         equipment_confidence=fb["equipment_confidence"],
         resolution_method="MANUAL",
-        problem_description={"original_text": raw_text, "structured_description": fb["structured_description"], "failure_mode_detected": fb["failure_mode_detected"]},
-        ai_classification={"work_order_type": fb["work_order_type"], "priority_suggested": fb["priority_suggested"], "estimated_duration_hours": fb["estimated_duration"], "required_specialties": ["MECHANICAL"], "safety_flags": []},
+        problem_description=problem_desc,
+        ai_classification=ai_class,
         spare_parts=[],
         image_analysis=None,
         validation={"planner_approved": False, "modifications": []},

@@ -28,10 +28,15 @@ def _db_worker_to_profile(w: WorkforceModel) -> TechnicianProfile:
         for c in w.competencies:
             competencies.append(TechnicianCompetency(**c))
 
+    try:
+        specialty = LabourSpecialty(w.specialty)
+    except ValueError:
+        specialty = LabourSpecialty.FITTER  # fallback for unmapped specialties
+
     return TechnicianProfile(
         worker_id=w.worker_id,
         name=w.name,
-        specialty=LabourSpecialty(w.specialty),
+        specialty=specialty,
         shift=w.shift,
         plant_id=w.plant_id,
         available=w.available,
@@ -58,7 +63,13 @@ def get_technician_profiles(
     if specialty:
         q = q.filter(WorkforceModel.specialty == specialty)
     workers = q.all()
-    return [_db_worker_to_profile(w).model_dump(mode="json") for w in workers]
+    result = []
+    for w in workers:
+        try:
+            result.append(_db_worker_to_profile(w).model_dump(mode="json"))
+        except Exception:
+            result.append({"worker_id": w.worker_id, "name": w.name, "specialty": w.specialty or "", "shift": w.shift or "", "available": w.available})
+    return result
 
 
 def optimize_assignments(

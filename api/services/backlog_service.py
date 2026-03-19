@@ -231,7 +231,8 @@ def _auto_create_work_package(db: Session, item: BacklogItemModel, wr: WorkReque
         return  # Cannot create WP without a hierarchy node
 
     ai = wr.ai_classification or {}
-    desc = wr.problem_description or "Maintenance task"
+    pd = wr.problem_description if isinstance(wr.problem_description, dict) else {}
+    desc = pd.get("original_text") or pd.get("structured_description") or (wr.problem_description if isinstance(wr.problem_description, str) else "Maintenance task")
     tag = item.equipment_tag or "EQUIPMENT"
     code = f"WP-{item.backlog_id[:8].upper()}"
 

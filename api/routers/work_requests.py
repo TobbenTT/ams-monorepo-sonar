@@ -27,6 +27,24 @@ class OCRClosureRequest(BaseModel):
     ocr_confidence: float = Field(default=0, ge=0, le=100)
 
 
+class WRApproveRequest(BaseModel):
+    comment: str = Field(min_length=1, description="Mandatory approval comment")
+    priority_override: str | None = None  # P1, P2, P3, P4
+
+
+class WRRejectRequest(BaseModel):
+    reason: str = Field(min_length=1, description="Mandatory rejection reason")
+
+
+class WRAssignWorker(BaseModel):
+    worker_id: str
+    worker_name: str = ""
+
+
+class WRAssignRequest(BaseModel):
+    workers: list[WRAssignWorker]
+
+
 class WRFromHierarchyRequest(BaseModel):
     equipment_tag: str
     equipment_name: str = ""
@@ -36,6 +54,13 @@ class WRFromHierarchyRequest(BaseModel):
 
 
 router = APIRouter(prefix="/work-requests", tags=["work-requests"], dependencies=[Depends(get_current_user)])
+
+
+@router.get("/equipment-history/{equipment_tag}")
+def get_equipment_history(equipment_tag: str, exclude_id: str | None = None, limit: int = 10, db: Session = Depends(get_db)):
+    """Get previous WRs for the same equipment — supervisor reviews history before approving."""
+    history = work_request_service.get_equipment_history(db, equipment_tag, exclude_id, limit)
+    return {"equipment_tag": equipment_tag, "count": len(history), "history": history}
 
 
 @router.get("/")
@@ -60,7 +85,12 @@ def list_work_requests(status: str | None = None, limit: int = 200, offset: int 
             "equipment_name": ai.get("equipment_name") or wr.equipment_tag,
             "equipment_confidence": wr.equipment_confidence,
             "plant_id": ai.get("plant_id", ""),
-            "priority": ai.get("priority_suggested") or ai.get("priority", "P3"),
+            "priority": wr.priority_code or ai.get("priority_suggested") or ai.get("priority", "P3"),
+            "priority_code": wr.priority_code,
+            "work_class": wr.work_class,
+            "sla_deadline": wr.sla_deadline.isoformat() if wr.sla_deadline else None,
+            "clase_ot": ai.get("clase_ot", ""),
+            "activity_class": ai.get("activity_class", ""),
             "failure_description": ai.get("failure_description", ""),
             "production_impact": ai.get("production_impact", ""),
             "estimated_duration": ai.get("estimated_duration_hours", 0),
@@ -68,7 +98,14 @@ def list_work_requests(status: str | None = None, limit: int = 200, offset: int 
             "ai_classification": wr.ai_classification,
             "spare_parts": wr.spare_parts,
             "photos": photos,
-            "created_by": ai.get("technician_id") or ai.get("source", ""),
+            "technician_name": ai.get("technician_name", ""),
+            "created_by": wr.created_by or ai.get("technician_id") or ai.get("source", ""),
+            "assigned_to": (wr.validation or {}).get("assigned_to", ""),
+            "assigned_to_name": (wr.validation or {}).get("assigned_to_name", ""),
+            "approval_comment": wr.approval_comment,
+            "rejection_reason": wr.rejection_reason,
+            "approver_id": wr.approver_id,
+            "approved_at": wr.approved_at.isoformat() if wr.approved_at else None,
             "created_at": wr.created_at.isoformat() if wr.created_at else None,
         })
     return results
@@ -85,6 +122,8 @@ def get_work_request(request_id: str, db: Session = Depends(get_db)):
         cap = db.query(FieldCaptureModel).filter(FieldCaptureModel.capture_id == wr.source_capture_id).first()
         if cap and cap.images:
             photos = cap.images
+    ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+    pd = wr.problem_description if isinstance(wr.problem_description, dict) else {}
     return {
         "request_id": wr.request_id,
         "source_capture_id": wr.source_capture_id,
@@ -92,12 +131,40 @@ def get_work_request(request_id: str, db: Session = Depends(get_db)):
         "equipment_id": wr.equipment_id,
         "equipment_tag": wr.equipment_tag,
         "equipment_confidence": wr.equipment_confidence,
+        "plant_id": ai.get("plant_id", ""),
+        "priority": ai.get("priority_suggested") or ai.get("priority", "P3"),
+        "clase_ot": ai.get("clase_ot", ""),
+        "activity_class": ai.get("activity_class", ""),
+        "technician_name": ai.get("technician_name", ""),
+        "technician_id": ai.get("technician_id", ""),
+        "plant_condition": ai.get("plant_condition", ""),
+        "technical_location": ai.get("technical_location", ""),
+        "technical_location_code": ai.get("technical_location_code", ""),
+        "estimated_duration": ai.get("estimated_duration_hours", 0),
+        "description": pd.get("original_text", ""),
+        "suggested_action": pd.get("suggested_action", ""),
+        "resources": pd.get("resources", []),
+        "materials": pd.get("materials", []),
+        "special_equipment": pd.get("special_equipment", ""),
+        "failure_catalog": pd.get("failure_catalog"),
         "problem_description": wr.problem_description,
         "ai_classification": wr.ai_classification,
         "spare_parts": wr.spare_parts,
         "image_analysis": wr.image_analysis,
         "validation": wr.validation,
+        "assigned_to": (wr.validation or {}).get("assigned_to", ""),
+        "assigned_to_name": (wr.validation or {}).get("assigned_to_name", ""),
+        "assigned_to_specialty": (wr.validation or {}).get("assigned_to_specialty", ""),
+        "assigned_workers": (wr.validation or {}).get("assigned_workers", []),
+        "assigned_at": (wr.validation or {}).get("assigned_at", ""),
         "photos": photos,
+        "priority_code": wr.priority_code,
+        "work_class": wr.work_class,
+        "sla_deadline": wr.sla_deadline.isoformat() if wr.sla_deadline else None,
+        "approval_comment": wr.approval_comment,
+        "rejection_reason": wr.rejection_reason,
+        "approver_id": wr.approver_id,
+        "approved_at": wr.approved_at.isoformat() if wr.approved_at else None,
         "created_at": wr.created_at.isoformat() if wr.created_at else None,
     }
 
@@ -110,6 +177,72 @@ def validate_work_request(request_id: str, data: WRValidateRequest, db: Session 
     if not result:
         raise HTTPException(status_code=404, detail="Work request not found")
     return result
+
+
+@router.put("/{request_id}/approve")
+def approve_work_request(request_id: str, data: WRApproveRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Supervisor approves a WR with mandatory comment (Jorge Work Management)."""
+    result = work_request_service.approve_work_request(
+        db, request_id, approver_id=user.get("user_id", ""), comment=data.comment,
+        priority_override=data.priority_override,
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Work request not found")
+    return result
+
+
+@router.put("/{request_id}/reject")
+def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Supervisor rejects a WR with mandatory reason (Jorge Work Management)."""
+    result = work_request_service.reject_work_request(
+        db, request_id, approver_id=user.get("user_id", ""), reason=data.reason,
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Work request not found")
+    return result
+
+
+@router.put("/{request_id}/assign")
+def assign_work_request(request_id: str, data: WRAssignRequest, db: Session = Depends(get_db)):
+    """Assign a validated WR to one or more technicians."""
+    from datetime import datetime
+    from api.database.models import WorkforceModel
+    from sqlalchemy.orm.attributes import flag_modified
+    wr = work_request_service.get_work_request(db, request_id)
+    if not wr:
+        raise HTTPException(status_code=404, detail="Work request not found")
+    if wr.status not in ("VALIDATED", "APPROVED", "ASSIGNED"):
+        raise HTTPException(status_code=400, detail=f"Cannot assign WR in status {wr.status}")
+    if not data.workers:
+        raise HTTPException(status_code=400, detail="At least one worker is required")
+    # Validate all workers exist and build the list
+    assigned_workers = []
+    for w in data.workers:
+        worker = db.query(WorkforceModel).filter(WorkforceModel.worker_id == w.worker_id).first()
+        if not worker:
+            raise HTTPException(status_code=404, detail=f"Technician {w.worker_id} not found")
+        assigned_workers.append({
+            "worker_id": worker.worker_id,
+            "name": worker.name,
+            "specialty": worker.specialty or "",
+        })
+    # Store in validation JSON (copy dict so SQLAlchemy detects change)
+    validation = dict(wr.validation) if isinstance(wr.validation, dict) else {}
+    validation["assigned_workers"] = assigned_workers
+    validation["assigned_at"] = datetime.now().isoformat()
+    # Keep backward compat with single-assign fields (first worker)
+    validation["assigned_to"] = assigned_workers[0]["worker_id"]
+    validation["assigned_to_name"] = assigned_workers[0]["name"]
+    validation["assigned_to_specialty"] = assigned_workers[0]["specialty"]
+    wr.validation = validation
+    wr.status = "ASSIGNED"
+    flag_modified(wr, "validation")
+    from api.services.audit_service import log_action
+    log_action(db, "work_request", request_id, "ASSIGN")
+    db.commit()
+    db.refresh(wr)
+    names = ", ".join(w["name"] for w in assigned_workers)
+    return {"ok": True, "status": wr.status, "assigned_workers": assigned_workers, "assigned_to": names}
 
 
 @router.delete("/{request_id}")

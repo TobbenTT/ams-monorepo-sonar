@@ -35,7 +35,7 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex bg-gradient-to-br from-[#1B5E20] via-[#2E7D32] to-[#388E3C]">
+        <div className="min-h-screen flex bg-gradient-to-br from-[#064e3b] via-[#047857] to-[#059669]">
             {/* Left Panel - Branding */}
             <div className="hidden lg:flex lg:w-[55%] flex-col justify-between p-12 text-white relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10">
@@ -102,7 +102,7 @@ export default function Login() {
                                     onClick={() => setLang(opt.code)}
                                     className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                                         lang === opt.code
-                                            ? 'bg-[#1B5E20] text-white shadow-sm'
+                                            ? 'bg-[#047857] text-white shadow-sm'
                                             : 'text-muted-foreground hover:text-foreground hover:bg-background'
                                     }`}
                                 >
@@ -115,7 +115,7 @@ export default function Login() {
 
                     {/* Mobile logo */}
                     <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-                        <div className="w-16 h-16 bg-[#1B5E20] rounded-xl flex items-center justify-center overflow-hidden">
+                        <div className="w-16 h-16 bg-[#047857] rounded-xl flex items-center justify-center overflow-hidden">
                             <img src="/OCP_LOGO.png" alt="OCP" className="w-14 h-14 object-contain" />
                         </div>
                         <div>
@@ -150,7 +150,7 @@ export default function Login() {
                                 required
                                 autoFocus
                                 autoComplete="username"
-                                className="w-full px-4 py-3 border border-border rounded-xl bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] transition-colors placeholder:text-muted-foreground"
+                                className="w-full px-4 py-3 border border-border rounded-xl bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#047857]/30 focus:border-[#047857] transition-colors placeholder:text-muted-foreground"
                             />
                         </div>
 
@@ -167,7 +167,7 @@ export default function Login() {
                                     placeholder="••••••••"
                                     required
                                     autoComplete="current-password"
-                                    className="w-full px-4 py-3 border border-border rounded-xl bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] transition-colors placeholder:text-muted-foreground pr-11"
+                                    className="w-full px-4 py-3 border border-border rounded-xl bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#047857]/30 focus:border-[#047857] transition-colors placeholder:text-muted-foreground pr-11"
                                 />
                                 <button
                                     type="button"
@@ -182,7 +182,7 @@ export default function Login() {
 
                         <button
                             type="submit"
-                            className="w-full py-3 px-4 bg-[#1B5E20] hover:bg-[#2E7D32] text-white font-semibold rounded-xl transition-colors text-sm shadow-lg shadow-[#1B5E20]/25 disabled:opacity-60"
+                            className="w-full py-3 px-4 bg-[#047857] hover:bg-[#059669] text-white font-semibold rounded-xl transition-colors text-sm shadow-lg shadow-[#047857]/25 disabled:opacity-60"
                             disabled={loading}
                         >
                             {loading ? t('auth.signingIn') : t('auth.signIn')}

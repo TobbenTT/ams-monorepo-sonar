@@ -81,6 +81,21 @@ class CaptureCreate(BaseModel):
     location_hint: str | None = None
     image_data: str | None = None  # base64 data-URL from camera capture
     plant_id: str | None = None
+    # Structured fields from mobile form
+    suggested_action: str | None = None
+    resources: list | None = None
+    estimated_duration: str | None = None
+    materials: list | None = None
+    special_equipment: str | None = None
+    plant_condition: str | None = None
+    priority: str | None = None
+    technical_location: str | None = None
+    technical_location_code: str | None = None
+    failure_category: str | None = None
+    failure_symptom: str | None = None
+    failure_object_part: str | None = None
+    failure_cause: str | None = None
+    activity_class: str | None = None  # SAP PM: CR, MC, MJ, IO, IP, PV, PD, CC, PP
 
 
 # ── Criticality ──────────────────────────────────────────────────────

@@ -150,6 +150,9 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
     return () => { cancelled = true; };
   }, [selectedPlant]);
 
+  // Filter work requests by time range (must be before early returns — React hook rules)
+  const filteredWRs = useMemo(() => filterByDateRange(workRequests, selectedTimeRange), [workRequests, selectedTimeRange]);
+
   // ── Loading state ──
   if (loading) {
     return (
@@ -179,9 +182,6 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
   const kpis = a.kpis || {};
   const woByType = a.work_orders_by_type || [];
   const reliabilityKpisRaw = a.reliability_kpis || [];
-
-  // Filter work requests by time range
-  const filteredWRs = useMemo(() => filterByDateRange(workRequests, selectedTimeRange), [workRequests, selectedTimeRange]);
 
   const totalWrs = filteredWRs.length;
   const lateNotifs = filteredWRs.filter(wr => wr.status === 'late' || wr.is_late).length;

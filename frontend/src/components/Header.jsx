@@ -100,8 +100,10 @@ export default function Header({
 
     const currentLang = LANG_OPTIONS.find(l => l.code === lang) || LANG_OPTIONS[0];
 
-    // Only show filters on dashboard
+    // Show plant/time/area filters on these pages
     const showFilters = loc.pathname === '/' || loc.pathname === '/work-orders' || loc.pathname === '/analytics' || loc.pathname === '/failures-events';
+    // View mode toggle only on Dashboard
+    const showViewToggle = loc.pathname === '/';
 
     return (
         <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex-shrink-0 sticky top-0 z-50">
@@ -255,8 +257,8 @@ export default function Header({
                 </div>
             )}
 
-            {/* View Mode Toggle */}
-            {showFilters && (
+            {/* View Mode Toggle — only on Dashboard */}
+            {showViewToggle && (
                 <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('header.analysisLevel')}</span>
                     <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 p-1">

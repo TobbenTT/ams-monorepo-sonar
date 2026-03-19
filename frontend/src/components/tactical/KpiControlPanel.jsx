@@ -19,7 +19,7 @@ function kpiStatus(value, target, lowerIsBetter = false) {
   return 'critical';
 }
 
-function KpiCard({ title, value, target, trend, status, unit = '', weeklyData, onClick }) {
+function KpiCard({ title, value, target, trend, status, unit = '', weeklyData, onClick, showWeekly }) {
   const statusColors = {
     good: 'border-green-500 bg-green-50',
     warning: 'border-yellow-500 bg-yellow-50',
@@ -74,27 +74,42 @@ function KpiCard({ title, value, target, trend, status, unit = '', weeklyData, o
           <span className="font-medium">Target:</span> {target}{unit}
         </div>
 
-        {weeklyData && weeklyData.length > 0 && (
-          <div className="pt-2 border-t border-gray-200">
-            <ResponsiveContainer width="100%" height={60}>
-              <LineChart data={weeklyData}>
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={status === 'good' ? '#10b981' : status === 'warning' ? '#eab308' : '#ef4444'}
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <ReferenceLine
-                  y={typeof target === 'number' ? target : 0}
-                  stroke="#94a3b8"
-                  strokeDasharray="3 3"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            <p className="text-xs text-gray-500 mt-1 text-center">Last 12 weeks trend</p>
-          </div>
-        )}
+        {(() => {
+          const hasData = weeklyData && weeklyData.length > 0;
+          // In weekly mode, generate synthetic trend data if none exists
+          const chartData = hasData ? weeklyData : (showWeekly && typeof value === 'number' ? Array.from({ length: 8 }, (_, i) => ({
+            week: `W${i + 1}`,
+            value: Math.max(0, value * (0.85 + Math.random() * 0.3)),
+          })) : null);
+
+          if (!chartData || (!showWeekly && !hasData)) return null;
+
+          return (
+            <div className="pt-2 border-t border-gray-200">
+              <ResponsiveContainer width="100%" height={showWeekly ? 100 : 60}>
+                <LineChart data={chartData}>
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke={status === 'good' ? '#10b981' : status === 'warning' ? '#eab308' : '#ef4444'}
+                    strokeWidth={2}
+                    dot={showWeekly}
+                  />
+                  <ReferenceLine
+                    y={typeof target === 'number' ? target : 0}
+                    stroke="#94a3b8"
+                    strokeDasharray="3 3"
+                  />
+                  {showWeekly && <XAxis dataKey="week" tick={{ fontSize: 10 }} />}
+                  {showWeekly && <Tooltip />}
+                </LineChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-gray-500 mt-1 text-center">
+                {hasData ? 'Last 12 weeks trend' : 'Weekly simulated trend'}
+              </p>
+            </div>
+          );
+        })()}
 
         <Button
           variant="ghost"
@@ -358,15 +373,73 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
     },
   ];
 
-  // Summary badges
+  // Apply filter
+  const filterKpis = (kpis) =>
+    selectedFilter === 'critical' ? kpis.filter(k => k.status === 'critical' || k.status === 'warning') : kpis;
+
+  const filteredOpDiscipline = filterKpis(operationalDisciplineKpis);
+  const filteredPlanning = filterKpis(planningKpis);
+  const filteredReliability = filterKpis(reliabilityKpis);
+  const filteredExecution = filterKpis(executionKpis);
+
+  const showWeekly = viewMode === 'weekly';
+
+  // Summary badges (always from unfiltered)
   const allKpis = [...operationalDisciplineKpis, ...planningKpis, ...reliabilityKpis, ...executionKpis];
   const criticalCount = allKpis.filter(k => k.status === 'critical').length;
   const watchCount = allKpis.filter(k => k.status === 'warning').length;
   const goodCount = allKpis.filter(k => k.status === 'good').length;
 
+  const sections = [
+    {
+      key: 'opDiscipline',
+      title: '1. Operational Discipline',
+      subtitle: 'Core execution metrics - highest priority',
+      icon: <AlertCircle className="w-5 h-5 text-white" />,
+      iconBg: 'bg-emerald-600',
+      sectionBg: 'p-6 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-lg border-2 border-emerald-200',
+      badge: <Badge className="bg-emerald-600 text-white text-sm px-3 py-1">PRIORITY</Badge>,
+      titleColor: 'text-emerald-900',
+      subtitleColor: 'text-emerald-700',
+      kpis: filteredOpDiscipline,
+      cols: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+      getClickWrs: () => filteredWRs.filter(wr => wr.status === 'late' || wr.is_late || wr.status === 'overdue' || wr.is_overdue),
+    },
+    {
+      key: 'planning',
+      title: '2. Planning & Scheduling',
+      subtitle: 'Operational planning metrics (financial excluded)',
+      icon: <TrendingUp className="w-5 h-5 text-blue-600" />,
+      iconBg: 'bg-blue-100',
+      kpis: filteredPlanning,
+      cols: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+      getClickWrs: () => [],
+    },
+    {
+      key: 'reliability',
+      title: '3. Reliability Metrics',
+      subtitle: 'Simplified view - critical equipment focus',
+      icon: <CheckCircle className="w-5 h-5 text-purple-600" />,
+      iconBg: 'bg-purple-100',
+      kpis: filteredReliability,
+      cols: 'grid-cols-1 md:grid-cols-3',
+      getClickWrs: () => [],
+    },
+    {
+      key: 'execution',
+      title: '4. Execution Metrics',
+      subtitle: 'Supervisor role - impact on execution and deviations',
+      icon: <AlertCircle className="w-5 h-5 text-orange-600" />,
+      iconBg: 'bg-orange-100',
+      kpis: filteredExecution,
+      cols: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5',
+      getClickWrs: () => filteredWRs,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Filter Controls - More Compact */}
+      {/* Filter Controls */}
       <Card className="p-4 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -430,98 +503,45 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
       </Card>
 
       <Card className="p-6 bg-white shadow-sm">
-        {/* 1. OPERATIONAL DISCIPLINE - HIGHEST PRIORITY */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-lg border-2 border-emerald-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-600 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-white" />
+        {sections.map((section, sIdx) => {
+          if (section.kpis.length === 0) return null;
+          return (
+            <div key={section.key} className={sIdx < sections.length - 1 ? 'mb-8' : ''}>
+              <div className={section.sectionBg || ''}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 ${section.iconBg} rounded-lg`}>
+                      {section.icon}
+                    </div>
+                    <div>
+                      <h4 className={`font-bold text-lg ${section.titleColor || 'text-gray-900'}`}>{section.title}</h4>
+                      <p className={`text-sm ${section.subtitleColor || 'text-gray-600'}`}>{section.subtitle}</p>
+                    </div>
+                  </div>
+                  {section.badge || null}
+                </div>
+                <div className={`grid ${section.cols} gap-4`}>
+                  {section.kpis.map((kpi, idx) => (
+                    <KpiCard
+                      key={idx}
+                      {...kpi}
+                      showWeekly={showWeekly}
+                      onClick={() => onKpiClick(section.key, kpi.title, section.getClickWrs())}
+                    />
+                  ))}
+                </div>
               </div>
-              <div>
-                <h4 className="font-bold text-emerald-900 text-lg">1. Operational Discipline</h4>
-                <p className="text-sm text-emerald-700">Core execution metrics - highest priority</p>
-              </div>
             </div>
-            <Badge className="bg-emerald-600 text-white text-sm px-3 py-1">
-              PRIORITY
-            </Badge>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {operationalDisciplineKpis.map((kpi, idx) => (
-              <KpiCard
-                key={idx}
-                {...kpi}
-                onClick={() => onKpiClick('operationalDiscipline', kpi.title, filteredWRs.filter(wr => wr.status === 'late' || wr.is_late || wr.status === 'overdue' || wr.is_overdue))}
-              />
-            ))}
-          </div>
-        </div>
+          );
+        })}
 
-        {/* 2. PLANNING - OPERATIONAL ONLY */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h4 className="font-bold text-gray-900">2. Planning & Scheduling</h4>
-              <p className="text-sm text-gray-600">Operational planning metrics (financial excluded)</p>
-            </div>
+        {selectedFilter === 'critical' && filteredOpDiscipline.length === 0 && filteredPlanning.length === 0 && filteredReliability.length === 0 && filteredExecution.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-400" />
+            <p className="text-lg font-medium text-green-700">All KPIs are on track</p>
+            <p className="text-sm mt-1">No critical or warning indicators detected</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {planningKpis.map((kpi, idx) => (
-              <KpiCard
-                key={idx}
-                {...kpi}
-                onClick={() => onKpiClick('planning', kpi.title, [])}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* 3. RELIABILITY - CRITICAL EQUIPMENT FOCUS */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <h4 className="font-bold text-gray-900">3. Reliability Metrics</h4>
-              <p className="text-sm text-gray-600">Simplified view - critical equipment focus</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {reliabilityKpis.map((kpi, idx) => (
-              <KpiCard
-                key={idx}
-                {...kpi}
-                onClick={() => onKpiClick('reliability', kpi.title, [])}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* 4. EXECUTION - SUPERVISOR FOCUS */}
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-orange-600" />
-            </div>
-            <div>
-              <h4 className="font-bold text-gray-900">4. Execution Metrics</h4>
-              <p className="text-sm text-gray-600">Supervisor role - impact on execution and deviations</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {executionKpis.map((kpi, idx) => (
-              <KpiCard
-                key={idx}
-                {...kpi}
-                onClick={() => onKpiClick('execution', kpi.title, filteredWRs)}
-              />
-            ))}
-          </div>
-        </div>
+        )}
       </Card>
     </div>
   );

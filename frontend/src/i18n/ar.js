@@ -102,16 +102,40 @@ export default {
         administration: 'الإدارة',
         myProfile: 'ملفي الشخصي',
         viewProfile: 'عرض الملف الشخصي',
+        workOrders: 'أوامر العمل',
+        failuresEvents: 'الأعطال والأحداث',
+        improvementActions: 'إجراءات التحسين',
+        team: 'الفريق',
+        settings: 'الإعدادات',
+        profile: 'الملف الشخصي',
+        brandTitle: 'صيانة OCP',
+        brandSubtitle: 'منصة الموثوقية',
     },
 
     // ─── Header ────────────────────────────────────────────
     header: {
         searchPlaceholder: 'بحث عن صفحة، معدة، وظيفة...',
+        searchModules: 'البحث في الوحدات...',
         selectPlant: 'اختر المصنع',
         lightMode: 'التبديل إلى الوضع الفاتح',
         darkMode: 'التبديل إلى الوضع الداكن',
         notifications: 'الإشعارات: {count} غير مقروءة',
         language: 'اللغة',
+        noResults: 'لا توجد نتائج',
+        analysisLevel: 'مستوى التحليل:',
+        executiveView: 'العرض التنفيذي',
+        tacticalView: 'عرض العمليات التكتيكية',
+        timeRange7: 'آخر 7 أيام',
+        timeRange30: 'آخر 30 يوماً',
+        timeRange90: 'آخر 90 يوماً',
+        timeRangeYTD: 'منذ بداية العام',
+        timeRangeLastYear: 'العام الماضي',
+        allAreas: 'جميع المناطق',
+        grinding: 'الطحن',
+        flotation: 'التعويم',
+        crushing: 'التكسير',
+        utilities: 'المرافق',
+        thickening: 'التكثيف',
     },
 
     // ─── Login ─────────────────────────────────────────────
@@ -163,6 +187,15 @@ export default {
         notifications: 'الإشعارات',
         connected: 'متصل',
         disconnected: 'غير متصل',
+    },
+
+    // ─── Tactical Operations ──────────────────────────────
+    tactical: {
+        addressDeviation: 'معالجة {type}: {description}',
+        preventRecurrence: 'منع تكرار مشكلة {type}',
+        rework: 'إعادة العمل',
+        delay: 'تأخير',
+        actionSaved: 'تم حفظ الإجراء:',
     },
 
     // ─── Field Capture ─────────────────────────────────────

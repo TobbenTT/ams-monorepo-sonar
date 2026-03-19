@@ -28,7 +28,7 @@ const AREA_I18N_KEYS = {
 };
 
 export default function AnalyticsPage() {
-  const { selectedPlant, selectedTimeRange, selectedArea } = useOutletContext();
+  const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
   const { t } = useLanguage();
   const plantId = selectedPlant?.plant_id || selectedPlant || 'OCP-JFC1';
   const [activeTab, setActiveTab] = useState('operational');
@@ -230,6 +230,9 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50">
+      {/* ═══ EXECUTIVE VIEW: KPIs + Condition Monitoring + Charts ═══ */}
+      {viewMode !== 'tactical' && (<>
+
       {/* TOP KPI ROW */}
       <div className="grid grid-cols-4 gap-6">
         {[
@@ -404,6 +407,11 @@ export default function AnalyticsPage() {
           </Card>
         </div>
       </div>
+
+      </>)}
+
+      {/* ═══ TACTICAL VIEW: Operational Discipline + Detailed Analysis ═══ */}
+      {viewMode === 'tactical' && (<>
 
       {/* OPERATIONAL DISCIPLINE SECTION */}
       <div className="pt-8 border-t-4 border-emerald-600">
@@ -622,6 +630,8 @@ export default function AnalyticsPage() {
           </div>
         )}
       </div>
+
+      </>)}
     </div>
   );
 }

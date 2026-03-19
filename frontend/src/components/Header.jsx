@@ -102,8 +102,8 @@ export default function Header({
 
     // Show plant/time/area filters on these pages
     const showFilters = loc.pathname === '/' || loc.pathname === '/work-orders' || loc.pathname === '/analytics' || loc.pathname === '/failures-events';
-    // View mode toggle only on Dashboard
-    const showViewToggle = loc.pathname === '/';
+    // View mode toggle on all pages that have filters
+    const showViewToggle = showFilters;
 
     return (
         <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex-shrink-0 sticky top-0 z-50">

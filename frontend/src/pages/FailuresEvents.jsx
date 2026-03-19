@@ -21,7 +21,7 @@ const AREA_PREFIXES = {
 
 export default function FailuresEvents() {
   const { t } = useLanguage();
-  const { selectedPlant, selectedTimeRange, selectedArea } = useOutletContext();
+  const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
   const plant = selectedPlant;
   const [planningGroup, setPlanningGroup] = useState('All');
   const [level2, setLevel2] = useState('All');
@@ -320,6 +320,9 @@ export default function FailuresEvents() {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50">
+      {/* ═══ EXECUTIVE VIEW: Summary Charts ═══ */}
+      {viewMode !== 'tactical' && (<>
+
       {/* Top Filters Bar */}
       <Card className="p-4 bg-white">
         <div className="flex items-center gap-4 flex-wrap">
@@ -529,6 +532,71 @@ export default function FailuresEvents() {
           </Card>
         </div>
       </div>
+
+      </>)}
+
+      {/* ═══ TACTICAL VIEW: Detailed Tables + AI Insights ═══ */}
+      {viewMode === 'tactical' && (<>
+
+      {/* Top Filters Bar (also in tactical) */}
+      <Card className="p-4 bg-white">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">{t('failuresEvents.planningGroupArea')}</span>
+            <Select value={planningGroup} onValueChange={setPlanningGroup}>
+              <SelectTrigger className={`w-48 ${planningGroup !== 'All' ? 'bg-emerald-50 border-emerald-300' : ''}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">{t('failuresEvents.allAreas')}</SelectItem>
+                <SelectItem value="Grinding">{t('failuresEvents.areas.grinding')}</SelectItem>
+                <SelectItem value="Crushing">{t('failuresEvents.areas.crushing')}</SelectItem>
+                <SelectItem value="Flotation">{t('failuresEvents.areas.flotation')}</SelectItem>
+                <SelectItem value="Relaves">{t('failuresEvents.areas.relaves')}</SelectItem>
+                <SelectItem value="Lixiviación">{t('failuresEvents.areas.lixiviacion')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">{t('failuresEvents.level2Label')}</span>
+            <Select value={level2} onValueChange={setLevel2}>
+              <SelectTrigger className={`w-40 ${level2 !== 'All' ? 'bg-blue-50 border-blue-300' : ''}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">{t('failuresEvents.all')}</SelectItem>
+                <SelectItem value="Mechanical">{t('failuresEvents.mechanical')}</SelectItem>
+                <SelectItem value="Electrical">{t('failuresEvents.electrical')}</SelectItem>
+                <SelectItem value="Instrumentation">{t('failuresEvents.instrumentation')}</SelectItem>
+                <SelectItem value="Lubrication">{t('failuresEvents.lubrication')}</SelectItem>
+                <SelectItem value="MonCon">{t('failuresEvents.moncon')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">{t('failuresEvents.specialtyLabel')}</span>
+            <Select value={specialty} onValueChange={setSpecialty}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">{t('failuresEvents.all')}</SelectItem>
+                <SelectItem value="Pumps">{t('failuresEvents.pumps')}</SelectItem>
+                <SelectItem value="Motors">{t('failuresEvents.motors')}</SelectItem>
+                <SelectItem value="Bearings">{t('failuresEvents.bearings')}</SelectItem>
+                <SelectItem value="Valves">{t('failuresEvents.valves')}</SelectItem>
+                <SelectItem value="Conveyors">{t('failuresEvents.conveyors')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {(planningGroup !== 'All' || level2 !== 'All' || specialty !== 'All') && (
+            <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-red-600"
+              onClick={() => { setPlanningGroup('All'); setLevel2('All'); setSpecialty('All'); }}>
+              {t('failuresEvents.clearFilters')} ({[planningGroup !== 'All', level2 !== 'All', specialty !== 'All'].filter(Boolean).length})
+            </Button>
+          )}
+        </div>
+      </Card>
 
       {/* Third Section: Critical Work Orders Table */}
       <Card className="p-6 bg-white">
@@ -1315,6 +1383,8 @@ export default function FailuresEvents() {
           )}
         </Card>
       </div>
+
+      </>)}
     </div>
   );
 }

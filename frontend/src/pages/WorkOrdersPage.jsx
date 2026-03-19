@@ -14,7 +14,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 export default function WorkOrdersPage() {
   const { t } = useLanguage();
-  const { selectedPlant, selectedTimeRange, selectedArea } = useOutletContext();
+  const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
   const plant = selectedPlant;
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
   const [workRequests, setWorkRequests] = useState([]);
@@ -343,12 +343,17 @@ export default function WorkOrdersPage() {
             <Download className="w-4 h-4" />
             {t('workOrders.export')}
           </Button>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4" />
-            {t('workOrders.createWorkOrder')}
-          </Button>
+          {viewMode === 'tactical' && (
+            <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4" />
+              {t('workOrders.createWorkOrder')}
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* ═══ EXECUTIVE VIEW: KPI Cards + Charts ═══ */}
+      {viewMode !== 'tactical' && (<>
 
       {/* Top Section: KPI Card + Main Chart */}
       <div className="grid grid-cols-12 gap-6">
@@ -527,6 +532,11 @@ export default function WorkOrdersPage() {
           </Card>
         </div>
       </div>
+
+      </>)}
+
+      {/* ═══ TACTICAL VIEW: Detailed Work Orders Table ═══ */}
+      {viewMode === 'tactical' && (<>
 
       {/* Bottom Section: Work Orders Table */}
       <Card className="p-6 bg-white">
@@ -922,6 +932,8 @@ export default function WorkOrdersPage() {
           </div>
         </div>
       )}
+
+      </>)}
     </div>
   );
 }

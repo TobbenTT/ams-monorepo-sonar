@@ -122,7 +122,7 @@ function MaintainerHome({ plant }) {
             {/* Rejected WRs */}
             {rejected.length > 0 && (
                 <div>
-                    <SectionHeader icon={XCircle} iconColor="#F59E0B" title={`WR Rechazadas (${rejected.length})`} />
+                    <SectionHeader icon={XCircle} iconColor="#F59E0B" title={`Avisos Rechazados (${rejected.length})`} />
                     <div className="space-y-3">
                         {rejected.map(wr => (
                             <WRRejectedCard key={wr.request_id || wr.id} wr={wr} onAction={() => navigate('/m/avisos')} />
@@ -269,7 +269,7 @@ function SupervisorHome({ plant }) {
                 >
                     <Timer className="w-6 h-6 flex-shrink-0" style={{ color: '#EF4444' }} />
                     <div className="flex-1 text-left">
-                        <div className="text-sm font-bold" style={{ color: '#991B1B' }}>{wrSlaExpired.length} WR con SLA vencido</div>
+                        <div className="text-sm font-bold" style={{ color: '#991B1B' }}>{wrSlaExpired.length} Avisos con SLA vencido</div>
                         <div className="text-xs" style={{ color: '#B91C1C' }}>Requieren atención inmediata</div>
                     </div>
                     <ChevronRight className="w-5 h-5" style={{ color: '#EF4444' }} />
@@ -281,7 +281,7 @@ function SupervisorHome({ plant }) {
                 <div>
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-sm font-bold" style={{ color: '#0F172A' }}>
-                            WR Pendientes de Aprobación ({pendingWRs.length})
+                            Avisos Pendientes de Aprobación ({pendingWRs.length})
                         </h2>
                         <button onClick={() => navigate('/m/avisos')} className="text-xs font-semibold" style={{ color: '#047857' }}>
                             Ver todos
@@ -437,7 +437,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                 <div className="sticky top-0 bg-white rounded-t-3xl border-b px-4 py-4 flex items-center justify-between z-10" style={{ borderColor: '#E2E8F0' }}>
                     <div>
                         <div className="text-sm font-bold" style={{ color: '#0F172A' }}>
-                            {isApprove ? 'Aprobar WR' : 'Rechazar WR'}
+                            {isApprove ? 'Aprobar Aviso' : 'Rechazar Aviso'}
                         </div>
                         <div className="text-xs" style={{ color: '#64748B' }}>{tag} — {(wr.request_id || '').slice(0, 10)}</div>
                     </div>
@@ -564,7 +564,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                     >
                         {submitting
                             ? 'Procesando...'
-                            : isApprove ? 'Aprobar Work Request' : 'Rechazar Work Request'
+                            : isApprove ? 'Aprobar Aviso' : 'Rechazar Aviso'
                         }
                     </button>
                 </div>

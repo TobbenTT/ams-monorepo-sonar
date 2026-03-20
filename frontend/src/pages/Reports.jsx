@@ -169,7 +169,7 @@ export default function Reports() {
                     rows: [
                         ['Plan Adherence', `${adh}%`, '≥90%', adh >= 90 ? 'OK' : 'Below Target'],
                         ['WO Completed', `${wos.filter(w => w.status === 'COMPLETED').length}/${wos.length}`, '≥80%', 'OK'],
-                        ['Pending WR', String(workRequests.filter(w => w.status === 'PENDING_VALIDATION' || w.status === 'DRAFT').length), '≤3', ''],
+                        ['Avisos Pendientes', String(workRequests.filter(w => w.status === 'PENDING_VALIDATION' || w.status === 'DRAFT').length), '≤3', ''],
                         ['Total Backlog', String(backlogItems.length), '≤8', ''],
                         ['Planned Hours', `${week.planned_hours ?? 0}h`, '', ''],
                         ['Executed Hours', `${week.executed_hours ?? 0}h`, '', ''],
@@ -181,13 +181,13 @@ export default function Reports() {
                     rows: wos.map(wo => [wo.id || wo.work_package_id, wo.equipment || wo.equipment_tag, wo.type || wo.wo_type, wo.description || '', `${wo.duration_planned ?? wo.estimated_hours ?? 0}h`, `${wo.duration_actual ?? 0}h`, wo.status, wo.priority, (wo.technicians || []).join(', ')]),
                 },
                 {
-                    name: 'Work Requests',
+                    name: 'Avisos',
                     headers: ['ID', 'Equipment', 'Failure Description', 'Failure Mode', 'Priority', 'Status', 'Plant', 'Area', 'Technician', 'Est. Duration', 'AI Confidence'],
                     rows: workRequests.map(wr => [wr.id || wr.request_id, wr.equipment_tag, wr.failure_description || '', wr.failure_mode || '', wr.priority_suggested || wr.priority || '', wr.status, wr.plant || wr.plant_id || '', wr.area || '', wr.technician || wr.created_by || '', `${wr.estimated_duration ?? ''}h`, `${wr.ai_confidence ?? ''}%`]),
                 },
                 {
                     name: 'Backlog',
-                    headers: ['ID', 'WR ID', 'Equipment', 'Reason', 'Age (days)', 'Est. Hours', 'Plant', 'Priority', 'Group ID'],
+                    headers: ['ID', 'Aviso ID', 'Equipment', 'Reason', 'Age (days)', 'Est. Hours', 'Plant', 'Priority', 'Group ID'],
                     rows: backlogItems.map(bl => [bl.id || bl.backlog_id, bl.wr_id || bl.work_request_id || '—', bl.equipment_tag, bl.reason, String(bl.age_days ?? ''), String(bl.estimated_hours ?? ''), bl.plant || bl.plant_id || '', bl.priority, bl.group_id || '—']),
                 },
             ];
@@ -215,14 +215,14 @@ export default function Reports() {
             let sheets = [];
             if (exp.titleKey === 'reports.workRequests') {
                 sheets = [{
-                    name: 'Work Requests',
+                    name: 'Avisos',
                     headers: ['ID', 'Equipment', 'Name', 'Failure Description', 'Failure Mode', 'Priority Requested', 'Priority Suggested', 'Status', 'Plant', 'Area', 'Technician', 'Est. Duration (h)', 'AI Confidence (%)', 'Production Impact', 'Created'],
                     rows: workRequests.map(wr => [wr.id || wr.request_id, wr.equipment_tag, wr.equipment_name || '', wr.failure_description || '', wr.failure_mode || '', wr.priority_requested || '', wr.priority_suggested || wr.priority || '', wr.status, wr.plant || wr.plant_id || '', wr.area || '', wr.technician || wr.created_by || '', wr.estimated_duration ?? '', wr.ai_confidence ?? '', wr.production_impact || '', wr.created_at || '']),
                 }];
             } else if (exp.titleKey === 'reports.backlogItems') {
                 sheets = [{
                     name: 'Backlog Items',
-                    headers: ['ID', 'WR ID', 'Equipment', 'Reason', 'Age (days)', 'Est. Hours', 'Plant', 'Priority', 'Groupable', 'Group ID'],
+                    headers: ['ID', 'Aviso ID', 'Equipment', 'Reason', 'Age (days)', 'Est. Hours', 'Plant', 'Priority', 'Groupable', 'Group ID'],
                     rows: backlogItems.map(bl => [bl.id || bl.backlog_id, bl.wr_id || bl.work_request_id || '—', bl.equipment_tag, bl.reason, bl.age_days ?? '', bl.estimated_hours ?? '', bl.plant || bl.plant_id || '', bl.priority, bl.groupable ? 'Yes' : 'No', bl.group_id || '—']),
                 }];
             } else if (exp.titleKey === 'reports.reliabilityKpis') {

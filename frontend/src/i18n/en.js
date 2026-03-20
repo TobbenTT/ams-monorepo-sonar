@@ -83,7 +83,7 @@ export default {
         analyticsReports: 'ANALYTICS & REPORTS',
         dashboard: 'Dashboard',
         fieldCapture: 'Field Capture',
-        workRequests: 'Work Requests',
+        workRequests: 'Work Notices',
         workPackages: 'Work Packages',
         backlogMgmt: 'Backlog Management',
         weeklyScheduling: 'Weekly Scheduling',
@@ -229,9 +229,9 @@ export default {
         estimatedDuration: 'Estimated Duration',
         safetyFlags: 'Safety Flags',
         confirmAndSubmit: 'Confirm & Submit',
-        wrGenerated: 'Work Request Generated',
-        wrId: 'Work Request ID',
-        goToWorkRequests: 'Go to Work Requests',
+        wrGenerated: 'Work Notice Generated',
+        wrId: 'Work Notice ID',
+        goToWorkRequests: 'Go to Work Notices',
         newCapture: 'New Capture',
         editField: 'Click to edit',
         noEquipmentFound: 'No equipment identified',
@@ -244,10 +244,10 @@ export default {
         },
     },
 
-    // ─── Work Requests ─────────────────────────────────────
+    // ─── Work Notices ──────────────────────────────────────
     workRequests: {
-        title: 'Work Requests',
-        subtitle: 'Review, validate and manage work requests from field captures',
+        title: 'Work Notices',
+        subtitle: 'Review, validate and manage work notices from field captures',
         myRequests: 'My Requests',
         teamRequests: 'Team',
         allRequests: 'All',
@@ -262,7 +262,7 @@ export default {
         scheduled: 'Scheduled',
         pendingValidation: 'pending validation',
         duplicateWarning: 'Similar open request found',
-        duplicateDetail: 'A similar work request ({id}) exists for this equipment. Review before submitting.',
+        duplicateDetail: 'A similar work notice ({id}) exists for this equipment. Review before submitting.',
         viewDuplicate: 'View Duplicate',
         proceedAnyway: 'Proceed Anyway',
         photos: 'Photos',
@@ -298,7 +298,7 @@ export default {
         generateWithAI: 'Generate with AI',
         improveHierarchy: 'Improve with AI',
         improveHierarchyDesc: 'AI will analyze the current hierarchy and suggest improvements before applying them.',
-        createWorkRequest: 'Create Work Request',
+        createWorkRequest: 'Create Work Notice',
         nodeType: 'Node type',
         parentNode: 'Parent node',
         nodeName: 'Name',
@@ -701,7 +701,7 @@ export default {
         duration: 'Estimated duration',
         specialties: 'Specialties',
         riskFactors: 'Risk factors',
-        wrNotFound: 'Work request not found',
+        wrNotFound: 'Work notice not found',
         checkId: 'Check the ID and try again.',
         welcomeMessage: 'Hello! I am the OCP AI Planning Assistant. I can help you prioritize the backlog, optimize the weekly program, identify grouping opportunities, and analyze failure trends. How can I help you?',
         responses: {
@@ -767,7 +767,7 @@ Would you like me to schedule this grouping for W09-2026?`,
 **Backlog Status:**
 - Total backlog: 10 items | 10 registered in system
 - Critical P1: 1 item (BL-005 — Compressor)
-- Pending validation: 2 work requests
+- Pending validation: 2 work notices
 
 **Program W09-2026:**
 - Planned hours: 280h
@@ -1018,7 +1018,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         safetyTrainingCompliance: 'Safety Training Compliance',
         hseTrend: 'HSE Trend (Last 6 Months)',
         hseTrendNoData: 'HSE trend data not yet available. Submit incident reports to populate this chart.',
-        totalWorkRequests: 'Total Work Requests',
+        totalWorkRequests: 'Total Work Notices',
         recentReports: 'Recent Reports',
         failureModesIdentified: 'Failure Modes Identified',
         fieldCompletion: 'Field Completion',
@@ -1067,7 +1067,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         previewWeeklySummary: 'Preview — Weekly Summary',
         planAdherence: 'Plan Adherence',
         woCompleted: 'WO Completed',
-        pendingWR: 'Pending WR',
+        pendingWR: 'Pending Notices',
         totalBacklog: 'Total Backlog',
         week: 'Week',
         completed: 'completed',
@@ -1081,7 +1081,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         summaryCompleted: 'were completed out of',
         summaryPlannedWO: 'planned work orders',
         summaryCompletionRate: 'completion rate',
-        summaryPendingWR: 'pending work requests',
+        summaryPendingWR: 'pending work notices',
         summaryAwaitingValidation: 'awaiting validation, of which',
         summaryP1Priority: 'are P1 priority',
         summaryActiveBacklog: 'The active backlog has',
@@ -1090,8 +1090,8 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         summaryGoodPerformance: 'Overall weekly performance is satisfactory.',
         summaryReviewDeviation: 'A review of deviation causes for next week is recommended.',
         dataExport: 'Data Export',
-        workRequests: 'Work Requests',
-        allWoAndRequests: 'All WOs and work requests',
+        workRequests: 'Work Notices',
+        allWoAndRequests: 'All WOs and work notices',
         backlogItems: 'Backlog Items',
         currentBacklogWithReasons: 'Current backlog with delay reasons',
         reliabilityKpis: 'Reliability KPIs',
@@ -1399,8 +1399,8 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         noWeeklyPrograms: 'No weekly programs',
         noWeeklyProgramsDesc: 'Create a scheduling program to see the Gantt view',
         aiPlannerTitle: 'AI Planner',
-        selectWorkRequest: 'Select Work Request',
-        selectWorkRequestPlaceholder: 'Select a work request...',
+        selectWorkRequest: 'Select Work Notice',
+        selectWorkRequestPlaceholder: 'Select a work notice...',
         generating: 'Generating...',
         generateAIRecommendation: 'Generate AI Recommendation',
         recommendation: 'Recommendation',
@@ -1414,7 +1414,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         groupableWith: 'Groupable with',
         justification: 'Justification',
         aiPlannerEmpty: 'AI Planner',
-        aiPlannerEmptyDesc: 'Select a work request and generate a recommendation',
+        aiPlannerEmptyDesc: 'Select a work notice and generate a recommendation',
         aiRecommendationGenerated: 'AI recommendation generated',
         recommendationFailed: 'Recommendation failed: ',
         colId: 'ID',
@@ -1524,8 +1524,8 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         workOrdersByTypePareto: 'Work Orders by Type (Pareto)',
         noData: 'No data',
         // WR breakdown
-        wrStatusBreakdown: 'Work Request Status Breakdown ({range})',
-        noWrsInPeriod: 'No work requests in selected period',
+        wrStatusBreakdown: 'Work Notice Status Breakdown ({range})',
+        noWrsInPeriod: 'No work notices in selected period',
         // Process area names
         areaCrushing: 'Crushing',
         areaGrinding: 'Grinding',
@@ -1544,9 +1544,9 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         send: 'Send',
         thinking: 'Analyzing equipment data...',
         noEquipment: 'Select an equipment to start chatting',
-        welcome: 'Hi! I\'m the maintenance assistant. Ask me about this equipment — I have access to its full history: work requests, criticality, FMEA, tasks, diagnostics, and more.',
+        welcome: 'Hi! I\'m the maintenance assistant. Ask me about this equipment — I have access to its full history: work notices, criticality, FMEA, tasks, diagnostics, and more.',
         contextLoaded: 'Equipment context loaded',
-        workRequests: 'work requests',
+        workRequests: 'work notices',
         tasks: 'maint. tasks',
         diagnostics: 'diagnostics',
         criticality: 'Criticality',
@@ -1558,7 +1558,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
             status: 'What is the current status of this equipment?',
             failures: 'What are the most frequent failure modes?',
             recommendations: 'What maintenance do you recommend?',
-            history: 'What work requests have been generated recently?',
+            history: 'What work notices have been generated recently?',
         },
     },
 
@@ -1749,8 +1749,8 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         },
         assignDialog: {
             title: 'Assign Work to {name}',
-            description: 'Select pending work requests to assign to this team member',
-            noPending: 'No pending work requests available',
+            description: 'Select pending work notices to assign to this team member',
+            noPending: 'No pending work notices available',
             noEquipment: 'No equipment',
             assign: 'Assign',
             errorAssigning: 'Error assigning: {message}',
@@ -1883,7 +1883,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         sourceManual: 'Manual',
         sourceRca: 'RCA',
         sourceDeviation: 'Deviation',
-        sourceWorkRequest: 'Work Request',
+        sourceWorkRequest: 'Work Notice',
         sourceCapa: 'CAPA',
 
         // Delete modal
@@ -1949,7 +1949,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         shiftHighPriority: 'Shift A (High Priority)',
         shiftStandard: 'Shift B (Standard)',
         // Create modal
-        createTitle: 'Create Work Request',
+        createTitle: 'Create Work Notice',
         createSubtitle: 'Full SAP PM form',
         whatHappens: 'What happened? *',
         whatHappensPlaceholder: 'Describe the problem, anomaly, or detected need...',
@@ -1962,7 +1962,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         suggestedActionPlaceholder: 'What should be done?',
         estimatedDuration: 'Estimated Duration',
         estimatedDurationPlaceholder: 'e.g.: 4 hours',
-        plantCondition: 'Plant Condition *',
+        plantCondition: 'Equipment Condition *',
         requiredResources: 'Required Resources *',
         addButton: '+ Add',
         resourceType: 'Type',
@@ -1981,7 +1981,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         selectPlaceholder: 'Select...',
         cancel: 'Cancel',
         creating: 'Creating...',
-        createWorkRequest: 'Create Work Request',
+        createWorkRequest: 'Create Work Notice',
         // Plant conditions
         plantOperating: 'Operating',
         plantStopped: 'Stopped',
@@ -2042,7 +2042,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         workOrdersStatusTitle: 'Work Orders Status:',
         allAreasUpper: 'ALL AREAS',
         ofTotal: 'of',
-        workRequests: 'work requests',
+        workRequests: 'work notices',
 
         // Charts section 1
         workOrdersStatusChart: 'Work Orders Status:',
@@ -2091,7 +2091,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         downtimeHours: 'Downtime (h)',
         estimatedDuration: 'Estimated Duration (h)',
         priorityHighest: 'Priority (1=highest)',
-        workRequestsScatter: 'Work Requests',
+        workRequestsScatter: 'Work Notices',
         highPriorityP1P2: 'High Priority (P1-P2)',
         lowPriority: 'Low Priority',
         highPriority: 'High Priority',
@@ -2146,7 +2146,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         // Top Recurring Failures
         topRecurringFailures: 'Top Recurring Failures - Action Required',
         occurrences: 'Occurrences:',
-        workRequestsCount: 'work requests',
+        workRequestsCount: 'work notices',
         critical: 'Critical',
         high: 'High',
         aiSelectedForRCA: 'AI Selected for RCA',
@@ -2158,12 +2158,12 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         // AI Overview
         aiOverview: 'AI Overview',
         areaAnalysis: 'area analysis.',
-        workRequestsAnalyzed: 'work requests analyzed',
+        workRequestsAnalyzed: 'work notices analyzed',
         equipmentsRecurring: 'equipment(s) with recurring failures detected.',
         topRecurring: 'Top recurring:',
         occurrencesCount: 'occurrences',
-        aiAnalysisBasedOnReal: 'AI analysis based on real work request data.',
-        noWorkRequestsForAI: 'No work requests data available for AI analysis.',
+        aiAnalysisBasedOnReal: 'AI analysis based on real work notice data.',
+        noWorkRequestsForAI: 'No work notices data available for AI analysis.',
 
         // Analisis Inteligente
         analisisInteligente: 'Intelligent Analysis of Notices (WR) & Orders (OT)',
@@ -2217,6 +2217,6 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         aiClassification: 'AI Classification',
         assignedTo: 'Assigned To',
         noEventsDataYet: 'No events data available yet',
-        eventsWillAppear: 'Events will appear here once work requests are created',
+        eventsWillAppear: 'Events will appear here once work notices are created',
     },
 };

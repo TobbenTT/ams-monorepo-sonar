@@ -73,8 +73,7 @@ function EquipmentReportModal({ equipment, t, onClose, reliabilityKpis = [] }) {
     { name: 'PM-03', value: woStats.PM03 || 1, color: '#f59e0b' },
   ];
 
-  const healthScore = rel ? Math.round(rel.availability * 0.3 + rel.oee * 0.3 + Math.min(rel.mtbf / 20, 100) * 0.4) : null;
-  const healthColor = healthScore >= 85 ? 'text-green-600 dark:text-green-400' : healthScore >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
+  // Health Score eliminado por decisión de Jorge (QUOTE 43/55: "eso lo eliminaría")
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -94,20 +93,6 @@ function EquipmentReportModal({ equipment, t, onClose, reliabilityKpis = [] }) {
         </div>
 
         <div className="p-5 space-y-5">
-          {/* Health Score */}
-          {healthScore !== null && (
-            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl border border-border">
-              <div className={`text-4xl font-black ${healthColor}`}>{healthScore}</div>
-              <div>
-                <div className="text-sm font-bold text-foreground">{t('executive.healthScore')}</div>
-                <div className="text-xs text-muted-foreground">{t('executive.healthScoreDesc')}</div>
-              </div>
-              <div className="ml-auto">
-                {trendBadge(rel?.trend || 'STABLE', t)}
-              </div>
-            </div>
-          )}
-
           {/* Reliability KPIs */}
           <div>
             <h4 className="text-xs font-bold text-[#1B5E20] dark:text-green-400 uppercase tracking-wider mb-3 flex items-center gap-2">

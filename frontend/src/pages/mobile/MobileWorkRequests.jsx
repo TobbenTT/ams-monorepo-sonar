@@ -168,7 +168,7 @@ export default function MobileWorkRequests() {
         <div className="min-h-screen pb-28" style={{ backgroundColor: '#F8FAFC' }}>
             {/* HEADER */}
             <div className="bg-white border-b p-4 sticky top-0 z-10" style={{ borderColor: '#E2E8F0' }}>
-                <h1 className="text-xl font-bold mb-1" style={{ color: '#0F172A' }}>Work Requests Dashboard</h1>
+                <h1 className="text-xl font-bold mb-1" style={{ color: '#0F172A' }}>Avisos de Trabajo</h1>
                 <p className="text-sm" style={{ color: '#64748B' }}>Estado y gestión de solicitudes de trabajo</p>
             </div>
 
@@ -179,7 +179,7 @@ export default function MobileWorkRequests() {
                         ESTADO DEL SISTEMA
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <MetricCard icon={FileText} color="#3B82F6" label="WR Creados" value={created}
+                        <MetricCard icon={FileText} color="#3B82F6" label="Avisos Creados" value={created}
                             onClick={() => { setSelectedStatus('created'); setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }} />
                         <MetricCard icon={Zap} color="#F59E0B" label="En Proceso" value={inProcess}
                             onClick={() => { setSelectedStatus('in_process'); setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }} />
@@ -227,7 +227,7 @@ export default function MobileWorkRequests() {
                     </div>
                     <div className="pt-3 border-t flex items-center justify-between" style={{ borderColor: '#E2E8F0' }}>
                         <span className="text-xs font-semibold" style={{ color: '#64748B' }}>Total en flujo</span>
-                        <span className="text-lg font-bold" style={{ color: '#047857' }}>{enriched.length} WR</span>
+                        <span className="text-lg font-bold" style={{ color: '#047857' }}>{enriched.length} Avisos</span>
                     </div>
                 </div>
 
@@ -242,7 +242,7 @@ export default function MobileWorkRequests() {
                             <ProblemCard
                                 icon={AlertTriangle} iconBg="#FEE2E2" iconColor="#EF4444"
                                 gradient="from-red-50 to-orange-50" border="#FCA5A5"
-                                title={`${delayedWRs.length} WR Atrasados`}
+                                title={`${delayedWRs.length} Avisos Atrasados`}
                                 subtitle="Requieren atención inmediata"
                                 titleColor="#991B1B" subtitleColor="#7C2D12"
                                 items={delayedWRs} badgeBg="#FEE2E2" badgeColor="#991B1B"
@@ -253,7 +253,7 @@ export default function MobileWorkRequests() {
                             <ProblemCard
                                 icon={Clock} iconBg="#FEF3C7" iconColor="#F97316"
                                 gradient="from-yellow-50 to-orange-50" border="#FDE68A"
-                                title={`${noProgressWRs.length} WR Sin Avance`}
+                                title={`${noProgressWRs.length} Avisos Sin Avance`}
                                 subtitle="No han tenido progreso en las últimas 48h"
                                 titleColor="#92400E" subtitleColor="#78350F"
                                 items={noProgressWRs} badgeBg="#FEF3C7" badgeColor="#92400E"
@@ -264,7 +264,7 @@ export default function MobileWorkRequests() {
                             <ProblemCard
                                 icon={Zap} iconBg="#FED7AA" iconColor="#F97316"
                                 gradient="from-orange-50 to-yellow-50" border="#FDBA74"
-                                title={`${atRiskWRs.length} WR de Alta Prioridad Sin Revisar`}
+                                title={`${atRiskWRs.length} Avisos de Alta Prioridad Sin Revisar`}
                                 subtitle="P1/P2 creados pero no aprobados aún"
                                 titleColor="#9A3412" subtitleColor="#7C2D12"
                                 items={atRiskWRs} badgeBg="#FED7AA" badgeColor="#9A3412"
@@ -288,7 +288,7 @@ export default function MobileWorkRequests() {
                                             </span>
                                             <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{pct}% de carga</span>
                                         </div>
-                                        <span className="text-sm font-bold" style={{ color: item.color }}>{item.count} WR</span>
+                                        <span className="text-sm font-bold" style={{ color: item.color }}>{item.count} Avisos</span>
                                     </div>
                                     <div className="h-2 rounded-full" style={{ backgroundColor: '#E2E8F0' }}>
                                         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: item.color }} />
@@ -319,7 +319,7 @@ export default function MobileWorkRequests() {
                                 <div className="flex-1">
                                     <div className="text-sm font-bold" style={{ color: '#991B1B' }}>Sistema en acumulación</div>
                                     <div className="text-xs" style={{ color: '#7C2D12' }}>
-                                        Se crean más WR de los que se resuelven (+{enriched.length - closedCount})
+                                        Se crean más avisos de los que se resuelven (+{enriched.length - closedCount})
                                     </div>
                                 </div>
                             </>
@@ -328,7 +328,7 @@ export default function MobileWorkRequests() {
                                 <TrendingDown className="w-5 h-5" style={{ color: '#10B981' }} />
                                 <div className="flex-1">
                                     <div className="text-sm font-bold" style={{ color: '#047857' }}>Sistema bajo control</div>
-                                    <div className="text-xs" style={{ color: '#064E3B' }}>Se resuelven más WR de los que se crean</div>
+                                    <div className="text-xs" style={{ color: '#064E3B' }}>Se resuelven más avisos de los que se crean</div>
                                 </div>
                             </>
                         )}
@@ -338,7 +338,7 @@ export default function MobileWorkRequests() {
                 {/* 6. LISTA OPERATIVA DE WR */}
                 <div ref={listRef}>
                     <div className="flex items-center justify-between mb-3">
-                        <div className="text-sm font-bold" style={{ color: '#0F172A' }}>Work Requests Activos</div>
+                        <div className="text-sm font-bold" style={{ color: '#0F172A' }}>Avisos Activos</div>
                         {selectedStatus !== 'all' && (
                             <button onClick={() => setSelectedStatus('all')} className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#047857' }}>
                                 Ver todos
@@ -348,7 +348,7 @@ export default function MobileWorkRequests() {
                     <div className="space-y-3">
                         {filteredWRs.length === 0 && (
                             <div className="bg-white rounded-2xl p-6 border text-center" style={{ borderColor: '#E2E8F0' }}>
-                                <div className="text-sm" style={{ color: '#94A3B8' }}>No hay work requests en este estado</div>
+                                <div className="text-sm" style={{ color: '#94A3B8' }}>No hay avisos en este estado</div>
                             </div>
                         )}
                         {filteredWRs.map(wr => {

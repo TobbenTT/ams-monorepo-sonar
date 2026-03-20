@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
-import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight } from 'lucide-react';
+import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck } from 'lucide-react';
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -426,7 +426,7 @@ export default function WorkOrdersPage() {
           {viewMode === 'tactical' && (<>
             <Button variant="outline" className="flex items-center gap-2 border-emerald-300 text-emerald-700" onClick={() => setShowCreateOTModal(true)}>
               <Plus className="w-4 h-4" />
-              Nueva OT
+              Crear OT desde Aviso
             </Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateModal(true)}>
               <Plus className="w-4 h-4" />
@@ -641,7 +641,7 @@ export default function WorkOrdersPage() {
         </button>
         <button onClick={() => setWoTab('wrs')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${woTab === 'wrs' ? 'bg-white shadow text-emerald-700' : 'text-gray-600 hover:text-gray-900'}`}>
-          Avisos / WR ({workOrdersData.length})
+          Avisos ({workOrdersData.length})
         </button>
       </div>
 
@@ -653,7 +653,7 @@ export default function WorkOrdersPage() {
               Órdenes de Trabajo ({managedWOs.length})
             </h3>
             <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateOTModal(true)}>
-              <Plus className="w-4 h-4" /> Nueva OT
+              <Plus className="w-4 h-4" /> Crear OT desde Aviso
             </Button>
           </div>
           {managedWOs.length > 0 ? (
@@ -733,7 +733,7 @@ export default function WorkOrdersPage() {
       {woTab === 'wrs' && (
         <Card className="p-6 bg-white">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Avisos / Work Requests ({workOrdersData.length})
+            Avisos ({workOrdersData.length})
           </h3>
           {workOrdersData.length > 0 ? (
             <div className="overflow-x-auto">
@@ -814,7 +814,7 @@ export default function WorkOrdersPage() {
         />
       )}
 
-      {/* Create OT Modal */}
+      {/* Create OT Modal — solo desde Aviso aprobado (Jorge: "las órdenes no se crean manualmente") */}
       {showCreateOTModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreateOTModal(false)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -822,7 +822,7 @@ export default function WorkOrdersPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">Crear Orden de Trabajo</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Desde un aviso aprobado o manualmente</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Selecciona un aviso aprobado para generar la OT</p>
                 </div>
                 <button onClick={() => setShowCreateOTModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
                   <X className="w-5 h-5 text-gray-500" />
@@ -831,11 +831,10 @@ export default function WorkOrdersPage() {
             </div>
 
             <div className="p-5 space-y-5">
-              {/* From approved WR */}
-              {approvedWRs.length > 0 && (
+              {approvedWRs.length > 0 ? (
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Desde Aviso Aprobado</label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Avisos Aprobados</label>
+                  <div className="space-y-2 max-h-72 overflow-y-auto">
                     {approvedWRs.map(wr => (
                       <div key={wr.request_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
                         <div className="flex-1 min-w-0">
@@ -852,74 +851,19 @@ export default function WorkOrdersPage() {
                     ))}
                   </div>
                 </div>
-              )}
-
-              {approvedWRs.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-gray-200"></div>
-                  <span className="text-xs text-gray-400">o crear manualmente</span>
-                  <div className="flex-1 h-px bg-gray-200"></div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-2">
+                    <ClipboardCheck className="w-12 h-12 mx-auto" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-600">No hay avisos aprobados pendientes</p>
+                  <p className="text-xs text-gray-400 mt-1">Los avisos deben ser aprobados por un supervisor antes de generar una OT</p>
                 </div>
               )}
-
-              {/* Manual OT creation */}
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Descripción</label>
-                  <textarea value={otCreateForm.description}
-                    onChange={e => setOtCreateForm(p => ({ ...p, description: e.target.value }))}
-                    placeholder="Describe el trabajo a realizar..."
-                    rows={3}
-                    className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">TAG Equipo</label>
-                    <input type="text" value={otCreateForm.equipment_tag}
-                      onChange={e => setOtCreateForm(p => ({ ...p, equipment_tag: e.target.value, equipment_id: e.target.value }))}
-                      placeholder="Ej: BOM-001"
-                      className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Tipo OT</label>
-                    <select value={otCreateForm.wo_type}
-                      onChange={e => setOtCreateForm(p => ({ ...p, wo_type: e.target.value }))}
-                      className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500">
-                      <option value="CORRECTIVO">Correctivo</option>
-                      <option value="PREVENTIVO">Preventivo</option>
-                      <option value="PREDICTIVO">Predictivo</option>
-                      <option value="MEJORA">Mejora</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Prioridad</label>
-                    <select value={otCreateForm.priority_code}
-                      onChange={e => setOtCreateForm(p => ({ ...p, priority_code: e.target.value }))}
-                      className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500">
-                      <option value="P1">P1 - Urgente (&lt; 24h)</option>
-                      <option value="P2">P2 - Ejecución (&lt; 7d)</option>
-                      <option value="P3">P3 - Próximo programa</option>
-                      <option value="P4">P4 - Sin urgencia</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Horas Estimadas</label>
-                    <input type="number" value={otCreateForm.estimated_hours}
-                      onChange={e => setOtCreateForm(p => ({ ...p, estimated_hours: parseFloat(e.target.value) || 0 }))}
-                      className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
-                  </div>
-                </div>
-              </div>
             </div>
 
-            <div className="sticky bottom-0 bg-white border-t p-5 rounded-b-xl flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowCreateOTModal(false)}>Cancelar</Button>
-              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleCreateOTManual}
-                disabled={creatingOT || !otCreateForm.description.trim() || !otCreateForm.equipment_tag.trim()}>
-                {creatingOT ? 'Creando...' : 'Crear OT Manual'}
-              </Button>
+            <div className="sticky bottom-0 bg-white border-t p-5 rounded-b-xl flex justify-end">
+              <Button variant="outline" onClick={() => setShowCreateOTModal(false)}>Cerrar</Button>
             </div>
           </div>
         </div>

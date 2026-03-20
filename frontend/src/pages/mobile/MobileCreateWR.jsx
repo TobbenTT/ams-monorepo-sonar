@@ -377,7 +377,7 @@ export default function MobileCreateWR() {
                 created_by: user?.user_id || user?.username || '',
             });
             setSuccess(res);
-            toast.success('Work Request creado exitosamente');
+            toast.success('Aviso creado exitosamente');
 
             // If photos exist, upload them separately via capture endpoint
             if (form.photos.length > 0) {
@@ -421,9 +421,9 @@ export default function MobileCreateWR() {
                     <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: '#ECFDF5' }}>
                         <CheckCircle className="w-10 h-10" style={{ color: '#047857' }} />
                     </div>
-                    <h2 className="text-xl font-bold mb-2" style={{ color: '#0F172A' }}>WR Creado</h2>
+                    <h2 className="text-xl font-bold mb-2" style={{ color: '#0F172A' }}>Aviso Creado</h2>
                     <p className="text-sm text-center mb-4" style={{ color: '#64748B' }}>
-                        Tu Work Request ha sido enviado para revisión
+                        Tu aviso ha sido enviado para revisión
                     </p>
                     {wrId && (
                         <div className="px-5 py-3 rounded-2xl mb-6" style={{ backgroundColor: '#ECFDF5', border: '2px solid #10B981' }}>
@@ -464,7 +464,7 @@ export default function MobileCreateWR() {
                         <ArrowLeft className="w-5 h-5" style={{ color: '#64748B' }} />
                     </button>
                     <div>
-                        <h1 className="text-lg font-bold" style={{ color: '#0F172A' }}>Crear Work Request</h1>
+                        <h1 className="text-lg font-bold" style={{ color: '#0F172A' }}>Crear Aviso</h1>
                         <p className="text-xs" style={{ color: '#64748B' }}>Documenta hallazgos y necesidades</p>
                     </div>
                 </div>
@@ -978,7 +978,7 @@ export default function MobileCreateWR() {
                 {/* 8. Condición planta */}
                 <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
                     <label className="text-xs font-semibold mb-3 block" style={{ color: '#64748B', letterSpacing: '0.05em' }}>
-                        CONDICIÓN PLANTA *
+                        CONDICIÓN DEL EQUIPO *
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                         {PLANT_CONDITIONS.map((opt) => (
@@ -1151,7 +1151,7 @@ export default function MobileCreateWR() {
                             boxShadow: canSubmit ? '0 10px 25px rgba(4, 120, 87, 0.2)' : 'none',
                         }}
                     >
-                        {submitting ? 'Enviando...' : 'Enviar Work Request'}
+                        {submitting ? 'Enviando...' : 'Enviar Aviso'}
                     </button>
                     {!canSubmit && (
                         <div className="text-center mt-2 text-xs" style={{ color: '#64748B' }}>

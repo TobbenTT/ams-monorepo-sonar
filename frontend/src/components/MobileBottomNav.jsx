@@ -5,13 +5,13 @@ const NAV_ITEMS = {
     maintainer: [
         { to: '/', icon: Home, label: 'Inicio', exact: true },
         { to: '/m/tareas', icon: ClipboardList, label: 'Tareas' },
-        { to: '/m/crear-wr', icon: Plus, label: 'Crear WR', highlight: true },
+        { to: '/m/crear-wr', icon: Plus, label: 'Crear Aviso', highlight: true },
     ],
     supervisor: [
         { to: '/', icon: Home, label: 'Inicio', exact: true },
         { to: '/m/tareas', icon: ClipboardList, label: 'Tareas' },
-        { to: '/m/crear-wr', icon: Plus, label: 'Crear WR', highlight: true },
-        { to: '/m/avisos', icon: FileText, label: 'WR' },
+        { to: '/m/crear-wr', icon: Plus, label: 'Crear Aviso', highlight: true },
+        { to: '/m/avisos', icon: FileText, label: 'Avisos' },
         { to: '/m/dashboard', icon: BarChart3, label: 'Dashboard' },
     ],
 };

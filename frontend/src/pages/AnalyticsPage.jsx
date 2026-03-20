@@ -296,47 +296,36 @@ export default function AnalyticsPage() {
           </Card>
         </div>
 
-        {/* Asset Health Score */}
+        {/* KPIs de Confiabilidad */}
         <div className="col-span-5">
           <Card className="p-6 bg-white h-full">
             <h3 className="text-base font-semibold text-gray-900 mb-2">
-              {t('analyticsPage.assetVitalSignsHealth')}
+              KPIs de Confiabilidad
             </h3>
             <p className="text-xs text-gray-500 mb-4">{healthAssetName}</p>
 
-            <div className="flex items-center justify-center mb-6 relative">
-              <svg width="280" height="160" viewBox="0 0 280 160">
-                <path d="M 40 140 A 100 100 0 0 1 240 140" fill="none" stroke="#d1d5db" strokeWidth="30" strokeLinecap="round" />
-                <path d="M 40 140 A 100 100 0 0 1 100 50" fill="none" stroke="#22c55e" strokeWidth="26" strokeLinecap="round" />
-                <path d="M 105 48 A 100 100 0 0 1 140 40" fill="none" stroke="#eab308" strokeWidth="26" />
-                <path d="M 145 40 A 100 100 0 0 1 240 140" fill="none" stroke="#ef4444" strokeWidth="26" strokeLinecap="round" />
-                {healthScore != null && (
-                  <>
-                    <line x1="140" y1="140" x2={needleX} y2={needleY} stroke="#1f2937" strokeWidth="4" strokeLinecap="round" />
-                    <circle cx="140" cy="140" r="8" fill="#1f2937" />
-                  </>
-                )}
-              </svg>
-              <div className="absolute" style={{ top: '75px', left: '50%', transform: 'translateX(-50%)' }}>
-                <p className="text-5xl font-bold text-gray-900">{healthScore != null ? `${healthScore}%` : '\u2014'}</p>
-              </div>
-            </div>
-
-            {/* Reliability KPIs from API */}
             {reliabilityAsset && (
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">{t('analyticsPage.mtbf')}</p>
-                  <p className="text-lg font-bold text-gray-900">{reliabilityAsset.mtbf}h</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500">{t('analyticsPage.mtbf')}</p>
+                    <p className="text-2xl font-bold text-gray-900">{reliabilityAsset.mtbf}h</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500">{t('analyticsPage.mttr')}</p>
+                    <p className="text-2xl font-bold text-gray-900">{reliabilityAsset.mttr}h</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500">{t('analyticsPage.availAbbr')}</p>
+                    <p className="text-2xl font-bold text-gray-900">{reliabilityAsset.availability}%</p>
+                  </div>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">{t('analyticsPage.mttr')}</p>
-                  <p className="text-lg font-bold text-gray-900">{reliabilityAsset.mttr}h</p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">{t('analyticsPage.availAbbr')}</p>
-                  <p className="text-lg font-bold text-gray-900">{reliabilityAsset.availability}%</p>
-                </div>
+                {reliabilityAsset.oee != null && (
+                  <div className="p-4 bg-emerald-50 rounded-lg text-center">
+                    <p className="text-xs text-gray-500">OEE</p>
+                    <p className="text-2xl font-bold text-emerald-700">{reliabilityAsset.oee}%</p>
+                  </div>
+                )}
               </div>
             )}
             {!reliabilityAsset && (

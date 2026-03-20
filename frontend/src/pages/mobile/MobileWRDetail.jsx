@@ -148,7 +148,7 @@ export default function MobileWRDetail() {
         setLoading(true);
         api.getWorkRequest(id)
             .then(res => setWr(res))
-            .catch(() => toast.error('Error cargando WR'))
+            .catch(() => toast.error('Error cargando aviso'))
             .finally(() => setLoading(false));
     };
 
@@ -199,7 +199,7 @@ export default function MobileWRDetail() {
         setActionLoading(true);
         try {
             await api.validateWorkRequest(wr.request_id, { action: 'APPROVE', modifications: {} });
-            toast.success('WR aprobado exitosamente');
+            toast.success('Aviso aprobado exitosamente');
             loadWr();
         } catch (e) { toast.error('Error al aprobar: ' + (e.message || e)); }
         setActionLoading(false);
@@ -210,7 +210,7 @@ export default function MobileWRDetail() {
         setActionLoading(true);
         try {
             await api.validateWorkRequest(wr.request_id, { action: 'REJECT', modifications: { reason: rejectReason } });
-            toast.success('WR rechazado');
+            toast.success('Aviso rechazado');
             loadWr();
             setShowRejectForm(false);
             setRejectReason('');
@@ -234,8 +234,8 @@ export default function MobileWRDetail() {
                     <span className="text-sm" style={{ color: '#64748B' }}>Volver</span>
                 </button>
                 <div className="text-center py-12">
-                    <div className="text-lg font-bold mb-2" style={{ color: '#0F172A' }}>WR no encontrado</div>
-                    <div className="text-sm" style={{ color: '#64748B' }}>El work request no existe o fue eliminado</div>
+                    <div className="text-lg font-bold mb-2" style={{ color: '#0F172A' }}>Aviso no encontrado</div>
+                    <div className="text-sm" style={{ color: '#64748B' }}>El aviso no existe o fue eliminado</div>
                 </div>
             </div>
         );
@@ -279,7 +279,7 @@ export default function MobileWRDetail() {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                             <h1 className="text-lg font-bold truncate" style={{ color: '#0F172A' }}>
-                                {tag || 'Work Request'}
+                                {tag || 'Aviso'}
                             </h1>
                             <span className="px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0" style={{ backgroundColor: pm.bg, color: pm.color }}>
                                 {pri}
@@ -490,7 +490,7 @@ export default function MobileWRDetail() {
                         )}
                         {techName && <MetaRow icon={User} label="Reportado por" value={techName} />}
                         {plantId && <MetaRow icon={Building} label="Planta" value={plantId} />}
-                        {plantCondition && <MetaRow icon={Shield} label="Condición planta" value={PLANT_CONDITION_LABELS[plantCondition] || plantCondition} />}
+                        {plantCondition && <MetaRow icon={Shield} label="Condición del equipo" value={PLANT_CONDITION_LABELS[plantCondition] || plantCondition} />}
                         {estDuration > 0 && <MetaRow icon={Timer} label="Duración estimada" value={`${estDuration} horas`} />}
                     </div>
                 </div>
@@ -530,7 +530,7 @@ export default function MobileWRDetail() {
                                 <textarea
                                     value={rejectReason}
                                     onChange={(e) => setRejectReason(e.target.value)}
-                                    placeholder="Describe por qué se rechaza este WR..."
+                                    placeholder="Describe por qué se rechaza este aviso..."
                                     className="w-full h-20 p-3 rounded-xl border text-sm resize-none outline-none"
                                     style={{ borderColor: '#FCA5A5', backgroundColor: '#FEF2F2' }}
                                 />
@@ -561,7 +561,7 @@ export default function MobileWRDetail() {
                     <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-4 border-2" style={{ borderColor: '#FCA5A5' }}>
                         <div className="flex items-center gap-2 mb-2">
                             <XCircle className="w-5 h-5" style={{ color: '#EF4444' }} />
-                            <span className="text-sm font-bold" style={{ color: '#991B1B' }}>Work Request Rechazado</span>
+                            <span className="text-sm font-bold" style={{ color: '#991B1B' }}>Aviso Rechazado</span>
                         </div>
                         {wr.validation?.modifications?.reason && (
                             <p className="text-sm" style={{ color: '#7C2D12' }}>{wr.validation.modifications.reason}</p>
@@ -574,7 +574,7 @@ export default function MobileWRDetail() {
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border-2" style={{ borderColor: '#86EFAC' }}>
                         <div className="flex items-center gap-2 mb-3">
                             <CheckCircle2 className="w-5 h-5" style={{ color: '#16A34A' }} />
-                            <span className="text-sm font-bold" style={{ color: '#166534' }}>Work Request Aprobado</span>
+                            <span className="text-sm font-bold" style={{ color: '#166534' }}>Aviso Aprobado</span>
                         </div>
                         {!showAssignPanel ? (
                             <button

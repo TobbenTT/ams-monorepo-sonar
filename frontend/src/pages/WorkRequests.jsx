@@ -503,7 +503,7 @@ export default function WorkRequests() {
   function handleValidate(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'VALIDATED' } : r)));
     api.validateWorkRequest(id, { action: 'APPROVE' })
-      .then(() => toast.success('WR validado y agregado al Backlog'))
+      .then(() => toast.success('Aviso validado y agregado al Backlog'))
       .catch(() => toast.error('Error al validar'));
   }
 
@@ -529,13 +529,13 @@ export default function WorkRequests() {
   function handleClose(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CLOSED' } : r)));
     api.closeWorkRequest(id, { closure_notes: '' })
-      .then(() => toast.success('WR cerrada técnicamente'))
+      .then(() => toast.success('Aviso cerrado técnicamente'))
       .catch(() => toast.error('Error al cerrar'));
   }
 
   function handleDelete(id) {
     const msg = t('workRequests.confirmDelete');
-    if (!window.confirm(msg !== 'workRequests.confirmDelete' ? msg : '¿Eliminar esta solicitud de trabajo?')) return;
+    if (!window.confirm(msg !== 'workRequests.confirmDelete' ? msg : '¿Eliminar este aviso de trabajo?')) return;
     setRequests((prev) => prev.filter((r) => r.id !== id));
     api.deleteWorkRequest(id).catch(() => {
       // Re-fetch on error to restore state

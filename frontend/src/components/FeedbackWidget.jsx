@@ -17,18 +17,6 @@ const PRIORITIES = [
   { value: 'critical', label: 'Critica', color: '#EF4444' },
 ];
 
-const PAGE_SECTIONS = {
-  '/': ['Dashboard', 'KPI Cards', 'Charts', 'Executive View', 'Tactical View'],
-  '/work-orders': ['Tabla de OTs', 'Tabla de WRs', 'Modal Crear OT', 'Modal Crear WR', 'Filtros', 'Charts', 'KPI Cards'],
-  '/work-requests': ['Lista de Avisos', 'Formulario', 'Panel Aprobacion', 'Detalle'],
-  '/hierarchy': ['Arbol de Equipos', 'Detalle Equipo', 'Formulario'],
-  '/scheduling': ['Programa Semanal', 'Gantt', 'Calendario'],
-  '/fmea': ['Worksheet', 'Analisis', 'Resultados'],
-  '/analytics': ['Graficos', 'Tablas', 'Filtros'],
-  '/reliability': ['Analisis', 'Repuestos', 'MOCs'],
-  '/admin': ['Usuarios', 'Config', 'Feedback'],
-  '/reports': ['Generador', 'Historial'],
-};
 
 const INITIAL_FORM = {
   feedback_type: 'suggestion',
@@ -45,7 +33,7 @@ const INITIAL_FORM = {
 
 export default function FeedbackWidget() {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState(1); // 1: type, 2: details, 3: attachments, 4: confirm
+  const [step, setStep] = useState(1); // 1: type, 2: details+attachments, 3: confirm
   const [form, setForm] = useState({ ...INITIAL_FORM });
   const [screenshots, setScreenshots] = useState([]); // [{data_url, caption, preview}]
   const [files, setFiles] = useState([]); // File objects for post-submit upload
@@ -60,7 +48,6 @@ export default function FeedbackWidget() {
 
   // Auto-detect page info
   const pageName = location.pathname === '/' ? 'Dashboard' : location.pathname.replace(/^\//, '').replace(/-/g, ' ');
-  const availableSections = PAGE_SECTIONS[location.pathname] || ['General', 'Header', 'Sidebar', 'Main Content', 'Modal', 'Otro'];
 
   // Screenshot from clipboard paste
   const handlePaste = useCallback((e) => {
@@ -191,7 +178,7 @@ export default function FeedbackWidget() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Paso {step}/4</span>
+                <span className="text-xs text-gray-400">Paso {step}/3</span>
                 <button onClick={reset} className="p-1 hover:bg-gray-100 rounded-lg">
                   <X className="w-5 h-5 text-gray-400" />
                 </button>
@@ -243,24 +230,6 @@ export default function FeedbackWidget() {
                           color: form.priority === p.value ? 'white' : '#6B7280',
                         }}>
                         {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Pagina</label>
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 text-sm">
-                    <span className="font-medium text-gray-700">{pageName}</span>
-                    <span className="text-xs text-gray-400">({location.pathname})</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Seccion de la pagina</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {availableSections.map(s => (
-                      <button key={s} onClick={() => setF('section', form.section === s ? '' : s)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${form.section === s ? 'bg-emerald-100 border-emerald-500 text-emerald-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                        {s}
                       </button>
                     ))}
                   </div>
@@ -333,69 +302,49 @@ export default function FeedbackWidget() {
                     </span>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Step 3: Attachments */}
-            {!submitted && step === 3 && (
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* Screenshots */}
+                {/* Attachments inline */}
                 <div>
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-                    Screenshots / Capturas
+                    Adjuntar imagenes / archivos (opcional)
                   </label>
-                  <p className="text-xs text-gray-400 mb-2">Puedes pegar (Ctrl+V) una captura de pantalla o seleccionar imagenes</p>
-                  <div className="flex gap-2 mb-3">
+                  <div className="flex gap-2 mb-2">
                     <button onClick={() => screenshotInputRef.current?.click()}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-gray-300 hover:border-emerald-400 text-sm text-gray-600 hover:text-emerald-600 transition-colors">
-                      <Camera className="w-4 h-4" /> Seleccionar imagen
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-gray-300 hover:border-emerald-400 text-xs text-gray-600 hover:text-emerald-600 transition-colors">
+                      <Camera className="w-4 h-4" /> Imagen
+                    </button>
+                    <button onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-gray-300 hover:border-emerald-400 text-xs text-gray-600 hover:text-emerald-600 transition-colors">
+                      <Paperclip className="w-4 h-4" /> Archivo
                     </button>
                     <input ref={screenshotInputRef} type="file" accept="image/*" multiple onChange={handleScreenshotSelect} className="hidden" />
+                    <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden"
+                      accept=".pdf,.mp4,.webm,.mov,.jpg,.jpeg,.png,.webp,.gif,.csv,.xlsx,.docx,.txt" />
                   </div>
+                  <p className="text-xs text-gray-400 mb-2">Tambien puedes pegar (Ctrl+V) una captura de pantalla</p>
                   {screenshots.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2 mb-2">
                       {screenshots.map((sc, idx) => (
                         <div key={idx} className="relative rounded-lg overflow-hidden border group">
-                          <img src={sc.preview} alt={`Screenshot ${idx + 1}`} className="w-full h-24 object-cover" />
+                          <img src={sc.preview} alt={`Screenshot ${idx + 1}`} className="w-full h-16 object-cover" />
                           <button onClick={() => removeScreenshot(idx)}
-                            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                             <Trash2 className="w-3 h-3" />
                           </button>
-                          <input type="text" value={sc.caption} onChange={e => {
-                            const updated = [...screenshots];
-                            updated[idx] = { ...updated[idx], caption: e.target.value };
-                            setScreenshots(updated);
-                          }}
-                            placeholder="Caption..."
-                            className="w-full px-2 py-1 text-xs border-t bg-white focus:outline-none" />
                         </div>
                       ))}
                     </div>
                   )}
-                </div>
-
-                {/* File Attachments */}
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-                    Archivos adjuntos
-                  </label>
-                  <p className="text-xs text-gray-400 mb-2">PDF, videos, documentos, etc. (max 50 MB c/u)</p>
-                  <button onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-gray-300 hover:border-emerald-400 text-sm text-gray-600 hover:text-emerald-600 transition-colors">
-                    <Paperclip className="w-4 h-4" /> Adjuntar archivo
-                  </button>
-                  <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden"
-                    accept=".pdf,.mp4,.webm,.mov,.jpg,.jpeg,.png,.webp,.gif,.csv,.xlsx,.docx,.txt" />
                   {files.length > 0 && (
-                    <div className="mt-2 space-y-1">
+                    <div className="space-y-1">
                       {files.map((f, idx) => (
-                        <div key={idx} className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 text-sm">
+                        <div key={idx} className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-gray-50 text-xs">
                           <div className="flex items-center gap-2 min-w-0">
-                            {f.type.startsWith('image/') ? <Image className="w-4 h-4 text-blue-500 flex-shrink-0" /> : <Paperclip className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+                            <Paperclip className="w-3 h-3 text-gray-400 flex-shrink-0" />
                             <span className="truncate">{f.name}</span>
-                            <span className="text-xs text-gray-400 flex-shrink-0">{(f.size / 1024).toFixed(0)} KB</span>
+                            <span className="text-gray-400 flex-shrink-0">{(f.size / 1024).toFixed(0)}KB</span>
                           </div>
-                          <button onClick={() => removeFile(idx)} className="p-1 hover:bg-red-100 rounded text-red-500">
+                          <button onClick={() => removeFile(idx)} className="p-0.5 hover:bg-red-100 rounded text-red-500">
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
@@ -406,8 +355,8 @@ export default function FeedbackWidget() {
               </div>
             )}
 
-            {/* Step 4: Review & Submit */}
-            {!submitted && step === 4 && (
+            {/* Step 3: Review & Submit */}
+            {!submitted && step === 3 && (
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 <h4 className="text-sm font-bold text-gray-900">Resumen del feedback</h4>
                 <div className="space-y-2 text-sm">
@@ -463,13 +412,13 @@ export default function FeedbackWidget() {
                   )}
                 </div>
                 <div className="flex gap-2">
-                  {step < 4 && (
+                  {step < 3 && (
                     <button onClick={() => setStep(s => s + 1)}
                       className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors">
                       Siguiente
                     </button>
                   )}
-                  {step === 4 && (
+                  {step === 3 && (
                     <button onClick={handleSubmit} disabled={submitting || (!form.title.trim() && !form.description.trim())}
                       className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2">
                       <Send className="w-4 h-4" />

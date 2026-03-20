@@ -1,7 +1,11 @@
 """FMEA router — failure modes, RCM decision, FM validation endpoints."""
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user
@@ -26,7 +30,8 @@ def create_failure_mode(data: FailureModeCreate, db: Session = Depends(get_db)):
             "strategy_type": obj.strategy_type,
         }
     except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        logger.error("Failure mode creation validation error: %s", e)
+        raise HTTPException(status_code=422, detail="Validation error")
 
 
 @router.get("/failure-modes/{fm_id}")

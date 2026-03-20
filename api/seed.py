@@ -342,7 +342,8 @@ def _seed_m13_data(db: Session, nodes: list[dict]) -> dict:
 
 
 def _seed_users(db: Session) -> int:
-    """Seed default users (4 roles). Idempotent."""
+    """Seed default users (4 roles) with random passwords. Idempotent."""
+    import secrets
     from api.services.auth_service import hash_password
 
     default_users = [
@@ -356,15 +357,17 @@ def _seed_users(db: Session) -> int:
     for u in default_users:
         if db.query(UserModel).filter(UserModel.username == u["username"]).first():
             continue
+        pwd = secrets.token_urlsafe(16)
         db.add(UserModel(
             email=u["email"],
             username=u["username"],
-            hashed_password=hash_password("password123"),
+            hashed_password=hash_password(pwd),
             full_name=u["full_name"],
             role=u["role"],
             plant_id=u["plant_id"],
             is_active=True,
         ))
+        logger.info("Seeded user '%s' (role=%s) with generated password: %s", u["username"], u["role"], pwd)
         count += 1
 
     return count

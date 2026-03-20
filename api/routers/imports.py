@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user
@@ -67,7 +71,8 @@ async def import_file(
         )
         return entry.model_dump(mode="json")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Import processing failed for file=%s source=%s: %s", filename, source, e)
+        raise HTTPException(status_code=500, detail="Import processing failed")
 
 
 @router.get("/history")

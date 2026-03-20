@@ -288,7 +288,7 @@ def advance_milestone(
         log.error("AI milestone %d failed for session %s: %s", next_milestone, session_id, e)
         session.status = "FAILED"
         db.commit()
-        raise HTTPException(status_code=500, detail=f"AI agent error: {str(e)[:500]}")
+        raise HTTPException(status_code=500, detail="AI processing error")
 
 
 @router.post("/sessions/{session_id}/milestone/{milestone_num}/action")
@@ -406,7 +406,7 @@ def create_troubleshooting(
         raise
     except Exception as e:
         log.error("Troubleshooting failed: %s", e)
-        raise HTTPException(status_code=500, detail=f"AI troubleshooting error: {str(e)[:500]}")
+        raise HTTPException(status_code=500, detail="AI processing error")
 
 
 @router.get("/troubleshoot")
@@ -485,7 +485,7 @@ def generate_checklist(
         raise
     except Exception as e:
         log.error("Checklist generation failed: %s", e)
-        raise HTTPException(status_code=500, detail=f"Checklist error: {str(e)[:500]}")
+        raise HTTPException(status_code=500, detail="AI processing error")
 
 
 @router.get("/checklists/{checklist_id}")
@@ -555,7 +555,8 @@ def call_ai_tool(data: AIToolCallRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Tool call error: {str(e)[:500]}")
+        log.error("Tool call failed for '%s': %s", data.tool_name, e)
+        raise HTTPException(status_code=500, detail="AI processing error")
 
 
 @router.get("/tools")

@@ -189,33 +189,7 @@ export default function Login() {
                         </button>
                     </form>
 
-                    <div className="mt-8 p-4 bg-muted/50 rounded-xl border border-border">
-                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t('auth.demoUsers')}</div>
-                        <div className="grid grid-cols-2 gap-2">
-                            {[
-                                { user: 'admin', role: t('auth.roles.admin'), color: 'text-red-600' },
-                                { user: 'manager', role: t('auth.roles.manager'), color: 'text-blue-600' },
-                                { user: 'planner', role: t('auth.roles.planner'), color: 'text-amber-600' },
-                                { user: 'tecnico', role: t('auth.roles.tecnico'), color: 'text-green-600' },
-                            ].map(d => (
-                                <button
-                                    key={d.user}
-                                    type="button"
-                                    onClick={() => { setUsername(d.user); setPassword('password123'); }}
-                                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors text-left group"
-                                >
-                                    <div className={`w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-xs font-bold ${d.color} group-hover:scale-105 transition-transform`}>
-                                        {d.user[0].toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <div className="text-sm font-medium text-foreground">{d.user}</div>
-                                        <div className="text-[0.65rem] text-muted-foreground">{d.role}</div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                        <div className="text-[0.65rem] text-muted-foreground text-center mt-2">Password: password123</div>
-                    </div>
+                    {/* Demo credentials removed for security — use admin-provisioned accounts */}
                 </div>
             </div>
         </div>

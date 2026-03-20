@@ -46,6 +46,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none'"
         if not settings.DEBUG:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
@@ -111,6 +112,9 @@ def create_app() -> FastAPI:
         version="1.0.0",
         description="OCP Maintenance AI MVP — 4-module maintenance strategy platform",
         lifespan=lifespan,
+        docs_url="/docs" if settings.DEBUG else None,
+        redoc_url="/redoc" if settings.DEBUG else None,
+        openapi_url="/openapi.json" if settings.DEBUG else None,
     )
 
     # ── Global exception handler — hide stack traces ──
@@ -124,9 +128,10 @@ def create_app() -> FastAPI:
 
     allowed_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
     if not settings.DEBUG:
-        for origin in allowed_origins:
-            if "localhost" in origin or "127.0.0.1" in origin:
-                logger.warning("CORS origin '%s' contains localhost — unsafe in production", origin)
+        unsafe = [o for o in allowed_origins if "localhost" in o or "127.0.0.1" in o]
+        for origin in unsafe:
+            logger.warning("CORS origin '%s' contains localhost — removed in production", origin)
+        allowed_origins = [o for o in allowed_origins if "localhost" not in o and "127.0.0.1" not in o]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,

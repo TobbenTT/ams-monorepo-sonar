@@ -117,6 +117,9 @@ def authenticate_user(db: Session, username: str, password: str) -> UserModel | 
         or_(UserModel.username == username, UserModel.email == username)
     ).first()
     if not user or not user.is_active:
+        # Constant-time: always run bcrypt to prevent timing-based user enumeration
+        _dummy_hash = "$2b$12$LJ3m4ys3Lz0Y1r3XkRjv7eUuPOBEuoH7V3IjL.8lhHhVxH9mKJTy"
+        verify_password(password, _dummy_hash)
         _record_failed_attempt(username)
         return None
     if not verify_password(password, user.hashed_password):

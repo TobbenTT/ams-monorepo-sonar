@@ -1,7 +1,11 @@
 """Execution checklists router — generate, step completion, gate enforcement, closure (GAP-W06)."""
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user
@@ -53,7 +57,8 @@ def complete_step(checklist_id: str, step_id: str, data: dict, db: Session = Dep
             completed_by=data.get("completed_by", ""),
         )
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        logger.error("Step completion failed for checklist=%s step=%s: %s", checklist_id, step_id, e)
+        raise HTTPException(status_code=409, detail="Operation conflict")
 
 
 @router.post("/{checklist_id}/steps/{step_id}/skip")
@@ -67,7 +72,8 @@ def skip_step(checklist_id: str, step_id: str, data: dict, db: Session = Depends
             authorized_by=data.get("authorized_by", ""),
         )
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        logger.error("Step skip failed for checklist=%s step=%s: %s", checklist_id, step_id, e)
+        raise HTTPException(status_code=409, detail="Operation conflict")
 
 
 @router.get("/{checklist_id}/next-steps")
@@ -75,7 +81,8 @@ def get_next_steps(checklist_id: str, db: Session = Depends(get_db)):
     try:
         return execution_checklist_service.get_next_steps(db, checklist_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.error("Get next steps failed for checklist=%s: %s", checklist_id, e)
+        raise HTTPException(status_code=404, detail="Operation error")
 
 
 @router.post("/{checklist_id}/close")
@@ -88,4 +95,5 @@ def close_checklist(checklist_id: str, data: dict, db: Session = Depends(get_db)
             supervisor_notes=data.get("supervisor_notes", ""),
         )
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        logger.error("Checklist close failed for checklist=%s: %s", checklist_id, e)
+        raise HTTPException(status_code=409, detail="Operation conflict")

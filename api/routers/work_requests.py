@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from api.database.connection import get_db
-from api.dependencies.auth import get_current_user
+from api.dependencies.auth import get_current_user, require_role
 from api.schemas import WRValidateRequest
 from api.services import work_request_service
 
@@ -199,7 +199,7 @@ def validate_work_request(request_id: str, data: WRValidateRequest, db: Session 
 
 
 @router.put("/{request_id}/approve")
-def approve_work_request(request_id: str, data: WRApproveRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def approve_work_request(request_id: str, data: WRApproveRequest, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     """Supervisor approves a WR with mandatory comment (Jorge Work Management)."""
     result = work_request_service.approve_work_request(
         db, request_id, approver_id=user.get("user_id", ""), comment=data.comment,
@@ -211,7 +211,7 @@ def approve_work_request(request_id: str, data: WRApproveRequest, user=Depends(g
 
 
 @router.put("/{request_id}/reject")
-def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     """Supervisor rejects a WR with mandatory reason (Jorge Work Management)."""
     result = work_request_service.reject_work_request(
         db, request_id, approver_id=user.get("user_id", ""), reason=data.reason,
@@ -222,7 +222,7 @@ def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(get
 
 
 @router.put("/{request_id}/assign")
-def assign_work_request(request_id: str, data: WRAssignRequest, db: Session = Depends(get_db)):
+def assign_work_request(request_id: str, data: WRAssignRequest, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     """Assign a validated WR to one or more technicians."""
     from datetime import datetime
     from api.database.models import WorkforceModel

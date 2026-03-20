@@ -7,6 +7,19 @@
 .env.*
 *.env
 
+# -------------------- Certificates & Keys --------------------
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials.json
+credentials.*
+service-account*.json
+secrets.*
+
 # -------------------- Python --------------------
 __pycache__/
 *.py[cod]

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
-from api.dependencies.auth import get_current_user
+from api.dependencies.auth import get_current_user, require_role
 from api.schemas import WPCreate, WPGroupRequest, WorkInstructionRequest
 from api.services import work_package_service
 
@@ -67,7 +67,7 @@ def list_work_packages(node_id: str | None = None, status: str | None = None, pl
     return results
 
 
-@router.put("/{wp_id}/approve")
+@router.put("/{wp_id}/approve", dependencies=[Depends(require_role("admin", "manager", "planner"))])
 def approve_work_package(wp_id: str, db: Session = Depends(get_db)):
     obj = work_package_service.approve_work_package(db, wp_id)
     if not obj:

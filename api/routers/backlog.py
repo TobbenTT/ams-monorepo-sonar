@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
-from api.dependencies.auth import get_current_user
+from api.dependencies.auth import get_current_user, require_role
 from api.schemas import BacklogOptimizeRequest
 from api.services import backlog_service
 
@@ -54,7 +54,7 @@ def get_optimization(optimization_id: str, db: Session = Depends(get_db)):
     }
 
 
-@router.put("/optimizations/{optimization_id}/approve")
+@router.put("/optimizations/{optimization_id}/approve", dependencies=[Depends(require_role("admin", "manager", "planner"))])
 def approve_schedule(optimization_id: str, db: Session = Depends(get_db)):
     result = backlog_service.approve_schedule(db, optimization_id)
     if not result:

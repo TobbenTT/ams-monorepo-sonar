@@ -72,12 +72,12 @@ def reset_database(db: Session = Depends(get_db)):
     return {"status": "Database reset complete"}
 
 
-@router.get("/agent-status")
+@router.get("/agent-status", dependencies=[Depends(require_role("admin", "manager"))])
 def agent_status():
     return agent_service.get_status()
 
 
-@router.post("/feedback")
+@router.post("/feedback", dependencies=[Depends(get_current_user)])
 def submit_feedback(data: FeedbackCreate, db: Session = Depends(get_db)):
     fb = UserFeedbackModel(
         page=data.page,

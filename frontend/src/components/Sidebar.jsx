@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Home, Wrench, AlertTriangle, TrendingUp, BarChart3,
     FileText, Users, Settings, MessageSquare, ClipboardCheck,
@@ -8,19 +8,20 @@ import {
 import { cn } from './ui/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { usePermissions } from '../hooks/usePermissions';
 
 const navItems = [
-    { path: '/', icon: Home, labelKey: 'nav.dashboard', exact: true },
-    { path: '/work-orders', icon: Wrench, labelKey: 'nav.workOrders' },
-    { path: '/failures-events', icon: AlertTriangle, labelKey: 'nav.failuresEvents' },
-    { path: '/improvement-actions', icon: TrendingUp, labelKey: 'nav.improvementActions' },
-    { path: '/analytics', icon: BarChart3, labelKey: 'nav.analytics' },
-    { path: '/reports', icon: FileText, labelKey: 'nav.reports' },
-    { path: '/team', icon: Users, labelKey: 'nav.team' },
-    { path: '/settings', icon: Settings, labelKey: 'nav.settings' },
-    { path: '/feedback-admin', icon: MessageSquare, labelKey: 'nav.feedback' },
-    { path: '/execution', icon: ClipboardCheck, labelKey: 'nav.execution' },
-    { path: '/post-maintenance', icon: FileText, labelKey: 'nav.postMaintenance' },
+    { path: '/', icon: Home, labelKey: 'nav.dashboard', module: 'dashboard', exact: true },
+    { path: '/work-orders', icon: Wrench, labelKey: 'nav.workOrders', module: 'work-orders' },
+    { path: '/execution', icon: ClipboardCheck, labelKey: 'nav.execution', module: 'execution' },
+    { path: '/failures-events', icon: AlertTriangle, labelKey: 'nav.failuresEvents', module: 'failures-events' },
+    { path: '/improvement-actions', icon: TrendingUp, labelKey: 'nav.improvementActions', module: 'improvement-actions' },
+    { path: '/analytics', icon: BarChart3, labelKey: 'nav.analytics', module: 'analytics' },
+    { path: '/reports', icon: FileText, labelKey: 'nav.reports', module: 'reports' },
+    { path: '/post-maintenance', icon: FileText, labelKey: 'nav.postMaintenance', module: 'post-maintenance' },
+    { path: '/team', icon: Users, labelKey: 'nav.team', module: 'team' },
+    { path: '/settings', icon: Settings, labelKey: 'nav.settings', module: 'settings' },
+    { path: '/feedback-admin', icon: MessageSquare, labelKey: 'nav.feedback', module: 'feedback' },
 ];
 
 export default function Sidebar({ mobileOpen, onClose }) {
@@ -28,6 +29,12 @@ export default function Sidebar({ mobileOpen, onClose }) {
     const { user, logout } = useAuth();
     const { t } = useLanguage();
     const navigate = useNavigate();
+    const { canView } = usePermissions();
+
+    const visibleItems = useMemo(
+        () => navItems.filter(item => canView(item.module)),
+        [canView]
+    );
 
     const roleLabel = t(`auth.roles.${user?.role}`) || user?.role;
     const initials = user?.full_name
@@ -72,7 +79,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto px-3 py-3">
                     <div className="space-y-1">
-                        {navItems.map((item) => {
+                        {visibleItems.map((item) => {
                             const label = t(item.labelKey);
                             return (
                                 <NavLink

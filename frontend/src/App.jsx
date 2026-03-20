@@ -8,17 +8,20 @@ import ErrorBoundary from './components/ErrorBoundary';
 import UpdateBanner from './components/UpdateBanner';
 import FeedbackWidget from './components/FeedbackWidget';
 import useIsMobile from './hooks/useIsMobile';
+import { useAuth } from './contexts/AuthContext';
 import { listPlants } from './api';
 
 export default function App() {
+    const { user } = useAuth();
     const [plant, setPlant] = useState('OCP-JFC1');
     const [plants, setPlants] = useState([]);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [mobileRole, setMobileRole] = useState(() => localStorage.getItem('mobileRole') || 'maintainer');
     const isMobile = useIsMobile();
 
-    // Design state: view mode, time range, area
-    const [viewMode, setViewMode] = useState('executive');
+    // Design state: view mode defaults by role (manager→executive, others→tactical)
+    const defaultView = (user?.role === 'manager' || user?.role === 'admin') ? 'executive' : 'tactical';
+    const [viewMode, setViewMode] = useState(defaultView);
     const [selectedTimeRange, setSelectedTimeRange] = useState('Last 30 Days');
     const [selectedArea, setSelectedArea] = useState('All Areas');
 
@@ -27,6 +30,12 @@ export default function App() {
 
     useEffect(() => { listPlants().then(setPlants).catch(() => { }); }, []);
     useEffect(() => { localStorage.setItem('mobileRole', mobileRole); }, [mobileRole]);
+    // Auto-set viewMode when user role changes (login)
+    useEffect(() => {
+        if (user?.role) {
+            setViewMode((user.role === 'manager' || user.role === 'admin') ? 'executive' : 'tactical');
+        }
+    }, [user?.role]);
 
     // Redirect: mobile routes on desktop → home, desktop routes on mobile → home
     useEffect(() => {

@@ -40,19 +40,27 @@ const PERMISSIONS = {
     'rca':                { view: TACTICAL,  edit: ['admin', 'engineer'] },
     'defect-elimination': { view: TACTICAL,  edit: ['admin', 'engineer'] },
 
-    // ─── Execution ───
+    // ─── Work Orders & Execution ───
+    'work-orders':        { view: ALL_ROLES, edit: ['admin', 'planner'] },
+    'execution':          { view: ['admin', 'planner', 'tecnico'], edit: ['admin', 'planner', 'tecnico'] },
+    'post-maintenance':   { view: ['admin', 'manager', 'engineer'], edit: ['admin', 'engineer'] },
     'field-capture':      { view: TACTICAL,  edit: ['admin', 'tecnico'] },
     'troubleshooting':    { view: TACTICAL,  edit: ['admin', 'tecnico'] },
 
     // ─── Analytics & Reports ───
     'analytics':          { view: ['admin', 'manager'], edit: ['admin'] },
     'executive':          { view: ['admin', 'manager'], edit: ['admin'] },
+    'failures-events':    { view: ALL_ROLES, edit: ['admin', 'engineer'] },
+    'improvement-actions': { view: TACTICAL,  edit: ['admin', 'engineer', 'planner'] },
     'reports':            { view: ALL_ROLES, edit: ['admin', 'manager'] },
     'sap-review':         { view: ['admin', 'manager', 'planner'], edit: ['admin'] },
 
     // ─── System ───
     'admin':              { view: ['admin'], edit: ['admin'] },
     'ai-agents':          { view: ['admin', 'manager', 'engineer'], edit: ['admin'] },
+    'team':               { view: ['admin', 'manager', 'planner'], edit: ['admin', 'manager'] },
+    'settings':           { view: ALL_ROLES, edit: ALL_ROLES },
+    'feedback':           { view: ALL_ROLES, edit: ALL_ROLES },
     'profile':            { view: ALL_ROLES, edit: ALL_ROLES },
 };
 

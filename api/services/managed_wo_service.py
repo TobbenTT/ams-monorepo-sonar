@@ -76,6 +76,7 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "risk_analysis": wo.risk_analysis,
         "budget_approved": wo.budget_approved,
         "budget_amount": wo.budget_amount,
+        "is_fast_track": wo.is_fast_track,
         "created_at": wo.created_at.isoformat() if wo.created_at else None,
         "updated_at": wo.updated_at.isoformat() if wo.updated_at else None,
     }
@@ -95,9 +96,11 @@ def create_work_order(
     materials: list | None = None,
     tools: list | None = None,
 ) -> dict:
-    """Create a new managed work order (optionally from an approved WR)."""
+    """Create a new managed work order (optionally from an approved WR).
+    P1/P2 priorities trigger fast track: OT created directly in RELEASED status."""
     wo_number = _generate_wo_number(db)
     work_class = "NO_PROGRAMADO" if priority_code in ("P1", "P2") else "PROGRAMADO"
+    is_fast_track = priority_code in ("P1", "P2")
 
     wo = ManagedWorkOrderModel(
         wo_number=wo_number,
@@ -114,9 +117,24 @@ def create_work_order(
         operations=operations or [],
         materials=materials or [],
         tools=tools or [],
+        is_fast_track=is_fast_track,
     )
+
+    # Fast track: P1/P2 skip planning → go directly to RELEASED
+    if is_fast_track:
+        wo.status = "RELEASED"
+        wo.released_by = planned_by
+        wo.released_at = datetime.now()
+        wo.execution_notes = [{
+            "timestamp": datetime.now().isoformat(),
+            "user": planned_by or "system",
+            "note": f"[FAST TRACK] OT creada directamente en RELEASED por prioridad {priority_code}",
+        }]
+
     db.add(wo)
     log_action(db, "managed_work_order", wo.wo_id, "CREATE")
+    if is_fast_track:
+        log_action(db, "managed_work_order", wo.wo_id, "FAST_TRACK_RELEASED")
     db.commit()
     db.refresh(wo)
     return _to_dict(wo)
@@ -161,6 +179,7 @@ def list_work_orders(
     priority: str | None = None,
     limit: int = 200,
     offset: int = 0,
+    fast_track: bool | None = None,
 ) -> list[dict]:
     q = db.query(ManagedWorkOrderModel)
     if status:
@@ -171,6 +190,8 @@ def list_work_orders(
         q = q.filter(ManagedWorkOrderModel.wo_type == wo_type)
     if priority:
         q = q.filter(ManagedWorkOrderModel.priority_code == priority)
+    if fast_track is not None:
+        q = q.filter(ManagedWorkOrderModel.is_fast_track == fast_track)
     items = q.order_by(ManagedWorkOrderModel.created_at.desc()).offset(offset).limit(limit).all()
     return [_to_dict(wo) for wo in items]
 

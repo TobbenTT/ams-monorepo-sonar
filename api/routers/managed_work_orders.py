@@ -110,11 +110,12 @@ def list_work_orders(
     plant_id: str | None = None,
     wo_type: str | None = None,
     priority: str | None = None,
+    fast_track: bool | None = None,
     limit: int = 200,
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
-    return managed_wo_service.list_work_orders(db, status, plant_id, wo_type, priority, limit, offset)
+    return managed_wo_service.list_work_orders(db, status, plant_id, wo_type, priority, limit, offset, fast_track=fast_track)
 
 
 @router.get("/stats")

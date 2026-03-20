@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
-  Wrench, Tag, MapPin, Gauge, Package, Calendar, FileText, Trash2
+  Wrench, Tag, MapPin, Gauge, Package, Calendar, FileText, Trash2, Zap
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';
@@ -242,6 +242,17 @@ function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete,
                   {typeof part === 'string' ? part : part.name || part.code}
                 </span>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Fast Track Banner for P1/P2 */}
+        {isPending && ['P1', 'P2'].includes(item.priority_requested) && (
+          <div className="mx-6 mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 flex items-center gap-3">
+            <Zap className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">IMPREVISTO — Fast Track</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400">Al aprobar este aviso {item.priority_requested}, se creará una OT directa sin planificación</p>
             </div>
           </div>
         )}
@@ -501,9 +512,24 @@ export default function WorkRequests() {
 
   /* ─── Actions ─── */
   function handleValidate(id) {
+    const req = requests.find(r => r.id === id);
+    const priority = req?.priority_requested || req?.priority_suggested || 'P3';
+    const isFastTrack = ['P1', 'P2'].includes(priority);
+
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'VALIDATED' } : r)));
     api.validateWorkRequest(id, { action: 'APPROVE' })
-      .then(() => toast.success('Aviso validado y agregado al Backlog'))
+      .then(async () => {
+        if (isFastTrack) {
+          try {
+            const wo = await api.createWOFromWR({ work_request_id: id });
+            toast.success(`FAST TRACK: OT ${wo.wo_number} creada — lista para asignar`);
+          } catch {
+            toast.success('Aviso validado. Error al crear OT automática — créala manualmente.');
+          }
+        } else {
+          toast.success('Aviso validado y agregado al Backlog');
+        }
+      })
       .catch(() => toast.error('Error al validar'));
   }
 
@@ -729,8 +755,10 @@ export default function WorkRequests() {
                       : req.failure_description;
                   const hasDuplicates = findDuplicates(req, requests).length > 0;
 
+                  const isFastTrackWR = ['P1', 'P2'].includes(req.priority_requested);
+
                   return (
-                    <tr key={req.id} className="hover:bg-muted/30 transition-colors">
+                    <tr key={req.id} className={`hover:bg-muted/30 transition-colors ${isFastTrackWR && isPending ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''}`}>
                       {/* ID / Equipment */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -738,7 +766,14 @@ export default function WorkRequests() {
                             <span title={t('workRequests.duplicateWarning')} className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
                           )}
                           <div>
-                            <p className="font-mono text-xs text-muted-foreground mb-0.5">{req.id}</p>
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <p className="font-mono text-xs text-muted-foreground">{req.id}</p>
+                              {isFastTrackWR && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
+                                  <Zap size={8} /> FAST TRACK
+                                </span>
+                              )}
+                            </div>
                             <p className="font-semibold text-foreground text-xs">{req.equipment_name}</p>
                             <p className="font-mono text-xs text-muted-foreground">{req.equipment_tag}</p>
                           </div>

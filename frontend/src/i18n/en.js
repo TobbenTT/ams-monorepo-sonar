@@ -2002,6 +2002,13 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         failMechanical: 'Mechanical',
         failElectrical: 'Electrical',
         failInstrumentation: 'Instrumentation',
+        // Fast track (P1/P2 emergencies)
+        fastTrack: 'Fast Track',
+        fastTrackBadge: 'EMERGENCY',
+        fastTrackBanner: 'Approving this {priority} notice will create a direct WO without planning',
+        fastTrackCreated: 'WO {woNumber} created via Fast Track — ready to assign',
+        fastTrackAssign: 'Assign & Schedule',
+        imprevistoActivo: 'Active Emergencies',
     },
 
     // ─── Failures & Events ───────────────────────────────────

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
-import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck } from 'lucide-react';
+import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap } from 'lucide-react';
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -672,12 +672,26 @@ export default function WorkOrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {managedWOs.map((wo) => {
+                  {[...managedWOs].sort((a, b) => {
+                    // Fast track OTs first, then by creation date
+                    if (a.is_fast_track && !b.is_fast_track) return -1;
+                    if (!a.is_fast_track && b.is_fast_track) return 1;
+                    return 0;
+                  }).map((wo) => {
                     const nextAct = OT_NEXT_ACTION[wo.status];
                     const NextIcon = nextAct?.icon;
                     return (
-                      <TableRow key={wo.wo_id} className="hover:bg-gray-50">
-                        <TableCell className="font-mono text-sm font-medium text-emerald-700">{wo.wo_number}</TableCell>
+                      <TableRow key={wo.wo_id} className={`hover:bg-gray-50 ${wo.is_fast_track ? 'bg-amber-50/50' : ''}`}>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-sm font-medium text-emerald-700">{wo.wo_number}</span>
+                            {wo.is_fast_track && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300 flex items-center gap-0.5 whitespace-nowrap">
+                                <Zap size={8} /> FAST TRACK
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-sm">{wo.equipment_tag}</TableCell>
                         <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
                         <TableCell>

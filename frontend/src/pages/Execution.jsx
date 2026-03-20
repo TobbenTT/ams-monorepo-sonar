@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   Wrench, ClipboardCheck, ArrowRightLeft, Plus, CheckCircle2,
-  Clock, AlertTriangle, User, Send, RefreshCw, ChevronDown, ChevronUp
+  Clock, AlertTriangle, User, Send, RefreshCw, ChevronDown, ChevronUp, Zap
 } from 'lucide-react';
 import {
   getMyTasks, listExecutionTasks, assignExecutionTask,
@@ -37,8 +37,17 @@ export default function Execution() {
   const [expandedTask, setExpandedTask] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [shiftNote, setShiftNote] = useState('');
+  const [fastTrackWOs, setFastTrackWOs] = useState([]);
 
-  useEffect(() => { refresh(); }, [tab]);
+  useEffect(() => { refresh(); loadFastTrack(); }, [tab]);
+
+  async function loadFastTrack() {
+    try {
+      const wos = await listManagedWOs({ fast_track: true, limit: 20 });
+      const list = Array.isArray(wos) ? wos : wos.items || [];
+      setFastTrackWOs(list.filter(w => ['RELEASED', 'SCHEDULED', 'IN_PROGRESS'].includes(w.status)));
+    } catch { /* ignore */ }
+  }
 
   async function refresh() {
     setLoading(true);
@@ -362,6 +371,41 @@ export default function Execution() {
           </button>
         </div>
       </div>
+
+      {/* Fast Track / Imprevistos Activos */}
+      {fastTrackWOs.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <h2 className="text-sm font-bold text-amber-800 flex items-center gap-2 mb-3">
+            <Zap size={16} className="text-amber-600" /> Imprevistos Activos ({fastTrackWOs.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {fastTrackWOs.map(wo => (
+              <div key={wo.wo_id} className={`bg-white rounded-lg border-l-4 p-3 shadow-sm ${wo.priority_code === 'P1' ? 'border-red-500' : 'border-orange-400'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-mono text-sm font-bold text-emerald-700">{wo.wo_number}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${wo.priority_code === 'P1' ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-orange-100 text-orange-700'}`}>
+                    {wo.priority_code}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 truncate">{wo.equipment_tag}</p>
+                <p className="text-xs text-gray-500 truncate mt-0.5">{wo.description}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${
+                    wo.status === 'RELEASED' ? 'bg-blue-100 text-blue-700' :
+                    wo.status === 'SCHEDULED' ? 'bg-purple-100 text-purple-700' :
+                    'bg-amber-100 text-amber-700'
+                  }`}>{wo.status.replace(/_/g, ' ')}</span>
+                  {wo.assigned_workers?.length > 0 && (
+                    <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                      <User size={10} /> {wo.assigned_workers.length}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1">

@@ -522,6 +522,9 @@ class ManagedWorkOrderModel(Base):
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     assigned_workers: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{worker_id, name, specialty}]
 
+    # Fast track (P1/P2 imprevistos skip planning)
+    is_fast_track: Mapped[bool] = mapped_column(Boolean, default=False)
+
     # Execution
     completion_pct: Mapped[float] = mapped_column(Float, default=0.0)
     execution_notes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{timestamp, user, note}]

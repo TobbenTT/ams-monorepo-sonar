@@ -1796,6 +1796,13 @@ export default {
         failMechanical: 'Mecánico',
         failElectrical: 'Eléctrico',
         failInstrumentation: 'Instrumentación',
+        // Fast track (P1/P2 imprevistos)
+        fastTrack: 'Fast Track',
+        fastTrackBadge: 'IMPREVISTO',
+        fastTrackBanner: 'Al aprobar este aviso {priority}, se generará una OT directa sin planificación',
+        fastTrackCreated: 'OT {woNumber} creada en Fast Track — lista para asignar',
+        fastTrackAssign: 'Asignar y Programar',
+        imprevistoActivo: 'Imprevistos Activos',
     },
 
     // ─── Improvement Actions ─────────────────────────────────

@@ -81,7 +81,7 @@ createRoot(document.getElementById('root')).render(
 
                                 <Route element={<P roles={ALL}><App /></P>}>
                                     {/* ── New Design Routes (primary navigation) ── */}
-                                    <Route index element={<S><Dashboard /></S>} />
+                                    <Route index element={<S><HomeRouter /></S>} />
                                     <Route path="work-orders" element={<S><WorkOrdersPage /></S>} />
                                     <Route path="failures-events" element={<S><FailuresEvents /></S>} />
                                     <Route path="improvement-actions" element={<S><ImprovementActionsPage /></S>} />

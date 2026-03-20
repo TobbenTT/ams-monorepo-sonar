@@ -27,9 +27,9 @@ export default function App() {
     // Mobile layout
     if (isMobile) {
         return (
-            <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F8FAFC' }}>
+            <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ backgroundColor: '#F8FAFC' }}>
                 <MobileHeader mobileRole={mobileRole} onRoleChange={setMobileRole} />
-                <main className="flex-1 max-w-md mx-auto w-full pb-20">
+                <main className="flex-1 max-w-md mx-auto w-full pb-20 overflow-x-hidden">
                     <ErrorBoundary>
                         <Outlet context={{ plant, selectedPlant: plant, plants, mobileRole, viewMode, selectedTimeRange, selectedArea }} />
                     </ErrorBoundary>

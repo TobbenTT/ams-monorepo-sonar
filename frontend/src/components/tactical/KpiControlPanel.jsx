@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card } from '../ui/card';
-import { ArrowUp, ArrowDown, Minus, TrendingUp, AlertCircle, CheckCircle, Eye, Loader2 } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, TrendingUp, AlertCircle, CheckCircle, Eye, Loader2, Wrench, Users } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -134,6 +134,7 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
   const [execData, setExecData] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [workRequests, setWorkRequests] = useState([]);
+  const [wmKpis, setWmKpis] = useState(null);
 
   useEffect(() => {
     if (!selectedPlant) {
@@ -148,12 +149,14 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
       api.getExecutiveDashboard(selectedPlant).catch(() => null),
       api.getAnalyticsPageData(selectedPlant).catch(() => null),
       api.listWorkRequests({ plant_id: selectedPlant }).catch(() => []),
+      api.getWorkManagementKpis(selectedPlant).catch(() => null),
     ])
-      .then(([exec, analytics, wrs]) => {
+      .then(([exec, analytics, wrs, wm]) => {
         if (cancelled) return;
         setExecData(exec);
         setAnalyticsData(analytics);
         setWorkRequests(Array.isArray(wrs) ? wrs : []);
+        setWmKpis(wm);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || 'Failed to load KPI data');
@@ -373,6 +376,91 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
     },
   ];
 
+  // 5. WORK MANAGEMENT (from managed_work_orders — Phase 6)
+  const wm = wmKpis || {};
+  const workManagementKpis = [
+    {
+      title: 'Schedule Compliance (OTs)',
+      value: wm.schedule_compliance ?? '—',
+      target: 90,
+      unit: '%',
+      trend: 'stable',
+      status: kpiStatus(wm.schedule_compliance, 90),
+      weeklyData: [],
+    },
+    {
+      title: 'Schedule Adherence',
+      value: wm.schedule_adherence ?? '—',
+      target: 85,
+      unit: '%',
+      trend: 'stable',
+      status: kpiStatus(wm.schedule_adherence, 85),
+      weeklyData: [],
+    },
+    {
+      title: 'Backlog (hours)',
+      value: wm.backlog_hours ?? '—',
+      target: 500,
+      trend: 'stable',
+      status: kpiStatus(wm.backlog_hours, 500, true),
+      weeklyData: [],
+    },
+    {
+      title: 'Unplanned Work (%)',
+      value: wm.unplanned_pct ?? '—',
+      target: 20,
+      unit: '%',
+      trend: 'stable',
+      status: kpiStatus(wm.unplanned_pct, 20, true),
+      weeklyData: [],
+    },
+    {
+      title: 'SLA Overdue',
+      value: wm.sla_overdue_count ?? '—',
+      target: 0,
+      trend: 'stable',
+      status: kpiStatus(wm.sla_overdue_count ?? 0, 5, true),
+      weeklyData: [],
+    },
+  ];
+
+  // 6. COST & WORKFORCE
+  const costWorkforceKpis = [
+    {
+      title: 'Cost Correctivo',
+      value: wm.cost_correctivo != null ? `$${(wm.cost_correctivo / 1000).toFixed(0)}k` : '—',
+      target: '—',
+      trend: 'stable',
+      status: wm.cost_correctivo > 0 ? 'warning' : 'good',
+      weeklyData: [],
+    },
+    {
+      title: 'Cost Preventivo',
+      value: wm.cost_preventivo != null ? `$${(wm.cost_preventivo / 1000).toFixed(0)}k` : '—',
+      target: '—',
+      trend: 'stable',
+      status: wm.cost_preventivo > 0 ? 'good' : 'warning',
+      weeklyData: [],
+    },
+    {
+      title: 'Workforce Utilization',
+      value: wm.workforce_utilization ?? '—',
+      target: 85,
+      unit: '%',
+      trend: 'stable',
+      status: kpiStatus(wm.workforce_utilization, 85),
+      weeklyData: [],
+    },
+    {
+      title: 'Available Workers',
+      value: wm.available_workers != null ? `${wm.available_workers}/${wm.total_workers || 0}` : '—',
+      target: '—',
+      trend: 'stable',
+      status: wm.available_workers > 0 ? 'good' : 'warning',
+      weeklyData: [],
+    },
+  ];
+
   // Apply filter
   const filterKpis = (kpis) =>
     selectedFilter === 'critical' ? kpis.filter(k => k.status === 'critical' || k.status === 'warning') : kpis;
@@ -381,11 +469,13 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
   const filteredPlanning = filterKpis(planningKpis);
   const filteredReliability = filterKpis(reliabilityKpis);
   const filteredExecution = filterKpis(executionKpis);
+  const filteredWorkMgmt = filterKpis(workManagementKpis);
+  const filteredCostWorkforce = filterKpis(costWorkforceKpis);
 
   const showWeekly = viewMode === 'weekly';
 
   // Summary badges (always from unfiltered)
-  const allKpis = [...operationalDisciplineKpis, ...planningKpis, ...reliabilityKpis, ...executionKpis];
+  const allKpis = [...operationalDisciplineKpis, ...planningKpis, ...reliabilityKpis, ...executionKpis, ...workManagementKpis, ...costWorkforceKpis];
   const criticalCount = allKpis.filter(k => k.status === 'critical').length;
   const watchCount = allKpis.filter(k => k.status === 'warning').length;
   const goodCount = allKpis.filter(k => k.status === 'good').length;
@@ -434,6 +524,26 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
       kpis: filteredExecution,
       cols: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5',
       getClickWrs: () => filteredWRs,
+    },
+    {
+      key: 'workMgmt',
+      title: '5. Work Management',
+      subtitle: 'KPIs from managed work orders (OTs) — schedule compliance, backlog, SLA',
+      icon: <Wrench className="w-5 h-5 text-teal-600" />,
+      iconBg: 'bg-teal-100',
+      kpis: filteredWorkMgmt,
+      cols: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5',
+      getClickWrs: () => [],
+    },
+    {
+      key: 'costWorkforce',
+      title: '6. Cost & Workforce',
+      subtitle: 'Maintenance costs by type and workforce utilization',
+      icon: <Users className="w-5 h-5 text-indigo-600" />,
+      iconBg: 'bg-indigo-100',
+      kpis: filteredCostWorkforce,
+      cols: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+      getClickWrs: () => [],
     },
   ];
 
@@ -535,7 +645,7 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
           );
         })}
 
-        {selectedFilter === 'critical' && filteredOpDiscipline.length === 0 && filteredPlanning.length === 0 && filteredReliability.length === 0 && filteredExecution.length === 0 && (
+        {selectedFilter === 'critical' && filteredOpDiscipline.length === 0 && filteredPlanning.length === 0 && filteredReliability.length === 0 && filteredExecution.length === 0 && filteredWorkMgmt.length === 0 && filteredCostWorkforce.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-400" />
             <p className="text-lg font-medium text-green-700">All KPIs are on track</p>

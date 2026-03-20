@@ -203,6 +203,26 @@ export const uploadFeedbackAttachment = async (feedbackId, file, caption = '') =
   return res.json();
 };
 
+// ── Execution (Jorge Phase 4) ──
+export const assignExecutionTask = (d) => post('/execution/tasks', d);
+export const listExecutionTasks = (p) => get('/execution/tasks', p);
+export const getExecutionTask = (id) => get(`/execution/tasks/${id}`);
+export const getMyTasks = () => get('/execution/my-tasks');
+export const updateTaskProgress = (id, d) => put(`/execution/tasks/${id}/progress`, d);
+export const partialNotification = (id, d) => post(`/execution/tasks/${id}/partial`, d);
+export const completeExecutionTask = (id) => put(`/execution/tasks/${id}/complete`);
+export const confirmTaskUnderstood = (id) => put(`/execution/tasks/${id}/confirm-understood`);
+export const createHandover = (d) => post('/execution/handovers', d);
+export const listHandovers = (p) => get('/execution/handovers', p);
+
+// ── Post-Maintenance (Jorge Phase 5) ──
+export const createPMReview = (d) => post('/post-maintenance/reviews', d);
+export const listPMReviews = (p) => get('/post-maintenance/reviews', p);
+export const getPMReview = (id) => get(`/post-maintenance/reviews/${id}`);
+export const updatePMReview = (id, d) => put(`/post-maintenance/reviews/${id}`, d);
+export const completePMReview = (id) => put(`/post-maintenance/reviews/${id}/complete`);
+export const getPMAnalysis = (p) => get('/post-maintenance/analysis', p);
+
 // ── Planner ──
 export const generateRecommendation = (id) => post(`/planner/recommend/${id}`);
 export const getRecommendation = (id) => get(`/planner/recommendations/${id}`);
@@ -246,6 +266,8 @@ export const exportData = (d) => post('/reporting/export', d);
 export const getExecutiveDashboard = (plantId) => get(`/dashboard/executive/${plantId}`);
 export const getKpiSummary = (plantId) => get(`/dashboard/kpi-summary/${plantId}`);
 export const getDashboardAlerts = (plantId) => get(`/dashboard/alerts/${plantId}`);
+// Phase 6 — Work Management KPIs
+export const getWorkManagementKpis = (plantId) => get(`/dashboard/work-management-kpis/${plantId}`);
 
 // ── RCA ──
 export const createRca = (d) => post('/rca/analyses', d);

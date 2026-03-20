@@ -55,6 +55,8 @@ const EquipmentChat = lazy(() => import('./pages/EquipmentChat'));
 const ExpertKnowledge = lazy(() => import('./pages/ExpertKnowledge'));
 const ExecutionChecklists = lazy(() => import('./pages/ExecutionChecklists'));
 const FeedbackAdmin = lazy(() => import('./pages/FeedbackAdmin'));
+const Execution = lazy(() => import('./pages/Execution'));
+const PostMaintenance = lazy(() => import('./pages/PostMaintenance'));
 
 const ALL = ['admin', 'manager', 'planner', 'tecnico', 'engineer'];
 const MGMT = ['admin', 'manager'];
@@ -91,6 +93,8 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="team" element={<S><TeamPage /></S>} />
                                     <Route path="settings" element={<S><SettingsPage /></S>} />
                                     <Route path="feedback-admin" element={<S><FeedbackAdmin /></S>} />
+                                    <Route path="execution" element={<S><Execution /></S>} />
+                                    <Route path="post-maintenance" element={<S><PostMaintenance /></S>} />
 
                                     {/* ── Mobile routes ── */}
                                     <Route path="m/tareas" element={<S><MobileWorkOrders /></S>} />

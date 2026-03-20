@@ -12,6 +12,7 @@ from api.services import reporting_service
 from api.database.models import (
     KPIMetricsModel, BacklogItemModel, WorkRequestModel,
     HierarchyNodeModel, WeeklyProgramModel,
+    ManagedWorkOrderModel, WorkforceModel, WorkAssignmentModel,
 )
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"], dependencies=[Depends(get_current_user)])
@@ -109,4 +110,115 @@ def get_dashboard_alerts(plant_id: str, db: Session = Depends(get_db)):
         "plant_id": plant_id,
         "total_active": len(notifications),
         "alerts": notifications,
+    }
+
+
+# ── Jorge Phase 6 — Work Management KPIs ─────────────────────────────
+
+@router.get("/work-management-kpis/{plant_id}")
+def get_work_management_kpis(plant_id: str, db: Session = Depends(get_db)):
+    """Compute KPIs from managed_work_orders + workforce for Phase 6."""
+    from datetime import datetime, timedelta
+
+    now = datetime.now()
+    thirty_days_ago = now - timedelta(days=30)
+
+    # All MWOs for this plant
+    all_wos = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == plant_id,
+    ).all()
+
+    recent = [w for w in all_wos if w.created_at and w.created_at >= thirty_days_ago]
+
+    total = len(recent)
+    completed = [w for w in recent if w.status in ("COMPLETED", "CLOSED")]
+    in_progress = [w for w in recent if w.status == "IN_PROGRESS"]
+    programmed = [w for w in recent if w.work_class == "PROGRAMADO"]
+    unplanned = [w for w in recent if w.work_class == "NO_PROGRAMADO"]
+
+    # Schedule compliance: completed on time / total programmed
+    on_time = sum(
+        1 for w in programmed
+        if w.status in ("COMPLETED", "CLOSED")
+        and (not w.planned_end or not w.actual_end or w.actual_end <= w.planned_end)
+    )
+    schedule_compliance = round(on_time / len(programmed) * 100, 1) if programmed else 0
+
+    # Schedule adherence: executed per program / total executed
+    sched_executed = sum(1 for w in completed if w.work_class == "PROGRAMADO")
+    schedule_adherence = round(sched_executed / len(completed) * 100, 1) if completed else 0
+
+    # Backlog: pending hours
+    pending = [w for w in all_wos if w.status not in ("COMPLETED", "CLOSED")]
+    backlog_hours = round(sum(w.estimated_hours for w in pending), 1)
+    backlog_count = len(pending)
+
+    # Late WRs (past SLA)
+    late_wrs = db.query(WorkRequestModel).filter(
+        WorkRequestModel.plant_id == plant_id,
+        WorkRequestModel.status.notin_(["CLOSED", "COMPLETED", "REJECTED"]),
+    ).all()
+    sla_overdue = sum(
+        1 for wr in late_wrs
+        if getattr(wr, "sla_deadline", None) and wr.sla_deadline < now
+    )
+
+    # Cost by type (from budget_amount where available)
+    cost_correctivo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "CORRECTIVO")
+    cost_preventivo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "PREVENTIVO")
+    cost_predictivo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "PREDICTIVO")
+    cost_mejora = sum(w.budget_amount or 0 for w in recent if w.wo_type == "MEJORA")
+
+    # Hours by type
+    hours_correctivo = round(sum(w.actual_hours for w in recent if w.wo_type == "CORRECTIVO"), 1)
+    hours_preventivo = round(sum(w.actual_hours for w in recent if w.wo_type == "PREVENTIVO"), 1)
+    hours_predictivo = round(sum(w.actual_hours for w in recent if w.wo_type == "PREDICTIVO"), 1)
+
+    # Workforce
+    workers = db.query(WorkforceModel).filter(
+        WorkforceModel.plant_id == plant_id,
+    ).all()
+    total_workers = len(workers)
+    available_workers = sum(1 for w in workers if w.available)
+
+    # Tasks summary
+    tasks = db.query(WorkAssignmentModel).filter(
+        WorkAssignmentModel.plant_id == plant_id,
+    ).all()
+    tasks_completed = sum(1 for t in tasks if t.status == "COMPLETED")
+    tasks_in_progress = sum(1 for t in tasks if t.status in ("ASSIGNED", "IN_PROGRESS"))
+
+    return {
+        "plant_id": plant_id,
+        "period": "last_30_days",
+        # Core KPIs
+        "schedule_compliance": schedule_compliance,
+        "schedule_adherence": schedule_adherence,
+        "backlog_hours": backlog_hours,
+        "backlog_count": backlog_count,
+        "sla_overdue_count": sla_overdue,
+        # WO counts
+        "total_wos": total,
+        "completed_wos": len(completed),
+        "in_progress_wos": len(in_progress),
+        "programmed_wos": len(programmed),
+        "unplanned_wos": len(unplanned),
+        "unplanned_pct": round(len(unplanned) / total * 100, 1) if total else 0,
+        # Hours by type
+        "hours_correctivo": hours_correctivo,
+        "hours_preventivo": hours_preventivo,
+        "hours_predictivo": hours_predictivo,
+        # Cost by type
+        "cost_correctivo": round(cost_correctivo, 2),
+        "cost_preventivo": round(cost_preventivo, 2),
+        "cost_predictivo": round(cost_predictivo, 2),
+        "cost_mejora": round(cost_mejora, 2),
+        "total_cost": round(cost_correctivo + cost_preventivo + cost_predictivo + cost_mejora, 2),
+        # Workforce
+        "total_workers": total_workers,
+        "available_workers": available_workers,
+        "workforce_utilization": round(available_workers / total_workers * 100, 1) if total_workers else 0,
+        # Tasks
+        "tasks_completed": tasks_completed,
+        "tasks_in_progress": tasks_in_progress,
     }

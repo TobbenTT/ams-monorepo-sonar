@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import {
     Home, Wrench, AlertTriangle, TrendingUp, BarChart3,
-    FileText, Users, Settings, MessageSquare,
+    FileText, Users, Settings, MessageSquare, ClipboardCheck,
     ChevronLeft, ChevronRight, User, LogOut
 } from 'lucide-react';
 import { cn } from './ui/utils';
@@ -19,6 +19,8 @@ const navItems = [
     { path: '/team', icon: Users, labelKey: 'nav.team' },
     { path: '/settings', icon: Settings, labelKey: 'nav.settings' },
     { path: '/feedback-admin', icon: MessageSquare, labelKey: 'nav.feedback' },
+    { path: '/execution', icon: ClipboardCheck, labelKey: 'nav.execution' },
+    { path: '/post-maintenance', icon: FileText, labelKey: 'nav.postMaintenance' },
 ];
 
 export default function Sidebar({ mobileOpen, onClose }) {

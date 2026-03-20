@@ -108,6 +108,8 @@ export default {
         team: 'Equipo',
         settings: 'Configuración',
         feedback: 'Feedback',
+        execution: 'Ejecucion',
+        postMaintenance: 'Post Mantenimiento',
         profile: 'Perfil',
         brandTitle: 'Mantenimiento OCP',
         brandSubtitle: 'Plataforma de Confiabilidad',

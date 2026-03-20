@@ -1071,6 +1071,14 @@ class WorkAssignmentModel(Base):
     scheduled_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     estimated_hours: Mapped[float] = mapped_column(Float, default=0.0)
     status: Mapped[str] = mapped_column(String(20), default="PENDING")
+    # Jorge Phase 4 — Execution tracking
+    wo_id: Mapped[str | None] = mapped_column(String(50), nullable=True)  # link to managed WO
+    task_description: Mapped[str] = mapped_column(Text, default="")
+    task_understood: Mapped[bool] = mapped_column(Boolean, default=False)
+    progress_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    partial_notes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{timestamp, note}]
+    shift_handover_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
@@ -1355,3 +1363,56 @@ class ImprovementActionModel(Base):
         Index("ix_improvement_actions_plant_status", "plant_id", "status"),
         Index("ix_improvement_actions_assigned", "assigned_to"),
     )
+
+
+# ── Equipment Handovers (Jorge Phase 4 — Execution) ──────────────────
+
+class EquipmentHandoverModel(Base):
+    """Equipment handover records between maintenance and operations."""
+    __tablename__ = "equipment_handovers"
+
+    handover_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    wo_id: Mapped[str] = mapped_column(String(50), index=True)  # FK managed_work_orders
+    equipment_id: Mapped[str] = mapped_column(String(100))
+    equipment_tag: Mapped[str] = mapped_column(String(100))
+    handover_type: Mapped[str] = mapped_column(String(20))  # TO_MAINTENANCE, TO_OPERATIONS
+    from_user: Mapped[str] = mapped_column(String(50))
+    to_user: Mapped[str] = mapped_column(String(50))
+    condition_notes: Mapped[str] = mapped_column(Text, default="")
+    tests_passed: Mapped[bool] = mapped_column(Boolean, default=False)
+    test_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    handover_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+# ── Post-Maintenance Reviews (Jorge Phase 5) ─────────────────────────
+
+class PostMaintenanceReviewModel(Base):
+    """Post-maintenance period reviews — analysis, meeting, improvements."""
+    __tablename__ = "post_maintenance_reviews"
+
+    review_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    plant_id: Mapped[str] = mapped_column(String(50), default="OCP-JFC1")
+    period_start: Mapped[date] = mapped_column(Date)
+    period_end: Mapped[date] = mapped_column(Date)
+
+    # Analysis
+    wo_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {total, completed, delayed, rework_count}
+    performance_kpis: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    delays: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    unplanned_work: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    rework_items: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    # Meeting
+    meeting_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    attendees: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    meeting_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Improvement
+    improvement_actions: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{action, responsible, deadline, status}]
+    lessons_learned: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    status: Mapped[str] = mapped_column(String(20), default="DRAFT")  # DRAFT, IN_REVIEW, COMPLETED
+    created_by: Mapped[str] = mapped_column(String(50), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

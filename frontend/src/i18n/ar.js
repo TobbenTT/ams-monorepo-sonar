@@ -107,6 +107,8 @@ export default {
         improvementActions: 'إجراءات التحسين',
         team: 'الفريق',
         settings: 'الإعدادات',
+        execution: 'التنفيذ',
+        postMaintenance: 'ما بعد الصيانة',
         profile: 'الملف الشخصي',
         brandTitle: 'صيانة OCP',
         brandSubtitle: 'منصة الموثوقية',

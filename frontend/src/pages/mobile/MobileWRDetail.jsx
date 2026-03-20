@@ -64,11 +64,11 @@ function parseOldText(text) {
 
     // Define extraction patterns — order matters (greedy patterns last)
     const extractions = [
-        { key: 'suggestedAction', re: /Acci[oó]n sugerida:\s*(.+?)(?=\s*(?:Recursos:|Duraci[oó]n estimada:|Equipos especiales:|Condici[oó]n planta:|Prioridad:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
-        { key: 'resourcesText', re: /Recursos:\s*(.+?)(?=\s*(?:Duraci[oó]n estimada:|Equipos especiales:|Condici[oó]n planta:|Prioridad:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
+        { key: 'suggestedAction', re: /Acci[oó]n sugerida:\s*(.+?)(?=\s*(?:Recursos:|Duraci[oó]n estimada:|Equipos especiales:|Condici[oó]n (?:planta|equipo|del equipo):|Prioridad:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
+        { key: 'resourcesText', re: /Recursos:\s*(.+?)(?=\s*(?:Duraci[oó]n estimada:|Equipos especiales:|Condici[oó]n (?:planta|equipo|del equipo):|Prioridad:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
         { key: 'estimatedDurationText', re: /Duraci[oó]n estimada:\s*(\d+\.?\d*)h?/i },
-        { key: 'specialEquipment', re: /Equipos especiales:\s*(.+?)(?=\s*(?:Condici[oó]n planta:|Prioridad:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
-        { key: 'plantCondition', re: /Condici[oó]n planta:\s*(\S+)/i },
+        { key: 'specialEquipment', re: /Equipos especiales:\s*(.+?)(?=\s*(?:Condici[oó]n (?:planta|equipo|del equipo):|Prioridad:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
+        { key: 'plantCondition', re: /Condici[oó]n (?:planta|equipo|del equipo):\s*(\S+)/i },
         { key: 'priorityText', re: /Prioridad:\s*(\S+)/i },
         { key: 'locationText', re: /Ubicaci[oó]n t[eé]cnica:\s*(.+?)(?=\s*(?:Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
         { key: 'materialsText', re: /Materiales:\s*(.+?)(?=\s*(?:Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },

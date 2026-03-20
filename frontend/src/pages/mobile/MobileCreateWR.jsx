@@ -975,7 +975,7 @@ export default function MobileCreateWR() {
                     </div>
                 </div>
 
-                {/* 8. Condición planta */}
+                {/* 8. Condición del equipo */}
                 <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
                     <label className="text-xs font-semibold mb-3 block" style={{ color: '#64748B', letterSpacing: '0.05em' }}>
                         CONDICIÓN DEL EQUIPO *

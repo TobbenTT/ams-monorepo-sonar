@@ -285,6 +285,9 @@ export default {
         impactLow: 'Bajo',
         showingOf: 'Mostrando {shown} de {total} avisos',
         updatedAt: 'Actualizado: {time}',
+        queueAll: 'Todos',
+        queueSupervisor: 'Imprevistos (P1/P2)',
+        queuePlanner: 'Planificación (P3/P4)',
     },
 
     // ─── Hierarchy ─────────────────────────────────────────
@@ -958,6 +961,13 @@ export default {
         hrs: 'hrs',
         lessThanWeeks: '< {n} semanas',
         failedToLoad: 'Error al cargar datos del dashboard',
+        iaTotal: 'Total Acciones',
+        iaOpen: 'Abiertas / En Progreso',
+        iaOverdue: 'Atrasadas',
+        iaCompleted: 'Completadas',
+        iaCompletionRate: 'Tasa de Cierre',
+        iaOverdueWarning: '{count} acción(es) de mejora atrasada(s) — requieren atención inmediata',
+        iaRecentActions: 'Acciones de Mejora Recientes',
     },
 
     // ─── Reports ───────────────────────────────────────────

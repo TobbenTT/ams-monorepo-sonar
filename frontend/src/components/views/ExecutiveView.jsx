@@ -4,7 +4,7 @@ import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Minus, DollarSign, Users, Wrench, Shield, Loader2 } from 'lucide-react';
+import { TrendingUp, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Minus, DollarSign, Users, Wrench, Shield, Loader2, Clock, Target } from 'lucide-react';
 import * as api from '../../api';
 import { filterByDateRange } from '../../utils/dateRange';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -47,6 +47,8 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
   const [alertsData, setAlertsData] = useState(null);
   const [workRequests, setWorkRequests] = useState([]);
   const [wmKpis, setWmKpis] = useState(null);
+  const [iasSummary, setIasSummary] = useState(null);
+  const [iasRecent, setIasRecent] = useState([]);
 
   useEffect(() => {
     if (!selectedPlant) return;
@@ -60,14 +62,18 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
       api.getDashboardAlerts(selectedPlant).catch(() => null),
       api.listWorkRequests({ plant_id: selectedPlant }).catch(() => []),
       api.getWorkManagementKpis(selectedPlant).catch(() => null),
+      api.getImprovementActionsSummary({ plant_id: selectedPlant }).catch(() => null),
+      api.listImprovementActions({ plant_id: selectedPlant, limit: 10 }).catch(() => ({ items: [] })),
     ])
-      .then(([exec, analytics, alerts, wrs, wm]) => {
+      .then(([exec, analytics, alerts, wrs, wm, iaSum, iaList]) => {
         if (cancelled) return;
         setExecData(exec);
         setAnalyticsData(analytics);
         setAlertsData(alerts);
         setWorkRequests(Array.isArray(wrs) ? wrs : []);
         setWmKpis(wm);
+        setIasSummary(iaSum);
+        setIasRecent((iaList?.items || []).slice(0, 5));
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || t('executive.failedToLoad'));
@@ -481,77 +487,104 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
     );
   };
 
-  // ── Mejora Continua Tab — derive from work requests and analytics ──
+  // ── Mejora Continua Tab — improvement actions + failure insights ──
   const MejoraContinuaTabContent = () => {
-    const recentReports = e.recent_reports || [];
-    const recentNotifs = e.recent_notifications || [];
+    const s = iasSummary || {};
+    const total = s.total || 0;
+    const open = s.open || 0;
+    const inProgress = s.in_progress || 0;
+    const completed = s.completed || 0;
+    const overdue = s.overdue || 0;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
     const failureModes = a.failure_modes_pareto || [];
+
+    const priorityColors = { CRITICAL: 'bg-red-100 text-red-800', HIGH: 'bg-orange-100 text-orange-800', MEDIUM: 'bg-yellow-100 text-yellow-800', LOW: 'bg-gray-100 text-gray-700' };
+    const statusColors = { OPEN: 'bg-blue-100 text-blue-800', IN_PROGRESS: 'bg-amber-100 text-amber-800', COMPLETED: 'bg-green-100 text-green-800', VERIFIED: 'bg-emerald-100 text-emerald-800', CANCELLED: 'bg-gray-100 text-gray-600' };
 
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard
-            title={t('executive.totalWorkRequests')}
-            value={workRequests.length}
-            target="—"
-            trend="stable"
-            status={workRequests.length > 0 ? 'good' : 'warning'}
-            icon={TrendingUp}
-          />
-          <KpiCard
-            title={t('executive.recentReports')}
-            value={recentReports.length}
-            target="—"
-            trend="stable"
-            status={recentReports.length > 0 ? 'good' : 'warning'}
-            icon={CheckCircle}
-          />
-          <KpiCard
-            title={t('executive.failureModesIdentified')}
-            value={failureModes.length}
-            target="—"
-            trend="stable"
-            status={failureModes.length > 0 ? 'good' : 'warning'}
-            icon={AlertCircle}
-          />
-          <KpiCard
-            title={t('executive.fieldCompletion')}
-            value={e.field_completion != null ? e.field_completion : '—'}
-            target={100}
-            trend="stable"
-            status={kpiStatus(e.field_completion, 100)}
-            unit={e.field_completion != null ? '%' : ''}
-            icon={TrendingUp}
-          />
+        {/* KPI cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <KpiCard title={t('executive.iaTotal')} value={total} target="—" trend="stable" status={total > 0 ? 'good' : 'warning'} icon={Target} />
+          <KpiCard title={t('executive.iaOpen')} value={open + inProgress} target="—" trend="stable" status={open + inProgress > 5 ? 'warning' : 'good'} icon={Clock} />
+          <KpiCard title={t('executive.iaOverdue')} value={overdue} target={0} trend="stable" status={overdue > 0 ? 'critical' : 'good'} icon={AlertCircle} />
+          <KpiCard title={t('executive.iaCompleted')} value={completed} target="—" trend="stable" status={completed > 0 ? 'good' : 'warning'} icon={CheckCircle} />
+          <KpiCard title={t('executive.iaCompletionRate')} value={completionRate} target={80} trend="stable" status={kpiStatus(completionRate, 80)} unit="%" icon={TrendingUp} />
         </div>
-        <Card className="p-6">
-          <h4 className="font-semibold text-gray-900 mb-4">{t('executive.keyImprovementInsights')}</h4>
-          {recentNotifs.length > 0 || failureModes.length > 0 ? (
-            <div className="space-y-3">
-              {failureModes.slice(0, 3).map((fm, idx) => (
-                <div key={idx} className={`p-4 ${idx === 0 ? 'bg-red-50 border-l-4 border-red-500' : idx === 1 ? 'bg-yellow-50 border-l-4 border-yellow-500' : 'bg-blue-50 border-l-4 border-blue-500'} rounded`}>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className={`font-medium ${idx === 0 ? 'text-red-900' : idx === 1 ? 'text-yellow-900' : 'text-blue-900'}`}>
-                        {fm.mode || fm.failure_mode || t('executive.failureModeN').replace('{n}', idx + 1)}
-                      </p>
-                      <p className={`text-sm mt-1 ${idx === 0 ? 'text-red-700' : idx === 1 ? 'text-yellow-700' : 'text-blue-700'}`}>
-                        {t('executive.count')}: {fm.count || '—'}
-                      </p>
+
+        {/* Overdue warning */}
+        {overdue > 0 && (
+          <Card className="p-4 bg-red-50 border-l-4 border-red-500">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <p className="text-sm text-red-800 font-medium">
+                {t('executive.iaOverdueWarning').replace('{count}', overdue)}
+              </p>
+            </div>
+          </Card>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent improvement actions list */}
+          <Card className="p-6">
+            <h4 className="font-semibold text-gray-900 mb-4">{t('executive.iaRecentActions')}</h4>
+            {iasRecent.length > 0 ? (
+              <div className="space-y-3">
+                {iasRecent.map((ia) => {
+                  const isOverdue = ia.status !== 'COMPLETED' && ia.status !== 'VERIFIED' && ia.status !== 'CANCELLED' && ia.target_date && new Date(ia.target_date) < new Date();
+                  return (
+                    <div key={ia.action_id} className={`p-3 rounded-lg border ${isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{ia.title}</p>
+                          {ia.equipment_tag && <p className="text-xs text-gray-500 mt-0.5">{ia.equipment_tag}</p>}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Badge className={`text-xs ${priorityColors[ia.priority] || 'bg-gray-100 text-gray-700'}`}>{ia.priority}</Badge>
+                          <Badge className={`text-xs ${statusColors[ia.status] || 'bg-gray-100 text-gray-700'}`}>{ia.status}</Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                        <span>{ia.assigned_to || '—'}</span>
+                        {ia.target_date && <span className={isOverdue ? 'text-red-600 font-medium' : ''}>{ia.target_date}</span>}
+                      </div>
                     </div>
-                    <Badge className={`${idx === 0 ? 'bg-red-100 text-red-800' : idx === 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
-                      {idx === 0 ? t('executive.critical') : idx === 1 ? t('executive.medium') : t('executive.review')}
-                    </Badge>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-500">{t('executive.noImprovementInsights')}</div>
+            )}
+          </Card>
+
+          {/* Top failure modes Pareto */}
+          <Card className="p-6">
+            <h4 className="font-semibold text-gray-900 mb-4">{t('executive.keyImprovementInsights')}</h4>
+            {failureModes.length > 0 ? (
+              <div className="space-y-3">
+                {failureModes.slice(0, 5).map((fm, idx) => (
+                  <div key={idx} className={`p-3 ${idx === 0 ? 'bg-red-50 border-l-4 border-red-500' : idx === 1 ? 'bg-yellow-50 border-l-4 border-yellow-500' : 'bg-blue-50 border-l-4 border-blue-500'} rounded`}>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium ${idx === 0 ? 'text-red-900' : idx === 1 ? 'text-yellow-900' : 'text-blue-900'}`}>
+                          {fm.mode || fm.failure_mode || t('executive.failureModeN').replace('{n}', idx + 1)}
+                        </p>
+                        <p className={`text-xs mt-1 ${idx === 0 ? 'text-red-700' : idx === 1 ? 'text-yellow-700' : 'text-blue-700'}`}>
+                          {t('executive.count')}: {fm.count || '—'}
+                        </p>
+                      </div>
+                      <Badge className={`text-xs ${idx === 0 ? 'bg-red-100 text-red-800' : idx === 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                        {idx === 0 ? t('executive.critical') : idx === 1 ? t('executive.medium') : t('executive.review')}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-500">
-              {t('executive.noImprovementInsights')}
-            </div>
-          )}
-        </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-500">{t('executive.noImprovementInsights')}</div>
+            )}
+          </Card>
+        </div>
       </div>
     );
   };

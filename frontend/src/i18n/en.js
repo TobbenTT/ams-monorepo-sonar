@@ -285,6 +285,9 @@ export default {
         impactLow: 'Low',
         showingOf: 'Showing {shown} of {total} requests',
         updatedAt: 'Updated: {time}',
+        queueAll: 'All',
+        queueSupervisor: 'Emergencies (P1/P2)',
+        queuePlanner: 'Planning (P3/P4)',
     },
 
     // ─── Hierarchy ─────────────────────────────────────────
@@ -1033,6 +1036,13 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         hrs: 'hrs',
         lessThanWeeks: '< {n} weeks',
         failedToLoad: 'Failed to load dashboard data',
+        iaTotal: 'Total Actions',
+        iaOpen: 'Open / In Progress',
+        iaOverdue: 'Overdue',
+        iaCompleted: 'Completed',
+        iaCompletionRate: 'Completion Rate',
+        iaOverdueWarning: '{count} improvement action(s) overdue — require immediate attention',
+        iaRecentActions: 'Recent Improvement Actions',
     },
 
     // ─── Reports ───────────────────────────────────────────

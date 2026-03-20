@@ -388,6 +388,9 @@ const PAGE_SIZE = 25;
 
 export default function WorkRequests() {
   const [scope, setScope] = useState('all');
+  const { user } = useAuth();
+  const defaultQueue = user?.role === 'manager' ? 'supervisor' : user?.role === 'planner' ? 'planner' : 'all';
+  const [priorityQueue, setPriorityQueue] = useState(defaultQueue); // 'all' | 'supervisor' (P1/P2) | 'planner' (P3/P4)
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
@@ -399,7 +402,6 @@ export default function WorkRequests() {
   const [sortField, setSortField] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
 
-  const { user } = useAuth();
   const { t } = useLanguage();
   const toast = useToast();
   const ctx = useOutletContext() || {};
@@ -430,17 +432,28 @@ export default function WorkRequests() {
     return requests;
   }, [requests, scope, user]);
 
+  /* ─── Priority queue filtering (supervisor P1/P2 vs planner P3/P4) ─── */
+  const queueFiltered = useMemo(() => {
+    if (priorityQueue === 'supervisor') {
+      return scopeFiltered.filter((r) => ['P1', 'P2'].includes(r.priority_requested || r.priority_suggested));
+    }
+    if (priorityQueue === 'planner') {
+      return scopeFiltered.filter((r) => !['P1', 'P2'].includes(r.priority_requested || r.priority_suggested));
+    }
+    return scopeFiltered;
+  }, [scopeFiltered, priorityQueue]);
+
   /* ─── Area filtering ─── */
   const areaFiltered = useMemo(() => {
-    if (!selectedArea || selectedArea === 'All Areas') return scopeFiltered;
+    if (!selectedArea || selectedArea === 'All Areas') return queueFiltered;
     const areaLower = selectedArea.toLowerCase();
-    return scopeFiltered.filter((r) => {
+    return queueFiltered.filter((r) => {
       const tag = (r.equipment_tag || '').toLowerCase();
       const name = (r.equipment_name || '').toLowerCase();
       const area = (r.area || '').toLowerCase();
       return tag.includes(areaLower) || name.includes(areaLower) || area.includes(areaLower);
     });
-  }, [scopeFiltered, selectedArea]);
+  }, [queueFiltered, selectedArea]);
 
   /* ─── Status + search filtering ─── */
   const filtered = useMemo(() => {
@@ -474,14 +487,14 @@ export default function WorkRequests() {
   const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Reset page when filters change
-  useEffect(() => { setPage(1); }, [statusFilter, search, scope]);
+  useEffect(() => { setPage(1); }, [statusFilter, search, scope, priorityQueue]);
 
   const toggleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('asc'); }
   };
 
-  const pendingCount = scopeFiltered.filter((r) => r.status === 'PENDING_VALIDATION').length;
+  const pendingCount = queueFiltered.filter((r) => r.status === 'PENDING_VALIDATION').length;
 
   /* ─── Status labels (i18n) ─── */
   const statusLabels = useMemo(() => ({
@@ -653,6 +666,45 @@ export default function WorkRequests() {
         })}
       </div>
 
+      {/* Priority queue tabs — role-based routing (QUOTE 79 Jorge: P1/P2 → supervisor, P3/P4 → planner) */}
+      {['admin', 'manager', 'planner'].includes(user?.role) && (
+        <div className="flex gap-2">
+          {[
+            { key: 'all', label: t('workRequests.queueAll'), icon: Globe, color: 'bg-gray-600' },
+            { key: 'supervisor', label: t('workRequests.queueSupervisor'), icon: Zap, color: 'bg-red-600' },
+            { key: 'planner', label: t('workRequests.queuePlanner'), icon: Wrench, color: 'bg-blue-600' },
+          ].map((q) => {
+            const Icon = q.icon;
+            const cnt = q.key === 'all' ? scopeFiltered.length
+              : q.key === 'supervisor' ? scopeFiltered.filter((r) => ['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length
+              : scopeFiltered.filter((r) => !['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length;
+            const pendCnt = q.key === 'all' ? scopeFiltered.filter((r) => r.status === 'PENDING_VALIDATION').length
+              : q.key === 'supervisor' ? scopeFiltered.filter((r) => r.status === 'PENDING_VALIDATION' && ['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length
+              : scopeFiltered.filter((r) => r.status === 'PENDING_VALIDATION' && !['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length;
+            return (
+              <button
+                key={q.key}
+                onClick={() => setPriorityQueue(q.key)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  priorityQueue === q.key
+                    ? `${q.color} text-white border-transparent shadow-md`
+                    : 'bg-card text-muted-foreground border-border hover:bg-muted'
+                }`}
+              >
+                <Icon size={16} />
+                <span>{q.label}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                  priorityQueue === q.key ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
+                }`}>{cnt}</span>
+                {pendCnt > 0 && q.key !== 'all' && (
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-500 text-white animate-pulse">{pendCnt}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Duplicate Warning */}
       {showDuplicates.length > 0 && (
         <DuplicateWarning
@@ -681,8 +733,8 @@ export default function WorkRequests() {
         <div className="flex flex-wrap gap-2">
           {STATUS_KEYS.map((key) => {
             const count = key === 'ALL'
-              ? scopeFiltered.length
-              : scopeFiltered.filter((r) => r.status === key).length;
+              ? queueFiltered.length
+              : queueFiltered.filter((r) => r.status === key).length;
             return (
               <button
                 key={key}

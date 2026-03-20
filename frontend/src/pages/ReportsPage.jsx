@@ -12,6 +12,7 @@ import {
   Inbox, Play, Eye, Trash2, BarChart3, ClipboardList, Shield, Settings, DollarSign,
 } from 'lucide-react';
 import * as api from '../api';
+import { downloadExport } from '../utils/exportFile';
 
 // ── Report type metadata ─────────────────────────────────────────────
 const REPORT_TYPE_META = {
@@ -171,12 +172,6 @@ export default function ReportsPage() {
           week: weekNum,
           week_number: weekNum,
           year: now.getFullYear(),
-          work_orders_completed: 0,
-          work_orders_open: 0,
-          safety_incidents: 0,
-          schedule_compliance_pct: 0,
-          backlog_hours: 0,
-          key_events: [],
         });
       } else if (reportType === 'MONTHLY_KPI') {
         await api.generateMonthlyReport({
@@ -218,19 +213,45 @@ export default function ReportsPage() {
     }
   };
 
-  // ── Download report as JSON ────────────────────────────────────────
+  // ── Download report as XLSX ────────────────────────────────────────
   const handleDownload = async (report) => {
     try {
       const data = await api.getReport(report.report_id);
       const content = data?.content || data;
       const meta = getReportMeta(report, t);
-      const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${meta.name.replace(/\s+/g, '_')}_${report.report_id?.slice(0, 8) || 'report'}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const filename = `${meta.name.replace(/\s+/g, '_')}_${report.report_id?.slice(0, 8) || 'report'}`;
+
+      // Build sheets from report content for XLSX export
+      const sheets = [];
+      if (content?.sections) {
+        content.sections.forEach(section => {
+          const rows = [];
+          if (section.metrics) {
+            section.metrics.forEach(m => {
+              rows.push({ Métrica: m.name || m.label || '', Valor: m.value ?? '', Unidad: m.unit || '', Estado: m.status || '' });
+            });
+          } else if (typeof section.content === 'object' && section.content) {
+            Object.entries(section.content).forEach(([k, v]) => {
+              rows.push({ Campo: k, Valor: typeof v === 'object' ? JSON.stringify(v) : String(v ?? '') });
+            });
+          }
+          if (rows.length > 0) {
+            sheets.push({ name: (section.title || 'Data').slice(0, 31), headers: Object.keys(rows[0]), rows });
+          }
+        });
+      }
+      if (sheets.length > 0) {
+        downloadExport({ format: 'EXCEL', sheets }, filename);
+      } else {
+        // Fallback: JSON download
+        const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
     } catch (err) {
       alert(`${t('reports.errorDownloading')}: ${err.message}`);
     }

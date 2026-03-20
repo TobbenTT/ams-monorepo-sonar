@@ -359,32 +359,40 @@ export default function MobileCreateWR() {
         if (!canSubmit || submitting) return;
         setSubmitting(true);
         try {
-            const res = await api.submitCapture({
-                capture_type: form.photos.length > 0 ? 'IMAGE' : 'TEXT',
-                raw_text_input: form.whatHappens,
-                equipment_tag_manual: form.whereTag,
+            const res = await api.createWRManual({
+                equipment_tag: form.whereTag,
+                equipment_name: form.whereTag,
                 plant_id: plant,
-                image_data: form.photos[0] || undefined,
-                technician_id: user?.user_id || 'UNKNOWN',
-                technician_name: user?.full_name || user?.username || 'Unknown',
-                // Structured fields
-                suggested_action: form.suggestedAction || undefined,
-                resources: form.resources.length > 0 ? form.resources : undefined,
-                estimated_duration: form.estimatedDuration || undefined,
-                materials: form.materials.length > 0 ? form.materials : undefined,
-                special_equipment: form.specialEquipment || undefined,
-                plant_condition: form.plantCondition,
+                problem_description: form.whatHappens,
                 priority: form.priority,
-                activity_class: form.activityClass || undefined,
-                technical_location: form.technicalLocation || undefined,
-                technical_location_code: form.technicalLocationCode || undefined,
-                failure_category: failureCategory || undefined,
-                failure_symptom: form.failureSymptom || undefined,
-                failure_object_part: form.failureObjectPart || undefined,
-                failure_cause: form.failureCause || undefined,
+                activity_class: form.activityClass || '',
+                failure_category: failureCategory || '',
+                failure_symptom: form.failureSymptom || '',
+                failure_cause: form.failureCause || '',
+                plant_condition: form.plantCondition || '',
+                suggested_action: form.suggestedAction || '',
+                estimated_duration: parseFloat(form.estimatedDuration) || 4,
+                materials: (form.materials || []).map(m => typeof m === 'string' ? m : m.name || '').filter(Boolean),
+                resources: (form.resources || []).map(r => typeof r === 'string' ? r : `${r.type || ''} x${r.quantity || 1}`).filter(Boolean),
+                created_by: user?.user_id || user?.username || '',
             });
             setSuccess(res);
             toast.success('Work Request creado exitosamente');
+
+            // If photos exist, upload them separately via capture endpoint
+            if (form.photos.length > 0) {
+                try {
+                    await api.submitCapture({
+                        capture_type: 'IMAGE',
+                        raw_text_input: form.whatHappens,
+                        equipment_tag_manual: form.whereTag,
+                        plant_id: plant,
+                        image_data: form.photos[0],
+                        technician_id: user?.user_id || 'UNKNOWN',
+                        technician_name: user?.full_name || user?.username || 'Unknown',
+                    });
+                } catch { /* photo upload is best-effort */ }
+            }
         } catch (e) {
             toast.error('Error: ' + e.message);
         }

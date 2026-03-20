@@ -87,6 +87,25 @@ def _update_db(db: Session, session: DiagnosisSession) -> None:
 
 # ── Public API ──────────────────────────────────────────────────────────
 
+def list_sessions(db: Session, plant_id: str = "", status: str = "") -> list[dict]:
+    """List troubleshooting sessions with optional filters."""
+    q = db.query(TroubleshootingSessionModel).order_by(TroubleshootingSessionModel.created_at.desc())
+    if plant_id:
+        q = q.filter(TroubleshootingSessionModel.plant_id == plant_id)
+    if status:
+        q = q.filter(TroubleshootingSessionModel.status == status)
+    return [_session_to_dict(obj) for obj in q.limit(100).all()]
+
+
+def get_recommended_tests(db: Session, session_id: str) -> list[dict]:
+    """Get recommended diagnostic tests for an active session."""
+    obj = db.query(TroubleshootingSessionModel).filter_by(session_id=session_id).first()
+    if not obj:
+        return []
+    session = _reconstruct_session(obj)
+    return TroubleshootingEngine.get_recommended_tests(session)
+
+
 def create_session(
     db: Session,
     equipment_type_id: str,

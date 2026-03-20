@@ -1,116 +1,152 @@
+import { useState, useEffect, useMemo } from 'react';
 import { Card } from '../ui/card';
 import { Lightbulb, TrendingUp, AlertCircle, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
+import * as api from '../../api';
 
-export default function OperationalInsights({ selectedArea, onInsightClick }) {
-  const insights = [
-    {
-      id: 1,
+function computeInsights(workRequests) {
+  const insights = [];
+  if (!workRequests || workRequests.length === 0) return insights;
+
+  // 1. Find recurring failures (same equipment with multiple WRs)
+  const byEquip = {};
+  workRequests.forEach(wr => {
+    const tag = wr.equipment_tag || '';
+    if (!tag) return;
+    if (!byEquip[tag]) byEquip[tag] = [];
+    byEquip[tag].push(wr);
+  });
+  const recurring = Object.entries(byEquip)
+    .filter(([, wrs]) => wrs.length >= 2)
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, 3);
+
+  recurring.forEach(([tag, wrs], i) => {
+    insights.push({
+      id: `recurring-${i}`,
       type: 'deviation',
-      severity: 'critical',
-      title: 'Recurring Failure Pattern Detected',
-      description: 'Pump P-101 has failed 3 times in the last 60 days with similar root causes (seal failure). Pattern suggests inadequate failure analysis or part quality issues.',
-      recommendation: 'Conduct comprehensive RCFA and implement condition monitoring',
-      area: 'Production Line 1',
-      impact: 'High',
-      data: {
-        type: 'Recurring Failures',
-        equipment: 'Pump P-101',
-        count: 3,
-        rootCause: 'Seal failure'
-      }
-    },
-    {
-      id: 2,
+      severity: wrs.length >= 3 ? 'critical' : 'warning',
+      title: `Falla Recurrente: ${tag}`,
+      description: `${tag} tiene ${wrs.length} solicitudes de trabajo en el período. Revisar causa raíz y estrategia de mantenimiento.`,
+      recommendation: 'Realizar RCFA e implementar monitoreo de condición',
+      area: (wrs[0].ai_classification || {}).plant_id || 'Planta',
+      impact: wrs.length >= 3 ? 'Alto' : 'Medio',
+      data: { type: 'Fallas Recurrentes', equipment: tag, count: wrs.length },
+    });
+  });
+
+  // 2. Late/overdue WRs (past SLA)
+  const now = new Date();
+  const overdue = workRequests.filter(wr => {
+    if (!wr.sla_deadline) return false;
+    return new Date(wr.sla_deadline) < now && !['COMPLETED', 'CLOSED', 'REJECTED'].includes(wr.status);
+  });
+  if (overdue.length > 0) {
+    insights.push({
+      id: 'overdue',
+      type: 'deviation',
+      severity: overdue.length >= 5 ? 'critical' : 'warning',
+      title: `${overdue.length} Solicitudes Vencidas (SLA)`,
+      description: `Hay ${overdue.length} WRs que han superado su fecha límite SLA sin completarse. Prioridades: ${[...new Set(overdue.map(w => w.priority_code || 'P3'))].join(', ')}.`,
+      recommendation: 'Revisar backlog y reprogramar con recursos adicionales',
+      area: 'Todas',
+      impact: 'Alto',
+      data: { type: 'SLA Vencido', count: overdue.length },
+    });
+  }
+
+  // 3. Status distribution insight
+  const statusCounts = {};
+  workRequests.forEach(wr => {
+    statusCounts[wr.status] = (statusCounts[wr.status] || 0) + 1;
+  });
+  const draft = statusCounts['DRAFT'] || 0;
+  const pending = statusCounts['PENDING_VALIDATION'] || 0;
+  const bottleneck = draft + pending;
+  if (bottleneck > 5) {
+    insights.push({
+      id: 'bottleneck',
       type: 'planning',
-      severity: 'warning',
-      title: 'Planning Inefficiency: High Rework Rate',
-      description: 'Production Line 1 shows 8.5% rework rate, significantly above plant average of 3%. Primary causes: incomplete job plans (45%) and improper torque specs (30%).',
-      recommendation: 'Review and standardize job planning procedures, implement peer review',
-      area: 'Production Line 1',
-      impact: 'Medium',
-      data: {
-        type: 'Planning Quality',
-        currentRate: 8.5,
-        targetRate: 3,
-      }
-    },
-    {
-      id: 3,
+      severity: bottleneck > 15 ? 'critical' : 'warning',
+      title: `Cuello de Botella: ${bottleneck} WRs Pendientes de Validación`,
+      description: `${draft} en DRAFT y ${pending} pendientes de validación. Posible retraso en la planificación.`,
+      recommendation: 'Acelerar proceso de aprobación del supervisor',
+      area: 'Planificación',
+      impact: bottleneck > 15 ? 'Alto' : 'Medio',
+      data: { type: 'Planificación', draft, pending },
+    });
+  }
+
+  // 4. High priority P1/P2 count
+  const urgent = workRequests.filter(wr =>
+    ['P1', 'P2'].includes(wr.priority_code) && !['COMPLETED', 'CLOSED'].includes(wr.status)
+  );
+  if (urgent.length > 0) {
+    insights.push({
+      id: 'urgent',
       type: 'resource',
-      severity: 'info',
-      title: 'Resource Optimization Opportunity',
-      description: 'Analysis shows 25% of corrective maintenance could be prevented with enhanced condition monitoring on critical rotating equipment.',
-      recommendation: 'Expand vibration monitoring program to cover 15 additional assets',
-      area: 'All Areas',
-      impact: 'High',
-      data: {
-        type: 'Resource Optimization',
-        potentialSavings: '$45K/year'
-      }
-    },
-    {
-      id: 4,
-      type: 'deviation',
-      severity: 'warning',
-      title: 'Spare Parts Stock-out Impact',
-      description: 'Stock-out events caused 45% of all maintenance delays in the last 30 days. Critical items: bearings (SKU-2401), seals (SKU-3156).',
-      recommendation: 'Adjust reorder points for critical spares and establish backup suppliers',
-      area: 'Utilities',
-      impact: 'Medium',
-      data: {
-        type: 'Inventory Management',
-        delaysCaused: 12,
-        criticalItems: ['SKU-2401', 'SKU-3156']
-      }
-    },
-  ];
+      severity: urgent.length >= 3 ? 'critical' : 'info',
+      title: `${urgent.length} Trabajos de Alta Prioridad Activos`,
+      description: `Hay ${urgent.length} WRs con prioridad P1/P2 sin completar. Estos requieren atención inmediata.`,
+      recommendation: 'Asignar recursos dedicados y monitorear avance diario',
+      area: 'Operaciones',
+      impact: 'Alto',
+      data: { type: 'Alta Prioridad', count: urgent.length },
+    });
+  }
+
+  return insights.length > 0 ? insights : [{
+    id: 'ok',
+    type: 'resource',
+    severity: 'info',
+    title: 'Sin Desviaciones Significativas',
+    description: `Se analizaron ${workRequests.length} solicitudes de trabajo. No se detectaron patrones críticos.`,
+    recommendation: 'Mantener las prácticas actuales y continuar monitoreo',
+    area: 'General',
+    impact: 'Bajo',
+    data: { type: 'Estado Normal', count: workRequests.length },
+  }];
+}
+
+export default function OperationalInsights({ selectedArea, selectedPlant, onInsightClick }) {
+  const [workRequests, setWorkRequests] = useState([]);
+
+  useEffect(() => {
+    api.listWorkRequests(selectedPlant ? { plant_id: selectedPlant } : {})
+      .then(data => setWorkRequests(Array.isArray(data) ? data : []))
+      .catch(() => setWorkRequests([]));
+  }, [selectedPlant]);
+
+  const insights = useMemo(() => computeInsights(workRequests), [workRequests]);
 
   const getSeverityConfig = (severity) => {
     switch (severity) {
       case 'critical':
-        return {
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
-          iconColor: 'text-red-600',
-          icon: AlertCircle,
-        };
+        return { bgColor: 'bg-red-50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-800', iconColor: 'text-red-600', icon: AlertCircle };
       case 'warning':
-        return {
-          bgColor: 'bg-yellow-50',
-          borderColor: 'border-yellow-200',
-          iconColor: 'text-yellow-600',
-          icon: TrendingUp,
-        };
+        return { bgColor: 'bg-yellow-50 dark:bg-yellow-900/20', borderColor: 'border-yellow-200 dark:border-yellow-800', iconColor: 'text-yellow-600', icon: TrendingUp };
       case 'info':
-        return {
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
-          iconColor: 'text-blue-600',
-          icon: Zap,
-        };
+        return { bgColor: 'bg-blue-50 dark:bg-blue-900/20', borderColor: 'border-blue-200 dark:border-blue-800', iconColor: 'text-blue-600', icon: Zap };
       default:
-        return {
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200',
-          iconColor: 'text-gray-600',
-          icon: Lightbulb,
-        };
+        return { bgColor: 'bg-gray-50 dark:bg-gray-800', borderColor: 'border-gray-200 dark:border-gray-700', iconColor: 'text-gray-600', icon: Lightbulb };
     }
   };
 
   return (
-    <Card className="p-6 bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-200">
+    <Card className="p-6 bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-950/20 dark:to-blue-950/20 border-emerald-200 dark:border-emerald-800">
       <div className="flex items-center gap-2 mb-4">
         <Lightbulb className="w-5 h-5 text-emerald-600" />
-        <h3 className="text-lg font-semibold">AI-Powered Operational Insights</h3>
+        <h3 className="text-lg font-semibold">Insights Operacionales</h3>
         <span className="ml-2 px-2 py-0.5 text-xs bg-emerald-600 text-white rounded-full">
-          Smart Analytics
+          Datos Reales
+        </span>
+        <span className="text-xs text-muted-foreground ml-auto">
+          {workRequests.length} WRs analizadas
         </span>
       </div>
 
-      <p className="text-sm text-gray-600 mb-4">
-        Pattern detection and predictive recommendations based on maintenance execution data
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        Análisis automático basado en datos reales de solicitudes de trabajo
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -122,59 +158,29 @@ export default function OperationalInsights({ selectedArea, onInsightClick }) {
             <div
               key={insight.id}
               className={`p-4 ${config.bgColor} border ${config.borderColor} rounded-lg cursor-pointer hover:shadow-md transition-all`}
-              onClick={() => onInsightClick(insight)}
+              onClick={() => onInsightClick?.(insight)}
             >
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg bg-white ${config.iconColor}`}>
+                <div className={`p-2 rounded-lg bg-white dark:bg-gray-800 ${config.iconColor}`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="font-semibold text-sm">{insight.title}</h4>
-                    <span className="text-xs px-2 py-0.5 bg-white rounded border">
-                      Impact: {insight.impact}
+                    <span className="text-xs px-2 py-0.5 bg-white dark:bg-gray-800 rounded border text-nowrap ml-2">
+                      Impacto: {insight.impact}
                     </span>
                   </div>
-
-                  <p className="text-sm text-gray-700 mb-2">{insight.description}</p>
-
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs px-2 py-1 bg-white rounded border">
-                      📍 {insight.area}
-                    </span>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{insight.description}</p>
+                  <div className="bg-white/70 dark:bg-gray-800/70 p-3 rounded border">
+                    <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">Acción Recomendada:</p>
+                    <p className="text-xs text-gray-700 dark:text-gray-300">{insight.recommendation}</p>
                   </div>
-
-                  <div className="bg-white/70 p-3 rounded border mb-3">
-                    <p className="text-xs font-medium text-emerald-700 mb-1">
-                      💡 Recommended Action:
-                    </p>
-                    <p className="text-xs text-gray-700">{insight.recommendation}</p>
-                  </div>
-
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full bg-white hover:bg-emerald-50"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onInsightClick(insight);
-                    }}
-                  >
-                    Investigate & Create Action
-                  </Button>
                 </div>
               </div>
             </div>
           );
         })}
-      </div>
-
-      <div className="mt-4 p-3 bg-white/70 rounded-lg border border-emerald-200">
-        <p className="text-xs text-gray-600">
-          <strong>🤖 How it works:</strong> The system analyzes patterns in work orders, failures, and deviations to identify:
-          (1) High rework zones, (2) Recurring failures, (3) Planning inefficiencies, (4) Resource optimization opportunities.
-          Click any insight to drill down and create preventive actions.
-        </p>
       </div>
     </Card>
   );

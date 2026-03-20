@@ -233,25 +233,21 @@ export default function WorkOrdersPage() {
     if (!canCreate || creating) return;
     setCreating(true);
     try {
-      await api.submitCapture({
-        capture_type: 'TEXT',
-        raw_text_input: createForm.whatHappens.trim(),
-        equipment_tag_manual: createForm.whereTag.trim(),
+      await api.createWRManual({
+        equipment_tag: createForm.whereTag.trim(),
+        equipment_name: selectedEquip?.name || createForm.whereTag.trim(),
         plant_id: plant,
-        technician_id: 'desktop',
-        technician_name: 'Desktop User',
-        suggested_action: createForm.suggestedAction || undefined,
-        estimated_duration: createForm.estimatedDuration || undefined,
-        plant_condition: createForm.plantCondition,
+        problem_description: createForm.whatHappens.trim(),
         priority: createForm.priority,
-        activity_class: createForm.activityClass || undefined,
-        failure_category: createForm.failureCategory || undefined,
-        failure_symptom: createForm.failureSymptom || undefined,
-        failure_object_part: createForm.failureObjectPart || undefined,
-        failure_cause: createForm.failureCause || undefined,
-        resources: createForm.resources.length > 0 ? createForm.resources : undefined,
-        materials: createForm.materials.length > 0 ? createForm.materials : undefined,
-        special_equipment: createForm.specialEquipment || undefined,
+        activity_class: createForm.activityClass || '',
+        failure_category: createForm.failureCategory || '',
+        failure_symptom: createForm.failureSymptom || '',
+        failure_cause: createForm.failureCause || '',
+        plant_condition: createForm.plantCondition || '',
+        suggested_action: createForm.suggestedAction || '',
+        estimated_duration: parseFloat(createForm.estimatedDuration) || 4,
+        materials: (createForm.materials || []).map(m => typeof m === 'string' ? m : m.name || '').filter(Boolean),
+        resources: (createForm.resources || []).map(r => typeof r === 'string' ? r : `${r.type || ''} x${r.quantity || 1}`).filter(Boolean),
       });
       setShowCreateModal(false);
       setCreateForm({ whatHappens: '', whereTag: '', suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'CR', plantCondition: 'operating', failureCategory: 'MECANICO', failureSymptom: '', failureObjectPart: '', failureCause: '', resources: [], materials: [], specialEquipment: '' });

@@ -5,8 +5,10 @@ import * as api from '../api';
 
 const STATUS_COLORS = {
     IN_PROGRESS: 'bg-blue-100 text-blue-800',
+    COMPLETED: 'bg-green-100 text-green-800',
     DIAGNOSED: 'bg-green-100 text-green-800',
     ESCALATED: 'bg-yellow-100 text-yellow-800',
+    ABANDONED: 'bg-red-100 text-red-800',
     CLOSED: 'bg-gray-100 text-gray-800',
 };
 
@@ -18,6 +20,8 @@ export default function Troubleshooting() {
     const [creating, setCreating] = useState(false);
     const [form, setForm] = useState({ equipment_type_id: '', equipment_tag: '', plant_id: '' });
     const [symptomText, setSymptomText] = useState('');
+    const [recommendedTests, setRecommendedTests] = useState([]);
+    const [testForm, setTestForm] = useState({ test_id: '', result: '', measured_value: '' });
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -43,16 +47,47 @@ export default function Troubleshooting() {
     const handleAddSymptom = async () => {
         if (!activeSession || !symptomText.trim()) return;
         try {
-            const updated = await api.addSymptom(activeSession.session_id, { symptom: symptomText });
+            const updated = await api.addSymptom(activeSession.session_id, { description: symptomText });
             setActiveSession(updated);
             setSymptomText('');
+            // Refresh recommended tests after new symptom
+            loadTests(activeSession.session_id);
         } catch { /* ignore */ }
+    };
+
+    const loadTests = async (sessionId) => {
+        try {
+            const tests = await api.getDiagnosticTests(sessionId);
+            setRecommendedTests(Array.isArray(tests) ? tests : []);
+        } catch { setRecommendedTests([]); }
     };
 
     const handleViewSession = async (id) => {
         try {
             const session = await api.getTroubleshootingSession(id);
             setActiveSession(session);
+            if (session.status === 'IN_PROGRESS') loadTests(id);
+            else setRecommendedTests([]);
+        } catch { /* ignore */ }
+    };
+
+    const handleRecordTest = async () => {
+        if (!activeSession || !testForm.test_id || !testForm.result) return;
+        try {
+            const updated = await api.recordTestResult(activeSession.session_id, testForm);
+            setActiveSession(updated);
+            setTestForm({ test_id: '', result: '', measured_value: '' });
+            loadTests(activeSession.session_id);
+        } catch { /* ignore */ }
+    };
+
+    const handleFinalize = async (fmCode) => {
+        if (!activeSession) return;
+        try {
+            const updated = await api.completeTroubleshooting(activeSession.session_id, { selected_fm_code: fmCode });
+            setActiveSession(updated);
+            setRecommendedTests([]);
+            await load();
         } catch { /* ignore */ }
     };
 
@@ -60,29 +95,29 @@ export default function Troubleshooting() {
 
     return (
         <div className="space-y-5">
-            <h1 className="text-2xl font-bold text-foreground mb-5">Interactive Troubleshooting</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-5">Troubleshooting Interactivo</h1>
 
             <div className="grid md:grid-cols-3 gap-5">
                 {/* Left: Session List + Create */}
                 <div className="space-y-4">
                     {/* Create new session */}
                     <div className="bg-card rounded-xl border p-4">
-                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">New Diagnosis Session</div>
+                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Nueva Sesión de Diagnóstico</div>
                         <div className="space-y-2">
-                            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Equipment Type ID"
+                            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Tipo de Equipo (ID)"
                                 value={form.equipment_type_id} onChange={e => setForm({ ...form, equipment_type_id: e.target.value })} />
-                            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Equipment Tag"
+                            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Tag del Equipo"
                                 value={form.equipment_tag} onChange={e => setForm({ ...form, equipment_tag: e.target.value })} />
                             <button onClick={handleCreate} disabled={creating || !form.equipment_type_id}
                                 className="w-full px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-primary/90 disabled:opacity-50">
-                                {creating ? 'Creating...' : 'Start Session'}
+                                {creating ? 'Creando...' : 'Iniciar Sesión'}
                             </button>
                         </div>
                     </div>
 
                     {/* Session list */}
                     <div className="bg-card rounded-xl border p-4">
-                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Recent Sessions ({sessions.length})</div>
+                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Sesiones Recientes ({sessions.length})</div>
                         <div className="space-y-2 max-h-[400px] overflow-y-auto">
                             {sessions.map(s => (
                                 <button key={s.session_id} onClick={() => handleViewSession(s.session_id)}
@@ -94,7 +129,7 @@ export default function Troubleshooting() {
                                     </div>
                                 </button>
                             ))}
-                            {sessions.length === 0 && <div className="text-sm text-muted-foreground text-center py-4">No sessions yet</div>}
+                            {sessions.length === 0 && <div className="text-sm text-muted-foreground text-center py-4">Sin sesiones aún</div>}
                         </div>
                     </div>
                 </div>
@@ -110,7 +145,7 @@ export default function Troubleshooting() {
                                 </div>
                                 {activeSession.final_confidence != null && (
                                     <div className="text-right">
-                                        <div className="text-xs text-muted-foreground">Confidence</div>
+                                        <div className="text-xs text-muted-foreground">Confianza</div>
                                         <div className="text-2xl font-bold text-green-700">{(activeSession.final_confidence * 100).toFixed(0)}%</div>
                                     </div>
                                 )}
@@ -118,51 +153,141 @@ export default function Troubleshooting() {
 
                             {/* Symptoms */}
                             <div>
-                                <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Symptoms Reported</div>
-                                <div className="text-sm whitespace-pre-wrap bg-muted/30 rounded p-3">{activeSession.symptoms || 'No symptoms recorded'}</div>
+                                <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Síntomas Reportados</div>
+                                {Array.isArray(activeSession.symptoms) && activeSession.symptoms.length > 0 ? (
+                                    <div className="space-y-1.5">
+                                        {activeSession.symptoms.map((s, i) => (
+                                            <div key={i} className="flex items-center gap-2 bg-muted/30 rounded px-3 py-2 text-sm">
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                                    s.severity === 'CRITICAL' ? 'bg-red-100 text-red-800' :
+                                                    s.severity === 'HIGH' ? 'bg-orange-100 text-orange-800' :
+                                                    s.severity === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-blue-100 text-blue-800'
+                                                }`}>{s.severity || 'MEDIUM'}</span>
+                                                {s.category && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">{s.category}</span>}
+                                                <span>{s.description}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-muted-foreground bg-muted/30 rounded p-3">Sin síntomas registrados</div>
+                                )}
                             </div>
 
                             {/* Add symptom */}
                             {activeSession.status === 'IN_PROGRESS' && (
                                 <div className="flex gap-2">
-                                    <input className="flex-1 border rounded px-2 py-1 text-sm" placeholder="Describe symptom..."
+                                    <input className="flex-1 border rounded px-2 py-1 text-sm" placeholder="Describir síntoma..."
                                         value={symptomText} onChange={e => setSymptomText(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && handleAddSymptom()} />
-                                    <button onClick={handleAddSymptom} className="px-3 py-1 bg-primary text-white rounded text-sm">Add</button>
+                                    <button onClick={handleAddSymptom} className="px-3 py-1 bg-primary text-white rounded text-sm">Agregar</button>
+                                </div>
+                            )}
+
+                            {/* Recommended tests */}
+                            {activeSession.status === 'IN_PROGRESS' && recommendedTests.length > 0 && (
+                                <div>
+                                    <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Pruebas Recomendadas</div>
+                                    <div className="space-y-1.5">
+                                        {recommendedTests.map((t, i) => (
+                                            <div key={i} className="bg-blue-50 dark:bg-blue-900/20 rounded px-3 py-2 text-sm flex items-center justify-between">
+                                                <div>
+                                                    <span className="font-medium">{t.test_type || t.test_id}</span>
+                                                    {t.description && <span className="text-muted-foreground ml-2">— {t.description}</span>}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    {t.estimated_time_minutes && <span>{t.estimated_time_minutes}min</span>}
+                                                    {t.estimated_cost_usd && <span>${t.estimated_cost_usd}</span>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Record test result */}
+                            {activeSession.status === 'IN_PROGRESS' && (
+                                <div>
+                                    <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Registrar Resultado de Prueba</div>
+                                    <div className="flex gap-2 flex-wrap">
+                                        <input className="border rounded px-2 py-1 text-sm w-32" placeholder="ID Prueba"
+                                            value={testForm.test_id} onChange={e => setTestForm({ ...testForm, test_id: e.target.value })} />
+                                        <select className="border rounded px-2 py-1 text-sm" value={testForm.result}
+                                            onChange={e => setTestForm({ ...testForm, result: e.target.value })}>
+                                            <option value="">Resultado...</option>
+                                            <option value="PASS">PASS (Normal)</option>
+                                            <option value="FAIL">FAIL (Anormal)</option>
+                                            <option value="INCONCLUSIVE">Inconcluso</option>
+                                        </select>
+                                        <input className="border rounded px-2 py-1 text-sm flex-1" placeholder="Valor medido (opcional)"
+                                            value={testForm.measured_value} onChange={e => setTestForm({ ...testForm, measured_value: e.target.value })} />
+                                        <button onClick={handleRecordTest} disabled={!testForm.test_id || !testForm.result}
+                                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">Registrar</button>
+                                    </div>
                                 </div>
                             )}
 
                             {/* Candidate diagnoses */}
-                            {activeSession.candidate_diagnoses && (
+                            {Array.isArray(activeSession.candidate_diagnoses) && activeSession.candidate_diagnoses.length > 0 && (
                                 <div>
-                                    <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Candidate Diagnoses</div>
-                                    <div className="text-sm whitespace-pre-wrap bg-blue-50 rounded p-3">{activeSession.candidate_diagnoses}</div>
+                                    <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Diagnósticos Candidatos</div>
+                                    <div className="space-y-1.5">
+                                        {activeSession.candidate_diagnoses.map((c, i) => (
+                                            <div key={i} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded px-3 py-2 text-sm flex items-center justify-between">
+                                                <div>
+                                                    <span className="font-bold text-blue-800 dark:text-blue-300">{c.fm_code}</span>
+                                                    <span className="ml-2">{c.mechanism}</span>
+                                                    {c.cause && <span className="text-muted-foreground ml-1">— {c.cause}</span>}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-medium">{(c.confidence * 100).toFixed(0)}%</span>
+                                                    {activeSession.status === 'IN_PROGRESS' && (
+                                                        <button onClick={() => handleFinalize(c.fm_code)}
+                                                            className="text-[10px] px-2 py-0.5 bg-green-600 text-white rounded hover:bg-green-700">
+                                                            Seleccionar
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
                             {/* Tests performed */}
-                            {activeSession.tests_performed && (
+                            {Array.isArray(activeSession.tests_performed) && activeSession.tests_performed.length > 0 && (
                                 <div>
-                                    <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Tests Performed</div>
-                                    <div className="text-sm whitespace-pre-wrap bg-muted/30 rounded p-3">{activeSession.tests_performed}</div>
+                                    <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Pruebas Realizadas</div>
+                                    <div className="space-y-1.5">
+                                        {activeSession.tests_performed.map((t, i) => (
+                                            <div key={i} className="bg-muted/30 rounded px-3 py-2 text-sm flex items-center justify-between">
+                                                <span>{t.test_id || t.test_type}</span>
+                                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                                                    t.result === 'FAIL' ? 'bg-red-100 text-red-800' :
+                                                    t.result === 'PASS' ? 'bg-green-100 text-green-800' :
+                                                    'bg-gray-100 text-gray-600'
+                                                }`}>{t.result}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
                             {/* Final diagnosis */}
                             {activeSession.final_fm_code && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                    <div className="text-xs font-bold uppercase text-green-800 mb-2">Final Diagnosis</div>
+                                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                                    <div className="text-xs font-bold uppercase text-green-800 dark:text-green-300 mb-2">Diagnóstico Final</div>
                                     <div className="grid grid-cols-3 gap-3 text-sm">
-                                        <div><span className="text-muted-foreground">FM Code:</span> <strong>{activeSession.final_fm_code}</strong></div>
-                                        <div><span className="text-muted-foreground">Mechanism:</span> <strong>{activeSession.final_mechanism}</strong></div>
-                                        <div><span className="text-muted-foreground">Cause:</span> <strong>{activeSession.final_cause}</strong></div>
+                                        <div><span className="text-muted-foreground">Código FM:</span> <strong>{activeSession.final_fm_code}</strong></div>
+                                        <div><span className="text-muted-foreground">Mecanismo:</span> <strong>{activeSession.final_mechanism}</strong></div>
+                                        <div><span className="text-muted-foreground">Causa:</span> <strong>{activeSession.final_cause}</strong></div>
                                     </div>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="bg-card rounded-xl border p-10 text-center text-muted-foreground">
-                            Select or create a troubleshooting session to begin diagnosis
+                            Selecciona o crea una sesión de troubleshooting para comenzar
                         </div>
                     )}
                 </div>

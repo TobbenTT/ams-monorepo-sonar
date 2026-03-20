@@ -43,6 +43,7 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
                 <div id="insights-section">
                     <OperationalInsights
                         selectedArea={selectedArea}
+                        selectedPlant={selectedPlant}
                         onInsightClick={(insight) => {
                             if (insight.type === 'deviation') {
                                 setSelectedDeviation(insight.data);

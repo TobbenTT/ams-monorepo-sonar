@@ -10,6 +10,15 @@ from api.services import troubleshooting_service
 router = APIRouter(prefix="/troubleshooting", tags=["troubleshooting"], dependencies=[Depends(get_current_user)])
 
 
+@router.get("/sessions")
+def list_sessions(
+    plant_id: str = "",
+    status: str = "",
+    db: Session = Depends(get_db),
+):
+    return troubleshooting_service.list_sessions(db, plant_id=plant_id, status=status)
+
+
 @router.post("/sessions")
 def create_session(data: dict, db: Session = Depends(get_db)):
     return troubleshooting_service.create_session(
@@ -41,6 +50,11 @@ def add_symptom(session_id: str, data: dict, db: Session = Depends(get_db)):
     if not result:
         raise HTTPException(status_code=404, detail="Troubleshooting session not found")
     return result
+
+
+@router.get("/sessions/{session_id}/tests")
+def get_recommended_tests(session_id: str, db: Session = Depends(get_db)):
+    return troubleshooting_service.get_recommended_tests(db, session_id)
 
 
 @router.post("/sessions/{session_id}/tests")

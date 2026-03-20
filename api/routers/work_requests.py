@@ -45,6 +45,25 @@ class WRAssignRequest(BaseModel):
     workers: list[WRAssignWorker]
 
 
+class WRManualCreateRequest(BaseModel):
+    """Create a WR directly without AI processing — for manual form entry."""
+    equipment_tag: str
+    equipment_name: str = ""
+    plant_id: str = ""
+    problem_description: str = ""
+    priority: str = "P3"
+    activity_class: str = ""
+    failure_category: str = ""
+    failure_symptom: str = ""
+    failure_cause: str = ""
+    plant_condition: str = ""
+    suggested_action: str = ""
+    estimated_duration: float = 4
+    materials: list[str] = []
+    resources: list[str] = []
+    created_by: str = ""
+
+
 class WRFromHierarchyRequest(BaseModel):
     equipment_tag: str
     equipment_name: str = ""
@@ -64,9 +83,9 @@ def get_equipment_history(equipment_tag: str, exclude_id: str | None = None, lim
 
 
 @router.get("/")
-def list_work_requests(status: str | None = None, limit: int = 200, offset: int = 0, db: Session = Depends(get_db)):
+def list_work_requests(status: str | None = None, plant_id: str | None = None, limit: int = 200, offset: int = 0, db: Session = Depends(get_db)):
     from api.database.models import FieldCaptureModel
-    items = work_request_service.list_work_requests(db, status, limit=limit, offset=offset)
+    items = work_request_service.list_work_requests(db, status, plant_id=plant_id, limit=limit, offset=offset)
     # Batch-load photos from linked captures
     capture_ids = [wr.source_capture_id for wr in items if wr.source_capture_id]
     captures_map = {}
@@ -245,6 +264,47 @@ def assign_work_request(request_id: str, data: WRAssignRequest, db: Session = De
     return {"ok": True, "status": wr.status, "assigned_workers": assigned_workers, "assigned_to": names}
 
 
+class WRCompleteRequest(BaseModel):
+    completion_notes: str = ""
+    actual_hours: float = 0
+
+
+class WRCloseRequest(BaseModel):
+    closure_notes: str = ""
+
+
+@router.put("/{request_id}/start")
+def start_work_request(request_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Transition WR to IN_PROGRESS."""
+    result = work_request_service.start_work_request(db, request_id, user_id=user.get("user_id", ""))
+    if not result:
+        raise HTTPException(status_code=400, detail="Cannot start — WR not found or invalid status")
+    return result
+
+
+@router.put("/{request_id}/complete")
+def complete_work_request(request_id: str, data: WRCompleteRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Transition WR to COMPLETED."""
+    result = work_request_service.complete_work_request(
+        db, request_id, user_id=user.get("user_id", ""),
+        completion_notes=data.completion_notes, actual_hours=data.actual_hours,
+    )
+    if not result:
+        raise HTTPException(status_code=400, detail="Cannot complete — WR not found or not IN_PROGRESS")
+    return result
+
+
+@router.put("/{request_id}/close")
+def close_work_request(request_id: str, data: WRCloseRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Technical closure of WR."""
+    result = work_request_service.close_work_request(
+        db, request_id, user_id=user.get("user_id", ""), closure_notes=data.closure_notes,
+    )
+    if not result:
+        raise HTTPException(status_code=400, detail="Cannot close — WR not found or invalid status")
+    return result
+
+
 @router.delete("/{request_id}")
 def delete_work_request(request_id: str, db: Session = Depends(get_db)):
     deleted = work_request_service.delete_work_request(db, request_id)
@@ -277,6 +337,56 @@ def check_duplicates(data: DuplicateCheckRequest, db: Session = Depends(get_db))
                 "created_at": wr.created_at.isoformat() if wr.created_at else None,
             })
     return {"equipment_tag": data.equipment_tag, "duplicate_count": len(duplicates), "duplicates": duplicates}
+
+
+@router.post("/manual")
+def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Create a WR directly from a manual form — NO AI pipeline, data preserved as-is."""
+    import uuid
+    from datetime import datetime, timezone
+    from api.database.models import WorkRequestModel
+
+    now = datetime.now(timezone.utc)
+    wr = WorkRequestModel(
+        request_id=str(uuid.uuid4()),
+        status="DRAFT",
+        equipment_id=data.equipment_tag,
+        equipment_tag=data.equipment_tag,
+        priority_code=data.priority,
+        work_class=work_request_service.derive_work_class(data.priority),
+        created_by=data.created_by or user.get("user_id", ""),
+        problem_description={
+            "original_text": data.problem_description,
+            "suggested_action": data.suggested_action,
+            "failure_mode_detected": data.failure_category,
+            "failure_symptom": data.failure_symptom,
+            "failure_cause": data.failure_cause,
+            "resources": data.resources,
+            "materials": data.materials,
+        },
+        ai_classification={
+            "priority_suggested": data.priority,
+            "plant_id": data.plant_id,
+            "equipment_name": data.equipment_name,
+            "activity_class": data.activity_class,
+            "plant_condition": data.plant_condition,
+            "estimated_duration_hours": data.estimated_duration,
+            "source": "manual_form",
+        },
+        created_at=now,
+    )
+    db.add(wr)
+    from api.services.audit_service import log_action
+    log_action(db, "work_request", wr.request_id, "CREATE_MANUAL")
+    db.commit()
+    db.refresh(wr)
+    return {
+        "request_id": wr.request_id,
+        "status": wr.status,
+        "equipment_tag": wr.equipment_tag,
+        "priority_code": wr.priority_code,
+        "created_at": wr.created_at.isoformat() if wr.created_at else None,
+    }
 
 
 @router.post("/from-hierarchy")

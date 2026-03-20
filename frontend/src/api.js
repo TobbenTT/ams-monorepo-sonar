@@ -163,6 +163,10 @@ export const checkDuplicates = (d) => post('/work-requests/check-duplicates', d)
 export const createWRFromHierarchy = (d) => post('/work-requests/from-hierarchy', d);
 export const deleteWorkRequest = (id) => del(`/work-requests/${id}`);
 export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);
+export const startWorkRequest = (id) => put(`/work-requests/${id}/start`);
+export const completeWorkRequest = (id, d) => put(`/work-requests/${id}/complete`, d);
+export const closeWorkRequest = (id, d) => put(`/work-requests/${id}/close`, d);
+export const createWRManual = (d) => post('/work-requests/manual', d);
 
 // ── Planner ──
 export const generateRecommendation = (id) => post(`/planner/recommend/${id}`);
@@ -253,8 +257,8 @@ export const getTroubleshootingSession = (id) => get(`/troubleshooting/sessions/
 export const listTroubleshootingSessions = (p) => get('/troubleshooting/sessions', p);
 export const addSymptom = (id, d) => post(`/troubleshooting/sessions/${id}/symptoms`, d);
 export const getDiagnosticTests = (id) => get(`/troubleshooting/sessions/${id}/tests`);
-export const recordTestResult = (id, d) => post(`/troubleshooting/sessions/${id}/test-results`, d);
-export const completeTroubleshooting = (id, d) => put(`/troubleshooting/sessions/${id}/complete`, d);
+export const recordTestResult = (id, d) => post(`/troubleshooting/sessions/${id}/tests`, d);
+export const completeTroubleshooting = (id, d) => put(`/troubleshooting/sessions/${id}/finalize`, d);
 
 // ── Expert Knowledge (GAP-W13) ──
 export const listExperts = (p) => get('/expert-knowledge/experts', p);

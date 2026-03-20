@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
@@ -11,7 +12,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
 /* ─── Status config (dynamic with i18n) ─── */
-const STATUS_KEYS = ['ALL', 'DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'REJECTED', 'IN_PROGRESS', 'SCHEDULED'];
+const STATUS_KEYS = ['ALL', 'DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED', 'REJECTED'];
 
 const IMPACT_COLOR = {
   CRITICAL: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
@@ -128,16 +129,22 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t }) {
 }
 
 /* ─── Detail Modal (expanded) ─── */
-function DetailModal({ item, onClose, onValidate, onReject, t }) {
+function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete, onCloseWR, t }) {
   if (!item) return null;
   const isPending = item.status === 'PENDING_VALIDATION';
+  const canStart = ['VALIDATED', 'ASSIGNED', 'SCHEDULED'].includes(item.status);
+  const canComplete = item.status === 'IN_PROGRESS';
+  const canClose = item.status === 'COMPLETED';
 
   const statusLabels = {
     DRAFT: t('common.draft'),
     PENDING_VALIDATION: t('common.pending'),
     VALIDATED: t('workRequests.validate'),
+    ASSIGNED: 'Asignado',
     REJECTED: t('common.reject'),
     IN_PROGRESS: t('common.active'),
+    COMPLETED: 'Completado',
+    CLOSED: 'Cerrado',
     SCHEDULED: t('workRequests.scheduled'),
   };
 
@@ -260,22 +267,53 @@ function DetailModal({ item, onClose, onValidate, onReject, t }) {
         )}
 
         {/* Action Buttons */}
-        {isPending && (
+        {(isPending || canStart || canComplete || canClose) && (
           <div className="px-6 py-4 border-t border-border flex gap-3 sticky bottom-0 bg-card rounded-b-2xl">
-            <button
-              onClick={() => { onValidate(item.id); onClose(); }}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1B5E20] text-white text-sm font-semibold hover:bg-[#2E7D32] transition-colors"
-            >
-              <CheckCircle size={16} />
-              {t('workRequests.validateRequest')}
-            </button>
-            <button
-              onClick={() => { onReject(item.id); onClose(); }}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-            >
-              <XCircle size={16} />
-              {t('common.reject')}
-            </button>
+            {isPending && (
+              <>
+                <button
+                  onClick={() => { onValidate(item.id); onClose(); }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1B5E20] text-white text-sm font-semibold hover:bg-[#2E7D32] transition-colors"
+                >
+                  <CheckCircle size={16} />
+                  {t('workRequests.validateRequest')}
+                </button>
+                <button
+                  onClick={() => { onReject(item.id); onClose(); }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                >
+                  <XCircle size={16} />
+                  {t('common.reject')}
+                </button>
+              </>
+            )}
+            {canStart && (
+              <button
+                onClick={() => { onStart(item.id); onClose(); }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+              >
+                <Wrench size={16} />
+                Iniciar Trabajo
+              </button>
+            )}
+            {canComplete && (
+              <button
+                onClick={() => { onComplete(item.id); onClose(); }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+              >
+                <CheckCircle size={16} />
+                Completar Trabajo
+              </button>
+            )}
+            {canClose && (
+              <button
+                onClick={() => { onCloseWR(item.id); onClose(); }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gray-600 text-white text-sm font-semibold hover:bg-gray-700 transition-colors"
+              >
+                <CheckCircle size={16} />
+                Cierre Técnico
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -335,6 +373,8 @@ function findDuplicates(currentReq, allRequests) {
 /* ═══════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════ */
+const PAGE_SIZE = 25;
+
 export default function WorkRequests() {
   const [scope, setScope] = useState('all');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -344,20 +384,27 @@ export default function WorkRequests() {
   const [loading, setLoading] = useState(true);
   const [duplicateTarget, setDuplicateTarget] = useState(null);
   const [showDuplicates, setShowDuplicates] = useState([]);
+  const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortDir, setSortDir] = useState('desc');
 
   const { user } = useAuth();
   const { t } = useLanguage();
   const toast = useToast();
+  const ctx = useOutletContext() || {};
+  const plantId = ctx.plant || ctx.selectedPlant || '';
+  const selectedArea = ctx.selectedArea || 'All Areas';
 
   useEffect(() => {
-    api.listWorkRequests()
+    setLoading(true);
+    api.listWorkRequests(plantId ? { plant_id: plantId } : {})
       .then((data) => {
         const arr = Array.isArray(data) ? data : [];
         setRequests(arr.map(normalizeWR));
       })
       .catch(() => setRequests([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [plantId]);
 
   /* ─── Scope filtering ─── */
   const scopeFiltered = useMemo(() => {
@@ -372,9 +419,21 @@ export default function WorkRequests() {
     return requests;
   }, [requests, scope, user]);
 
+  /* ─── Area filtering ─── */
+  const areaFiltered = useMemo(() => {
+    if (!selectedArea || selectedArea === 'All Areas') return scopeFiltered;
+    const areaLower = selectedArea.toLowerCase();
+    return scopeFiltered.filter((r) => {
+      const tag = (r.equipment_tag || '').toLowerCase();
+      const name = (r.equipment_name || '').toLowerCase();
+      const area = (r.area || '').toLowerCase();
+      return tag.includes(areaLower) || name.includes(areaLower) || area.includes(areaLower);
+    });
+  }, [scopeFiltered, selectedArea]);
+
   /* ─── Status + search filtering ─── */
   const filtered = useMemo(() => {
-    return scopeFiltered.filter((r) => {
+    return areaFiltered.filter((r) => {
       const matchesFilter = statusFilter === 'ALL' || r.status === statusFilter;
       const q = search.toLowerCase();
       const matchesSearch =
@@ -385,7 +444,31 @@ export default function WorkRequests() {
         r.failure_description.toLowerCase().includes(q);
       return matchesFilter && matchesSearch;
     });
-  }, [scopeFiltered, statusFilter, search]);
+  }, [areaFiltered, statusFilter, search]);
+
+  /* ─── Sort + Paginate ─── */
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      const va = a[sortField] ?? '';
+      const vb = b[sortField] ?? '';
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filtered, sortField, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [statusFilter, search, scope]);
+
+  const toggleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
+  };
 
   const pendingCount = scopeFiltered.filter((r) => r.status === 'PENDING_VALIDATION').length;
 
@@ -395,8 +478,11 @@ export default function WorkRequests() {
     DRAFT: t('common.draft'),
     PENDING_VALIDATION: t('common.pending'),
     VALIDATED: t('workRequests.validate'),
+    ASSIGNED: 'Asignado',
     REJECTED: t('common.reject'),
     IN_PROGRESS: t('common.active'),
+    COMPLETED: 'Completado',
+    CLOSED: 'Cerrado',
     SCHEDULED: t('workRequests.scheduled'),
   }), [t]);
 
@@ -424,6 +510,27 @@ export default function WorkRequests() {
   function handleReject(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'REJECTED' } : r)));
     api.validateWorkRequest(id, { action: 'REJECT' }).catch(() => {});
+  }
+
+  function handleStart(id) {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'IN_PROGRESS' } : r)));
+    api.startWorkRequest(id)
+      .then(() => toast.success('Trabajo iniciado'))
+      .catch(() => toast.error('Error al iniciar'));
+  }
+
+  function handleComplete(id) {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'COMPLETED' } : r)));
+    api.completeWorkRequest(id, { completion_notes: '', actual_hours: 0 })
+      .then(() => toast.success('Trabajo completado'))
+      .catch(() => toast.error('Error al completar'));
+  }
+
+  function handleClose(id) {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CLOSED' } : r)));
+    api.closeWorkRequest(id, { closure_notes: '' })
+      .then(() => toast.success('WR cerrada técnicamente'))
+      .catch(() => toast.error('Error al cerrar'));
   }
 
   function handleDelete(id) {
@@ -585,20 +692,20 @@ export default function WorkRequests() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50 border-b border-border">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('workRequests.requestId')} / {t('workRequests.equipmentName')}
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('equipment_name')}>
+                    {t('workRequests.requestId')} / {t('workRequests.equipmentName')} {sortField === 'equipment_name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     {t('workRequests.failureDesc')}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('common.priority')}
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('priority_requested')}>
+                    {t('common.priority')} {sortField === 'priority_requested' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('common.status')}
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('status')}>
+                    {t('common.status')} {sortField === 'status' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('workRequests.aiConfidence')}
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('ai_confidence')}>
+                    {t('workRequests.aiConfidence')} {sortField === 'ai_confidence' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     {t('common.actions')}
@@ -606,14 +713,14 @@ export default function WorkRequests() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.length === 0 && (
+                {paged.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground text-sm">
                       {t('common.noData')}
                     </td>
                   </tr>
                 )}
-                {filtered.map((req) => {
+                {paged.map((req) => {
                   const priorityChanged = req.priority_requested !== req.priority_suggested;
                   const isPending = req.status === 'PENDING_VALIDATION';
                   const truncatedDesc =
@@ -703,6 +810,33 @@ export default function WorkRequests() {
                               </button>
                             </>
                           )}
+                          {['VALIDATED', 'ASSIGNED', 'SCHEDULED'].includes(req.status) && (
+                            <button
+                              onClick={() => handleStart(req.id)}
+                              className="text-[10px] px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors"
+                              title="Iniciar trabajo"
+                            >
+                              Iniciar
+                            </button>
+                          )}
+                          {req.status === 'IN_PROGRESS' && (
+                            <button
+                              onClick={() => handleComplete(req.id)}
+                              className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
+                              title="Completar trabajo"
+                            >
+                              Completar
+                            </button>
+                          )}
+                          {req.status === 'COMPLETED' && (
+                            <button
+                              onClick={() => handleClose(req.id)}
+                              className="text-[10px] px-2 py-1 rounded bg-gray-600 text-white hover:bg-gray-700 font-medium transition-colors"
+                              title="Cierre técnico"
+                            >
+                              Cerrar
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDelete(req.id)}
                             className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
@@ -719,12 +853,23 @@ export default function WorkRequests() {
             </table>
           </div>
 
-          {/* Table Footer */}
+          {/* Table Footer with Pagination */}
           <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{t('workRequests.showingOf', { shown: filtered.length, total: scopeFiltered.length })}</span>
-            <div className="flex items-center gap-1">
-              <Clock size={12} />
-              <span>{t('workRequests.updatedAt', { time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) })}</span>
+            <span>{t('workRequests.showingOf', { shown: paged.length, total: sorted.length })}</span>
+            <div className="flex items-center gap-3">
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                    className="p-1 rounded hover:bg-muted disabled:opacity-30"><ChevronLeft size={14} /></button>
+                  <span className="font-medium">{page} / {totalPages}</span>
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                    className="p-1 rounded hover:bg-muted disabled:opacity-30"><ChevronRight size={14} /></button>
+                </div>
+              )}
+              <div className="flex items-center gap-1">
+                <Clock size={12} />
+                <span>{t('workRequests.updatedAt', { time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) })}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -737,6 +882,9 @@ export default function WorkRequests() {
           onClose={() => setSelected(null)}
           onValidate={handleValidate}
           onReject={handleReject}
+          onStart={handleStart}
+          onComplete={handleComplete}
+          onCloseWR={handleClose}
           t={t}
         />
       )}

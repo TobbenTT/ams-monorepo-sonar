@@ -190,7 +190,7 @@ export default function FieldCapture() {
             return;
         }
         const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
+        recognition.lang = 'es-ES';
         recognition.continuous = true;
         recognition.interimResults = true;
         recognitionRef.current = recognition;

@@ -29,10 +29,21 @@ def get_work_request(db: Session, request_id: str) -> WorkRequestModel | None:
     ).first()
 
 
-def list_work_requests(db: Session, status: str | None = None, limit: int = 200, offset: int = 0) -> list[WorkRequestModel]:
+def list_work_requests(
+    db: Session, status: str | None = None, plant_id: str | None = None,
+    limit: int = 200, offset: int = 0,
+) -> list[WorkRequestModel]:
     q = db.query(WorkRequestModel)
     if status:
         q = q.filter(WorkRequestModel.status == status)
+    if plant_id:
+        # plant_id lives inside ai_classification JSON — use JSON extraction
+        from sqlalchemy import cast, String, text
+        q = q.filter(
+            cast(WorkRequestModel.ai_classification["plant_id"], String).in_([
+                f'"{plant_id}"', plant_id,  # handles both quoted and unquoted JSON values
+            ])
+        )
     return q.order_by(WorkRequestModel.created_at.desc()).offset(offset).limit(limit).all()
 
 
@@ -155,6 +166,68 @@ def validate_work_request(
         from api.services import backlog_service
         backlog_service.add_to_backlog(db, request_id)
 
+    return _to_dict(wr)
+
+
+def start_work_request(db: Session, request_id: str, user_id: str = "") -> dict | None:
+    """Transition WR to IN_PROGRESS — work begins."""
+    wr = get_work_request(db, request_id)
+    if not wr:
+        return None
+    if wr.status not in ("VALIDATED", "APPROVED", "ASSIGNED", "SCHEDULED"):
+        return None
+    wr.status = "IN_PROGRESS"
+    validation = dict(wr.validation) if isinstance(wr.validation, dict) else {}
+    validation["started_by"] = user_id
+    validation["started_at"] = datetime.now().isoformat()
+    wr.validation = validation
+    log_action(db, "work_request", request_id, "START")
+    db.commit()
+    db.refresh(wr)
+    return _to_dict(wr)
+
+
+def complete_work_request(
+    db: Session, request_id: str, user_id: str = "",
+    completion_notes: str = "", actual_hours: float = 0,
+) -> dict | None:
+    """Transition WR to COMPLETED — work finished, pending closure."""
+    wr = get_work_request(db, request_id)
+    if not wr:
+        return None
+    if wr.status != "IN_PROGRESS":
+        return None
+    wr.status = "COMPLETED"
+    validation = dict(wr.validation) if isinstance(wr.validation, dict) else {}
+    validation["completed_by"] = user_id
+    validation["completed_at"] = datetime.now().isoformat()
+    validation["completion_notes"] = completion_notes
+    validation["actual_hours"] = actual_hours
+    wr.validation = validation
+    log_action(db, "work_request", request_id, "COMPLETE")
+    db.commit()
+    db.refresh(wr)
+    return _to_dict(wr)
+
+
+def close_work_request(
+    db: Session, request_id: str, user_id: str = "", closure_notes: str = "",
+) -> dict | None:
+    """Transition WR to CLOSED — technical closure."""
+    wr = get_work_request(db, request_id)
+    if not wr:
+        return None
+    if wr.status not in ("COMPLETED", "IN_PROGRESS"):
+        return None
+    wr.status = "CLOSED"
+    validation = dict(wr.validation) if isinstance(wr.validation, dict) else {}
+    validation["closed_by"] = user_id
+    validation["closed_at"] = datetime.now().isoformat()
+    validation["closure_notes"] = closure_notes
+    wr.validation = validation
+    log_action(db, "work_request", request_id, "CLOSE")
+    db.commit()
+    db.refresh(wr)
     return _to_dict(wr)
 
 

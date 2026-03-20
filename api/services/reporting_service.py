@@ -17,14 +17,50 @@ from tools.models.schemas import DEKPIInput, ImportSource, ExportFormat
 
 # ── Reports ─────────────────────────────────────────────────────────
 
+def _compute_weekly_stats(db: Session, plant_id: str) -> dict:
+    """Auto-compute report data from work_requests table."""
+    from api.database.models import WorkRequestModel, BacklogItemModel
+    from sqlalchemy import func, cast, String
+
+    total = db.query(func.count(WorkRequestModel.request_id)).scalar() or 0
+    completed = db.query(func.count(WorkRequestModel.request_id)).filter(
+        WorkRequestModel.status.in_(["COMPLETED", "CLOSED"])
+    ).scalar() or 0
+    in_progress = db.query(func.count(WorkRequestModel.request_id)).filter(
+        WorkRequestModel.status == "IN_PROGRESS"
+    ).scalar() or 0
+    open_wrs = db.query(func.count(WorkRequestModel.request_id)).filter(
+        WorkRequestModel.status.in_(["DRAFT", "PENDING_VALIDATION", "VALIDATED", "ASSIGNED", "SCHEDULED", "IN_PROGRESS"])
+    ).scalar() or 0
+    backlog = db.query(func.count(BacklogItemModel.backlog_item_id)).scalar() or 0
+
+    compliance = round((completed / total * 100) if total > 0 else 0, 1)
+
+    return {
+        "work_orders_completed": completed,
+        "work_orders_open": open_wrs,
+        "safety_incidents": 0,
+        "schedule_compliance_pct": compliance,
+        "backlog_hours": backlog * 4.0,  # estimate 4h per backlog item
+    }
+
+
 def generate_weekly_report(db: Session, plant_id: str, week: int, year: int, data: dict) -> dict:
+    # Auto-compute from DB if not provided
+    db_stats = _compute_weekly_stats(db, plant_id)
+    wo_completed = data.get("work_orders_completed") or db_stats["work_orders_completed"]
+    wo_open = data.get("work_orders_open") or db_stats["work_orders_open"]
+    safety = data.get("safety_incidents", db_stats["safety_incidents"])
+    compliance = data.get("schedule_compliance_pct") or db_stats["schedule_compliance_pct"]
+    backlog = data.get("backlog_hours") or db_stats["backlog_hours"]
+
     result = ReportingEngine.generate_weekly_report(
         plant_id, week, year,
-        work_orders_completed=data.get("work_orders_completed"),
-        work_orders_open=data.get("work_orders_open"),
-        safety_incidents=data.get("safety_incidents", 0),
-        schedule_compliance_pct=data.get("schedule_compliance_pct"),
-        backlog_hours=data.get("backlog_hours", 0.0),
+        work_orders_completed=wo_completed,
+        work_orders_open=wo_open,
+        safety_incidents=safety,
+        schedule_compliance_pct=compliance,
+        backlog_hours=backlog,
         key_events=data.get("key_events"),
     )
     report_dict = result.model_dump(mode="json")

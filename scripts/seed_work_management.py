@@ -133,7 +133,12 @@ def run():
     # ── 2. Seed Work Requests ──
     print("Seeding work requests...")
     # Clean existing and re-seed with correct plant_id
+    # Disable FK checks, clear dependent tables, then work_requests
+    db.execute(text("PRAGMA foreign_keys = OFF"))
+    db.execute(text("DELETE FROM planner_recommendations"))
+    db.execute(text("DELETE FROM backlog_items"))
     db.execute(text("DELETE FROM work_requests"))
+    db.execute(text("PRAGMA foreign_keys = ON"))
     existing_wr_count = 0
 
     wr_ids = []

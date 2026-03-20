@@ -361,8 +361,25 @@ def run():
 
     print(f"  Inserted 25 managed work orders (total now: {existing_wo_count + 25})")
 
-    # ── 4. Seed Work Assignments ──
+    # ── 4. Migrate work_assignments if needed + Seed ──
     print("Seeding work assignments...")
+
+    # Add missing columns if they don't exist (SQLite migration)
+    existing_cols = {r[1] for r in db.execute(text("PRAGMA table_info(work_assignments)")).fetchall()}
+    migrations = {
+        "wo_id": "ALTER TABLE work_assignments ADD COLUMN wo_id VARCHAR(50)",
+        "task_description": "ALTER TABLE work_assignments ADD COLUMN task_description TEXT DEFAULT ''",
+        "task_understood": "ALTER TABLE work_assignments ADD COLUMN task_understood BOOLEAN DEFAULT 0",
+        "progress_pct": "ALTER TABLE work_assignments ADD COLUMN progress_pct FLOAT DEFAULT 0",
+        "partial_notes": "ALTER TABLE work_assignments ADD COLUMN partial_notes JSON",
+        "shift_handover_notes": "ALTER TABLE work_assignments ADD COLUMN shift_handover_notes TEXT",
+        "completed_at": "ALTER TABLE work_assignments ADD COLUMN completed_at DATETIME",
+    }
+    for col, sql in migrations.items():
+        if col not in existing_cols:
+            db.execute(text(sql))
+            print(f"  Added column: {col}")
+
     db.execute(text("DELETE FROM work_assignments WHERE plant_id = :plant"), {"plant": PLANT})
 
     assignment_count = 0
@@ -375,22 +392,27 @@ def run():
 
             db.execute(text("""
                 INSERT INTO work_assignments (
-                    assignment_id, plant_id, wo_id, worker_id, worker_name,
-                    task_description, specialty, estimated_hours, actual_hours,
-                    status, assigned_at, started_at, completed_at,
-                    task_understood, progress_pct
+                    assignment_id, work_package_id, plant_id, assigned_to,
+                    estimated_hours, status, created_at, scheduled_date,
+                    competency_match_score,
+                    wo_id, task_description, task_understood, progress_pct, completed_at
                 ) VALUES (
-                    :aid, :plant, :wo_id, :wid, :wname,
-                    :desc, :spec, :est, :actual,
-                    :status, :assigned, :started, :completed,
-                    :understood, :progress
+                    :aid, :wpid, :plant, :assigned_to,
+                    :est, :status, :created, :sched,
+                    :match_score,
+                    :wo_id, :desc, :understood, :progress, :completed
                 )
             """), {
                 "aid": _uuid(),
+                "wpid": wo_id,
                 "plant": PLANT,
+                "assigned_to": worker_id,
+                "est": round(random.uniform(2, 8), 1),
+                "status": status,
+                "created": (now - timedelta(days=random.randint(1, 10))).isoformat(),
+                "sched": (now - timedelta(days=random.randint(0, 7))).strftime("%Y-%m-%d"),
+                "match_score": round(random.uniform(0.6, 0.99), 2),
                 "wo_id": wo_id,
-                "wid": worker_id,
-                "wname": worker[0],
                 "desc": random.choice([
                     "Inspección y diagnóstico",
                     "Reemplazo de componente",
@@ -399,15 +421,9 @@ def run():
                     "Alineamiento y calibración",
                     "Limpieza y lubricación",
                 ]),
-                "spec": worker[1],
-                "est": round(random.uniform(2, 8), 1),
-                "actual": round(random.uniform(1.5, 10), 1) if status == "COMPLETED" else 0,
-                "status": status,
-                "assigned": (now - timedelta(days=random.randint(1, 10))).isoformat(),
-                "started": (now - timedelta(days=random.randint(0, 5))).isoformat() if status != "ASSIGNED" else None,
-                "completed": (now - timedelta(days=random.randint(0, 3))).isoformat() if status == "COMPLETED" else None,
                 "understood": status != "ASSIGNED",
                 "progress": 100 if status == "COMPLETED" else (random.randint(20, 80) if status == "IN_PROGRESS" else 0),
+                "completed": (now - timedelta(days=random.randint(0, 3))).isoformat() if status == "COMPLETED" else None,
             })
             assignment_count += 1
 

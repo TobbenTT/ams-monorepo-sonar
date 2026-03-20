@@ -77,7 +77,7 @@ WORKERS = [
 
 WR_STATUSES = ["DRAFT", "PENDING_VALIDATION", "VALIDATED", "APPROVED", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CLOSED", "REJECTED"]
 
-WO_TYPES = ["CORRECTIVO", "PREVENTIVO", "PREDICTIVO", "MEJORA"]
+WO_TYPES = ["CORRECTIVO", "PREVENTIVO", "PREDICTIVO", "MEJORA", "INCIDENTE_OPERACIONAL", "MONITOREO_CONDICION"]
 WO_STATUSES = ["DRAFT", "PLANNED", "RELEASED", "SCHEDULED", "IN_PROGRESS", "COMPLETED", "CLOSED"]
 PRIORITIES = ["P1", "P2", "P3", "P4"]
 
@@ -240,7 +240,7 @@ def run():
 
         tag, equip_name = random.choice(EQUIPMENT)
         node_id = tag_to_node.get(tag, tag_to_node.get(equip_name, tag))
-        wo_type = random.choices(WO_TYPES, weights=[35, 35, 20, 10])[0]
+        wo_type = random.choices(WO_TYPES, weights=[30, 30, 15, 10, 8, 7])[0]
         priority = random.choices(PRIORITIES, weights=[10, 20, 45, 25])[0]
         work_class = "NO_PROGRAMADO" if priority in ("P1", "P2") else "PROGRAMADO"
 

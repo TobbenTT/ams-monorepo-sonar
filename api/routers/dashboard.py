@@ -167,11 +167,15 @@ def get_work_management_kpis(plant_id: str, db: Session = Depends(get_db)):
     cost_preventivo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "PREVENTIVO")
     cost_predictivo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "PREDICTIVO")
     cost_mejora = sum(w.budget_amount or 0 for w in recent if w.wo_type == "MEJORA")
+    cost_incidente = sum(w.budget_amount or 0 for w in recent if w.wo_type == "INCIDENTE_OPERACIONAL")
+    cost_monitoreo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "MONITOREO_CONDICION")
 
     # Hours by type
     hours_correctivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "CORRECTIVO"), 1)
     hours_preventivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "PREVENTIVO"), 1)
     hours_predictivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "PREDICTIVO"), 1)
+    hours_incidente = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "INCIDENTE_OPERACIONAL"), 1)
+    hours_monitoreo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "MONITOREO_CONDICION"), 1)
 
     # Workforce
     workers = db.query(WorkforceModel).filter(
@@ -207,12 +211,16 @@ def get_work_management_kpis(plant_id: str, db: Session = Depends(get_db)):
         "hours_correctivo": hours_correctivo,
         "hours_preventivo": hours_preventivo,
         "hours_predictivo": hours_predictivo,
+        "hours_incidente": hours_incidente,
+        "hours_monitoreo": hours_monitoreo,
         # Cost by type
         "cost_correctivo": round(cost_correctivo, 2),
         "cost_preventivo": round(cost_preventivo, 2),
         "cost_predictivo": round(cost_predictivo, 2),
         "cost_mejora": round(cost_mejora, 2),
-        "total_cost": round(cost_correctivo + cost_preventivo + cost_predictivo + cost_mejora, 2),
+        "cost_incidente": round(cost_incidente, 2),
+        "cost_monitoreo": round(cost_monitoreo, 2),
+        "total_cost": round(cost_correctivo + cost_preventivo + cost_predictivo + cost_mejora + cost_incidente + cost_monitoreo, 2),
         # Workforce
         "total_workers": total_workers,
         "available_workers": available_workers,

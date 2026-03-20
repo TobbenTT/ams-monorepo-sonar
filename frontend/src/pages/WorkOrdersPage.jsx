@@ -695,7 +695,15 @@ export default function WorkOrdersPage() {
                         <TableCell className="text-sm">{wo.equipment_tag}</TableCell>
                         <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
                         <TableCell>
-                          <Badge className="bg-gray-100 text-gray-700 text-xs">{wo.wo_type}</Badge>
+                          <Badge className={`text-xs ${
+                            wo.wo_type === 'CORRECTIVO' ? 'bg-red-100 text-red-700' :
+                            wo.wo_type === 'PREVENTIVO' ? 'bg-blue-100 text-blue-700' :
+                            wo.wo_type === 'PREDICTIVO' ? 'bg-purple-100 text-purple-700' :
+                            wo.wo_type === 'MEJORA' ? 'bg-emerald-100 text-emerald-700' :
+                            wo.wo_type === 'INCIDENTE_OPERACIONAL' ? 'bg-red-200 text-red-800' :
+                            wo.wo_type === 'MONITOREO_CONDICION' ? 'bg-cyan-100 text-cyan-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>{t(`workOrders.woTypes.${wo.wo_type}`) || wo.wo_type}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getCriticalityColor(wo.priority_code === 'P1' || wo.priority_code === 'P2' ? 'High' : wo.priority_code === 'P3' ? 'Medium' : 'Low')}>

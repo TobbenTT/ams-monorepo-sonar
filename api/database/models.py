@@ -494,7 +494,7 @@ class ManagedWorkOrderModel(Base):
 
     # Planning
     description: Mapped[str] = mapped_column(Text, default="")
-    wo_type: Mapped[str] = mapped_column(String(20), default="CORRECTIVO")  # CORRECTIVO, PREVENTIVO, PREDICTIVO, MEJORA
+    wo_type: Mapped[str] = mapped_column(String(30), default="CORRECTIVO")  # CORRECTIVO, PREVENTIVO, PREDICTIVO, MEJORA, INCIDENTE_OPERACIONAL, MONITOREO_CONDICION
     priority_code: Mapped[str] = mapped_column(String(5), default="P3")
     work_class: Mapped[str] = mapped_column(String(20), default="PROGRAMADO")
 

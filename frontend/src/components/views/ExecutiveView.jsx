@@ -46,6 +46,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
   const [analyticsData, setAnalyticsData] = useState(null);
   const [alertsData, setAlertsData] = useState(null);
   const [workRequests, setWorkRequests] = useState([]);
+  const [wmKpis, setWmKpis] = useState(null);
 
   useEffect(() => {
     if (!selectedPlant) return;
@@ -58,13 +59,15 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
       api.getAnalyticsPageData(selectedPlant).catch(() => null),
       api.getDashboardAlerts(selectedPlant).catch(() => null),
       api.listWorkRequests({ plant_id: selectedPlant }).catch(() => []),
+      api.getWorkManagementKpis(selectedPlant).catch(() => null),
     ])
-      .then(([exec, analytics, alerts, wrs]) => {
+      .then(([exec, analytics, alerts, wrs, wm]) => {
         if (cancelled) return;
         setExecData(exec);
         setAnalyticsData(analytics);
         setAlertsData(alerts);
         setWorkRequests(Array.isArray(wrs) ? wrs : []);
+        setWmKpis(wm);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || t('executive.failedToLoad'));
@@ -305,12 +308,14 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
     );
   };
 
-  // ── Mantenimiento Tab — uses MTBF, MTTR, equipment_health, backlog_age from API ──
+  // ── Mantenimiento Tab — uses MTBF, MTTR, MTBM, equipment_health, backlog_age from API ──
   const MantenimientoTabContent = () => {
+    const wm = wmKpis || {};
     // Parse API values (they come as formatted strings like "99.5%", "93.8d", "11.2h")
     const pAvail = parseKpi(kpis.availability);
     const pMtbf = parseKpi(e.mtbf !== '—' && e.mtbf != null ? e.mtbf : kpis.mtbf);
     const pMttr = parseKpi(e.mttr !== '—' && e.mttr != null ? e.mttr : kpis.mttr);
+    const pMtbm = parseKpi(wm.mtbm_days);
     const pSched = parseKpi(e.schedule_adherence);
     const pEqHealth = parseKpi(e.equipment_health);
     const pBacklog = parseKpi(e.backlog_age);
@@ -332,7 +337,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
       <div className="space-y-6">
         <div>
           <div className="flex items-center gap-2 mb-4"><CheckCircle className="w-5 h-5 text-emerald-600" /><h4 className="font-bold text-gray-900">{t('executive.resultados')}</h4></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <KpiCard
               title={t('executive.availability')}
               value={pAvail.num != null ? pAvail.num : '—'}
@@ -358,6 +363,14 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
               unit={pMttr.num != null ? ` ${t('executive.hrs')}` : ''}
             />
             <KpiCard
+              title="MTBM"
+              value={pMtbm.num != null ? pMtbm.num : '—'}
+              target={60}
+              trend="stable"
+              status={kpiStatus(pMtbm.num, 60)}
+              unit={pMtbm.num != null ? ` ${t('executive.days')}` : ''}
+            />
+            <KpiCard
               title={t('executive.scheduleCompliance')}
               value={pSched.num != null ? pSched.num : '—'}
               target={90}
@@ -368,7 +381,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
           </div>
         </div>
         <div>
-          <div className="flex items-center gap-2 mb-4"><DollarSign className="w-5 h-5 text-emerald-600" /><h4 className="font-bold text-gray-900">{t('executive.costos')}</h4></div>
+          <div className="flex items-center gap-2 mb-4"><DollarSign className="w-5 h-5 text-emerald-600" /><h4 className="font-bold text-gray-900">{t('executive.costos')} — Gasto vs Costo</h4></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <KpiCard
               title={t('executive.equipmentHealth')}
@@ -380,24 +393,32 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
               icon={DollarSign}
             />
             <KpiCard
-              title={t('executive.correctiveHours')}
-              value={correctiveHours != null ? correctiveHours : '—'}
+              title="Gasto (Presupuesto)"
+              value={wm.gasto_total != null ? wm.gasto_total.toLocaleString() : '—'}
               target="—"
               trend="stable"
-              status={correctiveHours != null ? 'warning' : 'warning'}
-              unit={correctiveHours != null ? ` ${t('executive.hrs')}` : ''}
+              status={wm.gasto_total > 0 ? 'good' : 'warning'}
+              unit={wm.gasto_total != null ? ' MAD' : ''}
               icon={DollarSign}
             />
             <KpiCard
-              title={t('executive.preventiveHours')}
-              value={preventiveHours != null ? preventiveHours : '—'}
+              title="Costo (Real)"
+              value={wm.costo_total != null ? wm.costo_total.toLocaleString() : '—'}
               target="—"
               trend="stable"
-              status={preventiveHours != null ? 'good' : 'warning'}
-              unit={preventiveHours != null ? ` ${t('executive.hrs')}` : ''}
+              status={wm.costo_variance >= 0 ? 'good' : 'critical'}
+              unit={wm.costo_total != null ? ' MAD' : ''}
               icon={DollarSign}
             />
           </div>
+          {wm.gasto_total > 0 && (
+            <div className="mt-3 p-3 rounded-lg border bg-gray-50 flex items-center gap-6 text-sm">
+              <div><span className="text-gray-500">Varianza:</span> <span className={wm.costo_variance >= 0 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold'}>{wm.costo_variance >= 0 ? '+' : ''}{wm.costo_variance?.toLocaleString()} MAD ({wm.costo_variance_pct}%)</span></div>
+              <div><span className="text-gray-500">Mano de obra:</span> <span className="font-medium">{(wm.costo_labor || 0).toLocaleString()} MAD</span></div>
+              <div><span className="text-gray-500">Material:</span> <span className="font-medium">{(wm.costo_material || 0).toLocaleString()} MAD</span></div>
+              <div><span className="text-gray-500">Externo:</span> <span className="font-medium">{(wm.costo_external || 0).toLocaleString()} MAD</span></div>
+            </div>
+          )}
         </div>
         <div>
           <div className="flex items-center gap-2 mb-4"><Wrench className="w-5 h-5 text-emerald-600" /><h4 className="font-bold text-gray-900">{t('executive.disciplinaOperacional')}</h4></div>

@@ -177,6 +177,30 @@ def get_work_management_kpis(plant_id: str, db: Session = Depends(get_db)):
     hours_incidente = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "INCIDENTE_OPERACIONAL"), 1)
     hours_monitoreo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "MONITOREO_CONDICION"), 1)
 
+    # MTBM — Mean Time Between Maintenance (days)
+    # All completed WOs ordered by actual_end
+    completed_with_dates = sorted(
+        [w for w in all_wos if w.status in ("COMPLETED", "CLOSED") and w.actual_end],
+        key=lambda w: w.actual_end,
+    )
+    if len(completed_with_dates) >= 2:
+        first = completed_with_dates[0].actual_end
+        last = completed_with_dates[-1].actual_end
+        span_days = (last - first).total_seconds() / 86400
+        mtbm_days = round(span_days / (len(completed_with_dates) - 1), 1)
+    else:
+        mtbm_days = 0
+
+    # Gasto (budget) vs Costo (actual) comparison
+    gasto_total = round(sum(w.budget_amount or 0 for w in recent), 2)
+    costo_labor = round(sum(w.labor_cost or 0 for w in recent), 2)
+    costo_material = round(sum(w.material_cost or 0 for w in recent), 2)
+    costo_external = round(sum(w.external_cost or 0 for w in recent), 2)
+    costo_total = round(sum(w.actual_total_cost or 0 for w in recent), 2)
+    # If no actual costs tracked yet, estimate from hours × rate
+    if costo_total == 0 and gasto_total > 0:
+        costo_total = round(sum((w.actual_hours or 0) * 50 for w in recent), 2)  # $50/h estimate
+
     # Workforce
     workers = db.query(WorkforceModel).filter(
         WorkforceModel.plant_id == plant_id,
@@ -221,6 +245,16 @@ def get_work_management_kpis(plant_id: str, db: Session = Depends(get_db)):
         "cost_incidente": round(cost_incidente, 2),
         "cost_monitoreo": round(cost_monitoreo, 2),
         "total_cost": round(cost_correctivo + cost_preventivo + cost_predictivo + cost_mejora + cost_incidente + cost_monitoreo, 2),
+        # MTBM
+        "mtbm_days": mtbm_days,
+        # Gasto vs Costo
+        "gasto_total": gasto_total,
+        "costo_total": costo_total,
+        "costo_labor": costo_labor,
+        "costo_material": costo_material,
+        "costo_external": costo_external,
+        "costo_variance": round(gasto_total - costo_total, 2) if gasto_total else 0,
+        "costo_variance_pct": round((gasto_total - costo_total) / gasto_total * 100, 1) if gasto_total else 0,
         # Workforce
         "total_workers": total_workers,
         "available_workers": available_workers,

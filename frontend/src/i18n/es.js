@@ -2036,6 +2036,7 @@ export default {
         lowPriority: 'Prioridad Baja',
         highPriority: 'Prioridad Alta',
         noDataAvailable: 'No hay datos disponibles aún',
+        impact: 'Impacto',
         rcaPrioritization: 'Priorización RCA para Fallas Críticas Detectadas',
 
         // Master Data Reliability

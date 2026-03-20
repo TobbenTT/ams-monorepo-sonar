@@ -696,15 +696,25 @@ export default function FailuresEvents() {
 
         {/* First Row: 3 Analysis Blocks */}
         <div className="grid grid-cols-12 gap-6 mb-6">
-          {/* LEFT: Jack-knife Analysis */}
+          {/* LEFT: Jack-knife Analysis (Enhanced) */}
           <div className="col-span-4">
             <Card className="p-6 bg-white h-full">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
                 {t('failuresEvents.failureCriticalityVsCost')}
               </h3>
+              <div className="flex items-center gap-3 mb-3 text-[10px]">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>P1/P2</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>P3</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>P4</span>
+              </div>
               <div className="relative h-64 bg-white rounded-lg">
                 {filteredWRs.length > 0 ? (
                   <>
+                    {/* Quadrant background zones */}
+                    <div className="absolute inset-0 pointer-events-none z-0" style={{ left: 60, top: 20, right: 20, bottom: 30 }}>
+                      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-red-50 opacity-40 rounded-tr-lg"></div>
+                      <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-amber-50 opacity-40"></div>
+                    </div>
                     <ResponsiveContainer width="100%" height="100%">
                       <ScatterChart margin={{ top: 20, right: 20, bottom: 30, left: 60 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -720,46 +730,57 @@ export default function FailuresEvents() {
                           type="number"
                           dataKey="priority"
                           name={t('failuresEvents.priority')}
-                          domain={[0, 6]}
+                          domain={[0, 5]}
                           label={{ value: t('failuresEvents.priorityHighest'), angle: -90, position: 'insideLeft', fontSize: 11 }}
                           tick={{ fontSize: 10 }}
                         />
+                        <ZAxis type="number" dataKey="impact" range={[40, 400]} />
                         <Tooltip
                           cursor={{ strokeDasharray: '3 3' }}
-                          formatter={(value, name) => [value, name]}
+                          content={({ payload }) => {
+                            if (!payload?.length) return null;
+                            const d = payload[0].payload;
+                            return (
+                              <div className="bg-white border shadow-lg rounded-lg p-2.5 text-xs max-w-[200px]">
+                                <div className="font-bold text-gray-900">{d.equipment}</div>
+                                <div className="text-gray-600 mt-1">{t('failuresEvents.priority')}: P{d.priority}</div>
+                                <div className="text-gray-600">{t('failuresEvents.downtimeHours')}: {d.downtime}h</div>
+                                <div className="text-gray-600">{t('failuresEvents.impact')}: {d.impact}</div>
+                              </div>
+                            );
+                          }}
                         />
                         <Scatter
-                          name={t('failuresEvents.workRequestsScatter')}
-                          data={filteredWRs.map((wr) => ({
-                            downtime: wr.estimated_duration || wr.ai_classification?.estimated_duration_hours || 1,
-                            priority: parseInt((wr.priority_code || 'P5').replace(/\D/g, ''), 10) || 5,
-                            equipment: wr.equipment_tag || wr.equipment_name || 'Unknown',
-                          }))}
-                          fill="#6b7280"
-                          shape="circle"
-                        />
-                        <Scatter
-                          name={t('failuresEvents.highPriorityP1P2')}
+                          name="P3/P4"
                           data={filteredWRs
-                            .filter(wr => {
-                              const p = (wr.priority_code || '');
-                              return p === 'P1' || p === 'P2';
-                            })
-                            .map((wr) => ({
-                              downtime: wr.estimated_duration || wr.ai_classification?.estimated_duration_hours || 1,
-                              priority: parseInt((wr.priority_code || 'P5').replace(/\D/g, ''), 10) || 5,
-                              equipment: wr.equipment_tag || wr.equipment_name || 'Unknown',
-                            }))}
+                            .filter(wr => !['P1','P2'].includes(wr.priority_code))
+                            .map((wr) => {
+                              const dt = wr.estimated_duration || wr.ai_classification?.estimated_duration_hours || 1;
+                              const p = parseInt((wr.priority_code || 'P4').replace(/\D/g, ''), 10) || 4;
+                              return { downtime: dt, priority: p, equipment: wr.equipment_tag || 'N/A', impact: Math.round(dt * (5 - p + 1) * 10) };
+                            })}
+                          fill={['P1','P2'].length ? '#3b82f6' : '#6b7280'}
+                          fillOpacity={0.6}
+                        />
+                        <Scatter
+                          name="P1/P2"
+                          data={filteredWRs
+                            .filter(wr => ['P1','P2'].includes(wr.priority_code))
+                            .map((wr) => {
+                              const dt = wr.estimated_duration || wr.ai_classification?.estimated_duration_hours || 1;
+                              const p = parseInt((wr.priority_code || 'P2').replace(/\D/g, ''), 10) || 2;
+                              return { downtime: dt, priority: p, equipment: wr.equipment_tag || 'N/A', impact: Math.round(dt * (5 - p + 1) * 10) };
+                            })}
                           fill="#ef4444"
-                          shape="circle"
+                          fillOpacity={0.8}
                         />
                       </ScatterChart>
                     </ResponsiveContainer>
-                    <div className="absolute bottom-8 left-16 bg-white/80 px-2 py-1 rounded text-xs text-gray-600 border border-gray-200">
-                      {t('failuresEvents.lowPriority')}
+                    <div className="absolute bottom-8 left-16 bg-green-50 px-1.5 py-0.5 rounded text-[9px] text-green-700 border border-green-200 font-medium">
+                      RUTINA
                     </div>
-                    <div className="absolute top-12 right-20 bg-white/80 px-2 py-1 rounded text-xs text-gray-600 border border-gray-200">
-                      {t('failuresEvents.highPriority')}
+                    <div className="absolute top-5 right-4 bg-red-50 px-1.5 py-0.5 rounded text-[9px] text-red-700 border border-red-200 font-medium">
+                      {t('failuresEvents.highPriority').toUpperCase()}
                     </div>
                   </>
                 ) : (

@@ -2111,6 +2111,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         lowPriority: 'Low Priority',
         highPriority: 'High Priority',
         noDataAvailable: 'No data available yet',
+        impact: 'Impact',
         rcaPrioritization: 'RCA Prioritization for Critical Failures Detected',
 
         // Master Data Reliability

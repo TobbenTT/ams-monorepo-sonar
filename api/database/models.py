@@ -529,10 +529,14 @@ class ManagedWorkOrderModel(Base):
     completion_pct: Mapped[float] = mapped_column(Float, default=0.0)
     execution_notes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{timestamp, user, note}]
 
-    # Risk & budget
+    # Risk & budget (Gasto = presupuesto, Costo = real)
     risk_analysis: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     budget_approved: Mapped[bool] = mapped_column(Boolean, default=False)
-    budget_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    budget_amount: Mapped[float | None] = mapped_column(Float, nullable=True)  # Gasto (presupuestado)
+    labor_cost: Mapped[float | None] = mapped_column(Float, nullable=True)     # Costo mano de obra
+    material_cost: Mapped[float | None] = mapped_column(Float, nullable=True)  # Costo materiales
+    external_cost: Mapped[float | None] = mapped_column(Float, nullable=True)  # Costo servicios externos
+    actual_total_cost: Mapped[float | None] = mapped_column(Float, nullable=True)  # Costo total real
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)

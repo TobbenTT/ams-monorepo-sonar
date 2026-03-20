@@ -52,6 +52,12 @@ class FeedbackCreate(BaseModel):
     steps_to_reproduce: str = Field(default="", max_length=5000)
     expected_behavior: str = Field(default="", max_length=5000)
     actual_behavior: str = Field(default="", max_length=5000)
+    # Extended fields
+    frequency: str = Field(default="", max_length=30)
+    impact: str = Field(default="", max_length=30)
+    contact_email: str = Field(default="", max_length=255)
+    desired_behavior: str = Field(default="", max_length=5000)
+    expected_benefit: str = Field(default="", max_length=5000)
     # Screenshots as base64 data URLs
     screenshots: list[dict] | None = None  # [{data_url, caption}]
 
@@ -149,6 +155,11 @@ def create_feedback(
         steps_to_reproduce=body.steps_to_reproduce,
         expected_behavior=body.expected_behavior,
         actual_behavior=body.actual_behavior,
+        frequency=body.frequency,
+        impact=body.impact,
+        contact_email=body.contact_email,
+        desired_behavior=body.desired_behavior,
+        expected_benefit=body.expected_benefit,
         screenshots=saved_screenshots or None,
         attachments=None,
     )
@@ -311,6 +322,11 @@ def _fb_to_dict(fb: DetailedFeedbackModel) -> dict:
         "steps_to_reproduce": fb.steps_to_reproduce,
         "expected_behavior": fb.expected_behavior,
         "actual_behavior": fb.actual_behavior,
+        "frequency": fb.frequency,
+        "impact": fb.impact,
+        "contact_email": fb.contact_email,
+        "desired_behavior": fb.desired_behavior,
+        "expected_benefit": fb.expected_benefit,
         "status": fb.status,
         "admin_notes": fb.admin_notes,
         "created_at": fb.created_at.isoformat() if fb.created_at else None,

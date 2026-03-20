@@ -3,7 +3,10 @@ import * as api from '../api';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Download, Star, Bug, Lightbulb, Wrench, HelpCircle, ChevronDown, ChevronUp, Eye, Image, Paperclip, RefreshCw } from 'lucide-react';
+import { Download, Star, Bug, Lightbulb, Wrench, HelpCircle, ChevronDown, ChevronUp, Eye, Image, Paperclip, RefreshCw, Mail, Users, Repeat, Video } from 'lucide-react';
+
+const FREQUENCY_LABELS = { always: 'Siempre', sometimes: 'A veces', rarely: 'Rara vez', first_time: 'Primera vez' };
+const IMPACT_LABELS = { only_me: 'Solo yo', my_team: 'Mi equipo', everyone: 'Todos', unknown: 'No seguro' };
 
 const TYPE_CONFIG = {
   bug: { label: 'Bug', icon: Bug, color: '#EF4444', bg: '#FEE2E2' },
@@ -208,6 +211,27 @@ export default function FeedbackAdmin() {
                       </div>
                     )}
 
+                    {/* Impact & frequency badges */}
+                    {(fb.impact || fb.frequency || fb.contact_email) && (
+                      <div className="flex flex-wrap gap-2">
+                        {fb.impact && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                            <Users className="w-3 h-3" /> Impacto: {IMPACT_LABELS[fb.impact] || fb.impact}
+                          </span>
+                        )}
+                        {fb.frequency && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs font-medium">
+                            <Repeat className="w-3 h-3" /> Frecuencia: {FREQUENCY_LABELS[fb.frequency] || fb.frequency}
+                          </span>
+                        )}
+                        {fb.contact_email && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium">
+                            <Mail className="w-3 h-3" /> {fb.contact_email}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {fb.feedback_type === 'bug' && (fb.steps_to_reproduce || fb.expected_behavior || fb.actual_behavior) && (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {fb.steps_to_reproduce && (
@@ -228,6 +252,32 @@ export default function FeedbackAdmin() {
                             <p className="text-sm text-gray-700">{fb.actual_behavior}</p>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Improvement: desired behavior */}
+                    {fb.feedback_type === 'improvement' && (fb.actual_behavior || fb.desired_behavior) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {fb.actual_behavior && (
+                          <div>
+                            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Comportamiento actual</div>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{fb.actual_behavior}</p>
+                          </div>
+                        )}
+                        {fb.desired_behavior && (
+                          <div>
+                            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Comportamiento deseado</div>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{fb.desired_behavior}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Suggestion: expected benefit */}
+                    {fb.feedback_type === 'suggestion' && fb.expected_benefit && (
+                      <div>
+                        <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Beneficio esperado</div>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{fb.expected_benefit}</p>
                       </div>
                     )}
 

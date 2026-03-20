@@ -914,6 +914,12 @@ class DetailedFeedbackModel(Base):
     steps_to_reproduce: Mapped[str] = mapped_column(Text, default="")
     expected_behavior: Mapped[str] = mapped_column(Text, default="")
     actual_behavior: Mapped[str] = mapped_column(Text, default="")
+    # Extended fields
+    frequency: Mapped[str] = mapped_column(String(30), default="")  # always, sometimes, rarely, first_time
+    impact: Mapped[str] = mapped_column(String(30), default="")  # only_me, my_team, everyone, unknown
+    contact_email: Mapped[str] = mapped_column(String(255), default="")
+    desired_behavior: Mapped[str] = mapped_column(Text, default="")  # for improvements
+    expected_benefit: Mapped[str] = mapped_column(Text, default="")  # for suggestions
     # Status
     status: Mapped[str] = mapped_column(String(20), default="new")  # new, reviewed, in_progress, resolved, closed
     admin_notes: Mapped[str] = mapped_column(Text, default="")

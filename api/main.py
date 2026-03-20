@@ -32,6 +32,7 @@ from api.routers import (
     sync, troubleshooting, execution_checklists, deliverables,
     assignments, expert_knowledge, financial, workflow, media, imports,
     or_projects, improvement_actions,
+    managed_work_orders,
 )
 
 
@@ -196,6 +197,8 @@ def create_app() -> FastAPI:
     app.include_router(or_projects.router, prefix=prefix)
     # Improvement Actions
     app.include_router(improvement_actions.router, prefix=prefix)
+    # Jorge Phase 2 — Managed Work Orders (full OT lifecycle)
+    app.include_router(managed_work_orders.router, prefix=prefix)
 
     # GAP-W03 — Serve Field PWA at /field/
     field_dist = Path("field_app/dist")

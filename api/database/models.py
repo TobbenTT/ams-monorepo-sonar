@@ -480,6 +480,68 @@ class WorkRequestModel(Base):
     )
 
 
+# ── Managed Work Orders (Jorge Phase 2 — full OT lifecycle) ─────────
+
+class ManagedWorkOrderModel(Base):
+    __tablename__ = "managed_work_orders"
+
+    wo_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    wo_number: Mapped[str] = mapped_column(String(30), unique=True)  # OT-2026-00001
+    work_request_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    plant_id: Mapped[str] = mapped_column(String(50), default="OCP-JFC1")
+    equipment_id: Mapped[str] = mapped_column(String(100))
+    equipment_tag: Mapped[str] = mapped_column(String(100))
+
+    # Planning
+    description: Mapped[str] = mapped_column(Text, default="")
+    wo_type: Mapped[str] = mapped_column(String(20), default="CORRECTIVO")  # CORRECTIVO, PREVENTIVO, PREDICTIVO, MEJORA
+    priority_code: Mapped[str] = mapped_column(String(5), default="P3")
+    work_class: Mapped[str] = mapped_column(String(20), default="PROGRAMADO")
+
+    # Resources (JSON for flexibility)
+    operations: Mapped[list | None] = mapped_column(JSON, nullable=True)   # [{seq, description, specialty, hours, status}]
+    materials: Mapped[list | None] = mapped_column(JSON, nullable=True)    # [{code, description, qty_required, qty_available, reserved}]
+    tools: Mapped[list | None] = mapped_column(JSON, nullable=True)        # [{tool_name, qty}]
+    documents: Mapped[list | None] = mapped_column(JSON, nullable=True)    # [{name, url, type}]
+    labour_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {total_hours, specialties: [{name, hours}]}
+
+    # Scheduling
+    planned_start: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    planned_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    actual_start: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    actual_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    estimated_hours: Mapped[float] = mapped_column(Float, default=4.0)
+    actual_hours: Mapped[float] = mapped_column(Float, default=0.0)
+
+    # Workflow: DRAFT → PLANNED → RELEASED → SCHEDULED → IN_PROGRESS → COMPLETED → CLOSED
+    status: Mapped[str] = mapped_column(String(20), default="DRAFT")
+    planned_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    released_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closed_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    assigned_workers: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{worker_id, name, specialty}]
+
+    # Execution
+    completion_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    execution_notes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{timestamp, user, note}]
+
+    # Risk & budget
+    risk_analysis: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    budget_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    budget_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)
+
+    __table_args__ = (
+        Index("ix_mwo_status", "status"),
+        Index("ix_mwo_equipment", "equipment_tag"),
+        Index("ix_mwo_plant", "plant_id"),
+        Index("ix_mwo_priority", "priority_code"),
+    )
+
+
 # ── Planner Recommendation ──────────────────────────────────────────
 
 class PlannerRecommendationModel(Base):

@@ -168,6 +168,21 @@ export const completeWorkRequest = (id, d) => put(`/work-requests/${id}/complete
 export const closeWorkRequest = (id, d) => put(`/work-requests/${id}/close`, d);
 export const createWRManual = (d) => post('/work-requests/manual', d);
 
+// ── Managed Work Orders (Jorge Phase 2 — OT lifecycle) ──
+export const listManagedWOs = (p) => get('/managed-work-orders/', p);
+export const getManagedWO = (id) => get(`/managed-work-orders/${id}`);
+export const createManagedWO = (d) => post('/managed-work-orders/', d);
+export const createWOFromWR = (d) => post('/managed-work-orders/from-wr', d);
+export const updateManagedWO = (id, d) => put(`/managed-work-orders/${id}`, d);
+export const releaseManagedWO = (id) => put(`/managed-work-orders/${id}/release`);
+export const scheduleManagedWO = (id, d) => put(`/managed-work-orders/${id}/schedule`, d);
+export const startManagedWO = (id) => put(`/managed-work-orders/${id}/start`);
+export const completeManagedWO = (id, d) => put(`/managed-work-orders/${id}/complete`, d);
+export const closeManagedWO = (id) => put(`/managed-work-orders/${id}/close`);
+export const addManagedWONote = (id, d) => post(`/managed-work-orders/${id}/notes`, d);
+export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id}/progress`, d);
+export const getManagedWOStats = (p) => get('/managed-work-orders/stats', p);
+
 // ── Planner ──
 export const generateRecommendation = (id) => post(`/planner/recommend/${id}`);
 export const getRecommendation = (id) => get(`/planner/recommendations/${id}`);

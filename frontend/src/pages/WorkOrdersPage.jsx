@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
-import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package } from 'lucide-react';
+import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight } from 'lucide-react';
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -36,6 +36,14 @@ export default function WorkOrdersPage() {
   const [showSymptoms, setShowSymptoms] = useState(false);
   const [showParts, setShowParts] = useState(false);
   const [showCauses, setShowCauses] = useState(false);
+  // Managed Work Orders (Jorge Phase 2)
+  const [managedWOs, setManagedWOs] = useState([]);
+  const [woTab, setWoTab] = useState('ots'); // 'ots' | 'wrs'
+  const [showCreateOTModal, setShowCreateOTModal] = useState(false);
+  const [approvedWRs, setApprovedWRs] = useState([]);
+  const [creatingOT, setCreatingOT] = useState(false);
+  const [otCreateForm, setOtCreateForm] = useState({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4 });
+  const [selectedOT, setSelectedOT] = useState(null);
 
   // ── SAP PM constants (inside component for i18n) ──
   const PLANT_CONDITIONS = [
@@ -61,29 +69,29 @@ export default function WorkOrdersPage() {
     INSTRUMENTACION: { label: t('workOrders.failInstrumentation'), color: '#06B6D4', symptoms: ['LECTURA ERRONEA','SIN SEÑAL','SEÑAL INESTABLE','NO RESPONDE','ALARMA FALSA','COMUNICACION PERDIDA'], parts: ['SENSOR / TRANSDUCTOR','TRANSMISOR','VALVULA DE CONTROL','PLC / DCS','ACTUADOR','POSICIONADOR'], causes: ['DESCALIBRADO','CONTAMINADO','PERDIDA PARAMETROS','PERDIDA COMUNICACION','OBSTRUCCION'] },
   };
 
-  // Fetch work requests from API
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchData() {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await api.listWorkRequests({ plant_id: plant });
-        if (!cancelled) {
-          setWorkRequests(Array.isArray(data) ? data : []);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Failed to fetch work requests:', err);
-          setError(err.message || t('workOrders.failedToLoad'));
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  // Fetch work requests + managed WOs from API
+  const reloadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [wrData, woData] = await Promise.all([
+        api.listWorkRequests({ plant_id: plant }).catch(() => []),
+        api.listManagedWOs({ plant_id: plant }).catch(() => []),
+      ]);
+      setWorkRequests(Array.isArray(wrData) ? wrData : []);
+      setManagedWOs(Array.isArray(woData) ? woData : []);
+      setApprovedWRs((Array.isArray(wrData) ? wrData : []).filter(
+        wr => ['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(wr.status)
+      ));
+    } catch (err) {
+      console.error('Failed to fetch:', err);
+      setError(err.message || t('workOrders.failedToLoad'));
+    } finally {
+      setLoading(false);
     }
-    fetchData();
-    return () => { cancelled = true; };
   }, [plant]);
+
+  useEffect(() => { reloadData(); }, [reloadData]);
 
   // Load equipment for create modal search
   useEffect(() => {
@@ -252,8 +260,7 @@ export default function WorkOrdersPage() {
       setShowCreateModal(false);
       setCreateForm({ whatHappens: '', whereTag: '', suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'CR', plantCondition: 'operating', failureCategory: 'MECANICO', failureSymptom: '', failureObjectPart: '', failureCause: '', resources: [], materials: [], specialEquipment: '' });
       setSelectedEquip(null);
-      const data = await api.listWorkRequests({ plant_id: plant });
-      setWorkRequests(Array.isArray(data) ? data : []);
+      reloadData();
     } catch (err) {
       alert(err.message || t('workOrders.failedToCreate'));
     } finally {
@@ -297,6 +304,83 @@ export default function WorkOrdersPage() {
     }
   };
 
+  // ── OT Status helpers ──
+  const OT_STATUS_COLORS = {
+    DRAFT: 'bg-gray-100 text-gray-700',
+    PLANNED: 'bg-blue-100 text-blue-700',
+    RELEASED: 'bg-indigo-100 text-indigo-700',
+    SCHEDULED: 'bg-purple-100 text-purple-700',
+    IN_PROGRESS: 'bg-amber-100 text-amber-700',
+    COMPLETED: 'bg-green-100 text-green-700',
+    CLOSED: 'bg-gray-200 text-gray-500',
+  };
+
+  const OT_NEXT_ACTION = {
+    DRAFT: { label: 'Planificar', action: 'release', icon: ArrowRight },
+    PLANNED: { label: 'Liberar', action: 'release', icon: ArrowRight },
+    RELEASED: { label: 'Programar', action: 'schedule', icon: Clock },
+    SCHEDULED: { label: 'Iniciar', action: 'start', icon: Play },
+    IN_PROGRESS: { label: 'Completar', action: 'complete', icon: CheckCircle },
+    COMPLETED: { label: 'Cerrar', action: 'close', icon: Lock },
+  };
+
+  const handleOTTransition = async (wo, actionName) => {
+    try {
+      const fn = {
+        release: api.releaseManagedWO,
+        schedule: api.scheduleManagedWO,
+        start: api.startManagedWO,
+        complete: api.completeManagedWO,
+        close: api.closeManagedWO,
+      }[actionName];
+      if (!fn) return;
+      await fn(wo.wo_id, {});
+      reloadData();
+    } catch (err) {
+      alert(err.message || 'Error al cambiar status');
+    }
+  };
+
+  const handleCreateOTFromWR = async (wr) => {
+    setCreatingOT(true);
+    try {
+      await api.createWOFromWR({ work_request_id: wr.request_id, plant_id: plant });
+      setShowCreateOTModal(false);
+      reloadData();
+    } catch (err) {
+      alert(err.message || 'Error al crear OT');
+    } finally {
+      setCreatingOT(false);
+    }
+  };
+
+  const handleCreateOTManual = async () => {
+    if (!otCreateForm.description.trim() || !otCreateForm.equipment_tag.trim()) return;
+    setCreatingOT(true);
+    try {
+      await api.createManagedWO({
+        ...otCreateForm,
+        plant_id: plant,
+        equipment_id: otCreateForm.equipment_id || otCreateForm.equipment_tag,
+      });
+      setShowCreateOTModal(false);
+      setOtCreateForm({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4 });
+      reloadData();
+    } catch (err) {
+      alert(err.message || 'Error al crear OT');
+    } finally {
+      setCreatingOT(false);
+    }
+  };
+
+  // OT stats
+  const otStats = useMemo(() => {
+    const total = managedWOs.length;
+    const byStatus = {};
+    managedWOs.forEach(wo => { byStatus[wo.status] = (byStatus[wo.status] || 0) + 1; });
+    return { total, ...byStatus };
+  }, [managedWOs]);
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -339,12 +423,16 @@ export default function WorkOrdersPage() {
             <Download className="w-4 h-4" />
             {t('workOrders.export')}
           </Button>
-          {viewMode === 'tactical' && (
+          {viewMode === 'tactical' && (<>
+            <Button variant="outline" className="flex items-center gap-2 border-emerald-300 text-emerald-700" onClick={() => setShowCreateOTModal(true)}>
+              <Plus className="w-4 h-4" />
+              Nueva OT
+            </Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateModal(true)}>
               <Plus className="w-4 h-4" />
               {t('workOrders.createWorkOrder')}
             </Button>
-          )}
+          </>)}
         </div>
       </div>
 
@@ -531,84 +619,187 @@ export default function WorkOrdersPage() {
 
       </>)}
 
-      {/* ═══ TACTICAL VIEW: Detailed Work Orders Table ═══ */}
+      {/* ═══ TACTICAL VIEW: OTs + WRs Tabbed ═══ */}
       {viewMode === 'tactical' && (<>
 
-      {/* Bottom Section: Work Orders Table */}
-      <Card className="p-6 bg-white">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          {t('workOrders.workOrdersTableTitle').replace('{count}', workOrdersData.length)}
-        </h3>
-        {workOrdersData.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="font-semibold">{t('workOrders.woId')}</TableHead>
-                  <TableHead className="font-semibold">{t('workOrders.equipmentCol')}</TableHead>
-                  <TableHead className="font-semibold">{t('workOrders.descriptionCol')}</TableHead>
-                  <TableHead className="font-semibold">{t('workOrders.priorityCol')}</TableHead>
-                  <TableHead className="font-semibold">{t('workOrders.workClassCol')}</TableHead>
-                  <TableHead className="font-semibold">{t('workOrders.daysOld')}</TableHead>
-                  <TableHead className="font-semibold">{t('workOrders.assignedTo')}</TableHead>
-                  <TableHead className="font-semibold">{t('workOrders.statusCol')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {workOrdersData.map((wo, idx) => (
-                  <TableRow
-                    key={wo.id + '-' + idx}
-                    className="hover:bg-gray-50 cursor-pointer"
-                    onClick={() => setSelectedWorkOrder(wo)}
-                  >
-                    <TableCell className="font-medium text-sm">{wo.id}</TableCell>
-                    <TableCell className="text-sm">{wo._raw?.equipment_tag || t('workOrders.na')}</TableCell>
-                    <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
-                    <TableCell>
-                      <Badge className={getCriticalityColor(wo.criticality)}>
-                        {wo._raw?.priority_code || wo.criticality}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{wo.area}</TableCell>
-                    <TableCell className="font-semibold">{wo.delayDays}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {wo.responsible !== t('workOrders.unassigned') && (
-                          <Avatar className="w-8 h-8 bg-emerald-500">
-                            <AvatarFallback className="bg-emerald-500 text-white text-xs">
-                              {wo.responsible.split(' ').map(n => n[0] || '').join('').slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <span className="text-sm">{wo.responsible}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          wo.status === 'APPROVED' ? 'bg-green-500' :
-                          wo.status === 'REJECTED' ? 'bg-red-500' :
-                          wo.status === 'IN_PROGRESS' ? 'bg-blue-500' :
-                          'bg-yellow-500'
-                        }`}></div>
-                        <span className="text-sm">{wo.status.replace(/_/g, ' ')}</span>
-                      </div>
-                    </TableCell>
+      {/* OT Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        {['DRAFT','PLANNED','RELEASED','SCHEDULED','IN_PROGRESS','COMPLETED','CLOSED'].map(st => (
+          <Card key={st} className={`p-3 bg-white cursor-pointer border-2 transition-all ${woTab === 'ots' ? 'hover:border-emerald-300' : ''}`}
+            onClick={() => setWoTab('ots')}>
+            <div className="text-xs text-gray-500 truncate">{st.replace(/_/g, ' ')}</div>
+            <div className="text-xl font-bold text-gray-900">{otStats[st] || 0}</div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+        <button onClick={() => setWoTab('ots')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${woTab === 'ots' ? 'bg-white shadow text-emerald-700' : 'text-gray-600 hover:text-gray-900'}`}>
+          Órdenes de Trabajo ({managedWOs.length})
+        </button>
+        <button onClick={() => setWoTab('wrs')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${woTab === 'wrs' ? 'bg-white shadow text-emerald-700' : 'text-gray-600 hover:text-gray-900'}`}>
+          Avisos / WR ({workOrdersData.length})
+        </button>
+      </div>
+
+      {/* ── OTs Table ── */}
+      {woTab === 'ots' && (
+        <Card className="p-6 bg-white">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Órdenes de Trabajo ({managedWOs.length})
+            </h3>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateOTModal(true)}>
+              <Plus className="w-4 h-4" /> Nueva OT
+            </Button>
+          </div>
+          {managedWOs.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="font-semibold">OT #</TableHead>
+                    <TableHead className="font-semibold">Equipo</TableHead>
+                    <TableHead className="font-semibold">Descripción</TableHead>
+                    <TableHead className="font-semibold">Tipo</TableHead>
+                    <TableHead className="font-semibold">Prioridad</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Progreso</TableHead>
+                    <TableHead className="font-semibold">Acción</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-[200px] text-gray-400">
-            <div className="text-center">
-              <Wrench className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p className="text-sm">{t('workOrders.noWorkOrders')}</p>
-              <p className="text-xs mt-1">{t('workOrders.noWorkOrdersHint')}</p>
+                </TableHeader>
+                <TableBody>
+                  {managedWOs.map((wo) => {
+                    const nextAct = OT_NEXT_ACTION[wo.status];
+                    const NextIcon = nextAct?.icon;
+                    return (
+                      <TableRow key={wo.wo_id} className="hover:bg-gray-50">
+                        <TableCell className="font-mono text-sm font-medium text-emerald-700">{wo.wo_number}</TableCell>
+                        <TableCell className="text-sm">{wo.equipment_tag}</TableCell>
+                        <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-gray-100 text-gray-700 text-xs">{wo.wo_type}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getCriticalityColor(wo.priority_code === 'P1' || wo.priority_code === 'P2' ? 'High' : wo.priority_code === 'P3' ? 'Medium' : 'Low')}>
+                            {wo.priority_code}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={OT_STATUS_COLORS[wo.status] || 'bg-gray-100 text-gray-700'}>
+                            {wo.status.replace(/_/g, ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                              <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${wo.completion_pct || 0}%` }}></div>
+                            </div>
+                            <span className="text-xs text-gray-500">{Math.round(wo.completion_pct || 0)}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {nextAct && (
+                            <Button size="sm" variant="outline"
+                              className="text-xs h-7 px-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                              onClick={(e) => { e.stopPropagation(); handleOTTransition(wo, nextAct.action); }}>
+                              {NextIcon && <NextIcon className="w-3 h-3 mr-1" />}
+                              {nextAct.label}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
-          </div>
-        )}
-      </Card>
+          ) : (
+            <div className="flex items-center justify-center h-[200px] text-gray-400">
+              <div className="text-center">
+                <Wrench className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-sm">No hay órdenes de trabajo</p>
+                <p className="text-xs mt-1">Crea una OT desde un aviso aprobado o manualmente</p>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* ── WRs Table (Avisos) ── */}
+      {woTab === 'wrs' && (
+        <Card className="p-6 bg-white">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Avisos / Work Requests ({workOrdersData.length})
+          </h3>
+          {workOrdersData.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="font-semibold">{t('workOrders.woId')}</TableHead>
+                    <TableHead className="font-semibold">{t('workOrders.equipmentCol')}</TableHead>
+                    <TableHead className="font-semibold">{t('workOrders.descriptionCol')}</TableHead>
+                    <TableHead className="font-semibold">{t('workOrders.priorityCol')}</TableHead>
+                    <TableHead className="font-semibold">{t('workOrders.workClassCol')}</TableHead>
+                    <TableHead className="font-semibold">{t('workOrders.daysOld')}</TableHead>
+                    <TableHead className="font-semibold">{t('workOrders.statusCol')}</TableHead>
+                    <TableHead className="font-semibold">Acción</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {workOrdersData.map((wo, idx) => (
+                    <TableRow key={wo.id + '-' + idx} className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => setSelectedWorkOrder(wo)}>
+                      <TableCell className="font-medium text-sm">{wo.id}</TableCell>
+                      <TableCell className="text-sm">{wo._raw?.equipment_tag || t('workOrders.na')}</TableCell>
+                      <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
+                      <TableCell>
+                        <Badge className={getCriticalityColor(wo.criticality)}>
+                          {wo._raw?.priority_code || wo.criticality}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{wo.area}</TableCell>
+                      <TableCell className="font-semibold">{wo.delayDays}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            wo.status === 'APPROVED' || wo.status === 'VALIDATED' ? 'bg-green-500' :
+                            wo.status === 'REJECTED' ? 'bg-red-500' :
+                            wo.status === 'IN_PROGRESS' ? 'bg-blue-500' :
+                            'bg-yellow-500'
+                          }`}></div>
+                          <span className="text-sm">{wo.status.replace(/_/g, ' ')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(wo.status) && (
+                          <Button size="sm" variant="outline"
+                            className="text-xs h-7 px-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                            onClick={(e) => { e.stopPropagation(); handleCreateOTFromWR(wo._raw); }}>
+                            <FileText className="w-3 h-3 mr-1" /> Crear OT
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-[200px] text-gray-400">
+              <div className="text-center">
+                <Wrench className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-sm">{t('workOrders.noWorkOrders')}</p>
+                <p className="text-xs mt-1">{t('workOrders.noWorkOrdersHint')}</p>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Work Order Detail Dialog */}
       {selectedWorkOrder && (
@@ -621,6 +812,117 @@ export default function WorkOrdersPage() {
             setSelectedWorkOrder(null);
           }}
         />
+      )}
+
+      {/* Create OT Modal */}
+      {showCreateOTModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreateOTModal(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b p-5 rounded-t-xl z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Crear Orden de Trabajo</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Desde un aviso aprobado o manualmente</p>
+                </div>
+                <button onClick={() => setShowCreateOTModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* From approved WR */}
+              {approvedWRs.length > 0 && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Desde Aviso Aprobado</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {approvedWRs.map(wr => (
+                      <div key={wr.request_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {wr.equipment_tag} — {wr.problem_description?.original_text || 'Sin descripción'}
+                          </div>
+                          <div className="text-xs text-gray-500">{wr.priority_code || 'P3'} · {wr.status}</div>
+                        </div>
+                        <Button size="sm" className="ml-2 bg-emerald-600 hover:bg-emerald-700 text-xs h-7"
+                          onClick={() => handleCreateOTFromWR(wr)} disabled={creatingOT}>
+                          <ArrowRight className="w-3 h-3 mr-1" /> Crear OT
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {approvedWRs.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-gray-200"></div>
+                  <span className="text-xs text-gray-400">o crear manualmente</span>
+                  <div className="flex-1 h-px bg-gray-200"></div>
+                </div>
+              )}
+
+              {/* Manual OT creation */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Descripción</label>
+                  <textarea value={otCreateForm.description}
+                    onChange={e => setOtCreateForm(p => ({ ...p, description: e.target.value }))}
+                    placeholder="Describe el trabajo a realizar..."
+                    rows={3}
+                    className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">TAG Equipo</label>
+                    <input type="text" value={otCreateForm.equipment_tag}
+                      onChange={e => setOtCreateForm(p => ({ ...p, equipment_tag: e.target.value, equipment_id: e.target.value }))}
+                      placeholder="Ej: BOM-001"
+                      className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Tipo OT</label>
+                    <select value={otCreateForm.wo_type}
+                      onChange={e => setOtCreateForm(p => ({ ...p, wo_type: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500">
+                      <option value="CORRECTIVO">Correctivo</option>
+                      <option value="PREVENTIVO">Preventivo</option>
+                      <option value="PREDICTIVO">Predictivo</option>
+                      <option value="MEJORA">Mejora</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Prioridad</label>
+                    <select value={otCreateForm.priority_code}
+                      onChange={e => setOtCreateForm(p => ({ ...p, priority_code: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500">
+                      <option value="P1">P1 - Urgente (&lt; 24h)</option>
+                      <option value="P2">P2 - Ejecución (&lt; 7d)</option>
+                      <option value="P3">P3 - Próximo programa</option>
+                      <option value="P4">P4 - Sin urgencia</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Horas Estimadas</label>
+                    <input type="number" value={otCreateForm.estimated_hours}
+                      onChange={e => setOtCreateForm(p => ({ ...p, estimated_hours: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t p-5 rounded-b-xl flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowCreateOTModal(false)}>Cancelar</Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleCreateOTManual}
+                disabled={creatingOT || !otCreateForm.description.trim() || !otCreateForm.equipment_tag.trim()}>
+                {creatingOT ? 'Creando...' : 'Crear OT Manual'}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Create Work Order Modal — full SAP PM form */}

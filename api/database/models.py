@@ -881,6 +881,47 @@ class UserFeedbackModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
+# ── Detailed Feedback (with attachments, screenshots, etc.) ──────────
+
+class DetailedFeedbackModel(Base):
+    __tablename__ = "detailed_feedback"
+
+    feedback_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    # Who
+    user_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    user_name: Mapped[str] = mapped_column(String(100), default="anonymous")
+    user_role: Mapped[str] = mapped_column(String(50), default="")
+    # What
+    feedback_type: Mapped[str] = mapped_column(String(30), default="suggestion")  # bug, suggestion, question, improvement, other
+    priority: Mapped[str] = mapped_column(String(20), default="medium")  # low, medium, high, critical
+    title: Mapped[str] = mapped_column(String(300), default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    rating: Mapped[int] = mapped_column(Integer, default=3)  # 1-5
+    # Where
+    page_url: Mapped[str] = mapped_column(String(500), default="")
+    page_name: Mapped[str] = mapped_column(String(100), default="")
+    section: Mapped[str] = mapped_column(String(100), default="")  # specific section of the page
+    component: Mapped[str] = mapped_column(String(100), default="")  # specific component
+    # Context
+    browser_info: Mapped[str] = mapped_column(String(500), default="")
+    screen_size: Mapped[str] = mapped_column(String(50), default="")
+    device_type: Mapped[str] = mapped_column(String(30), default="")  # desktop, mobile, tablet
+    os_info: Mapped[str] = mapped_column(String(100), default="")
+    # Attachments — JSON arrays
+    screenshots: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{url, filename, caption}]
+    attachments: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{url, filename, type, size}]
+    # Steps to reproduce (for bugs)
+    steps_to_reproduce: Mapped[str] = mapped_column(Text, default="")
+    expected_behavior: Mapped[str] = mapped_column(Text, default="")
+    actual_behavior: Mapped[str] = mapped_column(Text, default="")
+    # Status
+    status: Mapped[str] = mapped_column(String(20), default="new")  # new, reviewed, in_progress, resolved, closed
+    admin_notes: Mapped[str] = mapped_column(Text, default="")
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
 class FMECAWorksheetModel(Base):
     __tablename__ = "fmeca_worksheets"
 

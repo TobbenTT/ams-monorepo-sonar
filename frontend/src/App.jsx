@@ -6,6 +6,7 @@ import MobileHeader from './components/MobileHeader';
 import MobileBottomNav from './components/MobileBottomNav';
 import ErrorBoundary from './components/ErrorBoundary';
 import UpdateBanner from './components/UpdateBanner';
+import FeedbackWidget from './components/FeedbackWidget';
 import useIsMobile from './hooks/useIsMobile';
 import { listPlants } from './api';
 
@@ -45,6 +46,7 @@ export default function App() {
                     </ErrorBoundary>
                 </main>
                 <MobileBottomNav mobileRole={mobileRole} />
+                <FeedbackWidget />
             </div>
         );
     }
@@ -73,6 +75,7 @@ export default function App() {
                     </ErrorBoundary>
                 </main>
             </div>
+            <FeedbackWidget />
         </div>
     );
 }

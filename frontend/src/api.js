@@ -183,6 +183,26 @@ export const addManagedWONote = (id, d) => post(`/managed-work-orders/${id}/note
 export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id}/progress`, d);
 export const getManagedWOStats = (p) => get('/managed-work-orders/stats', p);
 
+// ── Detailed Feedback ──
+export const submitFeedback = (d) => post('/feedback/', d);
+export const listFeedback = (p) => get('/feedback/', p);
+export const getFeedback = (id) => get(`/feedback/${id}`);
+export const updateFeedback = (id, d) => put(`/feedback/${id}`, d);
+export const exportFeedbackJSON = () => get('/feedback/export/json');
+export const uploadFeedbackAttachment = async (feedbackId, file, caption = '') => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('caption', caption);
+  const token = getToken();
+  const res = await fetch(`${BASE}/feedback/${feedbackId}/attachments`, {
+    method: 'POST',
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: formData,
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
+  return res.json();
+};
+
 // ── Planner ──
 export const generateRecommendation = (id) => post(`/planner/recommend/${id}`);
 export const getRecommendation = (id) => get(`/planner/recommendations/${id}`);

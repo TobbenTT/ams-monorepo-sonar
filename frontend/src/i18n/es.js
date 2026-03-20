@@ -107,6 +107,7 @@ export default {
         improvementActions: 'Acciones de Mejora',
         team: 'Equipo',
         settings: 'Configuración',
+        feedback: 'Feedback',
         profile: 'Perfil',
         brandTitle: 'Mantenimiento OCP',
         brandSubtitle: 'Plataforma de Confiabilidad',

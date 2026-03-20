@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -21,8 +21,18 @@ export default function App() {
     const [selectedTimeRange, setSelectedTimeRange] = useState('Last 30 Days');
     const [selectedArea, setSelectedArea] = useState('All Areas');
 
+    const location = useLocation();
+    const navigate = useNavigate();
+
     useEffect(() => { listPlants().then(setPlants).catch(() => { }); }, []);
     useEffect(() => { localStorage.setItem('mobileRole', mobileRole); }, [mobileRole]);
+
+    // Redirect: mobile routes on desktop → home, desktop routes on mobile → home
+    useEffect(() => {
+        if (!isMobile && location.pathname.startsWith('/m/')) {
+            navigate('/', { replace: true });
+        }
+    }, [isMobile, location.pathname]);
 
     // Mobile layout
     if (isMobile) {

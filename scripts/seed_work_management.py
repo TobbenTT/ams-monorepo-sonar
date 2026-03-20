@@ -437,13 +437,418 @@ def run():
 
     print(f"  Inserted {assignment_count} work assignments")
 
+    # ── 5. Assign some tasks to admin user (for "Mis Tareas" in Ejecución) ──
+    print("Assigning tasks to admin user...")
+    admin_row = db.execute(text(
+        "SELECT user_id, username FROM users WHERE role = 'admin' LIMIT 1"
+    )).fetchone()
+    admin_tasks = 0
+    if admin_row:
+        admin_uid, admin_uname = admin_row[0], admin_row[1]
+        for wo_id in wo_ids[15:20]:  # 5 WOs
+            db.execute(text("""
+                INSERT INTO work_assignments (
+                    assignment_id, work_package_id, plant_id, assigned_to,
+                    estimated_hours, status, created_at, scheduled_date,
+                    competency_match_score,
+                    wo_id, task_description, task_understood, progress_pct, completed_at
+                ) VALUES (
+                    :aid, :wpid, :plant, :assigned_to,
+                    :est, :status, :created, :sched,
+                    :match_score,
+                    :wo_id, :desc, :understood, :progress, :completed
+                )
+            """), {
+                "aid": _uuid(),
+                "wpid": wo_id,
+                "plant": PLANT,
+                "assigned_to": admin_uid,
+                "est": round(random.uniform(2, 8), 1),
+                "status": random.choice(["ASSIGNED", "IN_PROGRESS"]),
+                "created": (now - timedelta(days=random.randint(0, 5))).isoformat(),
+                "sched": (now + timedelta(days=random.randint(0, 3))).strftime("%Y-%m-%d"),
+                "match_score": round(random.uniform(0.7, 0.99), 2),
+                "wo_id": wo_id,
+                "desc": random.choice([
+                    "Inspección y diagnóstico de equipo",
+                    "Reemplazo de componente crítico",
+                    "Supervisar pruebas post-intervención",
+                    "Verificar alineamiento de eje",
+                    "Coordinar entrega de equipo a operaciones",
+                ]),
+                "understood": True,
+                "progress": random.randint(10, 60),
+                "completed": None,
+            })
+            admin_tasks += 1
+        print(f"  Assigned {admin_tasks} tasks to admin ({admin_uname})")
+    else:
+        print("  WARNING: No admin user found - skipping admin task assignment")
+
+    # ── 6. Seed Equipment Handovers (for Ejecución > Entregas tab) ──
+    print("Seeding equipment handovers...")
+    # Check if table exists
+    try:
+        db.execute(text("SELECT COUNT(*) FROM equipment_handovers"))
+        db.execute(text("DELETE FROM equipment_handovers"))
+    except Exception:
+        db.rollback()
+        print("  equipment_handovers table not found, skipping")
+
+    handover_count = 0
+    completed_wos = [wo_ids[i] for i in range(25) if random.random() > 0.6][:8]
+    for wo_id in completed_wos:
+        tag, equip_name = random.choice(EQUIPMENT)
+        node_id = tag_to_node.get(tag, tag_to_node.get(equip_name, tag))
+        h_type = random.choice(["TO_MAINTENANCE", "TO_OPERATIONS"])
+        from_u = random.choice(WORKERS)[0]
+        to_u = random.choice(["Operador Turno A", "Operador Turno B", "Supervisor Operaciones"])
+
+        db.execute(text("""
+            INSERT INTO equipment_handovers (
+                handover_id, wo_id, equipment_id, equipment_tag,
+                handover_type, from_user, to_user,
+                condition_notes, tests_passed, test_notes,
+                handover_at, created_at
+            ) VALUES (
+                :hid, :wo_id, :eid, :tag,
+                :htype, :from_u, :to_u,
+                :notes, :tests, :tnotes,
+                :hat, :cat
+            )
+        """), {
+            "hid": _uuid(),
+            "wo_id": wo_id,
+            "eid": node_id,
+            "tag": tag,
+            "htype": h_type,
+            "from_u": from_u,
+            "to_u": to_u,
+            "notes": random.choice([
+                "Equipo operando normalmente. Sin observaciones.",
+                "Equipo entregado con vibración dentro de parámetros. Monitorear en 24h.",
+                "Reparación completada. Pendiente prueba de carga completa.",
+                "Equipo listo para operación. Se realizaron pruebas exitosas.",
+                "Entrega con observación: sello pendiente de reemplazo definitivo en próxima parada.",
+            ]),
+            "tests": random.random() > 0.2,
+            "tnotes": random.choice([
+                "Prueba de giro sin carga: OK. Prueba con carga: OK.",
+                "Medición de vibración: 2.1 mm/s (dentro de límite 4.5 mm/s).",
+                "Prueba eléctrica: aislamiento OK, consumo nominal.",
+                None,
+            ]),
+            "hat": (now - timedelta(days=random.randint(0, 15), hours=random.randint(0, 23))).isoformat(),
+            "cat": (now - timedelta(days=random.randint(0, 15))).isoformat(),
+        })
+        handover_count += 1
+    print(f"  Inserted {handover_count} equipment handovers")
+
+    # ── 7. Seed Improvement Actions (for Acciones de Mejora page) ──
+    print("Seeding improvement actions...")
+    try:
+        db.execute(text("DELETE FROM improvement_actions WHERE plant_id = :plant"), {"plant": PLANT})
+    except Exception:
+        db.rollback()
+
+    IMPROVEMENT_ACTIONS = [
+        ("Implementar programa de lubricación predictiva", "IMPROVEMENT", "Reliability", "HIGH", "OPEN"),
+        ("Actualizar procedimiento de cambio de rodamientos SAG Mill", "CORRECTIVE", "Procedures", "HIGH", "IN_PROGRESS"),
+        ("Capacitar técnicos en alineamiento láser", "PREVENTIVE", "Training", "MEDIUM", "OPEN"),
+        ("Instalar sensores de vibración en bomba de slurry", "IMPROVEMENT", "Reliability", "CRITICAL", "IN_PROGRESS"),
+        ("Revisar stock mínimo de repuestos críticos flotación", "CORRECTIVE", "Spare Parts", "HIGH", "COMPLETED"),
+        ("Estandarizar check-list pre-operacional correas transportadoras", "PREVENTIVE", "Procedures", "MEDIUM", "OPEN"),
+        ("Mejorar iluminación en área de mantenimiento molino", "IMPROVEMENT", "Safety", "LOW", "COMPLETED"),
+        ("Crear plan de contingencia para falla de thickener", "PREVENTIVE", "Planning", "MEDIUM", "IN_PROGRESS"),
+        ("Reducir tiempo de cambio de liners en SAG Mill", "IMPROVEMENT", "Planning", "HIGH", "OPEN"),
+        ("Actualizar diagramas eléctricos del variador de frecuencia", "CORRECTIVE", "Procedures", "MEDIUM", "COMPLETED"),
+        ("Implementar LOTO en todas las intervenciones", "PREVENTIVE", "Safety", "CRITICAL", "IN_PROGRESS"),
+        ("Reparar sistema de supresión de polvo en crusher", "CORRECTIVE", "Reliability", "HIGH", "OPEN"),
+        ("Evaluar reemplazo de bomba centrífuga por bomba peristáltica", "IMPROVEMENT", "Reliability", "MEDIUM", "OPEN"),
+        ("Documentar lecciones aprendidas de falla de flotación Q1", "PREVENTIVE", "Procedures", "LOW", "COMPLETED"),
+        ("Instalar protección contra sobretensión en tablero MCC", "CORRECTIVE", "Safety", "HIGH", "IN_PROGRESS"),
+    ]
+
+    action_count = 0
+    for i, (title, atype, category, priority, status) in enumerate(IMPROVEMENT_ACTIONS):
+        tag, equip_name = random.choice(EQUIPMENT)
+        node_id = tag_to_node.get(tag, tag_to_node.get(equip_name, tag))
+        days_ago = random.randint(5, 60)
+        created = now - timedelta(days=days_ago)
+        target = created + timedelta(days=random.randint(14, 90))
+        completed_at = (target - timedelta(days=random.randint(0, 10))).isoformat() if status in ("COMPLETED", "VERIFIED") else None
+
+        source = random.choice(["MANUAL", "DEVIATION", "WORK_REQUEST", "RCA"])
+        source_ref = None
+        if source == "WORK_REQUEST" and wr_ids:
+            source_ref = f"WR-{random.choice(wr_ids)[:8]}"
+        elif source == "RCA":
+            source_ref = f"RCA-2026-{random.randint(1, 20):03d}"
+        elif source == "DEVIATION":
+            source_ref = f"DEV-{random.randint(100, 999)}"
+
+        db.execute(text("""
+            INSERT INTO improvement_actions (
+                action_id, title, description, plant_id, equipment_id, equipment_tag,
+                source_type, source_ref, action_type, priority, category,
+                assigned_to, created_by, target_date, completed_at,
+                created_at, updated_at, status,
+                ai_generated, ai_suggestion, notes, resolution
+            ) VALUES (
+                :aid, :title, :desc, :plant, :eid, :tag,
+                :source, :sref, :atype, :priority, :category,
+                :assigned, :created_by, :target, :completed,
+                :created_at, :updated_at, :status,
+                :ai, :ai_sug, :notes, :resolution
+            )
+        """), {
+            "aid": _uuid(),
+            "title": title,
+            "desc": f"Acción derivada de análisis de desempeño. Equipo: {equip_name} ({tag})",
+            "plant": PLANT,
+            "eid": node_id,
+            "tag": tag,
+            "source": source,
+            "sref": source_ref,
+            "atype": atype,
+            "priority": priority,
+            "category": category,
+            "assigned": random.choice(["Ahmed Mansouri", "Jorge Cortina", "Hassan Benali", "Karim Chakir"]),
+            "created_by": random.choice(["admin", "Jorge Cortina"]),
+            "target": target.strftime("%Y-%m-%d"),
+            "completed": completed_at,
+            "created_at": created.isoformat(),
+            "updated_at": now.isoformat(),
+            "status": status,
+            "ai": random.random() > 0.7,
+            "ai_sug": "IA sugiere priorizar esta acción basado en análisis de tendencia de fallas." if random.random() > 0.6 else "",
+            "notes": random.choice(["", "Seguimiento semanal requerido", "Coordinar con compras", "Pendiente aprobación presupuesto"]),
+            "resolution": "Acción completada satisfactoriamente. Verificado en campo." if status == "COMPLETED" else "",
+        })
+        action_count += 1
+    print(f"  Inserted {action_count} improvement actions")
+
+    # ── 8. Seed Reports (for Reportes page) ──
+    print("Seeding reports...")
+    try:
+        db.execute(text("DELETE FROM reports WHERE plant_id = :plant"), {"plant": PLANT})
+    except Exception:
+        db.rollback()
+
+    report_count = 0
+    # Weekly reports for last 4 weeks
+    for w in range(4):
+        week_start = now - timedelta(weeks=w + 1)
+        week_end = week_start + timedelta(days=6)
+        report_id = _uuid()
+        compliance = round(random.uniform(75, 98), 1)
+        wo_completed = random.randint(8, 18)
+        wo_total = wo_completed + random.randint(1, 5)
+
+        content = {
+            "metadata": {
+                "report_id": report_id,
+                "report_type": "WEEKLY_MAINTENANCE",
+                "plant_id": PLANT,
+                "period_start": week_start.strftime("%Y-%m-%d"),
+                "period_end": week_end.strftime("%Y-%m-%d"),
+            },
+            "sections": [
+                {
+                    "title": "Resumen Ejecutivo",
+                    "content": f"Semana {now.isocalendar()[1] - w - 1}: Se completaron {wo_completed} de {wo_total} órdenes programadas. "
+                               f"Cumplimiento del programa: {compliance}%. Sin incidentes de seguridad.",
+                    "metrics": {
+                        "schedule_compliance": compliance,
+                        "wo_completed": wo_completed,
+                        "wo_total": wo_total,
+                        "safety_incidents": 0,
+                        "backlog_hours": round(random.uniform(20, 80), 1),
+                    },
+                },
+                {
+                    "title": "Trabajo Correctivo",
+                    "content": f"Se atendieron {random.randint(2, 6)} órdenes correctivas durante la semana.",
+                    "metrics": {"corrective_count": random.randint(2, 6), "corrective_hours": round(random.uniform(10, 40), 1)},
+                },
+                {
+                    "title": "Backlog",
+                    "content": f"Backlog actual: {random.randint(15, 35)} órdenes pendientes ({round(random.uniform(100, 300), 0)} HH).",
+                    "metrics": {"backlog_count": random.randint(15, 35)},
+                },
+            ],
+            "traffic_lights": {
+                "adherence": "GREEN" if compliance > 85 else "YELLOW",
+                "safety": "GREEN",
+                "backlog": random.choice(["GREEN", "YELLOW"]),
+            },
+            "kpis": {
+                "schedule_compliance": {"value": compliance, "target": 90, "status": "OK" if compliance >= 90 else "WARNING"},
+            },
+        }
+
+        db.execute(text("""
+            INSERT INTO reports (report_id, report_type, plant_id, period_start, period_end, generated_at, content, metadata_json)
+            VALUES (:rid, :rtype, :plant, :ps, :pe, :gen, :content, :meta)
+        """), {
+            "rid": report_id,
+            "rtype": "WEEKLY_MAINTENANCE",
+            "plant": PLANT,
+            "ps": week_start.isoformat(),
+            "pe": week_end.isoformat(),
+            "gen": (week_end + timedelta(days=1)).isoformat(),
+            "content": json.dumps(content),
+            "meta": json.dumps({"generated_by": "system", "version": "1.0"}),
+        })
+        report_count += 1
+
+    # Monthly report for last month
+    month_start = (now.replace(day=1) - timedelta(days=1)).replace(day=1)
+    month_end = now.replace(day=1) - timedelta(days=1)
+    report_id = _uuid()
+    monthly_content = {
+        "metadata": {
+            "report_id": report_id,
+            "report_type": "MONTHLY_KPI",
+            "plant_id": PLANT,
+            "period_start": month_start.strftime("%Y-%m-%d"),
+            "period_end": month_end.strftime("%Y-%m-%d"),
+        },
+        "sections": [
+            {
+                "title": "KPIs del Mes",
+                "content": f"Resumen mensual de indicadores de mantenimiento para {month_start.strftime('%B %Y')}.",
+                "metrics": {
+                    "schedule_compliance": 88.5,
+                    "schedule_adherence": 82.3,
+                    "backlog_hours": 245,
+                    "mtbf_avg": 720,
+                    "mttr_avg": 4.2,
+                    "availability": 96.1,
+                    "safety_incidents": 0,
+                    "corrective_pct": 32,
+                    "preventive_pct": 68,
+                },
+            },
+            {
+                "title": "Análisis de Costos",
+                "content": "Costos de mantenimiento dentro del presupuesto mensual.",
+                "metrics": {
+                    "total_cost": 142500,
+                    "labor_cost": 85000,
+                    "material_cost": 45000,
+                    "contractor_cost": 12500,
+                },
+            },
+        ],
+        "traffic_lights": {"adherence": "GREEN", "safety": "GREEN", "backlog": "YELLOW", "costs": "GREEN"},
+    }
+    db.execute(text("""
+        INSERT INTO reports (report_id, report_type, plant_id, period_start, period_end, generated_at, content, metadata_json)
+        VALUES (:rid, :rtype, :plant, :ps, :pe, :gen, :content, :meta)
+    """), {
+        "rid": report_id,
+        "rtype": "MONTHLY_KPI",
+        "plant": PLANT,
+        "ps": month_start.isoformat(),
+        "pe": month_end.isoformat(),
+        "gen": (month_end + timedelta(days=2)).isoformat(),
+        "content": json.dumps(monthly_content),
+        "meta": json.dumps({"generated_by": "system", "version": "1.0"}),
+    })
+    report_count += 1
+    print(f"  Inserted {report_count} reports")
+
+    # ── 9. Seed Post Maintenance Reviews ──
+    print("Seeding post-maintenance reviews...")
+    try:
+        db.execute(text("DELETE FROM post_maintenance_reviews WHERE plant_id = :plant"), {"plant": PLANT})
+    except Exception:
+        db.rollback()
+
+    review_count = 0
+    for r in range(3):
+        p_end = now - timedelta(weeks=r)
+        p_start = p_end - timedelta(weeks=1)
+        review_id = _uuid()
+
+        wo_total = random.randint(10, 20)
+        wo_completed = wo_total - random.randint(1, 4)
+        wo_delayed = random.randint(1, 3)
+
+        db.execute(text("""
+            INSERT INTO post_maintenance_reviews (
+                review_id, plant_id, period_start, period_end,
+                wo_summary, performance_kpis, delays, unplanned_work, rework_items,
+                meeting_date, attendees, meeting_notes,
+                improvement_actions, lessons_learned,
+                status, created_by, created_at, updated_at
+            ) VALUES (
+                :rid, :plant, :ps, :pe,
+                :wo_sum, :kpis, :delays, :unplanned, :rework,
+                :mdate, :attendees, :mnotes,
+                :actions, :lessons,
+                :status, :created_by, :cat, :uat
+            )
+        """), {
+            "rid": review_id,
+            "plant": PLANT,
+            "ps": p_start.strftime("%Y-%m-%d"),
+            "pe": p_end.strftime("%Y-%m-%d"),
+            "wo_sum": json.dumps({
+                "total": wo_total,
+                "completed": wo_completed,
+                "in_progress": wo_total - wo_completed,
+                "delayed": wo_delayed,
+                "rework_count": random.randint(0, 2),
+            }),
+            "kpis": json.dumps({
+                "schedule_compliance": round(random.uniform(78, 96), 1),
+                "backlog_hours": round(random.uniform(100, 350), 1),
+                "avg_completion_hours": round(random.uniform(4, 10), 1),
+                "unplanned_pct": round(random.uniform(8, 25), 1),
+            }),
+            "delays": json.dumps([
+                {"wo_id": random.choice(wo_ids), "wo_number": f"OT-2026-{random.randint(1,25):05d}", "description": random.choice(PROBLEMS)[:80], "hours_delayed": round(random.uniform(2, 16), 1)}
+                for _ in range(wo_delayed)
+            ]),
+            "unplanned": json.dumps([
+                {"wo_id": random.choice(wo_ids), "wo_number": f"OT-2026-{random.randint(1,25):05d}", "description": "Trabajo no programado: " + random.choice(PROBLEMS)[:60], "hours": round(random.uniform(2, 12), 1)}
+                for _ in range(random.randint(1, 3))
+            ]),
+            "rework": json.dumps([]),
+            "mdate": p_end.strftime("%Y-%m-%d") if r > 0 else None,
+            "attendees": json.dumps([
+                {"name": "Jorge Cortina", "role": "Superintendente"},
+                {"name": "Ahmed Mansouri", "role": "Supervisor Mecánico"},
+                {"name": "Karim Chakir", "role": "Supervisor Eléctrico"},
+                {"name": "Hassan Benali", "role": "Planificador"},
+            ]) if r > 0 else json.dumps([]),
+            "mnotes": "Revisión semanal completada. Se discutieron causas de atraso y acciones correctivas." if r > 0 else None,
+            "actions": json.dumps([
+                {"action": "Mejorar coordinación con almacén para entrega de repuestos", "responsible": "Hassan Benali", "deadline": (p_end + timedelta(days=14)).strftime("%Y-%m-%d"), "status": "COMPLETADO" if r == 2 else "PENDIENTE"},
+                {"action": "Revisar procedimiento de LOTO para área de flotación", "responsible": "Karim Chakir", "deadline": (p_end + timedelta(days=7)).strftime("%Y-%m-%d"), "status": "EN_PROGRESO" if r >= 1 else "PENDIENTE"},
+            ]) if r > 0 else json.dumps([]),
+            "lessons": "Importancia de verificar disponibilidad de repuestos antes de programar OTs." if r > 0 else None,
+            "status": "COMPLETED" if r == 2 else ("IN_REVIEW" if r == 1 else "DRAFT"),
+            "created_by": "admin",
+            "cat": p_end.isoformat(),
+            "uat": now.isoformat(),
+        })
+        review_count += 1
+    print(f"  Inserted {review_count} post-maintenance reviews")
+
     db.commit()
     db.close()
     print(f"\n✓ Work management seed complete!")
     print(f"  - 30 Work Requests")
     print(f"  - 25 Managed Work Orders")
     print(f"  - {len(WORKERS)} Workers")
-    print(f"  - {assignment_count} Work Assignments")
+    print(f"  - {assignment_count + admin_tasks} Work Assignments")
+    print(f"  - {handover_count} Equipment Handovers")
+    print(f"  - {action_count} Improvement Actions")
+    print(f"  - {report_count} Reports")
+    print(f"  - {review_count} Post-Maintenance Reviews")
 
 
 if __name__ == "__main__":

@@ -17,6 +17,21 @@ const PRIORITIES = [
   { value: 'critical', label: 'Critica', color: '#EF4444' },
 ];
 
+const APP_SECTIONS = [
+  'Dashboard',
+  'Ordenes de Trabajo',
+  'Fallas y Eventos',
+  'Acciones de Mejora',
+  'Analitica',
+  'Reportes',
+  'Equipo',
+  'Configuracion',
+  'Sidebar / Menu',
+  'Header / Barra superior',
+  'Login',
+  'Vista Mobile',
+  'General / Otro',
+];
 
 const INITIAL_FORM = {
   feedback_type: 'suggestion',
@@ -25,7 +40,6 @@ const INITIAL_FORM = {
   description: '',
   rating: 3,
   section: '',
-  component: '',
   steps_to_reproduce: '',
   expected_behavior: '',
   actual_behavior: '',
@@ -234,6 +248,14 @@ export default function FeedbackWidget() {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">¿En que seccion?</label>
+                  <select value={form.section} onChange={e => setF('section', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 bg-white">
+                    <option value="">Seleccionar seccion...</option>
+                    {APP_SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
               </div>
             )}
 
@@ -252,12 +274,6 @@ export default function FeedbackWidget() {
                     placeholder="Explica en detalle..."
                     rows={4}
                     className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">¿Donde en la pagina?</label>
-                  <input type="text" value={form.section} onChange={e => setF('section', e.target.value)}
-                    placeholder="Ej: tabla principal, boton verde arriba, menu lateral, grafico de barras..."
-                    className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
                 </div>
                 {form.feedback_type === 'bug' && (
                   <>
@@ -286,12 +302,6 @@ export default function FeedbackWidget() {
                     </div>
                   </>
                 )}
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Componente especifico (opcional)</label>
-                  <input type="text" value={form.component} onChange={e => setF('component', e.target.value)}
-                    placeholder="Ej: Boton guardar, Tabla de datos, Menu lateral..."
-                    className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
-                </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Valoracion general</label>
                   <div className="flex items-center gap-1">

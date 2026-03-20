@@ -222,6 +222,11 @@ export const finalizeProgram = (id) => put(`/scheduling/programs/${id}/finalize`
 export const activateProgram = (id) => put(`/scheduling/programs/${id}/activate`);
 export const completeProgram = (id) => put(`/scheduling/programs/${id}/complete`);
 export const getGantt = (id) => get(`/scheduling/programs/${id}/gantt`);
+// Phase 3 — Scheduling improvements
+export const publishProgram = (id) => put(`/scheduling/programs/${id}/publish`);
+export const materialCheck = (id) => get(`/scheduling/programs/${id}/material-check`);
+export const hhBalance = (id) => get(`/scheduling/programs/${id}/hh-balance`);
+export const getGanttManaged = (p) => get('/scheduling/gantt', p);
 
 // ── Reliability ──
 export const analyzeSpare = (d) => post('/reliability/spare-parts/analyze', d);

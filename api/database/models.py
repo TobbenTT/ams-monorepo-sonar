@@ -674,6 +674,11 @@ class WeeklyProgramModel(Base):
     support_tasks: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     finalized_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Phase 3 — Scheduling improvements
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    published_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    material_status: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {confirmed, pending, unavailable}
+    hh_balance: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {capacity, assigned, available, by_specialty}
 
     __table_args__ = (
         Index("ix_weekly_programs_plant_year_week", "plant_id", "year", "week_number"),

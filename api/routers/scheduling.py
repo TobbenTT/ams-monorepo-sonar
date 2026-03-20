@@ -1,11 +1,11 @@
-"""Scheduling router — weekly program management and Gantt export."""
+"""Scheduling router — weekly program management, Gantt, HH balance, materials."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
-from api.dependencies.auth import get_current_user
+from api.dependencies.auth import get_current_user, require_role
 from api.schemas import ProgramCreate
 from api.services import scheduling_service
 
@@ -44,6 +44,10 @@ def get_program(program_id: str, db: Session = Depends(get_db)):
         "support_tasks": model.support_tasks,
         "created_at": model.created_at.isoformat() if model.created_at else None,
         "finalized_at": model.finalized_at.isoformat() if model.finalized_at else None,
+        "published_at": model.published_at.isoformat() if model.published_at else None,
+        "published_by": model.published_by,
+        "material_status": model.material_status,
+        "hh_balance": model.hh_balance,
     }
 
 
@@ -70,6 +74,57 @@ def complete_program(program_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Program not found")
     return result
 
+
+# ── Phase 3: Publish program ─────────────────────────────────────────
+
+@router.put("/programs/{program_id}/publish")
+def publish_program(
+    program_id: str,
+    user=Depends(require_role("admin", "manager", "planner")),
+    db: Session = Depends(get_db),
+):
+    """Publish a finalized program — makes it visible to all and locks edits."""
+    result = scheduling_service.publish_program(db, program_id, user.get("user_id", ""))
+    if not result:
+        raise HTTPException(status_code=400, detail="Cannot publish — program not found or not finalized/active")
+    return result
+
+
+# ── Phase 3: Material check ──────────────────────────────────────────
+
+@router.get("/programs/{program_id}/material-check")
+def material_check(program_id: str, db: Session = Depends(get_db)):
+    """Check material availability for all WOs/work packages in a program."""
+    result = scheduling_service.check_materials(db, program_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Program not found")
+    return result
+
+
+# ── Phase 3: HH balance ─────────────────────────────────────────────
+
+@router.get("/programs/{program_id}/hh-balance")
+def hh_balance(program_id: str, db: Session = Depends(get_db)):
+    """Calculate manpower hours balance: capacity vs assigned by specialty."""
+    result = scheduling_service.hh_balance(db, program_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Program not found")
+    return result
+
+
+# ── Phase 3: Gantt from managed WOs ─────────────────────────────────
+
+@router.get("/gantt")
+def get_gantt_managed(
+    plant_id: str = "OCP-JFC1",
+    weeks: int = 2,
+    db: Session = Depends(get_db),
+):
+    """Gantt data from managed_work_orders for next N weeks."""
+    return scheduling_service.get_gantt_managed(db, plant_id, weeks)
+
+
+# ── Existing Gantt endpoints ─────────────────────────────────────────
 
 @router.get("/programs/{program_id}/gantt")
 def get_gantt(program_id: str, db: Session = Depends(get_db)):

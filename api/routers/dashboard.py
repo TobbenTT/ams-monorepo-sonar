@@ -150,12 +150,11 @@ def get_work_management_kpis(plant_id: str, db: Session = Depends(get_db)):
 
     # Backlog: pending hours
     pending = [w for w in all_wos if w.status not in ("COMPLETED", "CLOSED")]
-    backlog_hours = round(sum(w.estimated_hours for w in pending), 1)
+    backlog_hours = round(sum(w.estimated_hours or 0 for w in pending), 1)
     backlog_count = len(pending)
 
-    # Late WRs (past SLA)
+    # Late WRs (past SLA) — WR has no plant_id column, query all open WRs
     late_wrs = db.query(WorkRequestModel).filter(
-        WorkRequestModel.plant_id == plant_id,
         WorkRequestModel.status.notin_(["CLOSED", "COMPLETED", "REJECTED"]),
     ).all()
     sla_overdue = sum(
@@ -170,9 +169,9 @@ def get_work_management_kpis(plant_id: str, db: Session = Depends(get_db)):
     cost_mejora = sum(w.budget_amount or 0 for w in recent if w.wo_type == "MEJORA")
 
     # Hours by type
-    hours_correctivo = round(sum(w.actual_hours for w in recent if w.wo_type == "CORRECTIVO"), 1)
-    hours_preventivo = round(sum(w.actual_hours for w in recent if w.wo_type == "PREVENTIVO"), 1)
-    hours_predictivo = round(sum(w.actual_hours for w in recent if w.wo_type == "PREDICTIVO"), 1)
+    hours_correctivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "CORRECTIVO"), 1)
+    hours_preventivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "PREVENTIVO"), 1)
+    hours_predictivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "PREDICTIVO"), 1)
 
     # Workforce
     workers = db.query(WorkforceModel).filter(

@@ -132,8 +132,9 @@ def run():
 
     # ── 2. Seed Work Requests ──
     print("Seeding work requests...")
-    # Don't delete existing — just add more
-    existing_wr_count = db.execute(text("SELECT COUNT(*) FROM work_requests")).scalar() or 0
+    # Clean existing and re-seed with correct plant_id
+    db.execute(text("DELETE FROM work_requests"))
+    existing_wr_count = 0
 
     wr_ids = []
     for i in range(30):
@@ -203,6 +204,7 @@ def run():
                 "failure_symptom": symptom,
                 "severity": random.choice(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
                 "confidence": round(random.uniform(0.7, 0.95), 2),
+                "plant_id": PLANT,
             }),
             "parts": json.dumps([]),
             "created": created.isoformat(),
@@ -219,7 +221,8 @@ def run():
 
     # ── 3. Seed Managed Work Orders ──
     print("Seeding managed work orders...")
-    existing_wo_count = db.execute(text("SELECT COUNT(*) FROM managed_work_orders")).scalar() or 0
+    db.execute(text("DELETE FROM managed_work_orders"))
+    existing_wo_count = 0
 
     wo_counter = existing_wo_count + 1
     wo_ids = []

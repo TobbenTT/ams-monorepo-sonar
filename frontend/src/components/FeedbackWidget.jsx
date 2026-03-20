@@ -253,6 +253,12 @@ export default function FeedbackWidget() {
                     rows={4}
                     className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none" />
                 </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">¿Donde en la pagina?</label>
+                  <input type="text" value={form.section} onChange={e => setF('section', e.target.value)}
+                    placeholder="Ej: tabla principal, boton verde arriba, menu lateral, grafico de barras..."
+                    className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
+                </div>
                 {form.feedback_type === 'bug' && (
                   <>
                     <div>

@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import {
     Home, Wrench, AlertTriangle, TrendingUp, BarChart3,
     FileText, Users, Settings, MessageSquare, ClipboardCheck,
-    ChevronLeft, ChevronRight, User, LogOut
+    ChevronLeft, ChevronRight, User, LogOut, Search
 } from 'lucide-react';
 import { cn } from './ui/utils';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,6 +15,7 @@ const navItems = [
     { path: '/work-orders', icon: Wrench, labelKey: 'nav.workOrders', module: 'work-orders' },
     { path: '/execution', icon: ClipboardCheck, labelKey: 'nav.execution', module: 'execution' },
     { path: '/failures-events', icon: AlertTriangle, labelKey: 'nav.failuresEvents', module: 'failures-events' },
+    { path: '/rca', icon: Search, labelKey: 'nav.rca', module: 'rca' },
     { path: '/improvement-actions', icon: TrendingUp, labelKey: 'nav.improvementActions', module: 'improvement-actions' },
     { path: '/analytics', icon: BarChart3, labelKey: 'nav.analytics', module: 'analytics' },
     { path: '/reports', icon: FileText, labelKey: 'nav.reports', module: 'reports' },

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -21,6 +21,7 @@ const AREA_PREFIXES = {
 
 export default function FailuresEvents() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
   const plant = selectedPlant;
   const [planningGroup, setPlanningGroup] = useState('All');
@@ -615,6 +616,7 @@ export default function FailuresEvents() {
                   <TableHead className="font-semibold">{t('failuresEvents.daysOld')}</TableHead>
                   <TableHead className="font-semibold">{t('failuresEvents.priority')}</TableHead>
                   <TableHead className="font-semibold">{t('failuresEvents.responsible')}</TableHead>
+                  <TableHead className="font-semibold">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -652,6 +654,19 @@ export default function FailuresEvents() {
                         )}
                         <span className="text-sm">{wo.responsible || t('failuresEvents.unassigned')}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/rca');
+                        }}
+                      >
+                        {t('rca.newRCA')}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

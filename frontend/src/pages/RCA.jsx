@@ -103,21 +103,24 @@ export default function RCA() {
         setEditEquipmentId(selected.equipment_id || '');
     };
 
-    // Event Information: save (local state update)
-    const saveEditEventInfo = () => {
-        setSelected(prev => ({
-            ...prev,
-            event_description: editEventDesc,
-            equipment_id: editEquipmentId,
-        }));
-        // Also update the list entry so the sidebar reflects changes
-        setRcas(prev => prev.map(r =>
-            r.analysis_id === selected.analysis_id
-                ? { ...r, event_description: editEventDesc, equipment_id: editEquipmentId }
-                : r
-        ));
+    // Event Information: save to API
+    const saveEditEventInfo = async () => {
+        try {
+            const updated = await api.updateRca(selected.analysis_id, {
+                event_description: editEventDesc,
+                equipment_id: editEquipmentId,
+            });
+            setSelected(updated);
+            setRcas(prev => prev.map(r =>
+                r.analysis_id === selected.analysis_id
+                    ? { ...r, event_description: editEventDesc, equipment_id: editEquipmentId }
+                    : r
+            ));
+            toast.success(t('common.saved'));
+        } catch (e) {
+            toast.error('Error: ' + e.message);
+        }
         setEditingEventInfo(false);
-        toast.success('Event information updated locally');
     };
 
     const cancelEditEventInfo = () => {
@@ -130,14 +133,17 @@ export default function RCA() {
         setEditValue(currentValue || '');
     };
 
-    // 5W+2H: save on blur or Enter
-    const saveEdit5w2h = (key) => {
-        setSelected(prev => ({
-            ...prev,
-            five_w_two_h: { ...prev.five_w_two_h, [key]: editValue },
-        }));
+    // 5W+2H: save on blur or Enter — persist to API
+    const saveEdit5w2h = async (key) => {
+        const newData = { ...selected.five_w_two_h, [key]: editValue };
+        setSelected(prev => ({ ...prev, five_w_two_h: newData }));
         setEditingField(null);
         setEditValue('');
+        try {
+            await api.updateRca(selected.analysis_id, { analysis_5w2h: newData });
+        } catch (e) {
+            toast.error('Error: ' + e.message);
+        }
     };
 
     // Root Cause Levels: start editing
@@ -146,33 +152,39 @@ export default function RCA() {
         setEditValue(currentValue || '');
     };
 
-    // Root Cause Levels: save on blur
-    const saveEditCause = (key) => {
-        setSelected(prev => ({
-            ...prev,
-            root_cause_levels: { ...prev.root_cause_levels, [key]: editValue },
-        }));
+    // Root Cause Levels: save on blur — persist to API
+    const saveEditCause = async (key) => {
+        const newCauses = { ...selected.root_cause_levels, [key]: editValue };
+        setSelected(prev => ({ ...prev, root_cause_levels: newCauses }));
         setEditingField(null);
         setEditValue('');
+        try {
+            await api.updateRca(selected.analysis_id, { root_cause_levels: newCauses });
+        } catch (e) {
+            toast.error('Error: ' + e.message);
+        }
     };
 
-    // CAPA: cycle status
-    const cycleCapaStatus = (index) => {
-        setSelected(prev => {
-            const actions = [...(prev.capa_actions || [])];
-            const current = actions[index].status || 'PENDING';
-            const currentIdx = CAPA_STATUS_CYCLE.indexOf(current);
-            const nextIdx = (currentIdx + 1) % CAPA_STATUS_CYCLE.length;
-            actions[index] = { ...actions[index], status: CAPA_STATUS_CYCLE[nextIdx] };
-            return { ...prev, capa_actions: actions };
-        });
-        toast.success('Action status updated');
+    // CAPA: cycle status — persist to API
+    const cycleCapaStatus = async (index) => {
+        const actions = [...(selected.capa_actions || [])];
+        const current = actions[index].status || 'PENDING';
+        const currentIdx = CAPA_STATUS_CYCLE.indexOf(current);
+        const nextIdx = (currentIdx + 1) % CAPA_STATUS_CYCLE.length;
+        actions[index] = { ...actions[index], status: CAPA_STATUS_CYCLE[nextIdx] };
+        setSelected(prev => ({ ...prev, capa_actions: actions }));
+        try {
+            await api.updateRca(selected.analysis_id, { capa_actions: actions });
+            toast.success(t('common.saved'));
+        } catch (e) {
+            toast.error('Error: ' + e.message);
+        }
     };
 
-    // CAPA: add new action
-    const handleAddCapa = () => {
+    // CAPA: add new action — persist to API
+    const handleAddCapa = async () => {
         if (!newCapa.description.trim()) {
-            toast.error('Action description is required');
+            toast.error(t('rca.actionRequired'));
             return;
         }
         const action = {
@@ -182,13 +194,16 @@ export default function RCA() {
             due_date: newCapa.due_date,
             status: 'PENDING',
         };
-        setSelected(prev => ({
-            ...prev,
-            capa_actions: [...(prev.capa_actions || []), action],
-        }));
+        const actions = [...(selected.capa_actions || []), action];
+        setSelected(prev => ({ ...prev, capa_actions: actions }));
         setNewCapa({ description: '', type: 'corrective', responsible: '', due_date: '' });
         setShowAddCapa(false);
-        toast.success('CAPA action added');
+        try {
+            await api.updateRca(selected.analysis_id, { capa_actions: actions });
+            toast.success(t('common.saved'));
+        } catch (e) {
+            toast.error('Error: ' + e.message);
+        }
     };
 
     return (

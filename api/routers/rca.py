@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user
-from api.schemas import RCACreate, FiveW2HRequest, RCAAdvance, PlanningKPIRequest, DEKPIRequest
+from api.schemas import RCACreate, RCAUpdate, FiveW2HRequest, RCAAdvance, PlanningKPIRequest, DEKPIRequest
 from api.services import rca_service
 
 router = APIRouter(prefix="/rca", tags=["rca"], dependencies=[Depends(get_current_user)])
@@ -46,6 +46,14 @@ def get_rca_summary(
 @router.get("/analyses/{analysis_id}")
 def get_rca(analysis_id: str, db: Session = Depends(get_db)):
     result = rca_service.get_rca(db, analysis_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="RCA analysis not found")
+    return result
+
+
+@router.put("/analyses/{analysis_id}")
+def update_rca(analysis_id: str, data: RCAUpdate, db: Session = Depends(get_db)):
+    result = rca_service.update_rca(db, analysis_id, data.model_dump(exclude_none=True))
     if not result:
         raise HTTPException(status_code=404, detail="RCA analysis not found")
     return result

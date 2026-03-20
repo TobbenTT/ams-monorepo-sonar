@@ -78,6 +78,32 @@ def list_rcas(
     return [_rca_to_dict(r) for r in q.order_by(RCAAnalysisModel.created_at.desc()).all()]
 
 
+def update_rca(db: Session, analysis_id: str, data: dict) -> dict | None:
+    """Update RCA analysis fields — event info, 5W2H, root causes, CAPA actions."""
+    obj = db.query(RCAAnalysisModel).filter_by(analysis_id=analysis_id).first()
+    if not obj:
+        return None
+
+    if data.get("event_description") is not None:
+        obj.event_description = data["event_description"]
+    if data.get("equipment_id") is not None:
+        obj.equipment_id = data["equipment_id"]
+    if data.get("analysis_5w2h") is not None:
+        obj.analysis_5w2h = data["analysis_5w2h"]
+    if data.get("root_cause_levels") is not None:
+        ce = obj.cause_effect or {}
+        ce.update(data["root_cause_levels"])
+        obj.cause_effect = ce
+    if data.get("capa_actions") is not None:
+        obj.solutions = data["capa_actions"]
+    if data.get("team_members") is not None:
+        obj.team_members = data["team_members"]
+
+    log_action(db, "rca", analysis_id, "UPDATE")
+    db.commit()
+    return _rca_to_dict(obj)
+
+
 def run_5w2h(db: Session, analysis_id: str, data: dict) -> dict | None:
     obj = db.query(RCAAnalysisModel).filter_by(analysis_id=analysis_id).first()
     if not obj:

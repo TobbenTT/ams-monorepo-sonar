@@ -273,6 +273,7 @@ export const getWorkManagementKpis = (plantId) => get(`/dashboard/work-managemen
 export const createRca = (d) => post('/rca/analyses', d);
 export const listRcas = (p) => get('/rca/analyses', p);
 export const getRca = (id) => get(`/rca/analyses/${id}`);
+export const updateRca = (id, d) => put(`/rca/analyses/${id}`, d);
 export const getRcaSummary = (p) => get('/rca/analyses/summary', p);
 export const run5w2h = (id, d) => post(`/rca/analyses/${id}/5w2h`, d);
 export const advanceRca = (id, d) => put(`/rca/analyses/${id}/advance`, d);

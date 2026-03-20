@@ -205,6 +205,15 @@ class FiveW2HRequest(BaseModel):
     how_much: str = ""
 
 
+class RCAUpdate(BaseModel):
+    event_description: str | None = None
+    equipment_id: str | None = None
+    analysis_5w2h: dict | None = None
+    root_cause_levels: dict | None = None
+    capa_actions: list[dict] | None = None
+    team_members: list[str] | None = None
+
+
 class RCAAdvance(BaseModel):
     status: str = ""
 

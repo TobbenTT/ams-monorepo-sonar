@@ -110,6 +110,7 @@ export default {
         feedback: 'Feedback',
         execution: 'Ejecucion',
         postMaintenance: 'Post Mantenimiento',
+        troubleshooting: 'Diagnóstico',
         profile: 'Perfil',
         brandTitle: 'Mantenimiento OCP',
         brandSubtitle: 'Plataforma de Confiabilidad',

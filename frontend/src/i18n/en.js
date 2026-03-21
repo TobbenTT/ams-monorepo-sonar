@@ -110,6 +110,7 @@ export default {
         feedback: 'Feedback',
         execution: 'Execution',
         postMaintenance: 'Post Maintenance',
+        troubleshooting: 'Troubleshooting',
         profile: 'Profile',
         brandTitle: 'Maintenance OCP',
         brandSubtitle: 'Reliability Platform',

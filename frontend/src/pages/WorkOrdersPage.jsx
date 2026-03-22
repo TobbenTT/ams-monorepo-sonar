@@ -55,7 +55,7 @@ export default function WorkOrdersPage() {
     { value: 'P1', label: t('workOrders.priorityUrgent'), sub: '< 24h', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03', claseOTLabel: t('workOrders.notScheduled') },
     { value: 'P2', label: t('workOrders.priorityExecution'), sub: '< 7d', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03', claseOTLabel: t('workOrders.notScheduled') },
     { value: 'P3', label: t('workOrders.priorityNextProg'), sub: '7-14d', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01', claseOTLabel: t('workOrders.scheduled') },
-    { value: 'P4', label: t('workOrders.priorityNone'), sub: '> 14d', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01', claseOTLabel: t('workOrders.scheduled') },
+    { value: 'P4', label: t('workOrders.priorityNone'), sub: '', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01', claseOTLabel: t('workOrders.scheduled') },
   ];
 
   const ACTIVITY_CLASSES = {
@@ -273,6 +273,13 @@ export default function WorkOrdersPage() {
     const tag = node.tag || node.code || node.name;
     setSelectedEquip(node);
     setF('whereTag', tag);
+    // Auto-detect failure category from equipment type/name
+    const combined = ((node.name || '') + ' ' + tag).toUpperCase();
+    if (/SENSOR|TRANSMISOR|PLC|DCS|INSTRUMENT|VALVULA.CONTROL|MEDIDOR|ANALIZADOR/.test(combined)) {
+      setF('failureCategory', 'INSTRUMENTACION'); setF('failureSymptom', ''); setF('failureObjectPart', ''); setF('failureCause', '');
+    } else if (/MOTOR.ELEC|TABLERO|TRANSFORM|CABLE|VARIADOR|MCC|INTERRUPTOR/.test(combined)) {
+      setF('failureCategory', 'ELECTRICO'); setF('failureSymptom', ''); setF('failureObjectPart', ''); setF('failureCause', '');
+    }
     setEquipSearch('');
     setShowEquipSearch(false);
   };

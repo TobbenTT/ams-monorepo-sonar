@@ -69,6 +69,7 @@ def _run_column_migrations():
         ("work_requests", "approved_at", "DATETIME", None),
         ("work_requests", "approval_comment", "TEXT", None),
         ("work_requests", "rejection_reason", "TEXT", None),
+        ("managed_work_orders", "is_fast_track", "BOOLEAN", "0"),
     ]
 
     with engine.begin() as conn:

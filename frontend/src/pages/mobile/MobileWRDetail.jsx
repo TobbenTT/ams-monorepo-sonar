@@ -12,7 +12,7 @@ const PRIORITY_META = {
     P1: { label: '1 - Urgente', color: '#EF4444', bg: '#FEE2E2', sub: '< 24 horas', claseOT: 'PM03', claseOTLabel: 'No Programado' },
     P2: { label: '2 - Programa en Ejecución', color: '#F97316', bg: '#FED7AA', sub: '< 7 días', claseOT: 'PM03', claseOTLabel: 'No Programado' },
     P3: { label: '3 - Próximo Programa', color: '#EAB308', bg: '#FEF3C7', sub: '7 - 14 días', claseOT: 'PM01', claseOTLabel: 'Programado' },
-    P4: { label: '4 - Sin Prioridad', color: '#3B82F6', bg: '#DBEAFE', sub: '> 14 días', claseOT: 'PM01', claseOTLabel: 'Programado' },
+    P4: { label: '4 - Sin Prioridad', color: '#3B82F6', bg: '#DBEAFE', sub: '', claseOT: 'PM01', claseOTLabel: 'Programado' },
 };
 
 const ACTIVITY_CLASS_LABELS = {

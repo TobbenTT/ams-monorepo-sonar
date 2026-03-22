@@ -16,7 +16,7 @@ const PRIORITIES = [
     { value: 'P1', label: '1 - Urgente', sub: '< 24 horas', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03', claseOTLabel: 'No Programado' },
     { value: 'P2', label: '2 - Programa en Ejecución', sub: '< 7 días', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03', claseOTLabel: 'No Programado' },
     { value: 'P3', label: '3 - Próximo Programa', sub: '7 - 14 días', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01', claseOTLabel: 'Programado' },
-    { value: 'P4', label: '4 - Sin Prioridad', sub: '> 14 días', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01', claseOTLabel: 'Programado' },
+    { value: 'P4', label: '4 - Sin Prioridad', sub: '', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01', claseOTLabel: 'Programado' },
 ];
 
 // SAP PM: Clase Aviso → Clase OT → Clases de Actividad
@@ -103,6 +103,29 @@ const FAILURE_CATALOG = {
 
 const FAILURE_CATEGORIES = Object.keys(FAILURE_CATALOG);
 
+const RESOURCE_TYPES = [
+    'Mecánico', 'Eléctrico', 'Instrumentista', 'Lubricador', 'Soldador',
+    'Operador Grúa', 'Andamiero', 'Calderero', 'Ayudante General', 'Supervisor',
+];
+
+const COMMON_MATERIALS = [
+    { sapId: '10001234', desc: 'Rodamiento SKF 6205' },
+    { sapId: '10001235', desc: 'Sello mecánico' },
+    { sapId: '10001236', desc: 'Correa V A-68' },
+    { sapId: '10001237', desc: 'Aceite ISO 68' },
+    { sapId: '10001238', desc: 'Grasa EP2' },
+    { sapId: '10001239', desc: 'Filtro aceite hidráulico' },
+    { sapId: '10001240', desc: 'Junta tórica NBR' },
+    { sapId: '10001241', desc: 'Tornillo M12x50 Gr8.8' },
+    { sapId: '10001242', desc: 'Electrodo E7018 3/32' },
+    { sapId: '10001243', desc: 'Cable 3x10 AWG' },
+    { sapId: '10001244', desc: 'Fusible NH 100A' },
+    { sapId: '10001245', desc: 'Contactor 3P 40A' },
+    { sapId: '10001246', desc: 'Sensor proximidad inductivo' },
+    { sapId: '10001247', desc: 'Transmisor presión 0-10bar' },
+    { sapId: '10001248', desc: 'Válvula solenoide 1/2"' },
+];
+
 export default function MobileCreateWR() {
     const { plant } = useOutletContext();
     const navigate = useNavigate();
@@ -135,6 +158,14 @@ export default function MobileCreateWR() {
     const [showSymptoms, setShowSymptoms] = useState(false);
     const [showParts, setShowParts] = useState(false);
     const [showCauses, setShowCauses] = useState(false);
+    // Searchable filters for failure catalog
+    const [symptomFilter, setSymptomFilter] = useState('');
+    const [partFilter, setPartFilter] = useState('');
+    const [causeFilter, setCauseFilter] = useState('');
+    // Resource type combobox
+    const [activeResTypeIdx, setActiveResTypeIdx] = useState(-1);
+    // Material SAP combobox
+    const [activeMatSapIdx, setActiveMatSapIdx] = useState(-1);
 
     const [form, setForm] = useState({
         whatHappens: '',
@@ -259,6 +290,17 @@ export default function MobileCreateWR() {
                 set('technicalLocation', parent.name || funcLoc);
                 set('technicalLocationCode', funcLoc);
             }
+        }
+        // Auto-detect failure category from equipment type/name
+        const nameUpper = (node.name || '').toUpperCase();
+        const tagUpper = tag.toUpperCase();
+        const combined = nameUpper + ' ' + tagUpper;
+        if (/SENSOR|TRANSMISOR|PLC|DCS|INSTRUMENT|VALVULA.CONTROL|MEDIDOR|ANALIZADOR/.test(combined)) {
+            setFailureCategory('INSTRUMENTACION');
+            set('failureSymptom', ''); set('failureObjectPart', ''); set('failureCause', '');
+        } else if (/MOTOR.ELEC|TABLERO|TRANSFORM|CABLE|VARIADOR|MCC|INTERRUPTOR/.test(combined)) {
+            setFailureCategory('ELECTRICO');
+            set('failureSymptom', ''); set('failureObjectPart', ''); set('failureCause', '');
         }
         setEquipSearch('');
         setShowEquipSearch(false);
@@ -707,11 +749,11 @@ export default function MobileCreateWR() {
                         })}
                     </div>
 
-                    {/* Síntoma selector */}
+                    {/* Síntoma selector — searchable */}
                     <div className="mb-3">
                         <div className="text-xs font-medium mb-1.5" style={{ color: '#475569' }}>Síntoma</div>
                         <button
-                            onClick={() => setShowSymptoms(!showSymptoms)}
+                            onClick={() => { setShowSymptoms(!showSymptoms); setSymptomFilter(''); }}
                             className="w-full flex items-center justify-between p-3 rounded-xl border text-sm text-left"
                             style={{
                                 borderColor: form.failureSymptom ? FAILURE_CATALOG[failureCategory].color : '#E2E8F0',
@@ -724,31 +766,52 @@ export default function MobileCreateWR() {
                             <ChevronDown className="w-4 h-4" style={{ color: '#94A3B8', transform: showSymptoms ? 'rotate(180deg)' : 'none' }} />
                         </button>
                         {showSymptoms && (
-                            <div className="mt-1 border rounded-xl max-h-40 overflow-y-auto" style={{ borderColor: '#E2E8F0' }}>
-                                {FAILURE_CATALOG[failureCategory].symptoms.map(s => (
-                                    <button
-                                        key={s}
-                                        onClick={() => { set('failureSymptom', s); setShowSymptoms(false); }}
-                                        className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 active:bg-gray-50"
-                                        style={{
-                                            borderColor: '#F1F5F9',
-                                            backgroundColor: form.failureSymptom === s ? FAILURE_CATALOG[failureCategory].color + '15' : 'transparent',
-                                            fontWeight: form.failureSymptom === s ? 700 : 400,
-                                            color: form.failureSymptom === s ? FAILURE_CATALOG[failureCategory].color : '#334155',
-                                        }}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
+                            <div className="mt-1 border rounded-xl overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
+                                <div className="sticky top-0 bg-white p-2 border-b" style={{ borderColor: '#F1F5F9' }}>
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: '#94A3B8' }} />
+                                        <input
+                                            type="text" value={symptomFilter}
+                                            onChange={(e) => setSymptomFilter(e.target.value)}
+                                            placeholder="Buscar síntoma..."
+                                            className="w-full pl-8 pr-3 py-1.5 rounded-lg border text-xs outline-none"
+                                            style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                <div className="max-h-36 overflow-y-auto">
+                                    {FAILURE_CATALOG[failureCategory].symptoms
+                                        .filter(s => !symptomFilter || s.toLowerCase().includes(symptomFilter.toLowerCase()))
+                                        .map(s => (
+                                            <button
+                                                key={s}
+                                                onClick={() => { set('failureSymptom', s); setShowSymptoms(false); setSymptomFilter(''); }}
+                                                className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 active:bg-gray-50"
+                                                style={{
+                                                    borderColor: '#F1F5F9',
+                                                    backgroundColor: form.failureSymptom === s ? FAILURE_CATALOG[failureCategory].color + '15' : 'transparent',
+                                                    fontWeight: form.failureSymptom === s ? 700 : 400,
+                                                    color: form.failureSymptom === s ? FAILURE_CATALOG[failureCategory].color : '#334155',
+                                                }}
+                                            >
+                                                {s}
+                                            </button>
+                                        ))
+                                    }
+                                    {FAILURE_CATALOG[failureCategory].symptoms.filter(s => !symptomFilter || s.toLowerCase().includes(symptomFilter.toLowerCase())).length === 0 && (
+                                        <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados</div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
 
-                    {/* Parte Objeto selector */}
+                    {/* Parte Objeto selector — searchable */}
                     <div className="mb-3">
                         <div className="text-xs font-medium mb-1.5" style={{ color: '#475569' }}>Parte Objeto</div>
                         <button
-                            onClick={() => setShowParts(!showParts)}
+                            onClick={() => { setShowParts(!showParts); setPartFilter(''); }}
                             className="w-full flex items-center justify-between p-3 rounded-xl border text-sm text-left"
                             style={{
                                 borderColor: form.failureObjectPart ? FAILURE_CATALOG[failureCategory].color : '#E2E8F0',
@@ -761,31 +824,52 @@ export default function MobileCreateWR() {
                             <ChevronDown className="w-4 h-4" style={{ color: '#94A3B8', transform: showParts ? 'rotate(180deg)' : 'none' }} />
                         </button>
                         {showParts && (
-                            <div className="mt-1 border rounded-xl max-h-40 overflow-y-auto" style={{ borderColor: '#E2E8F0' }}>
-                                {FAILURE_CATALOG[failureCategory].parts.map(p => (
-                                    <button
-                                        key={p}
-                                        onClick={() => { set('failureObjectPart', p); setShowParts(false); }}
-                                        className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 active:bg-gray-50"
-                                        style={{
-                                            borderColor: '#F1F5F9',
-                                            backgroundColor: form.failureObjectPart === p ? FAILURE_CATALOG[failureCategory].color + '15' : 'transparent',
-                                            fontWeight: form.failureObjectPart === p ? 700 : 400,
-                                            color: form.failureObjectPart === p ? FAILURE_CATALOG[failureCategory].color : '#334155',
-                                        }}
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
+                            <div className="mt-1 border rounded-xl overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
+                                <div className="sticky top-0 bg-white p-2 border-b" style={{ borderColor: '#F1F5F9' }}>
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: '#94A3B8' }} />
+                                        <input
+                                            type="text" value={partFilter}
+                                            onChange={(e) => setPartFilter(e.target.value)}
+                                            placeholder="Buscar parte..."
+                                            className="w-full pl-8 pr-3 py-1.5 rounded-lg border text-xs outline-none"
+                                            style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                <div className="max-h-36 overflow-y-auto">
+                                    {FAILURE_CATALOG[failureCategory].parts
+                                        .filter(p => !partFilter || p.toLowerCase().includes(partFilter.toLowerCase()))
+                                        .map(p => (
+                                            <button
+                                                key={p}
+                                                onClick={() => { set('failureObjectPart', p); setShowParts(false); setPartFilter(''); }}
+                                                className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 active:bg-gray-50"
+                                                style={{
+                                                    borderColor: '#F1F5F9',
+                                                    backgroundColor: form.failureObjectPart === p ? FAILURE_CATALOG[failureCategory].color + '15' : 'transparent',
+                                                    fontWeight: form.failureObjectPart === p ? 700 : 400,
+                                                    color: form.failureObjectPart === p ? FAILURE_CATALOG[failureCategory].color : '#334155',
+                                                }}
+                                            >
+                                                {p}
+                                            </button>
+                                        ))
+                                    }
+                                    {FAILURE_CATALOG[failureCategory].parts.filter(p => !partFilter || p.toLowerCase().includes(partFilter.toLowerCase())).length === 0 && (
+                                        <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados</div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
 
-                    {/* Causa selector */}
+                    {/* Causa selector — searchable */}
                     <div>
                         <div className="text-xs font-medium mb-1.5" style={{ color: '#475569' }}>Causa</div>
                         <button
-                            onClick={() => setShowCauses(!showCauses)}
+                            onClick={() => { setShowCauses(!showCauses); setCauseFilter(''); }}
                             className="w-full flex items-center justify-between p-3 rounded-xl border text-sm text-left"
                             style={{
                                 borderColor: form.failureCause ? FAILURE_CATALOG[failureCategory].color : '#E2E8F0',
@@ -798,22 +882,43 @@ export default function MobileCreateWR() {
                             <ChevronDown className="w-4 h-4" style={{ color: '#94A3B8', transform: showCauses ? 'rotate(180deg)' : 'none' }} />
                         </button>
                         {showCauses && (
-                            <div className="mt-1 border rounded-xl max-h-40 overflow-y-auto" style={{ borderColor: '#E2E8F0' }}>
-                                {FAILURE_CATALOG[failureCategory].causes.map(c => (
-                                    <button
-                                        key={c}
-                                        onClick={() => { set('failureCause', c); setShowCauses(false); }}
-                                        className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 active:bg-gray-50"
-                                        style={{
-                                            borderColor: '#F1F5F9',
-                                            backgroundColor: form.failureCause === c ? FAILURE_CATALOG[failureCategory].color + '15' : 'transparent',
-                                            fontWeight: form.failureCause === c ? 700 : 400,
-                                            color: form.failureCause === c ? FAILURE_CATALOG[failureCategory].color : '#334155',
-                                        }}
-                                    >
-                                        {c}
-                                    </button>
-                                ))}
+                            <div className="mt-1 border rounded-xl overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
+                                <div className="sticky top-0 bg-white p-2 border-b" style={{ borderColor: '#F1F5F9' }}>
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: '#94A3B8' }} />
+                                        <input
+                                            type="text" value={causeFilter}
+                                            onChange={(e) => setCauseFilter(e.target.value)}
+                                            placeholder="Buscar causa..."
+                                            className="w-full pl-8 pr-3 py-1.5 rounded-lg border text-xs outline-none"
+                                            style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                <div className="max-h-36 overflow-y-auto">
+                                    {FAILURE_CATALOG[failureCategory].causes
+                                        .filter(c => !causeFilter || c.toLowerCase().includes(causeFilter.toLowerCase()))
+                                        .map(c => (
+                                            <button
+                                                key={c}
+                                                onClick={() => { set('failureCause', c); setShowCauses(false); setCauseFilter(''); }}
+                                                className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 active:bg-gray-50"
+                                                style={{
+                                                    borderColor: '#F1F5F9',
+                                                    backgroundColor: form.failureCause === c ? FAILURE_CATALOG[failureCategory].color + '15' : 'transparent',
+                                                    fontWeight: form.failureCause === c ? 700 : 400,
+                                                    color: form.failureCause === c ? FAILURE_CATALOG[failureCategory].color : '#334155',
+                                                }}
+                                            >
+                                                {c}
+                                            </button>
+                                        ))
+                                    }
+                                    {FAILURE_CATALOG[failureCategory].causes.filter(c => !causeFilter || c.toLowerCase().includes(causeFilter.toLowerCase())).length === 0 && (
+                                        <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados</div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -870,26 +975,54 @@ export default function MobileCreateWR() {
                     ) : (
                         <div className="space-y-2">
                             {form.resources.map((res, i) => (
-                                <div key={i} className="relative grid grid-cols-3 gap-2 p-2 rounded-lg" style={{ backgroundColor: '#F8FAFC' }}>
-                                    <input
-                                        type="text" placeholder="Tipo" value={res.type}
-                                        onChange={(e) => updateResource(i, 'type', e.target.value)}
-                                        className="p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
-                                    />
-                                    <input
-                                        type="text" placeholder="Cant." value={res.quantity}
-                                        onChange={(e) => updateResource(i, 'quantity', e.target.value)}
-                                        className="p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
-                                    />
-                                    <div className="flex gap-1">
+                                <div key={i} className="relative p-2 rounded-lg" style={{ backgroundColor: '#F8FAFC' }}>
+                                    {/* Type — searchable combobox */}
+                                    <div className="relative mb-2">
+                                        <div className="relative">
+                                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: '#94A3B8' }} />
+                                            <input
+                                                type="text" placeholder="Buscar tipo..." value={res.type}
+                                                onChange={(e) => { updateResource(i, 'type', e.target.value); setActiveResTypeIdx(i); }}
+                                                onFocus={() => setActiveResTypeIdx(i)}
+                                                onBlur={() => setTimeout(() => setActiveResTypeIdx(-1), 150)}
+                                                className="w-full pl-7 pr-2 p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
+                                            />
+                                        </div>
+                                        {activeResTypeIdx === i && (
+                                            <div className="absolute top-full left-0 right-0 mt-0.5 bg-white border rounded-lg shadow-lg z-20 max-h-32 overflow-y-auto" style={{ borderColor: '#E2E8F0' }}>
+                                                {RESOURCE_TYPES
+                                                    .filter(t => !res.type || t.toLowerCase().includes(res.type.toLowerCase()))
+                                                    .map(t => (
+                                                        <button
+                                                            key={t}
+                                                            onClick={() => { updateResource(i, 'type', t); setActiveResTypeIdx(-1); }}
+                                                            className="w-full text-left px-3 py-1.5 text-xs border-b last:border-b-0 active:bg-gray-50"
+                                                            style={{ borderColor: '#F1F5F9', color: '#334155' }}
+                                                        >
+                                                            {t}
+                                                        </button>
+                                                    ))
+                                                }
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Quantity + Hours */}
+                                    <div className="grid grid-cols-2 gap-2">
                                         <input
-                                            type="text" placeholder="Horas" value={res.hours}
-                                            onChange={(e) => updateResource(i, 'hours', e.target.value)}
-                                            className="flex-1 p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
+                                            type="text" placeholder="Cant." value={res.quantity}
+                                            onChange={(e) => updateResource(i, 'quantity', e.target.value)}
+                                            className="p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
                                         />
-                                        <button onClick={() => removeResource(i)} className="px-1">
-                                            <X className="w-4 h-4" style={{ color: '#EF4444' }} />
-                                        </button>
+                                        <div className="flex gap-1">
+                                            <input
+                                                type="text" placeholder="Horas" value={res.hours}
+                                                onChange={(e) => updateResource(i, 'hours', e.target.value)}
+                                                className="flex-1 p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
+                                            />
+                                            <button onClick={() => removeResource(i)} className="px-1">
+                                                <X className="w-4 h-4" style={{ color: '#EF4444' }} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -930,26 +1063,58 @@ export default function MobileCreateWR() {
                     ) : (
                         <div className="space-y-2">
                             {form.materials.map((mat, i) => (
-                                <div key={i} className="relative grid grid-cols-3 gap-2 p-2 rounded-lg" style={{ backgroundColor: '#F8FAFC' }}>
-                                    <input
-                                        type="text" placeholder="SAP ID" value={mat.sapId}
-                                        onChange={(e) => updateMaterial(i, 'sapId', e.target.value)}
-                                        className="p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
-                                    />
-                                    <input
-                                        type="text" placeholder="Cant." value={mat.quantity}
-                                        onChange={(e) => updateMaterial(i, 'quantity', e.target.value)}
-                                        className="p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
-                                    />
-                                    <div className="flex gap-1">
+                                <div key={i} className="relative p-2 rounded-lg" style={{ backgroundColor: '#F8FAFC' }}>
+                                    {/* SAP ID — searchable combobox */}
+                                    <div className="relative mb-2">
+                                        <div className="relative">
+                                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: '#94A3B8' }} />
+                                            <input
+                                                type="text" placeholder="Buscar material SAP..." value={mat.sapId}
+                                                onChange={(e) => { updateMaterial(i, 'sapId', e.target.value); setActiveMatSapIdx(i); }}
+                                                onFocus={() => setActiveMatSapIdx(i)}
+                                                onBlur={() => setTimeout(() => setActiveMatSapIdx(-1), 150)}
+                                                className="w-full pl-7 pr-2 p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
+                                            />
+                                        </div>
+                                        {activeMatSapIdx === i && (
+                                            <div className="absolute top-full left-0 right-0 mt-0.5 bg-white border rounded-lg shadow-lg z-20 max-h-32 overflow-y-auto" style={{ borderColor: '#E2E8F0' }}>
+                                                {COMMON_MATERIALS
+                                                    .filter(m => !mat.sapId || m.sapId.includes(mat.sapId) || m.desc.toLowerCase().includes(mat.sapId.toLowerCase()))
+                                                    .map(m => (
+                                                        <button
+                                                            key={m.sapId}
+                                                            onClick={() => { updateMaterial(i, 'sapId', m.sapId); updateMaterial(i, 'description', m.desc); setActiveMatSapIdx(-1); }}
+                                                            className="w-full text-left px-3 py-1.5 border-b last:border-b-0 active:bg-gray-50"
+                                                            style={{ borderColor: '#F1F5F9' }}
+                                                        >
+                                                            <span className="text-xs font-mono font-bold" style={{ color: '#0F172A' }}>{m.sapId}</span>
+                                                            <span className="text-xs ml-1.5" style={{ color: '#64748B' }}>{m.desc}</span>
+                                                        </button>
+                                                    ))
+                                                }
+                                                {COMMON_MATERIALS.filter(m => !mat.sapId || m.sapId.includes(mat.sapId) || m.desc.toLowerCase().includes(mat.sapId.toLowerCase())).length === 0 && (
+                                                    <div className="px-3 py-2 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados — usa ID manual</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Quantity + Description */}
+                                    <div className="grid grid-cols-2 gap-2">
                                         <input
-                                            type="text" placeholder="Descripción" value={mat.description}
-                                            onChange={(e) => updateMaterial(i, 'description', e.target.value)}
-                                            className="flex-1 p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
+                                            type="text" placeholder="Cant." value={mat.quantity}
+                                            onChange={(e) => updateMaterial(i, 'quantity', e.target.value)}
+                                            className="p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
                                         />
-                                        <button onClick={() => removeMaterial(i)} className="px-1">
-                                            <X className="w-4 h-4" style={{ color: '#EF4444' }} />
-                                        </button>
+                                        <div className="flex gap-1">
+                                            <input
+                                                type="text" placeholder="Descripción" value={mat.description}
+                                                onChange={(e) => updateMaterial(i, 'description', e.target.value)}
+                                                className="flex-1 p-2 rounded text-xs outline-none" style={{ border: '1px solid #E2E8F0' }}
+                                            />
+                                            <button onClick={() => removeMaterial(i)} className="px-1">
+                                                <X className="w-4 h-4" style={{ color: '#EF4444' }} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}

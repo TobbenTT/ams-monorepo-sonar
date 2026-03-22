@@ -1,7 +1,9 @@
 """Dashboard router — executive dashboard data aggregation."""
 
 import logging
-from fastapi import APIRouter, Depends
+from datetime import datetime, timedelta
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -18,11 +20,14 @@ from api.database.models import (
 router = APIRouter(prefix="/dashboard", tags=["dashboard"], dependencies=[Depends(get_current_user)])
 
 
-def _compute_kpis(db: Session, plant_id: str) -> dict:
-    """Compute KPI values from available DB data."""
-    kpi = db.query(KPIMetricsModel).filter(
-        KPIMetricsModel.plant_id == plant_id
-    ).order_by(KPIMetricsModel.calculated_at.desc()).first()
+def _compute_kpis(db: Session, plant_id: str, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> dict:
+    """Compute KPI values from available DB data, optionally filtered by date range."""
+    q = db.query(KPIMetricsModel).filter(KPIMetricsModel.plant_id == plant_id)
+    if start_date:
+        q = q.filter(KPIMetricsModel.calculated_at >= start_date)
+    if end_date:
+        q = q.filter(KPIMetricsModel.calculated_at <= end_date)
+    kpi = q.order_by(KPIMetricsModel.calculated_at.desc()).first()
 
     if kpi:
         return {
@@ -72,12 +77,19 @@ def _compute_completions(db: Session, plant_id: str) -> dict:
 
 
 @router.get("/executive/{plant_id}")
-def get_executive_dashboard(plant_id: str, db: Session = Depends(get_db)):
+def get_executive_dashboard(
+    plant_id: str,
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
     """Get consolidated executive dashboard data for a plant."""
+    sd = datetime.fromisoformat(start_date) if start_date else None
+    ed = datetime.fromisoformat(end_date) if end_date else None
     reports = reporting_service.list_reports(db, plant_id)
     notifications = reporting_service.list_notifications(db, plant_id)
     critical_alerts = [n for n in notifications if n.get("level") == "CRITICAL"]
-    kpis = _compute_kpis(db, plant_id)
+    kpis = _compute_kpis(db, plant_id, sd, ed)
     completions = _compute_completions(db, plant_id)
     return {
         "plant_id": plant_id,
@@ -116,19 +128,23 @@ def get_dashboard_alerts(plant_id: str, db: Session = Depends(get_db)):
 # ── Jorge Phase 6 — Work Management KPIs ─────────────────────────────
 
 @router.get("/work-management-kpis/{plant_id}")
-def get_work_management_kpis(plant_id: str, db: Session = Depends(get_db)):
+def get_work_management_kpis(
+    plant_id: str,
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
     """Compute KPIs from managed_work_orders + workforce for Phase 6."""
-    from datetime import datetime, timedelta
-
     now = datetime.now()
-    thirty_days_ago = now - timedelta(days=30)
+    period_start = datetime.fromisoformat(start_date) if start_date else now - timedelta(days=30)
+    period_end = datetime.fromisoformat(end_date) if end_date else now
 
     # All MWOs for this plant
     all_wos = db.query(ManagedWorkOrderModel).filter(
         ManagedWorkOrderModel.plant_id == plant_id,
     ).all()
 
-    recent = [w for w in all_wos if w.created_at and w.created_at >= thirty_days_ago]
+    recent = [w for w in all_wos if w.created_at and w.created_at >= period_start and w.created_at <= period_end]
 
     total = len(recent)
     completed = [w for w in recent if w.status in ("COMPLETED", "CLOSED")]
@@ -217,7 +233,7 @@ def get_work_management_kpis(plant_id: str, db: Session = Depends(get_db)):
 
     return {
         "plant_id": plant_id,
-        "period": "last_30_days",
+        "period": f"{period_start.strftime('%Y-%m-%d')}_{period_end.strftime('%Y-%m-%d')}",
         # Core KPIs
         "schedule_compliance": schedule_compliance,
         "schedule_adherence": schedule_adherence,

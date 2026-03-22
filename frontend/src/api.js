@@ -139,7 +139,13 @@ export const fitWeibull = (d) => post('/analytics/weibull-fit', d);
 export const predictFailure = (d) => post('/analytics/weibull-predict', d);
 export const getVarianceAlerts = () => get('/analytics/variance-alerts');
 export const getAssetHealth = (p) => get('/analytics/asset-health', p);
-export const getAnalyticsPageData = (plantId) => get(`/analytics/page-data/${plantId}`);
+export const getAnalyticsPageData = (plantId, startDate, endDate) => {
+  const params = new URLSearchParams();
+  if (startDate) params.set('start_date', startDate);
+  if (endDate) params.set('end_date', endDate);
+  const qs = params.toString();
+  return get(`/analytics/page-data/${plantId}${qs ? '?' + qs : ''}`);
+};
 
 // ── Admin ──
 export const seedDatabase = () => post('/admin/seed-database');
@@ -263,11 +269,23 @@ export const acknowledgeNotification = (id) => put(`/reporting/notifications/${i
 export const exportData = (d) => post('/reporting/export', d);
 
 // ── Dashboard ──
-export const getExecutiveDashboard = (plantId) => get(`/dashboard/executive/${plantId}`);
+export const getExecutiveDashboard = (plantId, startDate, endDate) => {
+  const params = new URLSearchParams();
+  if (startDate) params.set('start_date', startDate);
+  if (endDate) params.set('end_date', endDate);
+  const qs = params.toString();
+  return get(`/dashboard/executive/${plantId}${qs ? '?' + qs : ''}`);
+};
 export const getKpiSummary = (plantId) => get(`/dashboard/kpi-summary/${plantId}`);
 export const getDashboardAlerts = (plantId) => get(`/dashboard/alerts/${plantId}`);
 // Phase 6 — Work Management KPIs
-export const getWorkManagementKpis = (plantId) => get(`/dashboard/work-management-kpis/${plantId}`);
+export const getWorkManagementKpis = (plantId, startDate, endDate) => {
+  const params = new URLSearchParams();
+  if (startDate) params.set('start_date', startDate);
+  if (endDate) params.set('end_date', endDate);
+  const qs = params.toString();
+  return get(`/dashboard/work-management-kpis/${plantId}${qs ? '?' + qs : ''}`);
+};
 
 // ── RCA ──
 export const createRca = (d) => post('/rca/analyses', d);

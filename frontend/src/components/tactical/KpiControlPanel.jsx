@@ -5,7 +5,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import * as api from '../../api';
-import { filterByDateRange } from '../../utils/dateRange';
+import { filterByDateRange, getDateRange } from '../../utils/dateRange';
 
 // Helper: determine KPI status based on value vs target
 function kpiStatus(value, target, lowerIsBetter = false) {
@@ -145,11 +145,15 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
     setLoading(true);
     setError(null);
 
+    const { start, end } = getDateRange(selectedTimeRange);
+    const startISO = start.toISOString();
+    const endISO = end.toISOString();
+
     Promise.all([
-      api.getExecutiveDashboard(selectedPlant).catch(() => null),
-      api.getAnalyticsPageData(selectedPlant).catch(() => null),
+      api.getExecutiveDashboard(selectedPlant, startISO, endISO).catch(() => null),
+      api.getAnalyticsPageData(selectedPlant, startISO, endISO).catch(() => null),
       api.listWorkRequests({ plant_id: selectedPlant }).catch(() => []),
-      api.getWorkManagementKpis(selectedPlant).catch(() => null),
+      api.getWorkManagementKpis(selectedPlant, startISO, endISO).catch(() => null),
     ])
       .then(([exec, analytics, wrs, wm]) => {
         if (cancelled) return;
@@ -166,7 +170,7 @@ export default function KpiControlPanel({ selectedPlant, selectedTimeRange, onKp
       });
 
     return () => { cancelled = true; };
-  }, [selectedPlant]);
+  }, [selectedPlant, selectedTimeRange]);
 
   // Filter work requests by time range (must be before early returns — React hook rules)
   const filteredWRs = useMemo(() => filterByDateRange(workRequests, selectedTimeRange), [workRequests, selectedTimeRange]);

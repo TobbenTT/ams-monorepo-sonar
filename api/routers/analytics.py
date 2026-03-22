@@ -1,6 +1,8 @@
 """Analytics router — KPIs, health scores, Weibull, variance."""
 
-from fastapi import APIRouter, Depends
+from datetime import datetime
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
@@ -144,7 +146,12 @@ def get_asset_health_scores(plant_id: str | None = None, db: Session = Depends(g
 
 
 @router.get("/page-data/{plant_id}")
-def get_analytics_page_data(plant_id: str, db: Session = Depends(get_db)):
+def get_analytics_page_data(
+    plant_id: str,
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
     """All-in-one endpoint for Analytics page: KPIs, charts, reliability table."""
     from api.database.models import (
         HierarchyNodeModel, FMECAWorksheetModel, WorkPackageModel,
@@ -157,14 +164,20 @@ def get_analytics_page_data(plant_id: str, db: Session = Depends(get_db)):
         HierarchyNodeModel.plant_id == plant_id,
     ).all()
 
+    sd = datetime.fromisoformat(start_date) if start_date else None
+    ed = datetime.fromisoformat(end_date) if end_date else None
+
     equipment_kpis = []
     total_mtbf = total_mttr = total_avail = total_oee = 0.0
     counted = 0
     for node in nodes:
         meta = node.metadata_json or {}
-        km = db.query(KPIMetricsModel).filter(
-            KPIMetricsModel.equipment_id == node.node_id
-        ).order_by(KPIMetricsModel.calculated_at.desc()).first()
+        km_q = db.query(KPIMetricsModel).filter(KPIMetricsModel.equipment_id == node.node_id)
+        if sd:
+            km_q = km_q.filter(KPIMetricsModel.calculated_at >= sd)
+        if ed:
+            km_q = km_q.filter(KPIMetricsModel.calculated_at <= ed)
+        km = km_q.order_by(KPIMetricsModel.calculated_at.desc()).first()
         hs = db.query(HealthScoreModel).filter(
             HealthScoreModel.node_id == node.node_id
         ).order_by(HealthScoreModel.calculated_at.desc()).first()
@@ -242,10 +255,15 @@ def get_analytics_page_data(plant_id: str, db: Session = Depends(get_db)):
     ]
 
     # ── KPI history (from real KPI records, grouped by month) ──
-    kpi_records = db.query(KPIMetricsModel).filter(
+    kpi_hist_q = db.query(KPIMetricsModel).filter(
         KPIMetricsModel.plant_id == plant_id,
         KPIMetricsModel.equipment_id.is_(None),
-    ).order_by(KPIMetricsModel.period_end.desc()).limit(6).all()
+    )
+    if sd:
+        kpi_hist_q = kpi_hist_q.filter(KPIMetricsModel.period_end >= sd)
+    if ed:
+        kpi_hist_q = kpi_hist_q.filter(KPIMetricsModel.period_end <= ed)
+    kpi_records = kpi_hist_q.order_by(KPIMetricsModel.period_end.desc()).limit(6).all()
     kpi_history = []
     if kpi_records:
         for rec in reversed(kpi_records):

@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Minus, DollarSign, Users, Wrench, Shield, Loader2, Clock, Target } from 'lucide-react';
 import * as api from '../../api';
-import { filterByDateRange } from '../../utils/dateRange';
+import { filterByDateRange, getDateRange } from '../../utils/dateRange';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 // Helper: determine KPI status based on value vs target
@@ -56,12 +56,17 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
     setLoading(true);
     setError(null);
 
+    // Convert time range label to ISO date strings for backend
+    const { start, end } = getDateRange(selectedTimeRange);
+    const startISO = start.toISOString();
+    const endISO = end.toISOString();
+
     Promise.all([
-      api.getExecutiveDashboard(selectedPlant).catch(() => null),
-      api.getAnalyticsPageData(selectedPlant).catch(() => null),
+      api.getExecutiveDashboard(selectedPlant, startISO, endISO).catch(() => null),
+      api.getAnalyticsPageData(selectedPlant, startISO, endISO).catch(() => null),
       api.getDashboardAlerts(selectedPlant).catch(() => null),
       api.listWorkRequests({ plant_id: selectedPlant }).catch(() => []),
-      api.getWorkManagementKpis(selectedPlant).catch(() => null),
+      api.getWorkManagementKpis(selectedPlant, startISO, endISO).catch(() => null),
       api.getImprovementActionsSummary({ plant_id: selectedPlant }).catch(() => null),
       api.listImprovementActions({ plant_id: selectedPlant, limit: 10 }).catch(() => ({ items: [] })),
     ])
@@ -83,7 +88,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
       });
 
     return () => { cancelled = true; };
-  }, [selectedPlant]);
+  }, [selectedPlant, selectedTimeRange]);
 
   // Filter work requests by time range (must be before early returns — Rules of Hooks)
   const filteredWRs = useMemo(() => filterByDateRange(workRequests, selectedTimeRange), [workRequests, selectedTimeRange]);

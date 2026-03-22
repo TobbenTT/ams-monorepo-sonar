@@ -27,6 +27,7 @@ export default function FailuresEvents() {
   const [planningGroup, setPlanningGroup] = useState('All');
   const [level2, setLevel2] = useState('All');
   const [specialty, setSpecialty] = useState('All');
+  const [selectedWR, setSelectedWR] = useState(null);
 
   // Translated display names for area filter keys
   const AREA_LABELS = {
@@ -621,7 +622,7 @@ export default function FailuresEvents() {
               </TableHeader>
               <TableBody>
                 {criticalWorkOrders.map((wo, idx) => (
-                  <TableRow key={wo.id + '-' + idx} className="hover:bg-gray-50 cursor-pointer">
+                  <TableRow key={wo.id + '-' + idx} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedWR(wo._raw)}>
                     <TableCell className="font-medium">{wo.id}</TableCell>
                     <TableCell className="font-medium">{wo.equipment}</TableCell>
                     <TableCell className="max-w-xs truncate">{wo.description || t('failuresEvents.noDescription')}</TableCell>
@@ -1421,6 +1422,125 @@ export default function FailuresEvents() {
       </div>
 
       </>)}
+
+      {/* ── WR Detail Modal ── */}
+      {selectedWR && (() => {
+        const wr = selectedWR;
+        const pd = typeof wr.problem_description === 'object' ? wr.problem_description : {};
+        const ai = typeof wr.ai_classification === 'object' ? wr.ai_classification : {};
+        const val = typeof wr.validation === 'object' ? wr.validation : {};
+        const workers = val.assigned_workers || [];
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setSelectedWR(null)}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Aviso: {wr.equipment_tag || 'N/A'}</h2>
+                  <p className="text-xs text-gray-400 font-mono">{wr.request_id}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className={`${
+                    wr.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                    wr.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                    wr.status === 'VALIDATED' ? 'bg-blue-100 text-blue-700' :
+                    wr.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700' :
+                    wr.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                    wr.status === 'CLOSED' ? 'bg-gray-100 text-gray-700' :
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>{wr.status?.replace(/_/g, ' ')}</Badge>
+                  <Badge className="bg-gray-100 text-gray-700">{wr.priority_code || 'P3'}</Badge>
+                  <button onClick={() => setSelectedWR(null)} className="ml-2 text-gray-400 hover:text-gray-700 text-xl">&times;</button>
+                </div>
+              </div>
+              {/* Body */}
+              <div className="p-4 space-y-4">
+                {/* Description */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Descripcion del problema</h3>
+                  <p className="text-sm text-gray-600 bg-gray-50 rounded p-3">{pd.original_text || String(wr.problem_description || 'Sin descripcion')}</p>
+                </div>
+                {/* Failure info */}
+                {(pd.failure_mode_detected || pd.failure_symptom || pd.failure_cause) && (
+                  <div className="grid grid-cols-3 gap-3">
+                    {pd.failure_mode_detected && (
+                      <div className="bg-red-50 rounded p-2">
+                        <p className="text-[10px] text-red-500 font-semibold uppercase">Categoria Falla</p>
+                        <p className="text-sm font-medium text-red-700">{pd.failure_mode_detected}</p>
+                      </div>
+                    )}
+                    {pd.failure_symptom && (
+                      <div className="bg-orange-50 rounded p-2">
+                        <p className="text-[10px] text-orange-500 font-semibold uppercase">Sintoma</p>
+                        <p className="text-sm font-medium text-orange-700">{pd.failure_symptom}</p>
+                      </div>
+                    )}
+                    {pd.failure_cause && (
+                      <div className="bg-yellow-50 rounded p-2">
+                        <p className="text-[10px] text-yellow-600 font-semibold uppercase">Causa</p>
+                        <p className="text-sm font-medium text-yellow-700">{pd.failure_cause}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Suggested action */}
+                {pd.suggested_action && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Accion sugerida</h3>
+                    <p className="text-sm text-gray-600 bg-blue-50 rounded p-3">{pd.suggested_action}</p>
+                  </div>
+                )}
+                {/* AI Classification */}
+                {Object.keys(ai).length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Clasificacion AI</h3>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {ai.work_order_type && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Tipo OT:</span> <span className="font-medium">{ai.work_order_type}</span></div>}
+                      {ai.estimated_duration_hours && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Horas est.:</span> <span className="font-medium">{ai.estimated_duration_hours}h</span></div>}
+                      {ai.plant_id && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Planta:</span> <span className="font-medium">{ai.plant_id}</span></div>}
+                      {ai.criticality && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Criticidad:</span> <span className="font-medium">{ai.criticality}</span></div>}
+                    </div>
+                  </div>
+                )}
+                {/* Assigned workers */}
+                {workers.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Tecnicos asignados</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {workers.map((w, i) => (
+                        <span key={i} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">{w.name} ({w.specialty || 'General'})</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Resources, materials */}
+                {pd.resources && pd.resources.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Recursos</h3>
+                    <div className="text-xs text-gray-600 bg-gray-50 rounded p-2">
+                      {pd.resources.map((r, i) => <div key={i}>{r.type}: {r.quantity} ({r.hours}h)</div>)}
+                    </div>
+                  </div>
+                )}
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 border-t pt-3">
+                  <div>Creado: {wr.created_at ? new Date(wr.created_at).toLocaleString() : '—'}</div>
+                  <div>Actualizado: {wr.updated_at ? new Date(wr.updated_at).toLocaleString() : '—'}</div>
+                  {wr.approved_at && <div>Aprobado: {new Date(wr.approved_at).toLocaleString()}</div>}
+                  {wr.approval_comment && <div>Comentario: {wr.approval_comment}</div>}
+                </div>
+              </div>
+              {/* Footer */}
+              <div className="sticky bottom-0 bg-white border-t p-3 flex justify-between">
+                <Button variant="outline" size="sm" onClick={() => { navigate('/work-orders'); setSelectedWR(null); }}>
+                  Ver en Work Orders
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setSelectedWR(null)}>Cerrar</Button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

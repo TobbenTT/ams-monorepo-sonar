@@ -227,7 +227,14 @@ export default function Execution() {
     const [form, setForm] = useState({ wo_id: '', assigned_to: '', task_description: '', estimated_hours: 4 });
 
     useEffect(() => {
-      listManagedWOs({ status: 'IN_PROGRESS', limit: 50 }).then(r => setWos(Array.isArray(r) ? r : r.items || [])).catch(() => {});
+      Promise.all([
+        listManagedWOs({ status: 'RELEASED', limit: 50 }),
+        listManagedWOs({ status: 'SCHEDULED', limit: 50 }),
+        listManagedWOs({ status: 'IN_PROGRESS', limit: 50 }),
+      ]).then(([r1, r2, r3]) => {
+        const parse = r => Array.isArray(r) ? r : r.items || [];
+        setWos([...parse(r1), ...parse(r2), ...parse(r3)]);
+      }).catch(() => {});
       authListUsers().then(r => setUsers(Array.isArray(r) ? r : r.users || [])).catch(() => {});
     }, []);
 

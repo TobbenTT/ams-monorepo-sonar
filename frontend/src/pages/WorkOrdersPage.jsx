@@ -36,6 +36,8 @@ export default function WorkOrdersPage() {
   const [showSymptoms, setShowSymptoms] = useState(false);
   const [showParts, setShowParts] = useState(false);
   const [showCauses, setShowCauses] = useState(false);
+  const [activeResTypeIdx, setActiveResTypeIdx] = useState(-1);
+  const [activeMatSapIdx, setActiveMatSapIdx] = useState(-1);
   // Managed Work Orders (Jorge Phase 2)
   const [managedWOs, setManagedWOs] = useState([]);
   const [woTab, setWoTab] = useState('ots'); // 'ots' | 'wrs'
@@ -62,6 +64,28 @@ export default function WorkOrdersPage() {
     PM01: [{ value: 'CR', label: t('workOrders.actCorrective') }, { value: 'MC', label: t('workOrders.actConditionMonitoring') }, { value: 'MJ', label: t('workOrders.actImprovement') }, { value: 'IO', label: t('workOrders.actOperationalIncident') }],
     PM03: [{ value: 'CR', label: t('workOrders.actCorrective') }, { value: 'IP', label: t('workOrders.actUnexpected') }, { value: 'IO', label: t('workOrders.actOperationalIncident') }],
   };
+
+  const RESOURCE_TYPES = [
+    'Mecánico', 'Eléctrico', 'Instrumentista', 'Lubricador', 'Soldador',
+    'Operador Grúa', 'Andamiero', 'Calderero', 'Ayudante General', 'Supervisor',
+  ];
+  const COMMON_MATERIALS = [
+    { sapId: '10001234', desc: 'Rodamiento SKF 6205' },
+    { sapId: '10001235', desc: 'Sello mecánico' },
+    { sapId: '10001236', desc: 'Correa V A-68' },
+    { sapId: '10001237', desc: 'Aceite ISO 68' },
+    { sapId: '10001238', desc: 'Grasa EP2' },
+    { sapId: '10001239', desc: 'Filtro aceite hidráulico' },
+    { sapId: '10001240', desc: 'Junta tórica NBR' },
+    { sapId: '10001241', desc: 'Tornillo M12x50 Gr8.8' },
+    { sapId: '10001242', desc: 'Electrodo E7018 3/32' },
+    { sapId: '10001243', desc: 'Cable 3x10 AWG' },
+    { sapId: '10001244', desc: 'Fusible NH 100A' },
+    { sapId: '10001245', desc: 'Contactor 3P 40A' },
+    { sapId: '10001246', desc: 'Sensor proximidad inductivo' },
+    { sapId: '10001247', desc: 'Transmisor presión 0-10bar' },
+    { sapId: '10001248', desc: 'Válvula solenoide 1/2"' },
+  ];
 
   const FAILURE_CATALOG = {
     MECANICO: { label: t('workOrders.failMechanical'), color: '#6366F1', symptoms: ['ALTA VIBRACION','ALTA TEMPERATURA','RUIDO ANORMAL','TRABADO','SIN FLUJO','FILTRACION','DESGASTE VISIBLE','FUGA ACEITE','ATASCAMIENTO'], parts: ['RODAMIENTOS','SELLOS MECANICOS','ACOPLES','EJES','ENGRANAJES','CORREAS','BOMBAS','VALVULAS','FILTROS'], causes: ['DESGASTE','FALTA LUBRICACION','CORROSION','DESALINEADO','OBSTRUIDO','SOBRECARGA','FATIGA','MONTAJE INCORRECTO'] },
@@ -1074,8 +1098,21 @@ export default function WorkOrdersPage() {
                   <div className="space-y-2">
                     {createForm.resources.map((res, i) => (
                       <div key={i} className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-gray-50">
-                        <input type="text" placeholder={t('workOrders.resourceType')} value={res.type} onChange={e => updateResource(i, 'type', e.target.value)}
-                          className="p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                        <div className="relative">
+                          <input type="text" placeholder={t('workOrders.resourceType')} value={res.type}
+                            onChange={e => { updateResource(i, 'type', e.target.value); setActiveResTypeIdx(i); }}
+                            onFocus={() => setActiveResTypeIdx(i)}
+                            onBlur={() => setTimeout(() => setActiveResTypeIdx(-1), 150)}
+                            className="w-full p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          {activeResTypeIdx === i && (
+                            <div className="absolute z-20 left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                              {RESOURCE_TYPES.filter(rt => !res.type || rt.toLowerCase().includes(res.type.toLowerCase())).map(rt => (
+                                <button key={rt} onClick={() => { updateResource(i, 'type', rt); setActiveResTypeIdx(-1); }}
+                                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 border-b last:border-b-0">{rt}</button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <input type="text" placeholder={t('workOrders.resourceQty')} value={res.quantity} onChange={e => updateResource(i, 'quantity', e.target.value)}
                           className="p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
                         <div className="flex gap-1">
@@ -1110,8 +1147,23 @@ export default function WorkOrdersPage() {
                   <div className="space-y-2">
                     {createForm.materials.map((mat, i) => (
                       <div key={i} className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-gray-50">
-                        <input type="text" placeholder={t('workOrders.materialSapId')} value={mat.sapId} onChange={e => updateMaterial(i, 'sapId', e.target.value)}
-                          className="p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                        <div className="relative">
+                          <input type="text" placeholder={t('workOrders.materialSapId')} value={mat.sapId}
+                            onChange={e => { updateMaterial(i, 'sapId', e.target.value); setActiveMatSapIdx(i); }}
+                            onFocus={() => setActiveMatSapIdx(i)}
+                            onBlur={() => setTimeout(() => setActiveMatSapIdx(-1), 150)}
+                            className="w-full p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          {activeMatSapIdx === i && (
+                            <div className="absolute z-20 left-0 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto" style={{ minWidth: '280px' }}>
+                              {COMMON_MATERIALS.filter(m => !mat.sapId || m.sapId.includes(mat.sapId) || m.desc.toLowerCase().includes(mat.sapId.toLowerCase())).map(m => (
+                                <button key={m.sapId} onClick={() => { updateMaterial(i, 'sapId', m.sapId); updateMaterial(i, 'description', m.desc); setActiveMatSapIdx(-1); }}
+                                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 border-b last:border-b-0">
+                                  <span className="font-mono text-emerald-700">{m.sapId}</span> — {m.desc}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <input type="text" placeholder={t('workOrders.materialQty')} value={mat.quantity} onChange={e => updateMaterial(i, 'quantity', e.target.value)}
                           className="p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
                         <div className="flex gap-1">

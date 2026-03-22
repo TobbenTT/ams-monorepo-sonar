@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { KPICard, LoadingSpinner } from '../components/Shared';
 import * as api from '../api';
@@ -23,6 +23,12 @@ export default function Troubleshooting() {
     const [recommendedTests, setRecommendedTests] = useState([]);
     const [testForm, setTestForm] = useState({ test_id: '', result: '', measured_value: '' });
 
+    // Equipment searchable dropdown state
+    const [equipment, setEquipment] = useState([]);
+    const [eqSearch, setEqSearch] = useState('');
+    const [showEqDropdown, setShowEqDropdown] = useState(false);
+    const eqDropdownRef = useRef(null);
+
     const load = useCallback(async () => {
         setLoading(true);
         try {
@@ -33,6 +39,39 @@ export default function Troubleshooting() {
     }, [plant]);
 
     useEffect(() => { load(); }, [load]);
+
+    // Load equipment from hierarchy
+    useEffect(() => {
+        api.listNodes({ plant_id: plant, node_type: 'EQUIPMENT' })
+            .then(r => setEquipment(r.data || r || []))
+            .catch(() => {});
+    }, [plant]);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (eqDropdownRef.current && !eqDropdownRef.current.contains(e.target)) {
+                setShowEqDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    const filteredEquipment = equipment.filter(e => {
+        const q = eqSearch.toLowerCase();
+        return !q ||
+            (e.tag || '').toLowerCase().includes(q) ||
+            (e.code || '').toLowerCase().includes(q) ||
+            (e.name || '').toLowerCase().includes(q);
+    });
+
+    const selectEquipment = useCallback((eq) => {
+        const tag = eq.tag || eq.code;
+        setForm(prev => ({ ...prev, equipment_type_id: eq.node_type || eq.code || tag, equipment_tag: tag }));
+        setEqSearch('');
+        setShowEqDropdown(false);
+    }, []);
 
     const handleCreate = async () => {
         setCreating(true);
@@ -104,11 +143,78 @@ export default function Troubleshooting() {
                     <div className="bg-card rounded-xl border p-4">
                         <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Nueva Sesión de Diagnóstico</div>
                         <div className="space-y-2">
-                            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Tipo de Equipo (ID)"
-                                value={form.equipment_type_id} onChange={e => setForm({ ...form, equipment_type_id: e.target.value })} />
-                            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Tag del Equipo"
-                                value={form.equipment_tag} onChange={e => setForm({ ...form, equipment_tag: e.target.value })} />
-                            <button onClick={handleCreate} disabled={creating || !form.equipment_type_id}
+                            {/* Searchable equipment dropdown */}
+                            <div className="relative" ref={eqDropdownRef}>
+                                <div
+                                    className={`flex items-center gap-2 border rounded px-2 py-1.5 cursor-pointer hover:border-primary/50 transition-colors text-sm ${form.equipment_tag ? 'border-primary/30 bg-primary/5' : ''}`}
+                                    onClick={() => setShowEqDropdown(!showEqDropdown)}
+                                >
+                                    <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    {form.equipment_tag ? (
+                                        <div className="flex-1 truncate">
+                                            <span className="font-mono font-bold text-primary">{form.equipment_tag}</span>
+                                            {form.equipment_type_id && form.equipment_type_id !== form.equipment_tag && (
+                                                <span className="text-muted-foreground ml-1 text-xs">({form.equipment_type_id})</span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span className="flex-1 text-muted-foreground">Seleccionar equipo...</span>
+                                    )}
+                                    <svg className="w-3 h-3 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+
+                                {showEqDropdown && (
+                                    <div className="absolute z-50 mt-1 w-full bg-card border rounded-lg shadow-lg max-h-[280px] overflow-hidden">
+                                        <div className="p-1.5 border-b">
+                                            <input
+                                                autoFocus
+                                                className="w-full px-2 py-1.5 text-sm border rounded bg-background"
+                                                placeholder="Buscar por tag, código o nombre..."
+                                                value={eqSearch}
+                                                onChange={e => setEqSearch(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="overflow-y-auto max-h-[220px]">
+                                            {filteredEquipment.length === 0 ? (
+                                                <div className="p-3 text-xs text-muted-foreground text-center">Sin resultados para "{eqSearch}"</div>
+                                            ) : filteredEquipment.slice(0, 50).map(eq => (
+                                                <div
+                                                    key={eq.node_id || eq.tag || eq.code}
+                                                    className="px-3 py-2 hover:bg-muted/50 cursor-pointer flex items-center gap-2 border-b border-border/50 last:border-0"
+                                                    onClick={() => selectEquipment(eq)}
+                                                >
+                                                    <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                                                        {eq.tag || eq.code}
+                                                    </span>
+                                                    <span className="text-xs truncate">{eq.name}</span>
+                                                    {eq.criticality && (
+                                                        <span className={`text-[10px] px-1 py-0.5 rounded font-medium ml-auto ${
+                                                            eq.criticality === 'AA' ? 'bg-red-100 text-red-700' :
+                                                            eq.criticality === 'A' ? 'bg-orange-100 text-orange-700' :
+                                                            'bg-gray-100 text-gray-600'
+                                                        }`}>{eq.criticality}</span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Clear selection button */}
+                            {form.equipment_tag && (
+                                <button onClick={() => setForm({ ...form, equipment_type_id: '', equipment_tag: '' })}
+                                    className="text-xs text-muted-foreground hover:text-red-600 transition-colors">
+                                    Limpiar selección
+                                </button>
+                            )}
+
+                            <button onClick={handleCreate} disabled={creating || !form.equipment_tag}
                                 className="w-full px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-primary/90 disabled:opacity-50">
                                 {creating ? 'Creando...' : 'Iniciar Sesión'}
                             </button>

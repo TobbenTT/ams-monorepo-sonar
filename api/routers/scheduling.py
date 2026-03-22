@@ -84,7 +84,7 @@ def publish_program(
     db: Session = Depends(get_db),
 ):
     """Publish a finalized program — makes it visible to all and locks edits."""
-    result = scheduling_service.publish_program(db, program_id, user.get("user_id", ""))
+    result = scheduling_service.publish_program(db, program_id, getattr(user, "user_id", ""))
     if not result:
         raise HTTPException(status_code=400, detail="Cannot publish — program not found or not finalized/active")
     return result

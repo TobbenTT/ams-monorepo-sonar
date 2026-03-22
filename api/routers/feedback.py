@@ -136,9 +136,9 @@ def create_feedback(
                     saved_screenshots.append(saved)
 
     fb = DetailedFeedbackModel(
-        user_id=user.get("user_id", ""),
-        user_name=user.get("username", "anonymous"),
-        user_role=user.get("role", ""),
+        user_id=getattr(user, "user_id", ""),
+        user_name=getattr(user, "username", "anonymous"),
+        user_role=getattr(user, "role", ""),
         feedback_type=body.feedback_type,
         priority=body.priority,
         title=body.title,

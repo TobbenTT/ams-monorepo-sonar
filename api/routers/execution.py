@@ -11,7 +11,7 @@ from api.database.connection import get_db
 from api.database.models import (
     WorkAssignmentModel, EquipmentHandoverModel, ManagedWorkOrderModel,
 )
-from api.routers.auth import get_current_user
+from api.dependencies.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class HandoverCreate(BaseModel):
 def assign_task(
     body: TaskAssignRequest,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """Create a work assignment linked to a managed work order."""
     wo = db.get(ManagedWorkOrderModel, body.wo_id)
@@ -91,11 +91,11 @@ def assign_task(
 @router.get("/my-tasks")
 def my_tasks(
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """Get all tasks assigned to the current user."""
-    uid = user.get("user_id", "")
-    username = user.get("username", "")
+    uid = getattr(user, "user_id", "")
+    username = getattr(user, "username", "")
     q = db.query(WorkAssignmentModel).filter(
         WorkAssignmentModel.assigned_to.in_([uid, username]),
         WorkAssignmentModel.status.notin_(["COMPLETED", "CANCELLED"]),
@@ -112,7 +112,7 @@ def list_tasks(
     assigned_to: str | None = None,
     limit: int = 200,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """List execution tasks with optional filters."""
     q = db.query(WorkAssignmentModel).order_by(WorkAssignmentModel.created_at.desc())
@@ -131,7 +131,7 @@ def list_tasks(
 def get_task(
     task_id: str,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     task = db.get(WorkAssignmentModel, task_id)
     if not task:
@@ -146,7 +146,7 @@ def update_progress(
     task_id: str,
     body: ProgressUpdate,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """Update task completion percentage and optionally add a note."""
     task = db.get(WorkAssignmentModel, task_id)
@@ -161,7 +161,7 @@ def update_progress(
         notes = task.partial_notes or []
         notes.append({
             "timestamp": datetime.now().isoformat(),
-            "user": user.get("username", ""),
+            "user": getattr(user, "username", ""),
             "note": body.note,
         })
         task.partial_notes = notes
@@ -179,7 +179,7 @@ def partial_notification(
     task_id: str,
     body: PartialNotification,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """Record a partial notification (e.g. shift handover)."""
     task = db.get(WorkAssignmentModel, task_id)
@@ -189,7 +189,7 @@ def partial_notification(
     notes = task.partial_notes or []
     notes.append({
         "timestamp": datetime.now().isoformat(),
-        "user": user.get("username", ""),
+        "user": getattr(user, "username", ""),
         "note": body.note,
         "type": "shift_change",
     })
@@ -207,7 +207,7 @@ def partial_notification(
 def complete_task(
     task_id: str,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """Mark a task as completed."""
     task = db.get(WorkAssignmentModel, task_id)
@@ -229,7 +229,7 @@ def complete_task(
 def confirm_understood(
     task_id: str,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """Supervisor confirms the technician understands the task."""
     task = db.get(WorkAssignmentModel, task_id)
@@ -246,7 +246,7 @@ def confirm_understood(
 def create_handover(
     body: HandoverCreate,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """Create an equipment handover record."""
     handover = EquipmentHandoverModel(
@@ -254,7 +254,7 @@ def create_handover(
         equipment_id=body.equipment_id,
         equipment_tag=body.equipment_tag,
         handover_type=body.handover_type,
-        from_user=user.get("username", ""),
+        from_user=getattr(user, "username", ""),
         to_user=body.to_user,
         condition_notes=body.condition_notes,
         tests_passed=body.tests_passed,
@@ -272,7 +272,7 @@ def list_handovers(
     equipment_tag: str | None = None,
     limit: int = 100,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """List equipment handovers."""
     q = db.query(EquipmentHandoverModel).order_by(EquipmentHandoverModel.handover_at.desc())

@@ -202,7 +202,7 @@ def validate_work_request(request_id: str, data: WRValidateRequest, db: Session 
 def approve_work_request(request_id: str, data: WRApproveRequest, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     """Supervisor approves a WR with mandatory comment (Jorge Work Management)."""
     result = work_request_service.approve_work_request(
-        db, request_id, approver_id=user.get("user_id", ""), comment=data.comment,
+        db, request_id, approver_id=getattr(user, "user_id", ""), comment=data.comment,
         priority_override=data.priority_override,
     )
     if not result:
@@ -214,7 +214,7 @@ def approve_work_request(request_id: str, data: WRApproveRequest, user=Depends(r
 def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     """Supervisor rejects a WR with mandatory reason (Jorge Work Management)."""
     result = work_request_service.reject_work_request(
-        db, request_id, approver_id=user.get("user_id", ""), reason=data.reason,
+        db, request_id, approver_id=getattr(user, "user_id", ""), reason=data.reason,
     )
     if not result:
         raise HTTPException(status_code=404, detail="Work request not found")
@@ -276,7 +276,7 @@ class WRCloseRequest(BaseModel):
 @router.put("/{request_id}/start")
 def start_work_request(request_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Transition WR to IN_PROGRESS."""
-    result = work_request_service.start_work_request(db, request_id, user_id=user.get("user_id", ""))
+    result = work_request_service.start_work_request(db, request_id, user_id=getattr(user, "user_id", ""))
     if not result:
         raise HTTPException(status_code=400, detail="Cannot start — WR not found or invalid status")
     return result
@@ -286,7 +286,7 @@ def start_work_request(request_id: str, user=Depends(get_current_user), db: Sess
 def complete_work_request(request_id: str, data: WRCompleteRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Transition WR to COMPLETED."""
     result = work_request_service.complete_work_request(
-        db, request_id, user_id=user.get("user_id", ""),
+        db, request_id, user_id=getattr(user, "user_id", ""),
         completion_notes=data.completion_notes, actual_hours=data.actual_hours,
     )
     if not result:
@@ -298,7 +298,7 @@ def complete_work_request(request_id: str, data: WRCompleteRequest, user=Depends
 def close_work_request(request_id: str, data: WRCloseRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Technical closure of WR."""
     result = work_request_service.close_work_request(
-        db, request_id, user_id=user.get("user_id", ""), closure_notes=data.closure_notes,
+        db, request_id, user_id=getattr(user, "user_id", ""), closure_notes=data.closure_notes,
     )
     if not result:
         raise HTTPException(status_code=400, detail="Cannot close — WR not found or invalid status")
@@ -354,7 +354,7 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
         equipment_tag=data.equipment_tag,
         priority_code=data.priority,
         work_class=work_request_service.derive_work_class(data.priority),
-        created_by=data.created_by or user.get("user_id", ""),
+        created_by=data.created_by or getattr(user, "user_id", ""),
         problem_description={
             "original_text": data.problem_description,
             "suggested_action": data.suggested_action,

@@ -58,7 +58,7 @@ def create_review(
         delays=analysis["delays"],
         unplanned_work=analysis["unplanned_work"],
         rework_items=analysis["rework_items"],
-        created_by=user.get("username", ""),
+        created_by=getattr(user, "username", ""),
     )
     db.add(review)
     db.commit()

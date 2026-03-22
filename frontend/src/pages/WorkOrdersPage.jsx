@@ -38,6 +38,7 @@ export default function WorkOrdersPage() {
   const [showCauses, setShowCauses] = useState(false);
   const [activeResTypeIdx, setActiveResTypeIdx] = useState(-1);
   const [activeMatSapIdx, setActiveMatSapIdx] = useState(-1);
+  const [showSpecEquip, setShowSpecEquip] = useState(false);
   // Managed Work Orders (Jorge Phase 2)
   const [managedWOs, setManagedWOs] = useState([]);
   const [woTab, setWoTab] = useState('ots'); // 'ots' | 'wrs'
@@ -64,6 +65,17 @@ export default function WorkOrdersPage() {
     PM01: [{ value: 'CR', label: t('workOrders.actCorrective') }, { value: 'MC', label: t('workOrders.actConditionMonitoring') }, { value: 'MJ', label: t('workOrders.actImprovement') }, { value: 'IO', label: t('workOrders.actOperationalIncident') }],
     PM03: [{ value: 'CR', label: t('workOrders.actCorrective') }, { value: 'IP', label: t('workOrders.actUnexpected') }, { value: 'IO', label: t('workOrders.actOperationalIncident') }],
   };
+
+  const SPECIAL_EQUIPMENT = [
+    'Grúa 20 Ton', 'Grúa 50 Ton', 'Grúa Horquilla', 'Andamio Multidireccional',
+    'Andamio Tubular', 'Camión Pluma', 'Plataforma Elevadora', 'Soldadora MIG/MAG',
+    'Soldadora TIG', 'Soldadora Arco', 'Compresor Portátil', 'Generador Eléctrico',
+    'Bomba Sumergible', 'Hidrolavadora', 'Equipo Alineación Láser',
+    'Analizador de Vibraciones', 'Cámara Termográfica', 'Megóhmetro',
+    'Multímetro Industrial', 'Torquímetro', 'Extractor Hidráulico',
+    'Gata Hidráulica', 'Tecle Cadena 5 Ton', 'Esmeril Angular',
+    'Taladro Magnético', 'Equipo Ultrasonido', 'Detector de Gases',
+  ];
 
   const RESOURCE_TYPES = [
     'Mecánico', 'Eléctrico', 'Instrumentista', 'Lubricador', 'Soldador',
@@ -1181,10 +1193,24 @@ export default function WorkOrdersPage() {
               <div className="border rounded-xl p-4">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.specialEquipment')}</label>
                 <div className="relative">
-                  <Wrench className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input type="text" value={createForm.specialEquipment} onChange={e => setF('specialEquipment', e.target.value)}
+                  <Wrench className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                  <input type="text" value={createForm.specialEquipment}
+                    onChange={e => { setF('specialEquipment', e.target.value); setShowSpecEquip(true); }}
+                    onFocus={() => setShowSpecEquip(true)}
+                    onBlur={() => setTimeout(() => setShowSpecEquip(false), 150)}
                     placeholder={t('workOrders.specialEquipmentPlaceholder')}
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
+                  {showSpecEquip && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {SPECIAL_EQUIPMENT.filter(se => !createForm.specialEquipment || se.toLowerCase().includes(createForm.specialEquipment.toLowerCase())).map(se => (
+                        <button key={se} onClick={() => {
+                          const cur = createForm.specialEquipment;
+                          setF('specialEquipment', cur ? `${cur}, ${se}` : se);
+                          setShowSpecEquip(false);
+                        }} className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b last:border-b-0">{se}</button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

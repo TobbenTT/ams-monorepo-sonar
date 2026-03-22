@@ -126,6 +126,17 @@ const COMMON_MATERIALS = [
     { sapId: '10001248', desc: 'Válvula solenoide 1/2"' },
 ];
 
+const SPECIAL_EQUIPMENT = [
+    'Grúa 20 Ton', 'Grúa 50 Ton', 'Grúa Horquilla', 'Andamio Multidireccional',
+    'Andamio Tubular', 'Camión Pluma', 'Plataforma Elevadora', 'Soldadora MIG/MAG',
+    'Soldadora TIG', 'Soldadora Arco', 'Compresor Portátil', 'Generador Eléctrico',
+    'Bomba Sumergible', 'Hidrolavadora', 'Equipo Alineación Láser',
+    'Analizador de Vibraciones', 'Cámara Termográfica', 'Megóhmetro',
+    'Multímetro Industrial', 'Torquímetro', 'Extractor Hidráulico',
+    'Gata Hidráulica', 'Tecle Cadena 5 Ton', 'Esmeril Angular',
+    'Taladro Magnético', 'Equipo Ultrasonido', 'Detector de Gases',
+];
+
 export default function MobileCreateWR() {
     const { plant } = useOutletContext();
     const navigate = useNavigate();
@@ -166,6 +177,8 @@ export default function MobileCreateWR() {
     const [activeResTypeIdx, setActiveResTypeIdx] = useState(-1);
     // Material SAP combobox
     const [activeMatSapIdx, setActiveMatSapIdx] = useState(-1);
+    // Special equipment combobox
+    const [showSpecEquip, setShowSpecEquip] = useState(false);
 
     const [form, setForm] = useState({
         whatHappens: '',
@@ -1128,15 +1141,28 @@ export default function MobileCreateWR() {
                         EQUIPOS ESPECIALES
                     </label>
                     <div className="relative">
-                        <Wrench className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#94A3B8' }} />
+                        <Wrench className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 z-10" style={{ color: '#94A3B8' }} />
                         <input
                             type="text"
                             value={form.specialEquipment}
-                            onChange={(e) => set('specialEquipment', e.target.value)}
+                            onChange={(e) => { set('specialEquipment', e.target.value); setShowSpecEquip(true); }}
+                            onFocus={() => setShowSpecEquip(true)}
+                            onBlur={() => setTimeout(() => setShowSpecEquip(false), 150)}
                             placeholder="Ej: Grúa 20 ton, Andamios"
                             className="w-full pl-10 pr-4 py-3 rounded-xl border text-sm outline-none"
                             style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
                         />
+                        {showSpecEquip && (
+                            <div className="absolute z-20 left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg max-h-48 overflow-y-auto" style={{ borderColor: '#E2E8F0' }}>
+                                {SPECIAL_EQUIPMENT.filter(se => !form.specialEquipment || se.toLowerCase().includes(form.specialEquipment.toLowerCase())).map(se => (
+                                    <button key={se} onClick={() => {
+                                        const cur = form.specialEquipment;
+                                        set('specialEquipment', cur ? `${cur}, ${se}` : se);
+                                        setShowSpecEquip(false);
+                                    }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 border-b last:border-b-0" style={{ borderColor: '#F1F5F9' }}>{se}</button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 

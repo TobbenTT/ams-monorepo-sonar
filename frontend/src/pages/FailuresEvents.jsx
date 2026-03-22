@@ -28,6 +28,10 @@ export default function FailuresEvents() {
   const [level2, setLevel2] = useState('All');
   const [specialty, setSpecialty] = useState('All');
   const [selectedWR, setSelectedWR] = useState(null);
+  const [wrEditing, setWrEditing] = useState(false);
+  const [wrEditForm, setWrEditForm] = useState({});
+  const [wrSaving, setWrSaving] = useState(false);
+  const [wrActionComment, setWrActionComment] = useState('');
 
   // Translated display names for area filter keys
   const AREA_LABELS = {
@@ -1423,15 +1427,88 @@ export default function FailuresEvents() {
 
       </>)}
 
-      {/* ── WR Detail Modal ── */}
+      {/* ── WR Detail/Edit Modal ── */}
       {selectedWR && (() => {
         const wr = selectedWR;
         const pd = typeof wr.problem_description === 'object' ? wr.problem_description : {};
         const ai = typeof wr.ai_classification === 'object' ? wr.ai_classification : {};
         const val = typeof wr.validation === 'object' ? wr.validation : {};
         const workers = val.assigned_workers || [];
+        const canEdit = !['COMPLETED', 'CLOSED', 'REJECTED'].includes(wr.status);
+        const canApprove = ['VALIDATED', 'PENDING_VALIDATION', 'DRAFT'].includes(wr.status);
+        const canCreateOT = ['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(wr.status);
+
+        const startEdit = () => {
+          setWrEditForm({
+            priority_code: wr.priority_code || 'P3',
+            description: pd.original_text || String(wr.problem_description || ''),
+            suggested_action: pd.suggested_action || '',
+            failure_category: pd.failure_mode_detected || '',
+            failure_symptom: pd.failure_symptom || '',
+            failure_cause: pd.failure_cause || '',
+          });
+          setWrEditing(true);
+        };
+
+        const saveEdit = async () => {
+          setWrSaving(true);
+          try {
+            await api.validateWorkRequest(wr.request_id, {
+              action: 'VALIDATE',
+              modifications: {
+                priority_code: wrEditForm.priority_code,
+                problem_description: {
+                  ...pd,
+                  original_text: wrEditForm.description,
+                  suggested_action: wrEditForm.suggested_action,
+                  failure_mode_detected: wrEditForm.failure_category,
+                  failure_symptom: wrEditForm.failure_symptom,
+                  failure_cause: wrEditForm.failure_cause,
+                },
+              },
+            });
+            const updated = await api.getWorkRequest(wr.request_id);
+            setSelectedWR(updated);
+            setWrEditing(false);
+          } catch (e) { console.error(e); alert('Error al guardar'); }
+          setWrSaving(false);
+        };
+
+        const handleApprove = async () => {
+          if (!wrActionComment) { alert('Escribe un comentario para aprobar'); return; }
+          setWrSaving(true);
+          try {
+            await api.approveWorkRequest(wr.request_id, { comment: wrActionComment });
+            const updated = await api.getWorkRequest(wr.request_id);
+            setSelectedWR(updated);
+            setWrActionComment('');
+          } catch (e) { console.error(e); alert('Error al aprobar'); }
+          setWrSaving(false);
+        };
+
+        const handleReject = async () => {
+          if (!wrActionComment) { alert('Escribe una razon para rechazar'); return; }
+          setWrSaving(true);
+          try {
+            await api.rejectWorkRequest(wr.request_id, { reason: wrActionComment });
+            const updated = await api.getWorkRequest(wr.request_id);
+            setSelectedWR(updated);
+            setWrActionComment('');
+          } catch (e) { console.error(e); alert('Error al rechazar'); }
+          setWrSaving(false);
+        };
+
+        const handleCreateOT = async () => {
+          setWrSaving(true);
+          try {
+            const result = await api.createWOFromWR({ work_request_id: wr.request_id });
+            alert(`OT ${result.wo_number} creada exitosamente`);
+          } catch (e) { console.error(e); alert('Error al crear OT'); }
+          setWrSaving(false);
+        };
+
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setSelectedWR(null)}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setSelectedWR(null); setWrEditing(false); setWrActionComment(''); }}>
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               {/* Header */}
               <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
@@ -1450,92 +1527,174 @@ export default function FailuresEvents() {
                     'bg-yellow-100 text-yellow-700'
                   }`}>{wr.status?.replace(/_/g, ' ')}</Badge>
                   <Badge className="bg-gray-100 text-gray-700">{wr.priority_code || 'P3'}</Badge>
-                  <button onClick={() => setSelectedWR(null)} className="ml-2 text-gray-400 hover:text-gray-700 text-xl">&times;</button>
+                  {canEdit && !wrEditing && (
+                    <button onClick={startEdit} className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100">Editar</button>
+                  )}
+                  <button onClick={() => { setSelectedWR(null); setWrEditing(false); setWrActionComment(''); }} className="ml-1 text-gray-400 hover:text-gray-700 text-xl">&times;</button>
                 </div>
               </div>
               {/* Body */}
               <div className="p-4 space-y-4">
-                {/* Description */}
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Descripcion del problema</h3>
-                  <p className="text-sm text-gray-600 bg-gray-50 rounded p-3">{pd.original_text || String(wr.problem_description || 'Sin descripcion')}</p>
-                </div>
-                {/* Failure info */}
-                {(pd.failure_mode_detected || pd.failure_symptom || pd.failure_cause) && (
-                  <div className="grid grid-cols-3 gap-3">
-                    {pd.failure_mode_detected && (
-                      <div className="bg-red-50 rounded p-2">
-                        <p className="text-[10px] text-red-500 font-semibold uppercase">Categoria Falla</p>
-                        <p className="text-sm font-medium text-red-700">{pd.failure_mode_detected}</p>
+                {wrEditing ? (
+                  <>
+                    {/* Edit mode */}
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">Prioridad</label>
+                      <select value={wrEditForm.priority_code} onChange={e => setWrEditForm({...wrEditForm, priority_code: e.target.value})}
+                        className="w-full mt-1 border rounded-lg p-2 text-sm">
+                        <option value="P1">P1 - Emergencia</option>
+                        <option value="P2">P2 - Urgente</option>
+                        <option value="P3">P3 - Normal</option>
+                        <option value="P4">P4 - Baja</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">Descripcion del problema</label>
+                      <textarea value={wrEditForm.description} onChange={e => setWrEditForm({...wrEditForm, description: e.target.value})}
+                        className="w-full mt-1 border rounded-lg p-2 text-sm" rows={3} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">Accion sugerida</label>
+                      <textarea value={wrEditForm.suggested_action} onChange={e => setWrEditForm({...wrEditForm, suggested_action: e.target.value})}
+                        className="w-full mt-1 border rounded-lg p-2 text-sm" rows={2} />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700">Categoria falla</label>
+                        <select value={wrEditForm.failure_category} onChange={e => setWrEditForm({...wrEditForm, failure_category: e.target.value})}
+                          className="w-full mt-1 border rounded-lg p-2 text-sm">
+                          <option value="">—</option>
+                          <option value="MECANICO">Mecanico</option>
+                          <option value="ELECTRICO">Electrico</option>
+                          <option value="INSTRUMENTACION">Instrumentacion</option>
+                          <option value="PROCESO">Proceso</option>
+                          <option value="ESTRUCTURAL">Estructural</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700">Sintoma</label>
+                        <input value={wrEditForm.failure_symptom} onChange={e => setWrEditForm({...wrEditForm, failure_symptom: e.target.value})}
+                          className="w-full mt-1 border rounded-lg p-2 text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700">Causa</label>
+                        <input value={wrEditForm.failure_cause} onChange={e => setWrEditForm({...wrEditForm, failure_cause: e.target.value})}
+                          className="w-full mt-1 border rounded-lg p-2 text-sm" />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveEdit} disabled={wrSaving}>
+                        {wrSaving ? 'Guardando...' : 'Guardar cambios'}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setWrEditing(false)}>Cancelar</Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* View mode */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-1">Descripcion del problema</h3>
+                      <p className="text-sm text-gray-600 bg-gray-50 rounded p-3">{pd.original_text || String(wr.problem_description || 'Sin descripcion')}</p>
+                    </div>
+                    {(pd.failure_mode_detected || pd.failure_symptom || pd.failure_cause) && (
+                      <div className="grid grid-cols-3 gap-3">
+                        {pd.failure_mode_detected && (
+                          <div className="bg-red-50 rounded p-2">
+                            <p className="text-[10px] text-red-500 font-semibold uppercase">Categoria Falla</p>
+                            <p className="text-sm font-medium text-red-700">{pd.failure_mode_detected}</p>
+                          </div>
+                        )}
+                        {pd.failure_symptom && (
+                          <div className="bg-orange-50 rounded p-2">
+                            <p className="text-[10px] text-orange-500 font-semibold uppercase">Sintoma</p>
+                            <p className="text-sm font-medium text-orange-700">{pd.failure_symptom}</p>
+                          </div>
+                        )}
+                        {pd.failure_cause && (
+                          <div className="bg-yellow-50 rounded p-2">
+                            <p className="text-[10px] text-yellow-600 font-semibold uppercase">Causa</p>
+                            <p className="text-sm font-medium text-yellow-700">{pd.failure_cause}</p>
+                          </div>
+                        )}
                       </div>
                     )}
-                    {pd.failure_symptom && (
-                      <div className="bg-orange-50 rounded p-2">
-                        <p className="text-[10px] text-orange-500 font-semibold uppercase">Sintoma</p>
-                        <p className="text-sm font-medium text-orange-700">{pd.failure_symptom}</p>
+                    {pd.suggested_action && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Accion sugerida</h3>
+                        <p className="text-sm text-gray-600 bg-blue-50 rounded p-3">{pd.suggested_action}</p>
                       </div>
                     )}
-                    {pd.failure_cause && (
-                      <div className="bg-yellow-50 rounded p-2">
-                        <p className="text-[10px] text-yellow-600 font-semibold uppercase">Causa</p>
-                        <p className="text-sm font-medium text-yellow-700">{pd.failure_cause}</p>
+                    {Object.keys(ai).length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Clasificacion AI</h3>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          {ai.work_order_type && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Tipo OT:</span> <span className="font-medium">{ai.work_order_type}</span></div>}
+                          {ai.estimated_duration_hours && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Horas est.:</span> <span className="font-medium">{ai.estimated_duration_hours}h</span></div>}
+                          {ai.plant_id && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Planta:</span> <span className="font-medium">{ai.plant_id}</span></div>}
+                          {ai.criticality && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Criticidad:</span> <span className="font-medium">{ai.criticality}</span></div>}
+                        </div>
                       </div>
                     )}
-                  </div>
-                )}
-                {/* Suggested action */}
-                {pd.suggested_action && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Accion sugerida</h3>
-                    <p className="text-sm text-gray-600 bg-blue-50 rounded p-3">{pd.suggested_action}</p>
-                  </div>
-                )}
-                {/* AI Classification */}
-                {Object.keys(ai).length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Clasificacion AI</h3>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      {ai.work_order_type && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Tipo OT:</span> <span className="font-medium">{ai.work_order_type}</span></div>}
-                      {ai.estimated_duration_hours && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Horas est.:</span> <span className="font-medium">{ai.estimated_duration_hours}h</span></div>}
-                      {ai.plant_id && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Planta:</span> <span className="font-medium">{ai.plant_id}</span></div>}
-                      {ai.criticality && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Criticidad:</span> <span className="font-medium">{ai.criticality}</span></div>}
+                    {workers.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Tecnicos asignados</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {workers.map((w, i) => (
+                            <span key={i} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">{w.name} ({w.specialty || 'General'})</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {pd.resources && pd.resources.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Recursos</h3>
+                        <div className="text-xs text-gray-600 bg-gray-50 rounded p-2">
+                          {pd.resources.map((r, i) => <div key={i}>{r.type}: {r.quantity} ({r.hours}h)</div>)}
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 border-t pt-3">
+                      <div>Creado: {wr.created_at ? new Date(wr.created_at).toLocaleString() : '—'}</div>
+                      <div>Actualizado: {wr.updated_at ? new Date(wr.updated_at).toLocaleString() : '—'}</div>
+                      {wr.approved_at && <div>Aprobado: {new Date(wr.approved_at).toLocaleString()}</div>}
+                      {wr.approval_comment && <div>Comentario: {wr.approval_comment}</div>}
                     </div>
-                  </div>
+
+                    {/* Approve / Reject section */}
+                    {canApprove && (
+                      <div className="border-t pt-3 space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">Comentario (requerido para aprobar/rechazar)</label>
+                        <textarea value={wrActionComment} onChange={e => setWrActionComment(e.target.value)}
+                          placeholder="Comentario de aprobacion o razon de rechazo..."
+                          className="w-full border rounded-lg p-2 text-sm" rows={2} />
+                        <div className="flex gap-2">
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleApprove} disabled={wrSaving}>
+                            {wrSaving ? '...' : 'Aprobar'}
+                          </Button>
+                          <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={handleReject} disabled={wrSaving}>
+                            {wrSaving ? '...' : 'Rechazar'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Create OT button */}
+                    {canCreateOT && (
+                      <div className="border-t pt-3">
+                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCreateOT} disabled={wrSaving}>
+                          {wrSaving ? 'Creando...' : 'Crear Orden de Trabajo desde este Aviso'}
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
-                {/* Assigned workers */}
-                {workers.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Tecnicos asignados</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {workers.map((w, i) => (
-                        <span key={i} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">{w.name} ({w.specialty || 'General'})</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {/* Resources, materials */}
-                {pd.resources && pd.resources.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Recursos</h3>
-                    <div className="text-xs text-gray-600 bg-gray-50 rounded p-2">
-                      {pd.resources.map((r, i) => <div key={i}>{r.type}: {r.quantity} ({r.hours}h)</div>)}
-                    </div>
-                  </div>
-                )}
-                {/* Dates */}
-                <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 border-t pt-3">
-                  <div>Creado: {wr.created_at ? new Date(wr.created_at).toLocaleString() : '—'}</div>
-                  <div>Actualizado: {wr.updated_at ? new Date(wr.updated_at).toLocaleString() : '—'}</div>
-                  {wr.approved_at && <div>Aprobado: {new Date(wr.approved_at).toLocaleString()}</div>}
-                  {wr.approval_comment && <div>Comentario: {wr.approval_comment}</div>}
-                </div>
               </div>
               {/* Footer */}
               <div className="sticky bottom-0 bg-white border-t p-3 flex justify-between">
-                <Button variant="outline" size="sm" onClick={() => { navigate('/work-orders'); setSelectedWR(null); }}>
+                <Button variant="outline" size="sm" onClick={() => { navigate('/work-orders'); setSelectedWR(null); setWrEditing(false); }}>
                   Ver en Work Orders
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setSelectedWR(null)}>Cerrar</Button>
+                <Button variant="outline" size="sm" onClick={() => { setSelectedWR(null); setWrEditing(false); setWrActionComment(''); }}>Cerrar</Button>
               </div>
             </div>
           </div>

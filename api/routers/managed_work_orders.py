@@ -80,7 +80,7 @@ def create_work_order(
         priority_code=data.priority_code,
         plant_id=data.plant_id,
         work_request_id=data.work_request_id,
-        planned_by=user.get("user_id", ""),
+        planned_by=getattr(user, "user_id", ""),
         estimated_hours=data.estimated_hours,
         operations=data.operations,
         materials=data.materials,
@@ -97,7 +97,7 @@ def create_from_work_request(
 ):
     """Create a WO from an approved Work Request."""
     result = managed_wo_service.create_from_work_request(
-        db, data.work_request_id, planned_by=user.get("user_id", ""),
+        db, data.work_request_id, planned_by=getattr(user, "user_id", ""),
     )
     if not result:
         raise HTTPException(status_code=400, detail="WR not found or not in approvable status")
@@ -151,7 +151,7 @@ def release_work_order(
     user=Depends(require_role("admin", "manager", "planner")),
     db: Session = Depends(get_db),
 ):
-    result = managed_wo_service.release_wo(db, wo_id, user.get("user_id", ""))
+    result = managed_wo_service.release_wo(db, wo_id, getattr(user, "user_id", ""))
     if not result:
         raise HTTPException(status_code=400, detail="Cannot release — WO not found or invalid status")
     return result
@@ -165,7 +165,7 @@ def schedule_work_order(
     db: Session = Depends(get_db),
 ):
     workers = data.assigned_workers if data else None
-    result = managed_wo_service.schedule_wo(db, wo_id, user.get("user_id", ""), workers)
+    result = managed_wo_service.schedule_wo(db, wo_id, getattr(user, "user_id", ""), workers)
     if not result:
         raise HTTPException(status_code=400, detail="Cannot schedule — WO not found or invalid status")
     return result
@@ -173,7 +173,7 @@ def schedule_work_order(
 
 @router.put("/{wo_id}/start")
 def start_work_order(wo_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    result = managed_wo_service.start_wo(db, wo_id, user.get("user_id", ""))
+    result = managed_wo_service.start_wo(db, wo_id, getattr(user, "user_id", ""))
     if not result:
         raise HTTPException(status_code=400, detail="Cannot start — WO not found or invalid status")
     return result
@@ -184,7 +184,7 @@ def complete_work_order(
     wo_id: str, data: WOCompleteRequest,
     user=Depends(get_current_user), db: Session = Depends(get_db),
 ):
-    result = managed_wo_service.complete_wo(db, wo_id, user.get("user_id", ""), data.actual_hours)
+    result = managed_wo_service.complete_wo(db, wo_id, getattr(user, "user_id", ""), data.actual_hours)
     if not result:
         raise HTTPException(status_code=400, detail="Cannot complete — WO not found or invalid status")
     return result
@@ -196,7 +196,7 @@ def close_work_order(
     user=Depends(require_role("admin", "manager", "planner")),
     db: Session = Depends(get_db),
 ):
-    result = managed_wo_service.close_wo(db, wo_id, user.get("user_id", ""))
+    result = managed_wo_service.close_wo(db, wo_id, getattr(user, "user_id", ""))
     if not result:
         raise HTTPException(status_code=400, detail="Cannot close — WO not found or invalid status")
     return result
@@ -204,7 +204,7 @@ def close_work_order(
 
 @router.post("/{wo_id}/notes")
 def add_note(wo_id: str, data: WONoteRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    result = managed_wo_service.add_note(db, wo_id, user.get("user_id", ""), data.note)
+    result = managed_wo_service.add_note(db, wo_id, getattr(user, "user_id", ""), data.note)
     if not result:
         raise HTTPException(status_code=404, detail="Work order not found")
     return result

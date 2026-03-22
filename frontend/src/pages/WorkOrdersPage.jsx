@@ -745,7 +745,7 @@ export default function WorkOrdersPage() {
                     const nextAct = OT_NEXT_ACTION[wo.status];
                     const NextIcon = nextAct?.icon;
                     return (
-                      <TableRow key={wo.wo_id} className={`hover:bg-gray-50 ${wo.is_fast_track ? 'bg-amber-50/50' : ''}`}>
+                      <TableRow key={wo.wo_id} className={`hover:bg-gray-50 cursor-pointer ${wo.is_fast_track ? 'bg-amber-50/50' : ''}`} onClick={() => setSelectedOT(wo)}>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono text-sm font-medium text-emerald-700">{wo.wo_number}</span>
@@ -767,7 +767,7 @@ export default function WorkOrdersPage() {
                             wo.wo_type === 'INCIDENTE_OPERACIONAL' ? 'bg-red-200 text-red-800' :
                             wo.wo_type === 'MONITOREO_CONDICION' ? 'bg-cyan-100 text-cyan-700' :
                             'bg-gray-100 text-gray-700'
-                          }`}>{t(`workOrders.woTypes.${wo.wo_type}`) || wo.wo_type}</Badge>
+                          }`}>{{ CORRECTIVO: 'Correctivo', PREVENTIVO: 'Preventivo', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' }[wo.wo_type] || wo.wo_type}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getCriticalityColor(wo.priority_code === 'P1' || wo.priority_code === 'P2' ? 'High' : wo.priority_code === 'P3' ? 'Medium' : 'Low')}>
@@ -1297,6 +1297,160 @@ export default function WorkOrdersPage() {
                 <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleCreate} disabled={creating || !canCreate}>
                   {creating ? t('workOrders.creating') : t('workOrders.createWorkRequest')}
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── WO Detail / Edit Modal ── */}
+      {selectedOT && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedOT(null)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b px-6 py-4 rounded-t-2xl flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  {selectedOT.wo_number}
+                  {selectedOT.is_fast_track && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300"><Zap size={8} className="inline" /> FAST TRACK</span>}
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  <Badge className={OT_STATUS_COLORS[selectedOT.status] || 'bg-gray-100'}>{selectedOT.status.replace(/_/g, ' ')}</Badge>
+                  <span className="ml-2">{selectedOT.equipment_tag}</span>
+                  <span className="ml-2">|</span>
+                  <span className="ml-2">{selectedOT.priority_code}</span>
+                </p>
+              </div>
+              <button onClick={() => setSelectedOT(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Info grid */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><span className="text-gray-500 text-xs block">Tipo</span><span className="font-medium">{{ CORRECTIVO: 'Correctivo', PREVENTIVO: 'Preventivo', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' }[selectedOT.wo_type] || selectedOT.wo_type}</span></div>
+                <div><span className="text-gray-500 text-xs block">Clase</span><span className="font-medium">{selectedOT.work_class || '—'}</span></div>
+                <div><span className="text-gray-500 text-xs block">Horas Estimadas</span><span className="font-medium">{selectedOT.estimated_hours || 0}h</span></div>
+                <div><span className="text-gray-500 text-xs block">Horas Reales</span><span className="font-medium">{selectedOT.actual_hours || 0}h</span></div>
+                <div><span className="text-gray-500 text-xs block">Inicio Plan.</span><span className="font-medium">{selectedOT.planned_start ? new Date(selectedOT.planned_start).toLocaleDateString() : '—'}</span></div>
+                <div><span className="text-gray-500 text-xs block">Fin Plan.</span><span className="font-medium">{selectedOT.planned_end ? new Date(selectedOT.planned_end).toLocaleDateString() : '—'}</span></div>
+                <div><span className="text-gray-500 text-xs block">Inicio Real</span><span className="font-medium">{selectedOT.actual_start ? new Date(selectedOT.actual_start).toLocaleDateString() : '—'}</span></div>
+                <div><span className="text-gray-500 text-xs block">Fin Real</span><span className="font-medium">{selectedOT.actual_end ? new Date(selectedOT.actual_end).toLocaleDateString() : '—'}</span></div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <span className="text-gray-500 text-xs block mb-1">Descripción</span>
+                {['DRAFT', 'PLANNED'].includes(selectedOT.status) ? (
+                  <textarea className="w-full border rounded-lg p-2 text-sm" rows={2} defaultValue={selectedOT.description}
+                    onBlur={async (e) => {
+                      if (e.target.value !== selectedOT.description) {
+                        await api.updateManagedWO(selectedOT.wo_id, { description: e.target.value });
+                        reloadData();
+                      }
+                    }} />
+                ) : (
+                  <p className="text-sm text-gray-800">{selectedOT.description || '—'}</p>
+                )}
+              </div>
+
+              {/* Editable fields for DRAFT/PLANNED */}
+              {['DRAFT', 'PLANNED'].includes(selectedOT.status) && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-gray-500 text-xs block mb-1">Tipo OT</label>
+                    <select className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.wo_type}
+                      onChange={async (e) => { await api.updateManagedWO(selectedOT.wo_id, { wo_type: e.target.value }); reloadData(); }}>
+                      <option value="CORRECTIVO">Correctivo</option>
+                      <option value="PREVENTIVO">Preventivo</option>
+                      <option value="PREDICTIVO">Predictivo</option>
+                      <option value="MEJORA">Mejora</option>
+                      <option value="INCIDENTE_OPERACIONAL">Incidente Op.</option>
+                      <option value="MONITOREO_CONDICION">Monitoreo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-gray-500 text-xs block mb-1">Prioridad</label>
+                    <select className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.priority_code}
+                      onChange={async (e) => { await api.updateManagedWO(selectedOT.wo_id, { priority_code: e.target.value }); reloadData(); }}>
+                      <option value="P1">P1 - Urgente</option>
+                      <option value="P2">P2 - Programa en Ejecución</option>
+                      <option value="P3">P3 - Próximo Programa</option>
+                      <option value="P4">P4 - Sin Prioridad</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-gray-500 text-xs block mb-1">Horas Estimadas</label>
+                    <input type="number" className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.estimated_hours}
+                      onBlur={async (e) => {
+                        const val = parseFloat(e.target.value);
+                        if (val !== selectedOT.estimated_hours) {
+                          await api.updateManagedWO(selectedOT.wo_id, { estimated_hours: val });
+                          reloadData();
+                        }
+                      }} />
+                  </div>
+                  <div>
+                    <label className="text-gray-500 text-xs block mb-1">Presupuesto ($)</label>
+                    <input type="number" className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.budget_amount || 0}
+                      onBlur={async (e) => {
+                        await api.updateManagedWO(selectedOT.wo_id, { budget_amount: parseFloat(e.target.value) || 0 });
+                        reloadData();
+                      }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Progress bar */}
+              <div>
+                <span className="text-gray-500 text-xs block mb-1">Progreso: {Math.round(selectedOT.completion_pct || 0)}%</span>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="bg-emerald-500 h-3 rounded-full transition-all" style={{ width: `${selectedOT.completion_pct || 0}%` }}></div>
+                </div>
+              </div>
+
+              {/* Execution Notes */}
+              {selectedOT.execution_notes?.length > 0 && (
+                <div>
+                  <span className="text-gray-500 text-xs block mb-1">Notas de Ejecución</span>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {selectedOT.execution_notes.map((note, i) => (
+                      <div key={i} className="text-xs bg-gray-50 rounded p-2">
+                        <span className="text-gray-400">{note.timestamp ? new Date(note.timestamp).toLocaleString() : ''}</span>
+                        <span className="ml-2 text-gray-700">{note.note}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Costs summary */}
+              {(selectedOT.labor_cost || selectedOT.material_cost || selectedOT.external_cost || selectedOT.actual_total_cost) ? (
+                <div className="grid grid-cols-4 gap-3 bg-gray-50 rounded-lg p-3">
+                  <div className="text-center"><span className="text-[10px] text-gray-500 block">Labor</span><span className="text-sm font-semibold">${selectedOT.labor_cost || 0}</span></div>
+                  <div className="text-center"><span className="text-[10px] text-gray-500 block">Material</span><span className="text-sm font-semibold">${selectedOT.material_cost || 0}</span></div>
+                  <div className="text-center"><span className="text-[10px] text-gray-500 block">Externo</span><span className="text-sm font-semibold">${selectedOT.external_cost || 0}</span></div>
+                  <div className="text-center"><span className="text-[10px] text-gray-500 block">Total</span><span className="text-sm font-bold text-emerald-700">${selectedOT.actual_total_cost || 0}</span></div>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Footer actions */}
+            <div className="sticky bottom-0 bg-white border-t px-6 py-4 rounded-b-2xl flex justify-between items-center">
+              <span className="text-xs text-gray-400">Creado: {selectedOT.created_at ? new Date(selectedOT.created_at).toLocaleString() : '—'}</span>
+              <div className="flex gap-2">
+                {(() => {
+                  const nxt = OT_NEXT_ACTION[selectedOT.status];
+                  if (!nxt) return null;
+                  const NxtIcon = nxt.icon;
+                  return (
+                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      onClick={async () => { await handleOTTransition(selectedOT, nxt.action); setSelectedOT(null); }}>
+                      {NxtIcon && <NxtIcon className="w-3 h-3 mr-1" />}
+                      {nxt.label}
+                    </Button>
+                  );
+                })()}
+                <Button variant="outline" size="sm" onClick={() => setSelectedOT(null)}>Cerrar</Button>
               </div>
             </div>
           </div>

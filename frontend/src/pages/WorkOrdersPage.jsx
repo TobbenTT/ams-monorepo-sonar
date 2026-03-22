@@ -110,6 +110,27 @@ export default function WorkOrdersPage() {
     ).slice(0, 8));
   }, [equipSearch, allEquipment]);
 
+  // Auto-detect equipment tag from description text
+  useEffect(() => {
+    if (selectedEquip || !createForm.whatHappens || allEquipment.length === 0) return;
+    const text = createForm.whatHappens.toUpperCase();
+    const found = allEquipment.find(n => {
+      const tag = (n.tag || n.code || '').toUpperCase();
+      return tag && tag.length >= 4 && text.includes(tag);
+    });
+    if (found) { selectEquip(found); return; }
+    const tagMatch = createForm.whatHappens.match(/\b([A-Z]{1,5}(?:-[A-Z0-9]{1,6}){1,5})\b/i);
+    if (tagMatch) {
+      const extracted = tagMatch[1].toUpperCase();
+      const partial = allEquipment.find(n => {
+        const tag = (n.tag || n.code || '').toUpperCase();
+        return tag && (tag.includes(extracted) || extracted.includes(tag));
+      });
+      if (partial) { selectEquip(partial); }
+      else { selectEquip({ tag: extracted, name: 'Detectado del texto' }); }
+    }
+  }, [createForm.whatHappens, allEquipment, selectedEquip]);
+
   // --- Filter work requests by selected time range ---
   const filteredWRs = useMemo(() => filterByDateRange(workRequests, selectedTimeRange), [workRequests, selectedTimeRange]);
 

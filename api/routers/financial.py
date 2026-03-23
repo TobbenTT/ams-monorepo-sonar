@@ -42,10 +42,34 @@ def detect_budget_alerts(data: dict):
     return [a.model_dump() for a in alerts]
 
 
-@router.get("/summary/{plant_id}")
-def get_financial_summary(plant_id: str):
+@router.get("/summary")
+def get_financial_summary(plant_id: str = ""):
+    """Financial summary — accepts plant_id as query param."""
     summary = BudgetEngine.generate_financial_summary(plant_id)
-    return summary.model_dump()
+    d = summary.model_dump()
+    # Map to frontend-expected field names
+    d["total_annual_cost"] = d.get("total_maintenance_budget", 0)
+    d["cost_avoidance"] = d.get("total_avoided_cost", 0)
+    d["pm_cm_ratio"] = 0
+    d["cost_breakdown"] = []
+    d["monthly_costs"] = []
+    return d
+
+
+@router.get("/budget")
+def get_budget_status(plant_id: str = ""):
+    """Budget status — returns utilization metrics for a plant."""
+    summary = BudgetEngine.generate_financial_summary(plant_id)
+    total_planned = summary.total_maintenance_budget
+    total_actual = summary.total_actual_spend
+    utilization_pct = round((total_actual / total_planned) * 100, 1) if total_planned > 0 else 0.0
+    return {
+        "plant_id": plant_id,
+        "total_planned": total_planned,
+        "total_actual": total_actual,
+        "utilization_pct": utilization_pct,
+        "variance_pct": summary.budget_variance_pct,
+    }
 
 
 @router.post("/impact")

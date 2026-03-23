@@ -14,10 +14,10 @@ from api.dependencies.auth import get_current_user
 from api.services import import_service
 from tools.models.schemas import ImportSource
 
-router = APIRouter(prefix="/import", tags=["import"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/imports", tags=["imports"], dependencies=[Depends(get_current_user)])
 
 
-@router.post("/file")
+@router.post("/upload")
 async def import_file(
     file: UploadFile = File(...),
     source: str = Form(...),

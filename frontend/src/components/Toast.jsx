@@ -35,10 +35,10 @@ export function ToastProvider({ children }) {
     }, []);
 
     const toast = {
-        success: (msg) => addToast(msg, 'success'),
-        error: (msg) => addToast(msg, 'error', 6000),
-        warning: (msg) => addToast(msg, 'warning'),
-        info: (msg) => addToast(msg, 'info'),
+        success: (msg, duration) => addToast(msg, 'success', duration ?? 4000),
+        error: (msg, duration) => addToast(msg, 'error', duration ?? 6000),
+        warning: (msg, duration) => addToast(msg, 'warning', duration ?? 4000),
+        info: (msg, duration) => addToast(msg, 'info', duration ?? 4000),
     };
 
     return (

@@ -425,7 +425,7 @@ function findDuplicates(currentReq, allRequests) {
    ═══════════════════════════════════════════════════════════ */
 const PAGE_SIZE = 25;
 
-export default function WorkRequests() {
+export default function WorkRequests({ onNavigateTab } = {}) {
   const [scope, setScope] = useState('all');
   const { user } = useAuth();
   const defaultQueue = user?.role === 'manager' ? 'supervisor' : user?.role === 'planner' ? 'planner' : 'all';
@@ -574,12 +574,32 @@ export default function WorkRequests() {
         if (isFastTrack) {
           try {
             const wo = await api.createWOFromWR({ work_request_id: id });
-            toast.success(`FAST TRACK: OT ${wo.wo_number} creada — lista para asignar`);
+            toast.success(
+              <span>
+                FAST TRACK: OT {wo.wo_number || ''} creada
+                {onNavigateTab && (
+                  <button onClick={() => onNavigateTab('execution')} className="ml-2 underline font-semibold">
+                    → Ir a Ejecución
+                  </button>
+                )}
+              </span>,
+              8000
+            );
           } catch {
             toast.success('Aviso validado. Error al crear OT automática — créala manualmente.');
           }
         } else {
-          toast.success('Aviso validado y agregado al Backlog');
+          toast.success(
+            <span>
+              Aviso validado y agregado al Backlog
+              {onNavigateTab && (
+                <button onClick={() => onNavigateTab('planning')} className="ml-2 underline font-semibold">
+                  → Ir a Planificación
+                </button>
+              )}
+            </span>,
+            8000
+          );
         }
       })
       .catch(() => toast.error('Error al validar'));
@@ -600,7 +620,17 @@ export default function WorkRequests() {
   function handleComplete(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'COMPLETED' } : r)));
     api.completeWorkRequest(id, { completion_notes: '', actual_hours: 0 })
-      .then(() => toast.success('Trabajo completado'))
+      .then(() => toast.success(
+        <span>
+          Trabajo completado
+          {onNavigateTab && (
+            <button onClick={() => onNavigateTab('closure')} className="ml-2 underline font-semibold">
+              → Ir a Cierre
+            </button>
+          )}
+        </span>,
+        8000
+      ))
       .catch(() => toast.error('Error al completar'));
   }
 

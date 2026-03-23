@@ -1,9 +1,10 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { LoadingSpinner } from '../components/Shared';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ClipboardList, CalendarRange, Calendar, Wrench, CheckCircle2 } from 'lucide-react';
+import * as api from '../api';
 
 const WorkRequests = lazy(() => import('./WorkRequests'));
 const Planning = lazy(() => import('./Planning'));
@@ -23,6 +24,34 @@ export default function WorkManagement() {
   const { t } = useLanguage();
   const outletContext = useOutletContext();
   const [activeTab, setActiveTab] = useState('identification');
+  const [phaseCounts, setPhaseCounts] = useState(null);
+
+  // Fetch phase counts
+  const refreshCounts = useCallback(() => {
+    Promise.all([
+      api.listWorkRequests({}).catch(() => []),
+      api.listManagedWOs({}).catch(() => []),
+    ]).then(([wrs, wos]) => {
+      const wrList = Array.isArray(wrs) ? wrs : [];
+      const woList = Array.isArray(wos) ? wos : [];
+      setPhaseCounts({
+        identification: wrList.filter(w => ['DRAFT', 'PENDING_VALIDATION'].includes(w.status)).length,
+        planning:       wrList.filter(w => ['VALIDATED', 'APPROVED'].includes(w.status)).length
+                        + woList.filter(w => ['DRAFT', 'PLANNED'].includes(w.status)).length,
+        scheduling:     woList.filter(w => w.status === 'RELEASED').length,
+        execution:      woList.filter(w => ['SCHEDULED', 'IN_PROGRESS'].includes(w.status)).length,
+        closure:        woList.filter(w => w.status === 'COMPLETED').length,
+      });
+    });
+  }, []);
+
+  useEffect(() => { refreshCounts(); }, [refreshCounts]);
+
+  // Callback for child components to navigate between tabs
+  const navigateTab = useCallback((tabId) => {
+    setActiveTab(tabId);
+    refreshCounts();
+  }, [refreshCounts]);
 
   const current = TABS.find(tab => tab.id === activeTab);
   const ActiveComponent = current?.component;
@@ -41,6 +70,7 @@ export default function WorkManagement() {
           {TABS.map((tab, idx) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const count = phaseCounts?.[tab.id];
             return (
               <button
                 key={tab.id}
@@ -51,9 +81,18 @@ export default function WorkManagement() {
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
-                <span className="text-xs font-bold text-opacity-60 mr-1">{idx + 1}.</span>
+                <span className="text-xs font-bold opacity-60 mr-1">{idx + 1}.</span>
                 <Icon className="w-4 h-4" />
                 <span className="hidden lg:inline">{t(`workManagement.tabs.${tab.id}`)}</span>
+                {count > 0 && (
+                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {count}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -63,7 +102,12 @@ export default function WorkManagement() {
       {/* Active Tab Content */}
       <div className="min-h-[600px]">
         <Suspense fallback={<LoadingSpinner />}>
-          {ActiveComponent && <ActiveComponent {...outletContext} />}
+          {ActiveComponent && (
+            <ActiveComponent
+              {...outletContext}
+              onNavigateTab={navigateTab}
+            />
+          )}
         </Suspense>
       </div>
     </div>

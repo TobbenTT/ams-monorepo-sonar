@@ -34,6 +34,7 @@ from api.routers import (
     or_projects, improvement_actions,
     managed_work_orders, feedback,
     execution, post_maintenance,
+    catalogs,
 )
 
 
@@ -206,6 +207,8 @@ def create_app() -> FastAPI:
     app.include_router(execution.router, prefix=prefix)
     # Jorge Phase 5 — Post-Maintenance reviews
     app.include_router(post_maintenance.router, prefix=prefix)
+    # SAP PM Reference Data (Planillas de Carga)
+    app.include_router(catalogs.router, prefix=prefix)
 
     # GAP-W03 — Serve Field PWA at /field/
     field_dist = Path("field_app/dist")

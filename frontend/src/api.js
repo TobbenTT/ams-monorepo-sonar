@@ -396,3 +396,11 @@ export const updateImprovementAction = (id, d) => put(`/improvement-actions/${id
 export const deleteImprovementAction = (id) => del(`/improvement-actions/${id}`);
 export const getImprovementActionsSummary = (p) => get('/improvement-actions/summary', p);
 export const analyzeDeviations = (plantId) => post(`/improvement-actions/analyze-deviations?plant_id=${plantId || 'OCP-JFC1'}`);
+
+// ── SAP PM Catalogs (Planillas de Carga) ──
+export const getFailureCategories = () => get('/catalogs/failure-categories');
+export const getFailureProfiles = (search) => get('/catalogs/failure-profiles', search ? { search } : {});
+export const getFailureProfile = (code) => get(`/catalogs/failure-profile/${code}`);
+export const getEquipmentTypes = (search) => get('/catalogs/equipment-types', search ? { search } : {});
+export const getCatalogTaxonomy = (p) => get('/catalogs/taxonomy', p);
+export const getCatalogCriticality = (tag) => get('/catalogs/criticality', tag ? { tag } : {});

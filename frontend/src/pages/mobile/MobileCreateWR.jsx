@@ -34,74 +34,12 @@ const ACTIVITY_CLASSES = {
     ],
 };
 
-// SAP PM Failure Catalog — compiled from Jorge's CATALOGO DE FALLAS EQUIPOS PPALES
-const FAILURE_CATALOG = {
-    MECANICO: {
-        label: 'Mecánico',
-        color: '#6366F1',
-        symptoms: [
-            'ALTA VIBRACION', 'ALTA TEMPERATURA', 'RUIDO ANORMAL', 'TRABADO', 'GIRO LENTO',
-            'SIN FLUJO', 'FILTRACION', 'FISURA O CORTE', 'FUERA POSICION', 'DERRAME',
-            'DEFORMADA', 'NO GIRA', 'NO FUNCIONA', 'DESGASTE VISIBLE', 'SOLTURA',
-            'BAJO RENDIMIENTO', 'FUGA ACEITE', 'FUGA AGUA', 'ATASCAMIENTO', 'DESBALANCE',
-        ],
-        parts: [
-            'RODAMIENTOS', 'SELLOS MECANICOS', 'ACOPLES', 'EJES', 'ENGRANAJES',
-            'CORREAS', 'POLEAS', 'REDUCTOR', 'ESTRUCTURA', 'VALVULAS',
-            'TUBERIAS', 'BOMBAS', 'CINTA', 'POLINES', 'GUARDERAS', 'TOLVA',
-            'CONTRAPESO', 'REVESTIMIENTO', 'CHUTE', 'FILTROS',
-        ],
-        causes: [
-            'DESGASTE', 'FALTA LUBRICACION', 'CORROSION', 'DESALINEADO', 'OBSTRUIDO',
-            'CONTAMINADO', 'SOLTURA MECANICA', 'FORZADO', 'SOBRECARGA', 'FATIGA',
-            'EROSION', 'TENSION INSUFICIENTE', 'CAVITACION', 'VIBRACION EXCESIVA',
-            'GOLPE / IMPACTO', 'TEMPERATURA EXCESIVA', 'MONTAJE INCORRECTO',
-        ],
-    },
-    ELECTRICO: {
-        label: 'Eléctrico',
-        color: '#F59E0B',
-        symptoms: [
-            'NO ARRANCA', 'SOBRECALENTAMIENTO', 'CORTOCIRCUITO', 'DISPARO PROTECCION',
-            'BAJA AISLACION', 'FALLA ARRANQUE', 'FUERA SERVICIO', 'BAJO RENDIMIENTO',
-            'RUIDO ELECTRICO', 'CHISPORROTEO', 'HUMO', 'OLOR A QUEMADO',
-            'CAIDA DE TENSION', 'OPERACION INTERMITENTE', 'CONSUMO EXCESIVO',
-        ],
-        parts: [
-            'MOTOR ELECTRICO', 'CABLES / CONDUCTORES', 'BORNES / CONEXIONES', 'PROTECCIONES',
-            'TABLERO ELECTRICO', 'INTERRUPTOR', 'ARRANCADOR', 'VARIADOR FRECUENCIA',
-            'TRANSFORMADOR', 'CONTACTOR', 'RELE', 'FUSIBLES', 'BARRA DE TIERRA',
-        ],
-        causes: [
-            'PERDIDA AISLACION', 'AUSENCIA DE FASE', 'DESGASTE', 'CONTAMINADO',
-            'SUELTO', 'POR GOLPE', 'FORZADO', 'SOBRECARGA ELECTRICA',
-            'CONTACTO ELECTRICO DEFICIENTE', 'CORTOCIRCUITO', 'ARCO ELECTRICO',
-            'HUMEDAD', 'CALENTAMIENTO EXCESIVO', 'DESBALANCE FASES',
-        ],
-    },
-    INSTRUMENTACION: {
-        label: 'Instrumentación',
-        color: '#06B6D4',
-        symptoms: [
-            'LECTURA ERRONEA', 'SIN SEÑAL', 'SEÑAL INESTABLE', 'FUERA DE RANGO',
-            'NO RESPONDE', 'ALARMA FALSA', 'LAZO ABIERTO', 'OPERACION ERRATICA',
-            'DISPLAY APAGADO', 'COMUNICACION PERDIDA', 'RESPUESTA LENTA',
-        ],
-        parts: [
-            'SENSOR / TRANSDUCTOR', 'TRANSMISOR', 'VALVULA DE CONTROL', 'PLC / DCS',
-            'CABLEADO SEÑAL', 'ACTUADOR', 'POSICIONADOR', 'INDICADOR LOCAL',
-            'ELEMENTO PRIMARIO', 'REGISTRADOR', 'SWITCH / PRESOSTATO',
-        ],
-        causes: [
-            'DESCALIBRADO', 'CONTAMINADO', 'PERDIDA PARAMETROS', 'POR GOLPE',
-            'PERDIDA AISLACION', 'SOLTURA MECANICA', 'PERDIDA REGULACION',
-            'PERDIDA COMUNICACION', 'DESGASTE', 'OBSTRUCCION', 'DAÑO POR PROCESO',
-            'HUMEDAD', 'INTERFERENCIA ELECTROMAGNETICA',
-        ],
-    },
+// Fallback failure catalog (used if API is unavailable)
+const DEFAULT_FAILURE_CATALOG = {
+    MECANICO: { label: 'Mecánico', color: '#6366F1', symptoms: [], parts: [], causes: [] },
+    ELECTRICO: { label: 'Eléctrico', color: '#F59E0B', symptoms: [], parts: [], causes: [] },
+    INSTRUMENTACION: { label: 'Instrumentación', color: '#06B6D4', symptoms: [], parts: [], causes: [] },
 };
-
-const FAILURE_CATEGORIES = Object.keys(FAILURE_CATALOG);
 
 const RESOURCE_TYPES = [
     'Mecánico', 'Eléctrico', 'Instrumentista', 'Lubricador', 'Soldador',
@@ -149,6 +87,10 @@ export default function MobileCreateWR() {
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
+
+    // SAP PM Catalog data (loaded from API, extracted from Planillas de Carga)
+    const [failureCatalog, setFailureCatalog] = useState(DEFAULT_FAILURE_CATALOG);
+    const failureCategories = Object.keys(failureCatalog);
 
     // Equipment & location search
     const [equipSearch, setEquipSearch] = useState('');
@@ -230,6 +172,27 @@ export default function MobileCreateWR() {
                 ).map(n => ({ ...n, _funcLoc: buildFuncLocPath(n, nodeMap) })));
             })
             .catch(() => {});
+    }, []);
+
+    // Load SAP PM failure catalog from API (Planillas de Carga data)
+    useEffect(() => {
+        api.getFailureCategories()
+            .then(categories => {
+                if (Array.isArray(categories) && categories.length > 0) {
+                    const catalog = {};
+                    categories.forEach(cat => {
+                        catalog[cat.category] = {
+                            label: cat.label,
+                            color: cat.color,
+                            symptoms: cat.symptoms || [],
+                            parts: cat.parts || [],
+                            causes: cat.causes || [],
+                        };
+                    });
+                    setFailureCatalog(catalog);
+                }
+            })
+            .catch(() => { /* keep fallback */ });
     }, []);
 
     // Filter equipment client-side
@@ -746,9 +709,9 @@ export default function MobileCreateWR() {
 
                     {/* Category tabs */}
                     <div className="flex gap-1 mb-4 p-1 rounded-xl" style={{ backgroundColor: '#F1F5F9' }}>
-                        {FAILURE_CATEGORIES.map(cat => {
+                        {failureCategories.map(cat => {
                             const active = failureCategory === cat;
-                            const catData = FAILURE_CATALOG[cat];
+                            const catData = failureCatalog[cat];
                             return (
                                 <button
                                     key={cat}
@@ -779,8 +742,8 @@ export default function MobileCreateWR() {
                             onClick={() => { setShowSymptoms(!showSymptoms); setSymptomFilter(''); }}
                             className="w-full flex items-center justify-between p-3 rounded-xl border text-sm text-left"
                             style={{
-                                borderColor: form.failureSymptom ? FAILURE_CATALOG[failureCategory].color : '#E2E8F0',
-                                backgroundColor: form.failureSymptom ? FAILURE_CATALOG[failureCategory].color + '10' : '#F8FAFC',
+                                borderColor: form.failureSymptom ? failureCatalog[failureCategory].color : '#E2E8F0',
+                                backgroundColor: form.failureSymptom ? failureCatalog[failureCategory].color + '10' : '#F8FAFC',
                             }}
                         >
                             <span style={{ color: form.failureSymptom ? '#0F172A' : '#94A3B8' }}>
@@ -804,7 +767,7 @@ export default function MobileCreateWR() {
                                     </div>
                                 </div>
                                 <div className="max-h-36 overflow-y-auto">
-                                    {FAILURE_CATALOG[failureCategory].symptoms
+                                    {failureCatalog[failureCategory].symptoms
                                         .filter(s => !symptomFilter || s.toLowerCase().includes(symptomFilter.toLowerCase()))
                                         .map(s => (
                                             <button
@@ -813,16 +776,16 @@ export default function MobileCreateWR() {
                                                 className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 active:bg-gray-50"
                                                 style={{
                                                     borderColor: '#F1F5F9',
-                                                    backgroundColor: form.failureSymptom === s ? FAILURE_CATALOG[failureCategory].color + '15' : 'transparent',
+                                                    backgroundColor: form.failureSymptom === s ? failureCatalog[failureCategory].color + '15' : 'transparent',
                                                     fontWeight: form.failureSymptom === s ? 700 : 400,
-                                                    color: form.failureSymptom === s ? FAILURE_CATALOG[failureCategory].color : '#334155',
+                                                    color: form.failureSymptom === s ? failureCatalog[failureCategory].color : '#334155',
                                                 }}
                                             >
                                                 {s}
                                             </button>
                                         ))
                                     }
-                                    {FAILURE_CATALOG[failureCategory].symptoms.filter(s => !symptomFilter || s.toLowerCase().includes(symptomFilter.toLowerCase())).length === 0 && (
+                                    {failureCatalog[failureCategory].symptoms.filter(s => !symptomFilter || s.toLowerCase().includes(symptomFilter.toLowerCase())).length === 0 && (
                                         <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados</div>
                                     )}
                                 </div>
@@ -837,8 +800,8 @@ export default function MobileCreateWR() {
                             onClick={() => { setShowParts(!showParts); setPartFilter(''); }}
                             className="w-full flex items-center justify-between p-3 rounded-xl border text-sm text-left"
                             style={{
-                                borderColor: form.failureObjectPart ? FAILURE_CATALOG[failureCategory].color : '#E2E8F0',
-                                backgroundColor: form.failureObjectPart ? FAILURE_CATALOG[failureCategory].color + '10' : '#F8FAFC',
+                                borderColor: form.failureObjectPart ? failureCatalog[failureCategory].color : '#E2E8F0',
+                                backgroundColor: form.failureObjectPart ? failureCatalog[failureCategory].color + '10' : '#F8FAFC',
                             }}
                         >
                             <span style={{ color: form.failureObjectPart ? '#0F172A' : '#94A3B8' }}>
@@ -862,7 +825,7 @@ export default function MobileCreateWR() {
                                     </div>
                                 </div>
                                 <div className="max-h-36 overflow-y-auto">
-                                    {FAILURE_CATALOG[failureCategory].parts
+                                    {failureCatalog[failureCategory].parts
                                         .filter(p => !partFilter || p.toLowerCase().includes(partFilter.toLowerCase()))
                                         .map(p => (
                                             <button
@@ -871,16 +834,16 @@ export default function MobileCreateWR() {
                                                 className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 active:bg-gray-50"
                                                 style={{
                                                     borderColor: '#F1F5F9',
-                                                    backgroundColor: form.failureObjectPart === p ? FAILURE_CATALOG[failureCategory].color + '15' : 'transparent',
+                                                    backgroundColor: form.failureObjectPart === p ? failureCatalog[failureCategory].color + '15' : 'transparent',
                                                     fontWeight: form.failureObjectPart === p ? 700 : 400,
-                                                    color: form.failureObjectPart === p ? FAILURE_CATALOG[failureCategory].color : '#334155',
+                                                    color: form.failureObjectPart === p ? failureCatalog[failureCategory].color : '#334155',
                                                 }}
                                             >
                                                 {p}
                                             </button>
                                         ))
                                     }
-                                    {FAILURE_CATALOG[failureCategory].parts.filter(p => !partFilter || p.toLowerCase().includes(partFilter.toLowerCase())).length === 0 && (
+                                    {failureCatalog[failureCategory].parts.filter(p => !partFilter || p.toLowerCase().includes(partFilter.toLowerCase())).length === 0 && (
                                         <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados</div>
                                     )}
                                 </div>
@@ -895,8 +858,8 @@ export default function MobileCreateWR() {
                             onClick={() => { setShowCauses(!showCauses); setCauseFilter(''); }}
                             className="w-full flex items-center justify-between p-3 rounded-xl border text-sm text-left"
                             style={{
-                                borderColor: form.failureCause ? FAILURE_CATALOG[failureCategory].color : '#E2E8F0',
-                                backgroundColor: form.failureCause ? FAILURE_CATALOG[failureCategory].color + '10' : '#F8FAFC',
+                                borderColor: form.failureCause ? failureCatalog[failureCategory].color : '#E2E8F0',
+                                backgroundColor: form.failureCause ? failureCatalog[failureCategory].color + '10' : '#F8FAFC',
                             }}
                         >
                             <span style={{ color: form.failureCause ? '#0F172A' : '#94A3B8' }}>
@@ -920,7 +883,7 @@ export default function MobileCreateWR() {
                                     </div>
                                 </div>
                                 <div className="max-h-36 overflow-y-auto">
-                                    {FAILURE_CATALOG[failureCategory].causes
+                                    {failureCatalog[failureCategory].causes
                                         .filter(c => !causeFilter || c.toLowerCase().includes(causeFilter.toLowerCase()))
                                         .map(c => (
                                             <button
@@ -929,16 +892,16 @@ export default function MobileCreateWR() {
                                                 className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 active:bg-gray-50"
                                                 style={{
                                                     borderColor: '#F1F5F9',
-                                                    backgroundColor: form.failureCause === c ? FAILURE_CATALOG[failureCategory].color + '15' : 'transparent',
+                                                    backgroundColor: form.failureCause === c ? failureCatalog[failureCategory].color + '15' : 'transparent',
                                                     fontWeight: form.failureCause === c ? 700 : 400,
-                                                    color: form.failureCause === c ? FAILURE_CATALOG[failureCategory].color : '#334155',
+                                                    color: form.failureCause === c ? failureCatalog[failureCategory].color : '#334155',
                                                 }}
                                             >
                                                 {c}
                                             </button>
                                         ))
                                     }
-                                    {FAILURE_CATALOG[failureCategory].causes.filter(c => !causeFilter || c.toLowerCase().includes(causeFilter.toLowerCase())).length === 0 && (
+                                    {failureCatalog[failureCategory].causes.filter(c => !causeFilter || c.toLowerCase().includes(causeFilter.toLowerCase())).length === 0 && (
                                         <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados</div>
                                     )}
                                 </div>

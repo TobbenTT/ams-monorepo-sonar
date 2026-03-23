@@ -162,6 +162,24 @@ export default function FailuresEvents() {
     return sorted[0] ? { name: sorted[0][0], initials: sorted[0][0].split(' ').map(n => n[0] || '').join('').slice(0, 2).toUpperCase() } : { name: t('failuresEvents.unassigned'), initials: 'NA' };
   }, [filteredWRs]);
 
+  // AI Analysis metrics — computed from real data
+  const aiMetrics = useMemo(() => {
+    if (!filteredWRs.length) return { downtimeReduction: 0, planningImprovement: 0 };
+    const repEquips = new Set(repetitiveFailuresData.map(r => r.equipment));
+    const totalHours = filteredWRs.reduce((s, w) => s + (w.estimated_duration || w.ai_classification?.estimated_duration_hours || 0), 0);
+    const repHours = filteredWRs
+      .filter(w => repEquips.has(w.equipment_tag || w.equipment_name || 'Unknown'))
+      .reduce((s, w) => s + (w.estimated_duration || w.ai_classification?.estimated_duration_hours || 0), 0);
+    const downtimeReduction = totalHours > 0 ? Math.round((repHours / totalHours) * 100) : 0;
+    const incomplete = filteredWRs.filter(w => {
+      const hasDur = w.estimated_duration || w.ai_classification?.estimated_duration_hours;
+      const hasCat = w.ai_classification?.failure_catalog || w.ai_classification?.failure_description;
+      return !hasDur || !hasCat;
+    }).length;
+    const planningImprovement = Math.round((incomplete / filteredWRs.length) * 100);
+    return { downtimeReduction, planningImprovement };
+  }, [filteredWRs, repetitiveFailuresData]);
+
   // --- Compute chart data from work requests ---
 
   // Work Orders Status: group by equipment_tag, categorize by status
@@ -337,6 +355,117 @@ export default function FailuresEvents() {
       equipment_id: equipment,
       plant_id: plant,
     })).then(r => { if (r) navigate('/rca'); });
+  };
+
+  // ─── AI Recommended Actions handlers ───
+  const handleGenerateRCA = () => {
+    const top = repetitiveFailuresData[0];
+    if (!top) { toast.warning(t('failuresEvents.action.generateRCA.noData') || 'No hay equipos repetitivos para analizar'); return; }
+    runAction('generateRCA', () => api.createRca({
+      event_description: `Proactive RCA: ${top.equipment} (${top.count} recurrences)`,
+      equipment_id: top.equipment,
+      plant_id: plant,
+    })).then(r => { if (r) navigate('/rca'); });
+  };
+
+  const handleOptimizeStrategy = () => {
+    runAction('optimizeStrategy', () => api.createAiSession({
+      session_type: 'STRATEGY_OPTIMIZATION',
+      plant_id: plant,
+      context: { area: planningGroup, failures: filteredWRs.length },
+    })).then(r => { if (r) navigate('/ai-agents'); });
+  };
+
+  const handleAdjustPlanning = () => {
+    runAction('adjustPlanning', () => api.createImprovementAction({
+      title: `Adjust Planning Standards — ${planningGroup} area`,
+      category: 'Planning',
+      priority: 'MEDIUM',
+      description: `Labor var: ${planningStats.laborVar}%, Cost var: ${planningStats.costVar}%. ${filteredWRs.length} WRs analyzed.`,
+      plant_id: plant,
+    }));
+  };
+
+  const handleRequestSpareParts = () => {
+    runAction('requestSpareParts', () => api.createImprovementAction({
+      title: `Spare Parts Data Review — ${masterDataStats.sparePct}% integrity`,
+      category: 'Spare Parts',
+      priority: masterDataStats.sparePct < 50 ? 'HIGH' : 'MEDIUM',
+      description: `Spare parts data integrity at ${masterDataStats.sparePct}%. ${filteredWRs.length} WRs in scope.`,
+      plant_id: plant,
+    }));
+  };
+
+  const handleEscalate = () => {
+    const critical = filteredWRs.filter(w => ['P1', 'P2'].includes(w.priority_code));
+    runAction('escalate', () => api.createImprovementAction({
+      title: `Technical Support Escalation — ${critical.length} P1/P2 WRs`,
+      category: 'Escalation',
+      priority: 'CRITICAL',
+      description: `${critical.length} critical WRs (P1/P2) require technical support in ${planningGroup} area.`,
+      plant_id: plant,
+    }));
+  };
+
+  // ─── Agentic Action Center handlers ───
+  const handleCheckAiStatus = async () => {
+    setActionLoading('checkAiStatus');
+    try {
+      const status = await api.getAiStatus();
+      toast.info(`AI CoPilot: ${status?.status || 'active'} — ${status?.available_tools || 0} tools`);
+    } catch (err) {
+      toast.error(err?.message || 'AI Status check failed');
+    } finally { setActionLoading(null); }
+  };
+
+  const handleGenerateWorkOrder = async () => {
+    const pending = filteredWRs.find(w => ['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(w.status));
+    if (!pending) { toast.warning(t('failuresEvents.action.generateWO.noData') || 'No hay avisos validados para crear OT'); return; }
+    setActionLoading('generateWO');
+    try {
+      const wo = await api.createWOFromWR({ work_request_id: pending.request_id });
+      toast.success(`OT ${wo.wo_number || wo.id} creada desde ${pending.equipment_tag || pending.request_id}`);
+    } catch (err) {
+      toast.error(err?.message || 'Error al crear OT');
+    } finally { setActionLoading(null); }
+  };
+
+  const handleDispatchSupport = () => {
+    const unassigned = filteredWRs.find(w => !w.assigned_to_name && ['VALIDATED', 'APPROVED'].includes(w.status));
+    if (!unassigned) { toast.warning(t('failuresEvents.action.dispatchSupport.noData') || 'No hay avisos sin asignar'); return; }
+    runAction('dispatchSupport', () => api.assignWorkRequest(unassigned.request_id, {
+      workers: [{ name: topAssignee.name, specialty: 'General' }],
+    }));
+  };
+
+  const handleEscalateIssue = () => {
+    const overdue = filteredWRs.filter(w => {
+      const days = w.created_at ? Math.floor((Date.now() - new Date(w.created_at).getTime()) / 86400000) : 0;
+      return days > 7 && !['COMPLETED', 'CLOSED'].includes(w.status);
+    });
+    runAction('escalateIssue', () => api.createImprovementAction({
+      title: `Issue Escalation — ${overdue.length} overdue WRs`,
+      category: 'Escalation',
+      priority: 'CRITICAL',
+      description: `${overdue.length} work requests overdue (>7 days) in ${planningGroup} area.`,
+      plant_id: plant,
+    }));
+  };
+
+  const handleReviewStrategy = () => {
+    runAction('reviewStrategy', () => api.createAiSession({
+      session_type: 'STRATEGY_REVIEW',
+      plant_id: plant,
+      context: { area: planningGroup, wrs: filteredWRs.length },
+    })).then(r => { if (r) navigate('/ai-agents'); });
+  };
+
+  const handleOptimizeAiStrategy = () => {
+    runAction('optimizeAiStrategy', () => api.createAiSession({
+      session_type: 'OPTIMIZATION',
+      plant_id: plant,
+      context: { area: planningGroup, repetitive: repetitiveFailuresData.length },
+    })).then(r => { if (r) navigate('/ai-agents'); });
   };
 
   if (loading) {
@@ -1273,6 +1402,103 @@ export default function FailuresEvents() {
           )}
         </Card>
       </div>
+
+      {/* ── AI Analysis Complete ── */}
+      <div className="pt-8 border-t-4 border-blue-500">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">{t('failuresEvents.aiAnalysisComplete') || 'AI Analysis Complete'}</h2>
+          <p className="text-sm text-gray-600 mt-1">{t('failuresEvents.aiAnalysisSubtitle') || 'Data-driven insights from real work request analysis'}</p>
+        </div>
+        <div className="grid grid-cols-12 gap-6 mb-6">
+          <div className="col-span-4">
+            <Card className="p-6 bg-white border-l-4 border-blue-500 h-full">
+              <h3 className="text-sm font-medium text-gray-600 mb-2">{t('failuresEvents.downtimeReduction') || 'Downtime Reduction Potential'}</h3>
+              <div className="text-5xl font-bold text-blue-600">{aiMetrics.downtimeReduction}%</div>
+              <p className="text-xs text-gray-500 mt-2">{t('failuresEvents.downtimeReductionDesc') || 'Hours from repetitive equipment failures vs total'}</p>
+            </Card>
+          </div>
+          <div className="col-span-4">
+            <Card className="p-6 bg-white border-l-4 border-amber-500 h-full">
+              <h3 className="text-sm font-medium text-gray-600 mb-2">{t('failuresEvents.planningGap') || 'Planning Data Gap'}</h3>
+              <div className="text-5xl font-bold text-amber-600">{aiMetrics.planningImprovement}%</div>
+              <p className="text-xs text-gray-500 mt-2">{t('failuresEvents.planningGapDesc') || 'WRs missing duration or failure catalog data'}</p>
+            </Card>
+          </div>
+          <div className="col-span-4 flex flex-col gap-3 justify-center">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full" onClick={() => navigate('/rca')}>
+              {t('failuresEvents.viewFullAiReport') || 'View Full AI Report'}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/improvement-actions')}>
+              {t('failuresEvents.scheduleReviewMeeting') || 'Schedule Review Meeting'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── AI Recommended Actions ── */}
+      <Card className="p-6 bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-200">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('failuresEvents.aiRecommendedActions') || 'AI Recommended Actions'}</h3>
+        <div className="space-y-3">
+          {[
+            { key: 'generateRCA', label: t('failuresEvents.action.generateRCA.label') || 'Generate Proactive RCA', desc: `Top recurring: ${repetitiveFailuresData[0]?.equipment || 'N/A'}`, handler: handleGenerateRCA, icon: '\uD83D\uDD0D' },
+            { key: 'optimizeStrategy', label: t('failuresEvents.action.optimizeStrategy.label') || 'Optimize Maintenance Strategy', desc: t('failuresEvents.action.optimizeStrategy.desc') || 'AI session for strategy optimization', handler: handleOptimizeStrategy, icon: '\u2699\uFE0F' },
+            { key: 'adjustPlanning', label: t('failuresEvents.action.adjustPlanning.label') || 'Adjust Planning Standards', desc: `Labor var: ${planningStats.laborVar}%, Cost var: ${planningStats.costVar}%`, handler: handleAdjustPlanning, icon: '\uD83D\uDCCB' },
+            { key: 'requestSpareParts', label: t('failuresEvents.action.requestSpareParts.label') || 'Request Spare Parts Review', desc: `Data integrity: ${masterDataStats.sparePct}%`, handler: handleRequestSpareParts, icon: '\uD83D\uDD27' },
+            { key: 'escalate', label: t('failuresEvents.action.escalate.label') || 'Escalate to Technical Support', desc: `${filteredWRs.filter(w => ['P1','P2'].includes(w.priority_code)).length} critical P1/P2 WRs`, handler: handleEscalate, icon: '\uD83D\uDEA8' },
+          ].map(action => (
+            <div
+              key={action.key}
+              onClick={actionLoading ? undefined : action.handler}
+              className={`flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-emerald-300 hover:shadow-sm transition-all cursor-pointer ${actionLoading === action.key ? 'opacity-60 pointer-events-none' : ''}`}
+            >
+              <span className="text-2xl">{action.icon}</span>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900">{action.label}</p>
+                <p className="text-xs text-gray-500">{action.desc}</p>
+              </div>
+              {actionLoading === action.key ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div>
+              ) : (
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* ── Agentic Action Center ── */}
+      <Card className="p-6 bg-gray-900 text-white">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+          <h3 className="text-lg font-bold">{t('failuresEvents.agenticActionCenter') || 'Agentic Action Center'}</h3>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { key: 'checkAiStatus', label: t('failuresEvents.action.checkAiStatus.label') || 'CoPilot Ready', icon: '\uD83E\uDD16', handler: handleCheckAiStatus, color: 'bg-emerald-600 hover:bg-emerald-500' },
+            { key: 'generateWO', label: t('failuresEvents.action.generateWO.label') || 'Generate Work Order', icon: '\uD83D\uDCDD', handler: handleGenerateWorkOrder, color: 'bg-blue-600 hover:bg-blue-500' },
+            { key: 'dispatchSupport', label: t('failuresEvents.action.dispatchSupport.label') || 'Dispatch Support', icon: '\uD83D\uDC77', handler: handleDispatchSupport, color: 'bg-amber-600 hover:bg-amber-500' },
+            { key: 'escalateIssue', label: t('failuresEvents.action.escalateIssue.label') || 'Escalate Issue', icon: '\u26A1', handler: handleEscalateIssue, color: 'bg-red-600 hover:bg-red-500' },
+            { key: 'reviewStrategy', label: t('failuresEvents.action.reviewStrategy.label') || 'Review Strategy', icon: '\uD83D\uDCCA', handler: handleReviewStrategy, color: 'bg-purple-600 hover:bg-purple-500' },
+            { key: 'optimizeAiStrategy', label: t('failuresEvents.action.optimizeAiStrategy.label') || 'Optimize Strategy', icon: '\uD83E\uDDE0', handler: handleOptimizeAiStrategy, color: 'bg-indigo-600 hover:bg-indigo-500' },
+          ].map(btn => (
+            <button
+              key={btn.key}
+              onClick={actionLoading ? undefined : btn.handler}
+              disabled={!!actionLoading}
+              className={`${btn.color} text-white rounded-lg p-4 flex flex-col items-center gap-2 transition-all ${actionLoading === btn.key ? 'opacity-60' : ''}`}
+            >
+              {actionLoading === btn.key ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              ) : (
+                <span className="text-2xl">{btn.icon}</span>
+              )}
+              <span className="text-sm font-medium">{btn.label}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
 
       </>)}
 

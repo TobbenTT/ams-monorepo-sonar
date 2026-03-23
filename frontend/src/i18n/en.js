@@ -2181,10 +2181,16 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
 
         // AI Analysis Complete
         aiAnalysisComplete: 'AI Analysis Complete',
+        aiAnalysisSubtitle: 'Data-driven insights from real work request analysis',
         aiAnalysisDescription: 'Based on the analysis of chronic failures and planning deviations, the AI system has identified',
         highPriorityActions: '3 high-priority actions',
         couldReduceDowntime: 'that could reduce downtime by up to',
         andImprovePlanning: 'and improve planning accuracy by',
+        downtimeReduction: 'Downtime Reduction Potential',
+        downtimeReductionDesc: 'Hours from repetitive equipment failures vs total',
+        planningGap: 'Planning Data Gap',
+        planningGapDesc: 'WRs missing duration or failure catalog data',
+        viewFullAiReport: 'View Full AI Report',
         viewFullAIReport: 'View Full AI Report',
         scheduleReviewMeeting: 'Schedule Review Meeting',
 
@@ -2215,17 +2221,17 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
 
         // Action feedback (toast messages)
         action: {
-          rca: { success: 'RCA analysis created successfully', error: 'Failed to create RCA' },
-          optimize: { success: 'AI Strategy session created', error: 'Failed to create strategy session' },
-          adjustPlanning: { success: 'Planning improvement action created', error: 'Failed to create improvement action' },
-          spareParts: { success: 'Spare parts review action created', error: 'Failed to create action' },
-          escalate: { success: 'Escalation created successfully', error: 'Failed to escalate' },
-          aiStatus: { success: 'AI system status retrieved', error: 'Failed to check AI status' },
-          generateWO: { success: 'Work order created', error: 'Failed to create work order' },
-          dispatch: { success: 'Support dispatched', error: 'Failed to dispatch' },
-          escalateIssue: { success: 'Issue escalated successfully', error: 'Failed to escalate issue' },
-          reviewStrategy: { success: 'Strategy review session created', error: 'Failed to create review' },
-          optimizeStrategy: { success: 'Optimization session created', error: 'Failed to create session' },
+          generateRCA: { success: 'RCA analysis created', error: 'Failed to create RCA', noData: 'No repetitive equipment to analyze', label: 'Generate Proactive RCA' },
+          optimizeStrategy: { success: 'AI Strategy session created', error: 'Failed to create strategy session', label: 'Optimize Maintenance Strategy', desc: 'AI session for strategy optimization' },
+          adjustPlanning: { success: 'Planning improvement action created', error: 'Failed to create improvement action', label: 'Adjust Planning Standards' },
+          requestSpareParts: { success: 'Spare parts review action created', error: 'Failed to create action', label: 'Request Spare Parts Review' },
+          escalate: { success: 'Escalation created', error: 'Failed to escalate', label: 'Escalate to Technical Support' },
+          checkAiStatus: { success: 'AI status retrieved', error: 'Failed to check AI status', label: 'CoPilot Ready' },
+          generateWO: { success: 'Work order created', error: 'Failed to create work order', noData: 'No validated notices for WO creation', label: 'Generate Work Order' },
+          dispatchSupport: { success: 'Support dispatched', error: 'Failed to dispatch', noData: 'No unassigned notices', label: 'Dispatch Support' },
+          escalateIssue: { success: 'Issue escalated', error: 'Failed to escalate issue', label: 'Escalate Issue' },
+          reviewStrategy: { success: 'Strategy review session created', error: 'Failed to create review', label: 'Review Strategy' },
+          optimizeAiStrategy: { success: 'Optimization session created', error: 'Failed to create session', label: 'Optimize Strategy' },
         },
 
         // Advanced Tactical Drill-Down

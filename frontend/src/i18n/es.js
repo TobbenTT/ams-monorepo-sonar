@@ -2106,10 +2106,16 @@ export default {
 
         // AI Analysis Complete
         aiAnalysisComplete: 'Análisis de IA Completo',
+        aiAnalysisSubtitle: 'Insights basados en datos reales de avisos de trabajo',
         aiAnalysisDescription: 'Basado en el análisis de fallas crónicas y desviaciones de planificación, el sistema de IA ha identificado',
         highPriorityActions: '3 acciones de alta prioridad',
         couldReduceDowntime: 'que podrían reducir el tiempo de inactividad hasta en un',
         andImprovePlanning: 'y mejorar la precisión de planificación en un',
+        downtimeReduction: 'Potencial de Reducción de Downtime',
+        downtimeReductionDesc: 'Horas de fallas en equipos repetitivos vs total',
+        planningGap: 'Brecha de Datos de Planificación',
+        planningGapDesc: 'Avisos sin duración o catálogo de falla',
+        viewFullAiReport: 'Ver Reporte Completo de IA',
         viewFullAIReport: 'Ver Reporte Completo de IA',
         scheduleReviewMeeting: 'Programar Reunión de Revisión',
 
@@ -2140,17 +2146,17 @@ export default {
 
         // Feedback de acciones (toast)
         action: {
-          rca: { success: 'Análisis RCA creado exitosamente', error: 'Error al crear RCA' },
-          optimize: { success: 'Sesión de estrategia IA creada', error: 'Error al crear sesión de estrategia' },
-          adjustPlanning: { success: 'Acción de mejora de planificación creada', error: 'Error al crear acción de mejora' },
-          spareParts: { success: 'Acción de revisión de repuestos creada', error: 'Error al crear acción' },
-          escalate: { success: 'Escalamiento creado exitosamente', error: 'Error al escalar' },
-          aiStatus: { success: 'Estado del sistema IA obtenido', error: 'Error al verificar estado IA' },
-          generateWO: { success: 'Orden de trabajo creada', error: 'Error al crear orden de trabajo' },
-          dispatch: { success: 'Soporte despachado', error: 'Error al despachar' },
-          escalateIssue: { success: 'Problema escalado exitosamente', error: 'Error al escalar problema' },
-          reviewStrategy: { success: 'Sesión de revisión de estrategia creada', error: 'Error al crear revisión' },
-          optimizeStrategy: { success: 'Sesión de optimización creada', error: 'Error al crear sesión' },
+          generateRCA: { success: 'Análisis RCA creado', error: 'Error al crear RCA', noData: 'No hay equipos repetitivos para analizar', label: 'Generar RCA Proactivo' },
+          optimizeStrategy: { success: 'Sesión de estrategia IA creada', error: 'Error al crear sesión de estrategia', label: 'Optimizar Estrategia', desc: 'Sesión IA de optimización de estrategia' },
+          adjustPlanning: { success: 'Acción de mejora de planificación creada', error: 'Error al crear acción de mejora', label: 'Ajustar Estándares de Planificación' },
+          requestSpareParts: { success: 'Acción de revisión de repuestos creada', error: 'Error al crear acción', label: 'Solicitar Revisión de Repuestos' },
+          escalate: { success: 'Escalamiento creado', error: 'Error al escalar', label: 'Escalar a Soporte Técnico' },
+          checkAiStatus: { success: 'Estado IA obtenido', error: 'Error al verificar estado IA', label: 'CoPilot Listo' },
+          generateWO: { success: 'Orden de trabajo creada', error: 'Error al crear OT', noData: 'No hay avisos validados para crear OT', label: 'Generar Orden de Trabajo' },
+          dispatchSupport: { success: 'Soporte despachado', error: 'Error al despachar', noData: 'No hay avisos sin asignar', label: 'Despachar Soporte' },
+          escalateIssue: { success: 'Problema escalado', error: 'Error al escalar problema', label: 'Escalar Problema' },
+          reviewStrategy: { success: 'Sesión de revisión creada', error: 'Error al crear revisión', label: 'Revisar Estrategia' },
+          optimizeAiStrategy: { success: 'Sesión de optimización creada', error: 'Error al crear sesión', label: 'Optimizar Estrategia' },
         },
 
         // Advanced Tactical Drill-Down

@@ -103,7 +103,9 @@ def get_recommended_tests(db: Session, session_id: str) -> list[dict]:
     if not obj:
         return []
     session = _reconstruct_session(obj)
-    return TroubleshootingEngine.get_recommended_tests(session)
+    performed_ids = [t.get("test_id", "") for t in session.tests_performed] if session.tests_performed else []
+    tests = TroubleshootingEngine.get_recommended_tests(session.candidate_diagnoses, performed_ids)
+    return [t.model_dump(mode="json") for t in tests]
 
 
 def create_session(

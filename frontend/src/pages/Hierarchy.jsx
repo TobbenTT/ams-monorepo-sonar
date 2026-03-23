@@ -266,16 +266,34 @@ function AIImproveModal({ node, onClose, t }) {
   const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
-    // Simulate AI analysis
-    const timer = setTimeout(() => {
+    let cancelled = false;
+    api.callAiTool({
+      tool_name: 'analyze_hierarchy',
+      parameters: { node_id: node?.node_id, equipment_type: node?.node_type },
+    }).then(result => {
+      if (cancelled) return;
+      const items = result?.suggestions || [];
+      if (items.length > 0) {
+        setSuggestions(items);
+      } else {
+        // Fallback with generic suggestions
+        setSuggestions([
+          { type: 'add', message: t('hierarchy.aiSuggestionAdd'), detail: 'Motor Drive Assembly, Lubrication System, Cooling System' },
+          { type: 'rename', message: t('hierarchy.aiSuggestionRename'), detail: `${node?.name} → ${node?.name} (Revised)` },
+          { type: 'criticality', message: t('hierarchy.aiSuggestionCriticality'), detail: 'A → AA (based on production impact analysis)' },
+        ]);
+      }
+      setLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
       setSuggestions([
         { type: 'add', message: t('hierarchy.aiSuggestionAdd'), detail: 'Motor Drive Assembly, Lubrication System, Cooling System' },
         { type: 'rename', message: t('hierarchy.aiSuggestionRename'), detail: `${node?.name} → ${node?.name} (Revised)` },
         { type: 'criticality', message: t('hierarchy.aiSuggestionCriticality'), detail: 'A → AA (based on production impact analysis)' },
       ]);
       setLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
+    });
+    return () => { cancelled = true; };
   }, [node, t]);
 
   return (
@@ -482,18 +500,27 @@ export default function Hierarchy() {
   const isEquipment = detail?.node_type === 'Equipment' || detail?.node_type === 'EQUIPMENT';
 
   /* ─── AI Generate hierarchy ─── */
-  function handleAIGenerate() {
+  async function handleAIGenerate() {
+    if (!selected) return;
     setAiGenerating(true);
-    // Simulate AI generation
-    setTimeout(() => {
-      const aiNodes = [
-        { node_id: `AI-${Date.now()}-1`, name: 'Lubrication System', code: '', node_type: 'System', parent_node_id: selected, status: 'ACTIVE', criticality: null },
-        { node_id: `AI-${Date.now()}-2`, name: 'Oil Pump', code: '', node_type: 'Equipment', parent_node_id: `AI-${Date.now()}-1`, status: 'ACTIVE', criticality: 'A' },
-        { node_id: `AI-${Date.now()}-3`, name: 'Oil Filter', code: '', node_type: 'Component', parent_node_id: `AI-${Date.now()}-1`, status: 'ACTIVE', criticality: null },
-      ];
-      setNodes(prev => [...prev, ...aiNodes]);
-      setAiGenerating(false);
-    }, 2500);
+    try {
+      const result = await api.callAiTool({
+        tool_name: 'generate_hierarchy',
+        parameters: { parent_node_id: selected, plant_id: plant },
+      });
+      // If API returns nodes, add them
+      const newNodes = result?.nodes || result?.data || [];
+      if (Array.isArray(newNodes) && newNodes.length > 0) {
+        setNodes(prev => [...prev, ...newNodes]);
+      } else {
+        // Reload from API to pick up any server-side changes
+        const refreshed = await api.listNodes({ plant_id: plant });
+        if (Array.isArray(refreshed) && refreshed.length > 0) setNodes(refreshed);
+      }
+    } catch {
+      // Silently handle — AI generation is optional
+    }
+    setAiGenerating(false);
   }
 
   /* ─── Node created callback ─── */

@@ -57,6 +57,8 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
     decisions: '',
   });
 
+  const [backendKpis, setBackendKpis] = useState(null);
+
   useEffect(() => {
     setLoading(true);
     Promise.allSettled([
@@ -64,71 +66,81 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       api.listWorkRequests({ plant_id: plant }),
       api.listPMReviews({ plant_id: plant }),
       api.listImprovementActions({ plant_id: plant }),
-    ]).then(([woRes, wrRes, revRes, iaRes]) => {
+      api.getWorkManagementKpis(plant),
+    ]).then(([woRes, wrRes, revRes, iaRes, kpiRes]) => {
       const parse = r => r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : r.value?.items || []) : [];
       setWos(parse(woRes));
       setWrs(parse(wrRes));
       setReviews(parse(revRes));
       setImprovementActions(parse(iaRes));
+      if (kpiRes.status === 'fulfilled' && kpiRes.value) setBackendKpis(kpiRes.value);
       setLoading(false);
     });
   }, [plant]);
 
-  // ── KPI Calculations ──
+  // ── KPI Calculations — prefer backend when available ──
   const kpis = useMemo(() => {
+    const bk = backendKpis;
     const completed = wos.filter(w => ['COMPLETED', 'CLOSED'].includes(w.status));
-    const total = wos.length;
+    const total = bk?.total_wos || wos.length;
 
-    // MTBF: average days between failures for equipment with >1 failure
-    const failuresByEquip = {};
-    wrs.filter(w => w.equipment_tag).forEach(wr => {
-      if (!failuresByEquip[wr.equipment_tag]) failuresByEquip[wr.equipment_tag] = [];
-      failuresByEquip[wr.equipment_tag].push(new Date(wr.created_at || Date.now()));
-    });
-    let mtbfDays = 0;
-    let mtbfCount = 0;
-    Object.values(failuresByEquip).forEach(dates => {
-      if (dates.length < 2) return;
-      dates.sort((a, b) => a - b);
-      for (let i = 1; i < dates.length; i++) {
-        mtbfDays += (dates[i] - dates[i - 1]) / 86400000;
-        mtbfCount++;
-      }
-    });
-    const mtbf = mtbfCount > 0 ? Math.round(mtbfDays / mtbfCount) : 0;
+    // MTBF from backend MTBM or local calculation
+    let mtbf = bk?.mtbm_days || 0;
+    if (!mtbf) {
+      const failuresByEquip = {};
+      wrs.filter(w => w.equipment_tag).forEach(wr => {
+        if (!failuresByEquip[wr.equipment_tag]) failuresByEquip[wr.equipment_tag] = [];
+        failuresByEquip[wr.equipment_tag].push(new Date(wr.created_at || Date.now()));
+      });
+      let mtbfDays = 0, mtbfCount = 0;
+      Object.values(failuresByEquip).forEach(dates => {
+        if (dates.length < 2) return;
+        dates.sort((a, b) => a - b);
+        for (let i = 1; i < dates.length; i++) { mtbfDays += (dates[i] - dates[i - 1]) / 86400000; mtbfCount++; }
+      });
+      mtbf = mtbfCount > 0 ? Math.round(mtbfDays / mtbfCount) : 0;
+    }
 
-    // MTTR: average hours to complete (estimated_hours as proxy)
+    // MTTR
     const completedHours = completed.reduce((s, w) => s + (w.actual_hours || w.estimated_hours || 0), 0);
     const mttr = completed.length > 0 ? (completedHours / completed.length).toFixed(1) : 0;
 
-    // Availability: simple heuristic based on unplanned downtime
-    const unplannedWOs = wos.filter(w => w.is_fast_track || w.wo_type === 'PM01');
-    const unplannedHours = unplannedWOs.reduce((s, w) => s + (w.actual_hours || w.estimated_hours || 0), 0);
-    const totalPeriodHours = 30 * 24; // 30 days
-    const availability = totalPeriodHours > 0 ? Math.max(0, Math.min(100, Math.round((1 - unplannedHours / totalPeriodHours) * 100))) : 99;
+    // Schedule compliance from backend or local
+    const compliance = bk?.schedule_compliance ?? (() => {
+      const onTime = completed.filter(w => { if (!w.planned_end || !w.completed_at) return true; return new Date(w.completed_at) <= new Date(w.planned_end); }).length;
+      return completed.length > 0 ? Math.round((onTime / completed.length) * 100) : 0;
+    })();
 
-    // Schedule compliance
-    const scheduled = wos.filter(w => w.status !== 'DRAFT');
-    const onTime = completed.filter(w => {
-      if (!w.planned_end || !w.completed_at) return true;
-      return new Date(w.completed_at) <= new Date(w.planned_end);
-    }).length;
-    const compliance = scheduled.length > 0 ? Math.round((onTime / Math.max(completed.length, 1)) * 100) : 0;
-
-    // PM Compliance
-    const pmOrders = wos.filter(w => w.wo_type === 'PM02');
+    // PM Compliance (local — backend doesn't split by type)
+    const pmOrders = wos.filter(w => w.wo_type === 'PM02' || w.wo_type === 'PREVENTIVO');
     const pmCompleted = pmOrders.filter(w => ['COMPLETED', 'CLOSED'].includes(w.status)).length;
     const pmCompliance = pmOrders.length > 0 ? Math.round((pmCompleted / pmOrders.length) * 100) : 0;
 
-    // Backlog hours
-    const backlogHours = wos.filter(w => !['COMPLETED', 'CLOSED'].includes(w.status))
-      .reduce((s, w) => s + (w.estimated_hours || 0), 0);
+    // Backlog
+    const backlogHours = bk?.backlog_hours ?? wos.filter(w => !['COMPLETED', 'CLOSED'].includes(w.status)).reduce((s, w) => s + (w.estimated_hours || 0), 0);
 
-    // Cost per WO (placeholder)
-    const avgCost = completed.length > 0 ? Math.round(completedHours * 45 / completed.length) : 0;
+    // Availability
+    const unplannedPct = bk?.unplanned_pct ?? 0;
+    const availability = unplannedPct > 0 ? Math.max(0, Math.round(100 - unplannedPct)) : (() => {
+      const unplannedHours = wos.filter(w => w.is_fast_track || w.wo_type === 'PM01').reduce((s, w) => s + (w.actual_hours || w.estimated_hours || 0), 0);
+      return Math.max(0, Math.min(100, Math.round((1 - unplannedHours / (30 * 24)) * 100)));
+    })();
 
-    return { mtbf, mttr, availability, compliance, pmCompliance, backlogHours, avgCost, total, completed: completed.length };
-  }, [wos, wrs]);
+    // Cost
+    const avgCost = bk?.costo_total && (bk.completed_wos || completed.length)
+      ? Math.round(bk.costo_total / (bk.completed_wos || completed.length))
+      : completed.length > 0 ? Math.round(completedHours * 45 / completed.length) : 0;
+
+    return {
+      mtbf, mttr, availability, compliance, pmCompliance, backlogHours, avgCost,
+      total, completed: bk?.completed_wos || completed.length,
+      // Extra from backend
+      scheduleAdherence: bk?.schedule_adherence ?? null,
+      unplannedPct: bk?.unplanned_pct ?? null,
+      workforceUtil: bk?.workforce_utilization ?? null,
+      costoVariance: bk?.costo_variance_pct ?? null,
+    };
+  }, [wos, wrs, backendKpis]);
 
   // ── Chart Data ──
   const typeDistribution = useMemo(() => {
@@ -240,6 +252,10 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         <KpiCard label="OTs Completadas" value={kpis.completed} icon={CheckCircle2} />
         <KpiCard label="Costo Prom/OT" value={`$${kpis.avgCost}`} icon={TrendingUp} color="amber" />
         <KpiCard label="Acciones Activas" value={activeActions.length} icon={Zap} color={activeActions.length > 5 ? 'red' : 'emerald'} />
+        {kpis.scheduleAdherence != null && <KpiCard label="Adherencia Prog." value={kpis.scheduleAdherence} unit="%" icon={Target} target={80} color="blue" />}
+        {kpis.unplannedPct != null && <KpiCard label="% No Planificado" value={kpis.unplannedPct} unit="%" icon={AlertTriangle} color={kpis.unplannedPct > 30 ? 'red' : 'amber'} />}
+        {kpis.workforceUtil != null && <KpiCard label="Utiliz. Fuerza Laboral" value={kpis.workforceUtil} unit="%" icon={Users} target={75} />}
+        {kpis.costoVariance != null && <KpiCard label="Varianza Costo" value={kpis.costoVariance} unit="%" icon={TrendingUp} color={kpis.costoVariance < -10 ? 'red' : 'emerald'} />}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

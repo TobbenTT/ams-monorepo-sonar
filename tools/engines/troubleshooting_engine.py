@@ -31,8 +31,12 @@ from tools.models.schemas import (
 
 _ROOT = Path(__file__).parent.parent.parent
 DATA_DIR = _ROOT / "data" / "libraries"
+DOCS_LIB_DIR = _ROOT / "docs" / "context" / "libraries"
 KB_DIR = _ROOT / "skills" / "00-knowledge-base" / "data-models" / "troubleshooting"
-EQUIPMENT_LIBRARY_PATH = DATA_DIR / "equipment_library.json"
+# equipment_library.json may live in data/libraries/ or docs/context/libraries/
+_EQ_LIB_PRIMARY = DATA_DIR / "equipment_library.json"
+_EQ_LIB_FALLBACK = DOCS_LIB_DIR / "equipment_library.json"
+EQUIPMENT_LIBRARY_PATH = _EQ_LIB_PRIMARY if _EQ_LIB_PRIMARY.exists() else _EQ_LIB_FALLBACK
 SYMPTOM_CATALOG_PATH = KB_DIR / "symptom-catalog.json"
 TREES_DIR = KB_DIR / "trees"
 

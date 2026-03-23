@@ -1,0 +1,600 @@
+{
+  "_meta": {
+    "description": "Symptom-to-FM mapping catalog for OCP phosphate processing equipment",
+    "version": "1.0.0",
+    "generated_from": "equipment_library.json FM_CODE_MAP analysis",
+    "symptom_count": 27,
+    "categories": [
+      "alignment",
+      "contamination",
+      "electrical",
+      "flow",
+      "leak",
+      "noise",
+      "performance",
+      "pressure",
+      "smell",
+      "temperature",
+      "vibration",
+      "visual"
+    ]
+  },
+  "symptoms": [
+    {
+      "symptom_id": "S-001",
+      "description": "Excessive vibration from rotating component",
+      "description_fr": "Vibration excessive du composant rotatif",
+      "category": "vibration",
+      "keywords": [
+        "vibration",
+        "shaking",
+        "oscillation",
+        "imbalance",
+        "unbalance",
+        "resonance"
+      ],
+      "fm_codes": [
+        "FM-47",
+        "FM-70",
+        "FM-72",
+        "FM-64"
+      ],
+      "primary_cbm": "Vibration spectrum analysis",
+      "threshold": ">7.1 mm/s velocity at bearing housing"
+    },
+    {
+      "symptom_id": "S-002",
+      "description": "Bearing vibration increasing trend",
+      "description_fr": "Tendance croissante de vibration des roulements",
+      "category": "vibration",
+      "keywords": [
+        "bearing",
+        "vibration",
+        "trend",
+        "increasing",
+        "envelope",
+        "BPFO",
+        "BPFI"
+      ],
+      "fm_codes": [
+        "FM-64",
+        "FM-69",
+        "FM-70"
+      ],
+      "primary_cbm": "Vibration envelope analysis on bearing frequencies",
+      "threshold": ">4.5 mm/s RMS at bearing cap, or spike energy >0.5 gSE"
+    },
+    {
+      "symptom_id": "S-003",
+      "description": "Loose bolts or coupling misalignment detected via vibration",
+      "description_fr": "Boulons desserrés ou désalignement de l’accouplement détecté par vibration",
+      "category": "alignment",
+      "keywords": [
+        "looseness",
+        "misalignment",
+        "coupling",
+        "bolt",
+        "preload",
+        "torque"
+      ],
+      "fm_codes": [
+        "FM-47",
+        "FM-45"
+      ],
+      "primary_cbm": "Vibration phase analysis and laser alignment",
+      "threshold": "2x or 3x running speed amplitude >50% of 1x component"
+    },
+    {
+      "symptom_id": "S-004",
+      "description": "Abnormal grinding or scraping noise from equipment",
+      "description_fr": "Bruit anormal de grincement ou de raclage de l’équipement",
+      "category": "noise",
+      "keywords": [
+        "noise",
+        "grinding",
+        "scraping",
+        "squealing",
+        "rattling",
+        "knocking"
+      ],
+      "fm_codes": [
+        "FM-54",
+        "FM-70",
+        "FM-72",
+        "FM-64"
+      ],
+      "primary_cbm": "Acoustic emission monitoring",
+      "threshold": ">85 dB at 1 m from source, or audible change from baseline"
+    },
+    {
+      "symptom_id": "S-005",
+      "description": "High-pitched whining or screeching from bearings",
+      "description_fr": "Grincement aigu ou crissement des roulements",
+      "category": "noise",
+      "keywords": [
+        "whining",
+        "screeching",
+        "high-pitched",
+        "bearing",
+        "lubrication"
+      ],
+      "fm_codes": [
+        "FM-51",
+        "FM-44",
+        "FM-69"
+      ],
+      "primary_cbm": "Ultrasonic emission detection at bearing housing",
+      "threshold": ">10 dB above baseline ultrasound reading"
+    },
+    {
+      "symptom_id": "S-006",
+      "description": "Elevated bearing or motor temperature",
+      "description_fr": "Température élevée des roulements ou du moteur",
+      "category": "temperature",
+      "keywords": [
+        "temperature",
+        "hot",
+        "overheating",
+        "thermal",
+        "heat",
+        "bearing"
+      ],
+      "fm_codes": [
+        "FM-49",
+        "FM-51",
+        "FM-54",
+        "FM-61"
+      ],
+      "primary_cbm": "Continuous temperature monitoring via RTD/thermocouple",
+      "threshold": ">95 °C bearing temperature or >40 °C above ambient"
+    },
+    {
+      "symptom_id": "S-007",
+      "description": "Motor winding overtemperature alarm",
+      "description_fr": "Alarme de surtempérature des enroulements du moteur",
+      "category": "temperature",
+      "keywords": [
+        "winding",
+        "motor",
+        "overtemperature",
+        "insulation",
+        "thermal",
+        "overcurrent"
+      ],
+      "fm_codes": [
+        "FM-61",
+        "FM-25",
+        "FM-50"
+      ],
+      "primary_cbm": "Winding temperature monitoring and current analysis",
+      "threshold": ">Class F insulation limit (155 °C) or current >110% FLA"
+    },
+    {
+      "symptom_id": "S-008",
+      "description": "Oil or grease leak from seal or housing",
+      "description_fr": "Fuite d’huile ou de graisse au niveau du joint ou du carter",
+      "category": "leak",
+      "keywords": [
+        "leak",
+        "oil",
+        "grease",
+        "seal",
+        "drip",
+        "seepage",
+        "weeping"
+      ],
+      "fm_codes": [
+        "FM-72",
+        "FM-25",
+        "FM-28"
+      ],
+      "primary_cbm": "Visual inspection and seal leak rate measurement",
+      "threshold": ">5 drops/min or visible pooling beneath equipment"
+    },
+    {
+      "symptom_id": "S-009",
+      "description": "Process slurry or chemical leak from piping or pump",
+      "description_fr": "Fuite de boue ou de produit chimique de la tuyauterie ou de la pompe",
+      "category": "leak",
+      "keywords": [
+        "leak",
+        "slurry",
+        "chemical",
+        "piping",
+        "pump",
+        "seal",
+        "flange"
+      ],
+      "fm_codes": [
+        "FM-09",
+        "FM-10",
+        "FM-72"
+      ],
+      "primary_cbm": "Visual inspection and ultrasonic wall thickness measurement",
+      "threshold": "Any visible process fluid external to containment"
+    },
+    {
+      "symptom_id": "S-010",
+      "description": "Abnormal pressure reading in hydraulic or pneumatic system",
+      "description_fr": "Lecture de pression anormale dans le système hydraulique ou pneumatique",
+      "category": "pressure",
+      "keywords": [
+        "pressure",
+        "low pressure",
+        "high pressure",
+        "hydraulic",
+        "pneumatic",
+        "gauge"
+      ],
+      "fm_codes": [
+        "FM-02",
+        "FM-64",
+        "FM-72"
+      ],
+      "primary_cbm": "Continuous pressure transmitter monitoring",
+      "threshold": ">15% deviation from normal operating pressure"
+    },
+    {
+      "symptom_id": "S-011",
+      "description": "Reduced flow rate or pump discharge pressure drop",
+      "description_fr": "Débit réduit ou chute de pression de refoulement de la pompe",
+      "category": "flow",
+      "keywords": [
+        "flow",
+        "reduced",
+        "discharge",
+        "pressure drop",
+        "pump",
+        "blockage",
+        "cavitation"
+      ],
+      "fm_codes": [
+        "FM-02",
+        "FM-72",
+        "FM-70"
+      ],
+      "primary_cbm": "Flow meter and discharge pressure trend monitoring",
+      "threshold": ">10% drop from design flow or head"
+    },
+    {
+      "symptom_id": "S-012",
+      "description": "Filter or screen blockage causing restricted flow",
+      "description_fr": "Blocage du filtre ou du tamis causant une restriction de débit",
+      "category": "flow",
+      "keywords": [
+        "blockage",
+        "clogged",
+        "filter",
+        "screen",
+        "restricted",
+        "plugged",
+        "blocked"
+      ],
+      "fm_codes": [
+        "FM-02"
+      ],
+      "primary_cbm": "Differential pressure across filter/screen",
+      "threshold": "Differential pressure >2x clean element baseline"
+    },
+    {
+      "symptom_id": "S-013",
+      "description": "Motor tripping on overcurrent or thermal protection",
+      "description_fr": "Déclenchement du moteur par surintensité ou protection thermique",
+      "category": "electrical",
+      "keywords": [
+        "trip",
+        "overcurrent",
+        "thermal",
+        "motor",
+        "protection",
+        "relay",
+        "overload"
+      ],
+      "fm_codes": [
+        "FM-61",
+        "FM-50"
+      ],
+      "primary_cbm": "Motor current signature analysis and relay event log review",
+      "threshold": "Any unplanned motor trip or current >115% FLA sustained"
+    },
+    {
+      "symptom_id": "S-014",
+      "description": "Insulation resistance degradation in motor or cable",
+      "description_fr": "Dégradation de la résistance d’isolement du moteur ou du câble",
+      "category": "electrical",
+      "keywords": [
+        "insulation",
+        "megger",
+        "resistance",
+        "winding",
+        "cable",
+        "degradation"
+      ],
+      "fm_codes": [
+        "FM-25",
+        "FM-58",
+        "FM-01"
+      ],
+      "primary_cbm": "Insulation resistance (megger) testing and polarization index",
+      "threshold": "<100 MOhm or PI <2.0"
+    },
+    {
+      "symptom_id": "S-015",
+      "description": "Electrical arcing or short circuit detected",
+      "description_fr": "Arc électrique ou court-circuit détecté",
+      "category": "electrical",
+      "keywords": [
+        "arc",
+        "short circuit",
+        "flash",
+        "spark",
+        "electrical fault",
+        "insulation breakdown"
+      ],
+      "fm_codes": [
+        "FM-01",
+        "FM-58",
+        "FM-48"
+      ],
+      "primary_cbm": "Infrared thermography and partial discharge monitoring",
+      "threshold": "Any detected arc flash event or partial discharge >500 pC"
+    },
+    {
+      "symptom_id": "S-016",
+      "description": "Visible corrosion, pitting, or material loss on surfaces",
+      "description_fr": "Corrosion visible, piqûres ou perte de matière sur les surfaces",
+      "category": "visual",
+      "keywords": [
+        "corrosion",
+        "pitting",
+        "rust",
+        "material loss",
+        "erosion",
+        "surface damage"
+      ],
+      "fm_codes": [
+        "FM-09",
+        "FM-10"
+      ],
+      "primary_cbm": "Visual inspection and ultrasonic thickness measurement",
+      "threshold": ">20% wall thickness loss from nominal or active pitting >2 mm depth"
+    },
+    {
+      "symptom_id": "S-017",
+      "description": "Visible cracks on structural member or rotating shaft",
+      "description_fr": "Fissures visibles sur un élément structural ou un arbre rotatif",
+      "category": "visual",
+      "keywords": [
+        "crack",
+        "fracture",
+        "fatigue",
+        "fissure",
+        "NDT",
+        "structural"
+      ],
+      "fm_codes": [
+        "FM-20",
+        "FM-23",
+        "FM-05",
+        "FM-06"
+      ],
+      "primary_cbm": "Non-destructive testing (UT, MPI, DPI)",
+      "threshold": "Any detected crack >1 mm length or through-wall indication"
+    },
+    {
+      "symptom_id": "S-018",
+      "description": "Wear debris or metal particles detected in oil sample",
+      "description_fr": "Débris d’usure ou particules métalliques détectés dans l’échantillon d’huile",
+      "category": "contamination",
+      "keywords": [
+        "oil analysis",
+        "wear metals",
+        "debris",
+        "particles",
+        "contamination",
+        "iron",
+        "copper"
+      ],
+      "fm_codes": [
+        "FM-64",
+        "FM-69",
+        "FM-70",
+        "FM-49"
+      ],
+      "primary_cbm": "Oil analysis (spectrometry, ferrography, particle count)",
+      "threshold": "Fe >100 ppm or Cu >50 ppm or ISO cleanliness >20/18/15"
+    },
+    {
+      "symptom_id": "S-019",
+      "description": "Lubricant contamination with water or process fluid",
+      "description_fr": "Contamination du lubrifiant par eau ou fluide de procédé",
+      "category": "contamination",
+      "keywords": [
+        "water",
+        "moisture",
+        "emulsion",
+        "lubricant",
+        "contamination",
+        "milky"
+      ],
+      "fm_codes": [
+        "FM-69",
+        "FM-49",
+        "FM-28"
+      ],
+      "primary_cbm": "Oil analysis (Karl Fischer moisture test)",
+      "threshold": ">500 ppm water in oil or visible emulsion"
+    },
+    {
+      "symptom_id": "S-020",
+      "description": "Reduced equipment throughput or processing efficiency",
+      "description_fr": "Réduction du débit de l’équipement ou de l’efficacité de traitement",
+      "category": "performance",
+      "keywords": [
+        "throughput",
+        "efficiency",
+        "capacity",
+        "reduced",
+        "degraded",
+        "performance"
+      ],
+      "fm_codes": [
+        "FM-25",
+        "FM-70",
+        "FM-72",
+        "FM-02"
+      ],
+      "primary_cbm": "Process parameter trending (tonnage, recovery, power draw)",
+      "threshold": ">10% decline from design throughput or efficiency"
+    },
+    {
+      "symptom_id": "S-021",
+      "description": "Sensor drift or inaccurate instrument reading",
+      "description_fr": "Dérive du capteur ou lecture d’instrument inexacte",
+      "category": "performance",
+      "keywords": [
+        "drift",
+        "calibration",
+        "sensor",
+        "instrument",
+        "inaccurate",
+        "reading"
+      ],
+      "fm_codes": [
+        "FM-41"
+      ],
+      "primary_cbm": "Periodic calibration verification against reference standard",
+      "threshold": ">2% deviation from calibration reference"
+    },
+    {
+      "symptom_id": "S-022",
+      "description": "Burning smell from motor, winding, or belt",
+      "description_fr": "Odeur de brûlé du moteur, des enroulements ou de la courroie",
+      "category": "smell",
+      "keywords": [
+        "burning",
+        "smell",
+        "smoke",
+        "fumes",
+        "acrid",
+        "belt",
+        "winding"
+      ],
+      "fm_codes": [
+        "FM-54",
+        "FM-61",
+        "FM-50",
+        "FM-25"
+      ],
+      "primary_cbm": "Infrared thermography and visual inspection",
+      "threshold": "Any detectable burning odor or visible smoke"
+    },
+    {
+      "symptom_id": "S-023",
+      "description": "Chemical or acid smell near process equipment",
+      "description_fr": "Odeur chimique ou acide près de l’équipement de procédé",
+      "category": "smell",
+      "keywords": [
+        "chemical",
+        "acid",
+        "fumes",
+        "gas",
+        "H2S",
+        "SO2",
+        "phosphoric"
+      ],
+      "fm_codes": [
+        "FM-09",
+        "FM-10",
+        "FM-28"
+      ],
+      "primary_cbm": "Gas detection monitoring and visual leak inspection",
+      "threshold": "Any detectable chemical odor outside containment zone"
+    },
+    {
+      "symptom_id": "S-024",
+      "description": "Component seized or immobilised preventing rotation",
+      "description_fr": "Composant grippé ou immobilisé empêchant la rotation",
+      "category": "performance",
+      "keywords": [
+        "seized",
+        "stuck",
+        "immobilised",
+        "locked",
+        "frozen",
+        "jammed"
+      ],
+      "fm_codes": [
+        "FM-44",
+        "FM-51",
+        "FM-54"
+      ],
+      "primary_cbm": "Motor current spike analysis and manual rotation check",
+      "threshold": "Unable to rotate by hand or motor stall current detected"
+    },
+    {
+      "symptom_id": "S-025",
+      "description": "Liner or wear part at minimum allowable thickness",
+      "description_fr": "Revêtement ou pièce d’usure à l’épaisseur minimale admissible",
+      "category": "visual",
+      "keywords": [
+        "liner",
+        "wear",
+        "thickness",
+        "minimum",
+        "replacement",
+        "erosion",
+        "abrasion"
+      ],
+      "fm_codes": [
+        "FM-70",
+        "FM-72",
+        "FM-55"
+      ],
+      "primary_cbm": "Ultrasonic thickness measurement during planned shutdown",
+      "threshold": "Remaining thickness <30% of original or at OEM replacement limit"
+    },
+    {
+      "symptom_id": "S-026",
+      "description": "Belt conveyor tracking off-center or material spillage",
+      "description_fr": "Convoyeur à bande décentré ou déversement de matériau",
+      "category": "alignment",
+      "keywords": [
+        "tracking",
+        "belt",
+        "misalignment",
+        "spillage",
+        "conveyor",
+        "off-center"
+      ],
+      "fm_codes": [
+        "FM-47",
+        "FM-72",
+        "FM-06"
+      ],
+      "primary_cbm": "Visual inspection and belt alignment sensor",
+      "threshold": "Belt edge >50 mm from centerline or any material spillage"
+    },
+    {
+      "symptom_id": "S-027",
+      "description": "Gasket or seal expired or degraded beyond service life",
+      "description_fr": "Joint ou garniture expiré ou dégradé au-delà de la durée de vie",
+      "category": "performance",
+      "keywords": [
+        "gasket",
+        "seal",
+        "expired",
+        "aged",
+        "hardened",
+        "brittle",
+        "end-of-life"
+      ],
+      "fm_codes": [
+        "FM-25",
+        "FM-28"
+      ],
+      "primary_cbm": "Time-based replacement per OEM schedule",
+      "threshold": "At or beyond OEM recommended replacement interval"
+    }
+  ]
+}

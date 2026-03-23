@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../components/Toast';
 
 /* ── Equipment-tag prefix → Planning Group / Area mapping ── */
 const AREA_PREFIXES = {
@@ -21,9 +22,11 @@ const AREA_PREFIXES = {
 
 export default function FailuresEvents() {
   const { t } = useLanguage();
+  const toast = useToast();
   const navigate = useNavigate();
   const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
   const plant = selectedPlant;
+  const [actionLoading, setActionLoading] = useState(null);
   const [planningGroup, setPlanningGroup] = useState('All');
   const [level2, setLevel2] = useState('All');
   const [specialty, setSpecialty] = useState('All');
@@ -292,12 +295,191 @@ export default function FailuresEvents() {
       .map(([equipment, count]) => ({ equipment, count }));
   }, [filteredWRs]);
 
+  // Priority Distribution: group by priority_code (fix: was using weeklySparklineData)
+  const priorityDistributionData = useMemo(() => {
+    if (!filteredWRs.length) return [];
+    const counts = {};
+    filteredWRs.forEach(wr => {
+      const p = wr.priority_code || 'N/A';
+      counts[p] = (counts[p] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([priority, count]) => ({ priority, count }));
+  }, [filteredWRs]);
+
+  // AI Analysis metrics: computed from real data (replaces hardcoded 25%/15%)
+  const aiMetrics = useMemo(() => {
+    if (!filteredWRs.length) return { downtimeReduction: 0, planningImprovement: 0, highPriorityCount: 0 };
+    const totalHours = filteredWRs.reduce((sum, wr) =>
+      sum + (wr.estimated_duration || wr.ai_classification?.estimated_duration_hours || 0), 0);
+    const repetitiveEquipments = new Set(repetitiveFailuresData.map(r => r.equipment));
+    const repetitiveHours = filteredWRs
+      .filter(wr => repetitiveEquipments.has(wr.equipment_tag || wr.equipment_name || ''))
+      .reduce((sum, wr) => sum + (wr.estimated_duration || wr.ai_classification?.estimated_duration_hours || 0), 0);
+    const downtimeReduction = totalHours > 0 ? Math.round((repetitiveHours / totalHours) * 100) : 0;
+    const withPlanning = filteredWRs.filter(wr =>
+      (wr.estimated_duration || wr.ai_classification?.estimated_duration_hours) &&
+      (wr.ai_classification?.failure_catalog || wr.ai_classification?.failure_description)
+    ).length;
+    const planningImprovement = filteredWRs.length > 0
+      ? Math.round(((filteredWRs.length - withPlanning) / filteredWRs.length) * 100) : 0;
+    const highPriorityCount = filteredWRs.filter(wr => ['P1', 'P2'].includes(wr.priority_code)).length;
+    return { downtimeReduction, planningImprovement, highPriorityCount };
+  }, [filteredWRs, repetitiveFailuresData]);
+
   const getStatusColor = (status) => {
     const s = (status || '').toUpperCase();
     if (s.includes('REJECT') || s.includes('CRITICAL') || s.includes('OVERDUE')) return 'bg-red-100 text-red-800 border-red-300';
     if (s.includes('PENDING') || s.includes('MEDIUM')) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
     if (s.includes('APPROVED') || s.includes('PROGRESS')) return 'bg-green-100 text-green-800 border-green-300';
     return 'bg-gray-100 text-gray-800 border-gray-300';
+  };
+
+  // ─── Action helper: loading + toast feedback ───
+  const runAction = async (actionKey, apiCall) => {
+    setActionLoading(actionKey);
+    try {
+      const result = await apiCall();
+      toast.success(t(`failuresEvents.action.${actionKey}.success`) || 'Action completed');
+      return result;
+    } catch (err) {
+      toast.error(err?.message || t(`failuresEvents.action.${actionKey}.error`) || 'Action failed');
+      return null;
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // ─── AI Recommended Actions handlers ───
+  const handleGenerateRCA = () => {
+    const topEquipment = repetitiveFailuresData[0];
+    if (!topEquipment) { toast.warning('No repetitive failures found for RCA'); return; }
+    runAction('rca', () => api.createRca({
+      event_description: `Proactive RCA for chronic failure: ${topEquipment.equipment} (${topEquipment.count} occurrences)`,
+      equipment_id: topEquipment.equipment,
+      plant_id: plant,
+    })).then(r => { if (r) navigate('/rca'); });
+  };
+
+  const handleOptimizeStrategy = () => {
+    runAction('optimize', () => api.createAiSession({
+      equipment_tag: repetitiveFailuresData[0]?.equipment || filteredWRs[0]?.equipment_tag || 'GENERAL',
+      session_type: 'STRATEGY_OPTIMIZATION',
+      context: { total_wrs: filteredWRs.length, repetitive_count: repetitiveFailuresData.length, plant_id: plant },
+    })).then(r => { if (r) navigate('/ai-agents'); });
+  };
+
+  const handleAdjustPlanning = () => {
+    runAction('adjustPlanning', () => api.createImprovementAction({
+      title: `Adjust Planning Standards - ${AREA_LABELS[planningGroup] || planningGroup}`,
+      description: `Labor variance: ${planningStats.laborVar}%, Cost variance: ${planningStats.costVar}%`,
+      action_type: 'IMPROVEMENT',
+      priority: Math.abs(planningStats.laborVar) > 15 ? 'HIGH' : 'MEDIUM',
+      category: 'Planning',
+      source_type: 'AI_ANALYSIS',
+      plant_id: plant,
+    }));
+  };
+
+  const handleRequestSpareParts = () => {
+    runAction('spareParts', () => api.createImprovementAction({
+      title: `Spare Parts Review - ${AREA_LABELS[planningGroup] || planningGroup}`,
+      description: `${masterDataStats.sparePct}% spare parts data integrity`,
+      action_type: 'CORRECTIVE',
+      priority: masterDataStats.sparePct < 40 ? 'HIGH' : 'MEDIUM',
+      category: 'Spare Parts',
+      source_type: 'AI_ANALYSIS',
+      plant_id: plant,
+    }));
+  };
+
+  const handleEscalate = () => {
+    const criticalWRs = filteredWRs.filter(wr => wr.priority_code === 'P1' || wr.priority_code === 'P2');
+    if (!criticalWRs.length) { toast.warning('No critical WRs to escalate'); return; }
+    const top = criticalWRs[0];
+    runAction('escalate', () => api.createImprovementAction({
+      title: `Technical Support Escalation: ${top.equipment_tag || 'Unknown'}`,
+      description: `${criticalWRs.length} high-priority WRs. Most critical: ${top.request_id}`,
+      action_type: 'CORRECTIVE',
+      priority: 'CRITICAL',
+      category: 'Reliability',
+      source_type: 'AI_ANALYSIS',
+      equipment_tag: top.equipment_tag || '',
+      plant_id: plant,
+    }));
+  };
+
+  // ─── Agentic Action Center handlers ───
+  const handleCheckAiStatus = () => {
+    runAction('aiStatus', () => api.getAiStatus()).then(r => {
+      if (r) toast.info(`AI System: ${r.status || 'Online'} - ${r.agents_active || 0} agents`);
+    });
+  };
+
+  const handleGenerateWorkOrder = () => {
+    const pendingWRs = filteredWRs
+      .filter(wr => ['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(wr.status))
+      .sort((a, b) => {
+        const pa = parseInt((a.priority_code || 'P5').replace(/\D/g, ''), 10);
+        const pb = parseInt((b.priority_code || 'P5').replace(/\D/g, ''), 10);
+        return pa - pb;
+      });
+    if (!pendingWRs.length) { toast.warning('No pending WRs to create WO from'); return; }
+    const wr = pendingWRs[0];
+    runAction('generateWO', () => api.createWOFromWR({ work_request_id: wr.request_id }))
+      .then(r => { if (r) toast.success(`OT ${r.wo_number} created from ${wr.request_id}`); });
+  };
+
+  const handleDispatchSupport = () => {
+    const unassigned = filteredWRs
+      .filter(wr => !wr.assigned_to_name && ['VALIDATED', 'APPROVED'].includes(wr.status))
+      .sort((a, b) => parseInt((a.priority_code || 'P5').replace(/\D/g, ''), 10) - parseInt((b.priority_code || 'P5').replace(/\D/g, ''), 10));
+    if (!unassigned.length) { toast.warning('No unassigned WRs for dispatch'); return; }
+    const wr = unassigned[0];
+    runAction('dispatch', () => api.assignWorkRequest(wr.request_id, {
+      workers: [{ worker_name: topAssignee.name }],
+    })).then(r => { if (r) toast.success(`${wr.request_id} dispatched to ${topAssignee.name}`); });
+  };
+
+  const handleEscalateIssue = () => {
+    const overdue = filteredWRs.filter(wr => wr.sla_deadline && new Date(wr.sla_deadline) < new Date());
+    const target = overdue[0] || filteredWRs.filter(wr => wr.priority_code === 'P1')[0];
+    if (!target) { toast.warning('No issues to escalate'); return; }
+    runAction('escalateIssue', () => api.createImprovementAction({
+      title: `Escalation: ${target.equipment_tag || 'Unknown'} - ${target.request_id}`,
+      description: `Priority: ${target.priority_code}. Status: ${target.status}`,
+      action_type: 'CORRECTIVE',
+      priority: 'CRITICAL',
+      category: 'Reliability',
+      source_type: 'AGENTIC_ACTION',
+      equipment_tag: target.equipment_tag || '',
+      plant_id: plant,
+    }));
+  };
+
+  const handleReviewStrategy = () => {
+    runAction('reviewStrategy', () => api.createAiSession({
+      equipment_tag: repetitiveFailuresData[0]?.equipment || 'GENERAL',
+      session_type: 'STRATEGY_REVIEW',
+      context: { plant_id: plant, area: planningGroup, total_wrs: filteredWRs.length },
+    })).then(r => { if (r) navigate('/ai-agents'); });
+  };
+
+  const handleOptimizeAiStrategy = () => {
+    runAction('optimizeStrategy', () => api.createAiSession({
+      equipment_tag: repetitiveFailuresData[0]?.equipment || 'GENERAL',
+      session_type: 'OPTIMIZATION',
+      context: { plant_id: plant, repetitive_failures: repetitiveFailuresData.map(r => r.equipment) },
+    })).then(r => { if (r) navigate('/ai-agents'); });
+  };
+
+  const handleRcaForEquipment = (equipment, count) => {
+    runAction(`rca-${equipment}`, () => api.createRca({
+      event_description: `Chronic failure analysis: ${equipment} (${count} occurrences in ${selectedTimeRange})`,
+      equipment_id: equipment,
+      plant_id: plant,
+    })).then(r => { if (r) navigate('/rca'); });
   };
 
   if (loading) {
@@ -887,13 +1069,13 @@ export default function FailuresEvents() {
                   <h4 className="font-semibold text-gray-900 mb-2">{t('failuresEvents.aiAnalysisComplete')}</h4>
                   <p className="text-sm text-gray-700 mb-3">
                     {t('failuresEvents.aiAnalysisDescription')}
-                    <span className="font-semibold text-emerald-700"> {t('failuresEvents.highPriorityActions')}</span> {t('failuresEvents.couldReduceDowntime')} <span className="font-semibold text-emerald-700">25%</span> {t('failuresEvents.andImprovePlanning')} <span className="font-semibold text-emerald-700">15%</span>.
+                    <span className="font-semibold text-emerald-700"> {aiMetrics.highPriorityCount} {t('failuresEvents.highPriorityActions')}</span> {t('failuresEvents.couldReduceDowntime')} <span className="font-semibold text-emerald-700">{aiMetrics.downtimeReduction}%</span> {t('failuresEvents.andImprovePlanning')} <span className="font-semibold text-emerald-700">{aiMetrics.planningImprovement}%</span>.
                   </p>
                   <div className="flex items-center gap-3">
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-sm">
+                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-sm" onClick={() => navigate('/rca')}>
                       {t('failuresEvents.viewFullAIReport')}
                     </Button>
-                    <Button variant="outline" className="text-sm border-emerald-600 text-emerald-600 hover:bg-emerald-50">
+                    <Button variant="outline" className="text-sm border-emerald-600 text-emerald-600 hover:bg-emerald-50" onClick={() => navigate('/improvement-actions')}>
                       {t('failuresEvents.scheduleReviewMeeting')}
                     </Button>
                   </div>
@@ -915,12 +1097,13 @@ export default function FailuresEvents() {
                   {t('failuresEvents.chronicFailureSolutions')}
                 </p>
                 <div className="space-y-3">
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 cursor-pointer hover:bg-emerald-100 transition-colors">
+                  <div className={`bg-emerald-50 border border-emerald-200 rounded-lg p-3 cursor-pointer hover:bg-emerald-100 transition-colors ${actionLoading === 'rca' ? 'opacity-60 pointer-events-none' : ''}`} onClick={handleGenerateRCA}>
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-emerald-600 rounded flex items-center justify-center flex-shrink-0">
+                        {actionLoading === 'rca' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
+                        </svg>)}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-gray-900">{t('failuresEvents.generateProactiveRCA')}</p>
@@ -929,12 +1112,13 @@ export default function FailuresEvents() {
                     </div>
                   </div>
 
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 cursor-pointer hover:bg-emerald-100 transition-colors">
+                  <div className={`bg-emerald-50 border border-emerald-200 rounded-lg p-3 cursor-pointer hover:bg-emerald-100 transition-colors ${actionLoading === 'optimize' ? 'opacity-60 pointer-events-none' : ''}`} onClick={handleOptimizeStrategy}>
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-emerald-600 rounded flex items-center justify-center flex-shrink-0">
+                        {actionLoading === 'optimize' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
+                        </svg>)}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-gray-900">{t('failuresEvents.optimizeMaintenanceStrategy')}</p>
@@ -951,12 +1135,13 @@ export default function FailuresEvents() {
                   {t('failuresEvents.planningDeviations')}
                 </p>
                 <div className="space-y-3">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 cursor-pointer hover:bg-blue-100 transition-colors">
+                  <div className={`bg-blue-50 border border-blue-200 rounded-lg p-3 cursor-pointer hover:bg-blue-100 transition-colors ${actionLoading === 'adjustPlanning' ? 'opacity-60 pointer-events-none' : ''}`} onClick={handleAdjustPlanning}>
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center flex-shrink-0">
+                        {actionLoading === 'adjustPlanning' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
+                        </svg>)}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-gray-900">{t('failuresEvents.adjustPlanningStandards')}</p>
@@ -965,12 +1150,13 @@ export default function FailuresEvents() {
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 cursor-pointer hover:bg-blue-100 transition-colors">
+                  <div className={`bg-blue-50 border border-blue-200 rounded-lg p-3 cursor-pointer hover:bg-blue-100 transition-colors ${actionLoading === 'spareParts' ? 'opacity-60 pointer-events-none' : ''}`} onClick={handleRequestSpareParts}>
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center flex-shrink-0">
+                        {actionLoading === 'spareParts' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                        </svg>
+                        </svg>)}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-gray-900">{t('failuresEvents.requestSpareParts')}</p>
@@ -986,12 +1172,13 @@ export default function FailuresEvents() {
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                   {t('failuresEvents.escalation')}
                 </p>
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 cursor-pointer hover:bg-orange-100 transition-colors">
+                <div className={`bg-orange-50 border border-orange-200 rounded-lg p-3 cursor-pointer hover:bg-orange-100 transition-colors ${actionLoading === 'escalate' ? 'opacity-60 pointer-events-none' : ''}`} onClick={handleEscalate}>
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 bg-orange-600 rounded flex items-center justify-center flex-shrink-0">
+                      {actionLoading === 'escalate' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                       <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
+                      </svg>)}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-gray-900">{t('failuresEvents.escalateToTechnicalSupport')}</p>
@@ -1028,10 +1215,16 @@ export default function FailuresEvents() {
                     </Badge>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2"
+                      disabled={actionLoading === `rca-${item.equipment}`}
+                      onClick={() => handleRcaForEquipment(item.equipment, item.count)}>
+                      {actionLoading === `rca-${item.equipment}` ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      )}
                       {t('failuresEvents.aiSelectedForRCA')}
                     </Button>
                     <span className="text-xs text-gray-500">{t('failuresEvents.priority')}: {idx + 1}</span>
@@ -1178,11 +1371,11 @@ export default function FailuresEvents() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">{t('failuresEvents.priorityDistribution')}</span>
                 </div>
-                {weeklySparklineData.length > 0 ? (
+                {priorityDistributionData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={80}>
-                    <BarChart data={weeklySparklineData}>
-                      <Bar dataKey="value" fill="#10b981" />
-                      <XAxis dataKey="week" tick={{ fontSize: 10 }} />
+                    <BarChart data={priorityDistributionData}>
+                      <Bar dataKey="count" fill="#10b981" />
+                      <XAxis dataKey="priority" tick={{ fontSize: 10 }} />
                       <YAxis domain={[0, 'auto']} tick={{ fontSize: 10 }} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1292,56 +1485,62 @@ export default function FailuresEvents() {
             <Card className="p-6 bg-emerald-900 text-white h-full">
               <h3 className="text-lg font-bold mb-6">{t('failuresEvents.agenticActionCenter')}</h3>
               <div className="space-y-3">
-                <div className="bg-emerald-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-emerald-600 transition-colors">
+                <div className={`bg-emerald-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-emerald-600 transition-colors ${actionLoading === 'aiStatus' ? 'opacity-60' : ''}`} onClick={handleCheckAiStatus}>
                   <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    {actionLoading === 'aiStatus' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
+                    </svg>)}
                   </div>
                   <span className="text-sm font-semibold">{t('failuresEvents.agenticCoPilotReady')}</span>
                 </div>
 
-                <div className="bg-teal-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-teal-600 transition-colors">
+                <div className={`bg-teal-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-teal-600 transition-colors ${actionLoading === 'generateWO' ? 'opacity-60' : ''}`} onClick={handleGenerateWorkOrder}>
                   <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    {actionLoading === 'generateWO' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                    </svg>
+                    </svg>)}
                   </div>
                   <span className="text-sm font-semibold">{t('failuresEvents.generateWorkOrder')}</span>
                 </div>
 
-                <div className="bg-blue-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-blue-600 transition-colors">
+                <div className={`bg-blue-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-blue-600 transition-colors ${actionLoading === 'dispatch' ? 'opacity-60' : ''}`} onClick={handleDispatchSupport}>
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    {actionLoading === 'dispatch' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                    </svg>
+                    </svg>)}
                   </div>
                   <span className="text-sm font-semibold">{t('failuresEvents.dispatchSupport')}</span>
                 </div>
 
-                <div className="bg-yellow-600 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-yellow-500 transition-colors">
+                <div className={`bg-yellow-600 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-yellow-500 transition-colors ${actionLoading === 'escalateIssue' ? 'opacity-60' : ''}`} onClick={handleEscalateIssue}>
                   <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    {actionLoading === 'escalateIssue' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                    </svg>
+                    </svg>)}
                   </div>
                   <span className="text-sm font-semibold">{t('failuresEvents.escalateIssue')}</span>
                 </div>
 
-                <div className="bg-purple-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-purple-600 transition-colors">
+                <div className={`bg-purple-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-purple-600 transition-colors ${actionLoading === 'reviewStrategy' ? 'opacity-60' : ''}`} onClick={handleReviewStrategy}>
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    {actionLoading === 'reviewStrategy' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z"/>
-                    </svg>
+                    </svg>)}
                   </div>
                   <span className="text-sm font-semibold">{t('failuresEvents.reviewStrategy')}</span>
                 </div>
 
-                <div className="bg-cyan-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-cyan-600 transition-colors">
+                <div className={`bg-cyan-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-cyan-600 transition-colors ${actionLoading === 'optimizeStrategy' ? 'opacity-60' : ''}`} onClick={handleOptimizeAiStrategy}>
                   <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    {actionLoading === 'optimizeStrategy' ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : (
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd"/>
-                    </svg>
+                    </svg>)}
                   </div>
                   <span className="text-sm font-semibold">{t('failuresEvents.optimizeStrategy')}</span>
                 </div>
@@ -1470,31 +1669,31 @@ export default function FailuresEvents() {
             const updated = await api.getWorkRequest(wr.request_id);
             setSelectedWR(updated);
             setWrEditing(false);
-          } catch (e) { console.error(e); alert('Error al guardar'); }
+          } catch (e) { console.error(e); toast.error('Error al guardar'); }
           setWrSaving(false);
         };
 
         const handleApprove = async () => {
-          if (!wrActionComment) { alert('Escribe un comentario para aprobar'); return; }
+          if (!wrActionComment) { toast.warning('Escribe un comentario para aprobar'); return; }
           setWrSaving(true);
           try {
             await api.approveWorkRequest(wr.request_id, { comment: wrActionComment });
             const updated = await api.getWorkRequest(wr.request_id);
             setSelectedWR(updated);
             setWrActionComment('');
-          } catch (e) { console.error(e); alert('Error al aprobar'); }
+          } catch (e) { console.error(e); toast.error('Error al aprobar'); }
           setWrSaving(false);
         };
 
         const handleReject = async () => {
-          if (!wrActionComment) { alert('Escribe una razon para rechazar'); return; }
+          if (!wrActionComment) { toast.warning('Escribe una razon para rechazar'); return; }
           setWrSaving(true);
           try {
             await api.rejectWorkRequest(wr.request_id, { reason: wrActionComment });
             const updated = await api.getWorkRequest(wr.request_id);
             setSelectedWR(updated);
             setWrActionComment('');
-          } catch (e) { console.error(e); alert('Error al rechazar'); }
+          } catch (e) { console.error(e); toast.error('Error al rechazar'); }
           setWrSaving(false);
         };
 
@@ -1502,8 +1701,8 @@ export default function FailuresEvents() {
           setWrSaving(true);
           try {
             const result = await api.createWOFromWR({ work_request_id: wr.request_id });
-            alert(`OT ${result.wo_number} creada exitosamente`);
-          } catch (e) { console.error(e); alert('Error al crear OT'); }
+            toast.success(`OT ${result.wo_number} creada exitosamente`);
+          } catch (e) { console.error(e); toast.error('Error al crear OT'); }
           setWrSaving(false);
         };
 

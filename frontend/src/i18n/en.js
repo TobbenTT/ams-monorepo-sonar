@@ -2182,6 +2182,21 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         aiSelectedForRCA: 'AI Selected for RCA',
         noRecurringFailures: 'No recurring failures detected yet',
 
+        // Action feedback (toast messages)
+        action: {
+          rca: { success: 'RCA analysis created successfully', error: 'Failed to create RCA' },
+          optimize: { success: 'AI Strategy session created', error: 'Failed to create strategy session' },
+          adjustPlanning: { success: 'Planning improvement action created', error: 'Failed to create improvement action' },
+          spareParts: { success: 'Spare parts review action created', error: 'Failed to create action' },
+          escalate: { success: 'Escalation created successfully', error: 'Failed to escalate' },
+          aiStatus: { success: 'AI system status retrieved', error: 'Failed to check AI status' },
+          generateWO: { success: 'Work order created', error: 'Failed to create work order' },
+          dispatch: { success: 'Support dispatched', error: 'Failed to dispatch' },
+          escalateIssue: { success: 'Issue escalated successfully', error: 'Failed to escalate issue' },
+          reviewStrategy: { success: 'Strategy review session created', error: 'Failed to create review' },
+          optimizeStrategy: { success: 'Optimization session created', error: 'Failed to create session' },
+        },
+
         // Advanced Tactical Drill-Down
         advancedTacticalDrillDown: 'OCP Maintenance - Advanced Tactical Drill-Down',
 

@@ -2107,6 +2107,21 @@ export default {
         aiSelectedForRCA: 'IA Seleccionada para RCA',
         noRecurringFailures: 'No se detectaron fallas recurrentes aún',
 
+        // Feedback de acciones (toast)
+        action: {
+          rca: { success: 'Análisis RCA creado exitosamente', error: 'Error al crear RCA' },
+          optimize: { success: 'Sesión de estrategia IA creada', error: 'Error al crear sesión de estrategia' },
+          adjustPlanning: { success: 'Acción de mejora de planificación creada', error: 'Error al crear acción de mejora' },
+          spareParts: { success: 'Acción de revisión de repuestos creada', error: 'Error al crear acción' },
+          escalate: { success: 'Escalamiento creado exitosamente', error: 'Error al escalar' },
+          aiStatus: { success: 'Estado del sistema IA obtenido', error: 'Error al verificar estado IA' },
+          generateWO: { success: 'Orden de trabajo creada', error: 'Error al crear orden de trabajo' },
+          dispatch: { success: 'Soporte despachado', error: 'Error al despachar' },
+          escalateIssue: { success: 'Problema escalado exitosamente', error: 'Error al escalar problema' },
+          reviewStrategy: { success: 'Sesión de revisión de estrategia creada', error: 'Error al crear revisión' },
+          optimizeStrategy: { success: 'Sesión de optimización creada', error: 'Error al crear sesión' },
+        },
+
         // Advanced Tactical Drill-Down
         advancedTacticalDrillDown: 'OCP Mantenimiento - Drill-Down Táctico Avanzado',
 

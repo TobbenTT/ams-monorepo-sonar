@@ -49,6 +49,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
   const [wmKpis, setWmKpis] = useState(null);
   const [iasSummary, setIasSummary] = useState(null);
   const [iasRecent, setIasRecent] = useState([]);
+  const [staffData, setStaffData] = useState([]);
 
   useEffect(() => {
     if (!selectedPlant) return;
@@ -69,8 +70,9 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
       api.getWorkManagementKpis(selectedPlant, startISO, endISO).catch(() => null),
       api.getImprovementActionsSummary({ plant_id: selectedPlant }).catch(() => null),
       api.listImprovementActions({ plant_id: selectedPlant, limit: 10 }).catch(() => ({ items: [] })),
+      api.authListUsers().catch(() => []),
     ])
-      .then(([exec, analytics, alerts, wrs, wm, iaSum, iaList]) => {
+      .then(([exec, analytics, alerts, wrs, wm, iaSum, iaList, users]) => {
         if (cancelled) return;
         setExecData(exec);
         setAnalyticsData(analytics);
@@ -79,6 +81,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
         setWmKpis(wm);
         setIasSummary(iaSum);
         setIasRecent((iaList?.items || []).slice(0, 5));
+        setStaffData(Array.isArray(users) ? users : []);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || t('executive.failedToLoad'));
@@ -92,6 +95,35 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
 
   // Filter work requests by time range (must be before early returns — Rules of Hooks)
   const filteredWRs = useMemo(() => filterByDateRange(workRequests, selectedTimeRange), [workRequests, selectedTimeRange]);
+
+  // Staffing metrics derived from user list
+  const staffMetrics = useMemo(() => {
+    if (!staffData.length) return { total: 0, active: 0, byRole: {}, byDiscipline: {}, absentRate: 0 };
+    const active = staffData.filter(u => u.is_active !== false);
+    const inactive = staffData.length - active.length;
+    const byRole = {};
+    const byDiscipline = { mechanical: 0, electrical: 0, instrumentation: 0, staff: 0 };
+    active.forEach(u => {
+      const role = u.role || 'tecnico';
+      byRole[role] = (byRole[role] || 0) + 1;
+      if (role === 'tecnico') {
+        const spec = (u.specialty || u.discipline || '').toLowerCase();
+        if (spec.includes('elec')) byDiscipline.electrical++;
+        else if (spec.includes('inst')) byDiscipline.instrumentation++;
+        else byDiscipline.mechanical++;
+      } else {
+        byDiscipline.staff++;
+      }
+    });
+    return {
+      total: staffData.length,
+      active: active.length,
+      inactive,
+      byRole,
+      byDiscipline,
+      absentRate: staffData.length > 0 ? Math.round((inactive / staffData.length) * 100) : 0,
+    };
+  }, [staffData]);
 
   // ── Loading state ──
   if (loading) {
@@ -602,6 +634,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
           {[
             { value: 'produccion', label: t('executive.tabProduccion'), icon: TrendingUp },
             { value: 'mantenimiento', label: t('executive.tabMantenimiento'), icon: Wrench },
+            { value: 'dotaciones', label: t('executive.tabDotaciones'), icon: Users },
             { value: 'hse', label: t('executive.tabHSE'), icon: Shield },
             { value: 'mejora-continua', label: t('executive.tabMejoraContinua'), icon: CheckCircle },
           ].map(tab => (
@@ -616,6 +649,123 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
         </TabsList>
         <TabsContent value="produccion"><ProductionTabContent /></TabsContent>
         <TabsContent value="mantenimiento"><MantenimientoTabContent /></TabsContent>
+        <TabsContent value="dotaciones">
+          <div className="space-y-6 mt-4">
+            {/* Summary KPIs */}
+            <div className="grid grid-cols-4 gap-4">
+              <Card className="p-5 bg-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{staffMetrics.active}</p>
+                    <p className="text-xs text-gray-500">{t('executive.staffActive')}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-5 bg-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Wrench className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{staffMetrics.byDiscipline.mechanical}</p>
+                    <p className="text-xs text-gray-500">{t('executive.staffMechanical')}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-5 bg-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <Target className="w-5 h-5 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{staffMetrics.byDiscipline.electrical}</p>
+                    <p className="text-xs text-gray-500">{t('executive.staffElectrical')}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-5 bg-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{staffMetrics.byDiscipline.instrumentation}</p>
+                    <p className="text-xs text-gray-500">{t('executive.staffInstrumentation')}</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              {/* By Role */}
+              <Card className="p-6 bg-white">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">{t('executive.staffByRole')}</h3>
+                <div className="space-y-3">
+                  {Object.entries(staffMetrics.byRole).map(([role, count]) => (
+                    <div key={role} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge className={`text-xs ${role === 'admin' ? 'bg-red-100 text-red-800' : role === 'manager' ? 'bg-purple-100 text-purple-800' : role === 'planner' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                          {role}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (count / staffMetrics.active) * 100)}%` }} />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900 w-8 text-right">{count}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Absenteeism & Availability */}
+              <Card className="p-6 bg-white">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">{t('executive.staffAvailability')}</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-gray-600">{t('executive.staffPresent')}</p>
+                      <p className="text-3xl font-bold text-emerald-700">{staffMetrics.active}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600">{t('executive.staffAbsent')}</p>
+                      <p className="text-3xl font-bold text-red-600">{staffMetrics.inactive}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">{t('executive.staffAbsentRate')}</span>
+                      <span className={`font-semibold ${staffMetrics.absentRate > 10 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        {staffMetrics.absentRate}%
+                      </span>
+                    </div>
+                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${staffMetrics.absentRate > 10 ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${100 - staffMetrics.absentRate}%` }} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 pt-2">
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <p className="text-lg font-bold text-blue-700">{staffMetrics.byDiscipline.mechanical}</p>
+                      <p className="text-xs text-gray-600">{t('executive.staffMech')}</p>
+                    </div>
+                    <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                      <p className="text-lg font-bold text-yellow-700">{staffMetrics.byDiscipline.electrical}</p>
+                      <p className="text-xs text-gray-600">{t('executive.staffElec')}</p>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <p className="text-lg font-bold text-purple-700">{staffMetrics.byDiscipline.instrumentation}</p>
+                      <p className="text-xs text-gray-600">{t('executive.staffInst')}</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
         <TabsContent value="hse"><HSETabContent /></TabsContent>
         <TabsContent value="mejora-continua"><MejoraContinuaTabContent /></TabsContent>
       </Tabs>

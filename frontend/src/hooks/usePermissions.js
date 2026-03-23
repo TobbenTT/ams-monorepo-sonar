@@ -41,6 +41,7 @@ const PERMISSIONS = {
     'defect-elimination': { view: TACTICAL,  edit: ['admin', 'engineer'] },
 
     // ─── Work Orders & Execution ───
+    'work-management':    { view: ALL_ROLES, edit: ['admin', 'planner', 'tecnico'] },
     'work-orders':        { view: ALL_ROLES, edit: ['admin', 'planner'] },
     'execution':          { view: ['admin', 'planner', 'tecnico'], edit: ['admin', 'planner', 'tecnico'] },
     'post-maintenance':   { view: ['admin', 'manager', 'engineer'], edit: ['admin', 'engineer'] },

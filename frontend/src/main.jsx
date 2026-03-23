@@ -13,6 +13,7 @@ import './styles/index.css';
 // ── New Design Pages ──────────────────────────────────────────
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const WorkOrdersPage = lazy(() => import('./pages/WorkOrdersPage'));
+const WorkManagement = lazy(() => import('./pages/WorkManagement'));
 const FailuresEvents = lazy(() => import('./pages/FailuresEvents'));
 const ImprovementActionsPage = lazy(() => import('./pages/ImprovementActionsPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
@@ -85,6 +86,7 @@ createRoot(document.getElementById('root')).render(
                                 <Route element={<P roles={ALL}><App /></P>}>
                                     {/* ── New Design Routes (primary navigation) ── */}
                                     <Route index element={<S><HomeRouter /></S>} />
+                                    <Route path="work-management" element={<S><WorkManagement /></S>} />
                                     <Route path="work-orders" element={<S><WorkOrdersPage /></S>} />
                                     <Route path="failures-events" element={<S><FailuresEvents /></S>} />
                                     <Route path="improvement-actions" element={<S><ImprovementActionsPage /></S>} />

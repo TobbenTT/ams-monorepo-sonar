@@ -7,10 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
-import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap } from 'lucide-react';
+import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image } from 'lucide-react';
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 export default function WorkOrdersPage() {
   const { t } = useLanguage();
@@ -39,6 +41,12 @@ export default function WorkOrdersPage() {
   const [activeResTypeIdx, setActiveResTypeIdx] = useState(-1);
   const [activeMatSapIdx, setActiveMatSapIdx] = useState(-1);
   const [showSpecEquip, setShowSpecEquip] = useState(false);
+  // Voice + Photo capture
+  const [isRecording, setIsRecording] = useState(false);
+  const [photos, setPhotos] = useState([]);
+  const recognitionRef = useRef(null);
+  const baseTextRef = useRef('');
+  const cameraRef = useRef(null);
   // Managed Work Orders (Jorge Phase 2)
   const [managedWOs, setManagedWOs] = useState([]);
   const [woTab, setWoTab] = useState('ots'); // 'ots' | 'wrs'
@@ -298,7 +306,7 @@ export default function WorkOrdersPage() {
     if (!canCreate || creating) return;
     setCreating(true);
     try {
-      await api.createWRManual({
+      const res = await api.createWRManual({
         equipment_tag: createForm.whereTag.trim(),
         equipment_name: selectedEquip?.name || createForm.whereTag.trim(),
         plant_id: plant,
@@ -314,9 +322,19 @@ export default function WorkOrdersPage() {
         materials: (createForm.materials || []).map(m => typeof m === 'string' ? m : m.name || '').filter(Boolean),
         resources: (createForm.resources || []).map(r => typeof r === 'string' ? r : `${r.type || ''} x${r.quantity || 1}`).filter(Boolean),
       });
+      // Upload photos via capture endpoint
+      const wrId = res?.work_request_id || res?.request_id || '';
+      if (photos.length > 0 && wrId) {
+        for (const photo of photos) {
+          try {
+            await api.submitCapture({ capture_type: 'IMAGE', equipment_tag: createForm.whereTag, raw_text: `Photo for WR ${wrId}`, image_data: photo });
+          } catch { /* photo upload best-effort */ }
+        }
+      }
       setShowCreateModal(false);
       setCreateForm({ whatHappens: '', whereTag: '', suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'CR', plantCondition: 'operating', failureCategory: 'MECANICO', failureSymptom: '', failureObjectPart: '', failureCause: '', resources: [], materials: [], specialEquipment: '' });
       setSelectedEquip(null);
+      setPhotos([]);
       reloadData();
     } catch (err) {
       alert(err.message || t('workOrders.failedToCreate'));
@@ -354,6 +372,53 @@ export default function WorkOrdersPage() {
     const mats = [...prev.materials]; mats[idx] = { ...mats[idx], [field]: val }; return { ...prev, materials: mats };
   });
   const removeMaterial = (idx) => setCreateForm(prev => ({ ...prev, materials: prev.materials.filter((_, i) => i !== idx) }));
+
+  // ── Voice recording (Web Speech API) ──
+  const handleVoice = () => {
+    if (!SpeechRecognition) { alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome.'); return; }
+    if (isRecording) { recognitionRef.current?.stop(); return; }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognitionRef.current = recognition;
+    baseTextRef.current = createForm.whatHappens;
+    let finalTranscript = '';
+    recognition.onstart = () => setIsRecording(true);
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const tr = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += tr + ' ';
+        else interim += tr;
+      }
+      const base = baseTextRef.current;
+      const sep = base ? '\n' : '';
+      setF('whatHappens', (base + sep + finalTranscript + interim).trimEnd());
+    };
+    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => {
+      setIsRecording(false);
+      if (finalTranscript.trim()) {
+        const base = baseTextRef.current;
+        const sep = base ? '\n' : '';
+        setF('whatHappens', (base + sep + finalTranscript).trimEnd());
+      }
+    };
+    recognition.start();
+  };
+
+  // ── Photo capture ──
+  const handleCameraClick = () => cameraRef.current?.click();
+  const handleCameraChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotos(prev => [...prev, ev.target.result]);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+  const removePhoto = (idx) => setPhotos(prev => prev.filter((_, i) => i !== idx));
 
   const getCriticalityColor = (criticality) => {
     switch (criticality) {
@@ -973,16 +1038,50 @@ export default function WorkOrdersPage() {
             </div>
 
             <div className="p-5 space-y-5">
-              {/* 1. What happened? */}
+              {/* Hidden camera input */}
+              <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} className="hidden" />
+
+              {/* 1. What happened? + Voice / Camera */}
               <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.whatHappens')}</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.whatHappens')}</label>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={handleVoice}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${isRecording ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
+                      {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                      {isRecording ? t('workOrders.voiceRecording') || 'Grabando...' : t('workOrders.voiceButton') || 'Voz'}
+                    </button>
+                    <button type="button" onClick={handleCameraClick}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all">
+                      <Camera className="w-3.5 h-3.5" />
+                      {t('workOrders.photoButton') || 'Foto'}
+                    </button>
+                  </div>
+                </div>
                 <textarea
                   value={createForm.whatHappens}
                   onChange={e => setF('whatHappens', e.target.value)}
                   placeholder={t('workOrders.whatHappensPlaceholder')}
                   rows={3}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none"
+                  className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none ${isRecording ? 'border-red-400 bg-red-50/30' : 'border-gray-300'}`}
                 />
+                {/* Photo strip */}
+                {photos.length > 0 && (
+                  <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+                    {photos.map((photo, i) => (
+                      <div key={i} className="relative flex-shrink-0">
+                        <img src={photo} alt={`Foto ${i+1}`} className="w-20 h-20 rounded-lg object-cover border-2 border-blue-200" />
+                        <button onClick={() => removePhoto(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm hover:bg-red-600">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={handleCameraClick} className="flex-shrink-0 w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors">
+                      <Camera className="w-5 h-5" />
+                      <span className="text-[10px] mt-0.5">+</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* 2. Where? TAG equipment */}

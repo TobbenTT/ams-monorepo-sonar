@@ -62,6 +62,11 @@ class WRManualCreateRequest(BaseModel):
     materials: list[str] = []
     resources: list[str] = []
     created_by: str = ""
+    # SAP Aviso alignment (Creación de Aviso IH01)
+    notification_type: str = "A1"  # A1=Aviso Mantenimiento
+    reported_by: str = ""  # Autor del Aviso (quién reporta el evento)
+    circumstances: str = ""  # Detalle/Circunstancias del aviso
+    support_equipment: list[str] = []  # Equipos de apoyo necesarios
 
 
 class WRFromHierarchyRequest(BaseModel):
@@ -126,6 +131,11 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
             "approver_id": wr.approver_id,
             "approved_at": wr.approved_at.isoformat() if wr.approved_at else None,
             "created_at": wr.created_at.isoformat() if wr.created_at else None,
+            # SAP Aviso fields
+            "notification_type": getattr(wr, "notification_type", "A1") or "A1",
+            "reported_by": getattr(wr, "reported_by", None),
+            "circumstances": getattr(wr, "circumstances", None),
+            "support_equipment": getattr(wr, "support_equipment", None),
         })
     return results
 
@@ -185,6 +195,13 @@ def get_work_request(request_id: str, db: Session = Depends(get_db)):
         "approver_id": wr.approver_id,
         "approved_at": wr.approved_at.isoformat() if wr.approved_at else None,
         "created_at": wr.created_at.isoformat() if wr.created_at else None,
+        # SAP Aviso fields
+        "notification_type": getattr(wr, "notification_type", "A1") or "A1",
+        "reported_by": getattr(wr, "reported_by", None),
+        "reported_at": getattr(wr, "reported_at", None),
+        "circumstances": getattr(wr, "circumstances", None),
+        "support_equipment": getattr(wr, "support_equipment", None),
+        "documents": getattr(wr, "documents", None),
     }
 
 
@@ -373,6 +390,12 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
             "estimated_duration_hours": data.estimated_duration,
             "source": "manual_form",
         },
+        # SAP Aviso fields
+        notification_type=data.notification_type or "A1",
+        reported_by=data.reported_by or None,
+        reported_at=now if data.reported_by else None,
+        circumstances=data.circumstances or None,
+        support_equipment=[{"tag": s} for s in data.support_equipment] if data.support_equipment else None,
         created_at=now,
     )
     db.add(wr)

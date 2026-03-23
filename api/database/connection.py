@@ -70,6 +70,13 @@ def _run_column_migrations():
         ("work_requests", "approval_comment", "TEXT", None),
         ("work_requests", "rejection_reason", "TEXT", None),
         ("managed_work_orders", "is_fast_track", "BOOLEAN", "0"),
+        # SAP Aviso alignment
+        ("work_requests", "notification_type", "VARCHAR(30)", "'A1'"),
+        ("work_requests", "reported_by", "VARCHAR(100)", None),
+        ("work_requests", "reported_at", "DATETIME", None),
+        ("work_requests", "documents", "TEXT", None),  # JSON
+        ("work_requests", "support_equipment", "TEXT", None),  # JSON
+        ("work_requests", "circumstances", "TEXT", None),
     ]
 
     with engine.begin() as conn:

@@ -472,6 +472,13 @@ class WorkRequestModel(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     approval_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # SAP Aviso alignment (Creación de Aviso IH01)
+    notification_type: Mapped[str] = mapped_column(String(30), default="A1")  # A1=Aviso Mantenimiento
+    reported_by: Mapped[str | None] = mapped_column(String(100), nullable=True)  # Autor del Aviso (quién reporta, distinto de created_by)
+    reported_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    documents: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{name, url, type}] adjuntos
+    support_equipment: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{tag, description}] equipos de apoyo
+    circumstances: Mapped[str | None] = mapped_column(Text, nullable=True)  # Detalle/Circunstancias (SAP campo 8)
 
     __table_args__ = (
         Index("ix_work_requests_status", "status"),

@@ -246,6 +246,40 @@ function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete,
           </div>
         )}
 
+        {/* SAP Aviso fields */}
+        {(item.reported_by || item.circumstances || item.support_equipment) && (
+          <div className="px-6 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Datos del Aviso (SAP)</p>
+            <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
+              {item.reported_by && (
+                <div className="flex items-center gap-2">
+                  <User size={14} className="text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground">Autor del Aviso:</span>
+                  <span className="text-sm font-medium text-foreground">{item.reported_by}</span>
+                </div>
+              )}
+              {item.circumstances && (
+                <div>
+                  <span className="text-xs text-muted-foreground">Circunstancias:</span>
+                  <p className="text-sm text-foreground mt-0.5">{item.circumstances}</p>
+                </div>
+              )}
+              {item.support_equipment && item.support_equipment.length > 0 && (
+                <div>
+                  <span className="text-xs text-muted-foreground">Equipos de Apoyo:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(Array.isArray(item.support_equipment) ? item.support_equipment : []).map((eq, i) => (
+                      <span key={i} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">
+                        {typeof eq === 'string' ? eq : eq.tag || eq.description || ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Fast Track Banner for P1/P2 */}
         {isPending && ['P1', 'P2'].includes(item.priority_requested) && (
           <div className="mx-6 mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 flex items-center gap-3">
@@ -367,6 +401,11 @@ function normalizeWR(wr) {
     spare_parts: wr.spare_parts || [],
     photos: wr.photos || wr.images || [],
     created_at: wr.created_at || new Date().toISOString(),
+    // SAP Aviso fields
+    notification_type: wr.notification_type || 'A1',
+    reported_by: wr.reported_by || '',
+    circumstances: wr.circumstances || '',
+    support_equipment: wr.support_equipment || [],
   };
 }
 

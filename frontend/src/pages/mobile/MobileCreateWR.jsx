@@ -197,6 +197,10 @@ export default function MobileCreateWR() {
         failureSymptom: '',
         failureObjectPart: '',
         failureCause: '',
+        // SAP Aviso fields (IH01)
+        reportedBy: '',          // Autor del Aviso (quién reporta, puede ser distinto del creador)
+        circumstances: '',       // Detalle/Circunstancias del aviso
+        supportEquipment: '',    // Equipos de apoyo necesarios
     });
 
     // Build parent path for a node using the node map
@@ -430,6 +434,11 @@ export default function MobileCreateWR() {
                 materials: (form.materials || []).map(m => typeof m === 'string' ? m : m.name || '').filter(Boolean),
                 resources: (form.resources || []).map(r => typeof r === 'string' ? r : `${r.type || ''} x${r.quantity || 1}`).filter(Boolean),
                 created_by: user?.user_id || user?.username || '',
+                // SAP Aviso fields
+                notification_type: 'A1',
+                reported_by: form.reportedBy || '',
+                circumstances: form.circumstances || '',
+                support_equipment: form.supportEquipment ? form.supportEquipment.split(',').map(s => s.trim()).filter(Boolean) : [],
             });
             setSuccess(res);
             toast.success('Aviso creado exitosamente');
@@ -460,6 +469,7 @@ export default function MobileCreateWR() {
             suggestedAction: '', resources: [], estimatedDuration: '', materials: [],
             specialEquipment: '', plantCondition: 'operating', priority: 'P3', activityClass: 'CR', photos: [],
             failureSymptom: '', failureObjectPart: '', failureCause: '',
+            reportedBy: '', circumstances: '', supportEquipment: '',
         });
         setSelectedEquip(null);
         setSelectedLoc(null);
@@ -973,6 +983,23 @@ export default function MobileCreateWR() {
                     />
                 </div>
 
+                {/* Circunstancias (SAP IH01 — campo Detalle) */}
+                <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
+                    <label className="text-xs font-semibold mb-3 block" style={{ color: '#64748B', letterSpacing: '0.05em' }}>
+                        CIRCUNSTANCIAS / DETALLE
+                    </label>
+                    <textarea
+                        value={form.circumstances}
+                        onChange={(e) => set('circumstances', e.target.value)}
+                        placeholder="Descripción del evento, recursos necesarios, equipos de apoyo, información complementaria..."
+                        className="w-full h-20 p-3 rounded-xl border text-sm resize-none outline-none"
+                        style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                    />
+                    <div className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+                        SAP: Información complementaria del aviso
+                    </div>
+                </div>
+
                 {/* 4. Recursos necesarios */}
                 <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
                     <div className="flex items-center justify-between mb-3">
@@ -1163,6 +1190,42 @@ export default function MobileCreateWR() {
                                 ))}
                             </div>
                         )}
+                    </div>
+                </div>
+
+                {/* Autor del Aviso (SAP IH01 — quién reporta el evento) */}
+                <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
+                    <label className="text-xs font-semibold mb-3 block" style={{ color: '#64748B', letterSpacing: '0.05em' }}>
+                        AUTOR DEL AVISO
+                    </label>
+                    <input
+                        type="text"
+                        value={form.reportedBy}
+                        onChange={(e) => set('reportedBy', e.target.value)}
+                        placeholder="Nombre de quién reporta el evento (si es distinto del creador)"
+                        className="w-full p-3 rounded-xl border text-sm outline-none"
+                        style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                    />
+                    <div className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+                        SAP: Quién descubrió el problema (no necesariamente quién crea el aviso)
+                    </div>
+                </div>
+
+                {/* Equipos de apoyo (SAP IH01) */}
+                <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
+                    <label className="text-xs font-semibold mb-3 block" style={{ color: '#64748B', letterSpacing: '0.05em' }}>
+                        EQUIPOS DE APOYO
+                    </label>
+                    <input
+                        type="text"
+                        value={form.supportEquipment}
+                        onChange={(e) => set('supportEquipment', e.target.value)}
+                        placeholder="Ej: Grúa puente 10 ton, Camión grúa, Generador"
+                        className="w-full p-3 rounded-xl border text-sm outline-none"
+                        style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                    />
+                    <div className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+                        Separar con comas. Ej: Grúa 20t, Andamio, Camión pluma
                     </div>
                 </div>
 

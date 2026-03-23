@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   FileText, Plus, RefreshCw, Calendar, TrendingUp,
-  AlertTriangle, CheckCircle2, Clock, ChevronDown, ChevronUp, BarChart3
+  AlertTriangle, CheckCircle2, Clock, ChevronDown, ChevronUp, BarChart3,
+  RotateCcw, Loader2
 } from 'lucide-react';
+import { useToast } from '../components/Toast';
 import {
   createPMReview, listPMReviews, getPMReview, updatePMReview,
-  completePMReview, getPMAnalysis,
+  completePMReview, getPMAnalysis, listManagedWOs, closeManagedWO,
 } from '../api';
 
 const STATUS_COLORS = {
@@ -17,6 +19,7 @@ const STATUS_COLORS = {
 
 export default function PostMaintenance() {
   const { plant } = useOutletContext();
+  const toast = useToast();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -25,8 +28,29 @@ export default function PostMaintenance() {
   const [analysis, setAnalysis] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [meetingForm, setMeetingForm] = useState({ meeting_date: '', attendees: [], meeting_notes: '', improvement_actions: [], lessons_learned: '' });
+  const [completedWOs, setCompletedWOs] = useState([]);
+  const [closingWO, setClosingWO] = useState(null);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); loadCompletedWOs(); }, []);
+
+  async function loadCompletedWOs() {
+    try {
+      const wos = await listManagedWOs({ status: 'COMPLETED', plant_id: plant, limit: 50 });
+      setCompletedWOs(Array.isArray(wos) ? wos : wos.items || []);
+    } catch { setCompletedWOs([]); }
+  }
+
+  async function handleTechnicalClose(woId) {
+    setClosingWO(woId);
+    try {
+      await closeManagedWO(woId);
+      toast.success('Cierre tecnico completado — Contadores SAP reiniciados');
+      loadCompletedWOs();
+    } catch (e) {
+      toast.error('Error en cierre tecnico: ' + e.message);
+    }
+    setClosingWO(null);
+  }
 
   async function refresh() {
     setLoading(true);
@@ -331,6 +355,43 @@ export default function PostMaintenance() {
           )}
         </div>
       </div>
+
+      {/* SAP Technical Closure & Counter Reset */}
+      {completedWOs.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+            <RotateCcw size={18} className="text-blue-600" /> Cierre Tecnico — Reset de Contadores SAP
+          </h2>
+          <p className="text-sm text-gray-500 mb-3">
+            OTs completadas pendientes de cierre tecnico. Al cerrar se reinician los contadores SAP del equipo.
+          </p>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {completedWOs.map(wo => (
+              <div key={wo.wo_id || wo.work_order_id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-gray-900">{wo.wo_number}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">COMPLETED</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5 truncate">{wo.equipment_tag} — {wo.description}</p>
+                </div>
+                <button
+                  onClick={() => handleTechnicalClose(wo.wo_id || wo.work_order_id)}
+                  disabled={closingWO === (wo.wo_id || wo.work_order_id)}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {closingWO === (wo.wo_id || wo.work_order_id) ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <RotateCcw size={12} />
+                  )}
+                  Cierre Tecnico
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       {showCreate && (

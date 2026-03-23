@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { KPICard, LoadingSpinner } from '../components/Shared';
+import { useToast } from '../components/Toast';
 import * as api from '../api';
 
 const STATUS_COLORS = {
@@ -10,8 +11,15 @@ const STATUS_COLORS = {
     CLOSED: 'bg-purple-100 text-purple-800',
 };
 
+const STEP_TYPE_STYLES = {
+    TASK: { bg: 'bg-blue-50 border-blue-200', icon: '🔧', label: 'Tarea' },
+    QUALITY_GATE: { bg: 'bg-amber-50 border-amber-200', icon: '🛡️', label: 'Quality Gate' },
+    SKIP: { bg: 'bg-gray-50 border-gray-300 opacity-60', icon: '⏭️', label: 'Omitido' },
+};
+
 export default function ExecutionChecklists() {
     const { plant } = useOutletContext();
+    const toast = useToast();
     const [checklists, setChecklists] = useState([]);
     const [activeChecklist, setActiveChecklist] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -50,6 +58,27 @@ export default function ExecutionChecklists() {
             const updated = await api.completeChecklistStep(activeChecklist.checklist_id, { step_index: stepIndex, completed });
             setActiveChecklist(updated);
         } catch { /* ignore */ }
+    };
+
+    const handleStepSkip = async (stepIndex) => {
+        if (!activeChecklist) return;
+        try {
+            const updated = await api.completeChecklistStep(activeChecklist.checklist_id, { step_index: stepIndex, completed: true, skipped: true });
+            setActiveChecklist(updated);
+            toast.warning(`Paso ${stepIndex + 1} omitido`);
+        } catch { /* ignore */ }
+    };
+
+    const handleCloseChecklist = async () => {
+        if (!activeChecklist) return;
+        try {
+            const updated = await api.closeChecklist(activeChecklist.checklist_id, { supervisor_notes: 'Checklist cerrado por supervisor' });
+            setActiveChecklist(updated);
+            toast.success('Checklist cerrado — firma de supervisor registrada');
+            load();
+        } catch (e) {
+            toast.error('Error al cerrar checklist');
+        }
     };
 
     if (loading) return <LoadingSpinner message="Cargando checklists..." />;
@@ -143,24 +172,77 @@ export default function ExecutionChecklists() {
                                 </div>
                             )}
 
-                            {/* Steps */}
+                            {/* Steps with Quality Gate / Task / Skip types */}
                             <div className="space-y-2">
-                                <div className="text-xs font-bold uppercase text-muted-foreground">Execution Steps</div>
-                                {steps.map((step, i) => (
-                                    <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${step.completed ? 'bg-green-50 border-green-200' : 'hover:bg-muted/30'}`}>
-                                        <input type="checkbox" checked={!!step.completed}
-                                            onChange={e => handleStepComplete(i, e.target.checked)}
-                                            className="mt-0.5 w-4 h-4 accent-green-600" />
-                                        <div className="flex-1">
-                                            <div className={`text-sm ${step.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                                {typeof step === 'string' ? step : step.description || step.text || `Step ${i + 1}`}
+                                <div className="flex items-center justify-between">
+                                    <div className="text-xs font-bold uppercase text-muted-foreground">Execution Steps</div>
+                                    <div className="flex gap-2 text-[10px]">
+                                        {Object.entries(STEP_TYPE_STYLES).map(([type, style]) => (
+                                            <span key={type} className="flex items-center gap-1 text-muted-foreground">
+                                                {style.icon} {style.label}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                {steps.map((step, i) => {
+                                    const stepType = step.step_type || step.type || 'TASK';
+                                    const isSkipped = step.skipped;
+                                    const style = STEP_TYPE_STYLES[stepType] || STEP_TYPE_STYLES.TASK;
+                                    const isQualityGate = stepType === 'QUALITY_GATE';
+                                    return (
+                                        <div key={i} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                                            isSkipped ? 'bg-gray-50 border-gray-200 opacity-60' :
+                                            step.completed ? 'bg-green-50 border-green-200' :
+                                            isQualityGate ? 'bg-amber-50 border-amber-200' :
+                                            'hover:bg-muted/30'
+                                        }`}>
+                                            <input type="checkbox" checked={!!step.completed && !isSkipped}
+                                                onChange={e => handleStepComplete(i, e.target.checked)}
+                                                disabled={isSkipped}
+                                                className={`mt-0.5 w-4 h-4 ${isQualityGate ? 'accent-amber-600' : 'accent-green-600'}`} />
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <span className="text-[10px]">{style.icon}</span>
+                                                    <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                                                        isQualityGate ? 'text-amber-600' : 'text-muted-foreground'
+                                                    }`}>{style.label}</span>
+                                                    {isSkipped && <span className="text-[10px] font-bold text-gray-500 uppercase">OMITIDO</span>}
+                                                </div>
+                                                <div className={`text-sm ${step.completed || isSkipped ? 'line-through text-muted-foreground' : ''}`}>
+                                                    {typeof step === 'string' ? step : step.description || step.text || `Step ${i + 1}`}
+                                                </div>
+                                                {step.notes && <div className="text-xs text-muted-foreground mt-1">{step.notes}</div>}
+                                                {isQualityGate && !step.completed && !isSkipped && (
+                                                    <div className="text-xs text-amber-600 mt-1 font-medium">
+                                                        ⚠ Quality Gate: requiere verificacion antes de continuar
+                                                    </div>
+                                                )}
                                             </div>
-                                            {step.notes && <div className="text-xs text-muted-foreground mt-1">{step.notes}</div>}
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className="text-xs text-muted-foreground">#{i + 1}</span>
+                                                {!step.completed && !isSkipped && (
+                                                    <button
+                                                        onClick={() => handleStepSkip(i)}
+                                                        className="text-[10px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded border border-gray-200 hover:bg-gray-100"
+                                                    >
+                                                        Skip
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <span className="text-xs text-muted-foreground">#{i + 1}</span>
-                                    </label>
-                                ))}
+                                    );
+                                })}
                             </div>
+
+                            {/* Supervisor Close Checklist button */}
+                            {activeChecklist.status !== 'COMPLETED' && activeChecklist.status !== 'CLOSED' && progress >= 80 && (
+                                <button
+                                    onClick={handleCloseChecklist}
+                                    className="w-full py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                                >
+                                    🛡️ Cerrar Checklist — Firma Supervisor
+                                </button>
+                            )}
 
                             {/* Pre/Post notes */}
                             {activeChecklist.pre_task_notes && (

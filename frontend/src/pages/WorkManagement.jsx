@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { LoadingSpinner } from '../components/Shared';
 import { useLanguage } from '../contexts/LanguageContext';
-import { ClipboardList, CalendarRange, Calendar, Wrench, CheckCircle2 } from 'lucide-react';
+import { ClipboardList, CalendarRange, Calendar, Wrench, CheckCircle2, TrendingUp } from 'lucide-react';
 import * as api from '../api';
 
 const WorkRequests = lazy(() => import('./WorkRequests'));
@@ -11,13 +11,15 @@ const Planning = lazy(() => import('./Planning'));
 const Scheduling = lazy(() => import('./Scheduling'));
 const Execution = lazy(() => import('./Execution'));
 const PostMaintenance = lazy(() => import('./PostMaintenance'));
+const PerformanceAnalysis = lazy(() => import('./PerformanceAnalysis'));
 
 const TABS = [
-  { id: 'identification', icon: ClipboardList, component: WorkRequests },
-  { id: 'planning',       icon: CalendarRange, component: Planning },
-  { id: 'scheduling',     icon: Calendar,      component: Scheduling },
-  { id: 'execution',      icon: Wrench,        component: Execution },
-  { id: 'closure',        icon: CheckCircle2,  component: PostMaintenance },
+  { id: 'identification', icon: ClipboardList,  component: WorkRequests },
+  { id: 'planning',       icon: CalendarRange,  component: Planning },
+  { id: 'scheduling',     icon: Calendar,        component: Scheduling },
+  { id: 'execution',      icon: Wrench,          component: Execution },
+  { id: 'closure',        icon: CheckCircle2,    component: PostMaintenance },
+  { id: 'performance',    icon: TrendingUp,      component: PerformanceAnalysis },
 ];
 
 export default function WorkManagement() {
@@ -41,6 +43,7 @@ export default function WorkManagement() {
         scheduling:     woList.filter(w => w.status === 'RELEASED').length,
         execution:      woList.filter(w => ['SCHEDULED', 'IN_PROGRESS'].includes(w.status)).length,
         closure:        woList.filter(w => w.status === 'COMPLETED').length,
+        performance:    woList.filter(w => w.status === 'CLOSED').length,
       });
     });
   }, []);

@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   Wrench, ClipboardCheck, ArrowRightLeft, Plus, CheckCircle2,
-  Clock, AlertTriangle, User, Send, RefreshCw, ChevronDown, ChevronUp, Zap
+  Clock, AlertTriangle, User, Send, RefreshCw, ChevronDown, ChevronUp, Zap,
+  Calendar, Shield, Loader2
 } from 'lucide-react';
+import { useToast } from '../components/Toast';
 import {
   getMyTasks, listExecutionTasks, assignExecutionTask,
   updateTaskProgress, partialNotification, completeExecutionTask,
   confirmTaskUnderstood, createHandover, listHandovers,
-  listManagedWOs, authListUsers,
+  listManagedWOs, authListUsers, completeManagedWO,
 } from '../api';
 
 const STATUS_COLORS = {
@@ -22,11 +24,14 @@ const STATUS_COLORS = {
 const TABS = [
   { key: 'my', label: 'Mis Tareas', icon: User },
   { key: 'all', label: 'Todas las Tareas', icon: ClipboardCheck },
+  { key: 'daily', label: 'Reunion Diaria', icon: Calendar },
   { key: 'handovers', label: 'Entregas de Equipo', icon: ArrowRightLeft },
+  { key: 'signoff', label: 'Firma Supervisor', icon: Shield },
 ];
 
 export default function Execution() {
   const { plant } = useOutletContext();
+  const toast = useToast();
   const [tab, setTab] = useState('my');
   const [myTasks, setMyTasks] = useState([]);
   const [allTasks, setAllTasks] = useState([]);
@@ -38,8 +43,11 @@ export default function Execution() {
   const [noteText, setNoteText] = useState('');
   const [shiftNote, setShiftNote] = useState('');
   const [fastTrackWOs, setFastTrackWOs] = useState([]);
+  const [inProgressWOs, setInProgressWOs] = useState([]);
+  const [completedWOs, setCompletedWOs] = useState([]);
+  const [signingOff, setSigningOff] = useState(null);
 
-  useEffect(() => { refresh(); loadFastTrack(); }, [tab]);
+  useEffect(() => { refresh(); loadFastTrack(); loadWOsForTabs(); }, [tab]);
 
   async function loadFastTrack() {
     try {
@@ -47,6 +55,29 @@ export default function Execution() {
       const list = Array.isArray(wos) ? wos : wos.items || [];
       setFastTrackWOs(list.filter(w => ['RELEASED', 'SCHEDULED', 'IN_PROGRESS'].includes(w.status)));
     } catch { /* ignore */ }
+  }
+
+  async function loadWOsForTabs() {
+    try {
+      const [ipRes, compRes] = await Promise.all([
+        listManagedWOs({ status: 'IN_PROGRESS', limit: 50 }),
+        listManagedWOs({ status: 'COMPLETED', limit: 50 }),
+      ]);
+      setInProgressWOs(Array.isArray(ipRes) ? ipRes : ipRes.items || []);
+      setCompletedWOs(Array.isArray(compRes) ? compRes : compRes.items || []);
+    } catch { /* ignore */ }
+  }
+
+  async function handleSupervisorSignOff(woId) {
+    setSigningOff(woId);
+    try {
+      await completeManagedWO(woId, { supervisor_approved: true });
+      toast.success('Firma de supervisor registrada — OT lista para cierre');
+      loadWOsForTabs();
+    } catch (e) {
+      toast.error('Error: ' + e.message);
+    }
+    setSigningOff(null);
   }
 
   async function refresh() {
@@ -468,6 +499,82 @@ export default function Execution() {
             </div>
           )}
 
+          {tab === 'daily' && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h2 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-2">
+                  <Calendar size={16} /> Reunion Diaria de Ejecucion
+                </h2>
+                <p className="text-xs text-blue-600 mb-3">
+                  Revision de capacidad HH, asignaciones y estado de OTs activas para el dia.
+                </p>
+              </div>
+
+              {/* Daily summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-white rounded-xl border p-4 text-center">
+                  <p className="text-2xl font-bold text-blue-700">{inProgressWOs.length}</p>
+                  <p className="text-xs text-gray-500">OTs en Progreso</p>
+                </div>
+                <div className="bg-white rounded-xl border p-4 text-center">
+                  <p className="text-2xl font-bold text-amber-700">{fastTrackWOs.length}</p>
+                  <p className="text-xs text-gray-500">Imprevistos</p>
+                </div>
+                <div className="bg-white rounded-xl border p-4 text-center">
+                  <p className="text-2xl font-bold text-emerald-700">{completedWOs.length}</p>
+                  <p className="text-xs text-gray-500">Completadas Hoy</p>
+                </div>
+                <div className="bg-white rounded-xl border p-4 text-center">
+                  <p className="text-2xl font-bold text-gray-700">
+                    {inProgressWOs.reduce((s, w) => s + (w.estimated_hours || 0), 0)}h
+                  </p>
+                  <p className="text-xs text-gray-500">HH Asignadas</p>
+                </div>
+              </div>
+
+              {/* Active WOs list */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <span className="text-sm font-bold text-gray-700">OTs Activas — Revision Diaria</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {inProgressWOs.length > 0 ? inProgressWOs.map(wo => (
+                    <div key={wo.wo_id || wo.work_order_id} className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-bold text-gray-900">{wo.wo_number}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            wo.priority_code === 'P1' ? 'bg-red-100 text-red-700' :
+                            wo.priority_code === 'P2' ? 'bg-orange-100 text-orange-700' :
+                            'bg-blue-100 text-blue-700'
+                          }`}>{wo.priority_code}</span>
+                          {wo.is_fast_track && <Zap size={12} className="text-amber-500" />}
+                        </div>
+                        <span className="text-xs text-gray-400">{wo.estimated_hours || 0}h</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{wo.equipment_tag} — {wo.description}</p>
+                      {wo.assigned_workers?.length > 0 && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <User size={10} className="text-gray-400" />
+                          <span className="text-xs text-gray-500">{wo.assigned_workers.join(', ')}</span>
+                        </div>
+                      )}
+                      {wo.completion_pct > 0 && (
+                        <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${wo.completion_pct}%` }} />
+                        </div>
+                      )}
+                    </div>
+                  )) : (
+                    <div className="text-center py-10 text-gray-400">
+                      <p>No hay OTs en progreso</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {tab === 'handovers' && (
             <div className="space-y-3">
               {handovers.length === 0 ? (
@@ -504,6 +611,58 @@ export default function Execution() {
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {tab === 'signoff' && (
+            <div className="space-y-4">
+              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                <h2 className="text-sm font-bold text-purple-800 flex items-center gap-2 mb-2">
+                  <Shield size={16} /> Firma de Supervisor — Handover Formal
+                </h2>
+                <p className="text-xs text-purple-600">
+                  OTs completadas que requieren firma de supervisor para pasar a cierre tecnico.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {completedWOs.length > 0 ? completedWOs.map(wo => (
+                  <div key={wo.wo_id || wo.work_order_id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-mono text-sm font-bold text-gray-900">{wo.wo_number}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">COMPLETED</span>
+                          {wo.is_fast_track && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Fast-Track</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700">{wo.equipment_tag} — {wo.description}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {wo.estimated_hours}h estimadas · {wo.actual_hours || wo.estimated_hours}h reales
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleSupervisorSignOff(wo.wo_id || wo.work_order_id)}
+                        disabled={signingOff === (wo.wo_id || wo.work_order_id)}
+                        className="flex items-center gap-1 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        {signingOff === (wo.wo_id || wo.work_order_id) ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Shield size={14} />
+                        )}
+                        Firmar
+                      </button>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-16 text-gray-400">
+                    <Shield size={48} className="mx-auto mb-3 opacity-40" />
+                    <p className="text-lg font-medium">No hay OTs pendientes de firma</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </>

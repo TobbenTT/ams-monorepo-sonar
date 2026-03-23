@@ -20,6 +20,7 @@ export default function Planning() {
     const [selectedWr, setSelectedWr] = useState('');
     const [recommendation, setRecommendation] = useState(null);
     const [generating, setGenerating] = useState(false);
+    const [actionLoading, setActionLoading] = useState(null);
 
     useEffect(() => {
         setLoading(true);
@@ -46,6 +47,23 @@ export default function Planning() {
             toast.error(t('planning.recommendationFailed') + e.message);
         }
         setGenerating(false);
+    };
+
+    const handlePlannerAction = async (action) => {
+        if (!selectedWr || !recommendation) return;
+        setActionLoading(action);
+        try {
+            await api.applyRecommendationAction(recommendation.recommendation_id || selectedWr, { action });
+            toast.success(`${t('planning.action' + action.charAt(0) + action.slice(1).toLowerCase()) || action} aplicado`);
+            if (action === 'ESCALATE') {
+                toast.info('WR escalada a gerencia para decision');
+            } else if (action === 'DEFER') {
+                toast.info('WR diferida — se mantiene en backlog con prioridad baja');
+            }
+        } catch (e) {
+            toast.error('Error: ' + e.message);
+        }
+        setActionLoading(null);
     };
 
     const stratification = {
@@ -222,6 +240,27 @@ export default function Planning() {
                                         <p className="text-sm text-muted-foreground">{recommendation.justification}</p>
                                     </div>
                                 )}
+                                {/* Planner Actions: Approve / Modify / Escalate / Defer */}
+                                <div className="border-t border-border pt-3 mt-3">
+                                    <div className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">{t('planning.plannerActions') || 'Acciones del Planner'}</div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { action: 'APPROVE', label: t('common.approve'), bg: 'bg-emerald-600 hover:bg-emerald-700', icon: '✓' },
+                                            { action: 'MODIFY', label: t('planning.modify') || 'Modificar', bg: 'bg-blue-600 hover:bg-blue-700', icon: '✏' },
+                                            { action: 'ESCALATE', label: t('planning.escalate') || 'Escalar', bg: 'bg-red-600 hover:bg-red-700', icon: '⬆' },
+                                            { action: 'DEFER', label: t('planning.defer') || 'Diferir', bg: 'bg-gray-600 hover:bg-gray-700', icon: '⏸' },
+                                        ].map(btn => (
+                                            <button
+                                                key={btn.action}
+                                                onClick={() => handlePlannerAction(btn.action)}
+                                                disabled={actionLoading === btn.action}
+                                                className={`${btn.bg} text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1`}
+                                            >
+                                                {actionLoading === btn.action ? '⏳' : btn.icon} {btn.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         ) : (
                             <div className="text-center py-16 px-5 text-muted-foreground"><div className="text-5xl mb-4 opacity-40">🤖</div><h3>{t('planning.aiPlannerEmpty')}</h3><p>{t('planning.aiPlannerEmptyDesc')}</p></div>

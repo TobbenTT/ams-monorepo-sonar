@@ -3,32 +3,28 @@ import { useOutletContext } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { LoadingSpinner } from '../components/Shared';
 import { useLanguage } from '../contexts/LanguageContext';
-import { ClipboardList, CalendarRange, Calendar, Wrench, CheckCircle2, TrendingUp } from 'lucide-react';
+import { AlertTriangle, ClipboardList, CalendarRange, Calendar } from 'lucide-react';
 import * as api from '../api';
 
+const FailureCapture = lazy(() => import('./FailureCapture'));
 const WorkRequests = lazy(() => import('./WorkRequests'));
 const Planning = lazy(() => import('./Planning'));
 const Scheduling = lazy(() => import('./Scheduling'));
-const Execution = lazy(() => import('./Execution'));
-const PostMaintenance = lazy(() => import('./PostMaintenance'));
-const PerformanceAnalysis = lazy(() => import('./PerformanceAnalysis'));
 
 const TABS = [
-  { id: 'identification', icon: ClipboardList,  component: WorkRequests },
-  { id: 'planning',       icon: CalendarRange,  component: Planning },
-  { id: 'scheduling',     icon: Calendar,        component: Scheduling },
-  { id: 'execution',      icon: Wrench,          component: Execution },
-  { id: 'closure',        icon: CheckCircle2,    component: PostMaintenance },
-  { id: 'performance',    icon: TrendingUp,      component: PerformanceAnalysis },
+  { id: 'failure-capture', label: 'Failure Capture',  icon: AlertTriangle,  component: FailureCapture },
+  { id: 'identification',  label: 'Identification',   icon: ClipboardList,  component: WorkRequests },
+  { id: 'planning',        label: 'Planning',         icon: CalendarRange,  component: Planning },
+  { id: 'scheduling',      label: 'Scheduling',       icon: Calendar,       component: Scheduling },
 ];
 
 export default function WorkManagement() {
   const { t } = useLanguage();
   const outletContext = useOutletContext();
   const [activeTab, setActiveTab] = useState('identification');
+  const [viewMode, setViewMode] = useState('planner'); // planner | supervisor
   const [phaseCounts, setPhaseCounts] = useState(null);
 
-  // Fetch phase counts
   const refreshCounts = useCallback(() => {
     Promise.all([
       api.listWorkRequests({}).catch(() => []),
@@ -37,20 +33,16 @@ export default function WorkManagement() {
       const wrList = Array.isArray(wrs) ? wrs : [];
       const woList = Array.isArray(wos) ? wos : [];
       setPhaseCounts({
+        'failure-capture': null,
         identification: wrList.filter(w => ['DRAFT', 'PENDING_VALIDATION'].includes(w.status)).length,
-        planning:       wrList.filter(w => ['VALIDATED', 'APPROVED'].includes(w.status)).length
-                        + woList.filter(w => ['DRAFT', 'PLANNED'].includes(w.status)).length,
-        scheduling:     woList.filter(w => w.status === 'RELEASED').length,
-        execution:      woList.filter(w => ['SCHEDULED', 'IN_PROGRESS'].includes(w.status)).length,
-        closure:        woList.filter(w => w.status === 'COMPLETED').length,
-        performance:    woList.filter(w => w.status === 'CLOSED').length,
+        planning: woList.filter(w => ['DRAFT', 'PLANNED'].includes(w.status)).length,
+        scheduling: woList.filter(w => w.status === 'RELEASED').length,
       });
     });
   }, []);
 
   useEffect(() => { refreshCounts(); }, [refreshCounts]);
 
-  // Callback for child components to navigate between tabs
   const navigateTab = useCallback((tabId) => {
     setActiveTab(tabId);
     refreshCounts();
@@ -61,37 +53,60 @@ export default function WorkManagement() {
 
   return (
     <div className="p-6 space-y-4 bg-gray-50 min-h-full">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('workManagement.title')}</h1>
-        <p className="text-sm text-gray-500 mt-1">{t('workManagement.subtitle')}</p>
+      {/* Header Row */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{t('workManagement.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('workManagement.subtitle')}</p>
+        </div>
+
+        {/* Planner / Supervisor View Toggle */}
+        <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
+          <button
+            onClick={() => setViewMode('planner')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+              viewMode === 'planner'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Planner View
+          </button>
+          <button
+            onClick={() => setViewMode('supervisor')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+              viewMode === 'supervisor'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Supervisor View
+          </button>
+        </div>
       </div>
 
       {/* Tab Navigation */}
-      <Card className="p-1 bg-white">
-        <div className="flex gap-1">
-          {TABS.map((tab, idx) => {
-            const Icon = tab.icon;
+      <div className="border-b border-gray-200">
+        <div className="flex gap-0">
+          {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             const count = phaseCounts?.[tab.id];
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                className={`px-5 py-3 text-sm font-medium transition-all border-b-2 ${
                   isActive
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'border-emerald-600 text-emerald-700'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <span className="text-xs font-bold opacity-60 mr-1">{idx + 1}.</span>
-                <Icon className="w-4 h-4" />
-                <span className="hidden lg:inline">{t(`workManagement.tabs.${tab.id}`)}</span>
+                {tab.label}
                 {count > 0 && (
-                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                  <span className={`ml-2 text-xs font-bold px-1.5 py-0.5 rounded-full ${
                     isActive
-                      ? 'bg-white/20 text-white'
-                      : 'bg-emerald-100 text-emerald-700'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-gray-100 text-gray-600'
                   }`}>
                     {count}
                   </span>
@@ -100,7 +115,7 @@ export default function WorkManagement() {
             );
           })}
         </div>
-      </Card>
+      </div>
 
       {/* Active Tab Content */}
       <div className="min-h-[600px]">
@@ -109,6 +124,7 @@ export default function WorkManagement() {
             <ActiveComponent
               {...outletContext}
               onNavigateTab={navigateTab}
+              viewMode={viewMode}
             />
           )}
         </Suspense>

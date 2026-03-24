@@ -951,6 +951,21 @@ export default function WorkRequests({ onNavigateTab } = {}) {
         )}
       </div>
 
+      {/* KPI Summary Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: 'Pending Review', count: queueFiltered.filter(r => r.status === 'PENDING_VALIDATION').length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
+          { label: 'Approved', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
+          { label: 'Rejected', count: queueFiltered.filter(r => r.status === 'REJECTED').length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
+          { label: 'Cancelled', count: queueFiltered.filter(r => r.status === 'CANCELLED').length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
+        ].map(kpi => (
+          <div key={kpi.label} className={`bg-white dark:bg-card rounded-lg border border-border ${kpi.borderColor ? 'border-l-4 ' + kpi.borderColor : ''} p-5`}>
+            <p className={`text-sm ${kpi.textColor} mb-1`}>{kpi.label}</p>
+            <p className="text-3xl font-bold text-foreground">{kpi.count}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Scope tabs: My / Team / All */}
       <div className="flex gap-2">
         {SCOPE_TABS.map((tab) => {

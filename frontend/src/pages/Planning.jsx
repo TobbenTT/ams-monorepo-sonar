@@ -1,713 +1,415 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { KPICard, PriorityBadge, StatusBadge, DataTable, LoadingSpinner } from '../components/Shared';
+import { KPICard, PriorityBadge, StatusBadge, LoadingSpinner } from '../components/Shared';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
-  X, ChevronRight, Wrench, Clock, Package, AlertTriangle, Calendar,
-  Play, Loader2, ArrowRight, FileText, Users, CheckCircle, XCircle, Zap
+  Plus, Eye, Loader2, Clock, ChevronRight, ChevronLeft, ArrowRight
 } from 'lucide-react';
 import * as api from '../api';
 
-const COLORS = ['#C62828', '#E65100', '#F57F17', '#1B5E20'];
+const STRATEGY_COLORS = {
+  Corrective: 'bg-orange-100 text-orange-700 border-orange-200',
+  Preventive: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  Predictive: 'bg-blue-100 text-blue-700 border-blue-200',
+  Improvement: 'bg-purple-100 text-purple-700 border-purple-200',
+};
 
-export default function Planning() {
-    const { plant } = useOutletContext();
-    const toast = useToast();
-    const { t } = useLanguage();
-    const [backlog, setBacklog] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [tab, setTab] = useState('backlog');
-    const [programs, setPrograms] = useState([]);
-    const [workRequests, setWorkRequests] = useState([]);
-    const [managedWOs, setManagedWOs] = useState([]);
-    const [selectedWr, setSelectedWr] = useState('');
-    const [recommendation, setRecommendation] = useState(null);
-    const [generating, setGenerating] = useState(false);
-    const [actionLoading, setActionLoading] = useState(null);
+function getStrategy(wo) {
+  if (wo.work_order_type === 'PM01') return 'Preventive';
+  if (wo.work_order_type === 'PM03') return 'Corrective';
+  if (wo.work_order_type === 'PM05') return 'Predictive';
+  if (wo.work_order_type === 'PM04') return 'Improvement';
+  // Fallback: check description keywords
+  const desc = (wo.description || '').toLowerCase();
+  if (desc.includes('preventiv') || desc.includes('inspection') || desc.includes('lubrication')) return 'Preventive';
+  if (desc.includes('predictiv') || desc.includes('vibration') || desc.includes('monitoring')) return 'Predictive';
+  return 'Corrective';
+}
 
-    // Detail panel
-    const [selectedItem, setSelectedItem] = useState(null);
-    const [creatingOT, setCreatingOT] = useState(false);
-    const [statusFilter, setStatusFilter] = useState('ALL');
+function getPlanningStatus(wo) {
+  if (wo.status === 'RELEASED' || wo.status === 'SCHEDULED') return 'Ready';
+  return 'In Planning';
+}
 
-    const fetchAll = () => {
-        setLoading(true);
-        Promise.allSettled([
-            api.listBacklog(),
-            api.listPrograms({ plant_id: plant }),
-            api.listWorkRequests({ plant_id: plant }),
-            api.listManagedWOs({ plant_id: plant }),
-        ]).then(([b, p, w, wo]) => {
-            setBacklog(b.status === 'fulfilled' ? (Array.isArray(b.value) ? b.value : b.value?.items || []) : []);
-            setPrograms(p.status === 'fulfilled' ? (Array.isArray(p.value) ? p.value : []) : []);
-            setWorkRequests(w.status === 'fulfilled' ? (Array.isArray(w.value) ? w.value : w.value?.items || []) : []);
-            setManagedWOs(wo.status === 'fulfilled' ? (Array.isArray(wo.value) ? wo.value : wo.value?.items || []) : []);
-            setLoading(false);
-        });
-    };
+const PRIORITY_COLORS = {
+  P1: 'text-red-600 font-bold',
+  P2: 'text-orange-600 font-semibold',
+  P3: 'text-yellow-600',
+  P4: 'text-green-600',
+  1: 'text-red-600 font-bold',
+  2: 'text-orange-600 font-semibold',
+  3: 'text-yellow-600',
+  4: 'text-green-600',
+};
 
-    useEffect(() => { fetchAll(); }, [plant]);
+function PriorityLabel({ priority }) {
+  const p = String(priority || '');
+  const label = p.startsWith('P') ? p : `P${p}`;
+  const display = label === 'P1' ? 'Critical' : label === 'P2' ? 'High' : label === 'P3' ? 'Medium' : 'Low';
+  return <span className={PRIORITY_COLORS[p] || 'text-gray-500'}>{display}</span>;
+}
 
-    // ── AI Planner ──
-    const handleGenerateRec = async () => {
-        if (!selectedWr) return;
-        setGenerating(true);
-        try {
-            const res = await api.generateRecommendation(selectedWr);
-            setRecommendation(res);
-            toast.success(t('planning.aiRecommendationGenerated'));
-        } catch (e) {
-            toast.error(t('planning.recommendationFailed') + e.message);
-        }
-        setGenerating(false);
-    };
+function StatusLabel({ status }) {
+  if (status === 'Ready') return <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">Ready</span>;
+  return <span className="px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-700 border border-yellow-200">In Planning</span>;
+}
 
-    const handlePlannerAction = async (action) => {
-        if (!selectedWr || !recommendation) return;
-        setActionLoading(action);
-        try {
-            await api.applyRecommendationAction(recommendation.recommendation_id || selectedWr, { action });
-            toast.success(`${action} aplicado correctamente`);
-            if (action === 'APPROVE') {
-                toast.info('WR aprobada — lista para crear OT');
-            } else if (action === 'ESCALATE') {
-                toast.info('WR escalada a gerencia para decisión');
-            } else if (action === 'DEFER') {
-                toast.info('WR diferida — se mantiene en backlog con prioridad baja');
-            }
-        } catch (e) {
-            toast.error('Error: ' + e.message);
-        }
-        setActionLoading(null);
-    };
+export default function Planning({ onNavigateTab }) {
+  const { plant } = useOutletContext();
+  const toast = useToast();
+  const { t } = useLanguage();
+  const [loading, setLoading] = useState(true);
+  const [managedWOs, setManagedWOs] = useState([]);
+  const [workRequests, setWorkRequests] = useState([]);
 
-    // ── Create OT from backlog/WR ──
-    const handleCreateOT = async (item) => {
-        setCreatingOT(true);
-        try {
-            const wrId = item.work_request_id || item.request_id || item.source_wr_id;
-            let result;
-            if (wrId) {
-                result = await api.createWOFromWR({ work_request_id: wrId });
-            } else {
-                result = await api.createManagedWO({
-                    plant_id: plant,
-                    equipment_tag: item.equipment_tag || '',
-                    description: item.description || item.problem_description || '',
-                    priority: item.priority || 'P3',
-                    work_order_type: item.work_order_type || 'PM02',
-                    estimated_duration_hours: item.estimated_duration_hours || 4,
-                });
-            }
-            const woNum = result?.wo_number || result?.work_order_id || '';
-            toast.success(`OT ${woNum} creada exitosamente`);
-            fetchAll();
-            setSelectedItem(null);
-        } catch (e) {
-            toast.error('Error creando OT: ' + e.message);
-        }
-        setCreatingOT(false);
-    };
+  // Filters
+  const [originFilter, setOriginFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
 
-    // ── Release OT → Scheduling ──
-    const handleReleaseOT = async (woId) => {
-        setActionLoading('release-' + woId);
-        try {
-            await api.releaseManagedWO(woId);
-            toast.success('OT liberada → lista para Scheduling');
-            fetchAll();
-        } catch (e) {
-            toast.error('Error: ' + e.message);
-        }
-        setActionLoading(null);
-    };
+  // Create OT modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    equipment_tag: '', description: '', work_order_type: 'PM02',
+    priority: 'P3', estimated_duration_hours: 4,
+  });
+  const [creating, setCreating] = useState(false);
 
-    // ── Schedule OT ──
-    const handleScheduleOT = async (woId) => {
-        setActionLoading('schedule-' + woId);
-        try {
-            await api.scheduleManagedWO(woId, {});
-            toast.success('OT programada exitosamente');
-            fetchAll();
-        } catch (e) {
-            toast.error('Error: ' + e.message);
-        }
-        setActionLoading(null);
-    };
+  // Pagination
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 10;
 
-    // ── Create Weekly Program ──
-    const handleCreateProgram = async () => {
-        setActionLoading('create-program');
-        try {
-            const now = new Date();
-            const weekNum = Math.ceil(((now - new Date(now.getFullYear(), 0, 1)) / 86400000 + 1) / 7);
-            await api.createProgram({
-                plant_id: plant,
-                week_number: weekNum + 1,
-                year: now.getFullYear(),
-                status: 'DRAFT',
-            });
-            toast.success(`Programa Semana ${weekNum + 1} creado`);
-            fetchAll();
-        } catch (e) {
-            toast.error('Error: ' + e.message);
-        }
-        setActionLoading(null);
-    };
+  const fetchAll = () => {
+    setLoading(true);
+    Promise.allSettled([
+      api.listManagedWOs({ plant_id: plant }),
+      api.listWorkRequests({ plant_id: plant }),
+    ]).then(([woRes, wrRes]) => {
+      const wos = woRes.status === 'fulfilled' ? (Array.isArray(woRes.value) ? woRes.value : woRes.value?.items || []) : [];
+      setManagedWOs(wos);
+      const wrs = wrRes.status === 'fulfilled' ? (Array.isArray(wrRes.value) ? wrRes.value : wrRes.value?.items || []) : [];
+      setWorkRequests(wrs);
+      setLoading(false);
+    });
+  };
 
-    // ── Computed data ──
-    const stratification = useMemo(() => ({
-        AWAITING_MATERIALS: backlog.filter(b => b.status === 'AWAITING_MATERIALS').length,
-        AWAITING_SHUTDOWN: backlog.filter(b => b.status === 'AWAITING_SHUTDOWN').length,
-        AWAITING_RESOURCES: backlog.filter(b => b.status === 'AWAITING_RESOURCES').length,
-        SCHEDULABLE: backlog.filter(b => b.status === 'SCHEDULED' || b.status === 'IN_PROGRESS' || b.materials_ready).length,
-    }), [backlog]);
+  useEffect(() => { fetchAll(); }, [plant]);
 
-    const priorityData = useMemo(() => [
-        { name: t('planning.emergency'), value: backlog.filter(b => String(b.priority).startsWith('1') || b.priority === 'P1').length },
-        { name: t('planning.urgent'), value: backlog.filter(b => String(b.priority).startsWith('2') || b.priority === 'P2').length },
-        { name: t('planning.normal'), value: backlog.filter(b => String(b.priority).startsWith('3') || b.priority === 'P3').length },
-        { name: t('planning.planned'), value: backlog.filter(b => String(b.priority).startsWith('4') || b.priority === 'P4').length },
-    ], [backlog, t]);
+  // Filter OTs in planning phase
+  const planningWOs = useMemo(() =>
+    managedWOs.filter(wo => ['DRAFT', 'PLANNED', 'RELEASED'].includes(wo.status)),
+  [managedWOs]);
 
-    const agingData = useMemo(() => [
-        { range: '0-7d', count: backlog.filter(b => (b.age_days || 0) <= 7).length },
-        { range: '8-14d', count: backlog.filter(b => (b.age_days || 0) > 7 && (b.age_days || 0) <= 14).length },
-        { range: '15-30d', count: backlog.filter(b => (b.age_days || 0) > 14 && (b.age_days || 0) <= 30).length },
-        { range: '30d+', count: backlog.filter(b => (b.age_days || 0) > 30).length },
-    ], [backlog]);
+  // Apply filters
+  const filteredWOs = useMemo(() => {
+    let list = [...planningWOs];
 
-    const filteredBacklog = useMemo(() => {
-        if (statusFilter === 'ALL') return backlog;
-        if (statusFilter === 'SCHEDULABLE') return backlog.filter(b => b.materials_ready || b.status === 'SCHEDULED' || b.status === 'IN_PROGRESS');
-        return backlog.filter(b => b.status === statusFilter);
-    }, [backlog, statusFilter]);
+    if (originFilter === 'From WR') {
+      list = list.filter(wo => wo.source_wr_id || wo.work_request_id);
+    } else if (originFilter === 'From Strategy') {
+      list = list.filter(wo => !wo.source_wr_id && !wo.work_request_id);
+    }
 
-    // OTs in planning phase (DRAFT/PLANNED) — ready to release
-    const planningOTs = useMemo(() =>
-        managedWOs.filter(wo => ['DRAFT', 'PLANNED'].includes(wo.status)),
-    [managedWOs]);
+    if (statusFilter === 'In Planning') {
+      list = list.filter(wo => ['DRAFT', 'PLANNED'].includes(wo.status));
+    } else if (statusFilter === 'Ready') {
+      list = list.filter(wo => wo.status === 'RELEASED' || wo.status === 'SCHEDULED');
+    }
 
-    const columns = [
-        { key: 'backlog_id', label: t('planning.colId'), mono: true, render: r => (r.backlog_id || r.work_request_id || '').slice(0, 8) },
-        { key: 'equipment_tag', label: t('planning.colEquipment'), mono: true },
-        { key: 'work_order_type', label: t('planning.colType'), render: r => <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-medium">{r.work_order_type || '—'}</span> },
-        { key: 'priority', label: t('planning.colPriority'), render: r => <PriorityBadge priority={r.priority} /> },
-        { key: 'age_days', label: t('planning.colAge'), render: r => {
-            const days = r.age_days || 0;
-            return <span className={days > 30 ? 'text-red-600 font-bold' : days > 14 ? 'text-orange-600 font-medium' : ''}>{days} {t('planning.days')}</span>;
-        }},
-        { key: 'status', label: t('planning.colStatus'), render: r => <StatusBadge status={r.status} /> },
-        { key: 'materials_ready', label: t('planning.colMaterials'), render: r => r.materials_ready ? <CheckCircle className="w-4 h-4 text-green-600" /> : <XCircle className="w-4 h-4 text-red-400" /> },
-        { key: 'estimated_duration_hours', label: t('planning.colDuration'), render: r => `${r.estimated_duration_hours || 0}h` },
-    ];
+    return list;
+  }, [planningWOs, originFilter, statusFilter]);
 
-    return (
-        <div>
-            <h1 className="text-2xl font-bold text-foreground mb-5">{t('planning.title')}</h1>
+  // KPIs
+  const kpis = useMemo(() => {
+    const total = planningWOs.length;
+    const inPlanning = planningWOs.filter(wo => ['DRAFT', 'PLANNED'].includes(wo.status)).length;
+    const ready = planningWOs.filter(wo => wo.status === 'RELEASED' || wo.status === 'SCHEDULED').length;
+    const overdue = planningWOs.filter(wo => {
+      if (!wo.created_at) return false;
+      const age = (Date.now() - new Date(wo.created_at).getTime()) / (1000 * 60 * 60 * 24);
+      return age > 14 && ['DRAFT', 'PLANNED'].includes(wo.status);
+    }).length;
+    return { total, inPlanning, ready, overdue };
+  }, [planningWOs]);
 
-            <div className="flex gap-1 border-b border-border mb-4" role="tablist">
-                {[
-                    { id: 'backlog', label: t('planning.tabBacklog'), count: backlog.length },
-                    { id: 'ots', label: 'OTs en Planificación', count: planningOTs.length },
-                    { id: 'schedule', label: t('planning.tabSchedule'), count: programs.length },
-                    { id: 'planner', label: t('planning.tabPlanner') },
-                ].map(tb => (
-                    <button
-                        key={tb.id}
-                        className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-2 ${
-                            tab === tb.id
-                                ? 'bg-card border border-border border-b-card text-primary font-semibold'
-                                : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                        onClick={() => { setTab(tb.id); setSelectedItem(null); }}
-                        role="tab"
-                        aria-selected={tab === tb.id}
-                    >
-                        {tb.label}
-                        {tb.count > 0 && (
-                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
-                                tab === tb.id ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-600'
-                            }`}>{tb.count}</span>
-                        )}
-                    </button>
-                ))}
-            </div>
+  // Paginated data
+  const paginatedWOs = useMemo(() => {
+    const start = page * PAGE_SIZE;
+    return filteredWOs.slice(start, start + PAGE_SIZE);
+  }, [filteredWOs, page]);
+  const totalPages = Math.ceil(filteredWOs.length / PAGE_SIZE);
 
-            {/* ═══ BACKLOG TAB ═══ */}
-            {tab === 'backlog' && (
-                <>
-                    {/* KPI Row */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">
-                        <div className="cursor-pointer" onClick={() => setStatusFilter('AWAITING_MATERIALS')}>
-                            <KPICard label={t('planning.awaitingMaterials')} value={stratification.AWAITING_MATERIALS} variant="warning" />
-                        </div>
-                        <div className="cursor-pointer" onClick={() => setStatusFilter('AWAITING_SHUTDOWN')}>
-                            <KPICard label={t('planning.awaitingShutdown')} value={stratification.AWAITING_SHUTDOWN} variant="danger" />
-                        </div>
-                        <div className="cursor-pointer" onClick={() => setStatusFilter('AWAITING_RESOURCES')}>
-                            <KPICard label={t('planning.awaitingResources')} value={stratification.AWAITING_RESOURCES} variant="info" />
-                        </div>
-                        <div className="cursor-pointer" onClick={() => setStatusFilter('SCHEDULABLE')}>
-                            <KPICard label={t('planning.schedulableNow')} value={stratification.SCHEDULABLE} />
-                        </div>
-                        <div className="cursor-pointer" onClick={() => setStatusFilter('ALL')}>
-                            <KPICard label={t('planning.totalBacklog')} value={backlog.length} variant="" />
-                        </div>
-                    </div>
+  // Find WR origin for an OT
+  const getWROrigin = (wo) => {
+    const wrId = wo.source_wr_id || wo.work_request_id;
+    if (!wrId) return null;
+    const wr = workRequests.find(w => w.work_request_id === wrId || w.request_id === wrId);
+    return wr ? (wr.wo_number || wr.work_request_id?.slice(0, 10) || wrId.slice(0, 10)) : wrId.slice(0, 10);
+  };
 
-                    {/* Status filter chips */}
-                    {statusFilter !== 'ALL' && (
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs text-muted-foreground">Filtro:</span>
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                {statusFilter === 'SCHEDULABLE' ? 'Programables' : statusFilter.replace(/_/g, ' ')}
-                                <button onClick={() => setStatusFilter('ALL')} className="hover:bg-primary/20 rounded-full p-0.5">
-                                    <X className="w-3 h-3" />
-                                </button>
-                            </span>
-                            <span className="text-xs text-muted-foreground">{filteredBacklog.length} items</span>
-                        </div>
-                    )}
+  // Create OT
+  const handleCreateOT = async () => {
+    if (!createForm.equipment_tag.trim()) { toast.error('Equipment tag is required'); return; }
+    setCreating(true);
+    try {
+      const result = await api.createManagedWO({
+        plant_id: plant || 'OCP-JFC1',
+        ...createForm,
+        estimated_duration_hours: parseFloat(createForm.estimated_duration_hours) || 4,
+      });
+      toast.success(`OT ${result?.wo_number || ''} created`);
+      setShowCreateModal(false);
+      setCreateForm({ equipment_tag: '', description: '', work_order_type: 'PM02', priority: 'P3', estimated_duration_hours: 4 });
+      fetchAll();
+    } catch (e) {
+      toast.error('Error: ' + e.message);
+    }
+    setCreating(false);
+  };
 
-                    {/* Backlog table + detail panel */}
-                    <div className="flex gap-4">
-                        <div className={`bg-card border border-border rounded-lg p-5 shadow-sm transition-all ${selectedItem ? 'flex-1' : 'w-full'}`}>
-                            {loading ? <LoadingSpinner /> : (
-                                <DataTable
-                                    columns={columns}
-                                    data={filteredBacklog}
-                                    emptyMsg={t('planning.noBacklogItems')}
-                                    sortable
-                                    onRowClick={(row) => setSelectedItem(row)}
-                                />
-                            )}
-                        </div>
+  if (loading) return <LoadingSpinner />;
 
-                        {/* Detail panel */}
-                        {selectedItem && (
-                            <div className="w-96 bg-card border border-border rounded-lg shadow-lg flex-shrink-0 overflow-hidden">
-                                {/* Header */}
-                                <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-mono opacity-80">{(selectedItem.backlog_id || selectedItem.work_request_id || '').slice(0, 12)}</span>
-                                        <button onClick={() => setSelectedItem(null)} className="p-1 hover:bg-white/20 rounded">
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                    <h3 className="font-bold text-sm">{selectedItem.equipment_tag || 'Sin equipo'}</h3>
-                                    <p className="text-xs opacity-90 mt-1 line-clamp-2">{selectedItem.description || selectedItem.problem_description || '—'}</p>
-                                </div>
-
-                                {/* Details */}
-                                <div className="p-4 space-y-3">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="flex items-center gap-2">
-                                            <AlertTriangle className="w-3.5 h-3.5 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-[10px] uppercase text-muted-foreground">Prioridad</p>
-                                                <PriorityBadge priority={selectedItem.priority} />
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-[10px] uppercase text-muted-foreground">Antigüedad</p>
-                                                <span className={`text-sm font-bold ${(selectedItem.age_days || 0) > 30 ? 'text-red-600' : ''}`}>
-                                                    {selectedItem.age_days || 0} días
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Wrench className="w-3.5 h-3.5 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-[10px] uppercase text-muted-foreground">Tipo</p>
-                                                <span className="text-sm font-medium">{selectedItem.work_order_type || '—'}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Package className="w-3.5 h-3.5 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-[10px] uppercase text-muted-foreground">Materiales</p>
-                                                {selectedItem.materials_ready
-                                                    ? <span className="text-xs font-medium text-green-600">Listos</span>
-                                                    : <span className="text-xs font-medium text-red-500">Pendientes</span>
-                                                }
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                                        <div>
-                                            <p className="text-[10px] uppercase text-muted-foreground">Status</p>
-                                            <StatusBadge status={selectedItem.status} />
-                                        </div>
-                                    </div>
-
-                                    {selectedItem.estimated_duration_hours > 0 && (
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-[10px] uppercase text-muted-foreground">Duración Estimada</p>
-                                                <span className="text-sm font-medium">{selectedItem.estimated_duration_hours}h</span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Actions */}
-                                    <div className="border-t pt-3 space-y-2">
-                                        <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Acciones</p>
-
-                                        <button
-                                            onClick={() => handleCreateOT(selectedItem)}
-                                            disabled={creatingOT}
-                                            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                                        >
-                                            {creatingOT
-                                                ? <><Loader2 className="w-4 h-4 animate-spin" /> Creando OT...</>
-                                                : <><Zap className="w-4 h-4" /> Crear Orden de Trabajo</>
-                                            }
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                setTab('planner');
-                                                const wrId = selectedItem.work_request_id || selectedItem.request_id || selectedItem.source_wr_id || '';
-                                                setSelectedWr(wrId);
-                                                setSelectedItem(null);
-                                            }}
-                                            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                                        >
-                                            <FileText className="w-4 h-4" /> AI Planner
-                                        </button>
-
-                                        <button
-                                            onClick={async () => {
-                                                const wrId = selectedItem.work_request_id || selectedItem.request_id;
-                                                if (!wrId) { toast.error('Sin WR vinculada'); return; }
-                                                setActionLoading('defer');
-                                                try {
-                                                    await api.updateWorkRequest(wrId, { priority_requested: 'P4' });
-                                                    toast.info('Item diferido — prioridad bajada a P4');
-                                                    fetchAll();
-                                                    setSelectedItem(null);
-                                                } catch (e) { toast.error('Error: ' + e.message); }
-                                                setActionLoading(null);
-                                            }}
-                                            disabled={actionLoading === 'defer'}
-                                            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                                        >
-                                            {actionLoading === 'defer' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
-                                            Diferir
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Charts */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-                        <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-                            <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">{t('planning.backlogAging')}</div>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={agingData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                                    <XAxis dataKey="range" tick={{ fontSize: 11 }} />
-                                    <YAxis tick={{ fontSize: 11 }} />
-                                    <Tooltip />
-                                    <Bar dataKey="count" fill="#1B5E20" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-                            <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">{t('planning.priorityDistribution')}</div>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <PieChart>
-                                    <Pie data={priorityData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => value > 0 ? `${name}: ${value}` : ''}>
-                                        {priorityData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/* ═══ OTs EN PLANIFICACIÓN TAB ═══ */}
-            {tab === 'ots' && (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">
-                            OTs en estado DRAFT o PLANNED — necesitan ser completadas y liberadas para pasar a Scheduling
-                        </p>
-                    </div>
-
-                    {planningOTs.length === 0 ? (
-                        <div className="bg-card border border-border rounded-lg text-center py-16 px-5 text-muted-foreground shadow-sm">
-                            <div className="text-5xl mb-4 opacity-40">📋</div>
-                            <h3 className="text-base font-semibold mb-1">No hay OTs en planificación</h3>
-                            <p className="text-sm">Crea una OT desde el Backlog o desde un Aviso para comenzar</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {planningOTs.map(wo => (
-                                <div key={wo.work_order_id || wo.wo_number} className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <span className="font-mono text-sm font-bold text-primary">{wo.wo_number || (wo.work_order_id || '').slice(0, 8)}</span>
-                                                <StatusBadge status={wo.status} />
-                                                <PriorityBadge priority={wo.priority} />
-                                                {wo.work_order_type && (
-                                                    <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-medium">{wo.work_order_type}</span>
-                                                )}
-                                            </div>
-                                            <p className="text-sm text-foreground mb-1">
-                                                <span className="font-medium">{wo.equipment_tag || '—'}</span>
-                                                {wo.description && <span className="text-muted-foreground"> — {wo.description.slice(0, 80)}</span>}
-                                            </p>
-                                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                                {wo.estimated_duration_hours > 0 && (
-                                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {wo.estimated_duration_hours}h</span>
-                                                )}
-                                                {wo.assigned_workers?.length > 0 && (
-                                                    <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {wo.assigned_workers.length} técnicos</span>
-                                                )}
-                                                {wo.operations?.length > 0 && (
-                                                    <span className="flex items-center gap-1"><Wrench className="w-3 h-3" /> {wo.operations.length} operaciones</span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div className="flex items-center gap-2 ml-4">
-                                            {wo.status === 'DRAFT' && (
-                                                <button
-                                                    onClick={() => handleReleaseOT(wo.work_order_id)}
-                                                    disabled={actionLoading === 'release-' + wo.work_order_id}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-                                                >
-                                                    {actionLoading === 'release-' + wo.work_order_id
-                                                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                                                        : <ArrowRight className="w-3 h-3" />
-                                                    }
-                                                    Liberar
-                                                </button>
-                                            )}
-                                            {wo.status === 'PLANNED' && (
-                                                <button
-                                                    onClick={() => handleReleaseOT(wo.work_order_id)}
-                                                    disabled={actionLoading === 'release-' + wo.work_order_id}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-                                                >
-                                                    {actionLoading === 'release-' + wo.work_order_id
-                                                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                                                        : <ArrowRight className="w-3 h-3" />
-                                                    }
-                                                    Liberar → Scheduling
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => window.location.href = '/work-orders'}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors"
-                                            >
-                                                <FileText className="w-3 h-3" /> Ver Detalle
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Completeness indicators */}
-                                    <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
-                                        <span className="text-[10px] uppercase text-muted-foreground font-bold">Completitud:</span>
-                                        {[
-                                            { label: 'Operaciones', ok: wo.operations?.length > 0 },
-                                            { label: 'Materiales', ok: wo.materials?.length > 0 },
-                                            { label: 'Personal', ok: wo.assigned_workers?.length > 0 },
-                                            { label: 'Costos', ok: wo.budget_estimated > 0 || wo.labour_summary?.total_hours > 0 },
-                                        ].map(check => (
-                                            <span key={check.label} className={`flex items-center gap-1 text-xs ${check.ok ? 'text-green-600' : 'text-gray-400'}`}>
-                                                {check.ok ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                                                {check.label}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* ═══ SCHEDULE TAB ═══ */}
-            {tab === 'schedule' && (
-                <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="text-xs font-bold text-primary uppercase tracking-wider">{t('planning.weeklyPrograms')}</div>
-                        <button
-                            onClick={handleCreateProgram}
-                            disabled={actionLoading === 'create-program'}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-                        >
-                            {actionLoading === 'create-program'
-                                ? <Loader2 className="w-3 h-3 animate-spin" />
-                                : <Calendar className="w-3 h-3" />
-                            }
-                            Crear Programa Semanal
-                        </button>
-                    </div>
-
-                    {programs.length > 0 ? (
-                        <div className="space-y-2">
-                            {programs.map((p, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors cursor-pointer">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
-                                            S{p.week_number || i + 1}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold">{t('planning.week')} {p.week_number || i + 1} — {p.year || new Date().getFullYear()}</p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <StatusBadge status={p.status} />
-                                                {p.work_orders_count != null && (
-                                                    <span className="text-xs text-muted-foreground">{p.work_orders_count} OTs</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-16 px-5 text-muted-foreground">
-                            <div className="text-5xl mb-4 opacity-40">📅</div>
-                            <h3>{t('planning.noWeeklyPrograms')}</h3>
-                            <p>{t('planning.noWeeklyProgramsDesc')}</p>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* ═══ PLANNER TAB ═══ */}
-            {tab === 'planner' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-4">{t('planning.aiPlannerTitle')}</div>
-                        <div className="mb-3.5">
-                            <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('planning.selectWorkRequest')}</div>
-                            <select className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" value={selectedWr} onChange={e => setSelectedWr(e.target.value)} aria-label={t('planning.selectWorkRequest')}>
-                                <option value="">{t('planning.selectWorkRequestPlaceholder')}</option>
-                                {workRequests.map((wr, i) => (
-                                    <option key={i} value={wr.work_request_id || wr.request_id}>
-                                        {(wr.work_request_id || wr.request_id || '').slice(0, 8)} — {wr.equipment_tag || wr.equipment_identification?.equipment_tag || t('planning.unknown')}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <button className="w-full justify-center px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-2" onClick={handleGenerateRec} disabled={!selectedWr || generating}>
-                            {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('planning.generating')}</> : <><Zap className="w-4 h-4" /> {t('planning.generateAIRecommendation')}</>}
-                        </button>
-                    </div>
-                    <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-4">{t('planning.recommendation')}</div>
-                        {recommendation ? (
-                            <div>
-                                <div className="flex gap-2 flex-wrap mb-3">
-                                    <StatusBadge status={recommendation.planner_action || 'PENDING'} />
-                                    {recommendation.ai_confidence != null && (
-                                        <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-medium">AI: {Math.round(recommendation.ai_confidence * 100)}%</span>
-                                    )}
-                                </div>
-                                {recommendation.recommended_action && (
-                                    <div className="mb-3">
-                                        <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('planning.recommendedAction')}</div>
-                                        <p className="text-sm">{recommendation.recommended_action}</p>
-                                    </div>
-                                )}
-                                {recommendation.scheduling_suggestion && (
-                                    <div className="mb-3">
-                                        <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('planning.scheduling')}</div>
-                                        {typeof recommendation.scheduling_suggestion === 'object' ? (
-                                            <div className="space-y-2 text-sm">
-                                                {recommendation.scheduling_suggestion.recommended_date && (
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-muted-foreground">{t('planning.date')}:</span>
-                                                        <span>{recommendation.scheduling_suggestion.recommended_date}</span>
-                                                    </div>
-                                                )}
-                                                {recommendation.scheduling_suggestion.recommended_shift && (
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-muted-foreground">{t('planning.shift')}:</span>
-                                                        <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-semibold">{recommendation.scheduling_suggestion.recommended_shift}</span>
-                                                    </div>
-                                                )}
-                                                {recommendation.scheduling_suggestion.reasoning && (
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="font-medium text-muted-foreground shrink-0">{t('planning.reasoning')}:</span>
-                                                        <span>{recommendation.scheduling_suggestion.reasoning}</span>
-                                                    </div>
-                                                )}
-                                                {recommendation.scheduling_suggestion.conflicts?.length > 0 && (
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="font-medium text-red-500 shrink-0">{t('planning.conflicts')}:</span>
-                                                        <span className="text-red-600">{recommendation.scheduling_suggestion.conflicts.join(', ')}</span>
-                                                    </div>
-                                                )}
-                                                {recommendation.scheduling_suggestion.groupable_with?.length > 0 && (
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="font-medium text-muted-foreground shrink-0">{t('planning.groupableWith')}:</span>
-                                                        <span>{recommendation.scheduling_suggestion.groupable_with.join(', ')}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <p className="text-sm">{recommendation.scheduling_suggestion}</p>
-                                        )}
-                                    </div>
-                                )}
-                                {recommendation.justification && (
-                                    <div>
-                                        <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('planning.justification')}</div>
-                                        <p className="text-sm text-muted-foreground">{recommendation.justification}</p>
-                                    </div>
-                                )}
-                                {/* Planner Actions */}
-                                <div className="border-t border-border pt-3 mt-3">
-                                    <div className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">{t('planning.plannerActions') || 'Acciones del Planner'}</div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {[
-                                            { action: 'APPROVE', label: t('common.approve'), bg: 'bg-emerald-600 hover:bg-emerald-700', Icon: CheckCircle },
-                                            { action: 'MODIFY', label: t('planning.modify') || 'Modificar', bg: 'bg-blue-600 hover:bg-blue-700', Icon: Wrench },
-                                            { action: 'ESCALATE', label: t('planning.escalate') || 'Escalar', bg: 'bg-red-600 hover:bg-red-700', Icon: AlertTriangle },
-                                            { action: 'DEFER', label: t('planning.defer') || 'Diferir', bg: 'bg-gray-600 hover:bg-gray-700', Icon: Clock },
-                                        ].map(btn => (
-                                            <button
-                                                key={btn.action}
-                                                onClick={() => handlePlannerAction(btn.action)}
-                                                disabled={actionLoading === btn.action}
-                                                className={`${btn.bg} text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5`}
-                                            >
-                                                {actionLoading === btn.action ? <Loader2 className="w-3 h-3 animate-spin" /> : <btn.Icon className="w-3 h-3" />} {btn.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-16 px-5 text-muted-foreground">
-                                <div className="text-5xl mb-4 opacity-40">🤖</div>
-                                <h3>{t('planning.aiPlannerEmpty')}</h3>
-                                <p>{t('planning.aiPlannerEmptyDesc')}</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+  return (
+    <div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <p className="text-sm text-gray-500 mb-1">Total OTs</p>
+          <p className="text-3xl font-bold text-gray-900">{kpis.total}</p>
         </div>
-    );
+        <div className="bg-white rounded-lg border-l-4 border-l-yellow-400 border border-gray-200 p-5">
+          <p className="text-sm text-yellow-600 mb-1">In Planning</p>
+          <p className="text-3xl font-bold text-gray-900">{kpis.inPlanning}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <p className="text-sm text-gray-500 mb-1">Ready to Schedule</p>
+          <p className="text-3xl font-bold text-gray-900">{kpis.ready}</p>
+        </div>
+        <div className="bg-white rounded-lg border-l-4 border-l-red-400 border border-gray-200 p-5">
+          <p className="text-sm text-red-600 mb-1">Overdue</p>
+          <p className="text-3xl font-bold text-red-600">{kpis.overdue}</p>
+        </div>
+      </div>
+
+      {/* Title Row */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-bold text-gray-900">Work Orders Backlog</h3>
+          <span className="text-sm text-gray-400">{filteredWOs.length} orders</span>
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          <Plus className="w-4 h-4" /> Create OT
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-6 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 font-medium">Origin:</span>
+          {['All', 'From WR', 'From Strategy'].map(opt => (
+            <button
+              key={opt}
+              onClick={() => { setOriginFilter(opt); setPage(0); }}
+              className={`text-sm font-medium px-2 py-0.5 rounded transition-colors ${
+                originFilter === opt
+                  ? 'text-emerald-700 bg-emerald-50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 font-medium">Status:</span>
+          {['All', 'In Planning', 'Ready'].map(opt => (
+            <button
+              key={opt}
+              onClick={() => { setStatusFilter(opt); setPage(0); }}
+              className={`text-sm font-medium px-2 py-0.5 rounded transition-colors ${
+                statusFilter === opt
+                  ? 'text-emerald-700 bg-emerald-50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {filteredWOs.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <div className="text-4xl mb-3 opacity-40">📋</div>
+            <p className="text-sm font-medium">No work orders in planning</p>
+            <p className="text-xs mt-1">Create an OT or approve a Work Request to start</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">OT ID</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">WR Origin</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Asset</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Strategy</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Est. HH</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedWOs.map(wo => {
+                const strategy = getStrategy(wo);
+                const planStatus = getPlanningStatus(wo);
+                const wrOrigin = getWROrigin(wo);
+                return (
+                  <tr
+                    key={wo.work_order_id || wo.wo_number}
+                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"
+                    onClick={() => window.location.href = '/work-orders'}
+                  >
+                    <td className="px-4 py-3 font-mono text-sm text-gray-600">
+                      {wo.wo_number || (wo.work_order_id || '').slice(0, 10)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {wrOrigin
+                        ? <span className="text-emerald-600 font-medium cursor-pointer hover:underline" onClick={e => { e.stopPropagation(); if (onNavigateTab) onNavigateTab('identification'); }}>
+                            WR-{wrOrigin}
+                          </span>
+                        : <span className="text-gray-300">—</span>
+                      }
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{wo.equipment_tag || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{wo.description || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${STRATEGY_COLORS[strategy] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                        {strategy}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{wo.estimated_duration_hours || 0}h</td>
+                    <td className="px-4 py-3">
+                      <PriorityLabel priority={wo.priority} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusLabel status={planStatus} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+            <span className="text-xs text-gray-400">
+              Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredWOs.length)} of {filteredWOs.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Create OT Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Create Work Order</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Equipment Tag *</label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                  value={createForm.equipment_tag}
+                  onChange={e => setCreateForm(f => ({ ...f, equipment_tag: e.target.value }))}
+                  placeholder="e.g. P-1201A"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[80px]"
+                  value={createForm.description}
+                  onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Work order description..."
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    value={createForm.work_order_type}
+                    onChange={e => setCreateForm(f => ({ ...f, work_order_type: e.target.value }))}
+                  >
+                    <option value="PM01">PM01 - Preventive</option>
+                    <option value="PM02">PM02 - Planned</option>
+                    <option value="PM03">PM03 - Corrective</option>
+                    <option value="PM05">PM05 - Predictive</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    value={createForm.priority}
+                    onChange={e => setCreateForm(f => ({ ...f, priority: e.target.value }))}
+                  >
+                    <option value="P1">P1 - Critical</option>
+                    <option value="P2">P2 - High</option>
+                    <option value="P3">P3 - Medium</option>
+                    <option value="P4">P4 - Low</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Est. Hours</label>
+                  <input
+                    type="number"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    value={createForm.estimated_duration_hours}
+                    onChange={e => setCreateForm(f => ({ ...f, estimated_duration_hours: e.target.value }))}
+                    min="0" step="0.5"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateOT}
+                disabled={creating}
+                className="px-4 py-2 text-sm text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {creating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : <>Create OT</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

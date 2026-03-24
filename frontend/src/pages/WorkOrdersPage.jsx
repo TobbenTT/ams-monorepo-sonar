@@ -12,6 +12,7 @@ import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog'
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../contexts/AuthContext';
 import { downloadExport } from '../utils/exportFile';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -19,6 +20,7 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 export default function WorkOrdersPage() {
   const { t } = useLanguage();
   const toast = useToast();
+  const { user } = useAuth();
   const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
   const plant = selectedPlant;
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
@@ -549,6 +551,26 @@ export default function WorkOrdersPage() {
       reloadData();
     } catch (err) {
       toast.error(err.message || t('workOrders.errorChangeStatus') || 'Error al cambiar status');
+    }
+  };
+
+  const handleValidateWR = async (wrId) => {
+    try {
+      await api.validateWorkRequest(wrId, { action: 'APPROVE' });
+      toast.success('Aviso validado');
+      reloadData();
+    } catch (err) {
+      toast.error(err.message || 'Error al validar');
+    }
+  };
+
+  const handleRejectWR = async (wrId) => {
+    try {
+      await api.validateWorkRequest(wrId, { action: 'REJECT', modifications: { rejection_reason: 'Rechazado' } });
+      toast.success('Aviso rechazado');
+      reloadData();
+    } catch (err) {
+      toast.error(err.message || 'Error al rechazar');
     }
   };
 
@@ -1097,13 +1119,27 @@ export default function WorkOrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(wo.status) && (
-                          <Button size="sm" variant="outline"
-                            className="text-xs h-7 px-2 border-blue-300 text-blue-700 hover:bg-blue-50"
-                            onClick={(e) => { e.stopPropagation(); handleCreateOTFromWR(wo._raw); }}>
-                            <FileText className="w-3 h-3 mr-1" /> Crear OT
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {wo.status === 'PENDING_VALIDATION' && ['admin', 'manager'].includes(user?.role) && (
+                            <>
+                              <button title="Validar" onClick={(e) => { e.stopPropagation(); handleValidateWR(wo._raw?.request_id || wo.id); }}
+                                className="w-7 h-7 rounded-full flex items-center justify-center bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
+                                <CheckCircle className="w-3.5 h-3.5" />
+                              </button>
+                              <button title="Rechazar" onClick={(e) => { e.stopPropagation(); handleRejectWR(wo._raw?.request_id || wo.id); }}
+                                className="w-7 h-7 rounded-full flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                          {['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(wo.status) && (
+                            <Button size="sm" variant="outline"
+                              className="text-xs h-7 px-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                              onClick={(e) => { e.stopPropagation(); handleCreateOTFromWR(wo._raw); }}>
+                              <FileText className="w-3 h-3 mr-1" /> Crear OT
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

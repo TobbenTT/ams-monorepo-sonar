@@ -635,7 +635,7 @@ function normalizeWR(wr) {
     failure_mode: desc.failure_mode_detected || desc.failure_mode_code || wr.failure_mode || '',
     production_impact: wr.production_impact || cls.production_impact || 'MEDIUM',
     estimated_duration: cls.estimated_duration_hours || wr.estimated_duration || 4,
-    ai_confidence: Math.round((wr.equipment_confidence ?? 0.85) * 100),
+    ai_confidence: Math.round(((cls.confidence ?? wr.equipment_confidence) ?? 0.85) * 100),
     spare_parts: wr.spare_parts || [],
     photos: wr.photos || wr.images || (wr.documents || []).filter(d => d.type === 'photo').map(d => d.data) || [],
     created_at: wr.created_at || new Date().toISOString(),

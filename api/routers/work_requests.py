@@ -427,17 +427,42 @@ def check_duplicates(data: DuplicateCheckRequest, db: Session = Depends(get_db))
 
 @router.post("/manual")
 def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    """Create a WR directly from a manual form — NO AI pipeline, data preserved as-is."""
+    """Create a WR from manual form — calculates confidence from filled fields and goes to PENDING_VALIDATION."""
     import uuid
     from datetime import datetime, timezone
     from api.database.models import WorkRequestModel
 
     now = datetime.now(timezone.utc)
+
+    # Calculate AI confidence based on how many fields were filled
+    filled_fields = 0
+    total_scored = 7  # fields that contribute to confidence
+    if data.problem_description.strip():
+        filled_fields += 1
+    if data.failure_category:
+        filled_fields += 1
+    if data.failure_symptom:
+        filled_fields += 1
+    if data.failure_cause:
+        filled_fields += 1
+    if data.plant_condition:
+        filled_fields += 1
+    if data.suggested_action.strip():
+        filled_fields += 1
+    if data.circumstances.strip():
+        filled_fields += 1
+    confidence = round(filled_fields / total_scored, 2)
+
+    # Derive work order type from priority
+    wo_type_map = {"P1": "CORRECTIVO", "P2": "CORRECTIVO", "P3": "PREVENTIVO", "P4": "PREVENTIVO"}
+    wo_type = wo_type_map.get(data.priority, "CORRECTIVO")
+
     wr = WorkRequestModel(
         request_id=str(uuid.uuid4()),
-        status="DRAFT",
+        status="PENDING_VALIDATION",
         equipment_id=data.equipment_tag,
         equipment_tag=data.equipment_tag,
+        equipment_confidence=0.9 if data.equipment_name and "(No catalogado)" not in data.equipment_name else 0.5,
         priority_code=data.priority,
         work_class=work_request_service.derive_work_class(data.priority),
         created_by=data.created_by or getattr(user, "user_id", ""),
@@ -452,11 +477,18 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
         },
         ai_classification={
             "priority_suggested": data.priority,
+            "confidence": confidence,
+            "work_order_type": wo_type,
+            "failure_type": data.failure_category,
+            "failure_class": data.failure_symptom,
+            "failure_category": data.failure_cause,
+            "recommended_priority": data.priority,
             "plant_id": data.plant_id,
             "equipment_name": data.equipment_name,
             "activity_class": data.activity_class,
             "plant_condition": data.plant_condition,
             "estimated_duration_hours": data.estimated_duration,
+            "safety_flags": ["BREAKDOWN"] if data.plant_condition == "stopped" else [],
             "source": "manual_form",
         },
         # SAP Aviso fields

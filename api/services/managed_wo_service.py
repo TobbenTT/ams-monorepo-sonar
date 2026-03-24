@@ -106,6 +106,10 @@ def create_work_order(
     work_class = "NO_PROGRAMADO" if priority_code in ("P1", "P2") else "PROGRAMADO"
     is_fast_track = priority_code in ("P1", "P2")
 
+    # Auto-estimate budget from hours (default labor rate $50/hr)
+    LABOR_RATE = 50.0
+    auto_budget = round(estimated_hours * LABOR_RATE, 2)
+
     wo = ManagedWorkOrderModel(
         wo_number=wo_number,
         work_request_id=work_request_id,
@@ -118,6 +122,7 @@ def create_work_order(
         work_class=work_class,
         planned_by=planned_by,
         estimated_hours=estimated_hours,
+        budget_amount=auto_budget,
         operations=operations or [],
         materials=materials or [],
         tools=tools or [],
@@ -201,17 +206,18 @@ def list_work_orders(
 
 
 def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
-    """Update planning fields on a WO (only in DRAFT/PLANNED status)."""
+    """Update planning fields on a WO (before execution starts)."""
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
     if not wo:
         return None
-    if wo.status not in ("DRAFT", "PLANNED"):
+    if wo.status not in ("DRAFT", "PLANNED", "RELEASED", "SCHEDULED"):
         return None
 
     updatable = [
         "description", "wo_type", "priority_code", "estimated_hours",
         "operations", "materials", "tools", "documents", "labour_summary",
         "planned_start", "planned_end", "risk_analysis", "budget_amount", "budget_approved",
+        "labor_cost", "material_cost", "external_cost", "actual_total_cost", "actual_hours",
     ]
     for key in updatable:
         if key in data:
@@ -267,6 +273,10 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
     db.commit()
     db.refresh(wo)
     return _to_dict(wo)
+
+
+def plan_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
+    return _transition(db, wo_id, "PLANNED", user_id)
 
 
 def release_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:

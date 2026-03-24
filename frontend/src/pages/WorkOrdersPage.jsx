@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
-import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image, Trash2, Save, DollarSign, List, MessageSquare, Info, Users } from 'lucide-react';
+import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image, Trash2, Save, DollarSign, List, MessageSquare, Info, Users, MapPin } from 'lucide-react';
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -26,17 +26,26 @@ export default function WorkOrdersPage() {
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createdWRId, setCreatedWRId] = useState(null); // success popup
   const [createForm, setCreateForm] = useState({
-    whatHappens: '', whereTag: '', suggestedAction: '', estimatedDuration: '',
+    whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '',
+    suggestedAction: '', estimatedDuration: '',
     priority: 'P3', activityClass: 'CR', plantCondition: 'operating',
     failureCategory: 'MECANICO', failureSymptom: '', failureObjectPart: '', failureCause: '',
     resources: [], materials: [], specialEquipment: '',
+    circumstances: '', reportedBy: '', supportEquipment: '',
   });
   const [equipSearch, setEquipSearch] = useState('');
   const [allEquipment, setAllEquipment] = useState([]);
+  const [allNodes, setAllNodes] = useState([]);
+  const [locationNodes, setLocationNodes] = useState([]);
   const [equipResults, setEquipResults] = useState([]);
   const [showEquipSearch, setShowEquipSearch] = useState(false);
   const [selectedEquip, setSelectedEquip] = useState(null);
+  const [locSearch, setLocSearch] = useState('');
+  const [locResults, setLocResults] = useState([]);
+  const [showLocSearch, setShowLocSearch] = useState(false);
+  const [selectedLoc, setSelectedLoc] = useState(null);
   const [showSymptoms, setShowSymptoms] = useState(false);
   const [showParts, setShowParts] = useState(false);
   const [showCauses, setShowCauses] = useState(false);
@@ -146,13 +155,30 @@ export default function WorkOrdersPage() {
 
   useEffect(() => { reloadData(); }, [reloadData]);
 
-  // Load equipment for create modal search
+  // Build SAP functional location path from hierarchy
+  const buildFuncLocPath = useCallback((node, nodeMap) => {
+    const parts = [];
+    let current = node;
+    while (current) {
+      parts.unshift(current.code || current.name || '');
+      current = current.parent_node_id ? nodeMap[current.parent_node_id] : null;
+    }
+    return parts.join('-');
+  }, []);
+
+  // Load equipment + locations for create modal search
   useEffect(() => {
     api.listNodes({}).then(res => {
       const nodes = Array.isArray(res) ? res : res?.items || [];
+      setAllNodes(nodes);
+      const nodeMap = {};
+      nodes.forEach(n => { nodeMap[n.node_id] = n; });
       setAllEquipment(nodes.filter(n => n.node_type === 'EQUIPMENT'));
+      setLocationNodes(nodes.filter(n =>
+        ['PLANT', 'AREA', 'SYSTEM'].includes(n.node_type)
+      ).map(n => ({ ...n, _funcLoc: buildFuncLocPath(n, nodeMap) })));
     }).catch(() => {});
-  }, []);
+  }, [buildFuncLocPath]);
 
   // Filter equipment results
   useEffect(() => {
@@ -162,6 +188,15 @@ export default function WorkOrdersPage() {
       (n.tag || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
     ).slice(0, 8));
   }, [equipSearch, allEquipment]);
+
+  // Filter location results
+  useEffect(() => {
+    if (locSearch.length < 2) { setLocResults([]); return; }
+    const q = locSearch.toLowerCase();
+    setLocResults(locationNodes.filter(n =>
+      (n._funcLoc || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
+    ).slice(0, 8));
+  }, [locSearch, locationNodes]);
 
   // Auto-detect equipment tag from description text
   useEffect(() => {
@@ -330,19 +365,18 @@ export default function WorkOrdersPage() {
         estimated_duration: parseFloat(createForm.estimatedDuration) || 4,
         materials: (createForm.materials || []).map(m => typeof m === 'string' ? m : m.name || '').filter(Boolean),
         resources: (createForm.resources || []).map(r => typeof r === 'string' ? r : `${r.type || ''} x${r.quantity || 1}`).filter(Boolean),
+        documents: photos.map((data, i) => ({ name: `foto_${i + 1}.jpg`, data, type: 'photo' })),
+        circumstances: createForm.circumstances || '',
+        reported_by: createForm.reportedBy || '',
+        support_equipment: createForm.supportEquipment ? createForm.supportEquipment.split(',').map(s => s.trim()).filter(Boolean) : [],
+        technical_location: createForm.technicalLocationCode || '',
+        notification_type: 'A1',
       });
-      // Upload photos via capture endpoint
-      const wrId = res?.work_request_id || res?.request_id || '';
-      if (photos.length > 0 && wrId) {
-        for (const photo of photos) {
-          try {
-            await api.submitCapture({ capture_type: 'IMAGE', equipment_tag: createForm.whereTag, raw_text: `Photo for WR ${wrId}`, image_data: photo });
-          } catch { /* photo upload best-effort */ }
-        }
-      }
-      setShowCreateModal(false);
-      setCreateForm({ whatHappens: '', whereTag: '', suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'CR', plantCondition: 'operating', failureCategory: 'MECANICO', failureSymptom: '', failureObjectPart: '', failureCause: '', resources: [], materials: [], specialEquipment: '' });
+      const wrId = res?.request_id || res?.work_request_id || '';
+      setCreatedWRId(wrId);
+      setCreateForm({ whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '', suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'CR', plantCondition: 'operating', failureCategory: 'MECANICO', failureSymptom: '', failureObjectPart: '', failureCause: '', resources: [], materials: [], specialEquipment: '', circumstances: '', reportedBy: '', supportEquipment: '' });
       setSelectedEquip(null);
+      setSelectedLoc(null);
       setPhotos([]);
       reloadData();
     } catch (err) {
@@ -357,6 +391,18 @@ export default function WorkOrdersPage() {
     const tag = node.tag || node.code || node.name;
     setSelectedEquip(node);
     setF('whereTag', tag);
+    // Auto-resolve Ubicación Técnica from parent hierarchy
+    if (node.parent_node_id) {
+      const nodeMap = {};
+      allNodes.forEach(n => { nodeMap[n.node_id] = n; });
+      const parent = nodeMap[node.parent_node_id];
+      if (parent) {
+        const funcLoc = buildFuncLocPath(parent, nodeMap);
+        setSelectedLoc(parent);
+        setF('technicalLocation', parent.name || funcLoc);
+        setF('technicalLocationCode', funcLoc);
+      }
+    }
     // Auto-detect failure category from equipment type/name
     const combined = ((node.name || '') + ' ' + tag).toUpperCase();
     if (/SENSOR|TRANSMISOR|PLC|DCS|INSTRUMENT|VALVULA.CONTROL|MEDIDOR|ANALIZADOR/.test(combined)) {
@@ -366,6 +412,20 @@ export default function WorkOrdersPage() {
     }
     setEquipSearch('');
     setShowEquipSearch(false);
+  };
+
+  const selectLocation = (node) => {
+    setSelectedLoc(node);
+    setF('technicalLocation', node.name || node._funcLoc);
+    setF('technicalLocationCode', node._funcLoc || node.code);
+    setLocSearch('');
+    setShowLocSearch(false);
+  };
+
+  const clearLocation = () => {
+    setSelectedLoc(null);
+    setF('technicalLocation', '');
+    setF('technicalLocationCode', '');
   };
 
   // Resources helpers
@@ -454,7 +514,7 @@ export default function WorkOrdersPage() {
   };
 
   const OT_NEXT_ACTION = {
-    DRAFT: { label: 'Planificar', action: 'release', icon: ArrowRight },
+    DRAFT: { label: 'Planificar', action: 'plan', icon: ArrowRight },
     PLANNED: { label: 'Liberar', action: 'release', icon: ArrowRight },
     RELEASED: { label: 'Programar', action: 'schedule', icon: Clock },
     SCHEDULED: { label: 'Iniciar', action: 'start', icon: Play },
@@ -465,6 +525,7 @@ export default function WorkOrdersPage() {
   const handleOTTransition = async (wo, actionName) => {
     try {
       const fn = {
+        plan: api.planManagedWO,
         release: api.releaseManagedWO,
         schedule: api.scheduleManagedWO,
         start: api.startManagedWO,
@@ -521,7 +582,7 @@ export default function WorkOrdersPage() {
     setNewNote('');
   };
 
-  const isEditable = selectedOT && ['DRAFT', 'PLANNED'].includes(selectedOT.status);
+  const isEditable = selectedOT && ['DRAFT', 'PLANNED', 'RELEASED', 'SCHEDULED'].includes(selectedOT.status);
   const isExecuting = selectedOT && ['IN_PROGRESS', 'COMPLETED'].includes(selectedOT.status);
 
   // SLA targets by priority (hours)
@@ -1128,16 +1189,22 @@ export default function WorkOrdersPage() {
               {/* Hidden camera input */}
               <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} className="hidden" />
 
-              {/* 1. What happened? + Voice / Camera */}
+              {/* 1. Qué pasó? + Voice / Camera */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.whatHappens')}</label>
                   <div className="flex gap-2">
-                    <button type="button" onClick={handleVoice}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${isRecording ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
-                      {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                      {isRecording ? t('workOrders.voiceRecording') || 'Grabando...' : t('workOrders.voiceButton') || 'Voz'}
-                    </button>
+                    {SpeechRecognition ? (
+                      <button type="button" onClick={handleVoice}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${isRecording ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
+                        {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                        {isRecording ? t('workOrders.voiceRecording') || 'Grabando...' : t('workOrders.voiceButton') || 'Voz'}
+                      </button>
+                    ) : (
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed" title="Requiere HTTPS para funcionar">
+                        <Mic className="w-3.5 h-3.5" /> Voz
+                      </span>
+                    )}
                     <button type="button" onClick={handleCameraClick}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all">
                       <Camera className="w-3.5 h-3.5" />
@@ -1171,7 +1238,7 @@ export default function WorkOrdersPage() {
                 )}
               </div>
 
-              {/* 2. Where? TAG equipment */}
+              {/* 2. ¿Dónde? TAG equipo */}
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.whereTag')}</label>
                 {!selectedEquip ? (
@@ -1186,8 +1253,8 @@ export default function WorkOrdersPage() {
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                     />
                     {equipSearch.length >= 2 && equipResults.length === 0 && (
-                      <button onClick={() => { selectEquip({ tag: equipSearch, name: 'Manual' }); }} className="w-full mt-1 p-2 text-xs text-left rounded-lg bg-yellow-50 text-yellow-800 border border-yellow-200">
-                        {t('workOrders.useManualTag').replace('{tag}', equipSearch)}
+                      <button onClick={() => { selectEquip({ tag: equipSearch, name: `${equipSearch} (No catalogado)` }); }} className="w-full mt-1 p-2 text-xs text-left rounded-lg bg-yellow-50 text-yellow-800 border border-yellow-200">
+                        {(t('workOrders.useManualTag') || 'Usar TAG manual: {tag}').replace('{tag}', equipSearch)}
                       </button>
                     )}
                     {showEquipSearch && equipResults.length > 0 && (
@@ -1207,78 +1274,152 @@ export default function WorkOrdersPage() {
                       <div className="text-sm font-bold text-emerald-700">{createForm.whereTag}</div>
                       <div className="text-xs text-emerald-600">{selectedEquip.name}</div>
                     </div>
-                    <button onClick={() => { setSelectedEquip(null); setF('whereTag', ''); }}>
+                    <button onClick={() => { setSelectedEquip(null); setF('whereTag', ''); clearLocation(); }}>
                       <X className="w-4 h-4 text-emerald-600" />
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* 3. Priority + Activity Class */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.priorityLabel')}</label>
-                  <div className="space-y-1.5">
-                    {PRIORITIES.map(p => (
-                      <button
-                        key={p.value}
-                        onClick={() => { setF('priority', p.value); setF('activityClass', ACTIVITY_CLASSES[p.claseOT]?.[0]?.value || 'CR'); }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border-2 text-left transition-all ${createForm.priority === p.value ? 'scale-[1.02]' : 'opacity-70 hover:opacity-100'}`}
-                        style={{ borderColor: createForm.priority === p.value ? p.color : '#e5e7eb', backgroundColor: createForm.priority === p.value ? p.bg : 'transparent' }}
-                      >
-                        <div>
-                          <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
-                          <div className="text-xs text-gray-600">{p.label}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500">{p.sub}</div>
-                          <div className="text-[10px] font-mono text-gray-400">{p.claseOTLabel}</div>
-                        </div>
-                      </button>
-                    ))}
+              {/* 3. Ubicación Técnica (SAP) */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" /> Ubicación Técnica (SAP)
+                </label>
+                {!selectedLoc ? (
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={locSearch}
+                      onChange={e => { setLocSearch(e.target.value); setShowLocSearch(true); }}
+                      onFocus={() => locSearch.length >= 2 && setShowLocSearch(true)}
+                      placeholder="Buscar ubicación (ej: MOL, Molienda)..."
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    />
+                    {showLocSearch && locResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
+                        {locResults.map((node, i) => (
+                          <button key={node.node_id || i} onClick={() => selectLocation(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{node.node_type}</span>
+                              <span className="text-sm font-bold text-gray-900">{node._funcLoc}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">{node.name}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.activityClassLabel').replace('{code}', claseOT)}</label>
-                    <select value={createForm.activityClass} onChange={e => setF('activityClass', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30">
-                      {actClasses.map(ac => <option key={ac.value} value={ac.value}>{ac.label}</option>)}
-                    </select>
+                ) : (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50 border-2 border-blue-500">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-blue-500" />
+                        <span className="text-sm font-bold font-mono truncate text-blue-800">{createForm.technicalLocationCode}</span>
+                      </div>
+                      <div className="text-xs text-blue-600">{createForm.technicalLocation}</div>
+                    </div>
+                    <button onClick={clearLocation} className="flex-shrink-0 ml-2">
+                      <X className="w-4 h-4 text-blue-500" />
+                    </button>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.suggestedAction')}</label>
-                    <textarea value={createForm.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)} placeholder={t('workOrders.suggestedActionPlaceholder')} rows={2} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none" />
+                )}
+                {selectedEquip && selectedLoc && (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-emerald-600">
+                    <CheckCircle className="w-3 h-3" /> Auto-detectada del equipo {createForm.whereTag}
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{t('workOrders.estimatedDuration')}</label>
-                    <input type="text" value={createForm.estimatedDuration} onChange={e => setF('estimatedDuration', e.target.value)} placeholder={t('workOrders.estimatedDurationPlaceholder')} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-                  </div>
-                </div>
+                )}
               </div>
 
-              {/* 4. Plant Condition */}
+              {/* 4. Catálogo de Falla */}
               <div className="border rounded-xl p-4">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.plantCondition')}</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {PLANT_CONDITIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setF('plantCondition', opt.value)}
-                      className="p-3 rounded-xl border-2 transition-all text-sm font-bold"
-                      style={{
-                        borderColor: createForm.plantCondition === opt.value ? opt.color : '#e5e7eb',
-                        backgroundColor: createForm.plantCondition === opt.value ? opt.color + '15' : 'transparent',
-                        color: createForm.plantCondition === opt.value ? opt.color : '#64748B',
-                      }}
-                    >
-                      {opt.label}
-                    </button>
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.failureCatalog')}</label>
+                </div>
+                <div className="flex gap-1 mb-3 p-1 rounded-lg bg-gray-100">
+                  {Object.entries(FAILURE_CATALOG).map(([key, cat]) => (
+                    <button key={key} onClick={() => { setF('failureCategory', key); setF('failureSymptom', ''); setF('failureObjectPart', ''); setF('failureCause', ''); }}
+                      className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${createForm.failureCategory === key ? 'bg-white shadow-sm' : ''}`}
+                      style={{ color: createForm.failureCategory === key ? cat.color : '#94a3b8' }}>{cat.label}</button>
                   ))}
                 </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="relative">
+                    <div className="text-xs font-medium text-gray-600 mb-1">{t('workOrders.symptomLabel')}</div>
+                    <button onClick={() => { setShowSymptoms(!showSymptoms); setShowParts(false); setShowCauses(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
+                      style={{ borderColor: createForm.failureSymptom ? FAILURE_CATALOG[createForm.failureCategory].color : '#e5e7eb' }}>
+                      <span className={createForm.failureSymptom ? 'text-gray-900 font-medium' : 'text-gray-400'}>{createForm.failureSymptom || t('workOrders.selectPlaceholder')}</span>
+                      <ChevronDown className="w-3 h-3 text-gray-400" />
+                    </button>
+                    {showSymptoms && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
+                        {FAILURE_CATALOG[createForm.failureCategory].symptoms.map(s => (
+                          <button key={s} onClick={() => { setF('failureSymptom', s); setShowSymptoms(false); }}
+                            className={`w-full text-left px-2 py-1.5 text-xs border-b last:border-b-0 hover:bg-gray-50 ${createForm.failureSymptom === s ? 'font-bold bg-gray-50' : ''}`}>{s}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <div className="text-xs font-medium text-gray-600 mb-1">{t('workOrders.objectPartLabel')}</div>
+                    <button onClick={() => { setShowParts(!showParts); setShowSymptoms(false); setShowCauses(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
+                      style={{ borderColor: createForm.failureObjectPart ? FAILURE_CATALOG[createForm.failureCategory].color : '#e5e7eb' }}>
+                      <span className={createForm.failureObjectPart ? 'text-gray-900 font-medium' : 'text-gray-400'}>{createForm.failureObjectPart || t('workOrders.selectPlaceholder')}</span>
+                      <ChevronDown className="w-3 h-3 text-gray-400" />
+                    </button>
+                    {showParts && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
+                        {FAILURE_CATALOG[createForm.failureCategory].parts.map(p => (
+                          <button key={p} onClick={() => { setF('failureObjectPart', p); setShowParts(false); }}
+                            className={`w-full text-left px-2 py-1.5 text-xs border-b last:border-b-0 hover:bg-gray-50 ${createForm.failureObjectPart === p ? 'font-bold bg-gray-50' : ''}`}>{p}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <div className="text-xs font-medium text-gray-600 mb-1">{t('workOrders.causeLabel')}</div>
+                    <button onClick={() => { setShowCauses(!showCauses); setShowSymptoms(false); setShowParts(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
+                      style={{ borderColor: createForm.failureCause ? FAILURE_CATALOG[createForm.failureCategory].color : '#e5e7eb' }}>
+                      <span className={createForm.failureCause ? 'text-gray-900 font-medium' : 'text-gray-400'}>{createForm.failureCause || t('workOrders.selectPlaceholder')}</span>
+                      <ChevronDown className="w-3 h-3 text-gray-400" />
+                    </button>
+                    {showCauses && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
+                        {FAILURE_CATALOG[createForm.failureCategory].causes.map(c => (
+                          <button key={c} onClick={() => { setF('failureCause', c); setShowCauses(false); }}
+                            className={`w-full text-left px-2 py-1.5 text-xs border-b last:border-b-0 hover:bg-gray-50 ${createForm.failureCause === c ? 'font-bold bg-gray-50' : ''}`}>{c}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* 5. Required Resources */}
+              {/* 5. Acción Sugerida */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.suggestedAction')}</label>
+                <textarea value={createForm.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)} placeholder={t('workOrders.suggestedActionPlaceholder')} rows={2} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none" />
+              </div>
+
+              {/* 6. Circunstancias / Detalle */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Circunstancias / Detalle</label>
+                <textarea
+                  value={createForm.circumstances}
+                  onChange={e => setF('circumstances', e.target.value)}
+                  placeholder="Descripción del evento, recursos necesarios, equipos de apoyo, información complementaria..."
+                  rows={2}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
+                />
+                <div className="text-[10px] text-gray-400 mt-1">SAP: Información complementaria del aviso</div>
+              </div>
+
+              {/* 7. Recursos necesarios */}
               <div className="border rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.requiredResources')}</label>
@@ -1330,7 +1471,13 @@ export default function WorkOrdersPage() {
                 )}
               </div>
 
-              {/* 6. Materials (SAP) */}
+              {/* 8. Duración estimada */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{t('workOrders.estimatedDuration')}</label>
+                <input type="text" value={createForm.estimatedDuration} onChange={e => setF('estimatedDuration', e.target.value)} placeholder={t('workOrders.estimatedDurationPlaceholder')} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+              </div>
+
+              {/* 9. Materiales SAP */}
               <div className="border rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -1384,7 +1531,7 @@ export default function WorkOrdersPage() {
                 )}
               </div>
 
-              {/* 7. Special Equipment */}
+              {/* 10. Equipos Especiales */}
               <div className="border rounded-xl p-4">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.specialEquipment')}</label>
                 <div className="relative">
@@ -1409,75 +1556,85 @@ export default function WorkOrdersPage() {
                 </div>
               </div>
 
-              {/* 8. Failure Catalog */}
+              {/* 11. Autor del Aviso */}
               <div className="border rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.failureCatalog')}</label>
-                </div>
-                {/* Category tabs */}
-                <div className="flex gap-1 mb-3 p-1 rounded-lg bg-gray-100">
-                  {Object.entries(FAILURE_CATALOG).map(([key, cat]) => (
-                    <button key={key} onClick={() => { setF('failureCategory', key); setF('failureSymptom', ''); setF('failureObjectPart', ''); setF('failureCause', ''); }}
-                      className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${createForm.failureCategory === key ? 'bg-white shadow-sm' : ''}`}
-                      style={{ color: createForm.failureCategory === key ? cat.color : '#94a3b8' }}>{cat.label}</button>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Autor del Aviso</label>
+                <input
+                  type="text"
+                  value={createForm.reportedBy}
+                  onChange={e => setF('reportedBy', e.target.value)}
+                  placeholder="Nombre de quién reporta el evento (si es distinto del creador)"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                />
+                <div className="text-[10px] text-gray-400 mt-1">SAP: Quién descubrió el problema</div>
+              </div>
+
+              {/* 12. Equipos de Apoyo */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Equipos de Apoyo</label>
+                <input
+                  type="text"
+                  value={createForm.supportEquipment}
+                  onChange={e => setF('supportEquipment', e.target.value)}
+                  placeholder="Ej: Grúa puente 10 ton, Camión grúa, Generador"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                />
+                <div className="text-[10px] text-gray-400 mt-1">Separar con comas</div>
+              </div>
+
+              {/* 13. Condición del Equipo */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.plantCondition')}</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {PLANT_CONDITIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setF('plantCondition', opt.value)}
+                      className="p-3 rounded-xl border-2 transition-all text-sm font-bold"
+                      style={{
+                        borderColor: createForm.plantCondition === opt.value ? opt.color : '#e5e7eb',
+                        backgroundColor: createForm.plantCondition === opt.value ? opt.color + '15' : 'transparent',
+                        color: createForm.plantCondition === opt.value ? opt.color : '#64748B',
+                      }}
+                    >
+                      {opt.label}
+                    </button>
                   ))}
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Symptom */}
-                  <div className="relative">
-                    <div className="text-xs font-medium text-gray-600 mb-1">{t('workOrders.symptomLabel')}</div>
-                    <button onClick={() => { setShowSymptoms(!showSymptoms); setShowParts(false); setShowCauses(false); }}
-                      className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
-                      style={{ borderColor: createForm.failureSymptom ? FAILURE_CATALOG[createForm.failureCategory].color : '#e5e7eb' }}>
-                      <span className={createForm.failureSymptom ? 'text-gray-900 font-medium' : 'text-gray-400'}>{createForm.failureSymptom || t('workOrders.selectPlaceholder')}</span>
-                      <ChevronDown className="w-3 h-3 text-gray-400" />
+              </div>
+
+              {/* 14. Prioridad */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.priorityLabel')}</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {PRIORITIES.map(p => (
+                    <button
+                      key={p.value}
+                      onClick={() => { setF('priority', p.value); setF('activityClass', ACTIVITY_CLASSES[p.claseOT]?.[0]?.value || 'CR'); }}
+                      className={`flex flex-col items-center p-3 rounded-lg border-2 text-center transition-all ${createForm.priority === p.value ? 'scale-[1.02]' : 'opacity-70 hover:opacity-100'}`}
+                      style={{ borderColor: createForm.priority === p.value ? p.color : '#e5e7eb', backgroundColor: createForm.priority === p.value ? p.bg : 'transparent' }}
+                    >
+                      <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
+                      <div className="text-[10px] text-gray-600">{p.label}</div>
+                      {p.sub && <div className="text-[10px] text-gray-400">{p.sub}</div>}
                     </button>
-                    {showSymptoms && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
-                        {FAILURE_CATALOG[createForm.failureCategory].symptoms.map(s => (
-                          <button key={s} onClick={() => { setF('failureSymptom', s); setShowSymptoms(false); }}
-                            className={`w-full text-left px-2 py-1.5 text-xs border-b last:border-b-0 hover:bg-gray-50 ${createForm.failureSymptom === s ? 'font-bold bg-gray-50' : ''}`}>{s}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {/* Object Part */}
-                  <div className="relative">
-                    <div className="text-xs font-medium text-gray-600 mb-1">{t('workOrders.objectPartLabel')}</div>
-                    <button onClick={() => { setShowParts(!showParts); setShowSymptoms(false); setShowCauses(false); }}
-                      className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
-                      style={{ borderColor: createForm.failureObjectPart ? FAILURE_CATALOG[createForm.failureCategory].color : '#e5e7eb' }}>
-                      <span className={createForm.failureObjectPart ? 'text-gray-900 font-medium' : 'text-gray-400'}>{createForm.failureObjectPart || t('workOrders.selectPlaceholder')}</span>
-                      <ChevronDown className="w-3 h-3 text-gray-400" />
+                  ))}
+                </div>
+              </div>
+
+              {/* 15. Clase de Actividad */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.activityClassLabel').replace('{code}', claseOT)}</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {actClasses.map(ac => (
+                    <button
+                      key={ac.value}
+                      onClick={() => setF('activityClass', ac.value)}
+                      className={`p-2.5 rounded-lg border-2 text-xs font-semibold text-center transition-all ${createForm.activityClass === ac.value ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                    >
+                      {ac.value} — {ac.label}
                     </button>
-                    {showParts && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
-                        {FAILURE_CATALOG[createForm.failureCategory].parts.map(p => (
-                          <button key={p} onClick={() => { setF('failureObjectPart', p); setShowParts(false); }}
-                            className={`w-full text-left px-2 py-1.5 text-xs border-b last:border-b-0 hover:bg-gray-50 ${createForm.failureObjectPart === p ? 'font-bold bg-gray-50' : ''}`}>{p}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {/* Cause */}
-                  <div className="relative">
-                    <div className="text-xs font-medium text-gray-600 mb-1">{t('workOrders.causeLabel')}</div>
-                    <button onClick={() => { setShowCauses(!showCauses); setShowSymptoms(false); setShowParts(false); }}
-                      className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
-                      style={{ borderColor: createForm.failureCause ? FAILURE_CATALOG[createForm.failureCategory].color : '#e5e7eb' }}>
-                      <span className={createForm.failureCause ? 'text-gray-900 font-medium' : 'text-gray-400'}>{createForm.failureCause || t('workOrders.selectPlaceholder')}</span>
-                      <ChevronDown className="w-3 h-3 text-gray-400" />
-                    </button>
-                    {showCauses && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
-                        {FAILURE_CATALOG[createForm.failureCategory].causes.map(c => (
-                          <button key={c} onClick={() => { setF('failureCause', c); setShowCauses(false); }}
-                            className={`w-full text-left px-2 py-1.5 text-xs border-b last:border-b-0 hover:bg-gray-50 ${createForm.failureCause === c ? 'font-bold bg-gray-50' : ''}`}>{c}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1493,6 +1650,37 @@ export default function WorkOrdersPage() {
                   {creating ? t('workOrders.creating') : t('workOrders.createWorkRequest')}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Aviso Creado — Success Popup ── */}
+      {createdWRId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setCreatedWRId(null); setShowCreateModal(false); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Aviso Creado</h3>
+            <p className="text-sm text-gray-500 mb-4">Tu aviso ha sido enviado para revision</p>
+            <div className="inline-block px-4 py-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 mb-6">
+              <div className="text-xs text-emerald-600 font-medium">ID</div>
+              <div className="text-lg font-bold text-emerald-700 font-mono">{createdWRId.slice(0, 13)}</div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setCreatedWRId(null); setShowCreateModal(false); }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Ver WRs
+              </button>
+              <button
+                onClick={() => { setCreatedWRId(null); }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+              >
+                Crear Otro
+              </button>
             </div>
           </div>
         </div>

@@ -145,6 +145,18 @@ def update_work_order(
     return result
 
 
+@router.put("/{wo_id}/plan")
+def plan_work_order(
+    wo_id: str,
+    user=Depends(require_role("admin", "manager", "planner")),
+    db: Session = Depends(get_db),
+):
+    result = managed_wo_service.plan_wo(db, wo_id, getattr(user, "user_id", ""))
+    if not result:
+        raise HTTPException(status_code=400, detail="Cannot plan — WO not found or invalid status")
+    return result
+
+
 @router.put("/{wo_id}/release")
 def release_work_order(
     wo_id: str,

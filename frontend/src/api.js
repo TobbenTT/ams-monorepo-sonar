@@ -182,6 +182,7 @@ export const getManagedWO = (id) => get(`/managed-work-orders/${id}`);
 export const createManagedWO = (d) => post('/managed-work-orders/', d);
 export const createWOFromWR = (d) => post('/managed-work-orders/from-wr', d);
 export const updateManagedWO = (id, d) => put(`/managed-work-orders/${id}`, d);
+export const planManagedWO = (id) => put(`/managed-work-orders/${id}/plan`);
 export const releaseManagedWO = (id) => put(`/managed-work-orders/${id}/release`);
 export const scheduleManagedWO = (id, d) => put(`/managed-work-orders/${id}/schedule`, d);
 export const startManagedWO = (id) => put(`/managed-work-orders/${id}/start`);

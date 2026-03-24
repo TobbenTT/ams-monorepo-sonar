@@ -67,6 +67,7 @@ class WRManualCreateRequest(BaseModel):
     reported_by: str = ""  # Autor del Aviso (quién reporta el evento)
     circumstances: str = ""  # Detalle/Circunstancias del aviso
     support_equipment: list[str] = []  # Equipos de apoyo necesarios
+    documents: list = []  # [{name, data, type}] photos/attachments
 
 
 class WRFromHierarchyRequest(BaseModel):
@@ -396,6 +397,7 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
         reported_at=now if data.reported_by else None,
         circumstances=data.circumstances or None,
         support_equipment=[{"tag": s} for s in data.support_equipment] if data.support_equipment else None,
+        documents=data.documents if data.documents else None,
         created_at=now,
     )
     db.add(wr)

@@ -278,6 +278,21 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
           {item.created_at && (
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
           )}
+          {item.notification_type && (
+            <DetailCard icon={FileText} label="Tipo Aviso (SAP)" value={item.notification_type} />
+          )}
+          {item.work_class && (
+            <DetailCard icon={Tag} label="Clase de Trabajo" value={item.work_class} />
+          )}
+          {item.wo_number && (
+            <DetailCard icon={Wrench} label="OT Vinculada" value={item.wo_number} />
+          )}
+          {item.assigned_to_name && (
+            <DetailCard icon={Users} label="Asignado a" value={item.assigned_to_name} />
+          )}
+          {item.sla_deadline && (
+            <DetailCard icon={Clock} label="Plazo SLA" value={new Date(item.sla_deadline).toLocaleDateString()} />
+          )}
         </div>
 
         {/* Failure Description */}
@@ -574,25 +589,25 @@ function normalizeWR(wr) {
     status: wr.status || 'DRAFT',
     priority_requested: cls.priority_suggested || wr.priority_requested || wr.priority || 'P3',
     priority_suggested: cls.priority_suggested || wr.priority_suggested || 'P3',
-    failure_description: desc.original_text || desc.structured_description || wr.failure_description || wr.problem_description || '',
+    failure_description: desc.original_text || desc.structured_description || wr.failure_description || (typeof wr.problem_description === 'string' ? wr.problem_description : '') || '',
     failure_mode: desc.failure_mode_detected || desc.failure_mode_code || wr.failure_mode || '',
-    production_impact: wr.production_impact || 'MEDIUM',
+    production_impact: wr.production_impact || cls.production_impact || 'MEDIUM',
     estimated_duration: cls.estimated_duration_hours || wr.estimated_duration || 4,
     ai_confidence: Math.round((wr.equipment_confidence ?? 0.85) * 100),
     spare_parts: wr.spare_parts || [],
-    photos: wr.photos || wr.images || [],
+    photos: wr.photos || wr.images || (wr.documents || []).filter(d => d.type === 'photo').map(d => d.data) || [],
     created_at: wr.created_at || new Date().toISOString(),
-    // Classification fields
-    activity_class: wr.activity_class || '',
+    // Classification fields (check both top-level, ai_classification, and problem_description)
+    activity_class: wr.activity_class || cls.activity_class || '',
     work_class: wr.work_class || '',
-    failure_category: wr.failure_category || cls.failure_category || '',
-    failure_symptom: wr.failure_symptom || '',
-    failure_cause: wr.failure_cause || '',
-    plant_condition: wr.plant_condition || '',
-    suggested_action: wr.suggested_action || '',
-    // Resources & Materials
-    resources: wr.resources || [],
-    materials: wr.materials || [],
+    failure_category: wr.failure_category || cls.failure_category || desc.failure_mode_detected || '',
+    failure_symptom: wr.failure_symptom || desc.failure_symptom || '',
+    failure_cause: wr.failure_cause || desc.failure_cause || '',
+    plant_condition: wr.plant_condition || cls.plant_condition || '',
+    suggested_action: wr.suggested_action || desc.suggested_action || '',
+    // Resources & Materials (also check inside problem_description)
+    resources: wr.resources || desc.resources || [],
+    materials: wr.materials || desc.materials || [],
     // SAP Aviso fields
     notification_type: wr.notification_type || 'A1',
     reported_by: wr.reported_by || '',

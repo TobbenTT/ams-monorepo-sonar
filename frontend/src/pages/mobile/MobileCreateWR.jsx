@@ -596,7 +596,7 @@ export default function MobileCreateWR() {
                             {equipSearch.length >= 2 && equipResults.length === 0 && (
                                 <button
                                     onClick={() => {
-                                        setSelectedEquip({ tag: equipSearch, name: 'Manual' });
+                                        setSelectedEquip({ tag: equipSearch, name: `${equipSearch} (No catalogado)` });
                                         set('whereTag', equipSearch);
                                         setShowEquipSearch(false);
                                     }}

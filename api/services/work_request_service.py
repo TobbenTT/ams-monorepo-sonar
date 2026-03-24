@@ -308,4 +308,10 @@ def _to_dict(wr: WorkRequestModel) -> dict:
         "approval_comment": wr.approval_comment,
         "rejection_reason": wr.rejection_reason,
         "created_at": wr.created_at.isoformat() if wr.created_at else None,
+        # SAP Aviso fields
+        "notification_type": getattr(wr, "notification_type", None),
+        "reported_by": getattr(wr, "reported_by", None),
+        "circumstances": getattr(wr, "circumstances", None),
+        "support_equipment": getattr(wr, "support_equipment", None),
+        "documents": getattr(wr, "documents", None),
     }

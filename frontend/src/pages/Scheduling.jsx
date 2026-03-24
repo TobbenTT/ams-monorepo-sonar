@@ -7,9 +7,9 @@ import { useAuth } from '../contexts/AuthContext';
 import * as api from '../api';
 import {
   Calendar, Clock, Users, CheckCircle, Circle, Play, Loader2,
-  ChevronDown, ChevronUp, Inbox, Camera, Sparkles, Send, X,
+  ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Inbox, Camera, Sparkles, Send, X,
   FileText, Wrench, AlertTriangle, Filter, Eye, BarChart3,
-  Package, Upload, Lock, ArrowRight
+  Package, Upload, Lock, ArrowRight, Search, GripVertical
 } from 'lucide-react';
 
 const TYPE_META = {
@@ -48,6 +48,27 @@ const GANTT_COLORS = {
   PM02: '#3B82F6',
   PM03: '#F59E0B',
 };
+
+const SPEC_BADGE = {
+  MECHANICAL: { label: 'MECH', bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
+  ELECTRICAL: { label: 'ELEC', bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' },
+  INSTRUMENTATION: { label: 'INST', bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
+  HYDRAULIC: { label: 'HYD', bg: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300' },
+  FITTER: { label: 'FIT', bg: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' },
+  WELDER: { label: 'WELD', bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
+};
+const HOURS_PER_WEEK = 40;
+
+function getMonday(d) {
+  const date = new Date(d);
+  const day = date.getDay();
+  date.setDate(date.getDate() - day + (day === 0 ? -6 : 1));
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function fmtDateShort(d) { return d.toLocaleDateString('en', { month: 'short', day: 'numeric' }); }
+function toDateStr(d) { return d.toISOString().slice(0, 10); }
 
 /* ───── OCR Closure Modal ───── */
 function OCRClosureModal({ order, t, onClose, onSubmit }) {
@@ -247,36 +268,6 @@ function DetailCard({ label, value }) {
   );
 }
 
-/* ───── Day Grid Cell ───── */
-function DayCell({ state }) {
-  if (state === 'completed') return (
-    <div className="flex items-center justify-center h-7 w-full rounded bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700">
-      <CheckCircle size={12} className="text-emerald-600 dark:text-emerald-400" />
-    </div>
-  );
-  if (state === 'in_progress') return (
-    <div className="flex items-center justify-center h-7 w-full rounded bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700">
-      <Play size={12} className="text-blue-600 dark:text-blue-400" />
-    </div>
-  );
-  if (state === 'scheduled') return (
-    <div className="flex items-center justify-center h-7 w-full rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-      <Circle size={10} className="text-gray-400" />
-    </div>
-  );
-  return <div className="h-7 w-full rounded bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800" />;
-}
-
-function getDaySchedule(order, dayIndex) {
-  if (order.status === 'COMPLETED' || order.status === 'CLOSED') return 'completed';
-  if (order.status === 'PLANNED') return 'scheduled';
-  if (order.status === 'IN_PROGRESS') {
-    if (dayIndex === 0) return 'completed';
-    if (dayIndex === 1) return 'in_progress';
-    return 'scheduled';
-  }
-  return 'empty';
-}
 
 /* ───── Technician Inbox Tab ───── */
 function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
@@ -383,150 +374,273 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
   );
 }
 
-/* ───── Schedule Tab (existing) ───── */
-function ScheduleTab({ weeks, t, onOpenDetail, onOpenClosure }) {
-  const [activeWeek, setActiveWeek] = useState(0);
-  const [typeFilter, setTypeFilter] = useState('ALL');
-  const [expandedId, setExpandedId] = useState(null);
+/* ───── Weekly Calendar View (drag-and-drop scheduling grid) ───── */
+function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onPublish, publishing, canPublish }) {
+  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+  const [viewRange, setViewRange] = useState(1);
+  const [search, setSearch] = useState('');
+  const [dragWO, setDragWO] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null);
 
-  const week = weeks[activeWeek] || weeks[0];
-  if (!week) return <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>;
+  const days = useMemo(() => {
+    const result = [];
+    let d = new Date(weekStart);
+    const numDays = viewRange * 5;
+    for (let i = 0; i < numDays; i++) {
+      while (d.getDay() === 0 || d.getDay() === 6) d = addDays(d, 1);
+      result.push({ date: new Date(d), str: toDateStr(d), label: DAYS[d.getDay() - 1], dateLabel: fmtDateShort(d) });
+      d = addDays(d, 1);
+    }
+    return result;
+  }, [weekStart, viewRange]);
 
-  const adherenceGood = week.adherence >= 90;
-  const filteredOrders = useMemo(() => {
-    if (typeFilter === 'ALL') return week.work_orders;
-    return week.work_orders.filter(o => o.type === typeFilter);
-  }, [week, typeFilter]);
+  // Build assignment grid: "workerId:dateStr" -> [wo, ...]
+  const grid = useMemo(() => {
+    const g = {};
+    scheduledWOs.forEach(wo => {
+      const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
+      if (!start) return;
+      (wo.assigned_workers || []).forEach(w => {
+        const key = `${w.worker_id}:${start}`;
+        if (!g[key]) g[key] = [];
+        g[key].push(wo);
+      });
+    });
+    return g;
+  }, [scheduledWOs]);
+
+  // Per-technician total hours in view
+  const techHours = useMemo(() => {
+    const h = {};
+    technicians.forEach(tech => { h[tech.worker_id] = 0; });
+    const daySet = new Set(days.map(d => d.str));
+    scheduledWOs.forEach(wo => {
+      const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
+      if (!start || !daySet.has(start)) return;
+      (wo.assigned_workers || []).forEach(w => {
+        if (h[w.worker_id] !== undefined) h[w.worker_id] += wo.estimated_hours || 0;
+      });
+    });
+    return h;
+  }, [technicians, scheduledWOs, days]);
+
+  const totalAvailable = technicians.length * HOURS_PER_WEEK * viewRange;
+  const totalAssigned = Object.values(techHours).reduce((a, b) => a + b, 0);
+  const loadPct = totalAvailable > 0 ? Math.round((totalAssigned / totalAvailable) * 100) : 0;
+
+  // Daily totals
+  const dailyTotals = useMemo(() => {
+    const totals = {};
+    days.forEach(d => { totals[d.str] = 0; });
+    scheduledWOs.forEach(wo => {
+      const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
+      if (start && totals[start] !== undefined) totals[start] += wo.estimated_hours || 0;
+    });
+    return totals;
+  }, [scheduledWOs, days]);
+
+  const filteredReleased = useMemo(() => {
+    if (!search) return releasedWOs;
+    const q = search.toLowerCase();
+    return releasedWOs.filter(wo =>
+      (wo.wo_number || '').toLowerCase().includes(q) ||
+      (wo.equipment_tag || '').toLowerCase().includes(q) ||
+      (wo.description || '').toLowerCase().includes(q)
+    );
+  }, [releasedWOs, search]);
+
+  const weekEnd = days[days.length - 1]?.date || weekStart;
+  const weekNum = getISOWeek(weekStart);
+  const weekLabel = `Week ${weekNum} · ${fmtDateShort(weekStart)}\u2013${fmtDateShort(weekEnd)}, ${weekStart.getFullYear()}`;
+
+  const handleDragStart = (wo) => setDragWO(wo);
+  const handleDragEnd = () => { setDragWO(null); setDropTarget(null); };
+  const handleDrop = (e, tech, day) => {
+    e.preventDefault();
+    if (dragWO) onScheduleWO(dragWO, tech, day.date);
+    setDragWO(null);
+    setDropTarget(null);
+  };
 
   return (
-    <div className="space-y-5">
-      {/* Week Selector */}
-      <div className="flex gap-2 flex-wrap">
-        {weeks.map((w, i) => (
-          <button key={w.week} onClick={() => { setActiveWeek(i); setExpandedId(null); }}
-            className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${activeWeek === i ? 'bg-[#1B5E20] text-white border-[#1B5E20] shadow-sm' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
-            <span className="font-bold">{w.week}</span>
-            <span className={`ml-2 text-xs ${activeWeek === i ? 'text-green-200' : 'text-muted-foreground'}`}>{w.start} — {w.end}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard icon={Clock} color="text-blue-500" label={t('scheduling.plannedHours')} value={week.planned_hours} sub={t('scheduling.totalHours')} />
-        <KpiCard icon={CheckCircle} color="text-emerald-500" label={t('scheduling.executedHours')} value={week.executed_hours} sub={t('scheduling.actualHours')} />
-        <KpiCard icon={Play} color={adherenceGood ? 'text-emerald-500' : 'text-amber-500'} label={t('scheduling.adherence')} value={week.adherence > 0 ? `${week.adherence}%` : '\u2014'} sub={`${t('scheduling.target')}: 90%`} highlight={!adherenceGood} />
-        <KpiCard icon={Users} color="text-purple-500" label={t('scheduling.workOrders')} value={filteredOrders.length} sub={t('scheduling.ordersInWeek')} />
-      </div>
-
-      {/* Adherence Bar */}
-      {week.adherence > 0 && (
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-foreground">{t('scheduling.adherenceToProgram')}</span>
-            <span className={`text-sm font-bold ${adherenceGood ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>{week.adherence}%</span>
+    <div className="flex gap-4" style={{ minHeight: 500 }}>
+      {/* ── Left Panel: OTs to Schedule ── */}
+      <div className="w-72 min-w-[288px] flex flex-col">
+        <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+          <div className="px-4 py-3 border-b border-border">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-foreground text-sm">OTs to Schedule</h3>
+              <span className="text-xs font-bold bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{releasedWOs.length}</span>
+            </div>
+            <div className="relative">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('scheduling.searchOT') || 'Search OT...'}
+                className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
+            </div>
           </div>
-          <div className="relative h-4 bg-muted rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all ${adherenceGood ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(week.adherence, 100)}%` }} />
-            <div className="absolute top-0 bottom-0 w-0.5 bg-foreground/50" style={{ left: '90%' }} />
-          </div>
-        </div>
-      )}
-
-      {/* Filter by type */}
-      <div className="flex items-center gap-2">
-        <Filter size={14} className="text-muted-foreground" />
-        {['ALL', 'PM01', 'PM02', 'PM03'].map(f => (
-          <button key={f} onClick={() => setTypeFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${typeFilter === f ? 'bg-[#1B5E20] text-white border-[#1B5E20]' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
-            {f === 'ALL' ? t('scheduling.allTypes') : (TYPE_META[f]?.label || f)}
-          </button>
-        ))}
-      </div>
-
-      {/* Work Orders List */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">{t('scheduling.workOrders')} — {week.week}</h2>
-          <span className="text-xs text-muted-foreground bg-muted rounded-full px-3 py-1">{filteredOrders.length} {t('scheduling.orders')}</span>
-        </div>
-
-        <div className="divide-y divide-border">
-          {filteredOrders.map(order => {
-            const typeMeta = TYPE_META[order.type] || TYPE_META.PM02;
-            const statusMeta = STATUS_META[order.status] || STATUS_META.PLANNED;
-            const isExpanded = expandedId === order.id;
-            const deviation = order.duration_actual - order.duration_planned;
-            const hasDeviation = order.duration_actual > 0 && deviation !== 0;
-
-            return (
-              <div key={order.id} className="group">
-                <div className="p-4 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setExpandedId(isExpanded ? null : order.id)}>
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="font-mono text-sm font-bold text-foreground">{order.id}</span>
-                    <span className={`text-[0.65rem] font-bold px-2 py-0.5 rounded border ${typeMeta.bg}`}>{typeMeta.label}</span>
-                    <span className={`text-[0.65rem] font-medium px-2 py-0.5 rounded border ${statusMeta.bg}`}>{t(`scheduling.status_${order.status}`) || order.status}</span>
-                    <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded border border-border">{order.equipment}</span>
-                    <span className={`text-[0.65rem] font-bold px-2 py-0.5 rounded border ml-auto ${PRIORITY_COLOR[order.priority] || PRIORITY_COLOR.P3}`}>{order.priority}</span>
-                    {isExpanded ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
+          <div className="flex-1 overflow-y-auto divide-y divide-border">
+            {filteredReleased.map(wo => {
+              const typeMeta = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+              return (
+                <div key={wo.wo_id} draggable onDragStart={() => handleDragStart(wo)} onDragEnd={handleDragEnd}
+                  className="p-3 hover:bg-muted/50 cursor-grab active:cursor-grabbing transition-colors">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-xs font-bold text-foreground">{wo.wo_number}</span>
+                    <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded border ${typeMeta.bg}`}>{wo.wo_type}</span>
                   </div>
-                  <p className="text-sm text-foreground">{order.description}</p>
-                  <div className="grid grid-cols-5 gap-2 max-w-xs mt-3">
-                    {DAYS.map((day, i) => (
-                      <div key={day} className="flex flex-col items-center gap-1">
-                        <span className="text-[0.6rem] text-muted-foreground font-medium">{day}</span>
-                        <DayCell state={getDaySchedule(order, i)} />
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-sm text-foreground truncate">{wo.equipment_tag || wo.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{wo.estimated_hours || 0}h estimated</p>
                 </div>
-
-                {isExpanded && (
-                  <div className="px-4 pb-4 border-t border-border bg-muted/30">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
-                      <DetailCard label={t('scheduling.plannedHours')} value={`${order.duration_planned}h`} />
-                      {order.duration_actual > 0 && (
-                        <DetailCard label={t('scheduling.actualHours')} value={
-                          <span className="flex items-center gap-1">
-                            {order.duration_actual}h
-                            {hasDeviation && <span className={`text-xs font-bold ${deviation > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{deviation > 0 ? '+' : ''}{deviation}h</span>}
-                          </span>
-                        } />
-                      )}
-                      <DetailCard label={t('scheduling.technicians')} value={order.technicians?.join(', ')} />
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <button onClick={() => onOpenDetail(order)} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted transition-colors flex items-center gap-1.5">
-                        <Eye size={13} /> {t('scheduling.viewDetail')}
-                      </button>
-                      {order.status !== 'COMPLETED' && order.status !== 'CLOSED' && (
-                        <button onClick={() => onOpenClosure(order)} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#1B5E20] hover:bg-[#2E7D32] text-white transition-colors flex items-center gap-1.5">
-                          <Camera size={13} /> {t('scheduling.closeWithOCR')}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
+              );
+            })}
+            {filteredReleased.length === 0 && (
+              <div className="p-6 text-center">
+                <Inbox size={24} className="text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">{releasedWOs.length === 0 ? 'No OTs to schedule' : 'No results'}</p>
               </div>
-            );
-          })}
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main Calendar Area ── */}
+      <div className="flex-1 space-y-3 min-w-0">
+        {/* Draft banner */}
+        <div className="bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-sm font-medium px-4 py-2 rounded-lg">
+          Draft — not visible to technicians yet
         </div>
 
-        {/* Legend */}
-        <div className="px-5 py-3 border-t border-border bg-muted/50 flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 rounded bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center"><CheckCircle size={9} className="text-emerald-600 dark:text-emerald-400" /></div>
-            <span>{t('scheduling.status_COMPLETED')}</span>
+        {/* Week navigator + controls */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setWeekStart(addDays(weekStart, -7))} className="p-1.5 rounded-lg border border-border hover:bg-muted transition-colors">
+              <ChevronLeft size={16} className="text-muted-foreground" />
+            </button>
+            <span className="text-sm font-semibold text-foreground min-w-[250px] text-center">{weekLabel}</span>
+            <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="p-1.5 rounded-lg border border-border hover:bg-muted transition-colors">
+              <ChevronRight size={16} className="text-muted-foreground" />
+            </button>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 rounded bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 flex items-center justify-center"><Play size={9} className="text-blue-600 dark:text-blue-400" /></div>
-            <span>{t('scheduling.status_IN_PROGRESS')}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center"><Circle size={8} className="text-gray-400" /></div>
-            <span>{t('scheduling.status_PLANNED')}</span>
+          <div className="flex items-center gap-2">
+            {[{ v: 1, l: 'Week' }, { v: 2, l: '2 Weeks' }].map(opt => (
+              <button key={opt.v} onClick={() => setViewRange(opt.v)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${viewRange === opt.v ? 'bg-[#1B5E20] text-white border-[#1B5E20]' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
+                {opt.l}
+              </button>
+            ))}
+            {canPublish && (
+              <button onClick={onPublish} disabled={publishing}
+                className="flex items-center gap-2 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50">
+                {publishing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                Publish Schedule
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Capacity bar */}
+        <div className="flex items-center gap-4 text-sm flex-wrap">
+          <span className="text-muted-foreground">Total Available HH: <strong className="text-foreground">{totalAvailable}</strong></span>
+          <span className="text-muted-foreground">Assigned: <strong className="text-foreground">{Math.round(totalAssigned)}</strong></span>
+          <span className="text-muted-foreground">Remaining: <strong className="text-foreground">{Math.round(totalAvailable - totalAssigned)}</strong></span>
+          <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden min-w-[100px]">
+            <div className="h-full bg-[#1B5E20] rounded-full transition-all" style={{ width: `${Math.min(loadPct, 100)}%` }} />
+          </div>
+          <span className="text-sm font-semibold text-foreground whitespace-nowrap">Load: {loadPct}%</span>
+        </div>
+
+        {/* Calendar grid */}
+        {technicians.length > 0 ? (
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse" style={{ minWidth: days.length * 140 + 180 }}>
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase border-r border-border" style={{ width: 180, minWidth: 180 }}>
+                      Technician
+                    </th>
+                    {days.map(d => (
+                      <th key={d.str} className="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground border-r border-border last:border-r-0" style={{ minWidth: 140 }}>
+                        <div className="font-bold">{d.label}</div>
+                        <div className="text-[0.65rem] font-normal">{d.dateLabel}</div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {technicians.map(tech => {
+                    const badge = SPEC_BADGE[tech.specialty] || { label: (tech.specialty || '?').slice(0, 4).toUpperCase(), bg: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' };
+                    const hours = techHours[tech.worker_id] || 0;
+                    return (
+                      <tr key={tech.worker_id} className="border-t border-border hover:bg-muted/10 transition-colors">
+                        <td className="px-3 py-2.5 border-r border-border align-top">
+                          <div className="font-semibold text-sm text-foreground">{tech.name}</div>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded ${badge.bg}`}>{badge.label}</span>
+                            <span className="text-xs text-muted-foreground">{Math.round(hours)}h / {HOURS_PER_WEEK}h</span>
+                          </div>
+                        </td>
+                        {days.map(d => {
+                          const cellKey = `${tech.worker_id}:${d.str}`;
+                          const cellWOs = grid[cellKey] || [];
+                          const isTarget = dropTarget === cellKey && dragWO;
+                          return (
+                            <td key={d.str}
+                              className={`px-1 py-1.5 border-r border-border last:border-r-0 align-top transition-colors ${isTarget ? 'bg-[#1B5E20]/10' : ''}`}
+                              style={{ minHeight: 60 }}
+                              onDragOver={e => { e.preventDefault(); setDropTarget(cellKey); }}
+                              onDragLeave={() => setDropTarget(null)}
+                              onDrop={e => handleDrop(e, tech, d)}>
+                              {cellWOs.map(wo => {
+                                const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+                                return (
+                                  <div key={wo.wo_id} className={`mb-1 p-1.5 rounded text-xs border cursor-default ${woType.bg}`}>
+                                    <div className="font-bold truncate">{wo.wo_number}</div>
+                                    <div className="truncate text-[0.65rem]">{wo.equipment_tag}</div>
+                                    <div className="text-[0.6rem] mt-0.5">{wo.estimated_hours}h</div>
+                                  </div>
+                                );
+                              })}
+                              {cellWOs.length === 0 && isTarget && (
+                                <div className="h-14 border-2 border-dashed border-[#1B5E20]/40 rounded flex items-center justify-center">
+                                  <span className="text-[0.6rem] text-[#1B5E20]">Drop here</span>
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  {/* Daily Total row */}
+                  <tr className="border-t-2 border-border bg-muted/30">
+                    <td className="px-3 py-2.5 border-r border-border">
+                      <span className="text-sm font-semibold text-muted-foreground">Daily Total</span>
+                    </td>
+                    {days.map(d => {
+                      const total = dailyTotals[d.str] || 0;
+                      const maxDaily = technicians.length * 8;
+                      const pct = maxDaily > 0 ? Math.min((total / maxDaily) * 100, 100) : 0;
+                      return (
+                        <td key={d.str} className="px-2 py-2.5 border-r border-border last:border-r-0">
+                          <div className="text-sm font-bold text-foreground mb-1">{Math.round(total)}h</div>
+                          <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${total > 0 ? 'bg-[#1B5E20]' : ''}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-card border border-border rounded-xl p-12 text-center">
+            <Users size={40} className="text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-muted-foreground">No technicians available for this plant</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -846,7 +960,6 @@ export default function Scheduling() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const toast = useToast();
-  const [weeks, setWeeks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(user?.role === 'tecnico' ? 'inbox' : 'schedule');
   const [detailOrder, setDetailOrder] = useState(null);
@@ -854,10 +967,28 @@ export default function Scheduling() {
   const [generating, setGenerating] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
-  // Phase 3 state
+  // Calendar view state
+  const [technicians, setTechnicians] = useState([]);
+  const [releasedWOs, setReleasedWOs] = useState([]);
+  const [scheduledWOs, setScheduledWOs] = useState([]);
+
+  // Legacy state for Gantt/HH/Materials/Inbox
+  const [weeks, setWeeks] = useState([]);
   const [ganttData, setGanttData] = useState([]);
   const [ganttWeeks, setGanttWeeks] = useState(2);
-  const [programs, setPrograms] = useState([]); // raw program list for selecting
+  const [programs, setPrograms] = useState([]);
+
+  const loadCalendarData = () => {
+    Promise.all([
+      api.listTechnicians({ plant_id: plant }).catch(() => []),
+      api.listManagedWOs({ status: 'RELEASED', plant_id: plant }).catch(() => []),
+      api.listManagedWOs({ status: 'SCHEDULED', plant_id: plant }).catch(() => []),
+    ]).then(([techs, released, scheduled]) => {
+      setTechnicians(Array.isArray(techs) ? techs : techs?.technicians || []);
+      setReleasedWOs(Array.isArray(released) ? released : []);
+      setScheduledWOs(Array.isArray(scheduled) ? scheduled : []);
+    });
+  };
 
   const loadPrograms = () => {
     setLoading(true);
@@ -897,15 +1028,27 @@ export default function Scheduling() {
       .finally(() => setLoading(false));
   };
 
-  // Load Gantt data from managed WOs
   const loadGantt = () => {
     api.getGanttManaged({ plant_id: plant, weeks: ganttWeeks })
       .then(setGanttData)
       .catch(() => setGanttData([]));
   };
 
-  useEffect(() => { loadPrograms(); }, [plant]);
+  useEffect(() => { loadPrograms(); loadCalendarData(); }, [plant]);
   useEffect(() => { loadGantt(); }, [plant, ganttWeeks]);
+
+  const handleScheduleWO = (wo, tech, dayDate) => {
+    api.scheduleManagedWO(wo.wo_id, {
+      assigned_workers: [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }],
+      planned_start: toDateStr(dayDate),
+      planned_end: toDateStr(dayDate),
+    })
+      .then(() => {
+        toast.success(`${wo.wo_number} → ${tech.name}`);
+        loadCalendarData();
+      })
+      .catch(() => toast.error(`Error scheduling ${wo.wo_number}`));
+  };
 
   const handleGenerate = () => {
     const now = new Date();
@@ -915,6 +1058,7 @@ export default function Scheduling() {
       .then(() => {
         toast.success(t('scheduling.programCreated'));
         loadPrograms();
+        loadCalendarData();
         loadGantt();
       })
       .catch(() => toast.error(t('scheduling.programError')))
@@ -922,7 +1066,7 @@ export default function Scheduling() {
   };
 
   const handlePublish = () => {
-    const activeProgram = programs[0]; // most recent
+    const activeProgram = programs[0];
     if (!activeProgram) return;
     setPublishing(true);
     api.publishProgram(activeProgram.program_id)
@@ -935,7 +1079,7 @@ export default function Scheduling() {
   };
 
   const handleClosureSubmit = (order, ocrData) => {
-    toast.success(`${t('scheduling.closureSubmitted')} \u2014 ${order.id}`);
+    toast.success(`${t('scheduling.closureSubmitted')} — ${order.id}`);
     setWeeks(prev => prev.map(w => ({
       ...w,
       work_orders: w.work_orders.map(wo => wo.id === order.id ? { ...wo, status: 'COMPLETED', duration_actual: parseFloat(ocrData.actual_hours) || wo.duration_planned } : wo),
@@ -979,16 +1123,6 @@ export default function Scheduling() {
         </div>
         {!isTecnico && (
           <div className="flex items-center gap-2">
-            {canPublish && (
-              <button
-                onClick={handlePublish}
-                disabled={publishing}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50"
-              >
-                {publishing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                {publishing ? t('scheduling.publishing') : t('scheduling.publishProgram')}
-              </button>
-            )}
             {activeProgram?.published_at && (
               <span className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg text-xs font-medium text-emerald-700 dark:text-emerald-300">
                 <Lock size={12} /> {t('scheduling.published')}
@@ -1021,7 +1155,16 @@ export default function Scheduling() {
         <TechnicianInbox weeks={weeks} user={user} t={t} onOpenDetail={setDetailOrder} onOpenClosure={setClosureOrder} />
       )}
       {tab === 'schedule' && (
-        <ScheduleTab weeks={weeks} t={t} onOpenDetail={setDetailOrder} onOpenClosure={setClosureOrder} />
+        <WeeklyCalendarView
+          technicians={technicians}
+          releasedWOs={releasedWOs}
+          scheduledWOs={scheduledWOs}
+          t={t}
+          onScheduleWO={handleScheduleWO}
+          onPublish={handlePublish}
+          publishing={publishing}
+          canPublish={canPublish}
+        />
       )}
       {tab === 'gantt' && (
         <GanttTab ganttData={ganttData} t={t} weeksRange={ganttWeeks} onWeeksChange={setGanttWeeks} />

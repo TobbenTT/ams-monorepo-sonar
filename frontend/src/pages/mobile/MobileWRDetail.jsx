@@ -11,8 +11,8 @@ import * as api from '../../api';
 const PRIORITY_META = {
     P1: { label: '1 - Urgente', color: '#EF4444', bg: '#FEE2E2', sub: '< 24 horas', claseOT: 'PM03', claseOTLabel: 'No Programado' },
     P2: { label: '2 - Programa en Ejecución', color: '#F97316', bg: '#FED7AA', sub: '< 7 días', claseOT: 'PM03', claseOTLabel: 'No Programado' },
-    P3: { label: '3 - Próximo Programa', color: '#EAB308', bg: '#FEF3C7', sub: '7 - 14 días', claseOT: 'PM01', claseOTLabel: 'Programado' },
-    P4: { label: '4 - Sin Prioridad', color: '#3B82F6', bg: '#DBEAFE', sub: '', claseOT: 'PM01', claseOTLabel: 'Programado' },
+    P3: { label: '3 - Próximo Programa', color: '#EAB308', bg: '#FEF3C7', sub: '> 7 días', claseOT: 'PM01', claseOTLabel: 'Programado' },
+    P4: { label: '4 - Parada de Planta', color: '#3B82F6', bg: '#DBEAFE', sub: 'Parada programada', claseOT: 'PM01', claseOTLabel: 'Programado' },
 };
 
 const ACTIVITY_CLASS_LABELS = {
@@ -39,6 +39,7 @@ const STATUS_META = {
     COMPLETED: { label: 'Completado', color: '#047857', step: 4 },
     CLOSED: { label: 'Cerrado', color: '#6366F1', step: 4 },
     REJECTED: { label: 'Rechazado', color: '#EF4444', step: -1 },
+    CANCELLED: { label: 'Cancelado', color: '#6B7280', step: -1 },
 };
 
 const FLOW_STEPS = ['Creado', 'Revisión', 'Aprobado', 'Ejecución', 'Cerrado'];
@@ -215,6 +216,16 @@ export default function MobileWRDetail() {
             setShowRejectForm(false);
             setRejectReason('');
         } catch (e) { toast.error('Error al rechazar: ' + (e.message || e)); }
+        setActionLoading(false);
+    };
+
+    const handleCancel = async () => {
+        setActionLoading(true);
+        try {
+            await api.cancelWorkRequest(wr.request_id);
+            toast.success('Aviso cancelado');
+            loadWr();
+        } catch (e) { toast.error('Error al cancelar: ' + (e.message || e)); }
         setActionLoading(false);
     };
 
@@ -501,24 +512,35 @@ export default function MobileWRDetail() {
                         <div className="text-xs font-semibold mb-3" style={{ color: '#64748B', letterSpacing: '0.05em' }}>ACCIONES</div>
 
                         {!showRejectForm ? (
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={handleApprove}
+                                        disabled={actionLoading}
+                                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
+                                        style={{ backgroundColor: '#047857', color: '#FFFFFF' }}
+                                    >
+                                        <CheckCircle2 className="w-5 h-5" />
+                                        Aprobar
+                                    </button>
+                                    <button
+                                        onClick={() => setShowRejectForm(true)}
+                                        disabled={actionLoading}
+                                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
+                                        style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}
+                                    >
+                                        <XCircle className="w-5 h-5" />
+                                        Rechazar
+                                    </button>
+                                </div>
                                 <button
-                                    onClick={handleApprove}
+                                    onClick={handleCancel}
                                     disabled={actionLoading}
-                                    className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
-                                    style={{ backgroundColor: '#047857', color: '#FFFFFF' }}
-                                >
-                                    <CheckCircle2 className="w-5 h-5" />
-                                    Aprobar
-                                </button>
-                                <button
-                                    onClick={() => setShowRejectForm(true)}
-                                    disabled={actionLoading}
-                                    className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
-                                    style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}
+                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
+                                    style={{ backgroundColor: '#F1F5F9', color: '#64748B' }}
                                 >
                                     <XCircle className="w-5 h-5" />
-                                    Rechazar
+                                    Cancelar Aviso
                                 </button>
                             </div>
                         ) : (

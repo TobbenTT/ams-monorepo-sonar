@@ -10,8 +10,8 @@ import * as api from '../../api';
 const PRIORITY_META = {
     P1: { bg: '#FEE2E2', text: '#991B1B', label: '1-Urgente', sub: '<24h' },
     P2: { bg: '#FED7AA', text: '#9A3412', label: '2-Prog. Ejec.', sub: '<7d' },
-    P3: { bg: '#FEF3C7', text: '#92400E', label: '3-Próx. Prog.', sub: '7-14d' },
-    P4: { bg: '#DBEAFE', text: '#1E40AF', label: '4-Sin Prior.', sub: '>14d' },
+    P3: { bg: '#FEF3C7', text: '#92400E', label: '3-Próx. Prog.', sub: '> 7d' },
+    P4: { bg: '#DBEAFE', text: '#1E40AF', label: '4-Parada Planta', sub: 'Parada' },
 };
 const pc = (p) => PRIORITY_META[p] || { bg: '#F1F5F9', text: '#475569', label: p, sub: '' };
 
@@ -23,6 +23,7 @@ function flowStatus(s) {
     if (s === 'ASSIGNED' || s === 'ACTIVE' || s === 'IN_PROGRESS' || s === 'SCHEDULED') return 'in_execution';
     if (s === 'COMPLETED' || s === 'CLOSED') return 'closed';
     if (s === 'REJECTED') return 'rejected';
+    if (s === 'CANCELLED') return 'rejected';
     return 'created';
 }
 

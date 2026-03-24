@@ -1498,7 +1498,7 @@ export default function WorkOrdersPage() {
                       <option value="P1">P1 - Urgente</option>
                       <option value="P2">P2 - Programa en Ejecución</option>
                       <option value="P3">P3 - Próximo Programa</option>
-                      <option value="P4">P4 - Sin Prioridad</option>
+                      <option value="P4">P4 - Parada de Planta</option>
                     </select>
                   </div>
                   <div>

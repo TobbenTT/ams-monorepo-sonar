@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Clock, MapPin, AlertTriangle, Wrench, Package,
     CheckCircle2, XCircle, ChevronRight, FileText, User, Calendar,
-    Users, Timer, Shield, Building, Zap, MessageSquare,
+    Users, Timer, Shield, Building, Zap, MessageSquare, Pencil, Save,
 } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import * as api from '../../api';
@@ -144,6 +144,8 @@ export default function MobileWRDetail() {
     const [techLoading, setTechLoading] = useState(false);
     const [techFilter, setTechFilter] = useState('');
     const [selectedWorkers, setSelectedWorkers] = useState([]);
+    const [editing, setEditing] = useState(false);
+    const [editData, setEditData] = useState({});
 
     const loadWr = () => {
         setLoading(true);
@@ -229,6 +231,51 @@ export default function MobileWRDetail() {
         setActionLoading(false);
     };
 
+    const startEditing = () => {
+        setEditData({
+            problem_description: wr.description || wr.problem_description?.original_text || '',
+            priority: wr.priority || 'P3',
+            estimated_duration: wr.estimated_duration || 4,
+            production_impact: wr.production_impact || 'MEDIUM',
+            suggested_action: wr.suggested_action || '',
+            failure_symptom: wr.failure_symptom || '',
+        });
+        setEditing(true);
+    };
+
+    const handleSaveEdit = async () => {
+        setActionLoading(true);
+        try {
+            await api.updateWorkRequest(wr.request_id, editData);
+            toast.success('Aviso actualizado');
+            setEditing(false);
+            loadWr();
+        } catch (e) { toast.error('Error al actualizar: ' + (e.message || e)); }
+        setActionLoading(false);
+    };
+
+    const handleSaveAndApprove = async () => {
+        setActionLoading(true);
+        try {
+            await api.updateWorkRequest(wr.request_id, editData);
+            await api.validateWorkRequest(wr.request_id, { action: 'APPROVE', modifications: {} });
+            toast.success('Aviso actualizado y aprobado');
+            setEditing(false);
+            loadWr();
+        } catch (e) { toast.error('Error: ' + (e.message || e)); }
+        setActionLoading(false);
+    };
+
+    const handleCreateOT = async () => {
+        setActionLoading(true);
+        try {
+            const wo = await api.createWOFromWR({ work_request_id: wr.request_id });
+            toast.success(`OT ${wo.wo_number || ''} creada desde aviso`);
+            loadWr();
+        } catch (e) { toast.error('Error al crear OT: ' + (e.message || e)); }
+        setActionLoading(false);
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -295,11 +342,30 @@ export default function MobileWRDetail() {
                             <span className="px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0" style={{ backgroundColor: pm.bg, color: pm.color }}>
                                 {pri}
                             </span>
+                            {wr.wo_number && (
+                                <button
+                                    onClick={() => navigate(`/m/work-orders/${wr.wo_number}`)}
+                                    className="px-2 py-0.5 rounded-full text-xs font-bold flex-shrink-0"
+                                    style={{ backgroundColor: '#DBEAFE', color: '#1D4ED8' }}
+                                >
+                                    OT {wr.wo_number}
+                                </button>
+                            )}
                         </div>
                         <p className="text-xs font-mono truncate" style={{ color: '#64748B' }}>
                             {(wr.request_id || '').slice(0, 16)}
                         </p>
                     </div>
+                    {canApprove && !editing && (
+                        <button onClick={startEditing} className="p-2 rounded-lg" style={{ backgroundColor: '#EEF2FF' }}>
+                            <Pencil className="w-4 h-4" style={{ color: '#4F46E5' }} />
+                        </button>
+                    )}
+                    {editing && (
+                        <button onClick={handleSaveEdit} disabled={actionLoading} className="p-2 rounded-lg" style={{ backgroundColor: '#ECFDF5' }}>
+                            <Save className="w-4 h-4" style={{ color: '#059669' }} />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -327,19 +393,38 @@ export default function MobileWRDetail() {
                 </div>
 
                 {/* Description */}
-                <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
+                <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: editing ? '#818CF8' : '#E2E8F0' }}>
                     <div className="text-xs font-semibold mb-2" style={{ color: '#64748B', letterSpacing: '0.05em' }}>¿QUÉ OCURRE?</div>
-                    <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#334155' }}>{desc}</p>
+                    {editing ? (
+                        <textarea
+                            value={editData.problem_description || ''}
+                            onChange={(e) => setEditData(prev => ({ ...prev, problem_description: e.target.value }))}
+                            className="w-full h-28 p-3 rounded-xl border text-sm resize-none outline-none"
+                            style={{ borderColor: '#C7D2FE', backgroundColor: '#F5F3FF' }}
+                        />
+                    ) : (
+                        <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#334155' }}>{desc}</p>
+                    )}
                 </div>
 
                 {/* Suggested Action */}
-                {suggestedAction && (
-                    <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
+                {(suggestedAction || editing) && (
+                    <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: editing ? '#818CF8' : '#E2E8F0' }}>
                         <div className="text-xs font-semibold mb-2" style={{ color: '#64748B', letterSpacing: '0.05em' }}>ACCIÓN SUGERIDA</div>
-                        <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-                            <Zap className="w-5 h-5 flex-shrink-0" style={{ color: '#16A34A' }} />
-                            <span className="text-sm font-medium" style={{ color: '#166534' }}>{suggestedAction}</span>
-                        </div>
+                        {editing ? (
+                            <textarea
+                                value={editData.suggested_action || ''}
+                                onChange={(e) => setEditData(prev => ({ ...prev, suggested_action: e.target.value }))}
+                                placeholder="Describe la acción sugerida..."
+                                className="w-full h-20 p-3 rounded-xl border text-sm resize-none outline-none"
+                                style={{ borderColor: '#C7D2FE', backgroundColor: '#F5F3FF' }}
+                            />
+                        ) : (
+                            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                                <Zap className="w-5 h-5 flex-shrink-0" style={{ color: '#16A34A' }} />
+                                <span className="text-sm font-medium" style={{ color: '#166534' }}>{suggestedAction}</span>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -491,7 +576,7 @@ export default function MobileWRDetail() {
                 </div>
 
                 {/* Meta info */}
-                <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
+                <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: editing ? '#818CF8' : '#E2E8F0' }}>
                     <div className="text-xs font-semibold mb-3" style={{ color: '#64748B', letterSpacing: '0.05em' }}>INFORMACIÓN</div>
                     <div className="space-y-3">
                         {createdAt && (
@@ -502,16 +587,82 @@ export default function MobileWRDetail() {
                         {techName && <MetaRow icon={User} label="Reportado por" value={techName} />}
                         {plantId && <MetaRow icon={Building} label="Planta" value={plantId} />}
                         {plantCondition && <MetaRow icon={Shield} label="Condición del equipo" value={PLANT_CONDITION_LABELS[plantCondition] || plantCondition} />}
-                        {estDuration > 0 && <MetaRow icon={Timer} label="Duración estimada" value={`${estDuration} horas`} />}
+                        {editing ? (
+                            <>
+                                <div className="flex items-center gap-3 px-1">
+                                    <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#F59E0B' }} />
+                                    <div className="flex-1">
+                                        <div className="text-xs" style={{ color: '#64748B' }}>Prioridad</div>
+                                        <select
+                                            value={editData.priority || 'P3'}
+                                            onChange={(e) => setEditData(prev => ({ ...prev, priority: e.target.value }))}
+                                            className="w-full mt-1 px-2 py-1.5 rounded-lg border text-sm font-bold outline-none"
+                                            style={{ borderColor: '#C7D2FE', backgroundColor: '#F5F3FF' }}
+                                        >
+                                            {Object.entries(PRIORITY_META).map(([k, v]) => (
+                                                <option key={k} value={k}>{v.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 px-1">
+                                    <Timer className="w-4 h-4 flex-shrink-0" style={{ color: '#3B82F6' }} />
+                                    <div className="flex-1">
+                                        <div className="text-xs" style={{ color: '#64748B' }}>Duración estimada (horas)</div>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.5"
+                                            value={editData.estimated_duration || ''}
+                                            onChange={(e) => setEditData(prev => ({ ...prev, estimated_duration: parseFloat(e.target.value) || 0 }))}
+                                            className="w-full mt-1 px-2 py-1.5 rounded-lg border text-sm font-bold outline-none"
+                                            style={{ borderColor: '#C7D2FE', backgroundColor: '#F5F3FF' }}
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            estDuration > 0 && <MetaRow icon={Timer} label="Duración estimada" value={`${estDuration} horas`} />
+                        )}
                     </div>
                 </div>
 
                 {/* Approval / Reject Actions */}
                 {canApprove && (
-                    <div className="bg-white rounded-2xl p-4 border-2" style={{ borderColor: '#10B981' }}>
+                    <div className="bg-white rounded-2xl p-4 border-2" style={{ borderColor: editing ? '#818CF8' : '#10B981' }}>
                         <div className="text-xs font-semibold mb-3" style={{ color: '#64748B', letterSpacing: '0.05em' }}>ACCIONES</div>
 
-                        {!showRejectForm ? (
+                        {editing ? (
+                            <div className="space-y-2">
+                                <button
+                                    onClick={handleSaveAndApprove}
+                                    disabled={actionLoading}
+                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
+                                    style={{ backgroundColor: '#047857', color: '#FFFFFF' }}
+                                >
+                                    <CheckCircle2 className="w-5 h-5" />
+                                    Guardar y Aprobar
+                                </button>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={handleSaveEdit}
+                                        disabled={actionLoading}
+                                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
+                                        style={{ backgroundColor: '#EEF2FF', color: '#4F46E5' }}
+                                    >
+                                        <Save className="w-4 h-4" />
+                                        Solo Guardar
+                                    </button>
+                                    <button
+                                        onClick={() => setEditing(false)}
+                                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95"
+                                        style={{ backgroundColor: '#F1F5F9', color: '#64748B' }}
+                                    >
+                                        Cancelar Edición
+                                    </button>
+                                </div>
+                            </div>
+                        ) : !showRejectForm ? (
                             <div className="space-y-2">
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
@@ -591,7 +742,7 @@ export default function MobileWRDetail() {
                     </div>
                 )}
 
-                {/* Approved → Assign technician */}
+                {/* Approved → Assign technician + Crear OT */}
                 {['VALIDATED', 'APPROVED'].includes(status) && (
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border-2" style={{ borderColor: '#86EFAC' }}>
                         <div className="flex items-center gap-2 mb-3">
@@ -599,14 +750,27 @@ export default function MobileWRDetail() {
                             <span className="text-sm font-bold" style={{ color: '#166534' }}>Aviso Aprobado</span>
                         </div>
                         {!showAssignPanel ? (
-                            <button
-                                onClick={openAssignPanel}
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95"
-                                style={{ backgroundColor: '#7C3AED', color: '#FFFFFF' }}
-                            >
-                                <Users className="w-5 h-5" />
-                                Asignar Técnicos
-                            </button>
+                            <div className="space-y-2">
+                                {!wr.wo_number && (
+                                    <button
+                                        onClick={handleCreateOT}
+                                        disabled={actionLoading}
+                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
+                                        style={{ backgroundColor: '#1D4ED8', color: '#FFFFFF' }}
+                                    >
+                                        <FileText className="w-5 h-5" />
+                                        Crear Orden de Trabajo
+                                    </button>
+                                )}
+                                <button
+                                    onClick={openAssignPanel}
+                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95"
+                                    style={{ backgroundColor: '#7C3AED', color: '#FFFFFF' }}
+                                >
+                                    <Users className="w-5 h-5" />
+                                    Asignar Técnicos
+                                </button>
+                            </div>
                         ) : (
                             <div className="space-y-3">
                                 {selectedWorkers.length > 0 && (

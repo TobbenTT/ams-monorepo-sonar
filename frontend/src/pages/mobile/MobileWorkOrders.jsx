@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
     Filter, Search, Clock, PlayCircle, PauseCircle, CheckCircle2,
-    AlertCircle, Circle, UserPlus,
+    AlertCircle, Circle, UserPlus, X,
 } from 'lucide-react';
 import * as api from '../../api';
 
@@ -11,6 +11,7 @@ const STATUS_CONFIG = {
     PENDING:            { label: 'Pendiente',    color: '#3B82F6', bg: '#DBEAFE',  step: 2 },
     ASSIGNED:           { label: 'Asignada',     color: '#06B6D4', bg: '#CFFAFE',  step: 4 },
     IN_PROGRESS:        { label: 'En Ejecución', color: '#10B981', bg: '#D1FAE5',  step: 5 },
+    PAUSED:             { label: 'Pausada',      color: '#F97316', bg: '#FFF7ED',  step: 5 },
     COMPLETED:          { label: 'Cerrada',      color: '#6366F1', bg: '#E0E7FF',  step: 7 },
 };
 const sc = (s) => STATUS_CONFIG[s] || { label: s || '—', color: '#94A3B8', bg: '#F1F5F9', step: 0 };
@@ -59,6 +60,11 @@ export default function MobileWorkOrders() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
+    const [actionLoading, setActionLoading] = useState(null);
+    // Assign modal
+    const [assignTarget, setAssignTarget] = useState(null);
+    const [assignName, setAssignName] = useState('');
+    const [technicians, setTechnicians] = useState([]);
 
     useEffect(() => {
         api.listChecklists({ plant_id: plant })
@@ -69,6 +75,52 @@ export default function MobileWorkOrders() {
             .catch(() => setTasks([]))
             .finally(() => setLoading(false));
     }, [plant]);
+
+    // Load technicians for assign modal
+    useEffect(() => {
+        api.listTechnicians({ plant_id: plant })
+            .then(res => setTechnicians(Array.isArray(res) ? res : []))
+            .catch(() => setTechnicians([]));
+    }, [plant]);
+
+    const handlePause = async (wo) => {
+        setActionLoading(wo.id);
+        try {
+            await api.updateChecklist(wo.id, { status: 'PAUSED' });
+            setTasks(prev => prev.map(t => t.id === wo.id ? { ...t, status: 'PAUSED' } : t));
+        } catch { /* silently fail */ }
+        finally { setActionLoading(null); }
+    };
+
+    const handleResume = async (wo) => {
+        setActionLoading(wo.id);
+        try {
+            await api.updateChecklist(wo.id, { status: 'IN_PROGRESS' });
+            setTasks(prev => prev.map(t => t.id === wo.id ? { ...t, status: 'IN_PROGRESS' } : t));
+        } catch { /* silently fail */ }
+        finally { setActionLoading(null); }
+    };
+
+    const handleAssign = async () => {
+        if (!assignTarget || !assignName.trim()) return;
+        setActionLoading(assignTarget.id);
+        try {
+            await api.updateChecklist(assignTarget.id, { assigned_to: assignName.trim(), status: 'ASSIGNED' });
+            setTasks(prev => prev.map(t => t.id === assignTarget.id ? { ...t, assignee: assignName.trim(), status: 'ASSIGNED' } : t));
+            setAssignTarget(null);
+            setAssignName('');
+        } catch { /* silently fail */ }
+        finally { setActionLoading(null); }
+    };
+
+    const handleFinalize = async (wo) => {
+        setActionLoading(wo.id);
+        try {
+            await api.closeChecklist(wo.id, { supervisor: '', supervisor_notes: '' });
+            setTasks(prev => prev.map(t => t.id === wo.id ? { ...t, status: 'COMPLETED' } : t));
+        } catch { /* silently fail */ }
+        finally { setActionLoading(null); }
+    };
 
     const filterOptions = mobileRole === 'supervisor'
         ? [
@@ -86,7 +138,6 @@ export default function MobileWorkOrders() {
         ];
 
     const filtered = tasks.filter(wo => {
-        // Search filter
         if (search) {
             const q = search.toLowerCase();
             const match = wo.woId.toLowerCase().includes(q)
@@ -94,7 +145,6 @@ export default function MobileWorkOrders() {
                 || wo.equipmentName.toLowerCase().includes(q);
             if (!match) return false;
         }
-        // Status filter
         if (filter === 'all') return true;
         if (filter === 'unassigned') return !wo.assignee;
         if (filter === 'delayed') return wo.delayed;
@@ -175,6 +225,7 @@ export default function MobileWorkOrders() {
                 {filtered.map(wo => {
                     const statusCfg = sc(wo.status);
                     const priorityColors = pc(wo.priority);
+                    const isLoading = actionLoading === wo.id;
 
                     return (
                         <div
@@ -230,14 +281,14 @@ export default function MobileWorkOrders() {
                             </div>
 
                             {/* Progress Bar (if in progress) */}
-                            {wo.status === 'IN_PROGRESS' && (
+                            {(wo.status === 'IN_PROGRESS' || wo.status === 'PAUSED') && (
                                 <div className="mb-3">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-xs font-medium" style={{ color: '#64748B' }}>Avance</span>
-                                        <span className="text-xs font-bold" style={{ color: '#10B981' }}>{wo.progress}%</span>
+                                        <span className="text-xs font-bold" style={{ color: wo.status === 'PAUSED' ? '#F97316' : '#10B981' }}>{wo.progress}%</span>
                                     </div>
                                     <div className="h-2 rounded-full" style={{ backgroundColor: '#E2E8F0' }}>
-                                        <div className="h-full rounded-full transition-all" style={{ width: `${wo.progress}%`, backgroundColor: '#10B981' }} />
+                                        <div className="h-full rounded-full transition-all" style={{ width: `${wo.progress}%`, backgroundColor: wo.status === 'PAUSED' ? '#F97316' : '#10B981' }} />
                                     </div>
                                 </div>
                             )}
@@ -276,11 +327,13 @@ export default function MobileWorkOrders() {
                                         {wo.status === 'IN_PROGRESS' && (
                                             <>
                                                 <button
-                                                    className="px-4 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 flex items-center gap-2"
+                                                    onClick={() => handlePause(wo)}
+                                                    disabled={isLoading}
+                                                    className="px-4 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
                                                     style={{ backgroundColor: '#F97316', color: '#FFFFFF' }}
                                                 >
                                                     <PauseCircle className="w-4 h-4" />
-                                                    Pausar
+                                                    {isLoading ? '...' : 'Pausar'}
                                                 </button>
                                                 <button
                                                     onClick={() => navigate(`/m/tarea/${wo.id}`)}
@@ -291,13 +344,26 @@ export default function MobileWorkOrders() {
                                                 </button>
                                             </>
                                         )}
-                                        {wo.status === 'COMPLETED' && (
+                                        {wo.status === 'PAUSED' && (
                                             <button
-                                                className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                onClick={() => handleResume(wo)}
+                                                disabled={isLoading}
+                                                className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                                                 style={{ backgroundColor: '#10B981', color: '#FFFFFF' }}
                                             >
+                                                <PlayCircle className="w-4 h-4" />
+                                                {isLoading ? '...' : 'Reanudar'}
+                                            </button>
+                                        )}
+                                        {wo.status === 'COMPLETED' && (
+                                            <button
+                                                onClick={() => handleFinalize(wo)}
+                                                disabled={isLoading}
+                                                className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                                                style={{ backgroundColor: '#6366F1', color: '#FFFFFF' }}
+                                            >
                                                 <CheckCircle2 className="w-4 h-4" />
-                                                Finalizar
+                                                {isLoading ? '...' : 'Finalizar'}
                                             </button>
                                         )}
                                     </>
@@ -307,7 +373,9 @@ export default function MobileWorkOrders() {
                                     <>
                                         {!wo.assignee && (wo.status === 'DRAFT' || wo.status === 'PENDING') && (
                                             <button
-                                                className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                onClick={() => { setAssignTarget(wo); setAssignName(''); }}
+                                                disabled={isLoading}
+                                                className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                                                 style={{ backgroundColor: '#047857', color: '#FFFFFF' }}
                                             >
                                                 <UserPlus className="w-4 h-4" />
@@ -328,6 +396,58 @@ export default function MobileWorkOrders() {
                     );
                 })}
             </div>
+
+            {/* ASSIGN MODAL */}
+            {assignTarget && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setAssignTarget(null)}>
+                    <div className="bg-white w-full max-w-lg rounded-t-2xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold" style={{ color: '#0F172A' }}>Asignar Tarea</h3>
+                            <button onClick={() => setAssignTarget(null)} className="p-1"><X className="w-5 h-5" style={{ color: '#94A3B8' }} /></button>
+                        </div>
+                        <div className="text-sm" style={{ color: '#475569' }}>
+                            <span className="font-semibold">{assignTarget.woId}</span> — {assignTarget.equipment}
+                        </div>
+                        <div>
+                            <label className="text-xs font-semibold uppercase mb-1 block" style={{ color: '#64748B' }}>Técnico</label>
+                            <input
+                                type="text"
+                                value={assignName}
+                                onChange={e => setAssignName(e.target.value)}
+                                placeholder="Nombre del técnico..."
+                                className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                                style={{ borderColor: '#E2E8F0' }}
+                            />
+                            {technicians.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {technicians.slice(0, 6).map(tech => (
+                                        <button
+                                            key={tech.user_id || tech.username}
+                                            onClick={() => setAssignName(tech.full_name || tech.username)}
+                                            className="px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+                                            style={{
+                                                borderColor: assignName === (tech.full_name || tech.username) ? '#047857' : '#E2E8F0',
+                                                backgroundColor: assignName === (tech.full_name || tech.username) ? '#ECFDF5' : '#FFFFFF',
+                                                color: assignName === (tech.full_name || tech.username) ? '#047857' : '#475569',
+                                            }}
+                                        >
+                                            {tech.full_name || tech.username}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={handleAssign}
+                            disabled={!assignName.trim() || actionLoading}
+                            className="w-full py-3 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-50"
+                            style={{ backgroundColor: '#047857', color: '#FFFFFF' }}
+                        >
+                            {actionLoading ? 'Asignando...' : 'Confirmar Asignación'}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

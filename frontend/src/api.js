@@ -75,6 +75,7 @@ async function request(method, path, data, params) {
 async function get(path, params) { return request('GET', path, undefined, params); }
 async function post(path, data) { return request('POST', path, data || {}); }
 async function put(path, data) { return request('PUT', path, data || {}); }
+async function patch(path, data) { return request('PATCH', path, data || {}); }
 async function del(path) { return request('DELETE', path); }
 
 // ── Hierarchy ──
@@ -362,6 +363,7 @@ export const listChecklists = (p) => get('/execution-checklists/', p);
 export const getChecklist = (id) => get(`/execution-checklists/${id}`);
 export const completeChecklistStep = (id, d) => put(`/execution-checklists/${id}/steps`, d);
 export const closeChecklist = (id, d) => put(`/execution-checklists/${id}/close`, d);
+export const updateChecklist = (id, d) => patch(`/execution-checklists/${id}`, d);
 
 // ── Deliverables (GAP-W10) ──
 export const listDeliverables = (p) => get('/deliverables/', p);

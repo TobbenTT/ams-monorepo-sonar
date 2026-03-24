@@ -10,54 +10,70 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { LoadingSpinner } from './components/Shared';
 import './styles/index.css';
 
+// Wrapper: if a lazy chunk fails (stale deploy), auto-reload once
+function lazyRetry(importFn) {
+    return lazy(() =>
+        importFn().catch(() => {
+            const key = 'chunk_reload_ts';
+            const last = sessionStorage.getItem(key);
+            const now = Date.now();
+            if (!last || now - Number(last) > 10000) {
+                sessionStorage.setItem(key, String(now));
+                window.location.reload();
+            }
+            return importFn(); // 2nd attempt after potential reload
+        })
+    );
+}
+
 // ── New Design Pages ──────────────────────────────────────────
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const WorkOrdersPage = lazy(() => import('./pages/WorkOrdersPage'));
-const WorkManagement = lazy(() => import('./pages/WorkManagement'));
-const FailuresEvents = lazy(() => import('./pages/FailuresEvents'));
-const ImprovementActionsPage = lazy(() => import('./pages/ImprovementActionsPage'));
-const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
-const ReportsPage = lazy(() => import('./pages/ReportsPage'));
-const TeamPage = lazy(() => import('./pages/TeamPage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const Dashboard = lazyRetry(() => import('./pages/Dashboard'));
+const WorkOrdersPage = lazyRetry(() => import('./pages/WorkOrdersPage'));
+const WorkManagement = lazyRetry(() => import('./pages/WorkManagement'));
+const FailuresEvents = lazyRetry(() => import('./pages/FailuresEvents'));
+const ImprovementActionsPage = lazyRetry(() => import('./pages/ImprovementActionsPage'));
+const AnalyticsPage = lazyRetry(() => import('./pages/AnalyticsPage'));
+const ReportsPage = lazyRetry(() => import('./pages/ReportsPage'));
+const TeamPage = lazyRetry(() => import('./pages/TeamPage'));
+const SettingsPage = lazyRetry(() => import('./pages/SettingsPage'));
 
 // ── Existing Pages (secondary routes) ─────────────────────────
-const Login = lazy(() => import('./pages/Login'));
-const HomeRouter = lazy(() => import('./pages/HomeRouter'));
-const MobileHome = lazy(() => import('./pages/mobile/MobileHome'));
-const MobileCreateWR = lazy(() => import('./pages/mobile/MobileCreateWR'));
-const MobileWorkRequests = lazy(() => import('./pages/mobile/MobileWorkRequests'));
-const MobileTaskExecution = lazy(() => import('./pages/mobile/MobileTaskExecution'));
-const MobileDashboard = lazy(() => import('./pages/mobile/MobileDashboard'));
-const MobileWorkOrders = lazy(() => import('./pages/mobile/MobileWorkOrders'));
-const MobileWRDetail = lazy(() => import('./pages/mobile/MobileWRDetail'));
-const Hierarchy = lazy(() => import('./pages/Hierarchy'));
-const Criticality = lazy(() => import('./pages/Criticality'));
-const FMEA = lazy(() => import('./pages/FMEA'));
-const FMECA = lazy(() => import('./pages/FMECA'));
-const Strategy = lazy(() => import('./pages/Strategy'));
-const WorkPackages = lazy(() => import('./pages/WorkPackages'));
-const WorkRequests = lazy(() => import('./pages/WorkRequests'));
-const Backlog = lazy(() => import('./pages/Backlog'));
-const Scheduling = lazy(() => import('./pages/Scheduling'));
-const Planner = lazy(() => import('./pages/Planner'));
-const Planning = lazy(() => import('./pages/Planning'));
-const FieldCapture = lazy(() => import('./pages/FieldCapture'));
-const Reliability = lazy(() => import('./pages/Reliability'));
-const RCA = lazy(() => import('./pages/RCA'));
-const DefectElimination = lazy(() => import('./pages/DefectElimination'));
-const SAPReview = lazy(() => import('./pages/SAPReview'));
-const Admin = lazy(() => import('./pages/Admin'));
-const AIAgents = lazy(() => import('./pages/AIAgents'));
-const Profile = lazy(() => import('./pages/Profile'));
-const Financial = lazy(() => import('./pages/Financial'));
-const Troubleshooting = lazy(() => import('./pages/Troubleshooting'));
-const EquipmentChat = lazy(() => import('./pages/EquipmentChat'));
-const ExpertKnowledge = lazy(() => import('./pages/ExpertKnowledge'));
-const ExecutionChecklists = lazy(() => import('./pages/ExecutionChecklists'));
-const FeedbackAdmin = lazy(() => import('./pages/FeedbackAdmin'));
-const Execution = lazy(() => import('./pages/Execution'));
-const PostMaintenance = lazy(() => import('./pages/PostMaintenance'));
+const Login = lazyRetry(() => import('./pages/Login'));
+const HomeRouter = lazyRetry(() => import('./pages/HomeRouter'));
+const MobileHome = lazyRetry(() => import('./pages/mobile/MobileHome'));
+const MobileCreateWR = lazyRetry(() => import('./pages/mobile/MobileCreateWR'));
+const MobileWorkRequests = lazyRetry(() => import('./pages/mobile/MobileWorkRequests'));
+const MobileTaskExecution = lazyRetry(() => import('./pages/mobile/MobileTaskExecution'));
+const MobileDashboard = lazyRetry(() => import('./pages/mobile/MobileDashboard'));
+const MobileWorkOrders = lazyRetry(() => import('./pages/mobile/MobileWorkOrders'));
+const MobileWRDetail = lazyRetry(() => import('./pages/mobile/MobileWRDetail'));
+const Hierarchy = lazyRetry(() => import('./pages/Hierarchy'));
+const Criticality = lazyRetry(() => import('./pages/Criticality'));
+const FMEA = lazyRetry(() => import('./pages/FMEA'));
+const FMECA = lazyRetry(() => import('./pages/FMECA'));
+const Strategy = lazyRetry(() => import('./pages/Strategy'));
+const WorkPackages = lazyRetry(() => import('./pages/WorkPackages'));
+const WorkRequests = lazyRetry(() => import('./pages/WorkRequests'));
+const Backlog = lazyRetry(() => import('./pages/Backlog'));
+const Scheduling = lazyRetry(() => import('./pages/Scheduling'));
+const Planner = lazyRetry(() => import('./pages/Planner'));
+const Planning = lazyRetry(() => import('./pages/Planning'));
+const FieldCapture = lazyRetry(() => import('./pages/FieldCapture'));
+const Reliability = lazyRetry(() => import('./pages/Reliability'));
+const RCA = lazyRetry(() => import('./pages/RCA'));
+const DefectElimination = lazyRetry(() => import('./pages/DefectElimination'));
+const SAPReview = lazyRetry(() => import('./pages/SAPReview'));
+const Admin = lazyRetry(() => import('./pages/Admin'));
+const AIAgents = lazyRetry(() => import('./pages/AIAgents'));
+const Profile = lazyRetry(() => import('./pages/Profile'));
+const Financial = lazyRetry(() => import('./pages/Financial'));
+const Troubleshooting = lazyRetry(() => import('./pages/Troubleshooting'));
+const EquipmentChat = lazyRetry(() => import('./pages/EquipmentChat'));
+const ExpertKnowledge = lazyRetry(() => import('./pages/ExpertKnowledge'));
+const ExecutionChecklists = lazyRetry(() => import('./pages/ExecutionChecklists'));
+const FeedbackAdmin = lazyRetry(() => import('./pages/FeedbackAdmin'));
+const Execution = lazyRetry(() => import('./pages/Execution'));
+const PostMaintenance = lazyRetry(() => import('./pages/PostMaintenance'));
 
 const ALL = ['admin', 'manager', 'planner', 'tecnico', 'engineer'];
 const MGMT = ['admin', 'manager'];

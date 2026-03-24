@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user
 from api.services import execution_checklist_service
+from api.services.audit_service import log_action
 
 router = APIRouter(prefix="/execution-checklists", tags=["execution-checklists"], dependencies=[Depends(get_current_user)])
 
@@ -83,6 +84,22 @@ def get_next_steps(checklist_id: str, db: Session = Depends(get_db)):
     except ValueError as e:
         logger.error("Get next steps failed for checklist=%s: %s", checklist_id, e)
         raise HTTPException(status_code=404, detail="Operation error")
+
+
+@router.patch("/{checklist_id}")
+def update_checklist(checklist_id: str, data: dict, db: Session = Depends(get_db)):
+    """Update checklist fields (status, assigned_to, etc.)."""
+    obj = db.query(execution_checklist_service.ExecutionChecklistModel).filter_by(checklist_id=checklist_id).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Checklist not found")
+    allowed = {"status", "assigned_to", "supervisor"}
+    for k, v in data.items():
+        if k in allowed:
+            setattr(obj, k, v)
+    db.commit()
+    db.refresh(obj)
+    log_action(db, "execution_checklist", checklist_id, "UPDATE")
+    return execution_checklist_service._checklist_to_dict(obj)
 
 
 @router.post("/{checklist_id}/close")

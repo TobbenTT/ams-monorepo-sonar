@@ -396,13 +396,27 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
               <div className="mb-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Recursos</p>
                 <div className="space-y-1">
-                  {item.resources.map((r, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
-                      <span className="font-medium">{r.type}</span>
-                      <span className="text-muted-foreground">×{r.quantity} personas</span>
-                      <span className="text-muted-foreground">{r.hours} hrs</span>
-                    </div>
-                  ))}
+                  {item.resources.map((r, i) => {
+                    // Handle both string ("Mecánico x2") and object ({type, quantity, hours}) formats
+                    if (typeof r === 'string') {
+                      const match = r.match(/^(.+?)\s*x\s*(\d+)$/i);
+                      return (
+                        <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
+                          <Users className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                          <span className="font-medium">{match ? match[1].trim() : r}</span>
+                          {match && <span className="text-muted-foreground">×{match[2]} personas</span>}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
+                        <Users className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                        <span className="font-medium">{r.type || r.name || ''}</span>
+                        {r.quantity && <span className="text-muted-foreground">×{r.quantity} personas</span>}
+                        {r.hours && <span className="text-muted-foreground">{r.hours} hrs</span>}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -412,9 +426,15 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                 <div className="space-y-1">
                   {item.materials.map((m, i) => (
                     <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
-                      <span className="font-mono text-xs text-muted-foreground">{m.sapId}</span>
-                      <span className="font-medium">{m.description}</span>
-                      <span className="text-muted-foreground">×{m.quantity} uds</span>
+                      <Package className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                      {typeof m === 'string'
+                        ? <span className="font-medium">{m}</span>
+                        : <>
+                            {m.sapId && <span className="font-mono text-xs text-muted-foreground">{m.sapId}</span>}
+                            <span className="font-medium">{m.description || m.name || ''}</span>
+                            {m.quantity && <span className="text-muted-foreground">×{m.quantity} uds</span>}
+                          </>
+                      }
                     </div>
                   ))}
                 </div>

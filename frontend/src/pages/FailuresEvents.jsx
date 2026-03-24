@@ -154,24 +154,6 @@ export default function FailuresEvents() {
     return sorted[0] ? { name: sorted[0][0], initials: sorted[0][0].split(' ').map(n => n[0] || '').join('').slice(0, 2).toUpperCase() } : { name: t('failuresEvents.unassigned'), initials: 'NA' };
   }, [filteredWRs]);
 
-  // AI Analysis metrics — computed from real data
-  const aiMetrics = useMemo(() => {
-    if (!filteredWRs.length) return { downtimeReduction: 0, planningImprovement: 0 };
-    const repEquips = new Set(repetitiveFailuresData.map(r => r.equipment));
-    const totalHours = filteredWRs.reduce((s, w) => s + (w.estimated_duration || w.ai_classification?.estimated_duration_hours || 0), 0);
-    const repHours = filteredWRs
-      .filter(w => repEquips.has(w.equipment_tag || w.equipment_name || 'Unknown'))
-      .reduce((s, w) => s + (w.estimated_duration || w.ai_classification?.estimated_duration_hours || 0), 0);
-    const downtimeReduction = totalHours > 0 ? Math.round((repHours / totalHours) * 100) : 0;
-    const incomplete = filteredWRs.filter(w => {
-      const hasDur = w.estimated_duration || w.ai_classification?.estimated_duration_hours;
-      const hasCat = w.ai_classification?.failure_catalog || w.ai_classification?.failure_description;
-      return !hasDur || !hasCat;
-    }).length;
-    const planningImprovement = Math.round((incomplete / filteredWRs.length) * 100);
-    return { downtimeReduction, planningImprovement };
-  }, [filteredWRs, repetitiveFailuresData]);
-
   // --- Compute chart data from work requests ---
 
   // Work Orders Status: group by equipment_tag, categorize by status
@@ -304,6 +286,24 @@ export default function FailuresEvents() {
       .slice(0, 5)
       .map(([equipment, count]) => ({ equipment, count }));
   }, [filteredWRs]);
+
+  // AI Analysis metrics — computed from real data (must be after repetitiveFailuresData)
+  const aiMetrics = useMemo(() => {
+    if (!filteredWRs.length) return { downtimeReduction: 0, planningImprovement: 0 };
+    const repEquips = new Set(repetitiveFailuresData.map(r => r.equipment));
+    const totalHours = filteredWRs.reduce((s, w) => s + (w.estimated_duration || w.ai_classification?.estimated_duration_hours || 0), 0);
+    const repHours = filteredWRs
+      .filter(w => repEquips.has(w.equipment_tag || w.equipment_name || 'Unknown'))
+      .reduce((s, w) => s + (w.estimated_duration || w.ai_classification?.estimated_duration_hours || 0), 0);
+    const downtimeReduction = totalHours > 0 ? Math.round((repHours / totalHours) * 100) : 0;
+    const incomplete = filteredWRs.filter(w => {
+      const hasDur = w.estimated_duration || w.ai_classification?.estimated_duration_hours;
+      const hasCat = w.ai_classification?.failure_catalog || w.ai_classification?.failure_description;
+      return !hasDur || !hasCat;
+    }).length;
+    const planningImprovement = Math.round((incomplete / filteredWRs.length) * 100);
+    return { downtimeReduction, planningImprovement };
+  }, [filteredWRs, repetitiveFailuresData]);
 
   // Priority Distribution: group by priority_code (fix: was using weeklySparklineData)
   const priorityDistributionData = useMemo(() => {

@@ -1259,7 +1259,60 @@ export default function WorkOrdersPage() {
                 )}
               </div>
 
-              {/* 2. ¿Dónde? TAG equipo */}
+              {/* 2. Condición del Equipo + Prioridad (arriba para visibilidad) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border rounded-xl p-4">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.plantCondition')}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PLANT_CONDITIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setF('plantCondition', opt.value);
+                          if (opt.value === 'stopped' && createForm.priority !== 'P1') {
+                            setF('priority', 'P1');
+                            setF('activityClass', ACTIVITY_CLASSES['PM03']?.[0]?.value || 'CR');
+                          }
+                        }}
+                        className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
+                        style={{
+                          borderColor: createForm.plantCondition === opt.value ? opt.color : '#e5e7eb',
+                          backgroundColor: createForm.plantCondition === opt.value ? opt.color + '15' : 'transparent',
+                          color: createForm.plantCondition === opt.value ? opt.color : '#64748B',
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="border rounded-xl p-4">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.priorityLabel')}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PRIORITIES.map(p => (
+                      <button
+                        key={p.value}
+                        onClick={() => { setF('priority', p.value); setF('activityClass', ACTIVITY_CLASSES[p.claseOT]?.[0]?.value || 'CR'); }}
+                        className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${createForm.priority === p.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
+                        style={{ borderColor: createForm.priority === p.value ? p.color : '#e5e7eb', backgroundColor: createForm.priority === p.value ? p.bg : 'transparent' }}
+                      >
+                        <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
+                        <div className="text-[9px] text-gray-500 leading-tight">{p.sub}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Breakdown alert */}
+              {createForm.plantCondition === 'stopped' && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-sm">
+                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <span className="text-red-700 font-medium">{t('workOrders.breakdownAlert') || 'Equipo detenido — Prioridad ajustada a P1 (Urgente). Clase OT: PM03 No Programado.'}</span>
+                </div>
+              )}
+
+              {/* 3. ¿Dónde? TAG equipo */}
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.whereTag')}</label>
                 {!selectedEquip ? (
@@ -1603,45 +1656,7 @@ export default function WorkOrdersPage() {
                 <div className="text-[10px] text-gray-400 mt-1">{t('workOrders.supportEquipmentNote')}</div>
               </div>
 
-              {/* 13. Condición del Equipo */}
-              <div className="border rounded-xl p-4">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.plantCondition')}</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {PLANT_CONDITIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setF('plantCondition', opt.value)}
-                      className="p-3 rounded-xl border-2 transition-all text-sm font-bold"
-                      style={{
-                        borderColor: createForm.plantCondition === opt.value ? opt.color : '#e5e7eb',
-                        backgroundColor: createForm.plantCondition === opt.value ? opt.color + '15' : 'transparent',
-                        color: createForm.plantCondition === opt.value ? opt.color : '#64748B',
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 14. Prioridad */}
-              <div className="border rounded-xl p-4">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.priorityLabel')}</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {PRIORITIES.map(p => (
-                    <button
-                      key={p.value}
-                      onClick={() => { setF('priority', p.value); setF('activityClass', ACTIVITY_CLASSES[p.claseOT]?.[0]?.value || 'CR'); }}
-                      className={`flex flex-col items-center p-3 rounded-lg border-2 text-center transition-all ${createForm.priority === p.value ? 'scale-[1.02]' : 'opacity-70 hover:opacity-100'}`}
-                      style={{ borderColor: createForm.priority === p.value ? p.color : '#e5e7eb', backgroundColor: createForm.priority === p.value ? p.bg : 'transparent' }}
-                    >
-                      <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
-                      <div className="text-[10px] text-gray-600">{p.label}</div>
-                      {p.sub && <div className="text-[10px] text-gray-400">{p.sub}</div>}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* 13-14. Condición y Prioridad movidos arriba del formulario */}
 
               {/* 15. Clase de Actividad */}
               <div className="border rounded-xl p-4">

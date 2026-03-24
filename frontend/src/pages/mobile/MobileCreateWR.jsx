@@ -1201,7 +1201,13 @@ export default function MobileCreateWR() {
                         {PLANT_CONDITIONS.map((opt) => (
                             <button
                                 key={opt.value}
-                                onClick={() => set('plantCondition', opt.value)}
+                                onClick={() => {
+                                    set('plantCondition', opt.value);
+                                    if (opt.value === 'stopped' && form.priority !== 'P1') {
+                                        set('priority', 'P1');
+                                        set('activityClass', 'CR');
+                                    }
+                                }}
                                 className="p-3 rounded-xl border-2 transition-all active:scale-95"
                                 style={{
                                     borderColor: form.plantCondition === opt.value ? opt.color : '#E2E8F0',
@@ -1214,6 +1220,12 @@ export default function MobileCreateWR() {
                             </button>
                         ))}
                     </div>
+                    {form.plantCondition === 'stopped' && (
+                        <div className="flex items-center gap-2 mt-3 p-3 rounded-xl" style={{ backgroundColor: '#FEE2E2', border: '1px solid #FECACA' }}>
+                            <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#EF4444' }} />
+                            <span className="text-xs font-medium" style={{ color: '#B91C1C' }}>Equipo detenido — Prioridad ajustada a P1 (Urgente)</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* 9. Prioridad + Clasificación SAP PM */}

@@ -1873,6 +1873,7 @@ export default {
         // Plant conditions
         plantOperating: 'Operando',
         plantStopped: 'Detenida',
+        breakdownAlert: 'Equipo detenido — Prioridad ajustada a P1 (Urgente). Clase OT: PM03 No Programado.',
         // Priorities
         priorityUrgent: '1 - Urgente',
         priorityExecution: '2 - Prog. Ejecución',

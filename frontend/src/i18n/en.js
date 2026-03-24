@@ -2078,6 +2078,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         // Plant conditions
         plantOperating: 'Operating',
         plantStopped: 'Stopped',
+        breakdownAlert: 'Equipment stopped — Priority set to P1 (Urgent). WO Class: PM03 Unscheduled.',
         // Priorities
         priorityUrgent: '1 - Urgent',
         priorityExecution: '2 - Sched. Execution',

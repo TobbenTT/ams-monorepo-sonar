@@ -323,6 +323,74 @@ def close_work_request(request_id: str, data: WRCloseRequest, user=Depends(get_c
     return result
 
 
+class WRUpdateRequest(BaseModel):
+    """Generic update for WR fields (supervisor)."""
+    priority: str | None = None
+    description: str | None = None
+    suggested_action: str | None = None
+    failure_category: str | None = None
+    failure_symptom: str | None = None
+    failure_cause: str | None = None
+    estimated_duration: float | None = None
+    production_impact: str | None = None
+
+
+@router.put("/{request_id}")
+def update_work_request(request_id: str, data: WRUpdateRequest, db: Session = Depends(get_db)):
+    """Generic update endpoint for WR fields."""
+    from datetime import datetime
+    from sqlalchemy.orm.attributes import flag_modified
+    from api.services.audit_service import log_action
+
+    wr = work_request_service.get_work_request(db, request_id)
+    if not wr:
+        raise HTTPException(status_code=404, detail="Work request not found")
+
+    if data.priority:
+        wr.priority_code = data.priority
+    if data.description is not None:
+        pd = dict(wr.problem_description) if isinstance(wr.problem_description, dict) else {}
+        pd["original_text"] = data.description
+        wr.problem_description = pd
+        flag_modified(wr, "problem_description")
+    if data.suggested_action is not None:
+        pd = dict(wr.problem_description) if isinstance(wr.problem_description, dict) else {}
+        pd["suggested_action"] = data.suggested_action
+        wr.problem_description = pd
+        flag_modified(wr, "problem_description")
+    if data.failure_category is not None:
+        ai = dict(wr.ai_classification) if isinstance(wr.ai_classification, dict) else {}
+        ai["failure_category"] = data.failure_category
+        wr.ai_classification = ai
+        flag_modified(wr, "ai_classification")
+    if data.failure_symptom is not None:
+        pd = dict(wr.problem_description) if isinstance(wr.problem_description, dict) else {}
+        pd["failure_symptom"] = data.failure_symptom
+        wr.problem_description = pd
+        flag_modified(wr, "problem_description")
+    if data.failure_cause is not None:
+        pd = dict(wr.problem_description) if isinstance(wr.problem_description, dict) else {}
+        pd["failure_cause"] = data.failure_cause
+        wr.problem_description = pd
+        flag_modified(wr, "problem_description")
+    if data.estimated_duration is not None:
+        ai = dict(wr.ai_classification) if isinstance(wr.ai_classification, dict) else {}
+        ai["estimated_duration_hours"] = data.estimated_duration
+        wr.ai_classification = ai
+        flag_modified(wr, "ai_classification")
+    if data.production_impact is not None:
+        ai = dict(wr.ai_classification) if isinstance(wr.ai_classification, dict) else {}
+        ai["production_impact"] = data.production_impact
+        wr.ai_classification = ai
+        flag_modified(wr, "ai_classification")
+
+    wr.updated_at = datetime.now()
+    log_action(db, "work_request", request_id, "UPDATE")
+    db.commit()
+    db.refresh(wr)
+    return work_request_service._to_dict(wr)
+
+
 @router.delete("/{request_id}")
 def delete_work_request(request_id: str, db: Session = Depends(get_db)):
     deleted = work_request_service.delete_work_request(db, request_id)

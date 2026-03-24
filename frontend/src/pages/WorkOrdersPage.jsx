@@ -12,6 +12,7 @@ import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog'
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
+import { downloadExport } from '../utils/exportFile';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -316,29 +317,40 @@ export default function WorkOrdersPage() {
     return Math.round((pending / filteredWRs.length) * 100);
   }, [filteredWRs]);
 
-  // ── Export to CSV ──
-  const handleExport = useCallback(() => {
+  // ── Export WRs to Excel ──
+  const handleExportWRs = useCallback(() => {
     if (!workOrdersData.length) return;
-    const headers = [t('workOrders.csvWoId'), t('workOrders.csvEquipment'), t('workOrders.csvDescription'), t('workOrders.csvPriority'), t('workOrders.csvWorkClass'), t('workOrders.csvDaysOld'), t('workOrders.csvAssignedTo'), t('workOrders.csvStatus')];
+    const headers = ['ID', 'Equipo TAG', 'Descripción', 'Prioridad', 'Clase', 'Días', 'Asignado', 'Status'];
     const rows = workOrdersData.map(wo => [
       wo.id,
-      wo._raw?.equipment_tag || t('workOrders.na'),
-      `"${(wo.description || '').replace(/"/g, '""')}"`,
+      wo._raw?.equipment_tag || '',
+      wo.description || '',
       wo._raw?.priority_code || wo.criticality,
       wo.area,
       wo.delayDays,
       wo.responsible,
       wo.status,
     ]);
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `work-orders-${plant || 'all'}-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [workOrdersData, plant, t]);
+    downloadExport({ format: 'EXCEL', sheets: [{ name: 'Avisos', headers, rows }] }, `avisos-${plant || 'all'}-${new Date().toISOString().slice(0, 10)}`);
+  }, [workOrdersData, plant]);
+
+  // ── Export OTs to Excel ──
+  const handleExportOTs = useCallback(() => {
+    if (!managedWOs.length) return;
+    const headers = ['OT #', 'Equipo', 'Descripción', 'Tipo OT', 'Prioridad', 'Status', 'Progreso %', 'Fast Track', 'Creado'];
+    const rows = managedWOs.map(wo => [
+      wo.wo_number,
+      wo.equipment_tag || '',
+      wo.description || '',
+      wo.order_type || '',
+      wo.priority || '',
+      wo.status || '',
+      wo.progress ?? 0,
+      wo.is_fast_track ? 'Sí' : 'No',
+      wo.created_at ? new Date(wo.created_at).toLocaleDateString() : '',
+    ]);
+    downloadExport({ format: 'EXCEL', sheets: [{ name: 'Órdenes de Trabajo', headers, rows }] }, `ordenes-trabajo-${plant || 'all'}-${new Date().toISOString().slice(0, 10)}`);
+  }, [managedWOs, plant]);
 
   // ── Create Work Order ──
   const selectedPriority = PRIORITIES.find(p => p.value === createForm.priority);
@@ -690,7 +702,7 @@ export default function WorkOrdersPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="flex items-center gap-2 border-gray-300" onClick={handleExport} disabled={!workOrdersData.length}>
+          <Button variant="outline" className="flex items-center gap-2 border-gray-300" onClick={handleExportWRs} disabled={!workOrdersData.length}>
             <Download className="w-4 h-4" />
             {t('workOrders.export')}
           </Button>
@@ -923,9 +935,14 @@ export default function WorkOrdersPage() {
             <h3 className="text-lg font-semibold text-gray-900">
               Órdenes de Trabajo ({managedWOs.length})
             </h3>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateOTModal(true)}>
-              <Plus className="w-4 h-4" /> Crear OT desde Aviso
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="flex items-center gap-2 border-gray-300" onClick={handleExportOTs} disabled={!managedWOs.length}>
+                <Download className="w-4 h-4" /> Excel
+              </Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateOTModal(true)}>
+                <Plus className="w-4 h-4" /> Crear OT desde Aviso
+              </Button>
+            </div>
           </div>
           {managedWOs.length > 0 ? (
             <div className="overflow-x-auto">
@@ -1025,9 +1042,14 @@ export default function WorkOrdersPage() {
       {/* ── WRs Table (Avisos) ── */}
       {woTab === 'wrs' && (
         <Card className="p-6 bg-white">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Avisos ({workOrdersData.length})
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Avisos ({workOrdersData.length})
+            </h3>
+            <Button variant="outline" className="flex items-center gap-2 border-gray-300" onClick={handleExportWRs} disabled={!workOrdersData.length}>
+              <Download className="w-4 h-4" /> Excel
+            </Button>
+          </div>
           {workOrdersData.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>

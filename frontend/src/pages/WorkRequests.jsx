@@ -3,13 +3,15 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
-  Wrench, Tag, MapPin, Gauge, Package, Calendar, FileText, Trash2, Zap
+  Wrench, Tag, MapPin, Gauge, Package, Calendar, FileText, Trash2, Zap,
+  Save, Download
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
+import { downloadExport } from '../utils/exportFile';
 
 /* ─── Status config (dynamic with i18n) ─── */
 const STATUS_KEYS = ['ALL', 'DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED', 'REJECTED', 'CANCELLED'];
@@ -138,7 +140,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
   const canClose = item.status === 'COMPLETED';
   const isSupervisor = ['admin', 'manager'].includes(userRole);
   const isPlanner = userRole === 'planner';
-  const canEdit = isPending && isSupervisor;
+  const canEdit = (isSupervisor || isPlanner) && !['COMPLETED', 'CLOSED', 'CANCELLED', 'REJECTED'].includes(item.status);
 
   // Editable state (supervisor can edit before approving)
   const [editing, setEditing] = useState(false);
@@ -148,6 +150,10 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
     failure_mode: item.failure_mode || '',
     estimated_duration: item.estimated_duration || '',
     production_impact: item.production_impact || 'MEDIUM',
+    suggested_action: item.suggested_action || '',
+    failure_category: item.failure_category || '',
+    failure_symptom: item.failure_symptom || '',
+    failure_cause: item.failure_cause || '',
   });
 
   const statusLabels = {
@@ -319,39 +325,65 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
         </div>
 
         {/* Failure Classification */}
-        {(item.failure_category || item.failure_symptom || item.failure_cause) && (
+        {(item.failure_category || item.failure_symptom || item.failure_cause || editing) && (
           <div className="px-6 pb-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Clasificación de Falla</p>
-            <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
-              {item.failure_category && (
+            {editing ? (
+              <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
-                  <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
+                  <input type="text" value={editData.failure_category} onChange={e => setEditData(d => ({ ...d, failure_category: e.target.value }))}
+                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="MECANICO, ELECTRICO..." />
                 </div>
-              )}
-              {item.failure_symptom && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground min-w-[80px]">Síntoma:</span>
-                  <span className="text-sm font-medium text-foreground">{item.failure_symptom}</span>
+                  <input type="text" value={editData.failure_symptom} onChange={e => setEditData(d => ({ ...d, failure_symptom: e.target.value }))}
+                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="Fuga, Vibración..." />
                 </div>
-              )}
-              {item.failure_cause && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground min-w-[80px]">Causa:</span>
-                  <span className="text-sm font-medium text-foreground">{item.failure_cause}</span>
+                  <input type="text" value={editData.failure_cause} onChange={e => setEditData(d => ({ ...d, failure_cause: e.target.value }))}
+                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="Desgaste, Corrosión..." />
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
+                {item.failure_category && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                    <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
+                  </div>
+                )}
+                {item.failure_symptom && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Síntoma:</span>
+                    <span className="text-sm font-medium text-foreground">{item.failure_symptom}</span>
+                  </div>
+                )}
+                {item.failure_cause && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Causa:</span>
+                    <span className="text-sm font-medium text-foreground">{item.failure_cause}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
         {/* Suggested Action */}
-        {item.suggested_action && (
+        {(item.suggested_action || editing) && (
           <div className="px-6 pb-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Acción Sugerida</p>
-            <p className="text-sm text-foreground leading-relaxed bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
-              {item.suggested_action}
-            </p>
+            {editing ? (
+              <textarea value={editData.suggested_action || ''} onChange={e => setEditData(d => ({ ...d, suggested_action: e.target.value }))}
+                rows={2} placeholder="¿Qué se debe hacer?"
+                className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-none" />
+            ) : (
+              <p className="text-sm text-foreground leading-relaxed bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
+                {item.suggested_action}
+              </p>
+            )}
           </div>
         )}
 
@@ -490,8 +522,18 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
         )}
 
         {/* Action Buttons */}
-        {(isPending || isValidated || canStart || canComplete || canClose) && (
+        {(isPending || isValidated || canStart || canComplete || canClose || editing) && (
           <div className="px-6 py-4 border-t border-border flex flex-wrap gap-3 sticky bottom-0 bg-card rounded-b-2xl">
+            {/* Save button (standalone, any status while editing) */}
+            {editing && !isPending && (
+              <button
+                onClick={() => { onSaveEdit(item.id, editData); setEditing(false); }}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+              >
+                <Save size={16} />
+                Guardar Cambios
+              </button>
+            )}
             {/* Supervisor: Aprobar + Rechazar + Cancelar */}
             {isPending && (
               <>
@@ -907,6 +949,19 @@ export default function WorkRequests({ onNavigateTab } = {}) {
     });
   }
 
+  function handleExportWRs() {
+    if (!sorted.length) return;
+    const headers = ['ID', 'Equipo TAG', 'Equipo', 'Descripción Falla', 'Prioridad', 'Status', 'Impacto', 'Duración Est. (h)', 'Categoría Falla', 'Síntoma', 'Causa', 'Acción Sugerida', 'Técnico', 'Creado'];
+    const rows = sorted.map(r => [
+      r.id, r.equipment_tag, r.equipment_name, r.failure_description,
+      r.priority_requested, r.status, r.production_impact,
+      r.estimated_duration, r.failure_category, r.failure_symptom,
+      r.failure_cause, r.suggested_action, r.technician,
+      r.created_at ? new Date(r.created_at).toLocaleDateString() : '',
+    ]);
+    downloadExport({ format: 'EXCEL', sheets: [{ name: 'Avisos', headers, rows }] }, `avisos-${new Date().toISOString().slice(0, 10)}`);
+  }
+
   function fetchAndOpenDetail(req) {
     setDetailLoading(true);
     setSelected(req); // show immediately with list data
@@ -1288,7 +1343,13 @@ export default function WorkRequests({ onNavigateTab } = {}) {
 
           {/* Table Footer with Pagination */}
           <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{t('workRequests.showingOf', { shown: paged.length, total: sorted.length })}</span>
+            <div className="flex items-center gap-3">
+              <span>{t('workRequests.showingOf', { shown: paged.length, total: sorted.length })}</span>
+              <button onClick={handleExportWRs} disabled={!sorted.length}
+                className="flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-muted disabled:opacity-30 text-xs font-medium">
+                <Download size={12} /> Excel
+              </button>
+            </div>
             <div className="flex items-center gap-3">
               {totalPages > 1 && (
                 <div className="flex items-center gap-1">

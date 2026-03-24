@@ -136,12 +136,13 @@ export default function FailuresEvents() {
 
   const planningStats = useMemo(() => {
     if (!filteredWRs.length) return { laborVar: 0, costVar: 0 };
-    const highP = filteredWRs.filter(w => w.priority_code === 'P1' || w.priority_code === 'P2').length;
-    const ratio = highP / filteredWRs.length;
-    return {
-      laborVar: Math.round((ratio * 30 - 5) * 10) / 10,
-      costVar: Math.round((ratio * 15 - 8) * 10) / 10,
-    };
+    const withDuration = filteredWRs.filter(w => w.estimated_duration || w.ai_classification?.estimated_duration_hours);
+    const estimated = withDuration.reduce((s, w) => s + (w.estimated_duration || w.ai_classification?.estimated_duration_hours || 0), 0);
+    const completed = filteredWRs.filter(w => ['COMPLETED', 'CLOSED'].includes(w.status || ''));
+    const actualHours = completed.reduce((s, w) => s + (w.actual_duration || w.ai_classification?.actual_duration_hours || w.estimated_duration || 0), 0);
+    const laborVar = estimated > 0 ? Math.round(((actualHours - estimated) / estimated) * 100 * 10) / 10 : 0;
+    const completionRate = filteredWRs.length > 0 ? Math.round((completed.length / filteredWRs.length) * 100 * 10) / 10 : 0;
+    return { laborVar, costVar: completionRate };
   }, [filteredWRs]);
 
   const topAssignee = useMemo(() => {

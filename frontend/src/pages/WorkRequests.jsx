@@ -221,7 +221,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
         {/* Detail Grid */}
         <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <DetailCard icon={MapPin} label={t('workRequests.plantArea')} value={`${item.plant} / ${item.area}`} />
-          <DetailCard icon={User} label={t('workRequests.technician')} value={item.technician} />
+          <DetailCard icon={User} label="Creado por" value={item.created_by || '-'} />
           <DetailCard icon={Clock} label={t('workRequests.estimatedDuration')}>
             {editing ? (
               <input type="text" value={editData.estimated_duration} onChange={e => setEditData(d => ({ ...d, estimated_duration: e.target.value }))}
@@ -241,9 +241,6 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                 {impactLabels[item.production_impact] ?? item.production_impact}
               </span>
             )}
-          </DetailCard>
-          <DetailCard icon={Search} label={t('workRequests.aiConfidence')}>
-            <ConfidenceBar value={item.ai_confidence} />
           </DetailCard>
           <DetailCard icon={AlertTriangle} label={t('workRequests.priorityLabel')}>
             {editing ? (
@@ -267,6 +264,15 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
               </div>
             )}
           </DetailCard>
+          <DetailCard icon={Search} label={t('workRequests.aiConfidence')}>
+            <ConfidenceBar value={item.ai_confidence} />
+          </DetailCard>
+          {item.activity_class && (
+            <DetailCard icon={Wrench} label="Clase de Actividad" value={item.activity_class} />
+          )}
+          {item.plant_condition && (
+            <DetailCard icon={Zap} label="Condición de Planta" value={item.plant_condition} />
+          )}
           {item.created_at && (
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
           )}
@@ -294,6 +300,43 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
             )}
           </div>
         </div>
+
+        {/* Failure Classification */}
+        {(item.failure_category || item.failure_symptom || item.failure_cause) && (
+          <div className="px-6 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Clasificación de Falla</p>
+            <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
+              {item.failure_category && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                  <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
+                </div>
+              )}
+              {item.failure_symptom && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Síntoma:</span>
+                  <span className="text-sm font-medium text-foreground">{item.failure_symptom}</span>
+                </div>
+              )}
+              {item.failure_cause && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Causa:</span>
+                  <span className="text-sm font-medium text-foreground">{item.failure_cause}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Suggested Action */}
+        {item.suggested_action && (
+          <div className="px-6 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Acción Sugerida</p>
+            <p className="text-sm text-foreground leading-relaxed bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
+              {item.suggested_action}
+            </p>
+          </div>
+        )}
 
         {/* Spare Parts */}
         {item.spare_parts && item.spare_parts.length > 0 && (
@@ -504,12 +547,12 @@ function normalizeWR(wr) {
     equipment_name: wr.equipment_name || wr.equipment_tag || '',
     plant: wr.plant_id || 'OCP-JFC1',
     area: wr.area || '',
-    technician: wr.technician || cls.required_specialties?.[0] || '',
+    technician: wr.technician_name || wr.technician || cls.required_specialties?.[0] || '',
     created_by: wr.created_by || wr.technician || '',
     status: wr.status || 'DRAFT',
-    priority_requested: cls.priority_suggested || wr.priority_requested || 'P3',
+    priority_requested: cls.priority_suggested || wr.priority_requested || wr.priority || 'P3',
     priority_suggested: cls.priority_suggested || wr.priority_suggested || 'P3',
-    failure_description: desc.original_text || desc.structured_description || wr.failure_description || '',
+    failure_description: desc.original_text || desc.structured_description || wr.failure_description || wr.problem_description || '',
     failure_mode: desc.failure_mode_detected || desc.failure_mode_code || wr.failure_mode || '',
     production_impact: wr.production_impact || 'MEDIUM',
     estimated_duration: cls.estimated_duration_hours || wr.estimated_duration || 4,
@@ -517,11 +560,29 @@ function normalizeWR(wr) {
     spare_parts: wr.spare_parts || [],
     photos: wr.photos || wr.images || [],
     created_at: wr.created_at || new Date().toISOString(),
+    // Classification fields
+    activity_class: wr.activity_class || '',
+    work_class: wr.work_class || '',
+    failure_category: wr.failure_category || cls.failure_category || '',
+    failure_symptom: wr.failure_symptom || '',
+    failure_cause: wr.failure_cause || '',
+    plant_condition: wr.plant_condition || '',
+    suggested_action: wr.suggested_action || '',
+    // Resources & Materials
+    resources: wr.resources || [],
+    materials: wr.materials || [],
     // SAP Aviso fields
     notification_type: wr.notification_type || 'A1',
     reported_by: wr.reported_by || '',
     circumstances: wr.circumstances || '',
     support_equipment: wr.support_equipment || [],
+    // Workflow fields
+    wo_number: wr.wo_number || '',
+    assigned_to_name: wr.assigned_to_name || '',
+    approval_comment: wr.approval_comment || '',
+    rejection_reason: wr.rejection_reason || '',
+    sla_deadline: wr.sla_deadline || '',
+    _raw: wr,
   };
 }
 
@@ -549,6 +610,7 @@ export default function WorkRequests({ onNavigateTab } = {}) {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [duplicateTarget, setDuplicateTarget] = useState(null);
@@ -808,6 +870,15 @@ export default function WorkRequests({ onNavigateTab } = {}) {
     });
   }
 
+  function fetchAndOpenDetail(req) {
+    setDetailLoading(true);
+    setSelected(req); // show immediately with list data
+    api.getWorkRequest(req.id)
+      .then((full) => setSelected(normalizeWR(full)))
+      .catch(() => {}) // keep list data on error
+      .finally(() => setDetailLoading(false));
+  }
+
   function handleOpenDetail(req) {
     // Check for duplicates before opening
     const dups = findDuplicates(req, requests);
@@ -815,21 +886,21 @@ export default function WorkRequests({ onNavigateTab } = {}) {
       setDuplicateTarget(req);
       setShowDuplicates(dups);
     } else {
-      setSelected(req);
+      fetchAndOpenDetail(req);
       setDuplicateTarget(null);
       setShowDuplicates([]);
     }
   }
 
   function handleViewDuplicate(dup) {
-    setSelected(dup);
+    fetchAndOpenDetail(dup);
     setDuplicateTarget(null);
     setShowDuplicates([]);
   }
 
   function handleDismissDuplicate() {
     if (duplicateTarget) {
-      setSelected(duplicateTarget);
+      fetchAndOpenDetail(duplicateTarget);
     }
     setDuplicateTarget(null);
     setShowDuplicates([]);

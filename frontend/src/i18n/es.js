@@ -1747,7 +1747,7 @@ export default {
         title: 'DETALLE: ÓRDENES DE TRABAJO ATRASADAS',
         subtitle: 'Vista analítica de órdenes de trabajo de mantenimiento retrasadas',
         export: 'Exportar',
-        createWorkOrder: 'Crear Orden de Trabajo',
+        createWorkOrder: 'Crear Aviso de Trabajo',
         loadingWorkOrders: 'Cargando órdenes de trabajo...',
         failedToLoad: 'Error al cargar órdenes de trabajo',
         retry: 'Reintentar',
@@ -1842,7 +1842,7 @@ export default {
         priorityUrgent: '1 - Urgente',
         priorityExecution: '2 - Prog. Ejecución',
         priorityNextProg: '3 - Próximo Prog.',
-        priorityNone: '4 - Sin Prioridad',
+        priorityNone: '4 - Parada de Planta',
         notScheduled: 'No Programado',
         scheduled: 'Programado',
         // Activity classes

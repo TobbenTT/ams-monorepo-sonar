@@ -55,6 +55,7 @@ export default function WorkOrdersPage() {
   const [creatingOT, setCreatingOT] = useState(false);
   const [otCreateForm, setOtCreateForm] = useState({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4 });
   const [selectedOT, setSelectedOT] = useState(null);
+  const [wrSortBy, setWrSortBy] = useState('date_desc'); // 'date_desc' | 'date_asc'
 
   // ── SAP PM constants (inside component for i18n) ──
   const PLANT_CONDITIONS = [
@@ -65,7 +66,7 @@ export default function WorkOrdersPage() {
   const PRIORITIES = [
     { value: 'P1', label: t('workOrders.priorityUrgent'), sub: '< 24h', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03', claseOTLabel: t('workOrders.notScheduled') },
     { value: 'P2', label: t('workOrders.priorityExecution'), sub: '< 7d', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03', claseOTLabel: t('workOrders.notScheduled') },
-    { value: 'P3', label: t('workOrders.priorityNextProg'), sub: '7-14d', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01', claseOTLabel: t('workOrders.scheduled') },
+    { value: 'P3', label: t('workOrders.priorityNextProg'), sub: '> 7d', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01', claseOTLabel: t('workOrders.scheduled') },
     { value: 'P4', label: t('workOrders.priorityNone'), sub: '', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01', claseOTLabel: t('workOrders.scheduled') },
   ];
 
@@ -891,21 +892,29 @@ export default function WorkOrdersPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
+                    <TableHead className="font-semibold w-12">N°</TableHead>
                     <TableHead className="font-semibold">{t('workOrders.woId')}</TableHead>
+                    <TableHead className="font-semibold cursor-pointer select-none hover:text-emerald-700" onClick={() => setWrSortBy(prev => prev === 'date_desc' ? 'date_asc' : 'date_desc')}>
+                      Fecha {wrSortBy === 'date_desc' ? '↓' : '↑'}
+                    </TableHead>
                     <TableHead className="font-semibold">{t('workOrders.equipmentCol')}</TableHead>
                     <TableHead className="font-semibold">{t('workOrders.descriptionCol')}</TableHead>
                     <TableHead className="font-semibold">{t('workOrders.priorityCol')}</TableHead>
-                    <TableHead className="font-semibold">{t('workOrders.workClassCol')}</TableHead>
-                    <TableHead className="font-semibold">{t('workOrders.daysOld')}</TableHead>
                     <TableHead className="font-semibold">{t('workOrders.statusCol')}</TableHead>
                     <TableHead className="font-semibold">Acción</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {workOrdersData.map((wo, idx) => (
+                  {[...workOrdersData].sort((a, b) => {
+                    const dateA = a._raw?.created_at ? new Date(a._raw.created_at).getTime() : 0;
+                    const dateB = b._raw?.created_at ? new Date(b._raw.created_at).getTime() : 0;
+                    return wrSortBy === 'date_desc' ? dateB - dateA : dateA - dateB;
+                  }).map((wo, idx) => (
                     <TableRow key={wo.id + '-' + idx} className="hover:bg-gray-50 cursor-pointer"
                       onClick={() => setSelectedWorkOrder(wo)}>
+                      <TableCell className="text-xs text-gray-400 font-mono">{idx + 1}</TableCell>
                       <TableCell className="font-medium text-sm">{wo.id}</TableCell>
+                      <TableCell className="text-xs text-gray-500">{wo._raw?.created_at ? new Date(wo._raw.created_at).toLocaleDateString() : '—'}</TableCell>
                       <TableCell className="text-sm">{wo._raw?.equipment_tag || t('workOrders.na')}</TableCell>
                       <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
                       <TableCell>
@@ -913,8 +922,6 @@ export default function WorkOrdersPage() {
                           {wo._raw?.priority_code || wo.criticality}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm">{wo.area}</TableCell>
-                      <TableCell className="font-semibold">{wo.delayDays}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${
@@ -1224,11 +1231,17 @@ export default function WorkOrdersPage() {
                             </div>
                           )}
                         </div>
-                        <input type="text" placeholder={t('workOrders.resourceQty')} value={res.quantity} onChange={e => updateResource(i, 'quantity', e.target.value)}
-                          className="p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                        <div className="relative">
+                          <input type="text" placeholder={t('workOrders.resourceQty')} value={res.quantity} onChange={e => updateResource(i, 'quantity', e.target.value)}
+                            className="w-full p-2 pr-16 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">personas</span>
+                        </div>
                         <div className="flex gap-1">
-                          <input type="text" placeholder={t('workOrders.resourceHours')} value={res.hours} onChange={e => updateResource(i, 'hours', e.target.value)}
-                            className="flex-1 p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          <div className="relative flex-1">
+                            <input type="text" placeholder={t('workOrders.resourceHours')} value={res.hours} onChange={e => updateResource(i, 'hours', e.target.value)}
+                              className="w-full p-2 pr-10 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">hrs</span>
+                          </div>
                           <button onClick={() => removeResource(i)} className="px-1 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
                         </div>
                       </div>
@@ -1275,8 +1288,11 @@ export default function WorkOrdersPage() {
                             </div>
                           )}
                         </div>
-                        <input type="text" placeholder={t('workOrders.materialQty')} value={mat.quantity} onChange={e => updateMaterial(i, 'quantity', e.target.value)}
-                          className="p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                        <div className="relative">
+                          <input type="text" placeholder={t('workOrders.materialQty')} value={mat.quantity} onChange={e => updateMaterial(i, 'quantity', e.target.value)}
+                            className="w-full p-2 pr-10 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">uds</span>
+                        </div>
                         <div className="flex gap-1">
                           <input type="text" placeholder={t('workOrders.materialDescription')} value={mat.description} onChange={e => updateMaterial(i, 'description', e.target.value)}
                             className="flex-1 p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
@@ -1424,6 +1440,14 @@ export default function WorkOrdersPage() {
             </div>
 
             <div className="p-6 space-y-4">
+              {/* Aviso link */}
+              {selectedOT.work_request_id && (
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50 border border-blue-200 text-sm">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  <span className="text-blue-700">Aviso origen:</span>
+                  <span className="font-mono font-semibold text-blue-800">{selectedOT.work_request_id}</span>
+                </div>
+              )}
               {/* Info grid */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div><span className="text-gray-500 text-xs block">Tipo</span><span className="font-medium">{{ CORRECTIVO: 'Correctivo', PREVENTIVO: 'Preventivo', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' }[selectedOT.wo_type] || selectedOT.wo_type}</span></div>

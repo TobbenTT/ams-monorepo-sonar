@@ -12,7 +12,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
 /* ─── Status config (dynamic with i18n) ─── */
-const STATUS_KEYS = ['ALL', 'DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED', 'REJECTED'];
+const STATUS_KEYS = ['ALL', 'DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED', 'REJECTED', 'CANCELLED'];
 
 const IMPACT_COLOR = {
   CRITICAL: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
@@ -128,13 +128,27 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t }) {
   );
 }
 
-/* ─── Detail Modal (expanded) ─── */
-function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete, onCloseWR, t }) {
+/* ─── Detail Modal (expanded + editable for supervisor) ─── */
+function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, userRole, t }) {
   if (!item) return null;
   const isPending = item.status === 'PENDING_VALIDATION';
+  const isValidated = item.status === 'VALIDATED';
   const canStart = ['VALIDATED', 'ASSIGNED', 'SCHEDULED'].includes(item.status);
   const canComplete = item.status === 'IN_PROGRESS';
   const canClose = item.status === 'COMPLETED';
+  const isSupervisor = ['admin', 'manager'].includes(userRole);
+  const isPlanner = userRole === 'planner';
+  const canEdit = isPending && isSupervisor;
+
+  // Editable state (supervisor can edit before approving)
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    failure_description: item.failure_description || '',
+    priority_requested: item.priority_requested || 'P3',
+    failure_mode: item.failure_mode || '',
+    estimated_duration: item.estimated_duration || '',
+    production_impact: item.production_impact || 'MEDIUM',
+  });
 
   const statusLabels = {
     DRAFT: t('common.draft'),
@@ -142,6 +156,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete,
     VALIDATED: t('workRequests.validate'),
     ASSIGNED: 'Asignado',
     REJECTED: t('common.reject'),
+    CANCELLED: 'Cancelado',
     IN_PROGRESS: t('common.active'),
     COMPLETED: 'Completado',
     CLOSED: 'Cerrado',
@@ -153,6 +168,12 @@ function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete,
     HIGH: t('workRequests.impactHigh'),
     MEDIUM: t('workRequests.impactMedium'),
     LOW: t('workRequests.impactLow'),
+  };
+
+  const handleSaveAndApprove = () => {
+    if (editing) onSaveEdit(item.id, editData);
+    onValidate(item.id);
+    onClose();
   };
 
   return (
@@ -170,13 +191,25 @@ function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete,
               <span className={`text-xs px-2 py-0.5 rounded font-medium ${statusColor(item.status)}`}>
                 {statusLabels[item.status] ?? item.status}
               </span>
+              {item.wo_number && (
+                <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-100 text-emerald-700 border border-emerald-300 cursor-pointer hover:bg-emerald-200" title="Ir a OT">
+                  OT: {item.wo_number}
+                </span>
+              )}
             </div>
             <h2 className="text-lg font-bold text-foreground">{item.equipment_name}</h2>
             <p className="text-xs font-mono text-muted-foreground">{item.equipment_tag}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-            <XCircle size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            {canEdit && !editing && (
+              <button onClick={() => setEditing(true)} className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-300 font-semibold hover:bg-amber-100 transition-colors">
+                Editar
+              </button>
+            )}
+            <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <XCircle size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Photo Carousel */}
@@ -189,29 +222,50 @@ function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete,
         <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <DetailCard icon={MapPin} label={t('workRequests.plantArea')} value={`${item.plant} / ${item.area}`} />
           <DetailCard icon={User} label={t('workRequests.technician')} value={item.technician} />
-          <DetailCard icon={Clock} label={t('workRequests.estimatedDuration')} value={`${item.estimated_duration}h`} />
+          <DetailCard icon={Clock} label={t('workRequests.estimatedDuration')}>
+            {editing ? (
+              <input type="text" value={editData.estimated_duration} onChange={e => setEditData(d => ({ ...d, estimated_duration: e.target.value }))}
+                className="w-full text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" />
+            ) : (
+              <span className="text-sm font-medium text-foreground">{item.estimated_duration}h</span>
+            )}
+          </DetailCard>
           <DetailCard icon={Gauge} label={t('workRequests.productionImpact')}>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded ${IMPACT_COLOR[item.production_impact] ?? 'bg-muted text-muted-foreground'}`}>
-              {impactLabels[item.production_impact] ?? item.production_impact}
-            </span>
+            {editing ? (
+              <select value={editData.production_impact} onChange={e => setEditData(d => ({ ...d, production_impact: e.target.value }))}
+                className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none">
+                {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(v => <option key={v} value={v}>{impactLabels[v]}</option>)}
+              </select>
+            ) : (
+              <span className={`text-xs font-bold px-2 py-0.5 rounded ${IMPACT_COLOR[item.production_impact] ?? 'bg-muted text-muted-foreground'}`}>
+                {impactLabels[item.production_impact] ?? item.production_impact}
+              </span>
+            )}
           </DetailCard>
           <DetailCard icon={Search} label={t('workRequests.aiConfidence')}>
             <ConfidenceBar value={item.ai_confidence} />
           </DetailCard>
           <DetailCard icon={AlertTriangle} label={t('workRequests.priorityLabel')}>
-            <div className="flex items-center gap-1">
-              <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
-                {item.priority_requested}
-              </span>
-              {item.priority_requested !== item.priority_suggested && (
-                <>
-                  <span className="text-amber-500 text-xs">→</span>
-                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_suggested)}`}>
-                    {item.priority_suggested}
-                  </span>
-                </>
-              )}
-            </div>
+            {editing ? (
+              <select value={editData.priority_requested} onChange={e => setEditData(d => ({ ...d, priority_requested: e.target.value }))}
+                className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none">
+                {['P1', 'P2', 'P3', 'P4'].map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            ) : (
+              <div className="flex items-center gap-1">
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
+                  {item.priority_requested}
+                </span>
+                {item.priority_requested !== item.priority_suggested && (
+                  <>
+                    <span className="text-amber-500 text-xs">→</span>
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_suggested)}`}>
+                      {item.priority_suggested}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
           </DetailCard>
           {item.created_at && (
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
@@ -221,13 +275,23 @@ function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete,
         {/* Failure Description */}
         <div className="px-6 pb-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t('workRequests.failureDesc')}</p>
-          <p className="text-sm text-foreground leading-relaxed bg-muted/50 rounded-lg p-3 border border-border">
-            {item.failure_description}
-          </p>
+          {editing ? (
+            <textarea value={editData.failure_description} onChange={e => setEditData(d => ({ ...d, failure_description: e.target.value }))}
+              rows={3} className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-none" />
+          ) : (
+            <p className="text-sm text-foreground leading-relaxed bg-muted/50 rounded-lg p-3 border border-border">
+              {item.failure_description}
+            </p>
+          )}
           <div className="mt-2">
-            <span className="text-xs bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded font-mono">
-              {item.failure_mode}
-            </span>
+            {editing ? (
+              <input type="text" value={editData.failure_mode} onChange={e => setEditData(d => ({ ...d, failure_mode: e.target.value }))}
+                className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none font-mono" placeholder="Failure mode" />
+            ) : (
+              <span className="text-xs bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded font-mono">
+                {item.failure_mode}
+              </span>
+            )}
           </div>
         </div>
 
@@ -280,13 +344,47 @@ function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete,
           </div>
         )}
 
+        {/* Resources & Materials summary */}
+        {(item.resources?.length > 0 || item.materials?.length > 0) && (
+          <div className="px-6 pb-4">
+            {item.resources?.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Recursos</p>
+                <div className="space-y-1">
+                  {item.resources.map((r, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
+                      <span className="font-medium">{r.type}</span>
+                      <span className="text-muted-foreground">×{r.quantity} personas</span>
+                      <span className="text-muted-foreground">{r.hours} hrs</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {item.materials?.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Materiales</p>
+                <div className="space-y-1">
+                  {item.materials.map((m, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
+                      <span className="font-mono text-xs text-muted-foreground">{m.sapId}</span>
+                      <span className="font-medium">{m.description}</span>
+                      <span className="text-muted-foreground">×{m.quantity} uds</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Fast Track Banner for P1/P2 */}
-        {isPending && ['P1', 'P2'].includes(item.priority_requested) && (
+        {isPending && ['P1', 'P2'].includes(editing ? editData.priority_requested : item.priority_requested) && (
           <div className="mx-6 mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 flex items-center gap-3">
             <Zap className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">IMPREVISTO — Fast Track</p>
-              <p className="text-xs text-amber-700 dark:text-amber-400">Al aprobar este aviso {item.priority_requested}, se creará una OT directa sin planificación</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400">Al aprobar este aviso {editing ? editData.priority_requested : item.priority_requested}, se creará una OT directa sin planificación</p>
             </div>
           </div>
         )}
@@ -312,25 +410,43 @@ function DetailModal({ item, onClose, onValidate, onReject, onStart, onComplete,
         )}
 
         {/* Action Buttons */}
-        {(isPending || canStart || canComplete || canClose) && (
-          <div className="px-6 py-4 border-t border-border flex gap-3 sticky bottom-0 bg-card rounded-b-2xl">
+        {(isPending || isValidated || canStart || canComplete || canClose) && (
+          <div className="px-6 py-4 border-t border-border flex flex-wrap gap-3 sticky bottom-0 bg-card rounded-b-2xl">
+            {/* Supervisor: Aprobar + Rechazar + Cancelar */}
             {isPending && (
               <>
                 <button
-                  onClick={() => { onValidate(item.id); onClose(); }}
+                  onClick={handleSaveAndApprove}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1B5E20] text-white text-sm font-semibold hover:bg-[#2E7D32] transition-colors"
                 >
                   <CheckCircle size={16} />
-                  {t('workRequests.validateRequest')}
+                  {editing ? 'Guardar y Aprobar' : t('workRequests.validateRequest')}
                 </button>
                 <button
                   onClick={() => { onReject(item.id); onClose(); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                 >
                   <XCircle size={16} />
                   {t('common.reject')}
                 </button>
+                <button
+                  onClick={() => { onCancel(item.id); onClose(); }}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <XCircle size={16} />
+                  Cancelar
+                </button>
               </>
+            )}
+            {/* Planner: Crear OT from approved WR */}
+            {isValidated && isPlanner && onPlannerCreateOT && (
+              <button
+                onClick={() => { onPlannerCreateOT(item.id); onClose(); }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+              >
+                <FileText size={16} />
+                Crear OT
+              </button>
             )}
             {canStart && (
               <button
@@ -608,6 +724,44 @@ export default function WorkRequests({ onNavigateTab } = {}) {
   function handleReject(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'REJECTED' } : r)));
     api.validateWorkRequest(id, { action: 'REJECT' }).catch(() => {});
+  }
+
+  function handleCancel(id) {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CANCELLED' } : r)));
+    api.cancelWorkRequest(id)
+      .then(() => toast.success('Aviso cancelado'))
+      .catch(() => toast.error('Error al cancelar'));
+  }
+
+  function handleSaveEdit(id, updates) {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
+    api.updateWorkRequest(id, updates)
+      .then(() => toast.success('Aviso actualizado'))
+      .catch(() => toast.error('Error al actualizar'));
+  }
+
+  function handlePlannerCreateOT(id) {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'VALIDATED' } : r)));
+    api.validateWorkRequest(id, { action: 'APPROVE' })
+      .then(async () => {
+        try {
+          const wo = await api.createWOFromWR({ work_request_id: id });
+          toast.success(
+            <span>
+              OT {wo.wo_number || ''} creada desde aviso
+              {onNavigateTab && (
+                <button onClick={() => onNavigateTab('work-orders')} className="ml-2 underline font-semibold">
+                  → Ir a Work Orders
+                </button>
+              )}
+            </span>,
+            8000
+          );
+        } catch {
+          toast.success('Aviso aprobado. Error al crear OT — créala manualmente desde Work Orders.');
+        }
+      })
+      .catch(() => toast.error('Error al aprobar'));
   }
 
   function handleStart(id) {
@@ -1038,9 +1192,13 @@ export default function WorkRequests({ onNavigateTab } = {}) {
           onClose={() => setSelected(null)}
           onValidate={handleValidate}
           onReject={handleReject}
+          onCancel={handleCancel}
           onStart={handleStart}
           onComplete={handleComplete}
           onCloseWR={handleClose}
+          onSaveEdit={handleSaveEdit}
+          onPlannerCreateOT={handlePlannerCreateOT}
+          userRole={user?.role}
           t={t}
         />
       )}

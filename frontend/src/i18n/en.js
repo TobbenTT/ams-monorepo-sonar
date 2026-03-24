@@ -1952,7 +1952,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         title: 'DETAIL: LATE WORK ORDERS',
         subtitle: 'Analytical view of delayed maintenance work orders',
         export: 'Export',
-        createWorkOrder: 'Create Work Order',
+        createWorkOrder: 'Create Work Notice',
         loadingWorkOrders: 'Loading work orders...',
         failedToLoad: 'Failed to load work orders',
         retry: 'Retry',
@@ -2047,7 +2047,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         priorityUrgent: '1 - Urgent',
         priorityExecution: '2 - Sched. Execution',
         priorityNextProg: '3 - Next Scheduled',
-        priorityNone: '4 - No Priority',
+        priorityNone: '4 - Plant Shutdown',
         notScheduled: 'Not Scheduled',
         scheduled: 'Scheduled',
         // Activity classes

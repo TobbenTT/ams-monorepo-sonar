@@ -254,6 +254,9 @@ export const materialCheck = (id) => get(`/scheduling/programs/${id}/material-ch
 export const hhBalance = (id) => get(`/scheduling/programs/${id}/hh-balance`);
 export const getGanttManaged = (p) => get('/scheduling/gantt', p);
 
+// ── SAP BOM / Materials ──
+export const searchBOM = (query) => get('/sap/mock/MM60', { search: query });
+
 // ── Reliability ──
 export const analyzeSpare = (d) => post('/reliability/spare-parts/analyze', d);
 export const createShutdown = (d) => post('/reliability/shutdowns', d);

@@ -48,8 +48,6 @@ export default function FailuresEvents() {
 
   // API data state
   const [workRequests, setWorkRequests] = useState([]);
-  const [rcas, setRcas] = useState([]);
-  const [rcaSummary, setRcaSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -60,15 +58,9 @@ export default function FailuresEvents() {
       setLoading(true);
       setError(null);
       try {
-        const [wrData, rcaData, rcaSumData] = await Promise.allSettled([
-          api.listWorkRequests({ plant_id: plant }),
-          api.listRcas({ plant_id: plant }),
-          api.getRcaSummary({ plant_id: plant }),
-        ]);
+        const wrData = await api.listWorkRequests({ plant_id: plant });
         if (!cancelled) {
-          setWorkRequests(Array.isArray(wrData.value) ? wrData.value : []);
-          setRcas(Array.isArray(rcaData.value) ? rcaData.value : []);
-          setRcaSummary(rcaSumData.value || null);
+          setWorkRequests(Array.isArray(wrData) ? wrData : []);
         }
       } catch (err) {
         if (!cancelled) {

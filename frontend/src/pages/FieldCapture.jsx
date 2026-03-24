@@ -3,7 +3,7 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import { StatusBadge, PriorityBadge } from '../components/Shared';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
-import { CheckCircle, ArrowRight, ArrowLeft, Camera, Mic, MicOff, Search, Edit3, ChevronDown } from 'lucide-react';
+import { CheckCircle, ArrowRight, ArrowLeft, Camera, Mic, MicOff, Search, Edit3, ChevronDown, X, Plus } from 'lucide-react';
 import * as api from '../api';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -129,6 +129,9 @@ export default function FieldCapture() {
     const [availableFMs, setAvailableFMs] = useState([]);
     const [spareSearch, setSpareSearch] = useState('');
     const [spareParts, setSpareParts] = useState([]);
+    const [showSpareSearch, setShowSpareSearch] = useState(false);
+    const [bomResults, setBomResults] = useState([]);
+    const [bomLoading, setBomLoading] = useState(false);
 
     const STAGE_LABELS = [t('capture.step1'), t('capture.step2'), t('capture.step3')];
 
@@ -294,6 +297,38 @@ export default function FieldCapture() {
         setEditImpact('');
         setSpareParts([]);
     };
+
+    // Search BOM / spare parts from SAP material data
+    const handleSpareSearch = async (query) => {
+        if (!query || query.length < 2) { setBomResults([]); return; }
+        setBomLoading(true);
+        try {
+            const res = await api.searchBOM(query).catch(() => null);
+            const materials = res?.materials || res?.data || (Array.isArray(res) ? res : []);
+            const q = query.toLowerCase();
+            const matches = (Array.isArray(materials) ? materials : []).filter(m =>
+                (m.material_number || m.code || '').toLowerCase().includes(q) ||
+                (m.description || m.desc || m.name || '').toLowerCase().includes(q) ||
+                (m.equipment_tag || '').toLowerCase().includes(q)
+            );
+            setBomResults(matches.slice(0, 15));
+        } catch { setBomResults([]); }
+        setBomLoading(false);
+    };
+
+    const addSpareFromBom = (material) => {
+        const existing = spareParts.find(p => p.code === (material.material_number || material.code));
+        if (existing) { toast.info('Already added'); return; }
+        setSpareParts(prev => [...prev, {
+            code: material.material_number || material.code || '',
+            desc: material.description || material.desc || material.name || '',
+            qty: 1,
+            status: material.stock_status || (material.quantity_available > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK'),
+        }]);
+        toast.success('Part added');
+    };
+
+    const removeSpare = (idx) => setSpareParts(prev => prev.filter((_, i) => i !== idx));
 
     const filteredFMs = availableFMs.filter(fm =>
         fm.label?.toLowerCase().includes(failureModeSearch.toLowerCase()) ||
@@ -490,11 +525,48 @@ export default function FieldCapture() {
                                     <div className="text-xs font-bold text-primary uppercase tracking-wider">{t('capture.spareParts')}</div>
                                     <button
                                         className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                                        onClick={() => toast.info('Searching BOM...')}
+                                        onClick={() => setShowSpareSearch(!showSpareSearch)}
                                     >
                                         <Search size={12} /> {t('capture.searchSpares')}
                                     </button>
                                 </div>
+
+                                {/* BOM Search panel */}
+                                {showSpareSearch && (
+                                    <div className="mb-3 p-3 bg-muted/50 rounded-lg border border-border">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <input
+                                                type="text"
+                                                value={spareSearch}
+                                                onChange={e => { setSpareSearch(e.target.value); handleSpareSearch(e.target.value); }}
+                                                placeholder={t('capture.searchSparesPlaceholder') || 'Search by code or description...'}
+                                                className="flex-1 text-xs px-2 py-1.5 border border-border rounded bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                                autoFocus
+                                            />
+                                            <button onClick={() => { setShowSpareSearch(false); setSpareSearch(''); setBomResults([]); }} className="p-1 text-muted-foreground hover:text-foreground">
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                        {bomLoading && <p className="text-xs text-muted-foreground animate-pulse">Searching BOM...</p>}
+                                        {bomResults.length > 0 && (
+                                            <ul className="space-y-1 max-h-32 overflow-y-auto">
+                                                {bomResults.map((m, i) => (
+                                                    <li key={i} className="flex items-center justify-between p-1.5 bg-background rounded text-xs hover:bg-muted/60 cursor-pointer" onClick={() => addSpareFromBom(m)}>
+                                                        <div className="flex items-center gap-2 overflow-hidden">
+                                                            <span className="font-mono text-[10px] text-muted-foreground flex-shrink-0">{m.material_number || m.code}</span>
+                                                            <span className="truncate">{m.description || m.desc || m.name}</span>
+                                                        </div>
+                                                        <Plus size={12} className="text-primary flex-shrink-0" />
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                        {!bomLoading && spareSearch.length >= 2 && bomResults.length === 0 && (
+                                            <p className="text-xs text-muted-foreground">{t('common.noData') || 'No results'}</p>
+                                        )}
+                                    </div>
+                                )}
+
                                 <ul className="space-y-2">
                                     {spareParts.map((part, i) => (
                                         <li key={i} className="flex items-center justify-between p-2 bg-muted/40 rounded-lg text-sm">
@@ -505,9 +577,11 @@ export default function FieldCapture() {
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs text-muted-foreground">x{part.qty}</span>
                                                 {stockBadge(part.status)}
+                                                <button onClick={() => removeSpare(i)} className="p-0.5 text-muted-foreground hover:text-destructive"><X size={12} /></button>
                                             </div>
                                         </li>
                                     ))}
+                                    {spareParts.length === 0 && <li className="text-xs text-muted-foreground text-center py-2">{t('common.noData') || 'No spare parts'}</li>}
                                 </ul>
                             </div>
 

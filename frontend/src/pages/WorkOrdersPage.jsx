@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
-import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image } from 'lucide-react';
+import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image, Trash2, Save, DollarSign, List, MessageSquare, Info, Users } from 'lucide-react';
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -57,6 +57,12 @@ export default function WorkOrdersPage() {
   const [creatingOT, setCreatingOT] = useState(false);
   const [otCreateForm, setOtCreateForm] = useState({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4 });
   const [selectedOT, setSelectedOT] = useState(null);
+  const [otDetailTab, setOtDetailTab] = useState('resumen');
+  const [otOps, setOtOps] = useState([]); // editable operations
+  const [otMats, setOtMats] = useState([]); // editable materials
+  const [otCosts, setOtCosts] = useState({ labor_cost: 0, material_cost: 0, external_cost: 0 });
+  const [otSaving, setOtSaving] = useState(false);
+  const [newNote, setNewNote] = useState('');
   const [wrSortBy, setWrSortBy] = useState('date_desc'); // 'date_desc' | 'date_asc'
 
   // ── SAP PM constants (inside component for i18n) ──
@@ -505,6 +511,78 @@ export default function WorkOrdersPage() {
     }
   };
 
+  // ── Open OT detail & load editable data ──
+  const openOTDetail = (ot) => {
+    setSelectedOT(ot);
+    setOtDetailTab('resumen');
+    setOtOps(Array.isArray(ot.operations) ? ot.operations.map((op, i) => ({ ...op, _id: i })) : []);
+    setOtMats(Array.isArray(ot.materials) ? ot.materials.map((m, i) => ({ ...m, _id: i })) : []);
+    setOtCosts({ labor_cost: ot.labor_cost || 0, material_cost: ot.material_cost || 0, external_cost: ot.external_cost || 0 });
+    setNewNote('');
+  };
+
+  const isEditable = selectedOT && ['DRAFT', 'PLANNED'].includes(selectedOT.status);
+  const isExecuting = selectedOT && ['IN_PROGRESS', 'COMPLETED'].includes(selectedOT.status);
+
+  // SLA targets by priority (hours)
+  const SLA_HOURS = { P1: 24, P2: 72, P3: 168, P4: 720 };
+  const getSlaDays = (ot) => {
+    if (!ot?.created_at) return null;
+    const sla = SLA_HOURS[ot.priority_code] || 168;
+    const elapsed = (Date.now() - new Date(ot.created_at).getTime()) / 3600000;
+    const pct = Math.min((elapsed / sla) * 100, 100);
+    const remaining = Math.max(sla - elapsed, 0);
+    return { sla, elapsed, pct, remaining, overdue: elapsed > sla };
+  };
+
+  // Save operations
+  const saveOps = async () => {
+    setOtSaving(true);
+    try {
+      const ops = otOps.map(({ _id, ...rest }) => rest);
+      const totalHrs = ops.reduce((s, op) => s + (parseFloat(op.planned_hours) || 0), 0);
+      await api.updateManagedWO(selectedOT.wo_id, { operations: ops, estimated_hours: totalHrs });
+      toast.success('Operaciones guardadas');
+      reloadData();
+    } catch (err) { toast.error(err.message); } finally { setOtSaving(false); }
+  };
+
+  // Save materials
+  const saveMats = async () => {
+    setOtSaving(true);
+    try {
+      const mats = otMats.map(({ _id, ...rest }) => rest);
+      await api.updateManagedWO(selectedOT.wo_id, { materials: mats });
+      toast.success('Materiales guardados');
+      reloadData();
+    } catch (err) { toast.error(err.message); } finally { setOtSaving(false); }
+  };
+
+  // Save costs
+  const saveCosts = async () => {
+    setOtSaving(true);
+    try {
+      const total = (parseFloat(otCosts.labor_cost) || 0) + (parseFloat(otCosts.material_cost) || 0) + (parseFloat(otCosts.external_cost) || 0);
+      await api.updateManagedWO(selectedOT.wo_id, { ...otCosts, actual_total_cost: total });
+      toast.success('Costos actualizados');
+      reloadData();
+    } catch (err) { toast.error(err.message); } finally { setOtSaving(false); }
+  };
+
+  // Add execution note
+  const addNote = async () => {
+    if (!newNote.trim()) return;
+    setOtSaving(true);
+    try {
+      await api.addManagedWONote(selectedOT.wo_id, { note: newNote.trim() });
+      setNewNote('');
+      toast.success('Nota agregada');
+      // Reload the OT to get updated notes
+      const updated = await api.getManagedWO(selectedOT.wo_id);
+      setSelectedOT(updated);
+    } catch (err) { toast.error(err.message); } finally { setOtSaving(false); }
+  };
+
   // OT stats
   const otStats = useMemo(() => {
     const total = managedWOs.length;
@@ -813,7 +891,7 @@ export default function WorkOrdersPage() {
                     const nextAct = OT_NEXT_ACTION[wo.status];
                     const NextIcon = nextAct?.icon;
                     return (
-                      <TableRow key={wo.wo_id} className={`hover:bg-gray-50 cursor-pointer ${wo.is_fast_track ? 'bg-amber-50/50' : ''}`} onClick={() => setSelectedOT(wo)}>
+                      <TableRow key={wo.wo_id} className={`hover:bg-gray-50 cursor-pointer ${wo.is_fast_track ? 'bg-amber-50/50' : ''}`} onClick={() => openOTDetail(wo)}>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono text-sm font-medium text-emerald-700">{wo.wo_number}</span>
@@ -1420,149 +1498,521 @@ export default function WorkOrdersPage() {
         </div>
       )}
 
-      {/* ── WO Detail / Edit Modal ── */}
-      {selectedOT && (
+      {/* ── Professional OT Detail Modal ── */}
+      {selectedOT && (() => {
+        const sla = getSlaDays(selectedOT);
+        const WO_TYPE_LABELS = { CORRECTIVO: 'Correctivo', PREVENTIVO: 'Preventivo', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' };
+        const SPECIALTY_OPTIONS = ['Mecánico', 'Eléctrico', 'Instrumentación', 'Soldador', 'Lubricación', 'Andamios', 'Aislamiento', 'Operador', 'Supervisor', 'Otro'];
+        const OT_TABS = [
+          { id: 'resumen', label: 'Resumen', icon: Info },
+          { id: 'operaciones', label: 'Operaciones', icon: List },
+          { id: 'materiales', label: 'Materiales', icon: Package },
+          { id: 'costos', label: 'Costos', icon: DollarSign },
+          { id: 'historial', label: 'Historial', icon: MessageSquare },
+        ];
+        return (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedOT(null)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-6 py-4 rounded-t-2xl flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  {selectedOT.wo_number}
-                  {selectedOT.is_fast_track && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300"><Zap size={8} className="inline" /> FAST TRACK</span>}
-                </h2>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  <Badge className={OT_STATUS_COLORS[selectedOT.status] || 'bg-gray-100'}>{selectedOT.status.replace(/_/g, ' ')}</Badge>
-                  <span className="ml-2">{selectedOT.equipment_tag}</span>
-                  <span className="ml-2">|</span>
-                  <span className="ml-2">{selectedOT.priority_code}</span>
-                </p>
-              </div>
-              <button onClick={() => setSelectedOT(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
-            </div>
+          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[92vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
-            <div className="p-6 space-y-4">
-              {/* Aviso link */}
-              {selectedOT.work_request_id && (
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50 border border-blue-200 text-sm cursor-pointer hover:bg-blue-100 transition-colors"
-                  onClick={() => { window.location.href = '/work-requests'; }}
-                  title="Ver Aviso">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  <span className="text-blue-700">Aviso origen:</span>
-                  <span className="font-mono font-semibold text-blue-800 underline">{selectedOT.work_request_id}</span>
+            {/* ═══ HEADER ═══ */}
+            <div className="border-b px-6 py-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-bold text-gray-900">{selectedOT.wo_number}</h2>
+                    <Badge className={OT_STATUS_COLORS[selectedOT.status] || 'bg-gray-100'}>{selectedOT.status.replace(/_/g, ' ')}</Badge>
+                    {selectedOT.is_fast_track && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300"><Zap size={8} className="inline" /> FAST TRACK</span>}
+                  </div>
+                  <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                    <span className="font-medium text-gray-700">{selectedOT.equipment_tag}</span>
+                    <span>{WO_TYPE_LABELS[selectedOT.wo_type] || selectedOT.wo_type}</span>
+                    <span>{selectedOT.priority_code}</span>
+                    {selectedOT.work_request_id && (
+                      <span className="text-blue-600 underline cursor-pointer hover:text-blue-800" onClick={() => { window.location.href = '/work-requests'; }}>
+                        Aviso: {selectedOT.work_request_id.slice(0, 8)}...
+                      </span>
+                    )}
+                  </div>
                 </div>
-              )}
-              {/* Info grid */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><span className="text-gray-500 text-xs block">Tipo</span><span className="font-medium">{{ CORRECTIVO: 'Correctivo', PREVENTIVO: 'Preventivo', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' }[selectedOT.wo_type] || selectedOT.wo_type}</span></div>
-                <div><span className="text-gray-500 text-xs block">Clase</span><span className="font-medium">{selectedOT.work_class || '—'}</span></div>
-                <div><span className="text-gray-500 text-xs block">Horas Estimadas</span><span className="font-medium">{selectedOT.estimated_hours || 0}h</span></div>
-                <div><span className="text-gray-500 text-xs block">Horas Reales</span><span className="font-medium">{selectedOT.actual_hours || 0}h</span></div>
-                <div><span className="text-gray-500 text-xs block">Inicio Plan.</span><span className="font-medium">{selectedOT.planned_start ? new Date(selectedOT.planned_start).toLocaleDateString() : '—'}</span></div>
-                <div><span className="text-gray-500 text-xs block">Fin Plan.</span><span className="font-medium">{selectedOT.planned_end ? new Date(selectedOT.planned_end).toLocaleDateString() : '—'}</span></div>
-                <div><span className="text-gray-500 text-xs block">Inicio Real</span><span className="font-medium">{selectedOT.actual_start ? new Date(selectedOT.actual_start).toLocaleDateString() : '—'}</span></div>
-                <div><span className="text-gray-500 text-xs block">Fin Real</span><span className="font-medium">{selectedOT.actual_end ? new Date(selectedOT.actual_end).toLocaleDateString() : '—'}</span></div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <span className="text-gray-500 text-xs block mb-1">Descripción</span>
-                {['DRAFT', 'PLANNED'].includes(selectedOT.status) ? (
-                  <textarea className="w-full border rounded-lg p-2 text-sm" rows={2} defaultValue={selectedOT.description}
-                    onBlur={async (e) => {
-                      if (e.target.value !== selectedOT.description) {
-                        await api.updateManagedWO(selectedOT.wo_id, { description: e.target.value });
-                        reloadData();
-                      }
-                    }} />
-                ) : (
-                  <p className="text-sm text-gray-800">{selectedOT.description || '—'}</p>
+                {/* SLA indicator */}
+                {sla && !['COMPLETED', 'CLOSED'].includes(selectedOT.status) && (
+                  <div className={`text-center px-3 py-1.5 rounded-lg border text-xs ${sla.overdue ? 'bg-red-50 border-red-200 text-red-700' : sla.pct > 75 ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-green-50 border-green-200 text-green-700'}`}>
+                    <div className="font-semibold">{sla.overdue ? 'SLA Vencido' : `${Math.round(sla.remaining)}h restantes`}</div>
+                    <div className="w-20 bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div className={`h-1.5 rounded-full ${sla.overdue ? 'bg-red-500' : sla.pct > 75 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${Math.min(sla.pct, 100)}%` }} />
+                    </div>
+                  </div>
                 )}
+                <button onClick={() => setSelectedOT(null)} className="p-2 hover:bg-gray-100 rounded-lg ml-3"><X className="w-5 h-5" /></button>
               </div>
 
-              {/* Editable fields for DRAFT/PLANNED */}
-              {['DRAFT', 'PLANNED'].includes(selectedOT.status) && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-gray-500 text-xs block mb-1">Tipo OT</label>
-                    <select className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.wo_type}
-                      onChange={async (e) => { await api.updateManagedWO(selectedOT.wo_id, { wo_type: e.target.value }); reloadData(); }}>
-                      <option value="CORRECTIVO">Correctivo</option>
-                      <option value="PREVENTIVO">Preventivo</option>
-                      <option value="PREDICTIVO">Predictivo</option>
-                      <option value="MEJORA">Mejora</option>
-                      <option value="INCIDENTE_OPERACIONAL">Incidente Op.</option>
-                      <option value="MONITOREO_CONDICION">Monitoreo</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-gray-500 text-xs block mb-1">Prioridad</label>
-                    <select className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.priority_code}
-                      onChange={async (e) => { await api.updateManagedWO(selectedOT.wo_id, { priority_code: e.target.value }); reloadData(); }}>
-                      <option value="P1">P1 - Urgente</option>
-                      <option value="P2">P2 - Programa en Ejecución</option>
-                      <option value="P3">P3 - Próximo Programa</option>
-                      <option value="P4">P4 - Parada de Planta</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-gray-500 text-xs block mb-1">Horas Estimadas</label>
-                    <input type="number" className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.estimated_hours}
-                      onBlur={async (e) => {
-                        const val = parseFloat(e.target.value);
-                        if (val !== selectedOT.estimated_hours) {
-                          await api.updateManagedWO(selectedOT.wo_id, { estimated_hours: val });
-                          reloadData();
-                        }
-                      }} />
-                  </div>
-                  <div>
-                    <label className="text-gray-500 text-xs block mb-1">Presupuesto ($)</label>
-                    <input type="number" className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.budget_amount || 0}
-                      onBlur={async (e) => {
-                        await api.updateManagedWO(selectedOT.wo_id, { budget_amount: parseFloat(e.target.value) || 0 });
-                        reloadData();
-                      }} />
-                  </div>
-                </div>
-              )}
-
-              {/* Progress bar */}
-              <div>
-                <span className="text-gray-500 text-xs block mb-1">Progreso: {Math.round(selectedOT.completion_pct || 0)}%</span>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className="bg-emerald-500 h-3 rounded-full transition-all" style={{ width: `${selectedOT.completion_pct || 0}%` }}></div>
-                </div>
+              {/* Tabs */}
+              <div className="flex gap-1 mt-3 -mb-4 border-b-0">
+                {OT_TABS.map(tab => {
+                  const Icon = tab.icon;
+                  return (
+                    <button key={tab.id} onClick={() => setOtDetailTab(tab.id)}
+                      className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-t-lg border border-b-0 transition-colors ${otDetailTab === tab.id ? 'bg-white text-emerald-700 border-gray-200' : 'bg-gray-50 text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-100'}`}>
+                      <Icon size={13} /> {tab.label}
+                    </button>
+                  );
+                })}
               </div>
-
-              {/* Execution Notes */}
-              {selectedOT.execution_notes?.length > 0 && (
-                <div>
-                  <span className="text-gray-500 text-xs block mb-1">Notas de Ejecución</span>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {selectedOT.execution_notes.map((note, i) => (
-                      <div key={i} className="text-xs bg-gray-50 rounded p-2">
-                        <span className="text-gray-400">{note.timestamp ? new Date(note.timestamp).toLocaleString() : ''}</span>
-                        <span className="ml-2 text-gray-700">{note.note}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Costs summary */}
-              {(selectedOT.labor_cost || selectedOT.material_cost || selectedOT.external_cost || selectedOT.actual_total_cost) ? (
-                <div className="grid grid-cols-4 gap-3 bg-gray-50 rounded-lg p-3">
-                  <div className="text-center"><span className="text-[10px] text-gray-500 block">Labor</span><span className="text-sm font-semibold">${selectedOT.labor_cost || 0}</span></div>
-                  <div className="text-center"><span className="text-[10px] text-gray-500 block">Material</span><span className="text-sm font-semibold">${selectedOT.material_cost || 0}</span></div>
-                  <div className="text-center"><span className="text-[10px] text-gray-500 block">Externo</span><span className="text-sm font-semibold">${selectedOT.external_cost || 0}</span></div>
-                  <div className="text-center"><span className="text-[10px] text-gray-500 block">Total</span><span className="text-sm font-bold text-emerald-700">${selectedOT.actual_total_cost || 0}</span></div>
-                </div>
-              ) : null}
             </div>
 
-            {/* Footer actions */}
-            <div className="sticky bottom-0 bg-white border-t px-6 py-4 rounded-b-2xl flex justify-between items-center">
+            {/* ═══ TAB CONTENT ═══ */}
+            <div className="flex-1 overflow-y-auto p-6">
+
+              {/* ─── TAB: RESUMEN ─── */}
+              {otDetailTab === 'resumen' && (
+                <div className="space-y-4">
+                  {/* Progress bar */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-500">Progreso</span>
+                      <span className="text-xs font-semibold">{Math.round(selectedOT.completion_pct || 0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className="bg-emerald-500 h-2.5 rounded-full transition-all" style={{ width: `${selectedOT.completion_pct || 0}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Key metrics */}
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Horas Plan.</div>
+                      <div className="text-lg font-bold text-gray-900">{selectedOT.estimated_hours || 0}h</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Horas Real</div>
+                      <div className={`text-lg font-bold ${(selectedOT.actual_hours || 0) > (selectedOT.estimated_hours || 0) ? 'text-red-600' : 'text-gray-900'}`}>{selectedOT.actual_hours || 0}h</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Presupuesto</div>
+                      <div className="text-lg font-bold text-gray-900">${(selectedOT.budget_amount || 0).toLocaleString()}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Costo Real</div>
+                      <div className={`text-lg font-bold ${(selectedOT.actual_total_cost || 0) > (selectedOT.budget_amount || 0) && selectedOT.budget_amount ? 'text-red-600' : 'text-gray-900'}`}>${(selectedOT.actual_total_cost || 0).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="text-gray-500 text-xs block mb-1">Descripción</label>
+                    {isEditable ? (
+                      <textarea className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400" rows={2} defaultValue={selectedOT.description}
+                        onBlur={async (e) => {
+                          if (e.target.value !== selectedOT.description) {
+                            await api.updateManagedWO(selectedOT.wo_id, { description: e.target.value });
+                            reloadData();
+                          }
+                        }} />
+                    ) : (
+                      <p className="text-sm text-gray-800 bg-gray-50 rounded-lg p-2.5">{selectedOT.description || '—'}</p>
+                    )}
+                  </div>
+
+                  {/* Info grid */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {isEditable ? (
+                      <>
+                        <div>
+                          <label className="text-gray-500 text-xs block mb-1">Tipo OT</label>
+                          <select className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.wo_type}
+                            onChange={async (e) => { await api.updateManagedWO(selectedOT.wo_id, { wo_type: e.target.value }); reloadData(); }}>
+                            {Object.entries(WO_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-gray-500 text-xs block mb-1">Prioridad</label>
+                          <select className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.priority_code}
+                            onChange={async (e) => { await api.updateManagedWO(selectedOT.wo_id, { priority_code: e.target.value }); reloadData(); }}>
+                            <option value="P1">P1 - Urgente</option>
+                            <option value="P2">P2 - Programa en Ejecución</option>
+                            <option value="P3">P3 - Próximo Programa</option>
+                            <option value="P4">P4 - Parada de Planta</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-gray-500 text-xs block mb-1">Horas Estimadas</label>
+                          <input type="number" className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.estimated_hours}
+                            onBlur={async (e) => { const val = parseFloat(e.target.value); if (val !== selectedOT.estimated_hours) { await api.updateManagedWO(selectedOT.wo_id, { estimated_hours: val }); reloadData(); } }} />
+                        </div>
+                        <div>
+                          <label className="text-gray-500 text-xs block mb-1">Presupuesto ($)</label>
+                          <input type="number" className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.budget_amount || 0}
+                            onBlur={async (e) => { await api.updateManagedWO(selectedOT.wo_id, { budget_amount: parseFloat(e.target.value) || 0 }); reloadData(); }} />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Tipo</span><span className="font-medium">{WO_TYPE_LABELS[selectedOT.wo_type] || selectedOT.wo_type}</span></div>
+                        <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Clase</span><span className="font-medium">{selectedOT.work_class || '—'}</span></div>
+                        <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Inicio Plan.</span><span className="font-medium">{selectedOT.planned_start ? new Date(selectedOT.planned_start).toLocaleDateString() : '—'}</span></div>
+                        <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Fin Plan.</span><span className="font-medium">{selectedOT.planned_end ? new Date(selectedOT.planned_end).toLocaleDateString() : '—'}</span></div>
+                        <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Inicio Real</span><span className="font-medium">{selectedOT.actual_start ? new Date(selectedOT.actual_start).toLocaleDateString() : '—'}</span></div>
+                        <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Fin Real</span><span className="font-medium">{selectedOT.actual_end ? new Date(selectedOT.actual_end).toLocaleDateString() : '—'}</span></div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Assigned workers */}
+                  {selectedOT.assigned_workers?.length > 0 && (
+                    <div>
+                      <label className="text-gray-500 text-xs block mb-1"><Users size={12} className="inline mr-1" />Personal Asignado</label>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedOT.assigned_workers.map((w, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs border border-emerald-200">
+                            <Users size={10} /> {w.name || w.worker_id} {w.specialty && <span className="text-emerald-500">({w.specialty})</span>}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── TAB: OPERACIONES ─── */}
+              {otDetailTab === 'operaciones' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-800">Operaciones / Pasos de Trabajo</h3>
+                      <p className="text-xs text-gray-500">Define las operaciones necesarias, especialidad y horas planificadas</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {isEditable && (
+                        <Button size="sm" variant="outline" onClick={() => setOtOps(prev => [...prev, { _id: Date.now(), step: prev.length + 1, description: '', specialty: 'Mecánico', planned_hours: 1, actual_hours: 0 }])}>
+                          <Plus className="w-3 h-3 mr-1" /> Agregar
+                        </Button>
+                      )}
+                      {isEditable && otOps.length > 0 && (
+                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveOps} disabled={otSaving}>
+                          <Save className="w-3 h-3 mr-1" /> Guardar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {otOps.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <List className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">Sin operaciones definidas</p>
+                      {isEditable && <p className="text-xs mt-1">Agrega pasos de trabajo con especialidad y horas</p>}
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-10">#</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-32">Especialidad</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">H. Plan.</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">H. Real</th>
+                            {isEditable && <th className="px-3 py-2 w-10"></th>}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {otOps.map((op, idx) => (
+                            <tr key={op._id} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 text-gray-400 font-mono text-xs">{idx + 1}</td>
+                              <td className="px-3 py-2">
+                                {isEditable ? (
+                                  <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-sm focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Descripción de la operación..."
+                                    value={op.description} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, description: e.target.value } : o))} />
+                                ) : <span>{op.description || '—'}</span>}
+                              </td>
+                              <td className="px-3 py-2">
+                                {isEditable ? (
+                                  <select className="w-full border-0 border-b border-gray-200 p-0 text-xs focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                    value={op.specialty || 'Mecánico'} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, specialty: e.target.value } : o))}>
+                                    {SPECIALTY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                                  </select>
+                                ) : <span className="text-xs">{op.specialty || '—'}</span>}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                {isEditable ? (
+                                  <input type="number" className="w-16 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                    value={op.planned_hours || ''} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, planned_hours: parseFloat(e.target.value) || 0 } : o))} />
+                                ) : <span>{op.planned_hours || 0}h</span>}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                {isExecuting ? (
+                                  <input type="number" className="w-16 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                    value={op.actual_hours || ''} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, actual_hours: parseFloat(e.target.value) || 0 } : o))} />
+                                ) : <span className={`${(op.actual_hours || 0) > (op.planned_hours || 0) ? 'text-red-600 font-semibold' : ''}`}>{op.actual_hours || 0}h</span>}
+                              </td>
+                              {isEditable && (
+                                <td className="px-3 py-2">
+                                  <button onClick={() => setOtOps(prev => prev.filter(o => o._id !== op._id))} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot className="bg-gray-50 font-semibold">
+                          <tr>
+                            <td className="px-3 py-2" colSpan={3}><span className="text-xs text-gray-500">TOTAL</span></td>
+                            <td className="px-3 py-2 text-center text-xs">{otOps.reduce((s, o) => s + (parseFloat(o.planned_hours) || 0), 0)}h</td>
+                            <td className="px-3 py-2 text-center text-xs">{otOps.reduce((s, o) => s + (parseFloat(o.actual_hours) || 0), 0)}h</td>
+                            {isEditable && <td></td>}
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Labour summary by specialty */}
+                  {otOps.length > 0 && (
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Resumen por Especialidad</label>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(otOps.reduce((acc, op) => { const s = op.specialty || 'Sin definir'; acc[s] = (acc[s] || 0) + (parseFloat(op.planned_hours) || 0); return acc; }, {})).map(([spec, hrs]) => (
+                          <span key={spec} className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs border border-emerald-200">
+                            {spec}: {hrs}h
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isExecuting && otOps.length > 0 && (
+                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveOps} disabled={otSaving}>
+                      <Save className="w-3 h-3 mr-1" /> Guardar Horas Reales
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* ─── TAB: MATERIALES ─── */}
+              {otDetailTab === 'materiales' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-800">Lista de Materiales / Repuestos</h3>
+                      <p className="text-xs text-gray-500">Código SAP, descripción y cantidad requerida</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {isEditable && (
+                        <Button size="sm" variant="outline" onClick={() => setOtMats(prev => [...prev, { _id: Date.now(), code: '', description: '', quantity: 1, unit: 'PZ', reserved: false }])}>
+                          <Plus className="w-3 h-3 mr-1" /> Agregar
+                        </Button>
+                      )}
+                      {isEditable && otMats.length > 0 && (
+                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveMats} disabled={otSaving}>
+                          <Save className="w-3 h-3 mr-1" /> Guardar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {otMats.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">Sin materiales definidos</p>
+                      {isEditable && <p className="text-xs mt-1">Agrega repuestos y materiales necesarios</p>}
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">Código SAP</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Cant.</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Unidad</th>
+                            {isEditable && <th className="px-3 py-2 w-10"></th>}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {otMats.map((mat) => (
+                            <tr key={mat._id} className="hover:bg-gray-50">
+                              <td className="px-3 py-2">
+                                {isEditable ? (
+                                  <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-xs font-mono focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="10034567"
+                                    value={mat.code || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, code: e.target.value } : m))} />
+                                ) : <span className="font-mono text-xs">{mat.code || '—'}</span>}
+                              </td>
+                              <td className="px-3 py-2">
+                                {isEditable ? (
+                                  <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-sm focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Descripción del material..."
+                                    value={mat.description || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, description: e.target.value } : m))} />
+                                ) : <span>{mat.description || '—'}</span>}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                {isEditable ? (
+                                  <input type="number" className="w-14 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                    value={mat.quantity || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, quantity: parseInt(e.target.value) || 0 } : m))} />
+                                ) : <span>{mat.quantity || 0}</span>}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                {isEditable ? (
+                                  <select className="w-14 border-0 border-b border-gray-200 p-0 text-xs text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                    value={mat.unit || 'PZ'} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, unit: e.target.value } : m))}>
+                                    <option value="PZ">PZ</option><option value="KG">KG</option><option value="LT">LT</option><option value="MT">MT</option><option value="UN">UN</option>
+                                  </select>
+                                ) : <span className="text-xs">{mat.unit || 'PZ'}</span>}
+                              </td>
+                              {isEditable && (
+                                <td className="px-3 py-2">
+                                  <button onClick={() => setOtMats(prev => prev.filter(m => m._id !== mat._id))} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── TAB: COSTOS ─── */}
+              {otDetailTab === 'costos' && (() => {
+                const budget = selectedOT.budget_amount || 0;
+                const totalCost = (parseFloat(otCosts.labor_cost) || 0) + (parseFloat(otCosts.material_cost) || 0) + (parseFloat(otCosts.external_cost) || 0);
+                const variance = budget > 0 ? ((totalCost - budget) / budget * 100) : 0;
+                const overBudget = budget > 0 && totalCost > budget;
+                return (
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-800">Control de Costos</h3>
+
+                    {/* Budget vs Actual */}
+                    <div className={`rounded-xl p-4 border ${overBudget ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Presupuesto vs Real</span>
+                        {budget > 0 && <span className={`text-xs font-bold px-2 py-0.5 rounded ${overBudget ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {variance > 0 ? '+' : ''}{variance.toFixed(1)}% variación
+                        </span>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">Presupuesto</div>
+                          <div className="text-2xl font-bold text-gray-900">${budget.toLocaleString()}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">Costo Real</div>
+                          <div className={`text-2xl font-bold ${overBudget ? 'text-red-600' : 'text-emerald-700'}`}>${totalCost.toLocaleString()}</div>
+                        </div>
+                      </div>
+                      {budget > 0 && (
+                        <div className="mt-3">
+                          <div className="w-full bg-gray-200 rounded-full h-3 relative">
+                            <div className={`h-3 rounded-full transition-all ${overBudget ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min((totalCost / budget) * 100, 100)}%` }} />
+                            {totalCost > budget && <div className="absolute right-0 top-0 h-3 rounded-r-full bg-red-300" style={{ width: `${Math.min(((totalCost - budget) / budget) * 100, 30)}%` }} />}
+                          </div>
+                          <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                            <span>$0</span><span>${budget.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cost breakdown */}
+                    <div className="grid grid-cols-3 gap-4">
+                      {[
+                        { key: 'labor_cost', label: 'Mano de Obra', icon: Users, color: 'blue' },
+                        { key: 'material_cost', label: 'Materiales', icon: Package, color: 'amber' },
+                        { key: 'external_cost', label: 'Servicios Ext.', icon: Wrench, color: 'purple' },
+                      ].map(({ key, label, icon: CIcon, color }) => (
+                        <div key={key} className={`rounded-lg border p-3 bg-${color}-50/50`}>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <CIcon size={14} className={`text-${color}-600`} />
+                            <span className="text-xs text-gray-600">{label}</span>
+                          </div>
+                          {isExecuting || isEditable ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400 text-sm">$</span>
+                              <input type="number" className="w-full border rounded-lg p-2 text-sm font-semibold"
+                                value={otCosts[key] || ''} onChange={(e) => setOtCosts(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))} />
+                            </div>
+                          ) : (
+                            <div className="text-xl font-bold text-gray-900">${(selectedOT[key] || 0).toLocaleString()}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {(isExecuting || isEditable) && (
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveCosts} disabled={otSaving}>
+                        <Save className="w-3 h-3 mr-1" /> Guardar Costos
+                      </Button>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* ─── TAB: HISTORIAL ─── */}
+              {otDetailTab === 'historial' && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-800">Historial de Ejecución</h3>
+
+                  {/* Status timeline */}
+                  <div className="flex items-center gap-1 overflow-x-auto pb-2">
+                    {['DRAFT', 'PLANNED', 'RELEASED', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'].map((st, idx) => {
+                      const states = ['DRAFT', 'PLANNED', 'RELEASED', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'];
+                      const currentIdx = states.indexOf(selectedOT.status);
+                      const isPast = idx <= currentIdx;
+                      const isCurrent = idx === currentIdx;
+                      return (
+                        <div key={st} className="flex items-center">
+                          <div className={`px-2 py-1 rounded text-[10px] font-medium whitespace-nowrap ${isCurrent ? 'bg-emerald-600 text-white' : isPast ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                            {st.replace(/_/g, ' ')}
+                          </div>
+                          {idx < 6 && <div className={`w-4 h-0.5 ${isPast ? 'bg-emerald-300' : 'bg-gray-200'}`} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Key dates */}
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {selectedOT.created_at && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Creado</span><br /><span className="font-medium">{new Date(selectedOT.created_at).toLocaleString()}</span></div>}
+                    {selectedOT.released_at && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Liberado por {selectedOT.released_by || '—'}</span><br /><span className="font-medium">{new Date(selectedOT.released_at).toLocaleString()}</span></div>}
+                    {selectedOT.actual_start && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Inicio Real</span><br /><span className="font-medium">{new Date(selectedOT.actual_start).toLocaleString()}</span></div>}
+                    {selectedOT.actual_end && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Fin Real</span><br /><span className="font-medium">{new Date(selectedOT.actual_end).toLocaleString()}</span></div>}
+                    {selectedOT.closed_at && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Cerrado por {selectedOT.closed_by || '—'}</span><br /><span className="font-medium">{new Date(selectedOT.closed_at).toLocaleString()}</span></div>}
+                  </div>
+
+                  {/* Execution notes */}
+                  <div>
+                    <label className="text-xs text-gray-500 mb-2 block">Notas de Ejecución ({selectedOT.execution_notes?.length || 0})</label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {(selectedOT.execution_notes || []).length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-4">Sin notas de ejecución</p>
+                      ) : (
+                        selectedOT.execution_notes.map((note, i) => (
+                          <div key={i} className="flex gap-3 text-xs bg-gray-50 rounded-lg p-3">
+                            <div className="w-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                            <div>
+                              <div className="text-gray-400">{note.timestamp ? new Date(note.timestamp).toLocaleString() : ''} {note.user && <span className="text-gray-600 font-medium">- {note.user}</span>}</div>
+                              <div className="text-gray-700 mt-0.5">{note.note}</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Add note */}
+                  {!['CLOSED'].includes(selectedOT.status) && (
+                    <div className="flex gap-2">
+                      <input type="text" className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="Agregar nota de ejecución..."
+                        value={newNote} onChange={(e) => setNewNote(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') addNote(); }} />
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={addNote} disabled={otSaving || !newNote.trim()}>
+                        <MessageSquare className="w-3 h-3 mr-1" /> Agregar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ═══ FOOTER ═══ */}
+            <div className="border-t px-6 py-3 rounded-b-2xl flex justify-between items-center bg-gray-50">
               <span className="text-xs text-gray-400">Creado: {selectedOT.created_at ? new Date(selectedOT.created_at).toLocaleString() : '—'}</span>
               <div className="flex gap-2">
                 {(() => {
@@ -1582,7 +2032,8 @@ export default function WorkOrdersPage() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       </>)}
     </div>

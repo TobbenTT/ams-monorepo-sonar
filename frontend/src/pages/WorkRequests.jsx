@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
@@ -192,7 +192,9 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                 {statusLabels[item.status] ?? item.status}
               </span>
               {item.wo_number && (
-                <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-100 text-emerald-700 border border-emerald-300 cursor-pointer hover:bg-emerald-200" title="Ir a OT">
+                <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-100 text-emerald-700 border border-emerald-300 cursor-pointer hover:bg-emerald-200"
+                  title="Ir a OT"
+                  onClick={(e) => { e.stopPropagation(); window.location.href = '/work-orders'; }}>
                   OT: {item.wo_number}
                 </span>
               )}

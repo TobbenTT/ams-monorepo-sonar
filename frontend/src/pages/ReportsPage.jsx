@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
+import { useToast } from '../components/Toast';
 
 // ── Report type metadata ─────────────────────────────────────────────
 const REPORT_TYPE_META = {
@@ -128,6 +129,7 @@ export default function ReportsPage() {
   const ctx = useOutletContext() || {};
   const plantId = ctx.selectedPlant?.plant_id || ctx.selectedPlant || ctx.plant?.plant_id || 'OCP-JFC1';
   const { t, lang } = useLanguage();
+  const toast = useToast();
 
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -192,7 +194,7 @@ export default function ReportsPage() {
       }
       await fetchReports();
     } catch (err) {
-      alert(`${t('reports.errorGenerating')}: ${err.message || t('reports.unknownError')}`);
+      toast.error(`${t('reports.errorGenerating')}: ${err.message || t('reports.unknownError')}`);
     } finally {
       setGenerating(null);
     }
@@ -253,7 +255,7 @@ export default function ReportsPage() {
         URL.revokeObjectURL(url);
       }
     } catch (err) {
-      alert(`${t('reports.errorDownloading')}: ${err.message}`);
+      toast.error(`${t('reports.errorDownloading')}: ${err.message}`);
     }
   };
 

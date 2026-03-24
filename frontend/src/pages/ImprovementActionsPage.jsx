@@ -9,6 +9,7 @@ import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { Loader2, AlertCircle, Inbox, Plus, BarChart3, Pencil, Trash2, CheckCircle, Play, X as XIcon, Zap, ShoppingCart } from 'lucide-react';
 import * as api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../components/Toast';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ const EMPTY_FORM = {
 export default function ImprovementActionsPage() {
   const { selectedPlant } = useOutletContext();
   const { t } = useLanguage();
+  const toast = useToast();
   const plantId = selectedPlant?.plant_id || selectedPlant || 'OCP-JFC1';
 
   const [automaticCreation, setAutomaticCreation] = useState(true);
@@ -162,7 +164,7 @@ export default function ImprovementActionsPage() {
       setModalOpen(false);
       fetchActions();
     } catch (err) {
-      alert('Error: ' + (err.message || t('improvementActions.failedToLoad')));
+      toast.error('Error: ' + (err.message || t('improvementActions.failedToLoad')));
     } finally {
       setSaving(false);
     }
@@ -174,7 +176,7 @@ export default function ImprovementActionsPage() {
       await api.updateImprovementAction(action.action_id, { status: newStatus });
       fetchActions();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error('Error: ' + err.message);
     }
   }
 
@@ -186,7 +188,7 @@ export default function ImprovementActionsPage() {
       setDeleteTarget(null);
       fetchActions();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error('Error: ' + err.message);
     }
   }
 
@@ -198,10 +200,10 @@ export default function ImprovementActionsPage() {
       const msg = result.actions_created > 0
         ? t('improvementActions.analysisCreated', { wrs: result.analyzed_wrs, created: result.actions_created })
         : t('improvementActions.analysisNone', { wrs: result.analyzed_wrs });
-      alert(msg);
+      toast.success(msg);
       fetchActions();
     } catch (err) {
-      alert('Error: ' + (err.message || t('improvementActions.failedToLoad')));
+      toast.error('Error: ' + (err.message || t('improvementActions.failedToLoad')));
     } finally {
       setAnalyzing(false);
     }

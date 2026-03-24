@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrainCircuit, Wrench, AlertTriangle, CheckCircle, Loader, Play, ChevronRight, Search, ClipboardCheck, Cpu, FolderOpen, Users, Building2, FlaskConical, HardHat, DollarSign, Globe } from 'lucide-react';
 import * as api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../components/Toast';
 
 const TABS = [
     { id: 'status', icon: Cpu, label: 'Estado IA' },
@@ -180,6 +181,7 @@ function StatusTab() {
 /* ── OR Projects Tab ────────────────────────────────────────────── */
 
 function ORProjectsTab() {
+    const toast = useToast();
     const [projects, setProjects] = useState([]);
     const [creating, setCreating] = useState(false);
     const [form, setForm] = useState({ client_name: '', plant_code: '', project_type: 'greenfield' });
@@ -194,7 +196,7 @@ function ORProjectsTab() {
             setForm({ client_name: '', plant_code: '', project_type: 'greenfield' });
             setShowForm(false);
         } catch (err) {
-            alert('Error al crear proyecto: ' + err.message);
+            toast.error('Error al crear proyecto: ' + err.message);
         } finally {
             setCreating(false);
         }
@@ -579,6 +581,7 @@ function ChecklistItem({ item, onClick }) {
 /* ── Sessions Tab ───────────────────────────────────────────────── */
 
 function SessionsTab() {
+    const toast = useToast();
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
@@ -596,7 +599,7 @@ function SessionsTab() {
             setSessions(prev => [session, ...prev]);
             setEquipmentTag('');
         } catch (err) {
-            alert(err.message);
+            toast.error(err.message);
         } finally {
             setCreating(false);
         }

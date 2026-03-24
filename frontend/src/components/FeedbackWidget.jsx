@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MessageSquarePlus, X, Star, Camera, Trash2, Bug, Lightbulb, HelpCircle, Wrench, Send, Paperclip, Monitor, Video, StopCircle, ChevronDown, ChevronUp, Mail, Users, Repeat, TrendingUp, Info } from 'lucide-react';
 import * as api from '../api';
+import { useToast } from '../components/Toast';
 
 const FEEDBACK_TYPES = [
   { value: 'bug', label: 'Bug / Error', icon: Bug, color: '#EF4444', bg: '#FEE2E2' },
@@ -65,6 +66,7 @@ const INITIAL_FORM = {
 };
 
 export default function FeedbackWidget() {
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1); // 1: type, 2: details+attachments, 3: confirm
   const [form, setForm] = useState({ ...INITIAL_FORM });
@@ -240,7 +242,7 @@ export default function FeedbackWidget() {
         setFiles([]);
       }, 2000);
     } catch (err) {
-      alert(err.message || 'Error al enviar feedback');
+      toast.error(err.message || 'Error al enviar feedback');
     } finally {
       setSubmitting(false);
     }

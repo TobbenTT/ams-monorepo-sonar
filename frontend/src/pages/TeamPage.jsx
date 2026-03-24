@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import * as api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../components/Toast';
 
 const ROLES = ['admin', 'manager', 'planner', 'tecnico'];
 const ROLE_COLORS = {
@@ -37,6 +38,7 @@ function getInitials(member) {
 
 export default function TeamPage() {
   const { t, lang } = useLanguage();
+  const toast = useToast();
 
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ export default function TeamPage() {
       setEditingRole(false);
       await fetchTeam();
     } catch (err) {
-      alert(t('team.errors.changeRole', { message: err.message }));
+      toast.error(t('team.errors.changeRole', { message: err.message }));
     } finally {
       setSaving(false);
     }
@@ -133,7 +135,7 @@ export default function TeamPage() {
       if (profileMember?.user_id === member.user_id) setProfileMember(updated);
       await fetchTeam();
     } catch (err) {
-      alert(t('team.errors.toggleActive', { message: err.message }));
+      toast.error(t('team.errors.toggleActive', { message: err.message }));
     } finally {
       setSaving(false);
     }
@@ -189,7 +191,7 @@ export default function TeamPage() {
       });
       setPendingWRs(prev => prev.filter(w => w.request_id !== wr.request_id));
     } catch (err) {
-      alert(t('team.assignDialog.errorAssigning', { message: err.message }));
+      toast.error(t('team.assignDialog.errorAssigning', { message: err.message }));
     }
   };
 

@@ -4,6 +4,7 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Download, Star, Bug, Lightbulb, Wrench, HelpCircle, ChevronDown, ChevronUp, Eye, Image, Paperclip, RefreshCw, Mail, Users, Repeat, Video } from 'lucide-react';
+import { useToast } from '../components/Toast';
 
 const FREQUENCY_LABELS = { always: 'Siempre', sometimes: 'A veces', rarely: 'Rara vez', first_time: 'Primera vez' };
 const IMPACT_LABELS = { only_me: 'Solo yo', my_team: 'Mi equipo', everyone: 'Todos', unknown: 'No seguro' };
@@ -32,6 +33,7 @@ const STATUS_COLORS = {
 };
 
 export default function FeedbackAdmin() {
+  const toast = useToast();
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
@@ -67,7 +69,7 @@ export default function FeedbackAdmin() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err.message || 'Error al descargar');
+      toast.error(err.message || 'Error al descargar');
     } finally {
       setDownloading(false);
     }
@@ -78,7 +80,7 @@ export default function FeedbackAdmin() {
       await api.updateFeedback(fb.feedback_id, { status: newStatus });
       load();
     } catch (err) {
-      alert(err.message || 'Error');
+      toast.error(err.message || 'Error');
     }
   };
 

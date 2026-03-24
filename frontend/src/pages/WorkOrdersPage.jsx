@@ -11,11 +11,13 @@ import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown,
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../components/Toast';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 export default function WorkOrdersPage() {
   const { t } = useLanguage();
+  const toast = useToast();
   const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
   const plant = selectedPlant;
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
@@ -338,7 +340,7 @@ export default function WorkOrdersPage() {
       setPhotos([]);
       reloadData();
     } catch (err) {
-      alert(err.message || t('workOrders.failedToCreate'));
+      toast.error(err.message || t('workOrders.failedToCreate'));
     } finally {
       setCreating(false);
     }
@@ -376,7 +378,7 @@ export default function WorkOrdersPage() {
 
   // ── Voice recording (Web Speech API) ──
   const handleVoice = () => {
-    if (!SpeechRecognition) { alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome.'); return; }
+    if (!SpeechRecognition) { toast.warning('Tu navegador no soporta reconocimiento de voz. Usa Chrome.'); return; }
     if (isRecording) { recognitionRef.current?.stop(); return; }
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-ES';
@@ -467,7 +469,7 @@ export default function WorkOrdersPage() {
       await fn(wo.wo_id, {});
       reloadData();
     } catch (err) {
-      alert(err.message || 'Error al cambiar status');
+      toast.error(err.message || 'Error al cambiar status');
     }
   };
 
@@ -478,7 +480,7 @@ export default function WorkOrdersPage() {
       setShowCreateOTModal(false);
       reloadData();
     } catch (err) {
-      alert(err.message || 'Error al crear OT');
+      toast.error(err.message || 'Error al crear OT');
     } finally {
       setCreatingOT(false);
     }
@@ -497,7 +499,7 @@ export default function WorkOrdersPage() {
       setOtCreateForm({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4 });
       reloadData();
     } catch (err) {
-      alert(err.message || 'Error al crear OT');
+      toast.error(err.message || 'Error al crear OT');
     } finally {
       setCreatingOT(false);
     }
@@ -1442,10 +1444,12 @@ export default function WorkOrdersPage() {
             <div className="p-6 space-y-4">
               {/* Aviso link */}
               {selectedOT.work_request_id && (
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50 border border-blue-200 text-sm">
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50 border border-blue-200 text-sm cursor-pointer hover:bg-blue-100 transition-colors"
+                  onClick={() => { window.location.href = '/work-requests'; }}
+                  title="Ver Aviso">
                   <FileText className="w-4 h-4 text-blue-600" />
                   <span className="text-blue-700">Aviso origen:</span>
-                  <span className="font-mono font-semibold text-blue-800">{selectedOT.work_request_id}</span>
+                  <span className="font-mono font-semibold text-blue-800 underline">{selectedOT.work_request_id}</span>
                 </div>
               )}
               {/* Info grid */}

@@ -677,6 +677,7 @@ export default {
         generating: 'Generating...',
         programCreated: 'Weekly program generated',
         programError: 'Error generating program',
+        searchOT: 'Search OT...',
     },
 
     // ─── Planner ───────────────────────────────────────────

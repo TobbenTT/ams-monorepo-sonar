@@ -16,6 +16,12 @@ const TYPE_META = {
   PM01: { label: 'PM-01 Breakdown', bg: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700' },
   PM02: { label: 'PM-02 Preventive', bg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700' },
   PM03: { label: 'PM-03 Corrective', bg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-700' },
+  CORRECTIVO: { label: 'Correctivo', bg: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700' },
+  PREVENTIVO: { label: 'Preventivo', bg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700' },
+  PREDICTIVO: { label: 'Predictivo', bg: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-700' },
+  MEJORA: { label: 'Mejora', bg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700' },
+  INCIDENTE_OPERACIONAL: { label: 'Incidente', bg: 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-700' },
+  MONITOREO_CONDICION: { label: 'Monitoreo', bg: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-700' },
 };
 
 const STATUS_META = {
@@ -50,12 +56,20 @@ const GANTT_COLORS = {
 };
 
 const SPEC_BADGE = {
+  // English
   MECHANICAL: { label: 'MECH', bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
   ELECTRICAL: { label: 'ELEC', bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' },
   INSTRUMENTATION: { label: 'INST', bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
   HYDRAULIC: { label: 'HYD', bg: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300' },
   FITTER: { label: 'FIT', bg: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' },
   WELDER: { label: 'WELD', bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
+  WELDING: { label: 'WELD', bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
+  GENERAL: { label: 'GEN', bg: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  // Spanish (actual DB values)
+  MECANICO: { label: 'MEC', bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
+  ELECTRICO: { label: 'ELEC', bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' },
+  INSTRUMENTACION: { label: 'INST', bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
+  SOLDADOR: { label: 'SOLD', bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
 };
 const HOURS_PER_WEEK = 40;
 
@@ -584,11 +598,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                           const cellKey = `${tech.worker_id}:${d.str}`;
                           const cellWOs = grid[cellKey] || [];
                           const isTarget = dropTarget === cellKey && dragWO;
+                          const isDragging = !!dragWO;
                           return (
                             <td key={d.str}
-                              className={`px-1 py-1.5 border-r border-border last:border-r-0 align-top transition-colors ${isTarget ? 'bg-[#1B5E20]/10' : ''}`}
-                              style={{ minHeight: 60 }}
-                              onDragOver={e => { e.preventDefault(); setDropTarget(cellKey); }}
+                              className={`px-1 py-1.5 border-r border-border last:border-r-0 align-top transition-colors ${isTarget ? 'bg-[#1B5E20]/10' : isDragging && cellWOs.length === 0 ? 'bg-emerald-50/50 dark:bg-emerald-900/5' : ''}`}
+                              style={{ minHeight: 70, height: 70 }}
+                              onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
                               onDragLeave={() => setDropTarget(null)}
                               onDrop={e => handleDrop(e, tech, d)}>
                               {cellWOs.map(wo => {
@@ -602,9 +617,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                 );
                               })}
                               {cellWOs.length === 0 && isTarget && (
-                                <div className="h-14 border-2 border-dashed border-[#1B5E20]/40 rounded flex items-center justify-center">
-                                  <span className="text-[0.6rem] text-[#1B5E20]">Drop here</span>
+                                <div className="h-14 border-2 border-dashed border-[#1B5E20] rounded flex items-center justify-center bg-[#1B5E20]/5">
+                                  <span className="text-xs font-medium text-[#1B5E20]">Soltar aquí</span>
                                 </div>
+                              )}
+                              {cellWOs.length === 0 && isDragging && !isTarget && (
+                                <div className="h-14 border border-dashed border-gray-300 dark:border-gray-600 rounded opacity-40" />
                               )}
                             </td>
                           );

@@ -65,7 +65,7 @@ export default function WorkOrdersPage() {
   const [showCreateOTModal, setShowCreateOTModal] = useState(false);
   const [approvedWRs, setApprovedWRs] = useState([]);
   const [creatingOT, setCreatingOT] = useState(false);
-  const [otCreateForm, setOtCreateForm] = useState({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4 });
+  const [otCreateForm, setOtCreateForm] = useState({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4, failureCategory: 'MECANICO' });
   const [selectedOT, setSelectedOT] = useState(null);
   const [otDetailTab, setOtDetailTab] = useState('resumen');
   const [otOps, setOtOps] = useState([]); // editable operations
@@ -456,7 +456,7 @@ export default function WorkOrdersPage() {
 
   // ── Voice recording (Web Speech API) ──
   const handleVoice = () => {
-    if (!SpeechRecognition) { toast.warning('Tu navegador no soporta reconocimiento de voz. Usa Chrome.'); return; }
+    if (!SpeechRecognition) { toast.warning(t('workOrders.voiceNotSupported') || 'Tu navegador no soporta reconocimiento de voz. Usa Chrome.'); return; }
     if (isRecording) { recognitionRef.current?.stop(); return; }
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-ES';
@@ -548,7 +548,7 @@ export default function WorkOrdersPage() {
       await fn(wo.wo_id, {});
       reloadData();
     } catch (err) {
-      toast.error(err.message || 'Error al cambiar status');
+      toast.error(err.message || t('workOrders.errorChangeStatus') || 'Error al cambiar status');
     }
   };
 
@@ -559,7 +559,7 @@ export default function WorkOrdersPage() {
       setShowCreateOTModal(false);
       reloadData();
     } catch (err) {
-      toast.error(err.message || 'Error al crear OT');
+      toast.error(err.message || t('workOrders.errorCreateOT') || 'Error al crear OT');
     } finally {
       setCreatingOT(false);
     }
@@ -575,10 +575,10 @@ export default function WorkOrdersPage() {
         equipment_id: otCreateForm.equipment_id || otCreateForm.equipment_tag,
       });
       setShowCreateOTModal(false);
-      setOtCreateForm({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4 });
+      setOtCreateForm({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4, failureCategory: 'MECANICO' });
       reloadData();
     } catch (err) {
-      toast.error(err.message || 'Error al crear OT');
+      toast.error(err.message || t('workOrders.errorCreateOT') || 'Error al crear OT');
     } finally {
       setCreatingOT(false);
     }
@@ -615,7 +615,7 @@ export default function WorkOrdersPage() {
       const ops = otOps.map(({ _id, ...rest }) => rest);
       const totalHrs = ops.reduce((s, op) => s + (parseFloat(op.planned_hours) || 0), 0);
       await api.updateManagedWO(selectedOT.wo_id, { operations: ops, estimated_hours: totalHrs });
-      toast.success('Operaciones guardadas');
+      toast.success(t('workOrders.operationsSaved') || 'Operaciones guardadas');
       reloadData();
     } catch (err) { toast.error(err.message); } finally { setOtSaving(false); }
   };
@@ -626,7 +626,7 @@ export default function WorkOrdersPage() {
     try {
       const mats = otMats.map(({ _id, ...rest }) => rest);
       await api.updateManagedWO(selectedOT.wo_id, { materials: mats });
-      toast.success('Materiales guardados');
+      toast.success(t('workOrders.materialsSaved') || 'Materiales guardados');
       reloadData();
     } catch (err) { toast.error(err.message); } finally { setOtSaving(false); }
   };
@@ -637,7 +637,7 @@ export default function WorkOrdersPage() {
     try {
       const total = (parseFloat(otCosts.labor_cost) || 0) + (parseFloat(otCosts.material_cost) || 0) + (parseFloat(otCosts.external_cost) || 0);
       await api.updateManagedWO(selectedOT.wo_id, { ...otCosts, actual_total_cost: total });
-      toast.success('Costos actualizados');
+      toast.success(t('workOrders.costsSaved') || 'Costos actualizados');
       reloadData();
     } catch (err) { toast.error(err.message); } finally { setOtSaving(false); }
   };
@@ -649,7 +649,7 @@ export default function WorkOrdersPage() {
     try {
       await api.addManagedWONote(selectedOT.wo_id, { note: newNote.trim() });
       setNewNote('');
-      toast.success('Nota agregada');
+      toast.success(t('workOrders.noteAdded') || 'Nota agregada');
       // Reload the OT to get updated notes
       const updated = await api.getManagedWO(selectedOT.wo_id);
       setSelectedOT(updated);
@@ -709,7 +709,7 @@ export default function WorkOrdersPage() {
           {viewMode === 'tactical' && (<>
             <Button variant="outline" className="flex items-center gap-2 border-emerald-300 text-emerald-700" onClick={() => setShowCreateOTModal(true)}>
               <Plus className="w-4 h-4" />
-              Crear OT desde Aviso
+              {t('workOrders.createOTFromWR') || 'Crear OT desde Aviso'}
             </Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateModal(true)}>
               <Plus className="w-4 h-4" />
@@ -1129,7 +1129,6 @@ export default function WorkOrdersPage() {
           open={!!selectedWorkOrder}
           onClose={() => setSelectedWorkOrder(null)}
           onCreateAction={(wo) => {
-            console.log('Create action from WO:', wo);
             setSelectedWorkOrder(null);
           }}
         />
@@ -1142,8 +1141,8 @@ export default function WorkOrdersPage() {
             <div className="sticky top-0 bg-white border-b p-5 rounded-t-xl z-10">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Crear Orden de Trabajo</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Selecciona un aviso aprobado para generar la OT</p>
+                  <h3 className="text-lg font-bold text-gray-900">{t('workOrders.createOTTitle') || 'Crear Orden de Trabajo'}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{t('workOrders.createOTSubtitle') || 'Selecciona un aviso aprobado para generar la OT'}</p>
                 </div>
                 <button onClick={() => setShowCreateOTModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
                   <X className="w-5 h-5 text-gray-500" />
@@ -1154,7 +1153,7 @@ export default function WorkOrdersPage() {
             <div className="p-5 space-y-5">
               {approvedWRs.length > 0 ? (
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Avisos Aprobados</label>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.approvedWRs') || 'Avisos Aprobados'}</label>
                   <div className="space-y-2 max-h-72 overflow-y-auto">
                     {approvedWRs.map(wr => (
                       <div key={wr.request_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
@@ -1166,7 +1165,7 @@ export default function WorkOrdersPage() {
                         </div>
                         <Button size="sm" className="ml-2 bg-emerald-600 hover:bg-emerald-700 text-xs h-7"
                           onClick={() => handleCreateOTFromWR(wr)} disabled={creatingOT}>
-                          <ArrowRight className="w-3 h-3 mr-1" /> Crear OT
+                          <ArrowRight className="w-3 h-3 mr-1" /> {t('workOrders.createOTShort') || 'Crear OT'}
                         </Button>
                       </div>
                     ))}
@@ -1177,14 +1176,14 @@ export default function WorkOrdersPage() {
                   <div className="text-gray-400 mb-2">
                     <ClipboardCheck className="w-12 h-12 mx-auto" />
                   </div>
-                  <p className="text-sm font-medium text-gray-600">No hay avisos aprobados pendientes</p>
-                  <p className="text-xs text-gray-400 mt-1">Los avisos deben ser aprobados por un supervisor antes de generar una OT</p>
+                  <p className="text-sm font-medium text-gray-600">{t('workOrders.noApprovedWRs') || 'No hay avisos aprobados pendientes'}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('workOrders.noApprovedWRsHint') || 'Los avisos deben ser aprobados por un supervisor antes de generar una OT'}</p>
                 </div>
               )}
             </div>
 
             <div className="sticky bottom-0 bg-white border-t p-5 rounded-b-xl flex justify-end">
-              <Button variant="outline" onClick={() => setShowCreateOTModal(false)}>Cerrar</Button>
+              <Button variant="outline" onClick={() => setShowCreateOTModal(false)}>{t('common.close')}</Button>
             </div>
           </div>
         </div>
@@ -1224,7 +1223,7 @@ export default function WorkOrdersPage() {
                       </button>
                     ) : (
                       <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed" title="Requiere HTTPS para funcionar">
-                        <Mic className="w-3.5 h-3.5" /> Voz
+                        <Mic className="w-3.5 h-3.5" /> {t('workOrders.voiceButton') || 'Voz'}
                       </span>
                     )}
                     <button type="button" onClick={handleCameraClick}
@@ -1306,7 +1305,7 @@ export default function WorkOrdersPage() {
               {/* 3. Ubicación Técnica (SAP) */}
               <div className="border rounded-xl p-4">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" /> Ubicación Técnica (SAP)
+                  <MapPin className="w-3.5 h-3.5" /> {t('workOrders.technicalLocation')}
                 </label>
                 {!selectedLoc ? (
                   <div className="relative">
@@ -1316,7 +1315,7 @@ export default function WorkOrdersPage() {
                       value={locSearch}
                       onChange={e => { setLocSearch(e.target.value); setShowLocSearch(true); }}
                       onFocus={() => locSearch.length >= 2 && setShowLocSearch(true)}
-                      placeholder="Buscar ubicación (ej: MOL, Molienda)..."
+                      placeholder={t('workOrders.technicalLocationPlaceholder')}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                     />
                     {showLocSearch && locResults.length > 0 && (
@@ -1349,7 +1348,7 @@ export default function WorkOrdersPage() {
                 )}
                 {selectedEquip && selectedLoc && (
                   <div className="mt-2 flex items-center gap-1 text-xs text-emerald-600">
-                    <CheckCircle className="w-3 h-3" /> Auto-detectada del equipo {createForm.whereTag}
+                    <CheckCircle className="w-3 h-3" /> {t('workOrders.technicalLocationAuto')} {createForm.whereTag}
                   </div>
                 )}
               </div>
@@ -1430,15 +1429,15 @@ export default function WorkOrdersPage() {
 
               {/* 6. Circunstancias / Detalle */}
               <div className="border rounded-xl p-4">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Circunstancias / Detalle</label>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.circumstances')}</label>
                 <textarea
                   value={createForm.circumstances}
                   onChange={e => setF('circumstances', e.target.value)}
-                  placeholder="Descripción del evento, recursos necesarios, equipos de apoyo, información complementaria..."
+                  placeholder={t('workOrders.circumstancesPlaceholder')}
                   rows={2}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
                 />
-                <div className="text-[10px] text-gray-400 mt-1">SAP: Información complementaria del aviso</div>
+                <div className="text-[10px] text-gray-400 mt-1">{t('workOrders.circumstancesSapNote')}</div>
               </div>
 
               {/* 7. Recursos necesarios */}
@@ -1580,28 +1579,28 @@ export default function WorkOrdersPage() {
 
               {/* 11. Autor del Aviso */}
               <div className="border rounded-xl p-4">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Autor del Aviso</label>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {t('workOrders.reportedByLabel')}</label>
                 <input
                   type="text"
                   value={createForm.reportedBy}
                   onChange={e => setF('reportedBy', e.target.value)}
-                  placeholder="Nombre de quién reporta el evento (si es distinto del creador)"
+                  placeholder={t('workOrders.reportedByPlaceholder')}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
-                <div className="text-[10px] text-gray-400 mt-1">SAP: Quién descubrió el problema</div>
+                <div className="text-[10px] text-gray-400 mt-1">{t('workOrders.reportedBySapNote')}</div>
               </div>
 
               {/* 12. Equipos de Apoyo */}
               <div className="border rounded-xl p-4">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Equipos de Apoyo</label>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.supportEquipment')}</label>
                 <input
                   type="text"
                   value={createForm.supportEquipment}
                   onChange={e => setF('supportEquipment', e.target.value)}
-                  placeholder="Ej: Grúa puente 10 ton, Camión grúa, Generador"
+                  placeholder={t('workOrders.supportEquipmentPlaceholder')}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
-                <div className="text-[10px] text-gray-400 mt-1">Separar con comas</div>
+                <div className="text-[10px] text-gray-400 mt-1">{t('workOrders.supportEquipmentNote')}</div>
               </div>
 
               {/* 13. Condición del Equipo */}

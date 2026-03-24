@@ -289,6 +289,23 @@ export default {
         queueAll: 'Todos',
         queueSupervisor: 'Imprevistos (P1/P2)',
         queuePlanner: 'Planificación (P3/P4)',
+        // Toast messages
+        validatedNoOT: 'Aviso validado. Error al crear OT automática — créala manualmente.',
+        validatedBacklog: 'Aviso validado y agregado al Backlog',
+        approvedNoOT: 'Aviso aprobado. Error al crear OT — créala manualmente desde Work Orders.',
+        cancelled: 'Aviso cancelado',
+        updated: 'Aviso actualizado',
+        started: 'Trabajo iniciado',
+        completed: 'Trabajo completado',
+        closed: 'Aviso cerrado técnicamente',
+        confirmDelete: '¿Eliminar este aviso de trabajo?',
+        errorValidate: 'Error al validar',
+        errorCancel: 'Error al cancelar',
+        errorUpdate: 'Error al actualizar',
+        errorApprove: 'Error al aprobar',
+        errorStart: 'Error al iniciar',
+        errorComplete: 'Error al completar',
+        errorClose: 'Error al cerrar',
     },
 
     // ─── Hierarchy ─────────────────────────────────────────
@@ -1880,6 +1897,22 @@ export default {
         fastTrackCreated: 'OT {woNumber} creada en Fast Track — lista para asignar',
         fastTrackAssign: 'Asignar y Programar',
         imprevistoActivo: 'Imprevistos Activos',
+        // Create OT modal
+        createOTTitle: 'Crear Orden de Trabajo',
+        createOTSubtitle: 'Selecciona un aviso aprobado para generar la OT',
+        createOTFromWR: 'Crear OT desde Aviso',
+        createOTShort: 'Crear OT',
+        approvedWRs: 'Avisos Aprobados',
+        noApprovedWRs: 'No hay avisos aprobados pendientes',
+        noApprovedWRsHint: 'Los avisos deben ser aprobados por un supervisor antes de generar una OT',
+        // Toast messages
+        voiceNotSupported: 'Tu navegador no soporta reconocimiento de voz. Usa Chrome.',
+        errorChangeStatus: 'Error al cambiar status',
+        errorCreateOT: 'Error al crear OT',
+        operationsSaved: 'Operaciones guardadas',
+        materialsSaved: 'Materiales guardados',
+        costsSaved: 'Costos actualizados',
+        noteAdded: 'Nota agregada',
     },
 
     // ─── Improvement Actions ─────────────────────────────────

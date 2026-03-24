@@ -843,12 +843,12 @@ export default function WorkRequests({ onNavigateTab } = {}) {
               8000
             );
           } catch {
-            toast.success('Aviso validado. Error al crear OT automática — créala manualmente.');
+            toast.success(t('workRequests.validatedNoOT') || 'Aviso validado. Error al crear OT automática — créala manualmente.');
           }
         } else {
           toast.success(
             <span>
-              Aviso validado y agregado al Backlog
+              {t('workRequests.validatedBacklog') || 'Aviso validado y agregado al Backlog'}
               {onNavigateTab && (
                 <button onClick={() => onNavigateTab('planning')} className="ml-2 underline font-semibold">
                   → Ir a Planificación
@@ -859,7 +859,7 @@ export default function WorkRequests({ onNavigateTab } = {}) {
           );
         }
       })
-      .catch(() => toast.error('Error al validar'));
+      .catch(() => toast.error(t('workRequests.errorValidate') || 'Error al validar'));
   }
 
   function handleReject(id) {
@@ -870,15 +870,15 @@ export default function WorkRequests({ onNavigateTab } = {}) {
   function handleCancel(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CANCELLED' } : r)));
     api.cancelWorkRequest(id)
-      .then(() => toast.success('Aviso cancelado'))
-      .catch(() => toast.error('Error al cancelar'));
+      .then(() => toast.success(t('workRequests.cancelled') || 'Aviso cancelado'))
+      .catch(() => toast.error(t('workRequests.errorCancel') || 'Error al cancelar'));
   }
 
   function handleSaveEdit(id, updates) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
     api.updateWorkRequest(id, updates)
-      .then(() => toast.success('Aviso actualizado'))
-      .catch(() => toast.error('Error al actualizar'));
+      .then(() => toast.success(t('workRequests.updated') || 'Aviso actualizado'))
+      .catch(() => toast.error(t('workRequests.errorUpdate') || 'Error al actualizar'));
   }
 
   function handlePlannerCreateOT(id) {
@@ -899,17 +899,17 @@ export default function WorkRequests({ onNavigateTab } = {}) {
             8000
           );
         } catch {
-          toast.success('Aviso aprobado. Error al crear OT — créala manualmente desde Work Orders.');
+          toast.success(t('workRequests.approvedNoOT') || 'Aviso aprobado. Error al crear OT — créala manualmente desde Work Orders.');
         }
       })
-      .catch(() => toast.error('Error al aprobar'));
+      .catch(() => toast.error(t('workRequests.errorApprove') || 'Error al aprobar'));
   }
 
   function handleStart(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'IN_PROGRESS' } : r)));
     api.startWorkRequest(id)
-      .then(() => toast.success('Trabajo iniciado'))
-      .catch(() => toast.error('Error al iniciar'));
+      .then(() => toast.success(t('workRequests.started') || 'Trabajo iniciado'))
+      .catch(() => toast.error(t('workRequests.errorStart') || 'Error al iniciar'));
   }
 
   function handleComplete(id) {
@@ -917,7 +917,7 @@ export default function WorkRequests({ onNavigateTab } = {}) {
     api.completeWorkRequest(id, { completion_notes: '', actual_hours: 0 })
       .then(() => toast.success(
         <span>
-          Trabajo completado
+          {t('workRequests.completed') || 'Trabajo completado'}
           {onNavigateTab && (
             <button onClick={() => onNavigateTab('closure')} className="ml-2 underline font-semibold">
               → Ir a Cierre
@@ -926,14 +926,14 @@ export default function WorkRequests({ onNavigateTab } = {}) {
         </span>,
         8000
       ))
-      .catch(() => toast.error('Error al completar'));
+      .catch(() => toast.error(t('workRequests.errorComplete') || 'Error al completar'));
   }
 
   function handleClose(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CLOSED' } : r)));
     api.closeWorkRequest(id, { closure_notes: '' })
-      .then(() => toast.success('Aviso cerrado técnicamente'))
-      .catch(() => toast.error('Error al cerrar'));
+      .then(() => toast.success(t('workRequests.closed') || 'Aviso cerrado técnicamente'))
+      .catch(() => toast.error(t('workRequests.errorClose') || 'Error al cerrar'));
   }
 
   function handleDelete(id) {

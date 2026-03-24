@@ -289,6 +289,23 @@ export default {
         queueAll: 'All',
         queueSupervisor: 'Emergencies (P1/P2)',
         queuePlanner: 'Planning (P3/P4)',
+        // Toast messages
+        validatedNoOT: 'Request validated. Failed to auto-create WO — create it manually.',
+        validatedBacklog: 'Request validated and added to Backlog',
+        approvedNoOT: 'Request approved. Failed to create WO — create it manually from Work Orders.',
+        cancelled: 'Request cancelled',
+        updated: 'Request updated',
+        started: 'Work started',
+        completed: 'Work completed',
+        closed: 'Request technically closed',
+        confirmDelete: 'Delete this work request?',
+        errorValidate: 'Error validating',
+        errorCancel: 'Error cancelling',
+        errorUpdate: 'Error updating',
+        errorApprove: 'Error approving',
+        errorStart: 'Error starting',
+        errorComplete: 'Error completing',
+        errorClose: 'Error closing',
     },
 
     // ─── Hierarchy ─────────────────────────────────────────
@@ -2085,6 +2102,22 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         fastTrackCreated: 'WO {woNumber} created via Fast Track — ready to assign',
         fastTrackAssign: 'Assign & Schedule',
         imprevistoActivo: 'Active Emergencies',
+        // Create OT modal
+        createOTTitle: 'Create Work Order',
+        createOTSubtitle: 'Select an approved request to generate the WO',
+        createOTFromWR: 'Create WO from Request',
+        createOTShort: 'Create WO',
+        approvedWRs: 'Approved Requests',
+        noApprovedWRs: 'No approved requests pending',
+        noApprovedWRsHint: 'Requests must be approved by a supervisor before generating a WO',
+        // Toast messages
+        voiceNotSupported: 'Your browser does not support voice recognition. Use Chrome.',
+        errorChangeStatus: 'Error changing status',
+        errorCreateOT: 'Error creating WO',
+        operationsSaved: 'Operations saved',
+        materialsSaved: 'Materials saved',
+        costsSaved: 'Costs updated',
+        noteAdded: 'Note added',
     },
 
     // ─── Failures & Events ───────────────────────────────────

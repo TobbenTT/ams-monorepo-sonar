@@ -690,8 +690,8 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
 
   // Sync external viewMode toggle to internal priorityQueue
   useEffect(() => {
-    if (viewMode === planner) setPriorityQueue(planner);
-    else if (viewMode === supervisor) setPriorityQueue(supervisor);
+    if (viewMode === 'planner') setPriorityQueue('planner');
+    else if (viewMode === 'supervisor') setPriorityQueue('supervisor');
   }, [viewMode]);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');

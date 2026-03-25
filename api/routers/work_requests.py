@@ -429,10 +429,10 @@ def check_duplicates(data: DuplicateCheckRequest, db: Session = Depends(get_db))
 def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Create a WR from manual form — calculates confidence from filled fields and goes to PENDING_VALIDATION."""
     import uuid
-    from datetime import datetime, timezone
+    from datetime import datetime
     from api.database.models import WorkRequestModel
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
 
     # Calculate AI confidence based on how many fields were filled
     filled_fields = 0

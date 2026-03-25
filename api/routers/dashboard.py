@@ -144,7 +144,14 @@ def get_work_management_kpis(
         ManagedWorkOrderModel.plant_id == plant_id,
     ).all()
 
-    recent = [w for w in all_wos if w.created_at and w.created_at >= period_start and w.created_at <= period_end]
+    # Normalize dates to naive for comparison (some records may be tz-aware)
+    def to_naive(dt):
+        if dt is None:
+            return None
+        return dt.replace(tzinfo=None) if dt.tzinfo else dt
+    ps = to_naive(period_start)
+    pe = to_naive(period_end)
+    recent = [w for w in all_wos if w.created_at and to_naive(w.created_at) >= ps and to_naive(w.created_at) <= pe]
 
     total = len(recent)
     completed = [w for w in recent if w.status in ("COMPLETED", "CLOSED")]

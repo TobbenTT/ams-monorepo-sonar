@@ -35,9 +35,9 @@ export default function WorkManagement() {
       const woList = Array.isArray(wos) ? wos : [];
       setPhaseCounts({
         'failure-capture': null,
-        identification: wrList.filter(w => ['DRAFT', 'PENDING_VALIDATION'].includes(w.status)).length,
-        planning: woList.filter(w => ['DRAFT', 'PLANNED'].includes(w.status)).length,
-        scheduling: woList.filter(w => w.status === 'RELEASED').length,
+        identification: wrList.length,
+        planning: wrList.filter(w => w.status === 'VALIDATED').length,
+        scheduling: woList.filter(w => ['DRAFT', 'PLANNED', 'RELEASED'].includes(w.status)).length,
       });
     });
   }, []);

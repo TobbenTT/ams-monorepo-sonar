@@ -17,11 +17,11 @@ const STRATEGY_COLORS = {
 };
 
 function getStrategy(wo) {
-  if (wo.work_order_type === 'PM01') return 'Preventive';
-  if (wo.work_order_type === 'PM03') return 'Corrective';
-  if (wo.work_order_type === 'PM05') return 'Predictive';
-  if (wo.work_order_type === 'PM04') return 'Improvement';
-  // Fallback: check description keywords
+  const t = (wo.wo_type || wo.work_order_type || '').toUpperCase();
+  if (t.includes('PREVENT') || t === 'PM01') return 'Preventive';
+  if (t.includes('CORRECT') || t === 'PM03') return 'Corrective';
+  if (t.includes('PREDICT') || t.includes('MONITOREO') || t === 'PM05') return 'Predictive';
+  if (t.includes('MEJORA') || t.includes('IMPROV') || t === 'PM04') return 'Improvement';
   const desc = (wo.description || '').toLowerCase();
   if (desc.includes('preventiv') || desc.includes('inspection') || desc.includes('lubrication')) return 'Preventive';
   if (desc.includes('predictiv') || desc.includes('vibration') || desc.includes('monitoring')) return 'Predictive';
@@ -110,7 +110,7 @@ export default function Planning({ onNavigateTab }) {
     let list = [...planningWOs];
 
     if (originFilter === 'From WR') {
-      list = list.filter(wo => wo.source_wr_id || wo.work_request_id);
+      list = list.filter(wo => wo.work_request_id || wo.source_wr_id);
     } else if (originFilter === 'From Strategy') {
       list = list.filter(wo => !wo.source_wr_id && !wo.work_request_id);
     }
@@ -146,7 +146,7 @@ export default function Planning({ onNavigateTab }) {
 
   // Find WR origin for an OT
   const getWROrigin = (wo) => {
-    const wrId = wo.source_wr_id || wo.work_request_id;
+    const wrId = wo.work_request_id || wo.source_wr_id;
     if (!wrId) return null;
     const wr = workRequests.find(w => w.work_request_id === wrId || w.request_id === wrId);
     return wr ? (wr.wo_number || wr.work_request_id?.slice(0, 10) || wrId.slice(0, 10)) : wrId.slice(0, 10);
@@ -275,12 +275,12 @@ export default function Planning({ onNavigateTab }) {
                 const wrOrigin = getWROrigin(wo);
                 return (
                   <tr
-                    key={wo.work_order_id || wo.wo_number}
+                    key={wo.wo_id || wo.wo_number}
                     className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"
                     onClick={() => setSelectedWO(wo)}
                   >
                     <td className="px-4 py-3 font-mono text-sm text-gray-600">
-                      {wo.wo_number || (wo.work_order_id || '').slice(0, 10)}
+                      {wo.wo_number || (wo.wo_id || '').slice(0, 10)}
                     </td>
                     <td className="px-4 py-3">
                       {wrOrigin
@@ -297,9 +297,9 @@ export default function Planning({ onNavigateTab }) {
                         {strategy}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{wo.estimated_duration_hours || 0}h</td>
+                    <td className="px-4 py-3 text-gray-600">{wo.estimated_hours || wo.estimated_duration_hours || 0}h</td>
                     <td className="px-4 py-3">
-                      <PriorityLabel priority={wo.priority} />
+                      <PriorityLabel priority={wo.priority_code || wo.priority} />
                     </td>
                     <td className="px-4 py-3">
                       <StatusLabel status={planStatus} />

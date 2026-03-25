@@ -61,6 +61,13 @@ export default function Header({
         { path: '/hierarchy',          labelKey: 'nav.assetHierarchy',     keywords: 'hierarchy assets equipment tree jerarquia activos' },
         { path: '/reliability',        labelKey: 'nav.reliabilityEng',     keywords: 'reliability weibull mtbf mttr confiabilidad' },
         { path: '/profile',           labelKey: 'nav.profile',            keywords: 'profile user perfil usuario' },
+        { path: '/work-management', labelKey: 'nav.workManagement',   keywords: 'work management planning scheduling gestion trabajo planificacion programacion' },
+        { path: '/rca',             labelKey: 'nav.rca',              keywords: 'rca root cause analysis analisis causa raiz' },
+        { path: '/ai-agents',       labelKey: 'nav.aiAgents',         keywords: 'ai agents copilot intelligence artificial inteligencia' },
+        { path: '/troubleshooting', labelKey: 'nav.troubleshooting',  keywords: 'troubleshooting diagnostics diagnostico' },
+        { path: '/fmea',            labelKey: 'nav.fmea',             keywords: 'fmea failure modes effects analysis modos falla' },
+        { path: '/execution',       labelKey: 'nav.execution',        keywords: 'execution tasks field tareas ejecucion campo' },
+        { path: '/financial',       labelKey: 'nav.financial',        keywords: 'financial budget costs roi financiero presupuesto costos' },
     ].map(p => ({ ...p, label: t(p.labelKey) })), [t]);
 
     useEffect(() => {

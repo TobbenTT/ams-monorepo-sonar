@@ -24,6 +24,7 @@ export default function WorkManagement() {
   const [activeTab, setActiveTab] = useState('identification');
   const [viewMode, setViewMode] = useState('planner'); // planner | supervisor
   const [phaseCounts, setPhaseCounts] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const refreshCounts = useCallback(() => {
     Promise.all([
@@ -45,6 +46,7 @@ export default function WorkManagement() {
 
   const navigateTab = useCallback((tabId) => {
     setActiveTab(tabId);
+    setRefreshKey(k => k + 1);
     refreshCounts();
   }, [refreshCounts]);
 
@@ -122,6 +124,7 @@ export default function WorkManagement() {
         <Suspense fallback={<LoadingSpinner />}>
           {ActiveComponent && (
             <ActiveComponent
+              key={activeTab + "-" + refreshKey}
               {...outletContext}
               onNavigateTab={navigateTab}
               viewMode={viewMode}

@@ -103,6 +103,9 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
     for wr in items:
         ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
         photos = captures_map.get(wr.source_capture_id, [])
+        # Also check documents field for photos attached via manual form
+        if not photos and isinstance(wr.documents, list):
+            photos = [d["data"] for d in wr.documents if isinstance(d, dict) and d.get("type") == "photo" and d.get("data")]
         results.append({
             "request_id": wr.request_id,
             "status": wr.status,

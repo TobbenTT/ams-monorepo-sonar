@@ -681,12 +681,18 @@ function findDuplicates(currentReq, allRequests) {
    ═══════════════════════════════════════════════════════════ */
 const PAGE_SIZE = 25;
 
-export default function WorkRequests({ onNavigateTab } = {}) {
+export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
   const [scope, setScope] = useState('all');
   const navigate = useNavigate();
   const { user } = useAuth();
   const defaultQueue = user?.role === 'manager' ? 'supervisor' : user?.role === 'planner' ? 'planner' : 'all';
   const [priorityQueue, setPriorityQueue] = useState(defaultQueue); // 'all' | 'supervisor' (P1/P2) | 'planner' (P3/P4)
+
+  // Sync external viewMode toggle to internal priorityQueue
+  useEffect(() => {
+    if (viewMode === planner) setPriorityQueue(planner);
+    else if (viewMode === supervisor) setPriorityQueue(supervisor);
+  }, [viewMode]);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);

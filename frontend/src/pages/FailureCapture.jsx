@@ -111,24 +111,10 @@ export default function FailureCapture({ onNavigateTab }) {
         created_by: user?.user_id || user?.username || '',
         materials: [],
         resources: [],
+        documents: attachments.map(att => ({ name: att.name, data: att.data, type: "photo" })),
       });
 
-      // Upload photos if any
-      if (attachments.length > 0) {
-        for (const att of attachments) {
-          try {
-            await api.submitCapture({
-              capture_type: 'IMAGE',
-              raw_text_input: form.description,
-              equipment_tag_manual: form.equipment_tag,
-              plant_id: plant || 'OCP-JFC1',
-              image_data: att.data,
-              technician_id: user?.user_id || '',
-              technician_name: form.reported_by,
-            });
-          } catch { /* best effort */ }
-        }
-      }
+
 
       const wrId = result?.work_request_id || result?.request_id || '';
       toast.success(`Failure Report submitted — WR ${wrId.slice(0, 8)} created`);

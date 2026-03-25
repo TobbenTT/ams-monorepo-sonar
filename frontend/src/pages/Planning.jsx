@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { KPICard, PriorityBadge, StatusBadge, LoadingSpinner } from '../components/Shared';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -57,6 +57,7 @@ function StatusLabel({ status }) {
 
 export default function Planning({ onNavigateTab }) {
   const { plant } = useOutletContext();
+  const navigate = useNavigate();
   const toast = useToast();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
@@ -272,7 +273,7 @@ export default function Planning({ onNavigateTab }) {
                   <tr
                     key={wo.work_order_id || wo.wo_number}
                     className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"
-                    onClick={() => window.location.href = '/work-orders'}
+                    onClick={() => navigate('/work-orders')}
                   >
                     <td className="px-4 py-3 font-mono text-sm text-gray-600">
                       {wo.wo_number || (wo.work_order_id || '').slice(0, 10)}

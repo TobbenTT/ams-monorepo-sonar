@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -21,6 +21,7 @@ export default function WorkOrdersPage() {
   const { t } = useLanguage();
   const toast = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
   const plant = selectedPlant;
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
@@ -1788,7 +1789,7 @@ export default function WorkOrdersPage() {
                     <span>{WO_TYPE_LABELS[selectedOT.wo_type] || selectedOT.wo_type}</span>
                     <span>{selectedOT.priority_code}</span>
                     {selectedOT.work_request_id && (
-                      <span className="text-blue-600 underline cursor-pointer hover:text-blue-800" onClick={() => { window.location.href = '/work-requests'; }}>
+                      <span className="text-blue-600 underline cursor-pointer hover:text-blue-800" onClick={() => navigate('/work-requests')}>
                         Aviso: {selectedOT.work_request_id.slice(0, 8)}...
                       </span>
                     )}

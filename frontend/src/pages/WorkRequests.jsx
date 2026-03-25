@@ -200,7 +200,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
               {item.wo_number && (
                 <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-100 text-emerald-700 border border-emerald-300 cursor-pointer hover:bg-emerald-200"
                   title="Ir a OT"
-                  onClick={(e) => { e.stopPropagation(); window.location.href = '/work-orders'; }}>
+                  onClick={(e) => { e.stopPropagation(); navigate('/work-orders'); }}>
                   OT: {item.wo_number}
                 </span>
               )}
@@ -683,6 +683,7 @@ const PAGE_SIZE = 25;
 
 export default function WorkRequests({ onNavigateTab } = {}) {
   const [scope, setScope] = useState('all');
+  const navigate = useNavigate();
   const { user } = useAuth();
   const defaultQueue = user?.role === 'manager' ? 'supervisor' : user?.role === 'planner' ? 'planner' : 'all';
   const [priorityQueue, setPriorityQueue] = useState(defaultQueue); // 'all' | 'supervisor' (P1/P2) | 'planner' (P3/P4)

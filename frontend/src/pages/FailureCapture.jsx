@@ -7,10 +7,10 @@ import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 
 const PRIORITY_OPTIONS = [
-  { value: 'P1', label: 'P1 - Urgente', desc: '< 24h · Parada de Planta', color: 'border-red-300 bg-red-50 text-red-700', ring: 'ring-red-200' },
+  { value: 'P1', label: 'P1 - Urgente', desc: '< 24h', color: 'border-red-300 bg-red-50 text-red-700', ring: 'ring-red-200' },
   { value: 'P2', label: 'P2 - Alta',    desc: '< 7 días',                  color: 'border-orange-300 bg-orange-50 text-orange-700', ring: 'ring-orange-200' },
   { value: 'P3', label: 'P3 - Media',   desc: '> 7 días',                  color: 'border-yellow-300 bg-yellow-50 text-yellow-700', ring: 'ring-yellow-200' },
-  { value: 'P4', label: 'P4 - Baja',    desc: 'Sin Urgencia',              color: 'border-blue-300 bg-blue-50 text-blue-700', ring: 'ring-blue-200' },
+  { value: 'P4', label: 'P4 - Baja',    desc: 'Parada de Planta',              color: 'border-blue-300 bg-blue-50 text-blue-700', ring: 'ring-blue-200' },
 ];
 
 const FAILURE_TYPES = [

@@ -261,9 +261,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
                   {item.priority_requested}
                 </span>
-                {item.priority_requested === 'P1' && (
-                  <span className="text-[10px] text-red-600 dark:text-red-400 font-semibold">Parada de Plantas</span>
-                )}
+
                 {item.priority_requested !== item.priority_suggested && (
                   <>
                     <span className="text-amber-500 text-xs">→</span>
@@ -1276,9 +1274,7 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
                           <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(req.priority_requested)}`}>
                             {req.priority_requested}
                           </span>
-                          {req.priority_requested === 'P1' && (
-                            <span className="text-[9px] text-red-600 dark:text-red-400 font-semibold">Parada de Plantas</span>
-                          )}
+
                           {priorityChanged && (
                             <>
                               <span className="text-amber-500 text-xs font-bold">→</span>

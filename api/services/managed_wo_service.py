@@ -150,7 +150,7 @@ def create_work_order(
 
 
 def create_from_work_request(db: Session, request_id: str, planned_by: str = "") -> dict | None:
-    """Create a WO from an approved WR — copies equipment, priority, description."""
+    """Create a WO from an approved WR — copies equipment, priority, description, operations, materials."""
     wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
     if not wr:
         return None
@@ -161,17 +161,70 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "")
     pd = wr.problem_description if isinstance(wr.problem_description, dict) else {}
     desc_text = pd.get("original_text", "") if isinstance(pd, dict) else str(wr.problem_description or "")
 
+    # Build materials from WR spare_parts
+    materials = []
+    if isinstance(wr.spare_parts, list):
+        for sp in wr.spare_parts:
+            if isinstance(sp, dict):
+                materials.append({
+                    "code": sp.get("code", sp.get("material_code", "")),
+                    "description": sp.get("description", sp.get("name", "")),
+                    "quantity": sp.get("quantity", sp.get("qty", 1)),
+                })
+    if not materials and isinstance(pd, dict):
+        materials = pd.get("materials", [])
+
+    # Build operations from WR classification data
+    operations = []
+    op_num = 1
+    suggested = pd.get("suggested_action", "") if isinstance(pd, dict) else ""
+    if not suggested:
+        suggested = ai.get("recommended_action", "")
+    failure_type = ai.get("failure_type", "")
+    failure_class = ai.get("failure_class", "")
+
+    if suggested:
+        operations.append({
+            "op_number": op_num,
+            "description": suggested,
+            "specialty": failure_type or "MECANICO",
+            "estimated_hours": ai.get("estimated_duration_hours", 4.0) or 4.0,
+        })
+        op_num += 1
+
+    if failure_class and failure_class != suggested:
+        operations.append({
+            "op_number": op_num,
+            "description": f"Inspección: {failure_class}",
+            "specialty": failure_type or "MECANICO",
+            "estimated_hours": 1.0,
+        })
+        op_num += 1
+
+    # Fallback: at least one generic operation
+    if not operations:
+        operations.append({
+            "op_number": 1,
+            "description": desc_text[:200] or "Intervención correctiva",
+            "specialty": failure_type or "MECANICO",
+            "estimated_hours": ai.get("estimated_duration_hours", 4.0) or 4.0,
+        })
+
+    wo_type_map = {"P1": "CORRECTIVO", "P2": "CORRECTIVO", "P3": "PREVENTIVO", "P4": "PREVENTIVO"}
+    wo_type = ai.get("work_order_type") or wo_type_map.get(wr.priority_code, "CORRECTIVO")
+
     return create_work_order(
         db=db,
         equipment_tag=wr.equipment_tag,
         description=desc_text,
-        wo_type="CORRECTIVO",
+        wo_type=wo_type,
         priority_code=wr.priority_code or "P3",
         plant_id=ai.get("plant_id", "OCP-JFC1"),
         work_request_id=request_id,
         planned_by=planned_by,
         estimated_hours=ai.get("estimated_duration_hours", 4.0) or 4.0,
-        materials=pd.get("materials", []) if isinstance(pd, dict) else [],
+        operations=operations,
+        materials=materials,
     )
 
 

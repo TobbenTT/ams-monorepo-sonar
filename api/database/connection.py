@@ -77,6 +77,11 @@ def _run_column_migrations():
         ("work_requests", "documents", "TEXT", None),  # JSON
         ("work_requests", "support_equipment", "TEXT", None),  # JSON
         ("work_requests", "circumstances", "TEXT", None),
+        # Phase 3 — Scheduling improvements
+        ("weekly_programs", "published_at", "DATETIME", None),
+        ("weekly_programs", "published_by", "VARCHAR(50)", None),
+        ("weekly_programs", "material_status", "TEXT", None),  # JSON
+        ("weekly_programs", "hh_balance", "TEXT", None),  # JSON
     ]
 
     with engine.begin() as conn:

@@ -341,7 +341,7 @@ export default function Planning({ onNavigateTab }) {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" onClick={() => setShowCreateModal(false)}>
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Create Work Order</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Crear OT</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Equipment Tag *</label>

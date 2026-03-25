@@ -227,7 +227,7 @@ export default function Planning({ onNavigateTab }) {
         </div>
         <div className="bg-white rounded-lg border-l-4 border-l-blue-400 border border-gray-200 p-5">
           <p className="text-sm text-blue-600 mb-1">Avisos Aprobados</p>
-          <p className="text-3xl font-bold text-red-600">{kpis.overdue}</p>
+          <p className="text-3xl font-bold text-blue-600">{kpis.avisos}</p>
         </div>
       </div>
 

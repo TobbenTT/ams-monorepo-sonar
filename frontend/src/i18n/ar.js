@@ -102,7 +102,7 @@ export default {
         administration: 'الإدارة',
         myProfile: 'ملفي الشخصي',
         viewProfile: 'عرض الملف الشخصي',
-        workOrders: 'أوامر العمل',
+        workOrders: 'أوامر العمل والإشعارات',
         failuresEvents: 'الأعطال والأحداث',
         improvementActions: 'إجراءات التحسين',
         team: 'الفريق',

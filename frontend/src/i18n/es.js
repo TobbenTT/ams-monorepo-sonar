@@ -102,7 +102,7 @@ export default {
         administration: 'Administración',
         myProfile: 'Mi Perfil',
         viewProfile: 'Ver perfil',
-        workOrders: 'Órdenes de Trabajo',
+        workOrders: 'OTs y Avisos',
         workManagement: 'Gestión de Trabajos',
         failuresEvents: 'Fallas y Eventos',
         improvementActions: 'Acciones de Mejora',

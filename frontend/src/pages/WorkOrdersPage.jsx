@@ -66,7 +66,6 @@ export default function WorkOrdersPage() {
   // Managed Work Orders (Jorge Phase 2)
   const [managedWOs, setManagedWOs] = useState([]);
   const [woTab, setWoTab] = useState('ots'); // 'ots' | 'wrs'
-  const [showCreateOTModal, setShowCreateOTModal] = useState(false);
   const [approvedWRs, setApprovedWRs] = useState([]);
   const [creatingOT, setCreatingOT] = useState(false);
   const [otCreateForm, setOtCreateForm] = useState({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4, failureCategory: 'MECANICO' });
@@ -731,10 +730,6 @@ export default function WorkOrdersPage() {
             {t('workOrders.export')}
           </Button>
           {viewMode === 'tactical' && (<>
-            <Button variant="outline" className="flex items-center gap-2 border-emerald-300 text-emerald-700" onClick={() => setShowCreateOTModal(true)}>
-              <Plus className="w-4 h-4" />
-              {t('workOrders.createOTFromWR') || 'Crear OT desde Aviso'}
-            </Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateModal(true)}>
               <Plus className="w-4 h-4" />
               {t('workOrders.createWorkOrder')}
@@ -963,9 +958,6 @@ export default function WorkOrdersPage() {
               <Button variant="outline" className="flex items-center gap-2 border-gray-300" onClick={handleExportOTs} disabled={!managedWOs.length}>
                 <Download className="w-4 h-4" /> Excel
               </Button>
-              <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateOTModal(true)}>
-                <Plus className="w-4 h-4" /> Crear OT desde Aviso
-              </Button>
             </div>
           </div>
           {managedWOs.length > 0 ? (
@@ -1172,60 +1164,6 @@ export default function WorkOrdersPage() {
         />
       )}
 
-      {/* Create OT Modal — solo desde Aviso aprobado (Jorge: "las órdenes no se crean manualmente") */}
-      {showCreateOTModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreateOTModal(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b p-5 rounded-t-xl z-10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">{t('workOrders.createOTTitle') || 'Crear Orden de Trabajo'}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{t('workOrders.createOTSubtitle') || 'Selecciona un aviso aprobado para generar la OT'}</p>
-                </div>
-                <button onClick={() => setShowCreateOTModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-5 space-y-5">
-              {approvedWRs.length > 0 ? (
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.approvedWRs') || 'Avisos Aprobados'}</label>
-                  <div className="space-y-2 max-h-72 overflow-y-auto">
-                    {approvedWRs.map(wr => (
-                      <div key={wr.request_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 truncate">
-                            {wr.equipment_tag} — {wr.problem_description?.original_text || 'Sin descripción'}
-                          </div>
-                          <div className="text-xs text-gray-500">{wr.priority_code || 'P3'} · {wr.status}</div>
-                        </div>
-                        <Button size="sm" className="ml-2 bg-emerald-600 hover:bg-emerald-700 text-xs h-7"
-                          onClick={() => handleCreateOTFromWR(wr)} disabled={creatingOT}>
-                          <ArrowRight className="w-3 h-3 mr-1" /> {t('workOrders.createOTShort') || 'Crear OT'}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 mb-2">
-                    <ClipboardCheck className="w-12 h-12 mx-auto" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-600">{t('workOrders.noApprovedWRs') || 'No hay avisos aprobados pendientes'}</p>
-                  <p className="text-xs text-gray-400 mt-1">{t('workOrders.noApprovedWRsHint') || 'Los avisos deben ser aprobados por un supervisor antes de generar una OT'}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="sticky bottom-0 bg-white border-t p-5 rounded-b-xl flex justify-end">
-              <Button variant="outline" onClick={() => setShowCreateOTModal(false)}>{t('common.close')}</Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Create Work Order Modal — full SAP PM form */}
       {showCreateModal && (

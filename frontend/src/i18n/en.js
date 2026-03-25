@@ -102,7 +102,7 @@ export default {
         administration: 'Administration',
         myProfile: 'My Profile',
         viewProfile: 'View profile',
-        workOrders: 'Work Orders',
+        workOrders: 'WOs & Notifications',
         workManagement: 'Work Management',
         failuresEvents: 'Failures & Events',
         improvementActions: 'Improvement Actions',

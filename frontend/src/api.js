@@ -168,7 +168,7 @@ export const rejectWorkRequest = (id, d) => put(`/work-requests/${id}/reject`, d
 export const getEquipmentHistory = (tag, excludeId) => get(`/work-requests/equipment-history/${encodeURIComponent(tag)}`, { exclude_id: excludeId });
 export const checkDuplicates = (d) => post('/work-requests/check-duplicates', d);
 export const createWRFromHierarchy = (d) => post('/work-requests/from-hierarchy', d);
-export const cancelWorkRequest = (id, d) => put(`/work-requests/${id}/validate`, { action: 'CANCEL', ...(d || {}) });
+export const cancelWorkRequest = (id, d) => put(`/work-requests/${id}/cancel`, d || {});
 export const updateWorkRequest = (id, d) => put(`/work-requests/${id}`, d);
 export const deleteWorkRequest = (id) => del(`/work-requests/${id}`);
 export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);

@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
-import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image, Trash2, Save, DollarSign, List, MessageSquare, Info, Users, MapPin } from 'lucide-react';
+import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image, Trash2, Save, DollarSign, List, MessageSquare, Info, Users, MapPin, Printer } from 'lucide-react';
+import { handlePrintWorkOrder } from "../components/PrintWorkOrder";
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -635,8 +636,8 @@ export default function WorkOrdersPage() {
   const saveOps = async () => {
     setOtSaving(true);
     try {
-      const ops = otOps.map(({ _id, ...rest }) => rest);
-      const totalHrs = ops.reduce((s, op) => s + (parseFloat(op.planned_hours) || 0), 0);
+      const ops = otOps.map(({ _id, ...rest }) => ({ ...rest, hh_plan: (rest.quantity || 1) * (rest.duration || 0) }));
+      const totalHrs = ops.reduce((s, op) => s + (parseFloat(op.hh_plan) || 0), 0);
       await api.updateManagedWO(selectedOT.wo_id, { operations: ops, estimated_hours: totalHrs });
       toast.success(t('workOrders.operationsSaved') || 'Operaciones guardadas');
       reloadData();
@@ -1849,7 +1850,7 @@ export default function WorkOrdersPage() {
                       <div className={`text-lg font-bold ${(selectedOT.actual_hours || 0) > (selectedOT.estimated_hours || 0) ? 'text-red-600' : 'text-gray-900'}`}>{selectedOT.actual_hours || 0}h</div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Presupuesto</div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Costo Planificado</div>
                       <div className="text-lg font-bold text-gray-900">${(selectedOT.budget_amount || 0).toLocaleString()}</div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -1944,7 +1945,7 @@ export default function WorkOrdersPage() {
                     </div>
                     <div className="flex gap-2">
                       {isEditable && (
-                        <Button size="sm" variant="outline" onClick={() => setOtOps(prev => [...prev, { _id: Date.now(), step: prev.length + 1, description: '', specialty: 'Mecánico', planned_hours: 1, actual_hours: 0 }])}>
+                        <Button size="sm" variant="outline" onClick={() => setOtOps(prev => [...prev, { _id: Date.now(), step: prev.length + 1, description: '', op_type: 'INT', specialty: 'Mecánico', quantity: 1, duration: 1, hh_plan: 1, actual_hours: 0 }])}>
                           <Plus className="w-3 h-3 mr-1" /> Agregar
                         </Button>
                       )}
@@ -1969,9 +1970,12 @@ export default function WorkOrdersPage() {
                           <tr>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-10">#</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-20">Tipo</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-32">Especialidad</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">H. Plan.</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">H. Real</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">Cant.</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">Duración</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">HH Plan</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">HH Real</th>
                             {isEditable && <th className="px-3 py-2 w-10"></th>}
                           </tr>
                         </thead>
@@ -1988,22 +1992,40 @@ export default function WorkOrdersPage() {
                               <td className="px-3 py-2">
                                 {isEditable ? (
                                   <select className="w-full border-0 border-b border-gray-200 p-0 text-xs focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                    value={op.op_type || 'INT'} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, op_type: e.target.value } : o))}>
+                                    <option value="INT">INT</option>
+                                    <option value="EXT">EXT</option>
+                                  </select>
+                                ) : <span className="text-xs">{op.op_type || 'INT'}</span>}
+                              </td>
+                              <td className="px-3 py-2">
+                                {isEditable ? (
+                                  <select className="w-full border-0 border-b border-gray-200 p-0 text-xs focus:border-emerald-400 focus:ring-0 bg-transparent"
                                     value={op.specialty || 'Mecánico'} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, specialty: e.target.value } : o))}>
                                     {SPECIALTY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                                   </select>
                                 ) : <span className="text-xs">{op.specialty || '—'}</span>}
                               </td>
+                                                            <td className="px-3 py-2 text-center">
+                                {isEditable ? (
+                                  <input type="number" className="w-14 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                    value={op.quantity || ''} onChange={(e) => { const qty = parseInt(e.target.value) || 0; setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, quantity: qty, hh_plan: qty * (o.duration || 1) } : o)); }} min="1" />
+                                ) : <span>{op.quantity || 1}</span>}
+                              </td>
                               <td className="px-3 py-2 text-center">
                                 {isEditable ? (
                                   <input type="number" className="w-16 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
-                                    value={op.planned_hours || ''} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, planned_hours: parseFloat(e.target.value) || 0 } : o))} />
-                                ) : <span>{op.planned_hours || 0}h</span>}
+                                    value={op.duration || ''} onChange={(e) => { const dur = parseFloat(e.target.value) || 0; setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, duration: dur, hh_plan: (o.quantity || 1) * dur } : o)); }} min="0" step="0.5" />
+                                ) : <span>{op.duration || 0}h</span>}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <span className="text-sm font-medium text-gray-700">{op.hh_plan || ((op.quantity || 1) * (op.duration || 0))}h</span>
                               </td>
                               <td className="px-3 py-2 text-center">
                                 {isExecuting ? (
                                   <input type="number" className="w-16 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
                                     value={op.actual_hours || ''} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, actual_hours: parseFloat(e.target.value) || 0 } : o))} />
-                                ) : <span className={`${(op.actual_hours || 0) > (op.planned_hours || 0) ? 'text-red-600 font-semibold' : ''}`}>{op.actual_hours || 0}h</span>}
+                                ) : <span className={(op.actual_hours || 0) > (op.hh_plan || 0) ? 'text-red-600 font-semibold' : ''}>{op.actual_hours || 0}h</span>}
                               </td>
                               {isEditable && (
                                 <td className="px-3 py-2">
@@ -2015,8 +2037,10 @@ export default function WorkOrdersPage() {
                         </tbody>
                         <tfoot className="bg-gray-50 font-semibold">
                           <tr>
-                            <td className="px-3 py-2" colSpan={3}><span className="text-xs text-gray-500">TOTAL</span></td>
-                            <td className="px-3 py-2 text-center text-xs">{otOps.reduce((s, o) => s + (parseFloat(o.planned_hours) || 0), 0)}h</td>
+                            <td className="px-3 py-2" colSpan={4}><span className="text-xs text-gray-500">TOTAL</span></td>
+                            <td className="px-3 py-2 text-center text-xs"></td>
+                            <td className="px-3 py-2 text-center text-xs"></td>
+                            <td className="px-3 py-2 text-center text-xs font-semibold">{otOps.reduce((s, o) => s + (parseFloat(o.hh_plan) || ((o.quantity||1)*(o.duration||0))), 0)}h</td>
                             <td className="px-3 py-2 text-center text-xs">{otOps.reduce((s, o) => s + (parseFloat(o.actual_hours) || 0), 0)}h</td>
                             {isEditable && <td></td>}
                           </tr>
@@ -2030,7 +2054,7 @@ export default function WorkOrdersPage() {
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">Resumen por Especialidad</label>
                       <div className="flex flex-wrap gap-2">
-                        {Object.entries(otOps.reduce((acc, op) => { const s = op.specialty || 'Sin definir'; acc[s] = (acc[s] || 0) + (parseFloat(op.planned_hours) || 0); return acc; }, {})).map(([spec, hrs]) => (
+                        {Object.entries(otOps.reduce((acc, op) => { const s = op.specialty || 'Sin definir'; acc[s] = (acc[s] || 0) + (parseFloat(op.hh_plan) || ((op.quantity||1)*(op.duration||0))); return acc; }, {})).map(([spec, hrs]) => (
                           <span key={spec} className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs border border-emerald-200">
                             {spec}: {hrs}h
                           </span>
@@ -2057,7 +2081,7 @@ export default function WorkOrdersPage() {
                     </div>
                     <div className="flex gap-2">
                       {isEditable && (
-                        <Button size="sm" variant="outline" onClick={() => setOtMats(prev => [...prev, { _id: Date.now(), code: '', description: '', quantity: 1, unit: 'PZ', reserved: false }])}>
+                        <Button size="sm" variant="outline" onClick={() => setOtMats(prev => [...prev, { _id: Date.now(), code: '', description: '', quantity: 1, unit: 'PZ', reserved: false, warehouse: '' }])}>
                           <Plus className="w-3 h-3 mr-1" /> Agregar
                         </Button>
                       )}
@@ -2082,6 +2106,7 @@ export default function WorkOrdersPage() {
                           <tr>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">Código SAP</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-24">Almacén</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Cant.</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Unidad</th>
                             {isEditable && <th className="px-3 py-2 w-10"></th>}
@@ -2101,6 +2126,12 @@ export default function WorkOrdersPage() {
                                   <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-sm focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Descripción del material..."
                                     value={mat.description || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, description: e.target.value } : m))} />
                                 ) : <span>{mat.description || '—'}</span>}
+                              </td>
+                              <td className="px-3 py-2">
+                                {isEditable ? (
+                                  <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-xs focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Almacén"
+                                    value={mat.warehouse || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, warehouse: e.target.value } : m))} />
+                                ) : <span className="text-xs">{mat.warehouse || '—'}</span>}
                               </td>
                               <td className="px-3 py-2 text-center">
                                 {isEditable ? (
@@ -2143,14 +2174,14 @@ export default function WorkOrdersPage() {
                     {/* Budget vs Actual */}
                     <div className={`rounded-xl p-4 border ${overBudget ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Presupuesto vs Real</span>
+                        <span className="text-sm font-medium">Planificado vs Real</span>
                         {budget > 0 && <span className={`text-xs font-bold px-2 py-0.5 rounded ${overBudget ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
                           {variance > 0 ? '+' : ''}{variance.toFixed(1)}% variación
                         </span>}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="text-center">
-                          <div className="text-xs text-gray-500">Presupuesto</div>
+                          <div className="text-xs text-gray-500">Costo Planificado</div>
                           <div className="text-2xl font-bold text-gray-900">${budget.toLocaleString()}</div>
                         </div>
                         <div className="text-center">
@@ -2288,6 +2319,7 @@ export default function WorkOrdersPage() {
                     </Button>
                   );
                 })()}
+                <Button variant="outline" size="sm" onClick={() => handlePrintWorkOrder(selectedOT)}><Printer className="w-4 h-4 mr-1" />Imprimir</Button>
                 <Button variant="outline" size="sm" onClick={() => setSelectedOT(null)}>Cerrar</Button>
               </div>
             </div>

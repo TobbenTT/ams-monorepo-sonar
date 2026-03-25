@@ -4,10 +4,11 @@ import { KPICard, PriorityBadge, StatusBadge, LoadingSpinner } from '../componen
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
-  Plus, Eye, Loader2, Clock, ChevronRight, ChevronLeft, ArrowRight
+  Eye, Clock, ChevronRight, ChevronLeft, ArrowRight, Download, AlertCircle
 } from 'lucide-react';
 import * as api from '../api';
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
+import { downloadExport } from '../utils/exportFile';
 
 const STRATEGY_COLORS = {
   Corrective: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -68,14 +69,9 @@ export default function Planning({ onNavigateTab }) {
   // Filters
   const [originFilter, setOriginFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All'); // All, Aviso, OT
 
-  // Create OT modal
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    equipment_tag: '', description: '', work_order_type: 'PM02',
-    priority: 'P3', estimated_duration_hours: 4,
-  });
-  const [creating, setCreating] = useState(false);
+
 
   // WO Detail dialog
   const [selectedWO, setSelectedWO] = useState(null);
@@ -105,24 +101,50 @@ export default function Planning({ onNavigateTab }) {
     managedWOs.filter(wo => ['DRAFT', 'PLANNED', 'RELEASED'].includes(wo.status)),
   [managedWOs]);
 
-  // Apply filters
+  // Approved WRs (VALIDATED = approved by supervisor, not yet converted to OT)
+  const approvedWRs = useMemo(() =>
+    workRequests.filter(wr => wr.status === 'VALIDATED').map(wr => ({
+      ...wr,
+      _rowType: 'WR',
+      _displayId: `WN-${wr.work_request_id?.slice(0, 6) || wr.request_id?.slice(0, 6) || '???'}`,
+      wo_number: null,
+      equipment_tag: wr.equipment_tag || wr.asset_tag || '',
+      description: wr.description || '',
+      priority_code: wr.priority || 'P3',
+      estimated_hours: wr.estimated_hours || 0,
+      estimated_duration_hours: wr.estimated_hours || 0,
+      wo_type: wr.work_type || '',
+      work_order_type: wr.work_type || '',
+      created_at: wr.created_at,
+    })),
+  [workRequests]);
+
+  // Apply filters - combine OTs (tagged) + approved WRs
   const filteredWOs = useMemo(() => {
-    let list = [...planningWOs];
+    const otsTagged = planningWOs.map(wo => ({ ...wo, _rowType: 'OT', _displayId: wo.wo_number || (wo.wo_id || '').slice(0, 10) }));
+    let list = [...otsTagged, ...approvedWRs];
+
+    // Type filter
+    if (typeFilter === 'Aviso') {
+      list = list.filter(item => item._rowType === 'WR');
+    } else if (typeFilter === 'OT') {
+      list = list.filter(item => item._rowType === 'OT');
+    }
 
     if (originFilter === 'From WR') {
-      list = list.filter(wo => wo.work_request_id || wo.source_wr_id);
+      list = list.filter(wo => wo._rowType === 'WR' || wo.work_request_id || wo.source_wr_id);
     } else if (originFilter === 'From Strategy') {
-      list = list.filter(wo => !wo.source_wr_id && !wo.work_request_id);
+      list = list.filter(wo => wo._rowType === 'OT' && !wo.source_wr_id && !wo.work_request_id);
     }
 
     if (statusFilter === 'In Planning') {
-      list = list.filter(wo => ['DRAFT', 'PLANNED'].includes(wo.status));
+      list = list.filter(wo => wo._rowType === 'WR' || ['DRAFT', 'PLANNED'].includes(wo.status));
     } else if (statusFilter === 'Ready') {
-      list = list.filter(wo => wo.status === 'RELEASED' || wo.status === 'SCHEDULED');
+      list = list.filter(wo => wo._rowType === 'OT' && (wo.status === 'RELEASED' || wo.status === 'SCHEDULED'));
     }
 
     return list;
-  }, [planningWOs, originFilter, statusFilter]);
+  }, [planningWOs, approvedWRs, originFilter, statusFilter, typeFilter]);
 
   // KPIs
   const kpis = useMemo(() => {
@@ -134,8 +156,9 @@ export default function Planning({ onNavigateTab }) {
       const age = (Date.now() - new Date(wo.created_at).getTime()) / (1000 * 60 * 60 * 24);
       return age > 14 && ['DRAFT', 'PLANNED'].includes(wo.status);
     }).length;
-    return { total, inPlanning, ready, overdue };
-  }, [planningWOs]);
+    const avisos = approvedWRs.length;
+    return { total, inPlanning, ready, overdue, avisos };
+  }, [planningWOs, approvedWRs]);
 
   // Paginated data
   const paginatedWOs = useMemo(() => {
@@ -152,24 +175,36 @@ export default function Planning({ onNavigateTab }) {
     return wr ? (wr.wo_number || wr.work_request_id?.slice(0, 10) || wrId.slice(0, 10)) : wrId.slice(0, 10);
   };
 
-  // Create OT
-  const handleCreateOT = async () => {
-    if (!createForm.equipment_tag.trim()) { toast.error('Equipment tag is required'); return; }
-    setCreating(true);
-    try {
-      const result = await api.createManagedWO({
-        plant_id: plant || 'OCP-JFC1',
-        ...createForm,
-        estimated_duration_hours: parseFloat(createForm.estimated_duration_hours) || 4,
-      });
-      toast.success(`OT ${result?.wo_number || ''} created`);
-      setShowCreateModal(false);
-      setCreateForm({ equipment_tag: '', description: '', work_order_type: 'PM02', priority: 'P3', estimated_duration_hours: 4 });
-      fetchAll();
-    } catch (e) {
-      toast.error('Error: ' + e.message);
-    }
-    setCreating(false);
+
+
+  // Export filtered WOs to Excel
+  const handleExport = () => {
+    const headers = [
+      'OT Number', 'Type', 'Priority', 'Equipment', 'Description',
+      'Status', 'Strategy', 'Estimated Hours', 'Planned Start', 'Planned End'
+    ];
+    const rows = filteredWOs.map(wo => {
+      const strategy = getStrategy(wo);
+      const planStatus = getPlanningStatus(wo);
+      const prio = wo.priority_code || wo.priority || '';
+      return [
+        wo.wo_number || wo.wo_id || '',
+        wo.wo_type || wo.work_order_type || '',
+        prio,
+        wo.equipment_tag || '',
+        wo.description || '',
+        planStatus,
+        strategy,
+        wo.estimated_hours || wo.estimated_duration_hours || 0,
+        wo.planned_start ? new Date(wo.planned_start).toLocaleDateString() : '',
+        wo.planned_end ? new Date(wo.planned_end).toLocaleDateString() : ''
+      ];
+    });
+    downloadExport({
+      format: 'EXCEL',
+      sheets: [{ name: 'Planning Backlog', headers, rows }]
+    }, `planning_backlog_${new Date().toISOString().slice(0, 10)}`);
+    toast.success(`Exported ${filteredWOs.length} work orders`);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -190,8 +225,8 @@ export default function Planning({ onNavigateTab }) {
           <p className="text-sm text-gray-500 mb-1">Ready to Schedule</p>
           <p className="text-3xl font-bold text-gray-900">{kpis.ready}</p>
         </div>
-        <div className="bg-white rounded-lg border-l-4 border-l-red-400 border border-gray-200 p-5">
-          <p className="text-sm text-red-600 mb-1">Overdue</p>
+        <div className="bg-white rounded-lg border-l-4 border-l-blue-400 border border-gray-200 p-5">
+          <p className="text-sm text-blue-600 mb-1">Avisos Aprobados</p>
           <p className="text-3xl font-bold text-red-600">{kpis.overdue}</p>
         </div>
       </div>
@@ -199,20 +234,39 @@ export default function Planning({ onNavigateTab }) {
       {/* Title Row */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold text-gray-900">Work Orders Backlog</h3>
-          <span className="text-sm text-gray-400">{filteredWOs.length} orders</span>
+          <h3 className="text-lg font-bold text-gray-900">Backlog de Planificación</h3>
+          <span className="text-sm text-gray-400">{filteredWOs.length} items</span>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Create OT
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Download className="w-4 h-4" /> Export
+          </button>
+
+        </div>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-6 mb-4">
         <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 font-medium">Tipo:</span>
+          {['All', 'Aviso', 'OT'].map(opt => (
+            <button
+              key={opt}
+              onClick={() => { setTypeFilter(opt); setPage(0); }}
+              className={`text-sm font-medium px-2 py-0.5 rounded transition-colors ${
+                typeFilter === opt
+                  ? 'text-emerald-700 bg-emerald-50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
           <span className="text-xs text-gray-500 font-medium">Origin:</span>
           {['All', 'From WR', 'From Strategy'].map(opt => (
             <button
@@ -251,15 +305,15 @@ export default function Planning({ onNavigateTab }) {
         {filteredWOs.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <div className="text-4xl mb-3 opacity-40">📋</div>
-            <p className="text-sm font-medium">No work orders in planning</p>
-            <p className="text-xs mt-1">Create an OT or approve a Work Request to start</p>
+            <p className="text-sm font-medium">No items in planning</p>
+            <p className="text-xs mt-1">Approve a Work Request or create an OT from the Identification tab</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">OT ID</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">WR Origin</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Número</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Asset</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Strategy</th>
@@ -271,24 +325,28 @@ export default function Planning({ onNavigateTab }) {
             <tbody>
               {paginatedWOs.map(wo => {
                 const strategy = getStrategy(wo);
-                const planStatus = getPlanningStatus(wo);
-                const wrOrigin = getWROrigin(wo);
+                const planStatus = wo._rowType === 'WR' ? 'Aprobado' : getPlanningStatus(wo);
+                const isWR = wo._rowType === 'WR';
                 return (
                   <tr
-                    key={wo.wo_id || wo.wo_number}
+                    key={isWR ? (wo.work_request_id || wo.request_id) : (wo.wo_id || wo.wo_number)}
                     className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedWO(wo)}
-                  >
-                    <td className="px-4 py-3 font-mono text-sm text-gray-600">
-                      {wo.wo_number || (wo.wo_id || '').slice(0, 10)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {wrOrigin
-                        ? <span className="text-emerald-600 font-medium cursor-pointer hover:underline" onClick={e => { e.stopPropagation(); if (onNavigateTab) onNavigateTab('identification'); }}>
-                            WR-{wrOrigin}
-                          </span>
-                        : <span className="text-gray-300">—</span>
+                    onClick={() => {
+                      if (isWR) {
+                        if (onNavigateTab) onNavigateTab('identification');
+                      } else {
+                        setSelectedWO(wo);
                       }
+                    }}
+                  >
+                    <td className="px-4 py-3">
+                      {isWR
+                        ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200"><AlertCircle className="w-3 h-3" /> Aviso</span>
+                        : <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">OT</span>
+                      }
+                    </td>
+                    <td className="px-4 py-3 font-mono text-sm text-gray-600">
+                      {wo._displayId}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-900">{wo.equipment_tag || '—'}</td>
                     <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{wo.description || '—'}</td>
@@ -302,7 +360,10 @@ export default function Planning({ onNavigateTab }) {
                       <PriorityLabel priority={wo.priority_code || wo.priority} />
                     </td>
                     <td className="px-4 py-3">
-                      <StatusLabel status={planStatus} />
+{isWR
+                        ? <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">Aprobado</span>
+                        : <StatusLabel status={planStatus} />
+                      }
                     </td>
                   </tr>
                 );
@@ -337,85 +398,7 @@ export default function Planning({ onNavigateTab }) {
         )}
       </div>
 
-      {/* Create OT Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Crear OT</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Equipment Tag *</label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
-                  value={createForm.equipment_tag}
-                  onChange={e => setCreateForm(f => ({ ...f, equipment_tag: e.target.value }))}
-                  placeholder="e.g. P-1201A"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[80px]"
-                  value={createForm.description}
-                  onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Work order description..."
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    value={createForm.work_order_type}
-                    onChange={e => setCreateForm(f => ({ ...f, work_order_type: e.target.value }))}
-                  >
-                    <option value="PM01">PM01 - Preventive</option>
-                    <option value="PM02">PM02 - Planned</option>
-                    <option value="PM03">PM03 - Corrective</option>
-                    <option value="PM05">PM05 - Predictive</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    value={createForm.priority}
-                    onChange={e => setCreateForm(f => ({ ...f, priority: e.target.value }))}
-                  >
-                    <option value="P1">P1 - Critical</option>
-                    <option value="P2">P2 - High</option>
-                    <option value="P3">P3 - Medium</option>
-                    <option value="P4">P4 - Low</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Est. Hours</label>
-                  <input
-                    type="number"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    value={createForm.estimated_duration_hours}
-                    onChange={e => setCreateForm(f => ({ ...f, estimated_duration_hours: e.target.value }))}
-                    min="0" step="0.5"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateOT}
-                disabled={creating}
-                className="px-4 py-2 text-sm text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                {creating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : <>Create OT</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* WO Detail Dialog */}
+            {/* WO Detail Dialog */}
       {selectedWO && (
         <WorkOrderDetailDialog
           workOrder={selectedWO}

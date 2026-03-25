@@ -123,6 +123,29 @@ def reject_work_request(
     return _to_dict(wr)
 
 
+
+def cancel_work_request(
+    db: Session, request_id: str, reason: str = "",
+) -> dict | None:
+    """Cancel a work request (any open status)."""
+    wr = get_work_request(db, request_id)
+    if not wr:
+        return None
+    if wr.status in ("CLOSED", "CANCELLED"):
+        return None
+    wr.status = "CANCELLED"
+    if reason:
+        wr.rejection_reason = reason
+    validation = dict(wr.validation) if isinstance(wr.validation, dict) else {}
+    validation["cancelled_at"] = datetime.now().isoformat()
+    validation["cancel_reason"] = reason
+    wr.validation = validation
+    log_action(db, "work_request", request_id, "CANCEL")
+    db.commit()
+    db.refresh(wr)
+    return _to_dict(wr)
+
+
 def validate_work_request(
     db: Session, request_id: str, action: str, modifications: dict | None = None
 ) -> dict | None:

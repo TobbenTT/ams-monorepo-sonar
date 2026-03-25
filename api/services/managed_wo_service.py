@@ -242,6 +242,7 @@ def list_work_orders(
     limit: int = 200,
     offset: int = 0,
     fast_track: bool | None = None,
+    equipment_tag: str | None = None,
 ) -> list[dict]:
     q = db.query(ManagedWorkOrderModel)
     if status:
@@ -254,6 +255,8 @@ def list_work_orders(
         q = q.filter(ManagedWorkOrderModel.priority_code == priority)
     if fast_track is not None:
         q = q.filter(ManagedWorkOrderModel.is_fast_track == fast_track)
+    if equipment_tag:
+        q = q.filter(ManagedWorkOrderModel.equipment_tag == equipment_tag)
     items = q.order_by(ManagedWorkOrderModel.created_at.desc()).offset(offset).limit(limit).all()
     return [_to_dict(wo) for wo in items]
 
@@ -349,7 +352,23 @@ def complete_wo(db: Session, wo_id: str, user_id: str = "", actual_hours: float 
 
 
 def close_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
-    return _transition(db, wo_id, "CLOSED", user_id)
+    result = _transition(db, wo_id, "CLOSED", user_id)
+    if result and result.get("work_request_id"):
+        # Auto-close the linked WR when OT is closed
+        wr = db.query(WorkRequestModel).filter(
+            WorkRequestModel.request_id == result["work_request_id"]
+        ).first()
+        if wr and wr.status not in ("CLOSED", "CANCELLED"):
+            wr.status = "CLOSED"
+            validation = dict(wr.validation) if isinstance(wr.validation, dict) else {}
+            validation["closed_by"] = user_id
+            validation["closed_at"] = datetime.now().isoformat()
+            validation["closure_notes"] = f"Auto-cerrada al cerrar OT {result.get('wo_number', wo_id)}"
+            wr.validation = validation
+            log_action(db, "work_request", wr.request_id, "CLOSE_AUTO")
+            db.commit()
+            db.refresh(wr)
+    return result
 
 
 def add_note(db: Session, wo_id: str, user_id: str, note: str) -> dict | None:

@@ -242,6 +242,19 @@ def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(req
     return result
 
 
+class WRCancelRequest(BaseModel):
+    reason: str = ""
+
+
+@router.put("/{request_id}/cancel")
+def cancel_work_request(request_id: str, data: WRCancelRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Cancel a work request (any open status)."""
+    result = work_request_service.cancel_work_request(db, request_id, reason=data.reason)
+    if not result:
+        raise HTTPException(status_code=400, detail="Cannot cancel — WR not found or already closed/cancelled")
+    return result
+
+
 @router.put("/{request_id}/assign")
 def assign_work_request(request_id: str, data: WRAssignRequest, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     """Assign a validated WR to one or more technicians."""

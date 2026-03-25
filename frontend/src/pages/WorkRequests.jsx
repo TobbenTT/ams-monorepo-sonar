@@ -14,7 +14,7 @@ import { useToast } from '../components/Toast';
 import { downloadExport } from '../utils/exportFile';
 
 /* ─── Status config (dynamic with i18n) ─── */
-const STATUS_KEYS = ['ALL', 'DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED', 'REJECTED', 'CANCELLED'];
+const STATUS_KEYS = ['ALL', 'PENDING_VALIDATION', 'VALIDATED', 'REJECTED', 'CANCELLED', 'CLOSED'];
 
 const IMPACT_COLOR = {
   CRITICAL: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
@@ -157,13 +157,13 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
   });
 
   const statusLabels = {
-    DRAFT: t('common.draft'),
-    PENDING_VALIDATION: t('common.pending'),
-    VALIDATED: t('workRequests.validate'),
+    DRAFT: 'Pendiente',
+    PENDING_VALIDATION: 'Pendiente',
+    VALIDATED: 'Aprobado',
     ASSIGNED: 'Asignado',
-    REJECTED: t('common.reject'),
+    REJECTED: 'Rechazado',
     CANCELLED: 'Cancelado',
-    IN_PROGRESS: t('common.active'),
+    IN_PROGRESS: 'En Ejecución',
     COMPLETED: 'Completado',
     CLOSED: 'Cerrado',
     SCHEDULED: t('workRequests.scheduled'),
@@ -261,6 +261,9 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
                   {item.priority_requested}
                 </span>
+                {item.priority_requested === 'P1' && (
+                  <span className="text-[10px] text-red-600 dark:text-red-400 font-semibold">Parada de Plantas</span>
+                )}
                 {item.priority_requested !== item.priority_suggested && (
                   <>
                     <span className="text-amber-500 text-xs">→</span>
@@ -331,7 +334,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
             {editing ? (
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Parte Objeto:</span>
                   <input type="text" value={editData.failure_category} onChange={e => setEditData(d => ({ ...d, failure_category: e.target.value }))}
                     className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="MECANICO, ELECTRICO..." />
                 </div>
@@ -350,7 +353,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
                 {item.failure_category && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Parte Objeto:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
                   </div>
                 )}
@@ -560,15 +563,33 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                 </button>
               </>
             )}
-            {/* Planner: Crear OT from approved WR */}
-            {isValidated && isPlanner && onPlannerCreateOT && (
-              <button
-                onClick={() => { onPlannerCreateOT(item.id); onClose(); }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
-              >
-                <FileText size={16} />
-                Crear OT
-              </button>
+            {/* Planner: Rechazar + Cancelar + Crear OT from approved WR */}
+            {isValidated && isPlanner && (
+              <>
+                <button
+                  onClick={() => { onReject(item.id); onClose(); }}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                >
+                  <XCircle size={16} />
+                  Rechazar
+                </button>
+                <button
+                  onClick={() => { onCancel(item.id); onClose(); }}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <XCircle size={16} />
+                  Cancelar
+                </button>
+                {onPlannerCreateOT && (
+                  <button
+                    onClick={() => { onPlannerCreateOT(item.id); onClose(); }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+                  >
+                    <FileText size={16} />
+                    Crear OT
+                  </button>
+                )}
+              </>
             )}
             {canStart && (
               <button
@@ -802,12 +823,13 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
   /* ─── Status labels (i18n) ─── */
   const statusLabels = useMemo(() => ({
     ALL: t('common.all'),
-    DRAFT: t('common.draft'),
-    PENDING_VALIDATION: t('common.pending'),
-    VALIDATED: t('workRequests.validate'),
+    DRAFT: 'Pendiente',
+    PENDING_VALIDATION: 'Pendiente',
+    VALIDATED: 'Aprobado',
     ASSIGNED: 'Asignado',
-    REJECTED: t('common.reject'),
-    IN_PROGRESS: t('common.active'),
+    REJECTED: 'Rechazado',
+    CANCELLED: 'Cancelado',
+    IN_PROGRESS: 'En Ejecución',
     COMPLETED: 'Completado',
     CLOSED: 'Cerrado',
     SCHEDULED: t('workRequests.scheduled'),
@@ -958,7 +980,7 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
 
   function handleExportWRs() {
     if (!sorted.length) return;
-    const headers = ['ID', 'Equipo TAG', 'Equipo', 'Descripción Falla', 'Prioridad', 'Status', 'Impacto', 'Duración Est. (h)', 'Categoría Falla', 'Síntoma', 'Causa', 'Acción Sugerida', 'Técnico', 'Creado'];
+    const headers = ['ID', 'Equipo TAG', 'Equipo', 'Descripción Falla', 'Prioridad', 'Status', 'Impacto', 'Duración Est. (h)', 'Parte Objeto', 'Síntoma', 'Causa', 'Acción Sugerida', 'Técnico', 'Creado'];
     const rows = sorted.map(r => [
       r.id, r.equipment_tag, r.equipment_name, r.failure_description,
       r.priority_requested, r.status, r.production_impact,
@@ -1254,6 +1276,9 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
                           <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(req.priority_requested)}`}>
                             {req.priority_requested}
                           </span>
+                          {req.priority_requested === 'P1' && (
+                            <span className="text-[9px] text-red-600 dark:text-red-400 font-semibold">Parada de Plantas</span>
+                          )}
                           {priorityChanged && (
                             <>
                               <span className="text-amber-500 text-xs font-bold">→</span>

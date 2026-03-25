@@ -1,7 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Wrench, Clock, AlertCircle, Plus, Calendar, User, Tag, FileText, MapPin } from 'lucide-react';
+import { Wrench, Clock, AlertCircle, Plus, Calendar, User, Tag, FileText, MapPin, Printer } from 'lucide-react';
+import { handlePrintWorkOrder } from "../PrintWorkOrder";
 
 const PRIORITY_COLORS = {
   P1: 'bg-red-100 text-red-800',
@@ -321,6 +322,10 @@ export default function WorkOrderDetailDialog({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cerrar
+          </Button>
+          <Button variant="outline" onClick={() => handlePrintWorkOrder(workOrder)}>
+            <Printer className="w-4 h-4 mr-2" />
+            Imprimir
           </Button>
           {isUrgent && onCreateAction && (
             <Button

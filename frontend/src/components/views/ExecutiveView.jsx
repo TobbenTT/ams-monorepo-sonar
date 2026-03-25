@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -39,6 +40,7 @@ function parseKpi(val) {
 
 export default function ExecutiveView({ selectedPlant, selectedTimeRange, selectedArea }) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('mantenimiento');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

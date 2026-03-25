@@ -7,6 +7,7 @@ import {
   Plus, Eye, Loader2, Clock, ChevronRight, ChevronLeft, ArrowRight
 } from 'lucide-react';
 import * as api from '../api';
+import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 
 const STRATEGY_COLORS = {
   Corrective: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -75,6 +76,9 @@ export default function Planning({ onNavigateTab }) {
     priority: 'P3', estimated_duration_hours: 4,
   });
   const [creating, setCreating] = useState(false);
+
+  // WO Detail dialog
+  const [selectedWO, setSelectedWO] = useState(null);
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -273,7 +277,7 @@ export default function Planning({ onNavigateTab }) {
                   <tr
                     key={wo.work_order_id || wo.wo_number}
                     className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"
-                    onClick={() => navigate('/work-orders')}
+                    onClick={() => setSelectedWO(wo)}
                   >
                     <td className="px-4 py-3 font-mono text-sm text-gray-600">
                       {wo.wo_number || (wo.work_order_id || '').slice(0, 10)}
@@ -410,6 +414,14 @@ export default function Planning({ onNavigateTab }) {
             </div>
           </div>
         </div>
+      )}
+      {/* WO Detail Dialog */}
+      {selectedWO && (
+        <WorkOrderDetailDialog
+          workOrder={selectedWO}
+          open={!!selectedWO}
+          onClose={() => setSelectedWO(null)}
+        />
       )}
     </div>
   );

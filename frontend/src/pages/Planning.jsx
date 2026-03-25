@@ -103,7 +103,9 @@ export default function Planning({ onNavigateTab }) {
         estimated_hours: wr.estimated_hours || 4,
       });
       toast.success('OT creada: ' + (res?.wo_number || 'OK'));
-      fetchData(); // reload to remove this WR from approved list
+      fetchData();
+      // Navigate to scheduling tab to see the new OT
+      if (onNavigateTab) onNavigateTab('scheduling');
     } catch (err) {
       toast.error('Error: ' + (err.message || 'No se pudo crear OT'));
     } finally {

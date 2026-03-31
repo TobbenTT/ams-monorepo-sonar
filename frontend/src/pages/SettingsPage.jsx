@@ -39,6 +39,7 @@ export default function SettingsPage() {
     availabilityTarget: 95,
     mtbfTarget: 300,
     mttrTarget: 3.5,
+    laborRate: 35,
     plannedWorkTarget: 80,
     // Notifications
     notifCritical: true,
@@ -306,6 +307,11 @@ export default function SettingsPage() {
               <div>
                 <Label htmlFor="plannedWorkTarget">{t('settings.general.plannedWorkTarget')}</Label>
                 <Input id="plannedWorkTarget" type="number" value={settings.plannedWorkTarget} onChange={(e) => updateSetting('plannedWorkTarget', Number(e.target.value))} className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="laborRate">Tasa M.O. Interna (ZMANT001) $/h</Label>
+                <Input id="laborRate" type="number" value={settings.laborRate} onChange={(e) => updateSetting('laborRate', Number(e.target.value))} className="mt-1" />
+                <p className="text-xs text-gray-500 mt-1">Costo fijo por hora de mano de obra interna. Se usa en Control de Costos SAP.</p>
               </div>
             </div>
           </Card>

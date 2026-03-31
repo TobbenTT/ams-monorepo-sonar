@@ -3,8 +3,7 @@ import { useState, useMemo } from 'react';
 import {
     Home, Wrench, AlertTriangle, TrendingUp, BarChart3,
     FileText, Users, Settings, MessageSquare,
-    ChevronLeft, ChevronRight, User, LogOut, Search, Briefcase
-} from 'lucide-react';
+    ChevronLeft, ChevronRight, User, LogOut, Search, Briefcase, Database } from 'lucide-react';
 import { cn } from './ui/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -20,6 +19,7 @@ const navItems = [
     { path: '/reports', icon: FileText, labelKey: 'nav.reports', module: 'reports' },
     { path: '/team', icon: Users, labelKey: 'nav.team', module: 'team' },
     { path: '/settings', icon: Settings, labelKey: 'nav.settings', module: 'settings' },
+    { path: '/sap-pm', icon: Database, labelKey: 'SAP PM', module: 'sap-pm' },
     { path: '/feedback-admin', icon: MessageSquare, labelKey: 'nav.feedback', module: 'feedback' },
 ];
 
@@ -70,7 +70,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
                         </>
                     ) : (
                         <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-                            <span className="text-xs font-bold">OCP</span>
+                            <span className="text-xs font-bold">AMS</span>
                         </div>
                     )}
                 </div>

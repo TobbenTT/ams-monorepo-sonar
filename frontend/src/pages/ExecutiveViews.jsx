@@ -58,11 +58,11 @@ export function ExecRiskManagement() {
         { area: 'Relaves', score: 68, exposure: '$35k/día' },
     ];
     const topRiskAssets = [
-        { asset: 'Molino de Bolas #1', area: 'Molienda', riskScore: 92, probability: 'High', impact: '$120k/día', status: 'En Progreso', plan: 'Reemplazo de rodamientos programado para próxima parada' },
-        { asset: 'Trituradora Primaria', area: 'Trituración', riskScore: 87, probability: 'High', impact: '$95k/día', status: 'Planned', plan: 'Inspección de revestimientos y guardas' },
+        { asset: 'Molino de Bolas #1', area: 'Molienda', riskScore: 92, probability: 'Alta', impact: '$120k/día', status: 'En Progreso', plan: 'Reemplazo de rodamientos programado para próxima parada' },
+        { asset: 'Trituradora Primaria', area: 'Trituración', riskScore: 87, probability: 'Alta', impact: '$95k/día', status: 'Planificado', plan: 'Inspección de revestimientos y guardas' },
         { asset: 'Bomba Principal P-201', area: 'Bombeo', riskScore: 85, probability: 'Crítica', impact: '$85k/día', status: 'Activo', plan: 'Bomba standby activa, reemplazo de sellos urgente' },
-        { asset: 'Espesador #3', area: 'Espesamiento', riskScore: 78, probability: 'Medium', impact: '$45k/día', status: 'Monitoreo', plan: 'Plan de respuesta de emergencia actualizado' },
-        { asset: 'Motor SAG Mill', area: 'Molienda', riskScore: 72, probability: 'Medium', impact: '$110k/día', status: 'Planned', plan: 'Alineación de motor y monitoreo de vibración' },
+        { asset: 'Espesador #3', area: 'Espesamiento', riskScore: 78, probability: 'Media', impact: '$45k/día', status: 'Monitoreo', plan: 'Plan de respuesta de emergencia actualizado' },
+        { asset: 'Motor SAG Mill', area: 'Molienda', riskScore: 72, probability: 'Media', impact: '$110k/día', status: 'Planificado', plan: 'Alineación de motor y monitoreo de vibración' },
     ];
 
     const probColor = (p) => p === 'Crítica' ? 'bg-red-100 text-red-700' : p === 'Alta' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700';
@@ -341,7 +341,7 @@ export function ExecAssetCriticality() {
         { asset: 'Molino de Bolas #1', area: 'Molienda', criticality: 'Crítico', impact: '$120k/día', safetyRisk: 'Alto', envRisk: 'Medio', redundancy: 'Ninguna', strategy: 'Predictivo + Preventivo' },
         { asset: 'Trituradora Primaria', area: 'Trituración', criticality: 'Crítico', impact: '$95k/día', safetyRisk: 'Crítico', envRisk: 'Bajo', redundancy: 'Ninguna', strategy: 'Basado en Condición' },
         { asset: 'Molino SAG', area: 'Molienda', criticality: 'Crítico', impact: '$110k/día', safetyRisk: 'Alto', envRisk: 'Medio', redundancy: 'Ninguna', strategy: 'Predictivo' },
-        { asset: 'Bomba P-201', area: 'Bombeo', criticality: 'Crítico', impact: '$85k/día', safetyRisk: 'Medio', envRisk: 'Alto', redundancy: 'Standby Disponible', strategy: 'Preventive' },
+        { asset: 'Bomba P-201', area: 'Bombeo', criticality: 'Crítico', impact: '$85k/día', safetyRisk: 'Medio', envRisk: 'Alto', redundancy: 'Standby Disponible', strategy: 'Preventivo' },
         { asset: 'Espesador #3', area: 'Espesamiento', criticality: 'Alto', impact: '$45k/día', safetyRisk: 'Bajo', envRisk: 'Crítico', redundancy: 'Ninguna', strategy: 'Basado en Condición' },
     ];
     const critColor = (l) => l === 'Crítico' ? 'bg-red-100 text-red-700 border-red-300' : l === 'Alto' ? 'bg-orange-100 text-orange-700 border-orange-300' : l === 'Medio' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' : 'bg-blue-100 text-blue-700 border-blue-300';

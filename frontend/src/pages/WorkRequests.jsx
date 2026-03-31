@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
@@ -14,7 +14,90 @@ import { useToast } from '../components/Toast';
 import { downloadExport } from '../utils/exportFile';
 
 /* ─── Status config (dynamic with i18n) ─── */
-const STATUS_KEYS = ['ALL', 'PENDING_VALIDATION', 'VALIDATED', 'REJECTED', 'CANCELLED', 'CLOSED'];
+
+function MaterialEditor({ materials, onChange }) {
+  const [searchIdx, setSearchIdx] = useState(-1);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const searchTimer = useRef(null);
+
+  const handleSearch = (text, idx) => {
+    setSearchText(text);
+    setSearchIdx(idx);
+    clearTimeout(searchTimer.current);
+    if (text.length < 2) { setSearchResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await api.searchMaterials(text);
+        setSearchResults(Array.isArray(res) ? res : []);
+      } catch { setSearchResults([]); }
+    }, 300);
+  };
+
+  const selectMaterial = (mat, idx) => {
+    const arr = [...materials];
+    arr[idx] = { ...arr[idx], sapId: mat.sapId, description: mat.description, unit: mat.unit };
+    onChange(arr);
+    setSearchIdx(-1);
+    setSearchResults([]);
+    setSearchText('');
+  };
+
+  const updateField = (idx, field, value) => {
+    const arr = [...materials];
+    arr[idx] = { ...(typeof arr[idx] === 'object' ? arr[idx] : { description: arr[idx] }), [field]: value };
+    onChange(arr);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-[90px_1fr_60px_50px_30px] gap-2 text-xs text-muted-foreground font-semibold">
+        <span>SAP ID</span><span>Descripcion</span><span>Cant</span><span>Ud</span><span></span>
+      </div>
+      {materials.map((m, i) => {
+        const mat = typeof m === 'object' ? m : { description: m, quantity: 1 };
+        return (
+          <div key={i} className="relative">
+            <div className="grid grid-cols-[90px_1fr_60px_50px_30px] gap-2 items-center">
+              <input type="text" value={mat.sapId || ''} readOnly
+                className="text-xs px-2 py-1.5 border border-border rounded bg-muted font-mono text-muted-foreground" />
+              <div className="relative">
+                <input type="text" value={searchIdx === i ? searchText : (mat.description || '')}
+                  onChange={e => handleSearch(e.target.value, i)}
+                  onFocus={() => { setSearchIdx(i); setSearchText(mat.description || ''); }}
+                  placeholder="Buscar material SAP..."
+                  className="w-full text-sm px-2 py-1.5 border border-border rounded bg-background" />
+                {searchIdx === i && searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-30 max-h-48 overflow-y-auto">
+                    {searchResults.map((r, j) => (
+                      <button key={j} onClick={() => selectMaterial(r, i)}
+                        className="w-full text-left px-3 py-2 border-b last:border-b-0 hover:bg-blue-50 text-sm">
+                        <span className="font-mono text-xs text-muted-foreground mr-2">{r.sapId}</span>
+                        <span>{r.description}</span>
+                        <span className="text-xs text-muted-foreground ml-2">({r.unit})</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <input type="number" min="1" value={mat.quantity || 1} onChange={e => updateField(i, 'quantity', parseInt(e.target.value) || 1)}
+                className="text-sm px-2 py-1.5 border border-border rounded bg-background text-center" />
+              <select value={mat.unit || 'PZ'} onChange={e => updateField(i, 'unit', e.target.value)}
+                className="text-xs px-1 py-1.5 border border-border rounded bg-background">
+                <option>PZ</option><option>KG</option><option>LT</option><option>MT</option><option>UD</option>
+              </select>
+              <button onClick={() => onChange(materials.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600">&times;</button>
+            </div>
+          </div>
+        );
+      })}
+      <button onClick={() => onChange([...materials, { sapId: '', description: '', quantity: 1, unit: 'PZ' }])}
+        className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Agregar material</button>
+    </div>
+  );
+}
+
+const STATUS_KEYS = ['ALL', 'PENDIENTE', 'APROBADO', 'RECHAZADO', 'CANCELADO', 'CERRADO'];
 
 const IMPACT_COLOR = {
   CRITICAL: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
@@ -133,17 +216,20 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t }) {
 /* ─── Detail Modal (expanded + editable for supervisor) ─── */
 function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, userRole, t }) {
   if (!item) return null;
-  const isPending = item.status === 'PENDING_VALIDATION';
-  const isValidated = item.status === 'VALIDATED';
-  const canStart = ['VALIDATED', 'ASSIGNED', 'SCHEDULED'].includes(item.status);
+  const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(item.status);
+  const isValidated = ['VALIDATED', 'APROBADO'].includes(item.status);
+  const canStart = ['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(item.status);
   const canComplete = item.status === 'IN_PROGRESS';
   const canClose = item.status === 'COMPLETED';
   const isSupervisor = ['admin', 'manager'].includes(userRole);
   const isPlanner = userRole === 'planner';
-  const canEdit = (isSupervisor || isPlanner) && !['COMPLETED', 'CLOSED', 'CANCELLED', 'REJECTED'].includes(item.status);
+  const canEdit = (isSupervisor || isPlanner) && !['COMPLETED', 'CLOSED', 'CANCELLED', 'REJECTED', 'CERRADO', 'CANCELADO', 'RECHAZADO'].includes(item.status);
 
   // Editable state (supervisor can edit before approving)
   const [editing, setEditing] = useState(false);
+  const [checkedItems, setCheckedItems] = useState(new Set());
+  const CHECKLIST_COUNT = 4;
+  const allChecked = checkedItems.size >= CHECKLIST_COUNT;
   const [editData, setEditData] = useState({
     failure_description: item.failure_description || '',
     priority_requested: item.priority_requested || 'P3',
@@ -154,19 +240,31 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
     failure_category: item.failure_category || '',
     failure_symptom: item.failure_symptom || '',
     failure_cause: item.failure_cause || '',
+    support_equipment: Array.isArray(item.support_equipment) ? [...item.support_equipment] : [],
+    resources: Array.isArray(item.resources) ? item.resources.map(r => {
+      if (typeof r === "object") return { ...r };
+      const m = String(r).match(/^(.+?)\s*x\s*(\d+)\s*\((\d+\.?\d*)h\)$/i);
+      if (m) return { type: m[1].trim(), quantity: parseInt(m[2]) || 1, hours: parseFloat(m[3]) || 4 };
+      return { type: r, quantity: 1, hours: 4 };
+    }) : [],
+    materials: Array.isArray(item.materials) ? item.materials.map(m => typeof m === "string" ? { description: m, quantity: 1 } : { ...m }) : [],
   });
 
   const statusLabels = {
-    DRAFT: 'Pending',
-    PENDING_VALIDATION: 'Pending',
-    VALIDATED: 'Approved',
-    ASSIGNED: 'Asignado',
-    REJECTED: 'Rejected',
-    CANCELLED: 'Cancelled',
-    IN_PROGRESS: 'En Ejecución',
-    COMPLETED: 'Completado',
-    CLOSED: 'Closed',
-    SCHEDULED: t('workRequests.scheduled'),
+    PENDIENTE: 'Pendiente',
+    PENDING_VALIDATION: 'Pendiente',
+    APROBADO: 'Aprobado',
+    VALIDATED: 'Aprobado',
+    RECHAZADO: 'Rechazado',
+    REJECTED: 'Rechazado',
+    CANCELADO: 'Cancelado',
+    CANCELLED: 'Cancelado',
+    CERRADO: 'Cerrado',
+    CLOSED: 'Cerrado',
+    DRAFT: 'Pendiente',
+    ASSIGNED: 'Aprobado',
+    IN_PROGRESS: 'Aprobado',
+    COMPLETED: 'Cerrado',
   };
 
   const impactLabels = {
@@ -177,6 +275,10 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
   };
 
   const handleSaveAndApprove = () => {
+    if (!allChecked) {
+      alert('Debe completar todos los items de la Lista de Verificacion antes de aprobar.');
+      return;
+    }
     if (editing) onSaveEdit(item.id, editData);
     onValidate(item.id);
     onClose();
@@ -209,8 +311,106 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
             <p className="text-xs font-mono text-muted-foreground">{item.equipment_tag}</p>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => {
+              const wr = item;
+              const pd = typeof wr.problem_description === 'object' ? wr.problem_description : {};
+              const ai = typeof wr.ai_classification === 'object' ? wr.ai_classification : {};
+              const resources = wr.resources || pd.resources || [];
+              const materials = wr.materials || pd.materials || [];
+              const w = window.open('', '_blank');
+              w.document.write(`<!DOCTYPE html><html><head><title>Aviso ${wr.id || ''}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #047857, #065f46); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; }
+  .header h1 { font-size: 22px; margin-bottom: 5px; }
+  .header .subtitle { opacity: 0.8; font-size: 13px; }
+  .header .id { font-family: monospace; font-size: 14px; margin-top: 10px; background: rgba(255,255,255,0.15); display: inline-block; padding: 4px 12px; border-radius: 6px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+  .card .label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card .value { font-size: 14px; font-weight: 700; margin-top: 4px; }
+  .section { margin-bottom: 24px; }
+  .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #047857; border-bottom: 2px solid #047857; padding-bottom: 4px; margin-bottom: 10px; letter-spacing: 0.5px; }
+  .text-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; font-size: 13px; line-height: 1.6; }
+  .catalog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .catalog-item { text-align: center; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+  .cat-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .cat-yellow { background: #fefce8; color: #a16207; border: 1px solid #fde68a; }
+  .cat-red { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #f3f4f6; padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; color: #6b7280; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; }
+  .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+  .priority { display: inline-block; padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 12px; }
+  .p1, .p2 { background: #fef2f2; color: #dc2626; }
+  .p3 { background: #fefce8; color: #ca8a04; }
+  .p4 { background: #eff6ff; color: #2563eb; }
+  @media print { body { padding: 20px; } .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+<div class="header">
+  <h1>Reporte de Aviso de Trabajo</h1>
+  <div class="subtitle">AMS — Asset Management Software</div>
+  <div class="id">${wr.id || wr.request_id || ''}</div>
+</div>
+
+<div class="grid">
+  <div class="card"><div class="label">Estado</div><div class="value">${wr.status || '-'}</div></div>
+  <div class="card"><div class="label">Prioridad</div><div class="value"><span class="priority ${(wr.priority_requested||'p3').toLowerCase()}">${wr.priority_requested || wr.priority || '-'}</span></div></div>
+  <div class="card"><div class="label">Clase Actividad</div><div class="value">${ai.activity_class || '-'}</div></div>
+  <div class="card"><div class="label">Equipo / TAG</div><div class="value">${wr.equipment_tag || '-'}</div></div>
+  <div class="card"><div class="label">Equipo Nombre</div><div class="value">${wr.equipment_name || '-'}</div></div>
+  <div class="card"><div class="label">Duracion Estimada</div><div class="value">${wr.estimated_duration || ai.estimated_duration_hours || '-'}h</div></div>
+  <div class="card"><div class="label">Creado por</div><div class="value">${wr.created_by || '-'}</div></div>
+  <div class="card"><div class="label">Fecha Creacion</div><div class="value">${wr.created_at ? new Date(wr.created_at).toLocaleDateString('es-CL') : '-'}</div></div>
+  <div class="card"><div class="label">Planta</div><div class="value">${ai.plant_id || 'OCP-JFC1'}</div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Descripcion de Falla</div>
+  <div class="text-box">${pd.original_text || wr.failure_description || '-'}</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Accion Sugerida</div>
+  <div class="text-box">${wr.suggested_action || pd.suggested_action || '-'}</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Catalogo de Falla</div>
+  <div class="catalog-grid">
+    <div class="catalog-item cat-blue"><div style="font-size:10px;color:#6b7280">Categoria</div>${wr.failure_category || pd.failure_mode_detected || '-'}</div>
+    <div class="catalog-item cat-yellow"><div style="font-size:10px;color:#6b7280">Sintoma</div>${wr.failure_symptom || pd.failure_symptom || '-'}</div>
+    <div class="catalog-item cat-red"><div style="font-size:10px;color:#6b7280">Causa</div>${wr.failure_cause || pd.failure_cause || '-'}</div>
+  </div>
+</div>
+
+${resources.length ? `<div class="section">
+  <div class="section-title">Recursos Necesarios</div>
+  <table><thead><tr><th>Especialidad</th><th>Cantidad</th><th>Horas</th></tr></thead><tbody>
+  ${resources.map(r => typeof r === 'string' ? `<tr><td colspan="3">${r}</td></tr>` : `<tr><td>${r.type||''}</td><td>${r.quantity||1}</td><td>${r.hours||0}h</td></tr>`).join('')}
+  </tbody></table>
+</div>` : ''}
+
+${materials.length ? `<div class="section">
+  <div class="section-title">Materiales SAP</div>
+  <table><thead><tr><th>SAP ID</th><th>Descripcion</th><th>Cant.</th><th>Unidad</th></tr></thead><tbody>
+  ${materials.map(m => typeof m === 'string' ? `<tr><td colspan="4">${m}</td></tr>` : `<tr><td style="font-family:monospace">${m.sapId||''}</td><td>${m.description||''}</td><td>${m.quantity||1}</td><td>${m.unit||'PZ'}</td></tr>`).join('')}
+  </tbody></table>
+</div>` : ''}
+
+<div class="footer">
+  Generado automaticamente — AMS — ${new Date().toLocaleString('es-CL')}
+</div>
+
+<script>setTimeout(() => window.print(), 500);<\/script>
+</body></html>`);
+              w.document.close();
+            }} className="px-3 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 flex items-center gap-1">
+              <Download size={12} /> Reporte PDF
+            </button>
             {canEdit && !editing && (
-              <button onClick={() => setEditing(true)} className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-300 font-semibold hover:bg-amber-100 transition-colors">
+            <button onClick={() => setEditing(true)} className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-300 font-semibold hover:bg-amber-100 transition-colors">
                 Editar
               </button>
             )}
@@ -261,7 +461,6 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
                   {item.priority_requested}
                 </span>
-
                 {item.priority_requested !== item.priority_suggested && (
                   <>
                     <span className="text-amber-500 text-xs">→</span>
@@ -307,22 +506,13 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t('workRequests.failureDesc')}</p>
           {editing ? (
             <textarea value={editData.failure_description} onChange={e => setEditData(d => ({ ...d, failure_description: e.target.value }))}
-              rows={3} className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-none" />
+              rows={6} className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-y" />
           ) : (
             <p className="text-sm text-foreground leading-relaxed bg-muted/50 rounded-lg p-3 border border-border">
               {item.failure_description}
             </p>
           )}
-          <div className="mt-2">
-            {editing ? (
-              <input type="text" value={editData.failure_mode} onChange={e => setEditData(d => ({ ...d, failure_mode: e.target.value }))}
-                className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none font-mono" placeholder="Failure mode" />
-            ) : (
-              <span className="text-xs bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded font-mono">
-                {item.failure_mode}
-              </span>
-            )}
-          </div>
+
         </div>
 
         {/* Failure Classification */}
@@ -332,7 +522,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
             {editing ? (
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Parte Objeto:</span>
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
                   <input type="text" value={editData.failure_category} onChange={e => setEditData(d => ({ ...d, failure_category: e.target.value }))}
                     className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="MECANICO, ELECTRICO..." />
                 </div>
@@ -351,7 +541,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
                 {item.failure_category && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Parte Objeto:</span>
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
                   </div>
                 )}
@@ -378,8 +568,8 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Acción Sugerida</p>
             {editing ? (
               <textarea value={editData.suggested_action || ''} onChange={e => setEditData(d => ({ ...d, suggested_action: e.target.value }))}
-                rows={2} placeholder="¿Qué se debe hacer?"
-                className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-none" />
+                rows={5} placeholder="¿Qué se debe hacer?"
+                className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-y" />
             ) : (
               <p className="text-sm text-foreground leading-relaxed bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
                 {item.suggested_action}
@@ -421,16 +611,31 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                   <p className="text-sm text-foreground mt-0.5">{item.circumstances}</p>
                 </div>
               )}
-              {item.support_equipment && item.support_equipment.length > 0 && (
+              {(item.support_equipment?.length > 0 || editing) && (
                 <div>
                   <span className="text-xs text-muted-foreground">Equipos de Apoyo:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {(Array.isArray(item.support_equipment) ? item.support_equipment : []).map((eq, i) => (
-                      <span key={i} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">
-                        {typeof eq === 'string' ? eq : eq.tag || eq.description || ''}
-                      </span>
-                    ))}
-                  </div>
+                  {editing ? (
+                    <div className="mt-1">
+                      <div className="flex flex-wrap gap-1 mb-1">
+                        {(Array.isArray(editData.support_equipment) ? editData.support_equipment : []).map((eq, i) => (
+                          <span key={i} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            {typeof eq === 'string' ? eq : eq.tag || eq.description || ''}
+                            <button onClick={() => setEditData(d => ({ ...d, support_equipment: (d.support_equipment || []).filter((_, j) => j !== i) }))} className="text-purple-400 hover:text-red-500">&times;</button>
+                          </span>
+                        ))}
+                      </div>
+                      <input type="text" placeholder="Agregar equipo + Enter" className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none w-full"
+                        onKeyDown={(e) => { if (e.key === 'Enter' && e.target.value.trim()) { setEditData(d => ({ ...d, support_equipment: [...(d.support_equipment || []), e.target.value.trim()] })); e.target.value = ''; } }} />
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {(Array.isArray(item.support_equipment) ? item.support_equipment : []).map((eq, i) => (
+                        <span key={i} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">
+                          {typeof eq === 'string' ? eq : eq.tag || eq.description || ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -438,56 +643,80 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
         )}
 
         {/* Resources & Materials summary */}
-        {(item.resources?.length > 0 || item.materials?.length > 0) && (
+        {(item.resources?.length > 0 || item.materials?.length > 0 || editing) && (
           <div className="px-6 pb-4">
-            {item.resources?.length > 0 && (
-              <div className="mb-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Recursos</p>
-                <div className="space-y-1">
-                  {item.resources.map((r, i) => {
-                    // Handle both string ("Mecánico x2") and object ({type, quantity, hours}) formats
-                    if (typeof r === 'string') {
-                      const match = r.match(/^(.+?)\s*x\s*(\d+)$/i);
-                      return (
-                        <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
-                          <Users className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                          <span className="font-medium">{match ? match[1].trim() : r}</span>
-                          {match && <span className="text-muted-foreground">×{match[2]} personas</span>}
-                        </div>
-                      );
-                    }
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Recursos</p>
+              {editing ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[1fr_80px_80px_30px] gap-2 text-xs text-muted-foreground font-semibold">
+                    <span>Especialidad</span><span>Personas</span><span>Horas</span><span></span>
+                  </div>
+                  {(editData.resources || []).map((r, i) => {
+                    const res = typeof r === 'object' ? r : { type: r, quantity: 1, hours: 4 };
                     return (
-                      <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
-                        <Users className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                        <span className="font-medium">{r.type || r.name || ''}</span>
-                        {r.quantity && <span className="text-muted-foreground">×{r.quantity} personas</span>}
-                        {r.hours && <span className="text-muted-foreground">{r.hours} hrs</span>}
-                      </div>
+                    <div key={i} className="grid grid-cols-[1fr_80px_80px_30px] gap-2 items-center">
+                      <select value={res.type || ''} onChange={e => {
+                        const arr = [...(editData.resources || [])];
+                        arr[i] = { ...res, type: e.target.value };
+                        setEditData(d => ({ ...d, resources: arr }));
+                      }} className="text-sm px-2 py-1.5 border border-border rounded bg-background">
+                        <option value="">Seleccionar...</option>
+                        <option value="Mecanico">Mecanico</option>
+                        <option value="Electrico">Electrico</option>
+                        <option value="Instrumentacion">Instrumentacion</option>
+                        <option value="Supervisor">Supervisor</option>
+                        <option value="Soldador">Soldador</option>
+                        <option value="Rigger">Rigger</option>
+                      </select>
+                      <input type="number" min="1" value={res.quantity || 1} onChange={e => {
+                        const arr = [...(editData.resources || [])];
+                        arr[i] = { ...res, quantity: parseInt(e.target.value) || 1 };
+                        setEditData(d => ({ ...d, resources: arr }));
+                      }} className="text-sm px-2 py-1.5 border border-border rounded bg-background text-center" />
+                      <input type="number" min="0.5" step="0.5" value={res.hours || ''} onChange={e => {
+                        const arr = [...(editData.resources || [])];
+                        arr[i] = { ...res, hours: parseFloat(e.target.value) || 0 };
+                        setEditData(d => ({ ...d, resources: arr }));
+                      }} className="text-sm px-2 py-1.5 border border-border rounded bg-background text-center" />
+                      <button onClick={() => setEditData(d => ({ ...d, resources: (d.resources || []).filter((_, j) => j !== i) }))} className="text-red-400 hover:text-red-600">&times;</button>
+                    </div>
                     );
                   })}
+                  <button onClick={() => setEditData(d => ({ ...d, resources: [...(d.resources || []), { type: 'Mecanico', quantity: 1, hours: 4 }] }))}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Agregar recurso</button>
                 </div>
-              </div>
-            )}
-            {item.materials?.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Materiales</p>
+              ) : (
                 <div className="space-y-1">
-                  {item.materials.map((m, i) => (
+                  {(item.resources || []).map((r, i) => (
                     <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
-                      <Package className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                      {typeof m === 'string'
-                        ? <span className="font-medium">{m}</span>
-                        : <>
-                            {m.sapId && <span className="font-mono text-xs text-muted-foreground">{m.sapId}</span>}
-                            <span className="font-medium">{m.description || m.name || ''}</span>
-                            {m.quantity && <span className="text-muted-foreground">×{m.quantity} uds</span>}
-                          </>
-                      }
+                      <Users className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                      <span className="font-medium">{typeof r === 'string' ? r : (r.type || r.name || '')}</span>
+                      {typeof r === 'object' && r.quantity && <span className="text-muted-foreground">x{r.quantity} ({r.hours}h)</span>}
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Materiales</p>
+              {editing ? (
+                <MaterialEditor materials={editData.materials || []} onChange={(mats) => setEditData(d => ({ ...d, materials: mats }))} />
+              ) : (
+                <div className="space-y-1">
+                  {(item.materials || []).map((m, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm bg-muted/50 rounded px-3 py-1.5 border border-border">
+                      <Package className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                      {typeof m === 'string' ? <span className="font-medium">{m}</span> : <>
+                        {m.sapId && <span className="font-mono text-xs text-muted-foreground">{m.sapId}</span>}
+                        <span className="font-medium">{m.description || m.name || ''}</span>
+                        {m.quantity && <span className="text-muted-foreground">x{m.quantity} {m.unit || 'uds'}</span>}
+                      </>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -514,7 +743,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                 t('workRequests.personnelAvailable'),
               ].map((check, i) => (
                 <label key={i} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                  <input type="checkbox" className="accent-[#1B5E20] w-4 h-4" />
+                  <input type="checkbox" className="accent-[#1B5E20] w-4 h-4" checked={checkedItems.has(i)} onChange={() => { const s = new Set(checkedItems); if (s.has(i)) s.delete(i); else s.add(i); setCheckedItems(s); }} />
                   {check}
                 </label>
               ))}
@@ -540,7 +769,9 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
               <>
                 <button
                   onClick={handleSaveAndApprove}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1B5E20] text-white text-sm font-semibold hover:bg-[#2E7D32] transition-colors"
+                  disabled={!allChecked}
+                  title={!allChecked ? 'Complete la lista de verificacion' : ''}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${allChecked ? 'bg-[#1B5E20] text-white hover:bg-[#2E7D32]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                 >
                   <CheckCircle size={16} />
                   {editing ? 'Guardar y Aprobar' : t('workRequests.validateRequest')}
@@ -561,33 +792,15 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
                 </button>
               </>
             )}
-            {/* Planner: Rechazar + Cancelar + Crear OT from approved WR */}
-            {isValidated && isPlanner && (
-              <>
-                <button
-                  onClick={() => { onReject(item.id); onClose(); }}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                >
-                  <XCircle size={16} />
-                  Rechazar
-                </button>
-                <button
-                  onClick={() => { onCancel(item.id); onClose(); }}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <XCircle size={16} />
-                  Cancelar
-                </button>
-                {onPlannerCreateOT && (
-                  <button
-                    onClick={() => { onPlannerCreateOT(item.id); onClose(); }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
-                  >
-                    <FileText size={16} />
-                    Crear OT
-                  </button>
-                )}
-              </>
+            {/* Planner: Crear OT from approved WR */}
+            {isValidated && (
+              <button
+                onClick={() => { onPlannerCreateOT(item.id); onClose(); }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+              >
+                <FileText size={16} />
+                Crear OT
+              </button>
             )}
             {canStart && (
               <button
@@ -686,7 +899,7 @@ function normalizeWR(wr) {
 
 /* ─── Find duplicates (same equipment, open status) ─── */
 function findDuplicates(currentReq, allRequests) {
-  const openStatuses = ['DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'IN_PROGRESS'];
+  const openStatuses = ['DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'IN_PROGRESS', 'PENDIENTE', 'APROBADO'];
   return allRequests.filter(
     (r) =>
       r.id !== currentReq.id &&
@@ -700,35 +913,51 @@ function findDuplicates(currentReq, allRequests) {
    ═══════════════════════════════════════════════════════════ */
 const PAGE_SIZE = 25;
 
-export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
+export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenWrId, onClearAutoOpen, viewMode, isActive } = {}) {
   const [scope, setScope] = useState('all');
   const navigate = useNavigate();
   const { user } = useAuth();
   const defaultQueue = user?.role === 'manager' ? 'supervisor' : user?.role === 'planner' ? 'planner' : 'all';
   const [priorityQueue, setPriorityQueue] = useState(defaultQueue); // 'all' | 'supervisor' (P1/P2) | 'planner' (P3/P4)
-
-  // Sync external viewMode toggle to internal priorityQueue
-  useEffect(() => {
-    if (viewMode === 'planner') setPriorityQueue('planner');
-    else if (viewMode === 'supervisor') setPriorityQueue('supervisor');
-  }, [viewMode]);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
+
+  // Default filter: always show ALL
+  const [locationFilter, setLocationFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [duplicateTarget, setDuplicateTarget] = useState(null);
+  // Auto-open WR detail when navigating from duplicate panel
+  useEffect(() => {
+    if (autoOpenWrId && requests.length > 0) {
+      const found = requests.find(r => r.id === autoOpenWrId);
+      if (found) { fetchAndOpenDetail(found); onClearAutoOpen?.(); }
+    }
+  }, [autoOpenWrId, requests]);
   const [showDuplicates, setShowDuplicates] = useState([]);
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
+  const [wrsWithOT, setWrsWithOT] = useState(new Set());
 
   const { t } = useLanguage();
   const toast = useToast();
   const ctx = useOutletContext() || {};
   const plantId = ctx.plant || ctx.selectedPlant || '';
   const selectedArea = ctx.selectedArea || 'All Areas';
+
+  const refreshList = () => {
+    api.listWorkRequests(plantId ? { plant_id: plantId } : {})
+      .then((data) => {
+        const arr = Array.isArray(data) ? data : [];
+        setRequests(arr.map(normalizeWR));
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -740,6 +969,11 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
       .catch(() => setRequests([]))
       .finally(() => setLoading(false));
   }, [plantId]);
+
+  // Refresh data when tab becomes active
+  useEffect(() => {
+    if (isActive) refreshList();
+  }, [isActive]);
 
   /* ─── Scope filtering ─── */
   const scopeFiltered = useMemo(() => {
@@ -780,17 +1014,27 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
   /* ─── Status + search filtering ─── */
   const filtered = useMemo(() => {
     return areaFiltered.filter((r) => {
-      const matchesFilter = statusFilter === 'ALL' || r.status === statusFilter;
+      const statusMap = { PENDING_VALIDATION: 'PENDIENTE', VALIDATED: 'APROBADO', REJECTED: 'RECHAZADO', CANCELLED: 'CANCELADO', CLOSED: 'CERRADO', DRAFT: 'PENDIENTE', ASSIGNED: 'APROBADO', IN_PROGRESS: 'APROBADO', COMPLETED: 'CERRADO' };
+      const normalizedStatus = statusMap[r.status] || r.status;
+      const matchesFilter = statusFilter === 'ALL' || normalizedStatus === statusFilter || r.status === statusFilter;
       const q = search.toLowerCase();
       const matchesSearch =
         !search ||
-        r.id.toLowerCase().includes(q) ||
-        r.equipment_tag.toLowerCase().includes(q) ||
-        r.equipment_name.toLowerCase().includes(q) ||
-        r.failure_description.toLowerCase().includes(q);
-      return matchesFilter && matchesSearch;
+        (r.id || r.request_id || '').toLowerCase().includes(q) ||
+        (r.equipment_tag || '').toLowerCase().includes(q) ||
+        (r.equipment_name || '').toLowerCase().includes(q) ||
+        (r.failure_description || '').toLowerCase().includes(q);
+      // Location filter
+      const matchesLocation = !locationFilter ||
+        (r.technical_location || '').toLowerCase().includes(locationFilter.toLowerCase()) ||
+        (r.equipment_tag || '').toLowerCase().includes(locationFilter.toLowerCase());
+      // Date filter
+      const rDate = r.created_at ? r.created_at.slice(0, 10) : '';
+      const matchesDateFrom = !dateFrom || rDate >= dateFrom;
+      const matchesDateTo = !dateTo || rDate <= dateTo;
+      return matchesFilter && matchesSearch && matchesLocation && matchesDateFrom && matchesDateTo;
     });
-  }, [areaFiltered, statusFilter, search]);
+  }, [areaFiltered, statusFilter, search, locationFilter, dateFrom, dateTo]);
 
   /* ─── Sort + Paginate ─── */
   const sorted = useMemo(() => {
@@ -809,28 +1053,33 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
   const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Reset page when filters change
-  useEffect(() => { setPage(1); }, [statusFilter, search, scope, priorityQueue]);
+  useEffect(() => { setPage(1); }, [statusFilter, search, scope, priorityQueue, locationFilter, dateFrom, dateTo]);
 
   const toggleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('asc'); }
   };
 
-  const pendingCount = queueFiltered.filter((r) => r.status === 'PENDING_VALIDATION').length;
+  const pendingCount = queueFiltered.filter((r) => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length;
 
   /* ─── Status labels (i18n) ─── */
   const statusLabels = useMemo(() => ({
-    ALL: t('common.all'),
-    DRAFT: 'Pending',
-    PENDING_VALIDATION: 'Pending',
-    VALIDATED: 'Approved',
-    ASSIGNED: 'Asignado',
-    REJECTED: 'Rejected',
-    CANCELLED: 'Cancelled',
-    IN_PROGRESS: 'En Ejecución',
-    COMPLETED: 'Completado',
-    CLOSED: 'Closed',
-    SCHEDULED: t('workRequests.scheduled'),
+    ALL: 'Todos',
+    PENDIENTE: 'Pendiente',
+    PENDING_VALIDATION: 'Pendiente',
+    APROBADO: 'Aprobado',
+    VALIDATED: 'Aprobado',
+    RECHAZADO: 'Rechazado',
+    REJECTED: 'Rechazado',
+    CANCELADO: 'Cancelado',
+    CANCELLED: 'Cancelado',
+    CERRADO: 'Cerrado',
+    CLOSED: 'Cerrado',
+    DRAFT: 'Pendiente',
+    ASSIGNED: 'Aprobado',
+    IN_PROGRESS: 'Aprobado',
+    COMPLETED: 'Cerrado',
+    SCHEDULED: 'Aprobado',
   }), [t]);
 
   const impactLabels = useMemo(() => ({
@@ -847,35 +1096,27 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
   }), [t]);
 
   /* ─── Actions ─── */
-  function handleValidate(id) {
+  function handleValidate(id) { // Aprobar aviso
     const req = requests.find(r => r.id === id);
     const priority = req?.priority_requested || req?.priority_suggested || 'P3';
     const isFastTrack = ['P1', 'P2'].includes(priority);
 
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'VALIDATED' } : r)));
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'APROBADO' } : r)));
     api.validateWorkRequest(id, { action: 'APPROVE' })
       .then(async () => {
         if (isFastTrack) {
           try {
             const wo = await api.createWOFromWR({ work_request_id: id });
-            toast.success(
-              <span>
-                FAST TRACK: OT {wo.wo_number || ''} creada
-                {onNavigateTab && (
-                  <button onClick={() => onNavigateTab('execution')} className="ml-2 underline font-semibold">
-                    → Ir a Ejecución
-                  </button>
-                )}
-              </span>,
-              8000
-            );
+            setWrsWithOT(prev => new Set([...prev, id]));
+            toast.success('FAST TRACK: OT ' + (wo.wo_number || '') + ' creada — abriendo en Planning...');
+            if (onNavigateTab) onNavigateTab('planning', null, wo.wo_id || wo.wo_number);
           } catch {
-            toast.success(t('workRequests.validatedNoOT') || 'Aviso validado. Error al crear OT automática — créala manualmente.');
+            toast.success(t('workRequests.validatedNoOT') || 'Aviso aprobado. Error al crear OT automática — créala manualmente.');
           }
         } else {
           toast.success(
             <span>
-              {t('workRequests.validatedBacklog') || 'Aviso validado y agregado al Backlog'}
+              {t('workRequests.validatedBacklog') || 'Aviso aprobado y agregado al Backlog'}
               {onNavigateTab && (
                 <button onClick={() => onNavigateTab('planning')} className="ml-2 underline font-semibold">
                   → Ir a Planificación
@@ -886,18 +1127,25 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
           );
         }
       })
-      .catch(() => toast.error(t('workRequests.errorValidate') || 'Error al validar'));
+      .catch(() => toast.error(t('workRequests.errorValidate') || 'Error al validar'))
+      .finally(() => { onRefreshCounts?.(); refreshList(); });
   }
 
   function handleReject(id) {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'REJECTED' } : r)));
-    api.validateWorkRequest(id, { action: 'REJECT' }).catch(() => {});
+    const reason = prompt('Motivo del rechazo:');
+    if (!reason) return;
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'RECHAZADO', rejection_reason: reason } : r)));
+    api.validateWorkRequest(id, { action: 'REJECT', rejection_reason: reason })
+      .then(() => toast.success('Aviso rechazado. El creador será notificado.'))
+      .catch(() => toast.error('Error al rechazar aviso'))
+      .finally(() => { onRefreshCounts?.(); refreshList(); });
   }
 
   function handleCancel(id) {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CANCELLED' } : r)));
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CANCELADO' } : r)));
     api.cancelWorkRequest(id)
       .then(() => toast.success(t('workRequests.cancelled') || 'Aviso cancelado'))
+      .finally(() => onRefreshCounts?.())
       .catch(() => toast.error(t('workRequests.errorCancel') || 'Error al cancelar'));
   }
 
@@ -909,7 +1157,7 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
   }
 
   function handlePlannerCreateOT(id) {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'VALIDATED' } : r)));
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'APROBADO' } : r)));
     api.validateWorkRequest(id, { action: 'APPROVE' })
       .then(async () => {
         try {
@@ -978,7 +1226,7 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
 
   function handleExportWRs() {
     if (!sorted.length) return;
-    const headers = ['ID', 'Equipo TAG', 'Equipo', 'Descripción Falla', 'Prioridad', 'Status', 'Impacto', 'Duración Est. (h)', 'Parte Objeto', 'Síntoma', 'Causa', 'Acción Sugerida', 'Técnico', 'Creado'];
+    const headers = ['ID', 'Equipo TAG', 'Equipo', 'Descripción Falla', 'Prioridad', 'Status', 'Impacto', 'Duración Est. (h)', 'Categoría Falla', 'Síntoma', 'Causa', 'Acción Sugerida', 'Técnico', 'Creado'];
     const rows = sorted.map(r => [
       r.id, r.equipment_tag, r.equipment_name, r.failure_description,
       r.priority_requested, r.status, r.production_impact,
@@ -1051,10 +1299,10 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Pending Review', count: queueFiltered.filter(r => r.status === 'PENDING_VALIDATION').length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
-          { label: 'Approved', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
-          { label: 'Rejected', count: queueFiltered.filter(r => r.status === 'REJECTED').length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
-          { label: 'Cancelled', count: queueFiltered.filter(r => r.status === 'CANCELLED').length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
+          { label: 'Pendiente', count: queueFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
+          { label: 'Aprobado', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
+          { label: 'Rechazado', count: queueFiltered.filter(r => r.status === 'REJECTED').length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
+          { label: 'Cancelado', count: queueFiltered.filter(r => r.status === 'CANCELLED').length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
         ].map(kpi => (
           <div key={kpi.label} className={`bg-white dark:bg-card rounded-lg border border-border ${kpi.borderColor ? 'border-l-4 ' + kpi.borderColor : ''} p-5`}>
             <p className={`text-sm ${kpi.textColor} mb-1`}>{kpi.label}</p>
@@ -1106,9 +1354,9 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
             const cnt = q.key === 'all' ? scopeFiltered.length
               : q.key === 'supervisor' ? scopeFiltered.filter((r) => ['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length
               : scopeFiltered.filter((r) => !['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length;
-            const pendCnt = q.key === 'all' ? scopeFiltered.filter((r) => r.status === 'PENDING_VALIDATION').length
-              : q.key === 'supervisor' ? scopeFiltered.filter((r) => r.status === 'PENDING_VALIDATION' && ['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length
-              : scopeFiltered.filter((r) => r.status === 'PENDING_VALIDATION' && !['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length;
+            const pendCnt = q.key === 'all' ? scopeFiltered.filter((r) => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length
+              : q.key === 'supervisor' ? scopeFiltered.filter((r) => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status) && ['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length
+              : scopeFiltered.filter((r) => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status) && !['P1', 'P2'].includes(r.priority_requested || r.priority_suggested)).length;
             return (
               <button
                 key={q.key}
@@ -1157,6 +1405,33 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
           />
         </div>
 
+        {/* Location + Date filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="text"
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            placeholder="Filtrar por ubicacion tecnica o TAG..."
+            className="flex-1 min-w-[200px] text-sm px-3 py-2 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] placeholder:text-muted-foreground"
+          />
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground">Desde:</span>
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+              className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground">Hasta:</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+              className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
+          </div>
+          {(locationFilter || dateFrom || dateTo) && (
+            <button onClick={() => { setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
+              className="text-xs px-2 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100">
+              Limpiar
+            </button>
+          )}
+        </div>
+
         {/* Status Buttons */}
         <div className="flex flex-wrap gap-2">
           {STATUS_KEYS.map((key) => {
@@ -1198,6 +1473,9 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50 border-b border-border">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('created_at')}>
+                    Fecha {sortField === 'created_at' ? (sortDir === 'asc' ? '\u2191' : '\u2193') : ''}
+                  </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('equipment_name')}>
                     {t('workRequests.requestId')} / {t('workRequests.equipmentName')} {sortField === 'equipment_name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
@@ -1228,7 +1506,7 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
                 )}
                 {paged.map((req) => {
                   const priorityChanged = req.priority_requested !== req.priority_suggested;
-                  const isPending = req.status === 'PENDING_VALIDATION';
+                  const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(req.status);
                   const truncatedDesc =
                     req.failure_description.length > 60
                       ? req.failure_description.slice(0, 60) + '...'
@@ -1239,6 +1517,11 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
 
                   return (
                     <tr key={req.id} className={`hover:bg-muted/30 transition-colors ${isFastTrackWR && isPending ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''}`}>
+                      {/* Fecha */}
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <span className="text-xs text-muted-foreground">{req.created_at ? new Date(req.created_at).toLocaleDateString('es-CL') : '-'}</span>
+                      </td>
+
                       {/* ID / Equipment */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -1263,9 +1546,7 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
                       {/* Failure */}
                       <td className="px-4 py-3 max-w-xs">
                         <p className="text-foreground/80 text-xs mb-1">{truncatedDesc}</p>
-                        <span className="text-xs bg-muted text-muted-foreground border border-border px-1.5 py-0.5 rounded font-mono">
-                          {req.failure_mode}
-                        </span>
+
                       </td>
 
                       {/* Priority */}
@@ -1274,7 +1555,6 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
                           <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(req.priority_requested)}`}>
                             {req.priority_requested}
                           </span>
-
                           {priorityChanged && (
                             <>
                               <span className="text-amber-500 text-xs font-bold">→</span>
@@ -1313,7 +1593,23 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
                               Abrir detalle para validar
                             </span>
                           )}
-                          {['VALIDATED', 'ASSIGNED', 'SCHEDULED'].includes(req.status) && (
+                          {['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(req.status) && !wrsWithOT.has(req.id) && (
+                            <>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const wo = await api.createWOFromWR({ work_request_id: req.id });
+                                  setWrsWithOT(prev => new Set([...prev, req.id]));
+                                  onRefreshCounts?.();
+                                  toast.success('OT ' + (wo.wo_number || '') + ' creada — abriendo en Planning...');
+                                  if (onNavigateTab) onNavigateTab('planning', null, wo.wo_id || wo.wo_number);
+                                } catch (e) { toast.error('Error creando OT: ' + (e.message || '')); }
+                              }}
+                              className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
+                              title="Crear OT"
+                            >
+                              Crear OT
+                            </button>
                             <button
                               onClick={() => handleStart(req.id)}
                               className="text-[10px] px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors"
@@ -1321,6 +1617,12 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
                             >
                               Iniciar
                             </button>
+                            </>
+                          )}
+                          {['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(req.status) && wrsWithOT.has(req.id) && (
+                            <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">
+                              OT Creada ✓
+                            </span>
                           )}
                           {req.status === 'IN_PROGRESS' && (
                             <button

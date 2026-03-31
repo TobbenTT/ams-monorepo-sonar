@@ -276,7 +276,7 @@ export default function FeedbackWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
+          className="fixed bottom-6 left-[280px] z-50 w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
           title="Enviar Feedback"
         >
           <MessageSquarePlus className="w-6 h-6 group-hover:scale-110 transition-transform" />

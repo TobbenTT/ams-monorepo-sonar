@@ -23,8 +23,16 @@ export default function WorkManagement() {
   const outletContext = useOutletContext();
   const [activeTab, setActiveTab] = useState('identification');
   const [viewMode, setViewMode] = useState('planner'); // planner | supervisor
+
+  // When viewMode changes, switch to appropriate default tab
+  useEffect(() => {
+    if (viewMode === 'planner') setActiveTab('failure-capture');
+    else if (viewMode === 'supervisor') setActiveTab('identification');
+  }, [viewMode]);
   const [phaseCounts, setPhaseCounts] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [autoOpenWrId, setAutoOpenWrId] = useState(null);
+  const [autoOpenWoId, setAutoOpenWoId] = useState(null);
 
   const refreshCounts = useCallback(() => {
     Promise.all([
@@ -35,18 +43,22 @@ export default function WorkManagement() {
       const woList = Array.isArray(wos) ? wos : [];
       setPhaseCounts({
         'failure-capture': null,
-        identification: wrList.length,
+        identification: wrList.filter(w => ['PENDING_VALIDATION', 'VALIDATED'].includes(w.status)).length,
         planning: wrList.filter(w => w.status === 'VALIDATED').length,
         scheduling: woList.filter(w => ['DRAFT', 'PLANNED', 'RELEASED'].includes(w.status)).length,
       });
     });
   }, []);
 
-  useEffect(() => { refreshCounts(); }, [refreshCounts]);
+  useEffect(() => { refreshCounts(); }, [refreshCounts, refreshKey]);
 
-  const navigateTab = useCallback((tabId) => {
+  const navigateTab = useCallback((tabId, selectedWrId, selectedWoId) => {
     setActiveTab(tabId);
     setRefreshKey(k => k + 1);
+    if (selectedWrId) setAutoOpenWrId(selectedWrId);
+    if (selectedWoId) setAutoOpenWoId(selectedWoId);
+    // Refresh badge counts when navigating
+    setTimeout(() => refreshCounts(), 500);
     refreshCounts();
   }, [refreshCounts]);
 
@@ -119,17 +131,27 @@ export default function WorkManagement() {
         </div>
       </div>
 
-      {/* Active Tab Content */}
+      {/* Tab Content — all tabs rendered, only active visible (preserves state) */}
       <div className="min-h-[600px]">
         <Suspense fallback={<LoadingSpinner />}>
-          {ActiveComponent && (
-            <ActiveComponent
-              key={activeTab + "-" + refreshKey}
-              {...outletContext}
-              onNavigateTab={navigateTab}
-              viewMode={viewMode}
-            />
-          )}
+          {TABS.map(tab => {
+            const TabComp = tab.component;
+            return (
+              <div key={tab.id} style={{ display: activeTab === tab.id ? 'block' : 'none' }}>
+                <TabComp
+                  onRefreshCounts={refreshCounts}
+                  autoOpenWrId={activeTab === tab.id ? autoOpenWrId : null}
+                  autoOpenWoId={activeTab === tab.id ? autoOpenWoId : null}
+                  onClearAutoOpenWo={() => setAutoOpenWoId(null)}
+                  onClearAutoOpen={() => setAutoOpenWrId(null)}
+                  isActive={activeTab === tab.id}
+                  {...outletContext}
+                  onNavigateTab={navigateTab}
+                  viewMode={viewMode}
+                />
+              </div>
+            );
+          })}
         </Suspense>
       </div>
     </div>

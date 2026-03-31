@@ -10,7 +10,7 @@ const LANG_KEY = 'ocp_lang';
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-    const [lang, setLangState] = useState(() => 'en');
+    const [lang, setLangState] = useState(() => localStorage.getItem(LANG_KEY) || 'en');
 
     const setLang = useCallback((code) => {
         setLangState(code);

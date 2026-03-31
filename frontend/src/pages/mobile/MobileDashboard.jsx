@@ -12,10 +12,10 @@ const STATUS_ORDER = ['DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'APPROVED', 'A
 const PIPELINE_STEPS = [
     { key: 'draft', statuses: ['DRAFT'], label: 'Borrador', color: '#94A3B8', bg: '#F1F5F9' },
     { key: 'pending', statuses: ['PENDING_VALIDATION'], label: 'Revisión', color: '#F59E0B', bg: '#FFFBEB' },
-    { key: 'validated', statuses: ['VALIDATED', 'APPROVED'], label: 'Approved', color: '#10B981', bg: '#ECFDF5' },
+    { key: 'validated', statuses: ['VALIDATED', 'APPROVED'], label: 'Aprobado', color: '#10B981', bg: '#ECFDF5' },
     { key: 'assigned', statuses: ['ASSIGNED'], label: 'Asignado', color: '#8B5CF6', bg: '#F5F3FF' },
     { key: 'execution', statuses: ['IN_PROGRESS'], label: 'Ejecución', color: '#3B82F6', bg: '#EFF6FF' },
-    { key: 'done', statuses: ['COMPLETED'], label: 'Closed', color: '#047857', bg: '#ECFDF5' },
+    { key: 'done', statuses: ['COMPLETED'], label: 'Cerrado', color: '#047857', bg: '#ECFDF5' },
 ];
 
 export default function MobileDashboard() {
@@ -514,11 +514,11 @@ const STATUS_LABELS = {
     DRAFT: 'Borrador',
     PENDING_VALIDATION: 'Revisión',
     VALIDATED: 'Validado',
-    APPROVED: 'Approved',
+    APPROVED: 'Aprobado',
     ASSIGNED: 'Asignado',
     IN_PROGRESS: 'En Progreso',
     COMPLETED: 'Completado',
-    REJECTED: 'Rejected',
+    REJECTED: 'Rechazado',
 };
 
 function StatusDot({ status }) {

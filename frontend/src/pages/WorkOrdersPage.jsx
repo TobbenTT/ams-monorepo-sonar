@@ -7,8 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
-import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image, Trash2, Save, DollarSign, List, MessageSquare, Info, Users, MapPin, Printer } from 'lucide-react';
-import { handlePrintWorkOrder } from "../components/PrintWorkOrder";
+import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image, Trash2, Save, DollarSign, List, MessageSquare, Info, Users, MapPin } from 'lucide-react';
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -29,11 +28,13 @@ export default function WorkOrdersPage() {
   const [workRequests, setWorkRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createdWRId, setCreatedWRId] = useState(null); // success popup
   const [createForm, setCreateForm] = useState({
     whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '',
     suggestedAction: '', estimatedDuration: '',
-    priority: 'P3', activityClass: 'CR', plantCondition: 'operating',
+    priority: 'P3', activityClass: 'M001', plantCondition: 'operating',
     failureCategory: 'MECANICO', failureSymptom: '', failureObjectPart: '', failureCause: '',
     resources: [], materials: [], specialEquipment: '',
     circumstances: '', reportedBy: '', supportEquipment: '',
@@ -56,6 +57,7 @@ export default function WorkOrdersPage() {
   const [activeMatSapIdx, setActiveMatSapIdx] = useState(-1);
   const [showSpecEquip, setShowSpecEquip] = useState(false);
   // Voice + Photo capture
+  const [isRecording, setIsRecording] = useState(false);
   const [photos, setPhotos] = useState([]);
   const recognitionRef = useRef(null);
   const baseTextRef = useRef('');
@@ -63,14 +65,15 @@ export default function WorkOrdersPage() {
   // Managed Work Orders (Jorge Phase 2)
   const [managedWOs, setManagedWOs] = useState([]);
   const [woTab, setWoTab] = useState('ots'); // 'ots' | 'wrs'
+  const [showCreateOTModal, setShowCreateOTModal] = useState(false);
   const [approvedWRs, setApprovedWRs] = useState([]);
   const [creatingOT, setCreatingOT] = useState(false);
-  const [otCreateForm, setOtCreateForm] = useState({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4, failureCategory: 'MECANICO' });
+  const [otCreateForm, setOtCreateForm] = useState({ description: '', wo_type: 'PM01', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4, failureCategory: 'MECANICO' });
   const [selectedOT, setSelectedOT] = useState(null);
   const [otDetailTab, setOtDetailTab] = useState('resumen');
   const [otOps, setOtOps] = useState([]); // editable operations
   const [otMats, setOtMats] = useState([]); // editable materials
-  const [otCosts, setOtCosts] = useState({ labor_cost: 0, material_cost: 0, external_cost: 0 });
+  const [otCosts, setOtCosts] = useState({ labor_cost: 0, material_cost: 0, external_cost: 0 , planned_labor: 0, planned_material: 0, planned_external: 0 });
   const [otSaving, setOtSaving] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [wrSortBy, setWrSortBy] = useState('date_desc'); // 'date_desc' | 'date_asc'
@@ -89,8 +92,8 @@ export default function WorkOrdersPage() {
   ];
 
   const ACTIVITY_CLASSES = {
-    PM01: [{ value: 'CR', label: t('workOrders.actCorrective') }, { value: 'MC', label: t('workOrders.actConditionMonitoring') }, { value: 'MJ', label: t('workOrders.actImprovement') }, { value: 'IO', label: t('workOrders.actOperationalIncident') }],
-    PM03: [{ value: 'CR', label: t('workOrders.actCorrective') }, { value: 'IP', label: t('workOrders.actUnexpected') }, { value: 'IO', label: t('workOrders.actOperationalIncident') }],
+    PM01: [{ value: 'M001', label: 'M001 — Solicitud de Mantenimiento' }, { value: 'M003', label: 'M003 — Reparación / Prep. Componentes' }],
+    PM03: [{ value: 'M002', label: 'M002 — Avería' }, { value: 'M003', label: 'M003 — Reparación / Prep. Componentes' }],
   };
 
   const SPECIAL_EQUIPMENT = [
@@ -352,11 +355,61 @@ export default function WorkOrdersPage() {
     downloadExport({ format: 'EXCEL', sheets: [{ name: 'Órdenes de Trabajo', headers, rows }] }, `ordenes-trabajo-${plant || 'all'}-${new Date().toISOString().slice(0, 10)}`);
   }, [managedWOs, plant]);
 
+  // ── AI Assist ──
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiDuplicates, setAiDuplicates] = useState([]);
+
+  const handleAssistAI = async () => {
+    if (!createForm.whatHappens.trim()) { toast.error('Escribe una descripción primero'); return; }
+    setAiLoading(true);
+    try {
+      // 1. Check duplicates
+      if (createForm.whereTag) {
+        const dupRes = await api.checkDuplicates({ equipment_tag: createForm.whereTag, problem_description: createForm.whatHappens });
+        if (dupRes.duplicate_count > 0) {
+          setAiDuplicates(dupRes.duplicates);
+          toast.error(`⚠ ${dupRes.duplicate_count} aviso(s) abierto(s) similar(es) encontrado(s) para este equipo`);
+        }
+      }
+      // 2. Get AI suggestions
+      const res = await api.aiAssistWR({
+        description: createForm.whatHappens,
+        equipment_tag: createForm.whereTag || '',
+        plant_condition: createForm.plantCondition || '',
+        existing_priority: createForm.priority !== 'P3' ? createForm.priority : '',
+        existing_category: createForm.failureCategory !== 'MECANICO' ? createForm.failureCategory : '',
+        existing_action: createForm.suggestedAction || '',
+      });
+      const s = res.suggestions || {};
+      // 3. Fill only empty/default fields
+      const updates = {};
+      if (s.failureCategory && !createForm.failureCategory) updates.failureCategory = s.failureCategory;
+      if (s.failureCategory && createForm.failureCategory === 'MECANICO') updates.failureCategory = s.failureCategory;
+      if (s.priority) updates.priority = s.priority;
+      if (s.activityClass) updates.activityClass = s.activityClass;
+      if (s.suggestedAction && !createForm.suggestedAction) updates.suggestedAction = s.suggestedAction;
+      if (s.estimatedDuration && !createForm.estimatedDuration) updates.estimatedDuration = s.estimatedDuration;
+      if (s.failureSymptom && !createForm.failureSymptom) updates.failureSymptom = s.failureSymptom;
+      if (s.failureCause && !createForm.failureCause) updates.failureCause = s.failureCause;
+      if (s.productionImpact) updates.plantCondition = createForm.plantCondition; // keep user's choice
+      if (s.resources && (!createForm.resources || createForm.resources.length === 0)) updates.resources = s.resources;
+      if (s.materials && s.materials.length > 0 && (!createForm.materials || createForm.materials.length === 0)) updates.materials = s.materials;
+
+      setCreateForm(prev => ({ ...prev, ...updates }));
+      const filled = Object.keys(updates).length;
+      toast.success(`IA completó ${filled} campo(s) automáticamente`);
+    } catch (err) {
+      toast.error('Error al obtener sugerencias de IA');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   // ── Create Work Order ──
   const selectedPriority = PRIORITIES.find(p => p.value === createForm.priority);
   const claseOT = selectedPriority?.claseOT || 'PM01';
   const actClasses = ACTIVITY_CLASSES[claseOT] || [];
-  const canCreate = createForm.whatHappens.trim() && createForm.whereTag.trim();
+  const canCreate = createForm.whatHappens.trim() && createForm.technicalLocationCode;
 
   const handleCreate = async () => {
     if (!canCreate || creating) return;
@@ -379,14 +432,14 @@ export default function WorkOrdersPage() {
         resources: (createForm.resources || []).map(r => typeof r === 'string' ? r : `${r.type || ''} x${r.quantity || 1}`).filter(Boolean),
         documents: photos.map((data, i) => ({ name: `foto_${i + 1}.jpg`, data, type: 'photo' })),
         circumstances: createForm.circumstances || '',
-        reported_by: createForm.reportedBy || '',
+        reported_by: user?.full_name || user?.username || '',
         support_equipment: createForm.supportEquipment ? createForm.supportEquipment.split(',').map(s => s.trim()).filter(Boolean) : [],
         technical_location: createForm.technicalLocationCode || '',
         notification_type: 'A1',
       });
       const wrId = res?.request_id || res?.work_request_id || '';
       setCreatedWRId(wrId);
-      setCreateForm({ whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '', suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'CR', plantCondition: 'operating', failureCategory: 'MECANICO', failureSymptom: '', failureObjectPart: '', failureCause: '', resources: [], materials: [], specialEquipment: '', circumstances: '', reportedBy: '', supportEquipment: '' });
+      setCreateForm({ whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '', suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'M001', plantCondition: 'operating', failureCategory: 'MECANICO', failureSymptom: '', failureObjectPart: '', failureCause: '', resources: [], materials: [], specialEquipment: '', circumstances: '', reportedBy: '', supportEquipment: '' });
       setSelectedEquip(null);
       setSelectedLoc(null);
       setPhotos([]);
@@ -516,22 +569,30 @@ export default function WorkOrdersPage() {
 
   // ── OT Status helpers ──
   const OT_STATUS_COLORS = {
-    DRAFT: 'bg-gray-100 text-gray-700',
-    PLANNED: 'bg-blue-100 text-blue-700',
-    RELEASED: 'bg-indigo-100 text-indigo-700',
-    SCHEDULED: 'bg-purple-100 text-purple-700',
-    IN_PROGRESS: 'bg-amber-100 text-amber-700',
-    COMPLETED: 'bg-green-100 text-green-700',
-    CLOSED: 'bg-gray-200 text-gray-500',
+    CREADO: 'bg-yellow-100 text-yellow-700',
+    PLANIFICADO: 'bg-blue-100 text-blue-700',
+    PROGRAMADO: 'bg-indigo-100 text-indigo-700',
+    REPROGRAMADO: 'bg-orange-100 text-orange-700',
+    EN_EJECUCION: 'bg-amber-100 text-amber-700',
+    CERRADO: 'bg-green-100 text-green-700',
+    CANCELADO: 'bg-gray-300 text-gray-600',
+    // Legacy compat
+    PENDIENTE: 'bg-yellow-100 text-yellow-700',
+    APROBADO: 'bg-blue-100 text-blue-700',
+    EN_PROGRESO: 'bg-amber-100 text-amber-700',
+    RECHAZADO: 'bg-red-100 text-red-700',
   };
 
   const OT_NEXT_ACTION = {
-    DRAFT: { label: 'Planificar', action: 'plan', icon: ArrowRight },
-    PLANNED: { label: 'Liberar', action: 'release', icon: ArrowRight },
-    RELEASED: { label: 'Programar', action: 'schedule', icon: Clock },
-    SCHEDULED: { label: 'Iniciar', action: 'start', icon: Play },
-    IN_PROGRESS: { label: 'Completar', action: 'complete', icon: CheckCircle },
-    COMPLETED: { label: 'Cerrar', action: 'close', icon: Lock },
+    CREADO: { label: 'Planificar', action: 'plan', icon: ArrowRight },
+    PLANIFICADO: { label: 'Programar', action: 'schedule', icon: ClipboardCheck },
+    PROGRAMADO: { label: 'Iniciar Ejecucion', action: 'start', icon: Play },
+    REPROGRAMADO: { label: 'Reprogramar', action: 'schedule', icon: ClipboardCheck },
+    EN_EJECUCION: { label: 'Cerrar', action: 'complete', icon: CheckCircle },
+    // Legacy compat
+    PENDIENTE: { label: 'Planificar', action: 'plan', icon: ArrowRight },
+    APROBADO: { label: 'Iniciar', action: 'start', icon: Play },
+    EN_PROGRESO: { label: 'Cerrar', action: 'complete', icon: CheckCircle },
   };
 
   const handleOTTransition = async (wo, actionName) => {
@@ -540,6 +601,7 @@ export default function WorkOrdersPage() {
         plan: api.planManagedWO,
         release: api.releaseManagedWO,
         schedule: api.scheduleManagedWO,
+        reschedule: api.rescheduleManagedWO,
         start: api.startManagedWO,
         complete: api.completeManagedWO,
         close: api.closeManagedWO,
@@ -564,7 +626,7 @@ export default function WorkOrdersPage() {
 
   const handleRejectWR = async (wrId) => {
     try {
-      await api.validateWorkRequest(wrId, { action: 'REJECT', modifications: { rejection_reason: 'Rejected' } });
+      await api.validateWorkRequest(wrId, { action: 'REJECT', modifications: { rejection_reason: 'Rechazado' } });
       toast.success('Aviso rechazado');
       reloadData();
     } catch (err) {
@@ -595,7 +657,7 @@ export default function WorkOrdersPage() {
         equipment_id: otCreateForm.equipment_id || otCreateForm.equipment_tag,
       });
       setShowCreateOTModal(false);
-      setOtCreateForm({ description: '', wo_type: 'CORRECTIVO', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4, failureCategory: 'MECANICO' });
+      setOtCreateForm({ description: '', wo_type: 'PM01', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4, failureCategory: 'MECANICO' });
       reloadData();
     } catch (err) {
       toast.error(err.message || t('workOrders.errorCreateOT') || 'Error al crear OT');
@@ -608,14 +670,14 @@ export default function WorkOrdersPage() {
   const openOTDetail = (ot) => {
     setSelectedOT(ot);
     setOtDetailTab('resumen');
-    setOtOps(Array.isArray(ot.operations) ? ot.operations.map((op, i) => ({ ...op, _id: i })) : []);
-    setOtMats(Array.isArray(ot.materials) ? ot.materials.map((m, i) => ({ ...m, _id: i })) : []);
+    setOtOps(Array.isArray(ot.operations) ? ot.operations.map((op, i) => ({ ...op, _id: i, op_type: op.op_type || 'INT', quantity: op.quantity || 1, duration: op.duration || op.estimated_hours || op.planned_hours || 1, planned_hours: op.planned_hours || ((op.quantity || 1) * (op.duration || op.estimated_hours || 1)) })) : []);
+    setOtMats(Array.isArray(ot.materials) ? ot.materials.map((m, i) => ({ ...m, _id: i, code: m.code || m.sapId || '', unit: m.unit || 'PZ', quantity: parseInt(m.quantity) || 1 })) : []);
     setOtCosts({ labor_cost: ot.labor_cost || 0, material_cost: ot.material_cost || 0, external_cost: ot.external_cost || 0 });
     setNewNote('');
   };
 
-  const isEditable = selectedOT && ['DRAFT', 'PLANNED', 'RELEASED', 'SCHEDULED'].includes(selectedOT.status);
-  const isExecuting = selectedOT && ['IN_PROGRESS', 'COMPLETED'].includes(selectedOT.status);
+  const isEditable = selectedOT && ['CREADO', 'PLANIFICADO', 'PROGRAMADO', 'PENDIENTE', 'APROBADO'].includes(selectedOT.status);
+  const isExecuting = selectedOT && ['EN_EJECUCION', 'CERRADO', 'EN_PROGRESO'].includes(selectedOT.status);
 
   // SLA targets by priority (hours)
   const SLA_HOURS = { P1: 24, P2: 72, P3: 168, P4: 720 };
@@ -632,8 +694,8 @@ export default function WorkOrdersPage() {
   const saveOps = async () => {
     setOtSaving(true);
     try {
-      const ops = otOps.map(({ _id, ...rest }) => ({ ...rest, hh_plan: (rest.quantity || 1) * (rest.duration || 0) }));
-      const totalHrs = ops.reduce((s, op) => s + (parseFloat(op.hh_plan) || 0), 0);
+      const ops = otOps.map(({ _id, ...rest }) => rest);
+      const totalHrs = ops.reduce((s, op) => s + (parseFloat(op.planned_hours) || 0), 0);
       await api.updateManagedWO(selectedOT.wo_id, { operations: ops, estimated_hours: totalHrs });
       toast.success(t('workOrders.operationsSaved') || 'Operaciones guardadas');
       reloadData();
@@ -726,6 +788,7 @@ export default function WorkOrdersPage() {
             <Download className="w-4 h-4" />
             {t('workOrders.export')}
           </Button>
+
         </div>
       </div>
 
@@ -916,8 +979,8 @@ export default function WorkOrdersPage() {
       {viewMode === 'tactical' && (<>
 
       {/* OT Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        {['DRAFT','PLANNED','RELEASED','SCHEDULED','IN_PROGRESS','COMPLETED','CLOSED'].map(st => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {['CREADO','PLANIFICADO','PROGRAMADO','REPROGRAMADO','EN_EJECUCION','CERRADO','CANCELADO'].map(st => (
           <Card key={st} className={`p-3 bg-white cursor-pointer border-2 transition-all ${woTab === 'ots' ? 'hover:border-emerald-300' : ''}`}
             onClick={() => setWoTab('ots')}>
             <div className="text-xs text-gray-500 truncate">{st.replace(/_/g, ' ')}</div>
@@ -948,6 +1011,9 @@ export default function WorkOrdersPage() {
             <div className="flex items-center gap-2">
               <Button variant="outline" className="flex items-center gap-2 border-gray-300" onClick={handleExportOTs} disabled={!managedWOs.length}>
                 <Download className="w-4 h-4" /> Excel
+              </Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateOTModal(true)}>
+                <Plus className="w-4 h-4" /> Crear OT desde Aviso
               </Button>
             </div>
           </div>
@@ -991,14 +1057,12 @@ export default function WorkOrdersPage() {
                         <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
                         <TableCell>
                           <Badge className={`text-xs ${
-                            wo.wo_type === 'CORRECTIVO' ? 'bg-red-100 text-red-700' :
-                            wo.wo_type === 'PREVENTIVO' ? 'bg-blue-100 text-blue-700' :
-                            wo.wo_type === 'PREDICTIVO' ? 'bg-purple-100 text-purple-700' :
-                            wo.wo_type === 'MEJORA' ? 'bg-emerald-100 text-emerald-700' :
-                            wo.wo_type === 'INCIDENTE_OPERACIONAL' ? 'bg-red-200 text-red-800' :
-                            wo.wo_type === 'MONITOREO_CONDICION' ? 'bg-cyan-100 text-cyan-700' :
+                            wo.wo_type === 'PM01' ? 'bg-red-100 text-red-700' :
+                            wo.wo_type === 'PM02' ? 'bg-blue-100 text-blue-700' :
+                            wo.wo_type === 'PM03' ? 'bg-purple-100 text-purple-700' :
+                            wo.wo_type === 'PM05' ? 'bg-cyan-100 text-cyan-700' :
                             'bg-gray-100 text-gray-700'
-                          }`}>{{ CORRECTIVO: 'Corrective', PREVENTIVO: 'Preventive', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' }[wo.wo_type] || wo.wo_type}</Badge>
+                          }`}>{{ PM01: 'PM01 - Correctivo', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Programado', PM05: 'PM05 - Calib./Reparación' }[wo.wo_type] || wo.wo_type}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getCriticalityColor(wo.priority_code === 'P1' || wo.priority_code === 'P2' ? 'High' : wo.priority_code === 'P3' ? 'Medium' : 'Low')}>
@@ -1097,7 +1161,7 @@ export default function WorkOrdersPage() {
                           <div className={`w-2 h-2 rounded-full ${
                             wo.status === 'APPROVED' || wo.status === 'VALIDATED' ? 'bg-green-500' :
                             wo.status === 'REJECTED' ? 'bg-red-500' :
-                            wo.status === 'IN_PROGRESS' ? 'bg-blue-500' :
+                            wo.status === 'EN_EJECUCION' || wo.status === 'EN_PROGRESO' ? 'bg-blue-500' :
                             'bg-yellow-500'
                           }`}></div>
                           <span className="text-sm">{wo.status.replace(/_/g, ' ')}</span>
@@ -1155,12 +1219,619 @@ export default function WorkOrdersPage() {
         />
       )}
 
+      {/* Create OT Modal — solo desde Aviso aprobado (Jorge: "las órdenes no se crean manualmente") */}
+      {showCreateOTModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreateOTModal(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b p-5 rounded-t-xl z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">{t('workOrders.createOTTitle') || 'Crear Orden de Trabajo'}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{t('workOrders.createOTSubtitle') || 'Selecciona un aviso aprobado para generar la OT'}</p>
+                </div>
+                <button onClick={() => setShowCreateOTModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {approvedWRs.length > 0 ? (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.approvedWRs') || 'Avisos Aprobados'}</label>
+                  <div className="space-y-2 max-h-72 overflow-y-auto">
+                    {approvedWRs.map(wr => (
+                      <div key={wr.request_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {wr.equipment_tag} — {wr.problem_description?.original_text || 'Sin descripción'}
+                          </div>
+                          <div className="text-xs text-gray-500">{wr.priority_code || 'P3'} · {wr.status}</div>
+                        </div>
+                        <Button size="sm" className="ml-2 bg-emerald-600 hover:bg-emerald-700 text-xs h-7"
+                          onClick={() => handleCreateOTFromWR(wr)} disabled={creatingOT}>
+                          <ArrowRight className="w-3 h-3 mr-1" /> {t('workOrders.createOTShort') || 'Crear OT'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-2">
+                    <ClipboardCheck className="w-12 h-12 mx-auto" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-600">{t('workOrders.noApprovedWRs') || 'No hay avisos aprobados pendientes'}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('workOrders.noApprovedWRsHint') || 'Los avisos deben ser aprobados por un supervisor antes de generar una OT'}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t p-5 rounded-b-xl flex justify-end">
+              <Button variant="outline" onClick={() => setShowCreateOTModal(false)}>{t('common.close')}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Work Order Modal — full SAP PM form */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b p-5 rounded-t-xl z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">{t('workOrders.createTitle')}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{t('workOrders.createSubtitle')}</p>
+                </div>
+                <button onClick={() => setShowCreateModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* Hidden camera input */}
+              <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} className="hidden" />
+
+              {/* 1. Qué pasó? + Voice / Camera */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.whatHappens')}</label>
+                  <div className="flex gap-2">
+                    {SpeechRecognition ? (
+                      <button type="button" onClick={handleVoice}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${isRecording ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
+                        {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                        {isRecording ? t('workOrders.voiceRecording') || 'Grabando...' : t('workOrders.voiceButton') || 'Voz'}
+                      </button>
+                    ) : (
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed" title="Requiere HTTPS para funcionar">
+                        <Mic className="w-3.5 h-3.5" /> {t('workOrders.voiceButton') || 'Voz'}
+                      </span>
+                    )}
+                    <button type="button" onClick={handleCameraClick}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all">
+                      <Camera className="w-3.5 h-3.5" />
+                      {t('workOrders.photoButton') || 'Foto'}
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  value={createForm.whatHappens}
+                  onChange={e => setF('whatHappens', e.target.value)}
+                  placeholder={t('workOrders.whatHappensPlaceholder')}
+                  rows={3}
+                  className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none ${isRecording ? 'border-red-400 bg-red-50/30' : 'border-gray-300'}`}
+                />
+                {/* AI Assist button */}
+                {createForm.whatHappens.trim().length > 10 && (
+                  <div className="mt-2">
+                    <button type="button" onClick={handleAssistAI} disabled={aiLoading}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all w-full justify-center ${aiLoading ? 'border-purple-300 bg-purple-50 text-purple-400 animate-pulse' : 'border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-100 hover:border-purple-500'}`}>
+                      <Zap className="w-4 h-4" />
+                      {aiLoading ? 'Analizando...' : 'Asistir con IA'}
+                    </button>
+                    {aiDuplicates.length > 0 && (
+                      <div className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                        <p className="text-xs font-bold text-amber-800 mb-1">⚠ Avisos similares abiertos:</p>
+                        {aiDuplicates.slice(0, 3).map(d => (
+                          <div key={d.request_id} className="text-xs text-amber-700 flex items-center gap-2 py-0.5">
+                            <span className="font-mono">{(d.request_id || '').slice(0, 8)}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-amber-100 text-[10px] font-bold">{d.status}</span>
+                            <span className="truncate">{d.problem_description?.slice(0, 60)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Photo strip */}
+                {photos.length > 0 && (
+                  <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+                    {photos.map((photo, i) => (
+                      <div key={i} className="relative flex-shrink-0">
+                        <img src={photo} alt={`Foto ${i+1}`} className="w-20 h-20 rounded-lg object-cover border-2 border-blue-200" />
+                        <button onClick={() => removePhoto(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm hover:bg-red-600">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={handleCameraClick} className="flex-shrink-0 w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors">
+                      <Camera className="w-5 h-5" />
+                      <span className="text-[10px] mt-0.5">+</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Condición del Equipo + Prioridad (arriba para visibilidad) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border rounded-xl p-4">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.plantCondition')}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PLANT_CONDITIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setF('plantCondition', opt.value);
+                          if (opt.value === 'stopped' && createForm.priority !== 'P1') {
+                            setF('priority', 'P1');
+                            setF('activityClass', ACTIVITY_CLASSES['PM03']?.[0]?.value || 'M002');
+                          }
+                        }}
+                        className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
+                        style={{
+                          borderColor: createForm.plantCondition === opt.value ? opt.color : '#e5e7eb',
+                          backgroundColor: createForm.plantCondition === opt.value ? opt.color + '15' : 'transparent',
+                          color: createForm.plantCondition === opt.value ? opt.color : '#64748B',
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="border rounded-xl p-4">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.priorityLabel')}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PRIORITIES.map(p => (
+                      <button
+                        key={p.value}
+                        onClick={() => { setF('priority', p.value); setF('activityClass', ['P1','P2'].includes(p.value) ? 'M002' : 'M001'); }}
+                        className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${createForm.priority === p.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
+                        style={{ borderColor: createForm.priority === p.value ? p.color : '#e5e7eb', backgroundColor: createForm.priority === p.value ? p.bg : 'transparent' }}
+                      >
+                        <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
+                        <div className="text-[9px] text-gray-500 leading-tight">{p.sub}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Breakdown alert */}
+              {createForm.plantCondition === 'stopped' && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-sm">
+                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <span className="text-red-700 font-medium">{t('workOrders.breakdownAlert') || 'Equipo detenido — Prioridad ajustada a P1 (Urgente). Clase OT: PM03 No Programado.'}</span>
+                </div>
+              )}
+
+              {/* 3. ¿Dónde? TAG equipo */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.whereTag')}</label>
+                {!selectedEquip ? (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={equipSearch}
+                      onChange={e => { setEquipSearch(e.target.value); setShowEquipSearch(true); }}
+                      onFocus={() => equipSearch.length >= 2 && setShowEquipSearch(true)}
+                      placeholder={t('workOrders.searchTagPlaceholder')}
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    />
+                    {equipSearch.length >= 2 && equipResults.length === 0 && (
+                      <button onClick={() => { selectEquip({ tag: equipSearch, name: `${equipSearch} (No catalogado)` }); }} className="w-full mt-1 p-2 text-xs text-left rounded-lg bg-yellow-50 text-yellow-800 border border-yellow-200">
+                        {(t('workOrders.useManualTag') || 'Usar TAG manual: {tag}').replace('{tag}', equipSearch)}
+                      </button>
+                    )}
+                    {showEquipSearch && equipResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
+                        {equipResults.map((node, i) => (
+                          <button key={node.node_id || i} onClick={() => selectEquip(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
+                            <div className="text-sm font-bold text-gray-900">{node.tag || node.code}</div>
+                            <div className="text-xs text-gray-500">{node.name}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border-2 border-emerald-500">
+                    <div>
+                      <div className="text-sm font-bold text-emerald-700">{createForm.whereTag}</div>
+                      <div className="text-xs text-emerald-600">{selectedEquip.name}</div>
+                    </div>
+                    <button onClick={() => { setSelectedEquip(null); setF('whereTag', ''); clearLocation(); }}>
+                      <X className="w-4 h-4 text-emerald-600" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Ubicación Técnica (SAP) */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" /> {t('workOrders.technicalLocation')}
+                </label>
+                {!selectedLoc ? (
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={locSearch}
+                      onChange={e => { setLocSearch(e.target.value); setShowLocSearch(true); }}
+                      onFocus={() => locSearch.length >= 2 && setShowLocSearch(true)}
+                      placeholder={t('workOrders.technicalLocationPlaceholder')}
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    />
+                    {showLocSearch && locResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
+                        {locResults.map((node, i) => (
+                          <button key={node.node_id || i} onClick={() => selectLocation(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{node.node_type}</span>
+                              <span className="text-sm font-bold text-gray-900">{node._funcLoc}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">{node.name}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50 border-2 border-blue-500">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-blue-500" />
+                        <span className="text-sm font-bold font-mono truncate text-blue-800">{createForm.technicalLocationCode}</span>
+                      </div>
+                      <div className="text-xs text-blue-600">{createForm.technicalLocation}</div>
+                    </div>
+                    <button onClick={clearLocation} className="flex-shrink-0 ml-2">
+                      <X className="w-4 h-4 text-blue-500" />
+                    </button>
+                  </div>
+                )}
+                {selectedEquip && selectedLoc && (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-emerald-600">
+                    <CheckCircle className="w-3 h-3" /> {t('workOrders.technicalLocationAuto')} {createForm.whereTag}
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Catálogo de Falla */}
+              <div className="border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.failureCatalog')}</label>
+                </div>
+                <div className="flex gap-1 mb-3 p-1 rounded-lg bg-gray-100">
+                  {Object.entries(FAILURE_CATALOG).map(([key, cat]) => (
+                    <button key={key} onClick={() => { setF('failureCategory', key); setF('failureSymptom', ''); setF('failureObjectPart', ''); setF('failureCause', ''); }}
+                      className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${createForm.failureCategory === key ? 'bg-white shadow-sm' : ''}`}
+                      style={{ color: createForm.failureCategory === key ? cat.color : '#94a3b8' }}>{cat.label}</button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="relative">
+                    <div className="text-xs font-medium text-gray-600 mb-1">{t('workOrders.symptomLabel')}</div>
+                    <button onClick={() => { setShowSymptoms(!showSymptoms); setShowParts(false); setShowCauses(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
+                      style={{ borderColor: createForm.failureSymptom ? FAILURE_CATALOG[createForm.failureCategory].color : '#e5e7eb' }}>
+                      <span className={createForm.failureSymptom ? 'text-gray-900 font-medium' : 'text-gray-400'}>{createForm.failureSymptom || t('workOrders.selectPlaceholder')}</span>
+                      <ChevronDown className="w-3 h-3 text-gray-400" />
+                    </button>
+                    {showSymptoms && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
+                        {FAILURE_CATALOG[createForm.failureCategory].symptoms.map(s => (
+                          <button key={s} onClick={() => { setF('failureSymptom', s); setShowSymptoms(false); }}
+                            className={`w-full text-left px-2 py-1.5 text-xs border-b last:border-b-0 hover:bg-gray-50 ${createForm.failureSymptom === s ? 'font-bold bg-gray-50' : ''}`}>{s}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <div className="text-xs font-medium text-gray-600 mb-1">{t('workOrders.objectPartLabel')}</div>
+                    <button onClick={() => { setShowParts(!showParts); setShowSymptoms(false); setShowCauses(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
+                      style={{ borderColor: createForm.failureObjectPart ? FAILURE_CATALOG[createForm.failureCategory].color : '#e5e7eb' }}>
+                      <span className={createForm.failureObjectPart ? 'text-gray-900 font-medium' : 'text-gray-400'}>{createForm.failureObjectPart || t('workOrders.selectPlaceholder')}</span>
+                      <ChevronDown className="w-3 h-3 text-gray-400" />
+                    </button>
+                    {showParts && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
+                        {FAILURE_CATALOG[createForm.failureCategory].parts.map(p => (
+                          <button key={p} onClick={() => { setF('failureObjectPart', p); setShowParts(false); }}
+                            className={`w-full text-left px-2 py-1.5 text-xs border-b last:border-b-0 hover:bg-gray-50 ${createForm.failureObjectPart === p ? 'font-bold bg-gray-50' : ''}`}>{p}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <div className="text-xs font-medium text-gray-600 mb-1">{t('workOrders.causeLabel')}</div>
+                    <button onClick={() => { setShowCauses(!showCauses); setShowSymptoms(false); setShowParts(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
+                      style={{ borderColor: createForm.failureCause ? FAILURE_CATALOG[createForm.failureCategory].color : '#e5e7eb' }}>
+                      <span className={createForm.failureCause ? 'text-gray-900 font-medium' : 'text-gray-400'}>{createForm.failureCause || t('workOrders.selectPlaceholder')}</span>
+                      <ChevronDown className="w-3 h-3 text-gray-400" />
+                    </button>
+                    {showCauses && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
+                        {FAILURE_CATALOG[createForm.failureCategory].causes.map(c => (
+                          <button key={c} onClick={() => { setF('failureCause', c); setShowCauses(false); }}
+                            className={`w-full text-left px-2 py-1.5 text-xs border-b last:border-b-0 hover:bg-gray-50 ${createForm.failureCause === c ? 'font-bold bg-gray-50' : ''}`}>{c}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Acción Sugerida */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.suggestedAction')}</label>
+                <textarea value={createForm.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)} placeholder={t('workOrders.suggestedActionPlaceholder')} rows={2} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none" />
+              </div>
+
+              {/* 6. Circunstancias / Detalle */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.circumstances')}</label>
+                <textarea
+                  value={createForm.circumstances}
+                  onChange={e => setF('circumstances', e.target.value)}
+                  placeholder={t('workOrders.circumstancesPlaceholder')}
+                  rows={2}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
+                />
+                <div className="text-[10px] text-gray-400 mt-1">{t('workOrders.circumstancesSapNote')}</div>
+              </div>
+
+              {/* 7. Recursos necesarios */}
+              <div className="border rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.requiredResources')}</label>
+                  <button onClick={addResource} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
+                    {t('workOrders.addButton')}
+                  </button>
+                </div>
+                {createForm.resources.length === 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">{t('workOrders.resourceType')}</div>
+                    <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">{t('workOrders.resourceQty')}</div>
+                    <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">{t('workOrders.resourceHours')}</div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {createForm.resources.map((res, i) => (
+                      <div key={i} className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-gray-50">
+                        <div className="relative">
+                          <input type="text" placeholder={t('workOrders.resourceType')} value={res.type}
+                            onChange={e => { updateResource(i, 'type', e.target.value); setActiveResTypeIdx(i); }}
+                            onFocus={() => setActiveResTypeIdx(i)}
+                            onBlur={() => setTimeout(() => setActiveResTypeIdx(-1), 150)}
+                            className="w-full p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          {activeResTypeIdx === i && (
+                            <div className="absolute z-20 left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                              {RESOURCE_TYPES.filter(rt => !res.type || rt.toLowerCase().includes(res.type.toLowerCase())).map(rt => (
+                                <button key={rt} onClick={() => { updateResource(i, 'type', rt); setActiveResTypeIdx(-1); }}
+                                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 border-b last:border-b-0">{rt}</button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <input type="text" placeholder={t('workOrders.resourceQty')} value={res.quantity} onChange={e => updateResource(i, 'quantity', e.target.value)}
+                            className="w-full p-2 pr-16 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">personas</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <div className="relative flex-1">
+                            <input type="text" placeholder={t('workOrders.resourceHours')} value={res.hours} onChange={e => updateResource(i, 'hours', e.target.value)}
+                              className="w-full p-2 pr-10 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">hrs</span>
+                          </div>
+                          <button onClick={() => removeResource(i)} className="px-1 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 8. Duración estimada */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{t('workOrders.estimatedDuration')}</label>
+                <input type="text" value={createForm.estimatedDuration} onChange={e => setF('estimatedDuration', e.target.value)} placeholder={t('workOrders.estimatedDurationPlaceholder')} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+              </div>
+
+              {/* 9. Materiales SAP */}
+              <div className="border rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-gray-400" />
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.materialsSap')}</label>
+                  </div>
+                  <button onClick={addMaterial} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
+                    {t('workOrders.addButton')}
+                  </button>
+                </div>
+                {createForm.materials.length === 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">{t('workOrders.materialSapId')}</div>
+                    <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">{t('workOrders.materialQty')}</div>
+                    <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">{t('workOrders.materialDescription')}</div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {createForm.materials.map((mat, i) => (
+                      <div key={i} className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-gray-50">
+                        <div className="relative">
+                          <input type="text" placeholder={t('workOrders.materialSapId')} value={mat.sapId}
+                            onChange={e => { updateMaterial(i, 'sapId', e.target.value); setActiveMatSapIdx(i); }}
+                            onFocus={() => setActiveMatSapIdx(i)}
+                            onBlur={() => setTimeout(() => setActiveMatSapIdx(-1), 150)}
+                            className="w-full p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          {activeMatSapIdx === i && (
+                            <div className="absolute z-20 left-0 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto" style={{ minWidth: '280px' }}>
+                              {COMMON_MATERIALS.filter(m => !mat.sapId || m.sapId.includes(mat.sapId) || m.desc.toLowerCase().includes(mat.sapId.toLowerCase())).map(m => (
+                                <button key={m.sapId} onClick={() => { updateMaterial(i, 'sapId', m.sapId); updateMaterial(i, 'description', m.desc); setActiveMatSapIdx(-1); }}
+                                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 border-b last:border-b-0">
+                                  <span className="font-mono text-emerald-700">{m.sapId}</span> — {m.desc}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <input type="text" placeholder={t('workOrders.materialQty')} value={mat.quantity} onChange={e => updateMaterial(i, 'quantity', e.target.value)}
+                            className="w-full p-2 pr-10 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">uds</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <input type="text" placeholder={t('workOrders.materialDescription')} value={mat.description} onChange={e => updateMaterial(i, 'description', e.target.value)}
+                            className="flex-1 p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                          <button onClick={() => removeMaterial(i)} className="px-1 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 10. Equipos Especiales */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.specialEquipment')}</label>
+                <div className="relative">
+                  <Wrench className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                  <input type="text" value={createForm.specialEquipment}
+                    onChange={e => { setF('specialEquipment', e.target.value); setShowSpecEquip(true); }}
+                    onFocus={() => setShowSpecEquip(true)}
+                    onBlur={() => setTimeout(() => setShowSpecEquip(false), 150)}
+                    placeholder={t('workOrders.specialEquipmentPlaceholder')}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
+                  {showSpecEquip && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {SPECIAL_EQUIPMENT.filter(se => !createForm.specialEquipment || se.toLowerCase().includes(createForm.specialEquipment.toLowerCase())).map(se => (
+                        <button key={se} onClick={() => {
+                          const cur = createForm.specialEquipment;
+                          setF('specialEquipment', cur ? `${cur}, ${se}` : se);
+                          setShowSpecEquip(false);
+                        }} className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b last:border-b-0">{se}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 11. Autor del Aviso (auto - read only) */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {t('workOrders.reportedByLabel')}</label>
+                <div className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 font-medium">
+                  {user?.full_name || user?.username || 'Sistema'}
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1">Asignado automáticamente — no editable</div>
+              </div>
+
+              {/* 12. Equipos de Apoyo */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.supportEquipment')}</label>
+                <input
+                  type="text"
+                  value={createForm.supportEquipment}
+                  onChange={e => setF('supportEquipment', e.target.value)}
+                  placeholder={t('workOrders.supportEquipmentPlaceholder')}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                />
+                <div className="text-[10px] text-gray-400 mt-1">{t('workOrders.supportEquipmentNote')}</div>
+              </div>
+
+              {/* 13-14. Condición y Prioridad movidos arriba del formulario */}
+
+              {/* 15. Clase de Actividad */}
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.activityClassLabel').replace('{code}', claseOT)}</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {actClasses.map(ac => (
+                    <button
+                      key={ac.value}
+                      onClick={() => setF('activityClass', ac.value)}
+                      className={`p-2.5 rounded-lg border-2 text-xs font-semibold text-center transition-all ${createForm.activityClass === ac.value ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                    >
+                      {ac.value} — {ac.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-white border-t p-5 rounded-b-xl flex justify-between items-center">
+              <div className="text-xs text-gray-500">
+                {selectedPriority && <span className="font-mono px-2 py-1 rounded" style={{ backgroundColor: selectedPriority.bg, color: selectedPriority.color }}>{selectedPriority.value} / {claseOT}</span>}
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowCreateModal(false)}>{t('workOrders.cancel')}</Button>
+                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleCreate} disabled={creating || !canCreate}>
+                  {creating ? t('workOrders.creating') : t('workOrders.createWorkRequest')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Aviso Creado — Success Popup ── */}
+      {createdWRId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setCreatedWRId(null); setShowCreateModal(false); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Aviso Creado</h3>
+            <p className="text-sm text-gray-500 mb-4">Tu aviso ha sido enviado para revision</p>
+            <div className="inline-block px-4 py-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 mb-6">
+              <div className="text-xs text-emerald-600 font-medium">ID</div>
+              <div className="text-lg font-bold text-emerald-700 font-mono">{createdWRId.slice(0, 13)}</div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setCreatedWRId(null); setShowCreateModal(false); }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Ver WRs
+              </button>
+              <button
+                onClick={() => { setCreatedWRId(null); }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+              >
+                Crear Otro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Professional OT Detail Modal ── */}
       {selectedOT && (() => {
         const sla = getSlaDays(selectedOT);
-        const WO_TYPE_LABELS = { CORRECTIVO: 'Corrective', PREVENTIVO: 'Preventive', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' };
+        const WO_TYPE_LABELS = { PM01: 'PM01 - Correctivo', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Programado', PM05: 'PM05 - Calib./Reparación' };
         const SPECIALTY_OPTIONS = ['Mecánico', 'Eléctrico', 'Instrumentación', 'Soldador', 'Lubricación', 'Andamios', 'Aislamiento', 'Operador', 'Supervisor', 'Otro'];
+        const OP_TYPE_OPTIONS = [{ value: 'INT', label: 'INT' }, { value: 'EXT', label: 'EXT' }];
         const OT_TABS = [
           { id: 'resumen', label: 'Resumen', icon: Info },
           { id: 'operaciones', label: 'Operaciones', icon: List },
@@ -1193,7 +1864,7 @@ export default function WorkOrdersPage() {
                   </div>
                 </div>
                 {/* SLA indicator */}
-                {sla && !['COMPLETED', 'CLOSED'].includes(selectedOT.status) && (
+                {sla && !['CERRADO', 'CANCELADO'].includes(selectedOT.status) && (
                   <div className={`text-center px-3 py-1.5 rounded-lg border text-xs ${sla.overdue ? 'bg-red-50 border-red-200 text-red-700' : sla.pct > 75 ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-green-50 border-green-200 text-green-700'}`}>
                     <div className="font-semibold">{sla.overdue ? 'SLA Vencido' : `${Math.round(sla.remaining)}h restantes`}</div>
                     <div className="w-20 bg-gray-200 rounded-full h-1.5 mt-1">
@@ -1224,6 +1895,37 @@ export default function WorkOrdersPage() {
               {/* ─── TAB: RESUMEN ─── */}
               {otDetailTab === 'resumen' && (
                 <div className="space-y-4">
+                  {/* Productive Impact Banner */}
+                  <div className={`rounded-xl p-4 border-2 flex items-center justify-between ${
+                    selectedOT.priority_code === 'P1' ? 'bg-red-50 border-red-300' :
+                    selectedOT.priority_code === 'P2' ? 'bg-orange-50 border-orange-300' :
+                    selectedOT.priority_code === 'P3' ? 'bg-yellow-50 border-yellow-300' :
+                    'bg-green-50 border-green-300'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold text-white ${
+                        selectedOT.priority_code === 'P1' ? 'bg-red-600' :
+                        selectedOT.priority_code === 'P2' ? 'bg-orange-500' :
+                        selectedOT.priority_code === 'P3' ? 'bg-yellow-500' :
+                        'bg-green-500'
+                      }`}>
+                        {selectedOT.priority_code === 'P1' ? '!' : selectedOT.priority_code === 'P2' ? '!!' : selectedOT.priority_code === 'P3' ? '-' : '\u2713'}
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 uppercase font-semibold">Impacto Productivo</div>
+                        <div className="text-lg font-bold">{selectedOT.priority_code === 'P1' ? 'CRITICO' : selectedOT.priority_code === 'P2' ? 'ALTO' : selectedOT.priority_code === 'P3' ? 'MEDIO' : 'BAJO'}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500">Score Criticidad</div>
+                      <div className={`text-3xl font-bold ${
+                        selectedOT.priority_code === 'P1' ? 'text-red-600' :
+                        selectedOT.priority_code === 'P2' ? 'text-orange-600' :
+                        selectedOT.priority_code === 'P3' ? 'text-yellow-600' : 'text-green-600'
+                      }`}>{selectedOT.priority_code === 'P1' ? '95' : selectedOT.priority_code === 'P2' ? '75' : selectedOT.priority_code === 'P3' ? '45' : '20'}</div>
+                    </div>
+                  </div>
+
                   {/* Progress bar */}
                   <div>
                     <div className="flex justify-between items-center mb-1">
@@ -1246,7 +1948,7 @@ export default function WorkOrdersPage() {
                       <div className={`text-lg font-bold ${(selectedOT.actual_hours || 0) > (selectedOT.estimated_hours || 0) ? 'text-red-600' : 'text-gray-900'}`}>{selectedOT.actual_hours || 0}h</div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Costo Planificado</div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Costo Plan</div>
                       <div className="text-lg font-bold text-gray-900">${(selectedOT.budget_amount || 0).toLocaleString()}</div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -1341,7 +2043,7 @@ export default function WorkOrdersPage() {
                     </div>
                     <div className="flex gap-2">
                       {isEditable && (
-                        <Button size="sm" variant="outline" onClick={() => setOtOps(prev => [...prev, { _id: Date.now(), step: prev.length + 1, description: '', op_type: 'INT', specialty: 'Mecánico', quantity: 1, duration: 1, hh_plan: 1, actual_hours: 0 }])}>
+                        <Button size="sm" variant="outline" onClick={() => setOtOps(prev => [...prev, { _id: Date.now(), step: prev.length + 1, description: '', op_type: 'INT', specialty: 'Mecánico', quantity: 1, duration: 1, planned_hours: 1, actual_hours: 0 }])}>
                           <Plus className="w-3 h-3 mr-1" /> Agregar
                         </Button>
                       )}
@@ -1366,33 +2068,34 @@ export default function WorkOrdersPage() {
                           <tr>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-10">#</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-20">Tipo</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-32">Especialidad</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">Cant.</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">Duración</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">HH Plan</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">HH Real</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Tipo</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">Especialidad</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Cant.</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Duración</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">HH Plan</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">HH Real</th>
                             {isEditable && <th className="px-3 py-2 w-10"></th>}
                           </tr>
                         </thead>
                         <tbody className="divide-y">
-                          {otOps.map((op, idx) => (
+                          {otOps.map((op, idx) => {
+                            const hhPlan = (parseFloat(op.quantity) || 1) * (parseFloat(op.duration) || 1);
+                            return (
                             <tr key={op._id} className="hover:bg-gray-50">
                               <td className="px-3 py-2 text-gray-400 font-mono text-xs">{idx + 1}</td>
                               <td className="px-3 py-2">
                                 {isEditable ? (
-                                  <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-sm focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Descripción de la operación..."
+                                  <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-sm focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Título de la operación..."
                                     value={op.description} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, description: e.target.value } : o))} />
                                 ) : <span>{op.description || '—'}</span>}
                               </td>
-                              <td className="px-3 py-2">
+                              <td className="px-3 py-2 text-center">
                                 {isEditable ? (
-                                  <select className="w-full border-0 border-b border-gray-200 p-0 text-xs focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                  <select className={`w-full border-0 border-b-2 p-0 text-xs text-center font-bold focus:ring-0 rounded ${(op.op_type || 'INT') === 'EXT' ? 'border-purple-400 text-purple-700 bg-purple-50' : 'border-blue-400 text-blue-700 bg-blue-50'}`}
                                     value={op.op_type || 'INT'} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, op_type: e.target.value } : o))}>
-                                    <option value="INT">INT</option>
-                                    <option value="EXT">EXT</option>
+                                    {OP_TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                                   </select>
-                                ) : <span className="text-xs">{op.op_type || 'INT'}</span>}
+                                ) : <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${op.op_type === 'EXT' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{op.op_type || 'INT'}</span>}
                               </td>
                               <td className="px-3 py-2">
                                 {isEditable ? (
@@ -1402,26 +2105,24 @@ export default function WorkOrdersPage() {
                                   </select>
                                 ) : <span className="text-xs">{op.specialty || '—'}</span>}
                               </td>
-                                                            <td className="px-3 py-2 text-center">
+                              <td className="px-3 py-2 text-center">
                                 {isEditable ? (
-                                  <input type="number" className="w-14 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
-                                    value={op.quantity || ''} onChange={(e) => { const qty = parseInt(e.target.value) || 0; setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, quantity: qty, hh_plan: qty * (o.duration || 1) } : o)); }} min="1" />
+                                  <input type="number" min="1" className="w-12 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                    value={op.quantity || 1} onChange={(e) => { const q = parseInt(e.target.value) || 1; setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, quantity: q, planned_hours: q * (parseFloat(o.duration) || 1) } : o)); }} />
                                 ) : <span>{op.quantity || 1}</span>}
                               </td>
                               <td className="px-3 py-2 text-center">
                                 {isEditable ? (
-                                  <input type="number" className="w-16 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
-                                    value={op.duration || ''} onChange={(e) => { const dur = parseFloat(e.target.value) || 0; setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, duration: dur, hh_plan: (o.quantity || 1) * dur } : o)); }} min="0" step="0.5" />
-                                ) : <span>{op.duration || 0}h</span>}
+                                  <input type="number" min="0.5" step="0.5" className="w-12 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                    value={op.duration || 1} onChange={(e) => { const d = parseFloat(e.target.value) || 1; setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, duration: d, planned_hours: (parseInt(o.quantity) || 1) * d } : o)); }} />
+                                ) : <span>{op.duration || 1}</span>}
                               </td>
-                              <td className="px-3 py-2 text-center">
-                                <span className="text-sm font-medium text-gray-700">{op.hh_plan || ((op.quantity || 1) * (op.duration || 0))}h</span>
-                              </td>
+                              <td className="px-3 py-2 text-center font-medium">{hhPlan}h</td>
                               <td className="px-3 py-2 text-center">
                                 {isExecuting ? (
-                                  <input type="number" className="w-16 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
+                                  <input type="number" className="w-14 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
                                     value={op.actual_hours || ''} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, actual_hours: parseFloat(e.target.value) || 0 } : o))} />
-                                ) : <span className={(op.actual_hours || 0) > (op.hh_plan || 0) ? 'text-red-600 font-semibold' : ''}>{op.actual_hours || 0}h</span>}
+                                ) : <span className={`${(op.actual_hours || 0) > hhPlan ? 'text-red-600 font-semibold' : ''}`}>{op.actual_hours || 0}h</span>}
                               </td>
                               {isEditable && (
                                 <td className="px-3 py-2">
@@ -1429,14 +2130,13 @@ export default function WorkOrdersPage() {
                                 </td>
                               )}
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                         <tfoot className="bg-gray-50 font-semibold">
                           <tr>
-                            <td className="px-3 py-2" colSpan={4}><span className="text-xs text-gray-500">TOTAL</span></td>
-                            <td className="px-3 py-2 text-center text-xs"></td>
-                            <td className="px-3 py-2 text-center text-xs"></td>
-                            <td className="px-3 py-2 text-center text-xs font-semibold">{otOps.reduce((s, o) => s + (parseFloat(o.hh_plan) || ((o.quantity||1)*(o.duration||0))), 0)}h</td>
+                            <td className="px-3 py-2" colSpan={6}><span className="text-xs text-gray-500">TOTAL</span></td>
+                            <td className="px-3 py-2 text-center text-xs">{otOps.reduce((s, o) => s + ((parseInt(o.quantity) || 1) * (parseFloat(o.duration) || 1)), 0)}h</td>
                             <td className="px-3 py-2 text-center text-xs">{otOps.reduce((s, o) => s + (parseFloat(o.actual_hours) || 0), 0)}h</td>
                             {isEditable && <td></td>}
                           </tr>
@@ -1450,7 +2150,7 @@ export default function WorkOrdersPage() {
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">Resumen por Especialidad</label>
                       <div className="flex flex-wrap gap-2">
-                        {Object.entries(otOps.reduce((acc, op) => { const s = op.specialty || 'Sin definir'; acc[s] = (acc[s] || 0) + (parseFloat(op.hh_plan) || ((op.quantity||1)*(op.duration||0))); return acc; }, {})).map(([spec, hrs]) => (
+                        {Object.entries(otOps.reduce((acc, op) => { const s = op.specialty || 'Sin definir'; acc[s] = (acc[s] || 0) + (parseFloat(op.planned_hours) || 0); return acc; }, {})).map(([spec, hrs]) => (
                           <span key={spec} className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs border border-emerald-200">
                             {spec}: {hrs}h
                           </span>
@@ -1463,6 +2163,39 @@ export default function WorkOrdersPage() {
                     <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveOps} disabled={otSaving}>
                       <Save className="w-3 h-3 mr-1" /> Guardar Horas Reales
                     </Button>
+                  )}
+
+                  {/* AI Copilot for planning */}
+                  {isEditable && otOps.length === 0 && selectedOT?.description && (
+                    <button type="button" onClick={async () => {
+                      try {
+                        const res = await api.aiAssistWR({
+                          description: selectedOT.description,
+                          equipment_tag: selectedOT.equipment_tag || '',
+                          plant_condition: '',
+                          existing_priority: selectedOT.priority_code || '',
+                          existing_category: '',
+                          existing_action: '',
+                        });
+                        const s = res.suggestions || {};
+                        if (s.resources?.length > 0) {
+                          setOtOps(s.resources.map((r, i) => ({
+                            _id: Date.now() + i,
+                            description: s.suggestedAction || selectedOT.description?.slice(0, 100) || 'Intervención',
+                            op_type: r.op_type || 'INT',
+                            specialty: r.type || 'Mecánico',
+                            quantity: r.quantity || 1,
+                            duration: r.hours || 1,
+                            planned_hours: (r.quantity || 1) * (r.hours || 1),
+                            actual_hours: 0,
+                          })));
+                          toast.success(`IA sugirió ${s.resources.length} operación(es)`);
+                        }
+                      } catch { toast.error('Error al obtener sugerencias'); }
+                    }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-all w-full justify-center">
+                      <Zap className="w-4 h-4" /> Sugerir operaciones con IA
+                    </button>
                   )}
                 </div>
               )}
@@ -1477,7 +2210,7 @@ export default function WorkOrdersPage() {
                     </div>
                     <div className="flex gap-2">
                       {isEditable && (
-                        <Button size="sm" variant="outline" onClick={() => setOtMats(prev => [...prev, { _id: Date.now(), code: '', description: '', quantity: 1, unit: 'PZ', reserved: false, warehouse: '' }])}>
+                        <Button size="sm" variant="outline" onClick={() => setOtMats(prev => [...prev, { _id: Date.now(), code: '', description: '', quantity: 1, unit: 'PZ', reserved: false }])}>
                           <Plus className="w-3 h-3 mr-1" /> Agregar
                         </Button>
                       )}
@@ -1501,8 +2234,8 @@ export default function WorkOrdersPage() {
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">Código SAP</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Tipo</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-24">Almacén</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Cant.</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Unidad</th>
                             {isEditable && <th className="px-3 py-2 w-10"></th>}
@@ -1515,19 +2248,21 @@ export default function WorkOrdersPage() {
                                 {isEditable ? (
                                   <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-xs font-mono focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="10034567"
                                     value={mat.code || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, code: e.target.value } : m))} />
-                                ) : <span className="font-mono text-xs">{mat.code || '—'}</span>}
+                                ) : <span className="font-mono text-xs">{mat.code || '(Sin codigo)'}</span>}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                {isEditable ? (
+                                  <select className={`w-full border-0 border-b-2 p-0 text-xs text-center font-bold focus:ring-0 rounded ${(mat.mat_type || 'INT') === 'EXT' ? 'border-purple-400 text-purple-700 bg-purple-50' : 'border-blue-400 text-blue-700 bg-blue-50'}`}
+                                    value={mat.mat_type || 'INT'} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, mat_type: e.target.value } : m))}>
+                                    <option value="INT">INT</option><option value="EXT">EXT</option>
+                                  </select>
+                                ) : <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${(mat.mat_type || 'INT') === 'EXT' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{mat.mat_type || 'INT'}</span>}
                               </td>
                               <td className="px-3 py-2">
                                 {isEditable ? (
                                   <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-sm focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Descripción del material..."
                                     value={mat.description || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, description: e.target.value } : m))} />
                                 ) : <span>{mat.description || '—'}</span>}
-                              </td>
-                              <td className="px-3 py-2">
-                                {isEditable ? (
-                                  <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-xs focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Almacén"
-                                    value={mat.warehouse || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, warehouse: e.target.value } : m))} />
-                                ) : <span className="text-xs">{mat.warehouse || '—'}</span>}
                               </td>
                               <td className="px-3 py-2 text-center">
                                 {isEditable ? (
@@ -1561,6 +2296,9 @@ export default function WorkOrdersPage() {
               {otDetailTab === 'costos' && (() => {
                 const budget = selectedOT.budget_amount || 0;
                 const totalCost = (parseFloat(otCosts.labor_cost) || 0) + (parseFloat(otCosts.material_cost) || 0) + (parseFloat(otCosts.external_cost) || 0);
+                const plannedTotal = (parseFloat(otCosts.planned_labor) || 0) + (parseFloat(otCosts.planned_material) || 0) + (parseFloat(otCosts.planned_external) || 0);
+                const delta = totalCost - plannedTotal;
+                const deltaColor = delta > 0 ? 'text-red-600' : delta < 0 ? 'text-green-600' : 'text-gray-500';
                 const variance = budget > 0 ? ((totalCost - budget) / budget * 100) : 0;
                 const overBudget = budget > 0 && totalCost > budget;
                 return (
@@ -1570,19 +2308,25 @@ export default function WorkOrdersPage() {
                     {/* Budget vs Actual */}
                     <div className={`rounded-xl p-4 border ${overBudget ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Planificado vs Real</span>
+                        <span className="text-sm font-medium">Presupuesto vs Real</span>
                         {budget > 0 && <span className={`text-xs font-bold px-2 py-0.5 rounded ${overBudget ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
                           {variance > 0 ? '+' : ''}{variance.toFixed(1)}% variación
                         </span>}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="text-center">
-                          <div className="text-xs text-gray-500">Costo Planificado</div>
+                          <div className="text-xs text-gray-500">Presupuesto</div>
                           <div className="text-2xl font-bold text-gray-900">${budget.toLocaleString()}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-500">Costo Real</div>
                           <div className={`text-2xl font-bold ${overBudget ? 'text-red-600' : 'text-emerald-700'}`}>${totalCost.toLocaleString()}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">Delta</div>
+                          <div className={`text-2xl font-bold ${delta > 0 ? 'text-red-600' : delta < 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                            {delta > 0 ? '+' : ''}{delta === 0 ? '-' : '$' + delta.toLocaleString()}
+                          </div>
                         </div>
                       </div>
                       {budget > 0 && (
@@ -1601,26 +2345,48 @@ export default function WorkOrdersPage() {
                     {/* Cost breakdown */}
                     <div className="grid grid-cols-3 gap-4">
                       {[
-                        { key: 'labor_cost', label: 'Mano de Obra', icon: Users, color: 'blue' },
-                        { key: 'material_cost', label: 'Materiales', icon: Package, color: 'amber' },
-                        { key: 'external_cost', label: 'Servicios Ext.', icon: Wrench, color: 'purple' },
-                      ].map(({ key, label, icon: CIcon, color }) => (
+                        { key: 'labor_cost', pkey: 'planned_labor', label: 'Mano de Obra', icon: Users, color: 'blue' },
+                        { key: 'material_cost', pkey: 'planned_material', label: 'Materiales', icon: Package, color: 'amber' },
+                        { key: 'external_cost', pkey: 'planned_external', label: 'Servicios Ext.', icon: Wrench, color: 'purple' },
+                      ].map(({ key, pkey, label, icon: CIcon, color }) => {
+                        const planned = parseFloat(otCosts[pkey]) || selectedOT[pkey.replace('planned_', 'planned_') + '_cost'] || 0;
+                        const real = parseFloat(otCosts[key]) || selectedOT[key] || 0;
+                        const itemDelta = real - planned;
+                        return (
                         <div key={key} className={`rounded-lg border p-3 bg-${color}-50/50`}>
                           <div className="flex items-center gap-1.5 mb-2">
                             <CIcon size={14} className={`text-${color}-600`} />
                             <span className="text-xs text-gray-600">{label}</span>
                           </div>
-                          {isExecuting || isEditable ? (
-                            <div className="flex items-center gap-1">
-                              <span className="text-gray-400 text-sm">$</span>
-                              <input type="number" className="w-full border rounded-lg p-2 text-sm font-semibold"
-                                value={otCosts[key] || ''} onChange={(e) => setOtCosts(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))} />
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-gray-400 uppercase">Plan</span>
+                              {isEditable ? (
+                                <input type="number" className="w-24 border rounded p-1 text-xs font-semibold text-right"
+                                  value={otCosts[pkey] || ''} onChange={(e) => setOtCosts(prev => ({ ...prev, [pkey]: parseFloat(e.target.value) || 0 }))} />
+                              ) : (
+                                <span className="text-sm font-medium text-gray-600">${planned.toLocaleString()}</span>
+                              )}
                             </div>
-                          ) : (
-                            <div className="text-xl font-bold text-gray-900">${(selectedOT[key] || 0).toLocaleString()}</div>
-                          )}
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-gray-400 uppercase">Real</span>
+                              {isExecuting || isEditable ? (
+                                <input type="number" className="w-24 border rounded p-1 text-xs font-semibold text-right"
+                                  value={otCosts[key] || ''} onChange={(e) => setOtCosts(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))} />
+                              ) : (
+                                <span className="text-sm font-bold text-gray-900">${real.toLocaleString()}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between border-t pt-1">
+                              <span className="text-[10px] text-gray-400 uppercase">Delta</span>
+                              <span className={`text-xs font-bold ${itemDelta > 0 ? 'text-red-600' : itemDelta < 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                {itemDelta === 0 ? '-' : (itemDelta > 0 ? '+$' : '-$') + Math.abs(itemDelta).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {(isExecuting || isEditable) && (
@@ -1639,8 +2405,8 @@ export default function WorkOrdersPage() {
 
                   {/* Status timeline */}
                   <div className="flex items-center gap-1 overflow-x-auto pb-2">
-                    {['DRAFT', 'PLANNED', 'RELEASED', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'].map((st, idx) => {
-                      const states = ['DRAFT', 'PLANNED', 'RELEASED', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'];
+                    {['CREADO', 'PLANIFICADO', 'PROGRAMADO', 'EN_EJECUCION', 'CERRADO'].map((st, idx) => {
+                      const states = ['CREADO', 'PLANIFICADO', 'PROGRAMADO', 'EN_EJECUCION', 'CERRADO'];
                       const currentIdx = states.indexOf(selectedOT.status);
                       const isPast = idx <= currentIdx;
                       const isCurrent = idx === currentIdx;
@@ -1649,7 +2415,7 @@ export default function WorkOrdersPage() {
                           <div className={`px-2 py-1 rounded text-[10px] font-medium whitespace-nowrap ${isCurrent ? 'bg-emerald-600 text-white' : isPast ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
                             {st.replace(/_/g, ' ')}
                           </div>
-                          {idx < 6 && <div className={`w-4 h-0.5 ${isPast ? 'bg-emerald-300' : 'bg-gray-200'}`} />}
+                          {idx < 4 && <div className={`w-4 h-0.5 ${isPast ? 'bg-emerald-300' : 'bg-gray-200'}`} />}
                         </div>
                       );
                     })}
@@ -1685,7 +2451,7 @@ export default function WorkOrdersPage() {
                   </div>
 
                   {/* Add note */}
-                  {!['CLOSED'].includes(selectedOT.status) && (
+                  {!['CERRADO', 'CANCELADO'].includes(selectedOT.status) && (
                     <div className="flex gap-2">
                       <input type="text" className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="Agregar nota de ejecución..."
                         value={newNote} onChange={(e) => setNewNote(e.target.value)}
@@ -1715,7 +2481,35 @@ export default function WorkOrdersPage() {
                     </Button>
                   );
                 })()}
-                <Button variant="outline" size="sm" onClick={() => handlePrintWorkOrder(selectedOT)}><Printer className="w-4 h-4 mr-1" />Imprimir</Button>
+                <Button variant="outline" size="sm"
+                  onClick={async () => {
+                    try {
+                      const res = await api.aiSuggestSchedule(selectedOT.wo_id);
+                      const dates = (res.suggested_dates || []).slice(0, 3).map(d => d.date + ' (' + d.day_name + ', ' + d.available_hours + 'h libres)').join('\n');
+                      toast.success('Fechas sugeridas por IA:\n' + dates + '\n\n' + (res.ai_recommendation || ''), 12000);
+                    } catch { toast.error('Error sugiriendo fechas'); }
+                  }}
+                  className="gap-1 text-blue-600 border-blue-300 hover:bg-blue-50">
+                  <Clock size={14} /> Sugerir Fecha IA
+                </Button>
+                <Button variant="outline" size="sm"
+                  onClick={async () => {
+                    try {
+                      const res = await api.aiVerifyClose(selectedOT.wo_id);
+                      if (res.can_close && res.checks_passed) {
+                        toast.success('Verificacion IA: Todo OK para cerrar');
+                      } else {
+                        const parts = [];
+                        if (res.issues?.length) parts.push('Problemas:\n' + res.issues.join('\n'));
+                        if (res.warnings?.length) parts.push('Advertencias:\n' + res.warnings.join('\n'));
+                        if (res.ai_recommendation) parts.push('IA: ' + res.ai_recommendation);
+                        toast[res.can_close ? 'success' : 'error'](parts.join('\n\n'), 12000);
+                      }
+                    } catch (e) { toast.error('Error al verificar con IA'); }
+                  }}
+                  className="gap-1 text-violet-600 border-violet-300 hover:bg-violet-50">
+                  <Zap size={14} /> Verificar IA
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => setSelectedOT(null)}>Cerrar</Button>
               </div>
             </div>

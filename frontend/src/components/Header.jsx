@@ -22,12 +22,10 @@ const TIME_RANGE_OPTIONS = [
 ];
 
 const AREA_OPTIONS = [
-    { value: 'All Areas',  i18nKey: 'header.allAreas' },
-    { value: 'Grinding',   i18nKey: 'header.grinding' },
-    { value: 'Flotation',  i18nKey: 'header.flotation' },
-    { value: 'Crushing',   i18nKey: 'header.crushing' },
-    { value: 'Utilities',  i18nKey: 'header.utilities' },
-    { value: 'Thickening', i18nKey: 'header.thickening' },
+    { value: 'All Areas',  label: 'Todas las Areas' },
+    { value: 'Granulation Unit', label: 'Granulacion' },
+    { value: 'Phosphoric Acid Unit', label: 'Acido Fosforico' },
+    { value: 'Utilities & Steam', label: 'Utilities & Vapor' },
 ];
 
 export default function Header({
@@ -256,7 +254,7 @@ export default function Header({
                             </SelectTrigger>
                             <SelectContent>
                                 {AREA_OPTIONS.map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{t(opt.i18nKey)}</SelectItem>
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>

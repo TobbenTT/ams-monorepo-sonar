@@ -13,15 +13,15 @@ import {
 } from 'lucide-react';
 
 const TYPE_META = {
-  PM01: { label: 'PM-01 Breakdown', bg: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700' },
-  PM02: { label: 'PM-02 Preventive', bg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700' },
-  PM03: { label: 'PM-03 Corrective', bg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-700' },
-  CORRECTIVO: { label: 'Correctivo', bg: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700' },
-  PREVENTIVO: { label: 'Preventivo', bg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700' },
-  PREDICTIVO: { label: 'Predictivo', bg: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-700' },
-  MEJORA: { label: 'Mejora', bg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700' },
-  INCIDENTE_OPERACIONAL: { label: 'Incidente', bg: 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-700' },
-  MONITOREO_CONDICION: { label: 'Monitoreo', bg: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-700' },
+  PM01: { label: 'PM01 Correctivo', bg: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700' },
+  PM02: { label: 'PM02 Preventivo', bg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700' },
+  PM03: { label: 'PM03 Predictivo', bg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-700' },
+  CORRECTIVO: { label: 'PM01 Correctivo', bg: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700' },
+  PREVENTIVO: { label: 'PM02 Preventivo', bg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700' },
+  PREDICTIVO: { label: 'PM03 Predictivo', bg: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-700' },
+  MEJORA: { label: 'PM04 Mejora', bg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700' },
+  INCIDENTE_OPERACIONAL: { label: 'PM05 Incidente', bg: 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-700' },
+  MONITOREO_CONDICION: { label: 'PM06 Monitoreo', bg: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-700' },
 };
 
 const STATUS_META = {
@@ -288,7 +288,7 @@ function DetailCard({ label, value }) {
 }
 
 
-/* ───── Work Center Inbox Tab ───── */
+/* ───── Technician Inbox Tab ───── */
 function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
   const myOrders = useMemo(() => {
     const all = [];
@@ -559,7 +559,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
 
         {/* Capacity bar */}
         <div className="flex items-center gap-4 text-sm flex-wrap">
-          <span className="text-muted-foreground">Available HH: <strong className="text-foreground">{totalAvailable}</strong></span>
+          <span className="text-muted-foreground">Total Available HH: <strong className="text-foreground">{totalAvailable}</strong></span>
           <span className="text-muted-foreground">Assigned: <strong className="text-foreground">{Math.round(totalAssigned)}</strong></span>
           <span className="text-muted-foreground">Remaining: <strong className="text-foreground">{Math.round(totalAvailable - totalAssigned)}</strong></span>
           <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden min-w-[100px]">
@@ -572,19 +572,16 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         {technicians.length > 0 ? (
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse" style={{ minWidth: days.length * 220 + 180 }}>
+              <table className="w-full border-collapse" style={{ minWidth: days.length * 140 + 180 }}>
                 <thead>
                   <tr className="bg-muted/50">
                     <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase border-r border-border" style={{ width: 180, minWidth: 180 }}>
-                      Work Center
+                      Technician
                     </th>
                     {days.map(d => (
-                      <th key={d.str} colSpan={2} className="text-center px-1 py-1.5 text-xs font-semibold text-muted-foreground border-r border-border last:border-r-0" style={{ minWidth: 220 }}>
-                        <div className="font-bold">{d.label} {d.dateLabel}</div>
-                        <div className="flex border-t border-border mt-1 pt-1">
-                          <div className="flex-1 text-[0.6rem] text-amber-600 font-semibold">Day</div>
-                          <div className="flex-1 text-[0.6rem] text-indigo-600 font-semibold border-l border-border">Night</div>
-                        </div>
+                      <th key={d.str} className="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground border-r border-border last:border-r-0" style={{ minWidth: 140 }}>
+                        <div className="font-bold">{d.label}</div>
+                        <div className="text-[0.65rem] font-normal">{d.dateLabel}</div>
                       </th>
                     ))}
                   </tr>
@@ -603,42 +600,37 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                           </div>
                         </td>
                         {days.map(d => {
-                          const shifts = ['DIA', 'NOCHE'];
-                          return shifts.map(shift => {
-                            const cellKey = `${tech.worker_id}:${d.str}:${shift}`;
-                            const baseKey = `${tech.worker_id}:${d.str}`;
-                            const cellWOs = (grid[cellKey] || grid[baseKey] || []).filter(wo => {
-                              const woShift = wo.shift || wo.turno || 'DIA';
-                              return shift === 'DIA' ? woShift !== 'NOCHE' : woShift === 'NOCHE';
-                            });
-                            const isTarget = dropTarget === cellKey && dragWO;
-                            const isDragging = !!dragWO;
-                            const bgShift = shift === 'NOCHE' ? 'bg-indigo-50/30 dark:bg-indigo-950/10' : '';
-                            return (
-                              <td key={`${d.str}-${shift}`}
-                                className={`px-1 py-1 ${shift === 'NOCHE' ? 'border-r border-border' : 'border-r border-border/30'} align-top transition-colors ${bgShift} ${isTarget ? 'bg-[#1B5E20]/10' : isDragging && cellWOs.length === 0 ? 'bg-emerald-50/30' : ''}`}
-                                style={{ minHeight: 60, height: 60, minWidth: 100 }}
-                                onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
-                                onDragLeave={() => setDropTarget(null)}
-                                onDrop={e => { e.preventDefault(); if (dragWO) onScheduleWO({ ...dragWO, shift }, tech, d.date); setDragWO(null); setDropTarget(null); }}>
-                                {cellWOs.map(wo => {
-                                  const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
-                                  return (
-                                    <div key={wo.wo_id} className={`mb-1 p-1 rounded text-[0.65rem] border cursor-default ${woType.bg}`}>
-                                      <div className="font-bold truncate">{wo.wo_number}</div>
-                                      <div className="truncate">{wo.equipment_tag}</div>
-                                      <div className="mt-0.5 opacity-70">{wo.estimated_hours||0}h</div>
-                                    </div>
-                                  );
-                                })}
-                                {cellWOs.length === 0 && isTarget && (
-                                  <div className="h-12 border-2 border-dashed border-[#1B5E20] rounded flex items-center justify-center bg-[#1B5E20]/5">
-                                    <span className="text-[0.6rem] font-medium text-[#1B5E20]">Soltar</span>
+                          const cellKey = `${tech.worker_id}:${d.str}`;
+                          const cellWOs = grid[cellKey] || [];
+                          const isTarget = dropTarget === cellKey && dragWO;
+                          const isDragging = !!dragWO;
+                          return (
+                            <td key={d.str}
+                              className={`px-1 py-1.5 border-r border-border last:border-r-0 align-top transition-colors ${isTarget ? 'bg-[#1B5E20]/10' : isDragging && cellWOs.length === 0 ? 'bg-emerald-50/50 dark:bg-emerald-900/5' : ''}`}
+                              style={{ minHeight: 70, height: 70 }}
+                              onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
+                              onDragLeave={() => setDropTarget(null)}
+                              onDrop={e => handleDrop(e, tech, d)}>
+                              {cellWOs.map(wo => {
+                                const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+                                return (
+                                  <div key={wo.wo_id} className={`mb-1 p-1.5 rounded text-xs border cursor-default ${woType.bg}`}>
+                                    <div className="font-bold truncate">{wo.wo_number}</div>
+                                    <div className="truncate text-[0.65rem]">{wo.equipment_tag}</div>
+                                    <div className="text-[0.6rem] mt-0.5">{wo.estimated_hours}h</div>
                                   </div>
-                                )}
-                              </td>
-                            );
-                          });
+                                );
+                              })}
+                              {cellWOs.length === 0 && isTarget && (
+                                <div className="h-14 border-2 border-dashed border-[#1B5E20] rounded flex items-center justify-center bg-[#1B5E20]/5">
+                                  <span className="text-xs font-medium text-[#1B5E20]">Soltar aquí</span>
+                                </div>
+                              )}
+                              {cellWOs.length === 0 && isDragging && !isTarget && (
+                                <div className="h-14 border border-dashed border-gray-300 dark:border-gray-600 rounded opacity-40" />
+                              )}
+                            </td>
+                          );
                         })}
                       </tr>
                     );
@@ -653,7 +645,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                       const maxDaily = technicians.length * 8;
                       const pct = maxDaily > 0 ? Math.min((total / maxDaily) * 100, 100) : 0;
                       return (
-                        <td key={d.str} colSpan={2} className="px-2 py-2.5 border-r border-border last:border-r-0">
+                        <td key={d.str} className="px-2 py-2.5 border-r border-border last:border-r-0">
                           <div className="text-sm font-bold text-foreground mb-1">{Math.round(total)}h</div>
                           <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                             <div className={`h-full rounded-full transition-all ${total > 0 ? 'bg-[#1B5E20]' : ''}`} style={{ width: `${pct}%` }} />
@@ -1011,16 +1003,13 @@ export default function Scheduling() {
 
   const loadCalendarData = () => {
     Promise.all([
-      api.listWorkCenters().catch(() => []),
-      api.listManagedWOs({ plant_id: plant }).catch(() => []),
-    ]).then(([wcs, allWOs]) => {
-      const wcList = Array.isArray(wcs) ? wcs : wcs?.work_centers || [];
-      setTechnicians(wcList.map(wc => ({ worker_id: wc.code || wc.work_center_code, name: wc.description || wc.name || wc.code, specialty: wc.specialty || wc.type || '', ...wc })));
-      const wos = Array.isArray(allWOs) ? allWOs : [];
-      // OTs PLANIFICADO = ready to schedule (left panel)
-      // OTs PROGRAMADO/EN_EJECUCION = already scheduled (on calendar)
-      setReleasedWOs(wos.filter(wo => ['PLANIFICADO','CREADO'].includes(wo.status)));
-      setScheduledWOs(wos.filter(wo => ['PROGRAMADO','EN_EJECUCION','REPROGRAMADO'].includes(wo.status)));
+      api.listTechnicians({ plant_id: plant }).catch(() => []),
+      api.listManagedWOs({ status: 'RELEASED', plant_id: plant }).catch(() => []),
+      api.listManagedWOs({ status: 'SCHEDULED', plant_id: plant }).catch(() => []),
+    ]).then(([techs, released, scheduled]) => {
+      setTechnicians(Array.isArray(techs) ? techs : techs?.technicians || []);
+      setReleasedWOs(Array.isArray(released) ? released : []);
+      setScheduledWOs(Array.isArray(scheduled) ? scheduled : []);
     });
   };
 

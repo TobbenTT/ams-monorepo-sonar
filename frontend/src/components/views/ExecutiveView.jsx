@@ -43,6 +43,8 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('mantenimiento');
   const [loading, setLoading] = useState(true);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [error, setError] = useState(null);
   const [execData, setExecData] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -307,6 +309,162 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
         {/* Completion breakdown */}
         <Card className="p-6">
           <h4 className="font-semibold text-gray-900 mb-4">{t('executive.implementationProgress')}</h4>
+          
+          {/* AI Failure Predictions */}
+          <div className="mb-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-red-600 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="font-bold text-red-900">Prediccion de Fallas IA</h3>
+              </div>
+              <Button variant="outline" size="sm"
+                disabled={summaryLoading}
+                onClick={async () => {
+                  setSummaryLoading(true);
+                  try {
+                    const res = await api.aiPredictFailures('');
+                    setAiSummary(prev => ({ ...prev, predictions: res.predictions }));
+                  } catch {}
+                  finally { setSummaryLoading(false); }
+                }}
+                className="border-red-300 text-red-700 hover:bg-red-100 gap-1">
+                <AlertCircle className="w-3 h-3" /> Analizar Equipos
+              </Button>
+            </div>
+            {aiSummary?.predictions?.length > 0 ? (
+              <div className="space-y-2">
+                {aiSummary.predictions.map((p, i) => (
+                  <div key={i} className={`flex items-center justify-between p-3 rounded-lg border ${
+                    p.risk_level === 'CRITICAL' ? 'bg-red-100 border-red-300' :
+                    p.risk_level === 'HIGH' ? 'bg-orange-100 border-orange-300' :
+                    p.risk_level === 'MEDIUM' ? 'bg-yellow-50 border-yellow-200' :
+                    'bg-green-50 border-green-200'
+                  }`}>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-bold">{p.equipment_tag}</span>
+                        <span className="text-xs text-gray-500">{p.equipment_name}</span>
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                          p.risk_level === 'CRITICAL' ? 'bg-red-600 text-white' :
+                          p.risk_level === 'HIGH' ? 'bg-orange-500 text-white' :
+                          p.risk_level === 'MEDIUM' ? 'bg-yellow-500 text-white' :
+                          'bg-green-500 text-white'
+                        }`}>{p.risk_level}</span>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">{p.recommendation}</p>
+                    </div>
+                    <div className="text-right ml-4">
+                      <div className="text-2xl font-bold" style={{color: p.risk_score >= 75 ? '#dc2626' : p.risk_score >= 50 ? '#ea580c' : p.risk_score >= 25 ? '#ca8a04' : '#16a34a'}}>{p.risk_score}%</div>
+                      <div className="text-[10px] text-gray-400">Risk Score</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-red-600">Haz click en "Analizar Equipos" para predecir probabilidades de falla.</p>
+            )}
+          </div>
+
+          {/* AI Weekly Summary */}
+          <div className="mb-6 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl border border-violet-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-violet-600 rounded-lg">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="font-bold text-violet-900">Resumen IA Semanal</h3>
+              </div>
+              <Button variant="outline" size="sm"
+                disabled={summaryLoading}
+                onClick={async () => {
+                  setSummaryLoading(true);
+                  try {
+                    const res = await api.getAISummary(7);
+                    setAiSummary(res);
+                  } catch { setAiSummary({ summary: 'Error al generar resumen', stats: {} }); }
+                  finally { setSummaryLoading(false); }
+                }}
+                className="border-violet-300 text-violet-700 hover:bg-violet-100 gap-1">
+                {summaryLoading ? <><Loader2 className="w-3 h-3 animate-spin" /> Generando...</> : <><TrendingUp className="w-3 h-3" /> {aiSummary ? 'Actualizar' : 'Generar'}</>}
+              </Button>
+              {aiSummary && (
+                <Button variant="outline" size="sm"
+                  onClick={() => {
+                    const s = aiSummary.stats || {};
+                    const preds = aiSummary.predictions || [];
+                    const lines = [
+                      'REPORTE OPERACIONAL SEMANAL — MANTENIMIENTO OCP',
+                      '='.repeat(55),
+                      'Periodo: Ultimos ' + (s.period_days || 7) + ' dias',
+                      'Generado: ' + new Date().toLocaleString('es-CL'),
+                      '',
+                      '1. RESUMEN ESTADISTICO',
+                      '-'.repeat(30),
+                      'Avisos creados: ' + (s.total_wrs || 0),
+                      'Ordenes de trabajo: ' + (s.total_wos || 0),
+                      'Horas-hombre reales: ' + (s.total_actual_hours || 0) + 'h',
+                      '',
+                      'Por estado: ' + Object.entries(s.wr_by_status || {}).map(([k,v]) => k + ': ' + v).join(', '),
+                      'Por prioridad: ' + Object.entries(s.wr_by_priority || {}).map(([k,v]) => k + ': ' + v).join(', '),
+                      '',
+                      '2. EQUIPOS MAS PROBLEMATICOS',
+                      '-'.repeat(30),
+                      ...(s.top_equipment || []).map((e, i) => (i+1) + '. ' + e.tag + ' — ' + e.count + ' incidentes'),
+                      '',
+                      '3. ANALISIS IA',
+                      '-'.repeat(30),
+                      aiSummary.summary || 'No disponible',
+                      '',
+                      ...(preds.length ? [
+                        '4. PREDICCION DE FALLAS',
+                        '-'.repeat(30),
+                        ...preds.map(p => p.equipment_tag + ' (' + p.risk_level + ' ' + p.risk_score + '%) — ' + p.recommendation),
+                      ] : []),
+                    ];
+                    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'reporte-operacional-' + new Date().toISOString().slice(0, 10) + '.txt';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="border-violet-300 text-violet-700 hover:bg-violet-100 gap-1">
+                  <TrendingUp className="w-3 h-3" /> Exportar
+                </Button>
+              )}
+            </div>
+            {aiSummary ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="bg-white rounded-lg p-3 text-center border border-violet-100">
+                    <span className="text-2xl font-bold text-violet-700">{aiSummary.stats?.total_wrs || 0}</span>
+                    <span className="text-xs text-gray-500 block">Avisos</span>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-center border border-violet-100">
+                    <span className="text-2xl font-bold text-violet-700">{aiSummary.stats?.total_wos || 0}</span>
+                    <span className="text-xs text-gray-500 block">OTs</span>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-center border border-violet-100">
+                    <span className="text-2xl font-bold text-violet-700">{aiSummary.stats?.total_actual_hours || 0}h</span>
+                    <span className="text-xs text-gray-500 block">HH Reales</span>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-center border border-violet-100">
+                    <span className="text-2xl font-bold text-violet-700">{aiSummary.stats?.top_equipment?.[0]?.tag || '-'}</span>
+                    <span className="text-xs text-gray-500 block">Top Equipo</span>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-violet-100 text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                  {aiSummary.summary}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-violet-600">Haz click en "Generar" para obtener un resumen inteligente de la actividad de mantenimiento de los ultimos 7 dias.</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: t('executive.strategy'), val: e.strategy_completion },

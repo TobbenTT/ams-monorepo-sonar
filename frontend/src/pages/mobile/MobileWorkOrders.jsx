@@ -8,7 +8,7 @@ import * as api from '../../api';
 
 const STATUS_CONFIG = {
     DRAFT:              { label: 'Creada',       color: '#94A3B8', bg: '#F1F5F9',  step: 1 },
-    PENDING:            { label: 'Pending',    color: '#3B82F6', bg: '#DBEAFE',  step: 2 },
+    PENDING:            { label: 'Pendiente',    color: '#3B82F6', bg: '#DBEAFE',  step: 2 },
     ASSIGNED:           { label: 'Asignada',     color: '#06B6D4', bg: '#CFFAFE',  step: 4 },
     IN_PROGRESS:        { label: 'En Ejecución', color: '#10B981', bg: '#D1FAE5',  step: 5 },
     PAUSED:             { label: 'Pausada',      color: '#F97316', bg: '#FFF7ED',  step: 5 },

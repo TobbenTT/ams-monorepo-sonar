@@ -11,8 +11,8 @@ import * as api from '../../api';
 const PRIORITY_META = {
     P1: { label: '1 - Urgente', color: '#EF4444', bg: '#FEE2E2', sub: '< 24 horas', claseOT: 'PM03', claseOTLabel: 'No Programado' },
     P2: { label: '2 - Programa en Ejecución', color: '#F97316', bg: '#FED7AA', sub: '< 7 días', claseOT: 'PM03', claseOTLabel: 'No Programado' },
-    P3: { label: '3 - Próximo Programa', color: '#EAB308', bg: '#FEF3C7', sub: '> 7 días', claseOT: 'PM01', claseOTLabel: 'Scheduled' },
-    P4: { label: '4 - Parada de Planta', color: '#3B82F6', bg: '#DBEAFE', sub: 'Parada programada', claseOT: 'PM01', claseOTLabel: 'Scheduled' },
+    P3: { label: '3 - Próximo Programa', color: '#EAB308', bg: '#FEF3C7', sub: '> 7 días', claseOT: 'PM01', claseOTLabel: 'Programado' },
+    P4: { label: '4 - Parada de Planta', color: '#3B82F6', bg: '#DBEAFE', sub: 'Parada programada', claseOT: 'PM01', claseOTLabel: 'Programado' },
 };
 
 const ACTIVITY_CLASS_LABELS = {
@@ -31,15 +31,15 @@ const STATUS_META = {
     DRAFT: { label: 'Borrador', color: '#94A3B8', step: 0 },
     PENDING_VALIDATION: { label: 'En Revisión', color: '#3B82F6', step: 1 },
     VALIDATED: { label: 'Validado', color: '#10B981', step: 2 },
-    APPROVED: { label: 'Approved', color: '#10B981', step: 2 },
+    APPROVED: { label: 'Aprobado', color: '#10B981', step: 2 },
     ACTIVE: { label: 'Activo', color: '#F59E0B', step: 3 },
     IN_PROGRESS: { label: 'En Progreso', color: '#F59E0B', step: 3 },
     ASSIGNED: { label: 'Asignado', color: '#8B5CF6', step: 3 },
-    SCHEDULED: { label: 'Scheduled', color: '#8B5CF6', step: 3 },
+    SCHEDULED: { label: 'Programado', color: '#8B5CF6', step: 3 },
     COMPLETED: { label: 'Completado', color: '#047857', step: 4 },
-    CLOSED: { label: 'Closed', color: '#6366F1', step: 4 },
-    REJECTED: { label: 'Rejected', color: '#EF4444', step: -1 },
-    CANCELLED: { label: 'Cancelled', color: '#6B7280', step: -1 },
+    CLOSED: { label: 'Cerrado', color: '#6366F1', step: 4 },
+    REJECTED: { label: 'Rechazado', color: '#EF4444', step: -1 },
+    CANCELLED: { label: 'Cancelado', color: '#6B7280', step: -1 },
 };
 
 const FLOW_STEPS = ['Creado', 'Revisión', 'Aprobado', 'Ejecución', 'Cerrado'];

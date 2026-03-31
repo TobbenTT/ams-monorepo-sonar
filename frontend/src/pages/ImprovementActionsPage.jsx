@@ -61,7 +61,9 @@ export default function ImprovementActionsPage() {
   const toast = useToast();
   const plantId = selectedPlant?.plant_id || selectedPlant || 'OCP-JFC1';
 
-  const [automaticCreation, setAutomaticCreation] = useState(true);
+  const [activeModule, setActiveModule] = useState('acciones'); // 'acciones' | 'hallazgos'
+  const [hallazgos, setHallazgos] = useState([]);
+    const [automaticCreation, setAutomaticCreation] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actions, setActions] = useState([]);
@@ -110,12 +112,15 @@ export default function ImprovementActionsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [actionsRes, summaryRes] = await Promise.all([
+      const [actionsRes, summaryRes, hallazgosRes] = await Promise.all([
         api.listImprovementActions({ plant_id: plantId }).catch(() => ({ items: [] })),
         api.getImprovementActionsSummary({ plant_id: plantId }).catch(() => ({})),
+        api.listWorkRequests({ plant_id: plantId, limit: 100 }).catch(() => []),
       ]);
       setActions(actionsRes?.items || []);
       setSummary(summaryRes || {});
+      const wrItems = Array.isArray(hallazgosRes) ? hallazgosRes : (hallazgosRes?.items || []);
+      setHallazgos(wrItems.filter(r => !['COMPLETED','CLOSED','CANCELLED','REJECTED'].includes(r.status)));
     } catch (err) {
       setError(err.message || t('improvementActions.failedToLoad'));
     } finally {
@@ -274,6 +279,73 @@ export default function ImprovementActionsPage() {
           </div>
         </div>
       </Card>
+
+      {/* Module Tab Switcher */}
+      <div className="flex border-b border-gray-200 mb-2">
+        <button
+          onClick={() => setActiveModule('acciones')}
+          className={`pb-3 px-5 text-sm font-semibold border-b-2 transition-colors ${activeModule === 'acciones' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Acciones de Mejora
+        </button>
+        <button
+          onClick={() => setActiveModule('hallazgos')}
+          className={`pb-3 px-5 text-sm font-semibold border-b-2 transition-colors ${activeModule === 'hallazgos' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Hallazgos / Avisos
+          {hallazgos.length > 0 && <span className="ml-1.5 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">{hallazgos.length}</span>}
+        </button>
+      </div>
+
+      {activeModule === 'hallazgos' ? (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">Hallazgos y Avisos de Trabajo</h2>
+            <span className="text-sm text-gray-400">{hallazgos.length} hallazgos activos</span>
+          </div>
+          <div className="grid gap-3">
+            {hallazgos.length === 0 ? (
+              <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200">
+                <p className="text-4xl mb-3 opacity-40">🔍</p>
+                <p className="font-medium">Sin hallazgos activos</p>
+              </div>
+            ) : hallazgos.map(h => {
+              const pColor = { P1: 'bg-red-100 text-red-700 border-red-300', P2: 'bg-orange-100 text-orange-700 border-orange-300', P3: 'bg-yellow-100 text-yellow-700 border-yellow-300', P4: 'bg-blue-100 text-blue-700 border-blue-300' };
+              const sColor = { PENDING_VALIDATION: 'bg-amber-50 text-amber-700', VALIDATED: 'bg-emerald-50 text-emerald-700', IN_PROGRESS: 'bg-blue-50 text-blue-700', COMPLETED: 'bg-purple-50 text-purple-700' };
+              const sLabel = { PENDING_VALIDATION: 'Pendiente', VALIDATED: 'Aprobado', IN_PROGRESS: 'En Ejecución', COMPLETED: 'Completado', REJECTED: 'Rechazado' };
+              return (
+                <div key={h.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className="text-xs font-mono text-gray-400">{h.id?.slice(0, 10)}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded border ${pColor[h.priority_requested] || 'bg-gray-100 text-gray-600 border-gray-300'}`}>
+                          {h.priority_requested || '—'}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded ${sColor[h.status] || 'bg-gray-50 text-gray-600'}`}>
+                          {sLabel[h.status] || h.status}
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900 mb-1">{h.failure_description}</p>
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span>🏭 {h.equipment_name || h.equipment_tag}</span>
+                        {h.created_at && <span>📅 {new Date(h.created_at).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                        {h.failure_category && <span>🏷️ {h.failure_category}</span>}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      {h.ai_confidence && (
+                        <div className="text-xs text-gray-400 mb-1">IA: {Math.round(h.ai_confidence * 100)}%</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
 
       {/* Main Section Title */}
       <div className="flex items-center justify-between">
@@ -686,6 +758,8 @@ export default function ImprovementActionsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </div>
+      )}
     </div>
   );
 }

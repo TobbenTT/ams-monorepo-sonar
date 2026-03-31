@@ -176,6 +176,7 @@ export const startWorkRequest = (id) => put(`/work-requests/${id}/start`);
 export const completeWorkRequest = (id, d) => put(`/work-requests/${id}/complete`, d);
 export const closeWorkRequest = (id, d) => put(`/work-requests/${id}/close`, d);
 export const createWRManual = (d) => post('/work-requests/manual', d);
+export const aiAssistWR = (d) => post("/work-requests/ai-assist", d);
 
 // ── Managed Work Orders (Jorge Phase 2 — OT lifecycle) ──
 export const listManagedWOs = (p) => get('/managed-work-orders/', p);
@@ -186,6 +187,7 @@ export const updateManagedWO = (id, d) => put(`/managed-work-orders/${id}`, d);
 export const planManagedWO = (id) => put(`/managed-work-orders/${id}/plan`);
 export const releaseManagedWO = (id) => put(`/managed-work-orders/${id}/release`);
 export const scheduleManagedWO = (id, d) => put(`/managed-work-orders/${id}/schedule`, d);
+export const rescheduleManagedWO = (id) => put(`/managed-work-orders/${id}/reschedule`);
 export const startManagedWO = (id) => put(`/managed-work-orders/${id}/start`);
 export const completeManagedWO = (id, d) => put(`/managed-work-orders/${id}/complete`, d);
 export const closeManagedWO = (id) => put(`/managed-work-orders/${id}/close`);
@@ -412,3 +414,38 @@ export const getFailureProfile = (code) => get(`/catalogs/failure-profile/${code
 export const getEquipmentTypes = (search) => get('/catalogs/equipment-types', search ? { search } : {});
 export const getCatalogTaxonomy = (p) => get('/catalogs/taxonomy', p);
 export const getCatalogCriticality = (tag) => get('/catalogs/criticality', tag ? { tag } : {});
+
+// ── SAP PM stubs ──
+export const listMaintenancePlans = (p) => get('/sap-pm/maintenance-plans', p);
+export const getEquipmentBOM = (id) => get(`/sap-pm/bom/${id}`);
+export const listMeasuringPoints = (p) => get('/sap-pm/measuring-points', p);
+export const listPermits = (p) => get('/sap-pm/permits', p);
+export const listPurchaseReqs = (p) => get('/sap-pm/purchase-reqs', p);
+export const listCostCenters = (p) => get('/sap-pm/cost-centers', p);
+
+// ── Planning stubs ──
+export const draftManagedWO = (d) => post('/managed-work-orders/', d);
+export const deleteManagedWO = (id) => del(`/managed-work-orders/${id}`);
+export const listSettlementRules = (p) => get('/sap-pm/settlement-rules', p);
+export const listInventory = (p) => get('/sap-pm/inventory', p);
+export const suggestFailureFields = (d) => post('/work-requests/ai-assist', d);
+
+// ── Vision AI ──
+export const aiAssistImage = (d) => post("/work-requests/ai-assist-image", d);
+
+// -- AI Feedback --
+export const submitAIFeedback = (id, d) => post("/work-requests/\/feedback", d);
+export const getAIFeedbackStats = (tag) => get("/work-requests/ai-feedback/stats", tag ? { equipment_tag: tag } : {});
+export const searchMaterials = (q) => get("/work-requests/search-materials", { q });
+
+// -- AI Summary & Verify Close --
+export const getAISummary = (days) => get('/work-requests/ai-summary', { days: days || 7 });
+export const aiVerifyClose = (woId) => post(`/work-requests/ai-verify-close/${woId}`, {});
+
+// -- AI Predictions & Scheduling --
+export const aiPredictFailures = (tag) => get('/work-requests/ai-predict-failures', tag ? { equipment_tag: tag } : {});
+export const aiSuggestSchedule = (woId) => post(`/work-requests/ai-suggest-schedule?wo_id=${woId}`, {});
+
+// -- Work Centers & Capacity --
+export const listWorkCenters = (params) => get('/work-requests/work-centers', params || {});
+export const getCapacityEvaluation = (weekOffset, wc) => get('/work-requests/capacity-evaluation', { week_offset: weekOffset || 0, work_center: wc || '' });

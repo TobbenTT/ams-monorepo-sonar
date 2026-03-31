@@ -194,16 +194,16 @@ export default function Login() {
                         <div className="text-xs text-muted-foreground text-center mb-3">{t('auth.quickAccess') || 'Acceso rápido'}</div>
                         <div className="grid grid-cols-1 gap-2">
                             {[
-                                { user: 'admin', role: 'Administrator', color: '#047857' },
-                                { user: 'manager', role: 'Manager', color: '#1E40AF' },
-                                { user: 'planner', role: 'Planner', color: '#7C3AED' },
-                                { user: 'supervisor1', role: 'Supervisor', color: '#B45309' },
-                                { user: 'tecnico', role: 'Technician', color: '#059669' },
-                            ].map(({ user, role, color }) => (
+                                { user: 'admin', role: 'Administrador', color: '#047857', pass: 'password123' },
+                                { user: 'planner1', role: 'Planner', color: '#2563eb', pass: 'Planner123' },
+                                { user: 'tecnico1', role: 'T\u00e9cnico', color: '#d97706', pass: 'Tecnico123' },
+                                { user: 'supervisor1', role: 'Supervisor', color: '#7c3aed', pass: 'Supervisor123' },
+                                { user: 'manager1', role: 'Manager', color: '#dc2626', pass: 'Manager123' },
+                            ].map(({ user, role, color, pass }) => (
                                 <button
                                     key={user}
                                     type="button"
-                                    onClick={() => { setUsername(user); setPassword('OCP2026!'); }}
+                                    onClick={() => { setUsername(user); setPassword(pass); }}
                                     className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-card hover:bg-muted transition-colors text-left"
                                 >
                                     <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: color }}>

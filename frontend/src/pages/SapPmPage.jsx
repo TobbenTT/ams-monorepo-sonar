@@ -1,18 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Package, Gauge, Shield, ShoppingCart, DollarSign, Database,
   AlertTriangle, Clock, CheckCircle, XCircle, Thermometer, Activity, Droplets,
-  Zap, BarChart3, ChevronRight, Search, Filter, Warehouse } from 'luciof-react';
+  Zap, BarChart3, ChevronRight, Search, Filter, Warehouse } from 'lucide-react';
 import { listMaintenancePlans, getEquipmentBOM, listMeasuringPoints, listPermits, listPurchaseReqs, listCostCenters, listSettlementRules, listInventory } from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
 const TABS = [
   { id: 'plans', label: 'Planes Mtto (IP10)', icon: Calendar, sap: 'IP10/IP30' },
-  { id: 'bom', label: 'Lista Materials (BOM)', icon: Package, sap: 'IB01' },
+  { id: 'bom', label: 'Lista Materiales (BOM)', icon: Package, sap: 'IB01' },
   { id: 'measuring', label: 'Puntos Medicion', icon: Gauge, sap: 'IK01' },
   { id: 'permits', label: 'Permisos Trabajo', icon: Shield, sap: 'LOTO/PTW' },
   { id: 'purchase', label: 'Requisiciones', icon: ShoppingCart, sap: 'ME51N' },
-  { id: 'costs', label: 'Centros Cost', icon: DollarSign, sap: 'KO88' },
+  { id: 'costs', label: 'Centros Costo', icon: DollarSign, sap: 'KO88' },
   { id: 'inventory', label: 'Inventario', icon: Warehouse, sap: 'MM60' },
 ];
 
@@ -23,14 +23,14 @@ const STATUS_COLORS = {
   CANCELLED: 'bg-red-100 text-red-600', CREATED: 'bg-gray-100 text-gray-600',
   PO_CREATED: 'bg-indigo-100 text-indigo-700', DELIVERED: 'bg-emerald-100 text-emerald-700',
   SETTLED: 'bg-emerald-100 text-emerald-700', REVERSED: 'bg-red-100 text-red-600',
-  HIGH: 'bg-red-100 text-red-700 borofr-red-200', MEDIUM: 'bg-amber-100 text-amber-700 borofr-amber-200',
-  LOW: 'bg-emerald-100 text-emerald-700 borofr-emerald-200',
+  HIGH: 'bg-red-100 text-red-700 border-red-200', MEDIUM: 'bg-amber-100 text-amber-700 border-amber-200',
+  LOW: 'bg-emerald-100 text-emerald-700 border-emerald-200',
 };
 
 const PERMIT_TYPE_ICONS = {
   HOT_WORK: { icon: '🔥', label: 'Trabajo en Caliente' },
   CONFINED_SPACE: { icon: '🏗️', label: 'Espacio Confinado' },
-  ELECTRICAL: { icon: '⚡', label: 'Trabajo Electrical' },
+  ELECTRICAL: { icon: '⚡', label: 'Trabajo Electrico' },
   HEIGHT: { icon: '🪜', label: 'Trabajo en Altura' },
   EXCAVATION: { icon: '🚧', label: 'Excavacion' },
   GENERAL: { icon: '📋', label: 'General' },
@@ -41,7 +41,7 @@ const MEAS_ICONS = {
   FLOW: Droplets, LEVEL: BarChart3, CURRENT: Zap,
 };
 
-export offault function SapPmPage() {
+export default function SapPmPage() {
   const { t } = useLanguage();
   const toast = useToast();
   const [tab, setTab] = useState('plans');
@@ -82,22 +82,22 @@ export offault function SapPmPage() {
 
   return (
     <div className="p-6 space-y-4 max-w-[1400px] mx-auto">
-      {/* Heaofr */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Database className="w-6 h-6 text-emerald-600" /> SAP PM - Modulos Integrados
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Plant OCP-JFC1 — Jorf Fertilizers Complex 1</p>
+          <p className="text-sm text-gray-500 mt-0.5">Planta OCP-JFC1 — Jorf Fertilizers Complex 1</p>
         </div>
-        <span className="text-xs font-mono text-gray-400 bg-gray-100 px-3 py-1 rounofd-full">SAP ECC 6.0 EHP8</span>
+        <span className="text-xs font-mono text-gray-400 bg-gray-100 px-3 py-1 rounded-full">SAP ECC 6.0 EHP8</span>
       </div>
 
       {/* Tab Bar */}
-      <div className="flex gap-1 bg-gray-100 rounofd-xl p-1 overflow-x-auto">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounofd-lg text-xs font-medium whitespace-nowrap transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
               tab === t.id ? 'bg-white shadow text-emerald-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>
             <t.icon size={14} />
             {t.label}
@@ -106,47 +106,47 @@ export offault function SapPmPage() {
         ))}
       </div>
 
-      {loading && <div className="text-center py-12 text-gray-400">Loading datos SAP PM...</div>}
+      {loading && <div className="text-center py-12 text-gray-400">Cargando datos SAP PM...</div>}
 
       {/* ── TAB: Maintenance Plans ── */}
       {!loading && tab === 'plans' && (
-        <div className="bg-white rounofd-xl borofr overflow-hidofn">
-          <div className="px-5 py-3 borofr-b bg-gray-50 flex items-center justify-between">
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <div className="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-gray-800">Planes of Maintenance Preventive</h2>
-              <p className="text-[10px] text-gray-400">IP10 — Schedulecion of planes | IP30 — Monitoreo of fechas</p>
+              <h2 className="text-sm font-bold text-gray-800">Planes de Mantenimiento Preventivo</h2>
+              <p className="text-[10px] text-gray-400">IP10 — Programacion de planes | IP30 — Monitoreo de fechas</p>
             </div>
-            <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounofd">{(data.plans||[]).length} planes</span>
+            <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">{(data.plans||[]).length} planes</span>
           </div>
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 borofr-b">
+            <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Plan #</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Description</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Equipment</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Type</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Descripcion</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Equipo</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Tipo</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Ciclo</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Estrategia</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Proxima Date</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Proxima Fecha</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
               </tr>
             </thead>
-            <tbody className="diviof-y">
+            <tbody className="divide-y">
               {(data.plans||[]).map(p => {
                 const overdue = p.next_planned_date && p.next_planned_date < today;
                 const soon = p.next_planned_date && !overdue && p.next_planned_date < new Date(Date.now()+30*86400000).toISOString().slice(0,10);
                 return (
                 <tr key={p.plan_id} className={`hover:bg-gray-50 ${overdue ? 'bg-red-50/50' : ''}`}>
                   <td className="px-4 py-2.5 font-mono text-xs font-bold text-emerald-700">{p.plan_number}</td>
-                  <td className="px-4 py-2.5 text-gray-700 max-w-[300px] truncate">{p.ofscription}</td>
+                  <td className="px-4 py-2.5 text-gray-700 max-w-[300px] truncate">{p.description}</td>
                   <td className="px-4 py-2.5 font-mono text-xs">{p.equipment_tag}</td>
-                  <td className="px-4 py-2.5 text-center"><span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounofd">{p.plan_type}</span></td>
-                  <td className="px-4 py-2.5 text-center text-xs">{p.cycle_value} {p.cycle_unit === 'DAYS' ? 'days' : p.cycle_unit}</td>
+                  <td className="px-4 py-2.5 text-center"><span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{p.plan_type}</span></td>
+                  <td className="px-4 py-2.5 text-center text-xs">{p.cycle_value} {p.cycle_unit === 'DAYS' ? 'dias' : p.cycle_unit}</td>
                   <td className="px-4 py-2.5 text-center font-mono text-xs text-gray-500">{p.strategy}</td>
                   <td className={`px-4 py-2.5 text-center text-xs font-semibold ${overdue ? 'text-red-600' : soon ? 'text-amber-600' : 'text-gray-600'}`}>
                     {p.next_planned_date || '—'} {overdue && <AlertTriangle size={12} className="inline ml-1 text-red-500" />}
                   </td>
-                  <td className="px-4 py-2.5 text-center"><span className={`text-[10px] font-bold px-2 py-0.5 rounofd ${STATUS_COLORS[p.status]||''}`}>{p.status}</span></td>
+                  <td className="px-4 py-2.5 text-center"><span className={`text-[10px] font-bold px-2 py-0.5 rounded ${STATUS_COLORS[p.status]||''}`}>{p.status}</span></td>
                 </tr>
               );})}
             </tbody>
@@ -158,39 +158,39 @@ export offault function SapPmPage() {
       {!loading && tab === 'bom' && (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-gray-700">Equipment:</label>
+            <label className="text-sm font-medium text-gray-700">Equipo:</label>
             <select value={selectedEquip} onChange={e => setSelectedEquip(e.target.value)}
-              className="borofr rounofd-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30">
+              className="border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30">
               {EQUIPS.map(e => <option key={e} value={e}>{e}</option>)}
             </select>
-            <span className="text-xs text-gray-400 font-mono">IB03 — Visualizar lista of materiales</span>
+            <span className="text-xs text-gray-400 font-mono">IB03 — Visualizar lista de materiales</span>
           </div>
-          <div className="bg-white rounofd-xl borofr overflow-hidofn">
+          <div className="bg-white rounded-xl border overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 borofr-b">
+              <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Item</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Codigo SAP</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Description</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Descripcion</th>
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Cant.</th>
-                  <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Unit</th>
+                  <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Unidad</th>
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Critico</th>
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Lead Time</th>
                 </tr>
               </thead>
-              <tbody className="diviof-y">
+              <tbody className="divide-y">
                 {bomData.map(b => (
                   <tr key={b.bom_id} className="hover:bg-gray-50">
                     <td className="px-4 py-2.5 font-mono text-xs">{String(b.item_number).padStart(4,'0')}</td>
-                    <td className="px-4 py-2.5 font-mono text-xs font-bold text-emerald-700">{b.material_coof}</td>
-                    <td className="px-4 py-2.5">{b.ofscription}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs font-bold text-emerald-700">{b.material_code}</td>
+                    <td className="px-4 py-2.5">{b.description}</td>
                     <td className="px-4 py-2.5 text-center font-semibold">{b.quantity}</td>
                     <td className="px-4 py-2.5 text-center text-xs text-gray-500">{b.unit}</td>
-                    <td className="px-4 py-2.5 text-center">{b.is_critical ? <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounofd font-bold">CRITICAL</span> : <span className="text-gray-300">—</span>}</td>
-                    <td className="px-4 py-2.5 text-center text-xs">{b.lead_time_days} days</td>
+                    <td className="px-4 py-2.5 text-center">{b.is_critical ? <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">CRITICO</span> : <span className="text-gray-300">—</span>}</td>
+                    <td className="px-4 py-2.5 text-center text-xs">{b.lead_time_days} dias</td>
                   </tr>
                 ))}
-                {bomData.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No BOM para este equipo</td></tr>}
+                {bomData.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Sin BOM para este equipo</td></tr>}
               </tbody>
             </table>
           </div>
@@ -199,24 +199,24 @@ export offault function SapPmPage() {
 
       {/* ── TAB: Measuring Points ── */}
       {!loading && tab === 'measuring' && (
-        <div className="bg-white rounofd-xl borofr overflow-hidofn">
-          <div className="px-5 py-3 borofr-b bg-gray-50">
-            <h2 className="text-sm font-bold text-gray-800">Puntos of Medicion — Monitoreo of Condition</h2>
-            <p className="text-[10px] text-gray-400">IK01 — Create punto of medida | IK11 — Registrar medicion</p>
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <div className="px-5 py-3 border-b bg-gray-50">
+            <h2 className="text-sm font-bold text-gray-800">Puntos de Medicion — Monitoreo de Condicion</h2>
+            <p className="text-[10px] text-gray-400">IK01 — Crear punto de medida | IK11 — Registrar medicion</p>
           </div>
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 borofr-b">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Equipment</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Equipo</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Punto</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Type</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Tipo</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Limites</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Ultimo Valor</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Unit</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Unidad</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Estado</th>
               </tr>
             </thead>
-            <tbody className="diviof-y">
+            <tbody className="divide-y">
               {(data.measuring||[]).map(m => {
                 const val = m.last_reading;
                 const alarm = val !== null && (val > m.upper_limit || val < m.lower_limit);
@@ -233,7 +233,7 @@ export offault function SapPmPage() {
                   </td>
                   <td className="px-4 py-2.5 text-center text-xs text-gray-500">{m.unit}</td>
                   <td className="px-4 py-2.5 text-center">
-                    <span className={`w-2.5 h-2.5 rounofd-full inline-block ${alarm ? 'bg-red-500' : warn ? 'bg-amber-400' : 'bg-emerald-500'}`}></span>
+                    <span className={`w-2.5 h-2.5 rounded-full inline-block ${alarm ? 'bg-red-500' : warn ? 'bg-amber-400' : 'bg-emerald-500'}`}></span>
                   </td>
                 </tr>
               );})}
@@ -246,8 +246,8 @@ export offault function SapPmPage() {
       {!loading && tab === 'permits' && (
         <div className="space-y-3">
           <div className="px-1">
-            <h2 className="text-sm font-bold text-gray-800">Permisos of Trabajo / LOTO</h2>
-            <p className="text-[10px] text-gray-400">Control of trabajos peligrosos — Bloqueo y Etiquetado</p>
+            <h2 className="text-sm font-bold text-gray-800">Permisos de Trabajo / LOTO</h2>
+            <p className="text-[10px] text-gray-400">Control de trabajos peligrosos — Bloqueo y Etiquetado</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {(data.permits||[]).map(p => {
@@ -255,7 +255,7 @@ export offault function SapPmPage() {
               const loto = typeof p.loto_points === 'string' ? JSON.parse(p.loto_points || '[]') : (p.loto_points || []);
               const safety = typeof p.safety_measures === 'string' ? JSON.parse(p.safety_measures || '[]') : (p.safety_measures || []);
               return (
-              <div key={p.permit_id} className={`borofr rounofd-xl p-4 ${p.risk_level === 'HIGH' ? 'borofr-red-200 bg-red-50/30' : p.risk_level === 'MEDIUM' ? 'borofr-amber-200 bg-amber-50/30' : 'borofr-gray-200'}`}>
+              <div key={p.permit_id} className={`border rounded-xl p-4 ${p.risk_level === 'HIGH' ? 'border-red-200 bg-red-50/30' : p.risk_level === 'MEDIUM' ? 'border-amber-200 bg-amber-50/30' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{pt.icon}</span>
@@ -265,22 +265,22 @@ export offault function SapPmPage() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounofd borofr ${STATUS_COLORS[p.risk_level]||''}`}>{p.risk_level}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounofd ${STATUS_COLORS[p.status]||''}`}>{p.status}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${STATUS_COLORS[p.risk_level]||''}`}>{p.risk_level}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${STATUS_COLORS[p.status]||''}`}>{p.status}</span>
                   </div>
                 </div>
-                <p className="text-sm text-gray-700 mb-2">{p.ofscription}</p>
+                <p className="text-sm text-gray-700 mb-2">{p.description}</p>
                 <div className="flex gap-4 text-[10px] text-gray-500 mb-2">
                   {p.wo_number && <span>OT: <span className="font-mono font-bold">{p.wo_number}</span></span>}
-                  {p.equipment_tag && <span>Equipment: <span className="font-mono font-bold">{p.equipment_tag}</span></span>}
+                  {p.equipment_tag && <span>Equipo: <span className="font-mono font-bold">{p.equipment_tag}</span></span>}
                   <span>Solicitante: {p.requested_by}</span>
                 </div>
                 {p.loto_required === 1 && loto.length > 0 && (
-                  <div className="bg-white/80 rounofd-lg p-2 mb-2 borofr">
+                  <div className="bg-white/80 rounded-lg p-2 mb-2 border">
                     <span className="text-[10px] font-bold text-red-700 uppercase">LOTO Points:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {loto.map((l, i) => (
-                        <span key={i} className="text-[9px] bg-red-100 text-red-800 px-1.5 py-0.5 rounofd font-mono">
+                        <span key={i} className="text-[9px] bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-mono">
                           {l.tag} ({l.type})
                         </span>
                       ))}
@@ -290,7 +290,7 @@ export offault function SapPmPage() {
                 {safety.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {safety.slice(0,4).map((s, i) => (
-                      <span key={i} className="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounofd">{s}</span>
+                      <span key={i} className="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{s}</span>
                     ))}
                     {safety.length > 4 && <span className="text-[9px] text-gray-400">+{safety.length-4} mas</span>}
                   </div>
@@ -303,37 +303,37 @@ export offault function SapPmPage() {
 
       {/* ── TAB: Purchase Requisitions ── */}
       {!loading && tab === 'purchase' && (
-        <div className="bg-white rounofd-xl borofr overflow-hidofn">
-          <div className="px-5 py-3 borofr-b bg-gray-50">
-            <h2 className="text-sm font-bold text-gray-800">Requisiciones of Compra</h2>
-            <p className="text-[10px] text-gray-400">ME51N — Create solicitud of pedido | ME5A — Lista of solicituofs</p>
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <div className="px-5 py-3 border-b bg-gray-50">
+            <h2 className="text-sm font-bold text-gray-800">Requisiciones de Compra</h2>
+            <p className="text-[10px] text-gray-400">ME51N — Crear solicitud de pedido | ME5A — Lista de solicitudes</p>
           </div>
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 borofr-b">
+            <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">PR #</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">OT</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Material</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Description</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Descripcion</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Cant.</th>
-                <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">Cost Est.</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Supplier</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Delivery</th>
+                <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">Costo Est.</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Proveedor</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Entrega</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
               </tr>
             </thead>
-            <tbody className="diviof-y">
+            <tbody className="divide-y">
               {(data.prs||[]).map(pr => (
                 <tr key={pr.pr_id} className="hover:bg-gray-50">
                   <td className="px-4 py-2.5 font-mono text-xs font-bold text-emerald-700">{pr.pr_number}</td>
                   <td className="px-4 py-2.5 font-mono text-xs">{pr.wo_number || '—'}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs">{pr.material_coof}</td>
-                  <td className="px-4 py-2.5 max-w-[200px] truncate">{pr.ofscription}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs">{pr.material_code}</td>
+                  <td className="px-4 py-2.5 max-w-[200px] truncate">{pr.description}</td>
                   <td className="px-4 py-2.5 text-center font-semibold">{pr.quantity} {pr.unit}</td>
                   <td className="px-4 py-2.5 text-right font-mono">{pr.estimated_cost?.toLocaleString()} {pr.currency}</td>
                   <td className="px-4 py-2.5 text-xs">{pr.vendor}</td>
-                  <td className="px-4 py-2.5 text-center text-xs">{pr.oflivery_date}</td>
-                  <td className="px-4 py-2.5 text-center"><span className={`text-[10px] font-bold px-2 py-0.5 rounofd ${STATUS_COLORS[pr.status]||''}`}>{pr.status}</span></td>
+                  <td className="px-4 py-2.5 text-center text-xs">{pr.delivery_date}</td>
+                  <td className="px-4 py-2.5 text-center"><span className={`text-[10px] font-bold px-2 py-0.5 rounded ${STATUS_COLORS[pr.status]||''}`}>{pr.status}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -349,14 +349,14 @@ export offault function SapPmPage() {
               const pct = cc.budget_annual > 0 ? Math.round((cc.budget_used / cc.budget_annual) * 100) : 0;
               const over = pct > 90;
               return (
-              <div key={cc.cc_id} className={`bg-white borofr rounofd-xl p-4 ${over ? 'borofr-red-200' : 'borofr-gray-200'}`}>
+              <div key={cc.cc_id} className={`bg-white border rounded-xl p-4 ${over ? 'border-red-200' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-mono text-[10px] font-bold text-gray-500">{cc.cc_coof}</span>
+                  <span className="font-mono text-[10px] font-bold text-gray-500">{cc.cc_code}</span>
                   <span className={`text-[10px] font-bold ${over ? 'text-red-600' : 'text-emerald-600'}`}>{pct}%</span>
                 </div>
                 <h4 className="text-xs font-semibold text-gray-800 mb-2 leading-tight">{cc.cc_name}</h4>
-                <div className="w-full bg-gray-200 rounofd-full h-2 mb-2">
-                  <div className={`h-2 rounofd-full ${over ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{width: `${Math.min(pct,100)}%`}}></div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                  <div className={`h-2 rounded-full ${over ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{width: `${Math.min(pct,100)}%`}}></div>
                 </div>
                 <div className="flex justify-between text-[10px] text-gray-400">
                   <span>{(cc.budget_used||0).toLocaleString()} MAD</span>
@@ -366,30 +366,30 @@ export offault function SapPmPage() {
             );})}
           </div>
           {(data.settlements||[]).length > 0 && (
-            <div className="bg-white rounofd-xl borofr overflow-hidofn">
-              <div className="px-5 py-3 borofr-b bg-gray-50">
-                <h3 className="text-sm font-bold text-gray-800">Reglas of Liquidacion (KO88)</h3>
+            <div className="bg-white rounded-xl border overflow-hidden">
+              <div className="px-5 py-3 border-b bg-gray-50">
+                <h3 className="text-sm font-bold text-gray-800">Reglas de Liquidacion (KO88)</h3>
               </div>
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 borofr-b">
+                <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">OT</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Centro Cost</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Centro Costo</th>
                     <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">%</th>
                     <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">Monto</th>
-                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Date</th>
+                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Fecha</th>
                     <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
                   </tr>
                 </thead>
-                <tbody className="diviof-y">
+                <tbody className="divide-y">
                   {(data.settlements||[]).map(s => (
                     <tr key={s.rule_id} className="hover:bg-gray-50">
                       <td className="px-4 py-2.5 font-mono text-xs font-bold">{s.wo_number}</td>
-                      <td className="px-4 py-2.5 font-mono text-xs">{s.cost_center_coof}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs">{s.cost_center_code}</td>
                       <td className="px-4 py-2.5 text-center">{s.settlement_pct}%</td>
                       <td className="px-4 py-2.5 text-right font-mono">{s.settled_amount?.toLocaleString()} MAD</td>
                       <td className="px-4 py-2.5 text-center text-xs">{s.settlement_date || '—'}</td>
-                      <td className="px-4 py-2.5 text-center"><span className={`text-[10px] font-bold px-2 py-0.5 rounofd ${STATUS_COLORS[s.status]||''}`}>{s.status}</span></td>
+                      <td className="px-4 py-2.5 text-center"><span className={`text-[10px] font-bold px-2 py-0.5 rounded ${STATUS_COLORS[s.status]||''}`}>{s.status}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -401,44 +401,44 @@ export offault function SapPmPage() {
 
       {/* ── TAB: Inventory ── */}
       {!loading && tab === 'inventory' && (
-        <div className="bg-white rounofd-xl borofr overflow-hidofn">
-          <div className="px-5 py-3 borofr-b bg-gray-50 flex items-center justify-between">
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <div className="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-gray-800">Inventario of Repuestos — Almacen JFC1</h2>
-              <p className="text-[10px] text-gray-400">MM60 — Lista of inventario | MMBE — Summary of stocks</p>
+              <h2 className="text-sm font-bold text-gray-800">Inventario de Repuestos — Almacen JFC1</h2>
+              <p className="text-[10px] text-gray-400">MM60 — Lista de inventario | MMBE — Resumen de stocks</p>
             </div>
-            <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounofd">{(data.inventory||[]).length} items</span>
+            <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">{(data.inventory||[]).length} items</span>
           </div>
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 borofr-b">
+            <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Codigo SAP</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Description</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Descripcion</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">En Stock</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Reservado</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Available</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Disponible</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Min.</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Reorofn</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Reorden</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Estado</th>
               </tr>
             </thead>
-            <tbody className="diviof-y">
+            <tbody className="divide-y">
               {(data.inventory||[]).map(item => {
-                const low = item.quantity_available <= item.reorofr_point;
+                const low = item.quantity_available <= item.reorder_point;
                 const critical = item.quantity_available <= item.min_stock;
                 return (
                 <tr key={item.item_id} className={`hover:bg-gray-50 ${critical ? 'bg-red-50/50' : low ? 'bg-amber-50/50' : ''}`}>
-                  <td className="px-4 py-2.5 font-mono text-xs font-bold text-emerald-700">{item.material_coof}</td>
-                  <td className="px-4 py-2.5">{item.ofscription}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs font-bold text-emerald-700">{item.material_code}</td>
+                  <td className="px-4 py-2.5">{item.description}</td>
                   <td className="px-4 py-2.5 text-center font-semibold">{item.quantity_on_hand}</td>
                   <td className="px-4 py-2.5 text-center text-gray-500">{item.quantity_reserved}</td>
                   <td className={`px-4 py-2.5 text-center font-bold ${critical ? 'text-red-600' : low ? 'text-amber-600' : 'text-emerald-700'}`}>{item.quantity_available}</td>
                   <td className="px-4 py-2.5 text-center text-xs text-gray-400">{item.min_stock}</td>
-                  <td className="px-4 py-2.5 text-center text-xs text-gray-400">{item.reorofr_point}</td>
+                  <td className="px-4 py-2.5 text-center text-xs text-gray-400">{item.reorder_point}</td>
                   <td className="px-4 py-2.5 text-center">
-                    {critical ? <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounofd font-bold">CRITICAL</span> :
-                     low ? <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounofd font-bold">LOW</span> :
-                     <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounofd font-bold">OK</span>}
+                    {critical ? <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">CRITICO</span> :
+                     low ? <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold">BAJO</span> :
+                     <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold">OK</span>}
                   </td>
                 </tr>
               );})}

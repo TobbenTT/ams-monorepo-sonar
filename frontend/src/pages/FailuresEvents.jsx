@@ -341,25 +341,7 @@ export default function FailuresEvents() {
       setActionLoading(null);
     }
   };
-
-  const handleRcaForEquipment = (equipment, count) => {
-    runAction(`rca-${equipment}`, () => api.createRca({
-      event_description: `Chronic failure analysis: ${equipment} (${count} occurrences in ${selectedTimeRange})`,
-      equipment_id: equipment,
-      plant_id: plant,
-    })).then(r => { if (r) navigate('/rca'); });
-  };
-
   // ─── AI Recommended Actions handlers ───
-  const handleGenerateRCA = () => {
-    const top = repetitiveFailuresData[0];
-    if (!top) { toast.warning(t('failuresEvents.action.generateRCA.noData') || 'No hay equipos repetitivos para analizar'); return; }
-    runAction('generateRCA', () => api.createRca({
-      event_description: `Proactive RCA: ${top.equipment} (${top.count} recurrences)`,
-      equipment_id: top.equipment,
-      plant_id: plant,
-    })).then(r => { if (r) navigate('/rca'); });
-  };
 
   const handleOptimizeStrategy = () => {
     runAction('optimizeStrategy', () => api.createAiSession({
@@ -1056,21 +1038,7 @@ export default function FailuresEvents() {
                       {idx === 0 ? t('failuresEvents.critical') : t('failuresEvents.high')}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2"
-                      disabled={actionLoading === `rca-${item.equipment}`}
-                      onClick={() => handleRcaForEquipment(item.equipment, item.count)}>
-                      {actionLoading === `rca-${item.equipment}` ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      )}
-                      {t('failuresEvents.aiSelectedForRCA')}
-                    </Button>
-                    <span className="text-xs text-gray-500">{t('failuresEvents.priority')}: {idx + 1}</span>
-                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{t('failuresEvents.priority')}: {idx + 1}</p>
                 </div>
               ))}
             </div>
@@ -1418,9 +1386,6 @@ export default function FailuresEvents() {
             </Card>
           </div>
           <div className="col-span-4 flex flex-col gap-3 justify-center">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full" onClick={() => navigate('/rca')}>
-              {t('failuresEvents.viewFullAiReport') || 'View Full AI Report'}
-            </Button>
             <Button variant="outline" className="w-full" onClick={() => navigate('/improvement-actions')}>
               {t('failuresEvents.scheduleReviewMeeting') || 'Schedule Review Meeting'}
             </Button>
@@ -1433,7 +1398,6 @@ export default function FailuresEvents() {
         <h3 className="text-lg font-bold text-gray-900 mb-4">{t('failuresEvents.aiRecommendedActions') || 'AI Recommended Actions'}</h3>
         <div className="space-y-3">
           {[
-            { key: 'generateRCA', label: t('failuresEvents.action.generateRCA.label') || 'Generate Proactive RCA', desc: `Top recurring: ${repetitiveFailuresData[0]?.equipment || 'N/A'}`, handler: handleGenerateRCA, icon: '\uD83D\uDD0D' },
             { key: 'optimizeStrategy', label: t('failuresEvents.action.optimizeStrategy.label') || 'Optimize Maintenance Strategy', desc: t('failuresEvents.action.optimizeStrategy.desc') || 'AI session for strategy optimization', handler: handleOptimizeStrategy, icon: '\u2699\uFE0F' },
             { key: 'adjustPlanning', label: t('failuresEvents.action.adjustPlanning.label') || 'Adjust Planning Standards', desc: `Labor var: ${planningStats.laborVar}%, Cost var: ${planningStats.costVar}%`, handler: handleAdjustPlanning, icon: '\uD83D\uDCCB' },
             { key: 'requestSpareParts', label: t('failuresEvents.action.requestSpareParts.label') || 'Request Spare Parts Review', desc: `Data integrity: ${masterDataStats.sparePct}%`, handler: handleRequestSpareParts, icon: '\uD83D\uDD27' },

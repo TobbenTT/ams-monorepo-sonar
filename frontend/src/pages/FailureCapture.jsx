@@ -113,9 +113,9 @@ export default function FailureCapture({ onNavigateTab }) {
 
   // ── BBP SAP PM Master Data (AMSA_BBP_PM_04) ──
   const AVISO_CLASSES = [
-    { value: 'A1', label: 'A1 - Maintenance Notification', desc: 'Correctivo / Solicitud' },
+    { value: 'A1', label: 'A1 - Maintenance Notification', desc: 'Corrective / Request' },
     { value: 'A2', label: 'A2 - Aviso Predictive & Eng.', desc: 'Predictive / Engineering' },
-    { value: 'A3', label: 'A3 - Aviso Preventive Plan', desc: 'Plan de Mantenimiento' },
+    { value: 'A3', label: 'A3 - Aviso Preventive Plan', desc: 'Maintenance Plan' },
   ];
 
   const AVISO_CODING = {
@@ -132,14 +132,14 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   const PLANNING_GROUPS = [
-    { value: 'P01', label: 'P01 - Planta Area Seca', area: 'Planta' },
-    { value: 'P02', label: 'P02 - Planta Area Ripio', area: 'Planta' },
-    { value: 'P03', label: 'P03 - Planta Area Humeda', area: 'Planta' },
-    { value: 'M01', label: 'M01 - Mina Perforacion', area: 'Mina' },
-    { value: 'M02', label: 'M02 - Mina Carguio', area: 'Mina' },
-    { value: 'M03', label: 'M03 - Mina Transporte', area: 'Mina' },
+    { value: 'P01', label: 'P01 - Dry Area Plant', area: 'Planta' },
+    { value: 'P02', label: 'P02 - Heap Leach Area', area: 'Planta' },
+    { value: 'P03', label: 'P03 - Wet Area Plant', area: 'Planta' },
+    { value: 'M01', label: 'M01 - Mine Drilling', area: 'Mina' },
+    { value: 'M02', label: 'M02 - Mine Loading', area: 'Mina' },
+    { value: 'M03', label: 'M03 - Mine Hauling', area: 'Mina' },
     { value: 'M04', label: 'M04 - Mina Support Equipment', area: 'Mina' },
-    { value: 'M05', label: 'M05 - Mina Equipos Auxiliares', area: 'Mina' },
+    { value: 'M05', label: 'M05 - Mine Auxiliary Equipment', area: 'Mina' },
   ];
 
   const AREAS_EMPRESA = [
@@ -165,7 +165,7 @@ export default function FailureCapture({ onNavigateTab }) {
     { value: 'PAHELE01', label: 'Electrical Area Humeda', area: 'P03' },
     { value: 'PAHINS01', label: 'Instrumentista Area Humeda', area: 'P03' },
     { value: 'PSHSIN01', label: 'Symptomtico', area: 'P01' },
-    { value: 'PSHDCS01', label: 'DCS y Automatizacion', area: 'P01' },
+    { value: 'PSHDCS01', label: 'DCS & Automation', area: 'P01' },
     { value: 'MPCMEC01', label: 'Mechanical Perforacion y Carguio', area: 'M01' },
     { value: 'MTAMEC01', label: 'Mechanical Transporte y Apoyo', area: 'M03' },
     { value: 'MPCELE01', label: 'Electrical Perforacion y Carguio', area: 'M01' },
@@ -507,7 +507,7 @@ export default function FailureCapture({ onNavigateTab }) {
         const fullText = (base + sep + finalTranscript).trimEnd();
         setF('whatHappens', fullText);
         // Auto-trigger AI assist with the transcribed text
-        toast.success('Voz transcrita. Analizando con IA...');
+        toast.success('Voice transcribed. Analyzing with AI...');
         setTimeout(() => {
           handleAiSuggest(fullText);
         }, 300);
@@ -571,7 +571,7 @@ export default function FailureCapture({ onNavigateTab }) {
         if (s.supportEquipment?.length) setF("supportEquipment", s.supportEquipment);
         if (s.workConditions) setF("workConditions", s.workConditions);
         setAiSuggested(true);
-        toast.success('Fotos analizadas por IA - campos pre-llenados');
+        toast.success('Photos analyzed by AI - fields auto-filled');
       }
     } catch (e) {
       console.error('Vision AI error:', e);
@@ -671,7 +671,7 @@ export default function FailureCapture({ onNavigateTab }) {
       setCreatedWRId(wrId);
       toast.success('Aviso creado: ' + wrId.slice(0, 8));
     } catch (err) {
-      toast.error(err.message || 'Error al crear aviso');
+      toast.error(err.message || 'Error creating notification');
     } finally {
       setSubmitting(false);
     }
@@ -796,7 +796,7 @@ export default function FailureCapture({ onNavigateTab }) {
             {/* Failure catalog */}
             {(failureMode || failureSymptom || failureCause) && (
               <div>
-                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Catalogo de Falla</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Failure Catalog</span>
                 <div className="grid grid-cols-3 gap-2">
                   {failureMode && <div className="bg-blue-50 rounded-lg p-2 text-center"><span className="text-[10px] text-blue-500 block">Categoria</span><span className="text-xs font-bold text-blue-700">{failureMode}</span></div>}
                   {failureSymptom && <div className="bg-yellow-50 rounded-lg p-2 text-center"><span className="text-[10px] text-yellow-600 block">Symptom</span><span className="text-xs font-bold text-yellow-700">{failureSymptom}</span></div>}
@@ -931,7 +931,7 @@ export default function FailureCapture({ onNavigateTab }) {
                   }`}>
                   <span className="text-lg">{s.icon}</span>
                   <div className="text-left">
-                    <div className="text-xs font-bold">Paso {s.step}: {s.label}</div>
+                    <div className="text-xs font-bold">Step {s.step}: {s.label}</div>
                     <div className="text-[10px] opacity-70">{s.desc}</div>
                   </div>
                   {wizardStep > s.step && <span className="ml-auto text-emerald-600">✓</span>}
@@ -954,7 +954,7 @@ export default function FailureCapture({ onNavigateTab }) {
                   <button type="button" onClick={handleVoice}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${isRecording ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
                     {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                    {isRecording ? 'Grabando... (suelta para analizar)' : 'Voz'}
+                    {isRecording ? 'Recording... (release to analyze)' : 'Voice'}
                   </button>
                 ) : (
                   <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed" title="Requiere HTTPS">
@@ -1031,7 +1031,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
                 {photos.map((photo, i) => (
                   <div key={i} className="relative flex-shrink-0">
-                    <img src={photo} alt={`Foto ${i+1}`} className="w-20 h-20 rounded-lg object-cover border-2 border-blue-200" />
+                    <img src={photo} alt={`Photo ${i+1}`} className="w-20 h-20 rounded-lg object-cover border-2 border-blue-200" />
                     <button onClick={() => removePhoto(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm hover:bg-red-600">
                       <X className="w-3 h-3" />
                     </button>
@@ -1055,7 +1055,7 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Action</label>
             <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
-              placeholder="Que accion correctiva recomienda?"
+              placeholder="What corrective action is recommended?"
               rows={4} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
           </div>
 
@@ -1153,7 +1153,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <div className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider mb-1">Grupo de Planificacion</div>
                 <select value={form.planningGroup} onChange={e => setF('planningGroup', e.target.value)}
                   className="w-full text-sm font-semibold text-blue-800 bg-transparent border-none focus:outline-none cursor-pointer">
-                  <option value="">- Seleccionar -</option>
+                  <option value="">-- Select --</option>
                   {PLANNING_GROUPS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                 </select>
               </div>
@@ -1161,7 +1161,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <div className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider mb-1">Work Center</div>
                 <select value={form.workCenter} onChange={e => setF('workCenter', e.target.value)}
                   className="w-full text-sm font-semibold text-blue-800 bg-transparent border-none focus:outline-none cursor-pointer">
-                  <option value="">- Seleccionar -</option>
+                  <option value="">-- Select --</option>
                   {WORK_CENTERS.filter(wc => !form.planningGroup || wc.area === form.planningGroup).map(wc => <option key={wc.value} value={wc.value}>{wc.label}</option>)}
                 </select>
               </div>
@@ -1214,11 +1214,11 @@ export default function FailureCapture({ onNavigateTab }) {
 
           </div>
           <div style={{display: wizardStep === 2 ? undefined : "none"}}>
-          {/* 5. Catalogo de Falla */}
+          {/* 5. Failure Catalog */}
           <div className="border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="w-4 h-4 text-yellow-500" />
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Catalogo de Falla</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Failure Catalog</label>
             </div>
             <div className="flex gap-1 mb-3 p-1 rounded-lg bg-gray-100">
               {Object.entries(FAILURE_CATALOG).map(([key, cat]) => (
@@ -1234,7 +1234,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <button onClick={() => { setShowParts(!showParts); setShowSymptoms(false); setShowCauses(false); }}
                   className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
                   style={{ borderColor: form.failureObjectPart ? FAILURE_CATALOG[form.failureCategory]?.color || '#e5e7eb' : '#e5e7eb' }}>
-                  <span className={form.failureObjectPart ? 'text-gray-900 font-medium' : 'text-gray-400'}>{form.failureObjectPart || 'Seleccionar...'}</span>
+                  <span className={form.failureObjectPart ? 'text-gray-900 font-medium' : 'text-gray-400'}>{form.failureObjectPart || 'Select...'}</span>
                   <ChevronDown className="w-3 h-3 text-gray-400" />
                 </button>
                 {showParts && (
@@ -1252,7 +1252,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <button onClick={() => { setShowSymptoms(!showSymptoms); setShowParts(false); setShowCauses(false); }}
                   className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
                   style={{ borderColor: form.failureSymptom ? FAILURE_CATALOG[form.failureCategory]?.color || '#e5e7eb' : '#e5e7eb' }}>
-                  <span className={form.failureSymptom ? 'text-gray-900 font-medium' : 'text-gray-400'}>{form.failureSymptom || 'Seleccionar...'}</span>
+                  <span className={form.failureSymptom ? 'text-gray-900 font-medium' : 'text-gray-400'}>{form.failureSymptom || 'Select...'}</span>
                   <ChevronDown className="w-3 h-3 text-gray-400" />
                 </button>
                 {showSymptoms && (
@@ -1270,7 +1270,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <button onClick={() => { setShowCauses(!showCauses); setShowSymptoms(false); setShowParts(false); }}
                   className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
                   style={{ borderColor: form.failureCause ? FAILURE_CATALOG[form.failureCategory]?.color || '#e5e7eb' : '#e5e7eb' }}>
-                  <span className={form.failureCause ? 'text-gray-900 font-medium' : 'text-gray-400'}>{form.failureCause || 'Seleccionar...'}</span>
+                  <span className={form.failureCause ? 'text-gray-900 font-medium' : 'text-gray-400'}>{form.failureCause || 'Select...'}</span>
                   <ChevronDown className="w-3 h-3 text-gray-400" />
                 </button>
                 {showCauses && (
@@ -2009,7 +2009,7 @@ export default function FailureCapture({ onNavigateTab }) {
           </div>
           <div className="flex gap-3">
             <button onClick={handleReset} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              Cancelar
+              Cancel
             </button>
             <button onClick={handleSubmit} disabled={submitting || !canSubmit || wizardStep !== 3}
               className="px-5 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2">

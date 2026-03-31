@@ -681,16 +681,8 @@ The enhanced_description and suggestedAction should match the user's language.""
     if examples_str:
         system_prompt += "\n\n" + examples_str
 
-    # Detect input language by checking for common Spanish/French patterns
-    desc_lower = desc.lower()
-    has_spanish = any(w in desc_lower for w in ['vibración', 'presenta', 'requiere', 'intervención', 'inspección', 'detectada', 'desgaste', 'falla', 'equipo', 'rodamiento', 'durante', 'acople', 'operación', 'también', 'además'])
-    has_french = any(w in desc_lower for w in ['défaillance', 'roulement', 'inspection', 'vibration excessive', 'équipement', 'pompe', 'moteur'])
-    if has_spanish:
-        lang_instruction = "RESPOND IN SPANISH. Write enhanced_description and suggestedAction in Spanish."
-    elif has_french:
-        lang_instruction = "RESPOND IN FRENCH. Write enhanced_description and suggestedAction in French."
-    else:
-        lang_instruction = "RESPOND IN ENGLISH. Write enhanced_description and suggestedAction in English."
+    # Always respond in English for demo
+    lang_instruction = "RESPOND IN ENGLISH. Write ALL text fields (enhanced_description, suggestedAction, workConditions) in English. Do NOT translate to French or Spanish."
 
     user_msg = f"{lang_instruction}\n\nProblem description: \"{desc}\""
     if equipment_tag:

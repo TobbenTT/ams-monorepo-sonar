@@ -78,9 +78,43 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [selectedWR, setSelectedWR] = useState(null); // inline detail modal
   const [selectedOT, setSelectedOT] = useState(null);
   const [otModalTab, setOtModalTab] = useState('resumen');
+  const [editOps, setEditOps] = useState([]);
+  const [editMats, setEditMats] = useState([]);
+  const [editBudget, setEditBudget] = useState({ labor: '', material: '', external: '' });
+  const [editDates, setEditDates] = useState({ start: '', end: '' });
+  const [savingOT, setSavingOT] = useState(false);
   const [execData, setExecData] = useState({ actual_hours: '', observations: '', materials_used: [] });
   const [closingWithAI, setClosingWithAI] = useState(false);
   const [aiCloseResult, setAiCloseResult] = useState(null);
+
+  // Init edit state when OT changes
+  useEffect(() => {
+    if (selectedOT) {
+      setEditOps(selectedOT.operations || []);
+      setEditMats(selectedOT.materials || []);
+      setEditBudget({ labor: selectedOT.planned_labor || '', material: selectedOT.planned_material || '', external: selectedOT.planned_external || '' });
+      setEditDates({ start: selectedOT.planned_start || '', end: selectedOT.planned_end || '' });
+    }
+  }, [selectedOT?.wo_id]);
+
+  const saveOTChanges = async () => {
+    if (!selectedOT) return;
+    setSavingOT(true);
+    try {
+      await api.updateManagedWO(selectedOT.wo_id, {
+        operations: editOps,
+        materials: editMats,
+        planned_labor: parseFloat(editBudget.labor) || 0,
+        planned_material: parseFloat(editBudget.material) || 0,
+        planned_external: parseFloat(editBudget.external) || 0,
+        planned_start: editDates.start || null,
+        planned_end: editDates.end || null,
+      });
+      toast.success('OT actualizada');
+      fetchData();
+    } catch(e) { toast.error('Error: ' + (e.message || '')); }
+    finally { setSavingOT(false); }
+  };
 
   // Auto-open OT modal when navigated from another tab
   useEffect(() => {
@@ -807,6 +841,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           { id: 'resumen', label: 'Resumen', icon: Info },
           { id: 'operaciones', label: 'Operaciones', icon: List },
           { id: 'ejecucion', label: 'Ejecucion', icon: Play, show: ['EN_EJECUCION','CERRADO','EN_PROGRESO'].includes(wo.status) },
+          { id: 'materiales', label: 'Materiales', icon: Package },
           { id: 'costos', label: 'Costos', icon: DollarSign },
           { id: 'historial', label: 'Historial', icon: MessageSquare },
         ].filter(t => t.show === undefined || t.show);
@@ -889,32 +924,60 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 {/* OPERACIONES */}
                 {otModalTab === 'operaciones' && (
                   <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-gray-800">Operaciones / Pasos de Trabajo</h3>
-                    {ops.length === 0 ? (
-                      <div className="text-center py-8 text-gray-400">
-                        <List className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">Sin operaciones definidas</p>
-                        <p className="text-xs mt-1">Las operaciones se definen al planificar la OT</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-gray-800">Operaciones / Pasos de Trabajo</h3>
+                      <button type="button" onClick={() => setEditOps(prev => [...prev, { type: 'INT', description: '', specialty: 'Mecanico', quantity: 1, hours: 4 }])}
+                        className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">+ Agregar</button>
+                    </div>
+                    {editOps.length === 0 ? (
+                      <div className="text-center py-6 text-gray-400">
+                        <p className="text-sm">Sin operaciones</p>
+                        <p className="text-xs">Click "+ Agregar" para crear pasos de trabajo</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {ops.map((op, idx) => (
-                          <div key={idx} className={"rounded-lg border p-3 "+(op.type === 'EXT' ? "border-purple-200 bg-purple-50/50" : "border-gray-200")}>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-gray-400">#{idx+1}</span>
-                                <span className={"text-[10px] px-1.5 py-0.5 rounded font-bold "+(op.type === 'EXT' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700")}>{op.type || 'INT'}</span>
-                                <span className="text-sm font-medium">{op.description || op.specialty || 'Sin descripcion'}</span>
-                              </div>
-                              <span className="text-xs text-gray-500">{op.quantity || 1}x \• {op.hours || '0'}h</span>
+                        {editOps.map((op, idx) => (
+                          <div key={idx} className={"rounded-lg border p-3 "+(op.type === 'EXT' ? "border-purple-200 bg-purple-50/30" : "border-gray-200")}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs font-bold text-gray-400 w-5">#{idx+1}</span>
+                              <select value={op.type || 'INT'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], type: e.target.value}; setEditOps(n); }}
+                                className="text-xs border rounded px-2 py-1 w-16 font-bold">
+                                <option value="INT">INT</option><option value="EXT">EXT</option>
+                              </select>
+                              <input value={op.description || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], description: e.target.value}; setEditOps(n); }}
+                                className="flex-1 text-sm border rounded px-2 py-1" placeholder="Descripcion de la operacion" />
+                              <button type="button" onClick={() => setEditOps(prev => prev.filter((_,i) => i !== idx))}
+                                className="text-red-400 hover:text-red-600 p-1">
+                                <X size={14} />
+                              </button>
                             </div>
-                            {op.specialty && <p className="text-xs text-gray-500 mt-1 ml-8">{op.specialty}</p>}
+                            <div className="flex items-center gap-3 ml-7">
+                              <select value={op.specialty || 'Mecanico'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
+                                className="text-xs border rounded px-2 py-1">
+                                {['Mecanico','Electrico','Instrumentista','Soldador','Lubricacion','Operador Grua','Andamiero','Supervisor','Otro'].map(s => <option key={s} value={s}>{s}</option>)}
+                              </select>
+                              <div className="flex items-center gap-1">
+                                <label className="text-[10px] text-gray-500">Cant:</label>
+                                <input type="number" min="1" value={op.quantity || 1} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], quantity: parseInt(e.target.value)||1}; setEditOps(n); }}
+                                  className="w-12 text-xs border rounded px-1 py-1 text-center" />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <label className="text-[10px] text-gray-500">Horas:</label>
+                                <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
+                                  className="w-14 text-xs border rounded px-1 py-1 text-center" />
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
+                    <button type="button" onClick={saveOTChanges} disabled={savingOT}
+                      className="w-full mt-2 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+                      {savingOT ? 'Guardando...' : 'Guardar Operaciones'}
+                    </button>
                   </div>
                 )}
+
 
                 {/* EJECUCION */}
                 {otModalTab === 'ejecucion' && (
@@ -997,9 +1060,74 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 )}
 
                 {/* COSTOS */}
+                {otModalTab === 'materiales' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-gray-800">Materiales / Repuestos</h3>
+                      <button type="button" onClick={() => setEditMats(prev => [...prev, { sapId: '', description: '', quantity: 1, unit: 'PZ', type: 'INT' }])}
+                        className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">+ Agregar</button>
+                    </div>
+                    {editMats.length === 0 ? (
+                      <div className="text-center py-6 text-gray-400">
+                        <p className="text-sm">Sin materiales</p>
+                        <p className="text-xs">Click "+ Agregar" para agregar repuestos</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {editMats.map((mat, idx) => (
+                          <div key={idx} className="rounded-lg border border-gray-200 p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <input value={mat.sapId || ''} onChange={e => { const n = [...editMats]; n[idx].sapId = e.target.value; setEditMats(n); }}
+                                className="w-24 text-xs border rounded px-2 py-1 font-mono" placeholder="SAP Code" />
+                              <input value={mat.description || ''} onChange={e => { const n = [...editMats]; n[idx].description = e.target.value; setEditMats(n); }}
+                                className="flex-1 text-sm border rounded px-2 py-1" placeholder="Material description" />
+                              <button onClick={() => setEditMats(prev => prev.filter((_,i) => i !== idx))}
+                                className="text-red-400 hover:text-red-600 text-xs px-1">x</button>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <select value={mat.type || 'INT'} onChange={e => { const n = [...editMats]; n[idx].type = e.target.value; setEditMats(n); }}
+                                className="text-xs border rounded px-2 py-1 w-16 font-bold">
+                                <option value="INT">INT</option><option value="EXT">EXT</option>
+                              </select>
+                              <div className="flex items-center gap-1">
+                                <label className="text-[10px] text-gray-500">Qty:</label>
+                                <input type="number" min="1" value={mat.quantity || 1} onChange={e => { const n = [...editMats]; n[idx].quantity = parseInt(e.target.value)||1; setEditMats(n); }}
+                                  className="w-14 text-xs border rounded px-1 py-1 text-center" />
+                              </div>
+                              <select value={mat.unit || 'PZ'} onChange={e => { const n = [...editMats]; n[idx].unit = e.target.value; setEditMats(n); }}
+                                className="text-xs border rounded px-2 py-1 w-16">
+                                {['PZ','KG','LT','MT','UD','GL','M3'].map(u => <option key={u} value={u}>{u}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <button onClick={saveOTChanges} disabled={savingOT}
+                      className="w-full mt-2 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+                      {savingOT ? 'Guardando...' : 'Guardar Materiales'}
+                    </button>
+                  </div>
+                )}
+
                 {otModalTab === 'costos' && (
                   <div className="space-y-4">
                     <h3 className="text-sm font-semibold text-gray-800">Control de Costos</h3>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <label className="text-xs font-semibold text-blue-700 block mb-2">Fechas Planificadas</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] text-gray-500">Inicio</label>
+                          <input type="date" value={editDates.start} onChange={e => setEditDates(p => ({...p, start: e.target.value}))}
+                            className="w-full text-xs border rounded px-2 py-1.5" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-gray-500">Fin</label>
+                          <input type="date" value={editDates.end} onChange={e => setEditDates(p => ({...p, end: e.target.value}))}
+                            className="w-full text-xs border rounded px-2 py-1.5" />
+                        </div>
+                      </div>
+                    </div>
                     <div className="space-y-3">
                       {costCats.map(cat => {
                         const delta = cat.real - cat.plan;

@@ -1,0 +1,550 @@
+[
+  {
+    "QMNUM": "WR-2026-00001",
+    "QMART": "A1",
+    "QMTXT": "Vibracion excesiva en rodamiento lado acople del molino SAG",
+    "EQUNR": "BRY-SAG-ML-001",
+    "EQKTX": "SAG Mill #1",
+    "TPLNR": "OCP-JFC1-BRY-001",
+    "PRIOK": "P2",
+    "ERDAT": "2026-03-15",
+    "ERNAM": "Ahmed Mansouri",
+    "AUSVN": "In operation",
+    "STRMN": "2026-03-22",
+    "LTRMN": "2026-03-29",
+    "notification_type": "A1",
+    "aviso_coding": "M002",
+    "activity_class": "CORRECTIVO",
+    "planning_group": "P03",
+    "work_center": "PHUMEC01",
+    "area_empresa": "HUM",
+    "failure_category": "MECANICO",
+    "failure_symptom": "VIBRACION",
+    "failure_object_part": "RODAMIENTO",
+    "failure_cause": "DESGASTE",
+    "plant_condition": "In operation",
+    "suggested_action": "1. Detener molino. 2. Medir vibracion. 3. Reemplazar rodamiento SKF 23148. 4. Alinear laser. 5. Prueba 30 min.",
+    "estimated_duration_hours": 12,
+    "reported_by": "Ahmed Mansouri",
+    "circumstances": "Vibracion detectada en ronda turno dia. Nivel 8.5 mm/s RMS, alarma 7.0 mm/s.",
+    "work_conditions": "LOTO obligatorio. Area despejada 5m. Grua puente disponible.",
+    "materials": [
+      {
+        "sapId": "10001234",
+        "description": "Rodamiento SKF 23148 CC/W33",
+        "quantity": 1,
+        "unit": "PZ",
+        "unit_price": 4500
+      },
+      {
+        "sapId": "10001238",
+        "description": "Grasa EP2 Mobilux",
+        "quantity": 5,
+        "unit": "KG",
+        "unit_price": 12
+      },
+      {
+        "sapId": "10001240",
+        "description": "Junta torica NBR 250x5",
+        "quantity": 2,
+        "unit": "PZ",
+        "unit_price": 45
+      }
+    ],
+    "resources": [
+      {
+        "type": "Mecanico",
+        "quantity": 2,
+        "hours": 8
+      },
+      {
+        "type": "Operador Grua",
+        "quantity": 1,
+        "hours": 4
+      },
+      {
+        "type": "Supervisor",
+        "quantity": 1,
+        "hours": 2
+      }
+    ],
+    "support_equipment": [
+      "Grua 20 Ton",
+      "Equipo Alineacion Laser",
+      "Analizador de Vibraciones"
+    ],
+    "external_services": [],
+    "status": "VALIDATED",
+    "priority_code": "P2",
+    "work_class": "NO_PROGRAMADO",
+    "clase_ot": "PM01"
+  },
+  {
+    "QMNUM": "WR-2026-00002",
+    "QMART": "A1",
+    "QMTXT": "Fuga de aceite hidraulico en cilindro de clasificador",
+    "EQUNR": "BRY-CLS-003",
+    "EQKTX": "Classifier #3",
+    "TPLNR": "OCP-JFC1-BRY-003",
+    "PRIOK": "P1",
+    "ERDAT": "2026-03-20",
+    "ERNAM": "Youssef El Amrani",
+    "AUSVN": "Stopped by failure",
+    "STRMN": "2026-03-20",
+    "LTRMN": "2026-03-21",
+    "notification_type": "A1",
+    "aviso_coding": "M002",
+    "activity_class": "CORRECTIVO",
+    "planning_group": "P03",
+    "work_center": "PHUMEC01",
+    "area_empresa": "HUM",
+    "failure_category": "HIDRAULICO",
+    "failure_symptom": "FUGA",
+    "failure_object_part": "CILINDRO_HIDRAULICO",
+    "failure_cause": "SELLO_DANADO",
+    "plant_condition": "Stopped by failure",
+    "suggested_action": "1. Aislar circuito. 2. Drenar aceite. 3. Desmontar cilindro. 4. Reemplazar sellos. 5. Purgar. 6. Verificar presion.",
+    "estimated_duration_hours": 6,
+    "reported_by": "Youssef El Amrani",
+    "circumstances": "Fuga masiva turno noche. Charco ~20 litros. Equipo detenido de emergencia.",
+    "work_conditions": "Superficie resbaladiza. Material absorbente requerido. LOTO obligatorio.",
+    "materials": [
+      {
+        "sapId": "10002001",
+        "description": "Kit sellos cilindro hidraulico 200mm",
+        "quantity": 1,
+        "unit": "PZ",
+        "unit_price": 850
+      },
+      {
+        "sapId": "10001237",
+        "description": "Aceite hidraulico ISO 68",
+        "quantity": 40,
+        "unit": "LT",
+        "unit_price": 8
+      },
+      {
+        "sapId": "10002002",
+        "description": "Filtro aceite hidraulico 10um",
+        "quantity": 2,
+        "unit": "PZ",
+        "unit_price": 120
+      }
+    ],
+    "resources": [
+      {
+        "type": "Mecanico",
+        "quantity": 2,
+        "hours": 6
+      },
+      {
+        "type": "Ayudante General",
+        "quantity": 1,
+        "hours": 4
+      }
+    ],
+    "support_equipment": [
+      "Hidrolavadora industrial",
+      "Compresor Portatil"
+    ],
+    "external_services": [],
+    "status": "VALIDATED",
+    "priority_code": "P1",
+    "work_class": "NO_PROGRAMADO",
+    "clase_ot": "PM01"
+  },
+  {
+    "QMNUM": "WR-2026-00003",
+    "QMART": "A2",
+    "QMTXT": "Temperatura elevada en motor electrico de bomba de pulpa",
+    "EQUNR": "PMP-SLP-001",
+    "EQKTX": "Slurry Pump #1",
+    "TPLNR": "OCP-JFC1-PMP-001",
+    "PRIOK": "P3",
+    "ERDAT": "2026-03-22",
+    "ERNAM": "Karim Benali",
+    "AUSVN": "In operation",
+    "STRMN": "2026-04-01",
+    "LTRMN": "2026-04-15",
+    "notification_type": "A2",
+    "aviso_coding": "P001",
+    "activity_class": "PREDICTIVO",
+    "planning_group": "P03",
+    "work_center": "PHUELE01",
+    "area_empresa": "HUM",
+    "failure_category": "ELECTRICO",
+    "failure_symptom": "TEMPERATURA_ALTA",
+    "failure_object_part": "MOTOR_ELECTRICO",
+    "failure_cause": "AISLAMIENTO_DEGRADADO",
+    "plant_condition": "In operation",
+    "suggested_action": "1. Termografia detallada. 2. Medir resistencia aislamiento (Megger). 3. Verificar ventilador. 4. Limpiar canales ventilacion. 5. Si < 5MOhm, programar rebobinado.",
+    "estimated_duration_hours": 4,
+    "reported_by": "Karim Benali",
+    "circumstances": "Termografia ronda: punto caliente 95C en devanado fase R. Limite 85C. Motor 250kW, 4160V.",
+    "work_conditions": "Motor en operacion para mediciones. Permiso AT (Alta Tension) requerido.",
+    "materials": [
+      {
+        "sapId": "10003001",
+        "description": "Kit termografia calibracion",
+        "quantity": 1,
+        "unit": "PZ",
+        "unit_price": 0
+      },
+      {
+        "sapId": "10001243",
+        "description": "Cable 3x10 AWG",
+        "quantity": 5,
+        "unit": "MT",
+        "unit_price": 15
+      }
+    ],
+    "resources": [
+      {
+        "type": "Electrico",
+        "quantity": 1,
+        "hours": 3
+      },
+      {
+        "type": "Instrumentista",
+        "quantity": 1,
+        "hours": 2
+      }
+    ],
+    "support_equipment": [
+      "Camara Termografica",
+      "Megohmetro"
+    ],
+    "external_services": [],
+    "status": "VALIDATED",
+    "priority_code": "P3",
+    "work_class": "PROGRAMADO",
+    "clase_ot": "PM03"
+  },
+  {
+    "QMNUM": "WR-2026-00004",
+    "QMART": "A1",
+    "QMTXT": "Correa transportadora presenta desgaste lateral severo",
+    "EQUNR": "CVY-CVR-001",
+    "EQKTX": "Conveyor #1",
+    "TPLNR": "OCP-JFC1-CVY-001",
+    "PRIOK": "P3",
+    "ERDAT": "2026-03-25",
+    "ERNAM": "Hassan Tazi",
+    "AUSVN": "In operation",
+    "STRMN": "2026-04-05",
+    "LTRMN": "2026-04-20",
+    "notification_type": "A1",
+    "aviso_coding": "M001",
+    "activity_class": "CORRECTIVO",
+    "planning_group": "P01",
+    "work_center": "PASMEC01",
+    "area_empresa": "SEC",
+    "failure_category": "MECANICO",
+    "failure_symptom": "DESGASTE",
+    "failure_object_part": "CORREA",
+    "failure_cause": "DESALINEAMIENTO",
+    "plant_condition": "In operation",
+    "suggested_action": "1. Verificar alineamiento polines. 2. Ajustar polines. 3. Inspeccionar empalme. 4. Medir espesor cubierta (min 3mm). 5. Si < 3mm, programar cambio correa.",
+    "estimated_duration_hours": 8,
+    "reported_by": "Hassan Tazi",
+    "circumstances": "Desgaste visible borde derecho, 15cm ancho x 50m largo. Material cayendo fuera de cinta.",
+    "work_conditions": "Equipo detenido. Limpiar zona caida material. Andamios en zona retorno.",
+    "materials": [
+      {
+        "sapId": "10004001",
+        "description": "Polin de carga estandar 600mm",
+        "quantity": 4,
+        "unit": "PZ",
+        "unit_price": 180
+      },
+      {
+        "sapId": "10004002",
+        "description": "Polin de retorno 600mm",
+        "quantity": 2,
+        "unit": "PZ",
+        "unit_price": 150
+      }
+    ],
+    "resources": [
+      {
+        "type": "Mecanico",
+        "quantity": 3,
+        "hours": 8
+      },
+      {
+        "type": "Soldador",
+        "quantity": 1,
+        "hours": 4
+      },
+      {
+        "type": "Operador Grua",
+        "quantity": 1,
+        "hours": 6
+      },
+      {
+        "type": "Andamiero",
+        "quantity": 2,
+        "hours": 3
+      }
+    ],
+    "support_equipment": [
+      "Grua 50 Ton",
+      "Andamio Multidireccional",
+      "Equipo Alineacion Laser"
+    ],
+    "external_services": [
+      {
+        "service": "Vulcanizado de empalme",
+        "vendor": "SOLDADURAS_PRO",
+        "specialty": "SOLDADURA",
+        "contract_ref": "CM-2026-0012",
+        "estimated_cost": 8500,
+        "duration_days": 2
+      }
+    ],
+    "status": "PENDIENTE",
+    "priority_code": "P3",
+    "work_class": "PROGRAMADO",
+    "clase_ot": "PM01"
+  },
+  {
+    "QMNUM": "WR-2026-00005",
+    "QMART": "A1",
+    "QMTXT": "Falla en sensor de nivel de espesador - lectura erratica",
+    "EQUNR": "SED-THK-001",
+    "EQKTX": "Thickener #1",
+    "TPLNR": "OCP-JFC1-SED-001",
+    "PRIOK": "P2",
+    "ERDAT": "2026-03-28",
+    "ERNAM": "Omar Fassi",
+    "AUSVN": "In operation",
+    "STRMN": "2026-03-30",
+    "LTRMN": "2026-04-05",
+    "notification_type": "A1",
+    "aviso_coding": "M002",
+    "activity_class": "CORRECTIVO",
+    "planning_group": "P03",
+    "work_center": "PHUELE01",
+    "area_empresa": "HUM",
+    "failure_category": "INSTRUMENTACION",
+    "failure_symptom": "LECTURA_ERRATICA",
+    "failure_object_part": "SENSOR_NIVEL",
+    "failure_cause": "INCRUSTACION",
+    "plant_condition": "In operation",
+    "suggested_action": "1. Verificar alimentacion 24VDC. 2. Revisar cableado. 3. Limpiar sensor. 4. Calibrar. 5. Si persiste, reemplazar transmisor.",
+    "estimated_duration_hours": 3,
+    "reported_by": "Omar Fassi",
+    "circumstances": "Lectura saltando 40%-85% sin cambio real. Afecta control automatico underflow.",
+    "work_conditions": "Trabajo en altura (pasarela 8m). Arnes obligatorio.",
+    "materials": [
+      {
+        "sapId": "10001247",
+        "description": "Transmisor presion/nivel 0-10bar",
+        "quantity": 1,
+        "unit": "PZ",
+        "unit_price": 2200
+      },
+      {
+        "sapId": "10005001",
+        "description": "Cable instrumentacion 2x18 AWG blindado",
+        "quantity": 20,
+        "unit": "MT",
+        "unit_price": 8
+      }
+    ],
+    "resources": [
+      {
+        "type": "Instrumentista",
+        "quantity": 1,
+        "hours": 3
+      },
+      {
+        "type": "Electrico",
+        "quantity": 1,
+        "hours": 2
+      }
+    ],
+    "support_equipment": [
+      "Multimetro Industrial"
+    ],
+    "external_services": [],
+    "status": "VALIDATED",
+    "priority_code": "P2",
+    "work_class": "NO_PROGRAMADO",
+    "clase_ot": "PM01"
+  },
+  {
+    "QMNUM": "WR-2026-00006",
+    "QMART": "A3",
+    "QMTXT": "Mantenimiento preventivo trimestral - Filtro de banda",
+    "EQUNR": "FIL-BFT-001",
+    "EQKTX": "Belt Filter #1",
+    "TPLNR": "OCP-JFC1-FIL-001",
+    "PRIOK": "P4",
+    "ERDAT": "2026-03-01",
+    "ERNAM": "Sistema",
+    "AUSVN": "Planned stop",
+    "STRMN": "2026-04-15",
+    "LTRMN": "2026-04-20",
+    "notification_type": "A3",
+    "aviso_coding": "",
+    "activity_class": "PREVENTIVO",
+    "planning_group": "P03",
+    "work_center": "PHUMEC01",
+    "area_empresa": "HUM",
+    "failure_category": "",
+    "failure_symptom": "",
+    "failure_object_part": "",
+    "failure_cause": "",
+    "plant_condition": "Planned stop",
+    "suggested_action": "1. Inspeccion visual. 2. Lubricacion rodamientos (8 puntos). 3. Verificar tension banda. 4. Revisar cuchillas raspadoras. 5. Cambiar filtros vacio. 6. Alinear rodillos. 7. Prueba funcional.",
+    "estimated_duration_hours": 16,
+    "reported_by": "Sistema",
+    "circumstances": "Generado automaticamente por plan IP10. Ultimo PM: 2026-01-10. Frecuencia: 90 dias.",
+    "work_conditions": "Parada planificada. Coordinar con operaciones. Requiere 2 turnos.",
+    "materials": [
+      {
+        "sapId": "10001238",
+        "description": "Grasa EP2 Mobilux",
+        "quantity": 10,
+        "unit": "KG",
+        "unit_price": 12
+      },
+      {
+        "sapId": "10006001",
+        "description": "Cuchilla raspadora 1200mm",
+        "quantity": 2,
+        "unit": "PZ",
+        "unit_price": 350
+      },
+      {
+        "sapId": "10006002",
+        "description": "Tela filtrante banda 1.5x12m",
+        "quantity": 1,
+        "unit": "PZ",
+        "unit_price": 5800
+      },
+      {
+        "sapId": "10001241",
+        "description": "Tornillo M12x50 Gr8.8",
+        "quantity": 20,
+        "unit": "PZ",
+        "unit_price": 2
+      }
+    ],
+    "resources": [
+      {
+        "type": "Mecanico",
+        "quantity": 3,
+        "hours": 16
+      },
+      {
+        "type": "Lubricador",
+        "quantity": 1,
+        "hours": 4
+      },
+      {
+        "type": "Ayudante General",
+        "quantity": 2,
+        "hours": 8
+      }
+    ],
+    "support_equipment": [
+      "Tecle Cadena 5 Ton",
+      "Esmeril Angular",
+      "Torquimetro"
+    ],
+    "external_services": [],
+    "status": "PENDIENTE",
+    "priority_code": "P4",
+    "work_class": "PROGRAMADO",
+    "clase_ot": "PM02"
+  },
+  {
+    "QMNUM": "WR-2026-00007",
+    "QMART": "A1",
+    "QMTXT": "Rotura de perno de anclaje en screen vibratorio",
+    "EQUNR": "CVY-SCR-002",
+    "EQKTX": "Vibrating Screen #2",
+    "TPLNR": "OCP-JFC1-CVY-002",
+    "PRIOK": "P1",
+    "ERDAT": "2026-03-30",
+    "ERNAM": "Rachid Amrani",
+    "AUSVN": "Stopped by failure",
+    "STRMN": "2026-03-30",
+    "LTRMN": "2026-03-31",
+    "notification_type": "A1",
+    "aviso_coding": "M002",
+    "activity_class": "CORRECTIVO",
+    "planning_group": "P01",
+    "work_center": "PASMEC01",
+    "area_empresa": "SEC",
+    "failure_category": "MECANICO",
+    "failure_symptom": "ROTURA",
+    "failure_object_part": "PERNO_ANCLAJE",
+    "failure_cause": "FATIGA",
+    "plant_condition": "Stopped by failure",
+    "suggested_action": "1. LOTO. 2. Retirar pernos rotos con extractor. 3. Inspeccionar base. 4. Instalar pernos nuevos con torque. 5. Verificar mallas. 6. Prueba 15 min.",
+    "estimated_duration_hours": 5,
+    "reported_by": "Rachid Amrani",
+    "circumstances": "2 de 8 pernos rotos. Vibracion anormal. Equipo detenido emergencia. Produccion detenida.",
+    "work_conditions": "Equipo bloqueado. Zona alto ruido. EPP auditivo obligatorio.",
+    "materials": [
+      {
+        "sapId": "10007001",
+        "description": "Perno anclaje M24x200 Gr10.9",
+        "quantity": 8,
+        "unit": "PZ",
+        "unit_price": 45
+      },
+      {
+        "sapId": "10007002",
+        "description": "Golilla Belleville M24",
+        "quantity": 16,
+        "unit": "PZ",
+        "unit_price": 12
+      },
+      {
+        "sapId": "10007003",
+        "description": "Tuerca autofrenante M24",
+        "quantity": 8,
+        "unit": "PZ",
+        "unit_price": 8
+      },
+      {
+        "sapId": "10001242",
+        "description": "Electrodo E7018 3/32",
+        "quantity": 5,
+        "unit": "KG",
+        "unit_price": 15
+      }
+    ],
+    "resources": [
+      {
+        "type": "Mecanico",
+        "quantity": 2,
+        "hours": 5
+      },
+      {
+        "type": "Soldador",
+        "quantity": 1,
+        "hours": 3
+      },
+      {
+        "type": "Supervisor",
+        "quantity": 1,
+        "hours": 1
+      }
+    ],
+    "support_equipment": [
+      "Taladro Magnetico",
+      "Torquimetro",
+      "Soldadora Arco"
+    ],
+    "external_services": [],
+    "status": "VALIDATED",
+    "priority_code": "P1",
+    "work_class": "NO_PROGRAMADO",
+    "clase_ot": "PM01"
+  }
+]

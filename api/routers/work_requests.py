@@ -310,6 +310,20 @@ def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(req
     return result
 
 
+
+@router.put("/{request_id}/cancel")
+def cancel_work_request(request_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Cancel a work request."""
+    from api.database.models import WorkRequestModel
+    from datetime import datetime
+    wr_model = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not wr_model:
+        raise HTTPException(status_code=404, detail="Work request not found")
+    wr_model.status = "CANCELADO"
+    wr_model.updated_at = datetime.now()
+    db.commit()
+    return {"status": "CANCELADO", "request_id": request_id}
+
 @router.put("/{request_id}/assign")
 def assign_work_request(request_id: str, data: WRAssignRequest, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     """Assign a validated WR to one or more technicians."""

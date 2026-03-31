@@ -346,7 +346,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         wr.reported_by || wr.created_by || '', created ? created.toLocaleDateString() : '', days,
       ];
     });
-    downloadExport({ format: 'EXCEL', sheets: [{ name: 'Avisos Aprobados', headers, rows }] }, `avisos_aprobados_${new Date().toISOString().slice(0, 10)}`);
+    downloadExport({ format: 'EXCEL', sheets: [{ name: 'Avisos Aprobados', headers, rows }] }, `approved_notifications_${new Date().toISOString().slice(0, 10)}`);
     toast.success('Exported ' + filteredWRs.length + ' notifications');
   };
 
@@ -448,7 +448,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           onClick={() => setActiveTab('backlog')}
           className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'backlog' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
-          Avisos ({workRequests.length})
+          Notifications ({workRequests.length})
         </button>
         <button
           onClick={() => setActiveTab('capacidades')}
@@ -576,7 +576,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         {filteredWRs.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <div className="text-4xl mb-3 opacity-40">&#128203;</div>
-            <p className="text-sm font-medium">No hay notifications aprobados</p>
+            <p className="text-sm font-medium">No approved notifications</p>
             <p className="text-xs mt-1">Los notifications aparecen aqui cuando el supervisor los aprueba desde Identification</p>
           </div>
         ) : (

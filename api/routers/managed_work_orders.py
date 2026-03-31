@@ -287,7 +287,7 @@ def verify_close_with_ai(
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """AI verification before closing a WO — checks completeness."""
+    """AI verification before closing a WO - checks completeness."""
     wo = managed_wo_service.get_work_order(db, wo_id)
     if not wo:
         raise HTTPException(status_code=404, detail="Work order not found")
@@ -295,30 +295,26 @@ def verify_close_with_ai(
     issues = []
     warnings = []
 
-    # Check required fields
     if not data.actual_hours or data.actual_hours <= 0:
         issues.append("Actual hours not recorded")
     if not data.observations:
         warnings.append("No execution observations provided")
 
-    # Check hours variance
     plan_hours = wo.get("estimated_hours", 0) or 0
     if plan_hours > 0 and data.actual_hours > 0:
         variance = abs(data.actual_hours - plan_hours) / plan_hours
         if variance > 0.5:
-            warnings.append(f"Hours variance is {variance*100:.0f}% (planned: {plan_hours}h, actual: {data.actual_hours}h) — consider adding justification")
+            pct = int(variance * 100)
+            warnings.append("Hours variance is " + str(pct) + "% (planned: " + str(plan_hours) + "h, actual: " + str(data.actual_hours) + "h)")
 
-    # Check operations exist
     ops = wo.get("operations", [])
     if not ops:
         warnings.append("No operations defined for this WO")
 
-    # Check materials
     mats = wo.get("materials", [])
     if mats and not data.materials_used:
-        warnings.append(f"{len(mats)} materials were planned but none reported as used")
+        warnings.append(str(len(mats)) + " materials were planned but none reported as used")
 
-    # Try AI verification if API key available
     import os
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     ai_summary = ""
@@ -326,18 +322,23 @@ def verify_close_with_ai(
         try:
             import anthropic
             client = anthropic.Anthropic(api_key=api_key)
-            prompt = f"""You are an maintenance engineering AI verifying a Work Order closure.
-WO: {wo.get(wo_number, )} - {wo.get(description, )}
-Equipment: {wo.get(equipment_tag, )}
-Priority: {wo.get(priority_code, )}
-Planned hours: {plan_hours}h | Actual hours: {data.actual_hours}h
-Operations: {len(ops)} steps defined
-Materials planned: {len(mats)} items
-Observations: {data.observations or None provided}
-Materials used: {len(data.materials_used)} items reported
-
-Evaluate if this WO is ready to close. Be concise (2-3 sentences). Flag any concerns.
-Respond in English."""
+            wo_num = wo.get("wo_number", "")
+            wo_desc = wo.get("description", "")
+            wo_equip = wo.get("equipment_tag", "")
+            wo_prio = wo.get("priority_code", "")
+            obs_text = data.observations or "None provided"
+            prompt = (
+                "You are a maintenance engineering AI verifying a Work Order closure.\n"
+                "WO: " + str(wo_num) + " - " + str(wo_desc) + "\n"
+                "Equipment: " + str(wo_equip) + "\n"
+                "Priority: " + str(wo_prio) + "\n"
+                "Planned hours: " + str(plan_hours) + "h | Actual hours: " + str(data.actual_hours) + "h\n"
+                "Operations: " + str(len(ops)) + " steps defined\n"
+                "Materials planned: " + str(len(mats)) + " items\n"
+                "Observations: " + str(obs_text) + "\n"
+                "Materials used: " + str(len(data.materials_used)) + " items reported\n\n"
+                "Evaluate if this WO is ready to close. Be concise (2-3 sentences). Flag any concerns. Respond in English."
+            )
             resp = client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=200,
@@ -345,14 +346,14 @@ Respond in English."""
             )
             ai_summary = resp.content[0].text
         except Exception as e:
-            ai_summary = f"AI verification unavailable: {str(e)[:80]}"
+            ai_summary = "AI verification unavailable: " + str(e)[:80]
 
     ready = len(issues) == 0
     message_parts = []
     if issues:
-        message_parts.append("BLOCKING:\n" + "\n".join(f"• {i}" for i in issues))
+        message_parts.append("BLOCKING:\n" + "\n".join("- " + i for i in issues))
     if warnings:
-        message_parts.append("WARNINGS:\n" + "\n".join(f"• {w}" for w in warnings))
+        message_parts.append("WARNINGS:\n" + "\n".join("- " + w for w in warnings))
     if ai_summary:
         message_parts.append("AI ASSESSMENT:\n" + ai_summary)
     if ready and not warnings:

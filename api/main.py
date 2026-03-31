@@ -24,6 +24,7 @@ from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 
 from api.routers import (
+    notifications,
     hierarchy, criticality, fmea, tasks, work_packages, sap, analytics, admin,
     capture, work_requests, planner, backlog, scheduling,
     reliability, rca,
@@ -205,6 +206,7 @@ def create_app() -> FastAPI:
     app.include_router(managed_work_orders.router, prefix=prefix)
     # Detailed Feedback system
     app.include_router(feedback.router, prefix=prefix)
+    app.include_router(notifications.router, prefix=prefix)
     # Jorge Phase 4 — Execution tracking
     app.include_router(execution.router, prefix=prefix)
     # Jorge Phase 5 — Post-Maintenance reviews

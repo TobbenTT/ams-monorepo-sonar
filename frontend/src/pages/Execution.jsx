@@ -472,6 +472,9 @@ export default function Execution() {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Wrench className="text-emerald-600" /> Execution
           </h1>
+          <a href="/m/dashboard" target="_blank" className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+            Open Mobile View &rarr;
+          </a>
           <p className="text-gray-500 text-sm mt-1">Maintenance task management and equipment handovers</p>
         </div>
         <div className="flex gap-2">
@@ -918,6 +921,11 @@ export default function Execution() {
                       {verifying ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
                       {verifying ? 'Verifying...' : 'AI Verify'}
                     </button>
+                    <a href={'/api/v1/managed-work-orders/' + closureWO.wo_id + '/closure-report'}
+                      target="_blank"
+                      className="px-4 py-2.5 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300 flex items-center gap-1">
+                      PDF Report
+                    </a>
                     <button onClick={() => handleCloseWO(closureWO)}
                       disabled={closing || !closureForm.actual_hours || (aiResult && !aiResult.ready)}
                       className="px-5 py-2.5 text-sm font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">

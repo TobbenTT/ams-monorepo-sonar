@@ -46,12 +46,14 @@ class WOUpdateRequest(BaseModel):
     external_cost: float | None = None
     actual_total_cost: float | None = None
     actual_hours: float | None = None
+    shift: str | None = None
 
 
 class WOScheduleRequest(BaseModel):
     assigned_workers: list | None = None
     planned_start: str | None = None
     planned_end: str | None = None
+    shift: str | None = None
 
 
 class WOCompleteRequest(BaseModel):
@@ -197,7 +199,8 @@ def schedule_work_order(
     workers = data.assigned_workers if data else None
     p_start = data.planned_start if data else None
     p_end = data.planned_end if data else None
-    result = managed_wo_service.schedule_wo(db, wo_id, getattr(user, "user_id", ""), workers, planned_start=p_start, planned_end=p_end)
+    p_shift = data.shift if data else None
+    result = managed_wo_service.schedule_wo(db, wo_id, getattr(user, "user_id", ""), workers, planned_start=p_start, planned_end=p_end, shift=p_shift)
     if not result:
         raise HTTPException(status_code=400, detail="Cannot schedule — WO not found or invalid status")
     return result
@@ -439,3 +442,108 @@ def ai_estimate_duration(
         return {"predicted_hours": wo.get("estimated_hours", 4), "confidence": 50, "basis": "fallback", "ai_used": False}
     except Exception as e:
         return {"predicted_hours": wo.get("estimated_hours", 4), "confidence": 30, "error": str(e)[:80], "ai_used": False}
+
+
+
+@router.get("/{wo_id}/closure-report")
+def generate_closure_report(
+    wo_id: str,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Generate a PDF closure report for a completed/closed WO."""
+    wo = managed_wo_service.get_work_order(db, wo_id)
+    if not wo:
+        raise HTTPException(status_code=404, detail="Work order not found")
+
+    from io import BytesIO
+    from datetime import datetime
+
+    # Build HTML report
+    ops_html = ""
+    for i, op in enumerate(wo.get("operations", []) or []):
+        if isinstance(op, dict):
+            ops_html += f"<tr><td>{i+1}</td><td>{op.get('description','')}</td><td>{op.get('specialty','')}</td><td>{op.get('quantity',1)} x {op.get('hours',0)}h</td></tr>"
+
+    mats_html = ""
+    for m in wo.get("materials", []) or []:
+        if isinstance(m, dict):
+            mats_html += f"<tr><td>{m.get('sapId', m.get('code',''))}</td><td>{m.get('description','')}</td><td>{m.get('quantity',0)} {m.get('unit','PZ')}</td></tr>"
+
+    notes_html = ""
+    for n in wo.get("execution_notes", []) or []:
+        if isinstance(n, dict):
+            notes_html += f"<tr><td>{n.get('timestamp','')[:16]}</td><td>{n.get('user','')}</td><td>{n.get('note','')}</td></tr>"
+
+    variance = ""
+    est = wo.get("estimated_hours", 0) or 0
+    act = wo.get("actual_hours", 0) or 0
+    if est > 0 and act > 0:
+        delta = act - est
+        pct = round((act / est) * 100)
+        color = "#DC2626" if delta > 0 else "#16A34A"
+        variance = f'<span style="color:{color};font-weight:bold">{pct}% ({("+" if delta > 0 else "")}{delta:.1f}h)</span>'
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+body {{ font-family: Arial, sans-serif; font-size: 11px; margin: 30px; color: #333; }}
+h1 {{ color: #1B5E20; font-size: 18px; border-bottom: 2px solid #1B5E20; padding-bottom: 5px; }}
+h2 {{ color: #1B5E20; font-size: 14px; margin-top: 20px; }}
+table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
+th, td {{ border: 1px solid #ddd; padding: 6px 8px; text-align: left; }}
+th {{ background: #E8F5E9; color: #1B5E20; font-weight: bold; }}
+.info-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }}
+.info-item {{ background: #f9f9f9; padding: 8px; border-radius: 4px; }}
+.info-label {{ font-size: 9px; color: #888; text-transform: uppercase; }}
+.info-value {{ font-size: 12px; font-weight: bold; }}
+.header {{ display: flex; justify-content: space-between; align-items: center; }}
+.badge {{ display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }}
+.footer {{ margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #999; }}
+</style></head><body>
+<div class="header">
+  <h1>WO Closure Report — {wo.get("wo_number","")}</h1>
+  <span class="badge" style="background:#E8F5E9;color:#1B5E20">{wo.get("status","")}</span>
+</div>
+
+<div class="info-grid">
+  <div class="info-item"><div class="info-label">Equipment</div><div class="info-value">{wo.get("equipment_tag","")}</div></div>
+  <div class="info-item"><div class="info-label">WO Type</div><div class="info-value">{wo.get("wo_type","")}</div></div>
+  <div class="info-item"><div class="info-label">Priority</div><div class="info-value">{wo.get("priority_code","")}</div></div>
+  <div class="info-item"><div class="info-label">Plant</div><div class="info-value">{wo.get("plant_id","")}</div></div>
+  <div class="info-item"><div class="info-label">Planned Hours</div><div class="info-value">{est}h</div></div>
+  <div class="info-item"><div class="info-label">Actual Hours</div><div class="info-value">{act}h {variance}</div></div>
+  <div class="info-item"><div class="info-label">Planned Start</div><div class="info-value">{wo.get("planned_start","—")}</div></div>
+  <div class="info-item"><div class="info-label">Actual End</div><div class="info-value">{wo.get("actual_end","—")}</div></div>
+  <div class="info-item"><div class="info-label">Closed By</div><div class="info-value">{wo.get("closed_by","—")}</div></div>
+  <div class="info-item"><div class="info-label">Closed At</div><div class="info-value">{wo.get("closed_at","—")}</div></div>
+</div>
+
+<h2>Description</h2>
+<p>{wo.get("description","No description")}</p>
+
+<h2>Operations</h2>
+<table><tr><th>#</th><th>Description</th><th>Specialty</th><th>Resources</th></tr>{ops_html or "<tr><td colspan=4>No operations recorded</td></tr>"}</table>
+
+<h2>Materials</h2>
+<table><tr><th>SAP Code</th><th>Description</th><th>Quantity</th></tr>{mats_html or "<tr><td colspan=3>No materials</td></tr>"}</table>
+
+<h2>Costs</h2>
+<table>
+<tr><th>Category</th><th>Amount</th></tr>
+<tr><td>Labor</td><td>${wo.get("labor_cost",0) or 0:,.0f}</td></tr>
+<tr><td>Material</td><td>${wo.get("material_cost",0) or 0:,.0f}</td></tr>
+<tr><td>External</td><td>${wo.get("external_cost",0) or 0:,.0f}</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>${(wo.get("labor_cost",0) or 0) + (wo.get("material_cost",0) or 0) + (wo.get("external_cost",0) or 0):,.0f}</strong></td></tr>
+</table>
+
+<h2>Execution History</h2>
+<table><tr><th>Time</th><th>User</th><th>Note</th></tr>{notes_html or "<tr><td colspan=3>No notes</td></tr>"}</table>
+
+<div class="footer">
+  Generated {datetime.now().strftime("%Y-%m-%d %H:%M")} | OCP Maintenance Platform | {wo.get("wo_number","")}
+</div>
+</body></html>"""
+
+    # Return HTML (can be printed to PDF by browser)
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html, media_type="text/html")

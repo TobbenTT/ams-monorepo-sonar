@@ -86,6 +86,7 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "external_cost": wo.external_cost,
         "actual_total_cost": wo.actual_total_cost,
         "is_fast_track": wo.is_fast_track,
+        "shift": getattr(wo, "shift", "day") or "day",
         "created_at": wo.created_at.isoformat() if wo.created_at else None,
         "updated_at": wo.updated_at.isoformat() if wo.updated_at else None,
     }
@@ -328,7 +329,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
         "description", "wo_type", "priority_code", "estimated_hours",
         "operations", "materials", "tools", "documents", "labour_summary",
         "planned_start", "planned_end", "risk_analysis", "budget_amount", "budget_approved",
-        "labor_cost", "material_cost", "external_cost", "actual_total_cost", "actual_hours",
+        "labor_cost", "material_cost", "external_cost", "actual_total_cost", "actual_hours", "shift",
     ]
     for key in updatable:
         if key in data:
@@ -401,6 +402,7 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
     if "assigned_workers" in kwargs:
         wo.assigned_workers = kwargs["assigned_workers"]
 
+    _create_notification(db, wo, old_status, target_status, user_id)
     log_action(db, "managed_work_order", wo_id, target_status)
     db.commit()
     db.refresh(wo)
@@ -412,13 +414,15 @@ def plan_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
     return _transition(db, wo_id, "PLANIFICADO", user_id)
 
 
-def schedule_wo(db: Session, wo_id: str, user_id: str = "", assigned_workers: list | None = None, planned_start=None, planned_end=None) -> dict | None:
+def schedule_wo(db: Session, wo_id: str, user_id: str = "", assigned_workers: list | None = None, planned_start=None, planned_end=None, shift: str = None) -> dict | None:
     """Programmer schedules -> PROGRAMADO."""
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
     if wo and planned_start:
         wo.planned_start = planned_start
     if wo and planned_end:
         wo.planned_end = planned_end
+    if wo and shift:
+        wo.shift = shift
     return _transition(db, wo_id, "PROGRAMADO", user_id, assigned_workers=assigned_workers)
 
 
@@ -531,3 +535,50 @@ def draft_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
     db.commit()
     db.refresh(wo)
     return _to_dict(wo)
+
+
+def _create_notification(db: Session, wo, old_status: str, new_status: str, user_id: str = ""):
+    """Create in-app notification when WO status changes."""
+    try:
+        from api.database.models import NotificationModel
+        title_map = {
+            "PLANIFICADO": "WO Planned",
+            "PROGRAMADO": "WO Scheduled",
+            "EN_EJECUCION": "WO Started",
+            "CERRADO": "WO Closed",
+            "CANCELADO": "WO Cancelled",
+            "REPROGRAMADO": "WO Rescheduled",
+        }
+        title = title_map.get(new_status, f"WO Status: {new_status}")
+        message = f"{wo.wo_number} ({wo.equipment_tag}) moved from {old_status} to {new_status}"
+        if wo.priority_code in ("P1", "P2"):
+            message += f" [PRIORITY: {wo.priority_code}]"
+
+        # Notify assigned workers
+        targets = []
+        if wo.assigned_workers:
+            for w in wo.assigned_workers:
+                if isinstance(w, dict):
+                    targets.append(w.get("worker_id", ""))
+        if wo.planned_by:
+            targets.append(wo.planned_by)
+        if not targets:
+            targets = [""]  # broadcast
+
+        for target in targets[:5]:
+            from api.database.models import _uuid
+            notif = NotificationModel(
+                notification_id=_uuid(),
+                notification_type="WO_STATUS_CHANGE",
+                title=title,
+                message=message,
+                level=wo.priority_code or "P3",
+                plant_id=wo.plant_id or "OCP-JFC1",
+                equipment_id=wo.equipment_tag or "",
+                recipient_id=target,
+                channel="IN_APP",
+                acknowledged=False,
+            )
+            db.add(notif)
+    except Exception:
+        pass  # Don't fail the transition if notification fails

@@ -25,7 +25,7 @@ export default function FailureCapture({ onNavigateTab }) {
   ];
 
   const PRIORITIES = [
-    { value: 'P1', label: 'P1 (I) - Inmediata', sub: '< 24h', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03' },
+    { value: 'P1', label: 'P1 (I) - Immediate', sub: '< 24h', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03' },
     { value: 'P2', label: 'P2 (A) - Alta', sub: '< 7 dias', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03' },
     { value: 'P3', label: 'P3 (M) - Media', sub: '> 7 dias', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01' },
     { value: 'P4', label: 'P4 (B) - Baja', sub: 'Parada Planta', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01' },
@@ -168,7 +168,7 @@ export default function FailureCapture({ onNavigateTab }) {
   ];
 
   const SAP_PRIORITY_MAP = {
-    P1: { sap: 'I', label: 'Inmediata', days: '< 24h' },
+    P1: { sap: 'I', label: 'Immediate', days: '< 24h' },
     P2: { sap: 'A', label: 'Alta', days: '< 7 dias' },
     P3: { sap: 'M', label: 'Media', days: '> 7 dias' },
     P4: { sap: 'B', label: 'Baja', days: 'Parada Planta' },
@@ -776,7 +776,7 @@ export default function FailureCapture({ onNavigateTab }) {
             {/* Action */}
             {action && (
               <div>
-                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Accion Sugerida</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Suggested Action</span>
                 <p className="text-sm bg-emerald-50 rounded-lg p-3 border border-emerald-200 leading-relaxed">{action}</p>
               </div>
             )}
@@ -1039,9 +1039,9 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          {/* 2. Accion Sugerida */}
+          {/* 2. Suggested Action */}
           <div className="border rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Accion Sugerida</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Action</label>
             <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
               placeholder="Que accion correctiva recomienda?"
               rows={4} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
@@ -1085,10 +1085,10 @@ export default function FailureCapture({ onNavigateTab }) {
 
           </div>
           <div style={{display: wizardStep === 1 ? undefined : "none"}}>
-          {/* 3b. Ubicacion Tecnica (SAP) */}
+          {/* 3b. Technical Location (SAP) */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5" /> Ubicacion Tecnica *
+              <MapPin className="w-3.5 h-3.5" /> Technical Location *
             </label>
             {!selectedLoc ? (
               <div className="relative">
@@ -1134,7 +1134,7 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          {/* 3c. Grupo de Planificacion + Puesto de Trabajo */}
+          {/* 3c. Grupo de Planificacion + Work Center */}
           {(form.planningGroup || form.workCenter) && (
             <div className="grid grid-cols-2 gap-3">
               <div className="border rounded-xl p-3 bg-blue-50 border-blue-200">
@@ -1146,7 +1146,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 </select>
               </div>
               <div className="border rounded-xl p-3 bg-blue-50 border-blue-200">
-                <div className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider mb-1">Puesto de Trabajo</div>
+                <div className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider mb-1">Work Center</div>
                 <select value={form.workCenter} onChange={e => setF('workCenter', e.target.value)}
                   className="w-full text-sm font-semibold text-blue-800 bg-transparent border-none focus:outline-none cursor-pointer">
                   <option value="">- Seleccionar -</option>
@@ -1338,12 +1338,12 @@ export default function FailureCapture({ onNavigateTab }) {
               className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
           </div>
 
-          {/* 10. Materiales SAP */}
+          {/* 10. SAP Materials */}
           <div className="border rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-gray-400" />
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Materiales SAP</label>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">SAP Materials</label>
               </div>
               <button onClick={addMaterial} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
                 + Agregar
@@ -1527,7 +1527,7 @@ export default function FailureCapture({ onNavigateTab }) {
             onClick={() => setWizardStep(s => Math.max(1, s - 1))}
             disabled={wizardStep === 1}
             className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed">
-            &#8592; Anterior
+            &#8592; Previous
           </button>
           <div className="flex items-center gap-1.5">
             {[1,2,3].map(s => (
@@ -1538,7 +1538,7 @@ export default function FailureCapture({ onNavigateTab }) {
             <button
               onClick={() => setWizardStep(s => Math.min(3, s + 1))}
               className="px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
-              Siguiente &#8594;
+              Next &#8594;
             </button>
           ) : (
             <span />

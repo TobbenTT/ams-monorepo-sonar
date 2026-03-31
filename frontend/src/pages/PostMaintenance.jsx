@@ -185,7 +185,7 @@ export default function PostMaintenance() {
               </div>
               <p className="text-sm font-medium text-gray-900">{r.period_start} → {r.period_end}</p>
               <p className="text-xs text-gray-500 mt-1">
-                OTs: {r.wo_summary?.total || 0} · Completadas: {r.wo_summary?.completed || 0}
+                OTs: {r.wo_summary?.total || 0} · Completed: {r.wo_summary?.completed || 0}
               </p>
             </button>
           ))}
@@ -207,11 +207,11 @@ export default function PostMaintenance() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-blue-50 rounded-xl p-4 text-center">
                   <p className="text-2xl font-bold text-blue-700">{detail.wo_summary?.total || 0}</p>
-                  <p className="text-xs text-blue-600">Total OTs</p>
+                  <p className="text-xs text-blue-600">Total WOs</p>
                 </div>
                 <div className="bg-green-50 rounded-xl p-4 text-center">
                   <p className="text-2xl font-bold text-green-700">{detail.wo_summary?.completed || 0}</p>
-                  <p className="text-xs text-green-600">Completadas</p>
+                  <p className="text-xs text-green-600">Completed</p>
                 </div>
                 <div className="bg-amber-50 rounded-xl p-4 text-center">
                   <p className="text-2xl font-bold text-amber-700">{detail.wo_summary?.delayed || 0}</p>
@@ -257,7 +257,7 @@ export default function PostMaintenance() {
               {detail.unplanned_work?.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                   <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <Clock size={16} className="text-red-500" /> Trabajo No Planificado
+                    <Clock size={16} className="text-red-500" /> Trabajo No Planned
                   </h3>
                   <div className="space-y-2">
                     {detail.unplanned_work.map((u, i) => (
@@ -299,7 +299,7 @@ export default function PostMaintenance() {
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-gray-700">Acciones de Mejora</label>
+                        <label className="text-sm font-medium text-gray-700">Actions de Mejora</label>
                         <button onClick={addAction} className="text-xs text-emerald-600 hover:underline">+ Agregar</button>
                       </div>
                       {meetingForm.improvement_actions.map((a, i) => (
@@ -316,7 +316,7 @@ export default function PostMaintenance() {
                     <div className="flex gap-2">
                       <button onClick={saveReview} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">Guardar</button>
                       {detail.status !== 'COMPLETED' && (
-                        <button onClick={handleComplete} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Completar Revision</button>
+                        <button onClick={handleComplete} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Complete Revision</button>
                       )}
                     </div>
                   </div>
@@ -327,7 +327,7 @@ export default function PostMaintenance() {
                     {detail.lessons_learned && <p><span className="text-gray-500">Lecciones:</span> {detail.lessons_learned}</p>}
                     {detail.improvement_actions?.length > 0 && (
                       <div>
-                        <p className="text-gray-500 mb-2">Acciones de mejora:</p>
+                        <p className="text-gray-500 mb-2">Actions de mejora:</p>
                         <table className="w-full text-sm">
                           <thead><tr className="text-left text-gray-400 border-b">
                             <th className="pb-1">Accion</th><th className="pb-1">Responsable</th><th className="pb-1">Plazo</th><th className="pb-1">Estado</th>
@@ -397,7 +397,7 @@ export default function PostMaintenance() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCreate(false)}>
           <form onClick={e => e.stopPropagation()} onSubmit={handleCreate} className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">Nueva Revision Post-Mantenimiento</h2>
+            <h2 className="text-lg font-bold text-gray-900">Nueva Post-Maintenance Review</h2>
             <div>
               <label className="text-sm font-medium text-gray-700">Inicio del periodo</label>
               <input type="date" name="start" required className="w-full border rounded-lg p-2 mt-1" />

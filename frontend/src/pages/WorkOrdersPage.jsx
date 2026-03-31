@@ -340,7 +340,7 @@ export default function WorkOrdersPage() {
   // ── Export OTs to Excel ──
   const handleExportOTs = useCallback(() => {
     if (!managedWOs.length) return;
-    const headers = ['OT #', 'Equipo', 'Descripción', 'Tipo OT', 'Prioridad', 'Status', 'Progreso %', 'Fast Track', 'Creado'];
+    const headers = ['OT #', 'Equipo', 'Descripción', 'Tipo OT', 'Prioridad', 'Status', 'Progress %', 'Fast Track', 'Creado'];
     const rows = managedWOs.map(wo => [
       wo.wo_number,
       wo.equipment_tag || '',
@@ -627,7 +627,7 @@ export default function WorkOrdersPage() {
   const handleRejectWR = async (wrId) => {
     try {
       await api.validateWorkRequest(wrId, { action: 'REJECT', modifications: { rejection_reason: 'Rechazado' } });
-      toast.success('Aviso rechazado');
+      toast.success('Notification rejected');
       reloadData();
     } catch (err) {
       toast.error(err.message || 'Error al rechazar');
@@ -1013,7 +1013,7 @@ export default function WorkOrdersPage() {
                 <Download className="w-4 h-4" /> Excel
               </Button>
               <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateOTModal(true)}>
-                <Plus className="w-4 h-4" /> Crear OT desde Aviso
+                <Plus className="w-4 h-4" /> Crear WO from Notification
               </Button>
             </div>
           </div>
@@ -1028,7 +1028,7 @@ export default function WorkOrdersPage() {
                     <TableHead className="font-semibold">Tipo</TableHead>
                     <TableHead className="font-semibold">Prioridad</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
-                    <TableHead className="font-semibold">Progreso</TableHead>
+                    <TableHead className="font-semibold">Progress</TableHead>
                     <TableHead className="font-semibold">Acción</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1062,7 +1062,7 @@ export default function WorkOrdersPage() {
                             wo.wo_type === 'PM03' ? 'bg-purple-100 text-purple-700' :
                             wo.wo_type === 'PM05' ? 'bg-cyan-100 text-cyan-700' :
                             'bg-gray-100 text-gray-700'
-                          }`}>{{ PM01: 'PM01 - Correctivo', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Programado', PM05: 'PM05 - Calib./Reparación' }[wo.wo_type] || wo.wo_type}</Badge>
+                          }`}>{{ PM01: 'PM01 - Correctivo', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Scheduled', PM05: 'PM05 - Calib./Reparación' }[wo.wo_type] || wo.wo_type}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getCriticalityColor(wo.priority_code === 'P1' || wo.priority_code === 'P2' ? 'High' : wo.priority_code === 'P3' ? 'Medium' : 'Low')}>
@@ -1175,7 +1175,7 @@ export default function WorkOrdersPage() {
                                 className="w-7 h-7 rounded-full flex items-center justify-center bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
                                 <CheckCircle className="w-3.5 h-3.5" />
                               </button>
-                              <button title="Rechazar" onClick={(e) => { e.stopPropagation(); handleRejectWR(wo._raw?.request_id || wo.id); }}
+                              <button title="Reject" onClick={(e) => { e.stopPropagation(); handleRejectWR(wo._raw?.request_id || wo.id); }}
                                 className="w-7 h-7 rounded-full flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
                                 <X className="w-3.5 h-3.5" />
                               </button>
@@ -1185,7 +1185,7 @@ export default function WorkOrdersPage() {
                             <Button size="sm" variant="outline"
                               className="text-xs h-7 px-2 border-blue-300 text-blue-700 hover:bg-blue-50"
                               onClick={(e) => { e.stopPropagation(); handleCreateOTFromWR(wo._raw); }}>
-                              <FileText className="w-3 h-3 mr-1" /> Crear OT
+                              <FileText className="w-3 h-3 mr-1" /> Create WO
                             </Button>
                           )}
                         </div>
@@ -1238,7 +1238,7 @@ export default function WorkOrdersPage() {
             <div className="p-5 space-y-5">
               {approvedWRs.length > 0 ? (
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.approvedWRs') || 'Avisos Aprobados'}</label>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.approvedWRs') || 'Approved Notifications'}</label>
                   <div className="space-y-2 max-h-72 overflow-y-auto">
                     {approvedWRs.map(wr => (
                       <div key={wr.request_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
@@ -1250,7 +1250,7 @@ export default function WorkOrdersPage() {
                         </div>
                         <Button size="sm" className="ml-2 bg-emerald-600 hover:bg-emerald-700 text-xs h-7"
                           onClick={() => handleCreateOTFromWR(wr)} disabled={creatingOT}>
-                          <ArrowRight className="w-3 h-3 mr-1" /> {t('workOrders.createOTShort') || 'Crear OT'}
+                          <ArrowRight className="w-3 h-3 mr-1" /> {t('workOrders.createOTShort') || 'Create WO'}
                         </Button>
                       </div>
                     ))}
@@ -1261,7 +1261,7 @@ export default function WorkOrdersPage() {
                   <div className="text-gray-400 mb-2">
                     <ClipboardCheck className="w-12 h-12 mx-auto" />
                   </div>
-                  <p className="text-sm font-medium text-gray-600">{t('workOrders.noApprovedWRs') || 'No hay avisos aprobados pendientes'}</p>
+                  <p className="text-sm font-medium text-gray-600">{t('workOrders.noApprovedWRs') || 'No approved notifications pendientes'}</p>
                   <p className="text-xs text-gray-400 mt-1">{t('workOrders.noApprovedWRsHint') || 'Los avisos deben ser aprobados por un supervisor antes de generar una OT'}</p>
                 </div>
               )}
@@ -1416,7 +1416,7 @@ export default function WorkOrdersPage() {
               {createForm.plantCondition === 'stopped' && (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-sm">
                   <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                  <span className="text-red-700 font-medium">{t('workOrders.breakdownAlert') || 'Equipo detenido — Prioridad ajustada a P1 (Urgente). Clase OT: PM03 No Programado.'}</span>
+                  <span className="text-red-700 font-medium">{t('workOrders.breakdownAlert') || 'Equipo detenido — Prioridad ajustada a P1 (Urgente). Clase OT: PM03 No Scheduled.'}</span>
                 </div>
               )}
 
@@ -1659,7 +1659,7 @@ export default function WorkOrdersPage() {
                 <input type="text" value={createForm.estimatedDuration} onChange={e => setF('estimatedDuration', e.target.value)} placeholder={t('workOrders.estimatedDurationPlaceholder')} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
               </div>
 
-              {/* 9. Materiales SAP */}
+              {/* 9. SAP Materials */}
               <div className="border rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -1829,7 +1829,7 @@ export default function WorkOrdersPage() {
       {/* ── Professional OT Detail Modal ── */}
       {selectedOT && (() => {
         const sla = getSlaDays(selectedOT);
-        const WO_TYPE_LABELS = { PM01: 'PM01 - Correctivo', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Programado', PM05: 'PM05 - Calib./Reparación' };
+        const WO_TYPE_LABELS = { PM01: 'PM01 - Correctivo', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Scheduled', PM05: 'PM05 - Calib./Reparación' };
         const SPECIALTY_OPTIONS = ['Mecánico', 'Eléctrico', 'Instrumentación', 'Soldador', 'Lubricación', 'Andamios', 'Aislamiento', 'Operador', 'Supervisor', 'Otro'];
         const OP_TYPE_OPTIONS = [{ value: 'INT', label: 'INT' }, { value: 'EXT', label: 'EXT' }];
         const OT_TABS = [
@@ -1912,7 +1912,7 @@ export default function WorkOrdersPage() {
                         {selectedOT.priority_code === 'P1' ? '!' : selectedOT.priority_code === 'P2' ? '!!' : selectedOT.priority_code === 'P3' ? '-' : '\u2713'}
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 uppercase font-semibold">Impacto Productivo</div>
+                        <div className="text-xs text-gray-500 uppercase font-semibold">Production Impact</div>
                         <div className="text-lg font-bold">{selectedOT.priority_code === 'P1' ? 'CRITICO' : selectedOT.priority_code === 'P2' ? 'ALTO' : selectedOT.priority_code === 'P3' ? 'MEDIO' : 'BAJO'}</div>
                       </div>
                     </div>
@@ -1929,7 +1929,7 @@ export default function WorkOrdersPage() {
                   {/* Progress bar */}
                   <div>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-500">Progreso</span>
+                      <span className="text-xs text-gray-500">Progress</span>
                       <span className="text-xs font-semibold">{Math.round(selectedOT.completion_pct || 0)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -1995,7 +1995,7 @@ export default function WorkOrdersPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="text-gray-500 text-xs block mb-1">Horas Estimadas</label>
+                          <label className="text-gray-500 text-xs block mb-1">Estimated Hours</label>
                           <input type="number" className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.estimated_hours}
                             onBlur={async (e) => { const val = parseFloat(e.target.value); if (val !== selectedOT.estimated_hours) { await api.updateManagedWO(selectedOT.wo_id, { estimated_hours: val }); reloadData(); } }} />
                         </div>
@@ -2038,7 +2038,7 @@ export default function WorkOrdersPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-800">Operaciones / Pasos de Trabajo</h3>
+                      <h3 className="text-sm font-semibold text-gray-800">Operations / Work Steps</h3>
                       <p className="text-xs text-gray-500">Define las operaciones necesarias, especialidad y horas planificadas</p>
                     </div>
                     <div className="flex gap-2">
@@ -2058,7 +2058,7 @@ export default function WorkOrdersPage() {
                   {otOps.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">
                       <List className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                      <p className="text-sm">Sin operaciones definidas</p>
+                      <p className="text-sm">No operations definidas</p>
                       {isEditable && <p className="text-xs mt-1">Agrega pasos de trabajo con especialidad y horas</p>}
                     </div>
                   ) : (
@@ -2161,7 +2161,7 @@ export default function WorkOrdersPage() {
 
                   {isExecuting && otOps.length > 0 && (
                     <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveOps} disabled={otSaving}>
-                      <Save className="w-3 h-3 mr-1" /> Guardar Horas Reales
+                      <Save className="w-3 h-3 mr-1" /> Guardar Actual Hours
                     </Button>
                   )}
 
@@ -2205,7 +2205,7 @@ export default function WorkOrdersPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-800">Lista de Materiales / Repuestos</h3>
+                      <h3 className="text-sm font-semibold text-gray-800">Lista de Materials / Spare Parts</h3>
                       <p className="text-xs text-gray-500">Código SAP, descripción y cantidad requerida</p>
                     </div>
                     <div className="flex gap-2">
@@ -2225,7 +2225,7 @@ export default function WorkOrdersPage() {
                   {otMats.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">
                       <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                      <p className="text-sm">Sin materiales definidos</p>
+                      <p className="text-sm">No materials definidos</p>
                       {isEditable && <p className="text-xs mt-1">Agrega repuestos y materiales necesarios</p>}
                     </div>
                   ) : (
@@ -2303,7 +2303,7 @@ export default function WorkOrdersPage() {
                 const overBudget = budget > 0 && totalCost > budget;
                 return (
                   <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-gray-800">Control de Costos</h3>
+                    <h3 className="text-sm font-semibold text-gray-800">Cost Control</h3>
 
                     {/* Budget vs Actual */}
                     <div className={`rounded-xl p-4 border ${overBudget ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
@@ -2345,7 +2345,7 @@ export default function WorkOrdersPage() {
                     {/* Cost breakdown */}
                     <div className="grid grid-cols-3 gap-4">
                       {[
-                        { key: 'labor_cost', pkey: 'planned_labor', label: 'Mano de Obra', icon: Users, color: 'blue' },
+                        { key: 'labor_cost', pkey: 'planned_labor', label: 'Labor', icon: Users, color: 'blue' },
                         { key: 'material_cost', pkey: 'planned_material', label: 'Materiales', icon: Package, color: 'amber' },
                         { key: 'external_cost', pkey: 'planned_external', label: 'Servicios Ext.', icon: Wrench, color: 'purple' },
                       ].map(({ key, pkey, label, icon: CIcon, color }) => {
@@ -2427,7 +2427,7 @@ export default function WorkOrdersPage() {
                     {selectedOT.released_at && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Liberado por {selectedOT.released_by || '—'}</span><br /><span className="font-medium">{new Date(selectedOT.released_at).toLocaleString()}</span></div>}
                     {selectedOT.actual_start && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Inicio Real</span><br /><span className="font-medium">{new Date(selectedOT.actual_start).toLocaleString()}</span></div>}
                     {selectedOT.actual_end && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Fin Real</span><br /><span className="font-medium">{new Date(selectedOT.actual_end).toLocaleString()}</span></div>}
-                    {selectedOT.closed_at && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Cerrado por {selectedOT.closed_by || '—'}</span><br /><span className="font-medium">{new Date(selectedOT.closed_at).toLocaleString()}</span></div>}
+                    {selectedOT.closed_at && <div className="bg-gray-50 rounded-lg p-2"><span className="text-gray-500">Closed por {selectedOT.closed_by || '—'}</span><br /><span className="font-medium">{new Date(selectedOT.closed_at).toLocaleString()}</span></div>}
                   </div>
 
                   {/* Execution notes */}

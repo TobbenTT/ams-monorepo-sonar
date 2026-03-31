@@ -193,6 +193,7 @@ export const completeManagedWO = (id, d) => put(`/managed-work-orders/${id}/comp
 export const closeManagedWO = (id) => put(`/managed-work-orders/${id}/close`);
 export const addManagedWONote = (id, d) => post(`/managed-work-orders/${id}/notes`, d);
 export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id}/progress`, d);
+export const verifyCloseManagedWO = (id, d) => post(`/managed-work-orders/${id}/verify-close`, d);
 export const getManagedWOStats = (p) => get('/managed-work-orders/stats', p);
 
 // ── Detailed Feedback ──
@@ -424,7 +425,7 @@ export const listPurchaseReqs = (p) => get('/sap-pm/purchase-reqs', p);
 export const listCostCenters = (p) => get('/sap-pm/cost-centers', p);
 
 // ── Planning stubs ──
-export const draftManagedWO = (d) => post('/managed-work-orders/', d);
+export const draftManagedWO = (id) => put(`/managed-work-orders/${id}/draft`);
 export const deleteManagedWO = (id) => del(`/managed-work-orders/${id}`);
 export const listSettlementRules = (p) => get('/sap-pm/settlement-rules', p);
 export const listInventory = (p) => get('/sap-pm/inventory', p);

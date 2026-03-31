@@ -508,3 +508,26 @@ def get_stats(db: Session, plant_id: str | None = None) -> dict:
         "total_estimated_hours": round(total_estimated, 1),
         "total_actual_hours": round(total_actual, 1),
     }
+
+
+def draft_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
+    """Revert WO to CREADO (draft) status — only from PLANIFICADO or PROGRAMADO."""
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return None
+    if wo.status not in ("PLANIFICADO", "PROGRAMADO", "PENDIENTE", "APROBADO", "CREADO"):
+        return None
+    old_status = wo.status
+    wo.status = "CREADO"
+    wo.updated_at = datetime.now()
+    notes = list(wo.execution_notes or [])
+    notes.append({
+        "timestamp": datetime.now().isoformat(),
+        "user": user_id or "system",
+        "note": f"Status: {old_status} -> CREADO (reverted to draft)",
+    })
+    wo.execution_notes = notes
+    log_action(db, "managed_work_order", wo_id, "DRAFT")
+    db.commit()
+    db.refresh(wo)
+    return _to_dict(wo)

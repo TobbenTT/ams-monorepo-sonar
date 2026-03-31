@@ -22,8 +22,8 @@ const STATUS_COLORS = {
 };
 
 const TABS = [
-  { key: 'my', label: 'Mis Tareas', icon: User },
-  { key: 'all', label: 'Todas las Tareas', icon: ClipboardCheck },
+  { key: 'my', label: 'My Tasks', icon: User },
+  { key: 'all', label: 'All las Tareas', icon: ClipboardCheck },
   { key: 'daily', label: 'Reunion Diaria', icon: Calendar },
   { key: 'handovers', label: 'Entregas de Equipo', icon: ArrowRightLeft },
   { key: 'signoff', label: 'Firma Supervisor', icon: Shield },
@@ -148,7 +148,7 @@ export default function Execution() {
                   </span>
                 )}
               </div>
-              <h3 className="font-semibold text-gray-900 truncate">{task.task_description || 'Sin descripcion'}</h3>
+              <h3 className="font-semibold text-gray-900 truncate">{task.task_description || 'No description'}</h3>
               <p className="text-sm text-gray-500 mt-1">
                 Asignado a: <span className="font-medium">{task.assigned_to}</span>
                 {task.scheduled_date && <> · {task.scheduled_date}</>}
@@ -174,7 +174,7 @@ export default function Execution() {
             {/* Progress slider */}
             {showActions && task.status !== 'COMPLETED' && (
               <div>
-                <label className="text-sm font-medium text-gray-700">Progreso</label>
+                <label className="text-sm font-medium text-gray-700">Progress</label>
                 <div className="flex items-center gap-3 mt-1">
                   <input
                     type="range" min="0" max="100" step="5"
@@ -241,7 +241,7 @@ export default function Execution() {
                   onClick={() => handleComplete(task.assignment_id)}
                   className="flex items-center gap-1 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700"
                 >
-                  <CheckCircle2 size={16} /> Completar Tarea
+                  <CheckCircle2 size={16} /> Complete Tarea
                 </button>
               </div>
             )}
@@ -282,7 +282,7 @@ export default function Execution() {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAssignModal(false)}>
         <form onClick={e => e.stopPropagation()} onSubmit={submit} className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg space-y-4">
-          <h2 className="text-lg font-bold text-gray-900">Asignar Tarea</h2>
+          <h2 className="text-lg font-bold text-gray-900">Assign Task</h2>
           <div>
             <label className="text-sm font-medium text-gray-700">Orden de Trabajo</label>
             <select value={form.wo_id} onChange={e => setForm({...form, wo_id: e.target.value})} className="w-full border rounded-lg p-2 mt-1">
@@ -396,7 +396,7 @@ export default function Execution() {
         <div className="flex gap-2">
           {tab === 'all' && (
             <button onClick={() => setShowAssignModal(true)} className="flex items-center gap-1 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">
-              <Plus size={16} /> Asignar Tarea
+              <Plus size={16} /> Assign Task
             </button>
           )}
           {tab === 'handovers' && (
@@ -488,11 +488,11 @@ export default function Execution() {
                   </div>
                   <div className="bg-amber-50 rounded-xl p-4 text-center">
                     <p className="text-2xl font-bold text-amber-700">{tasks.filter(t => t.status === 'IN_PROGRESS').length}</p>
-                    <p className="text-sm text-amber-600">En Progreso</p>
+                    <p className="text-sm text-amber-600">In Progress</p>
                   </div>
                   <div className="bg-green-50 rounded-xl p-4 text-center">
                     <p className="text-2xl font-bold text-green-700">{tasks.filter(t => t.status === 'COMPLETED').length}</p>
-                    <p className="text-sm text-green-600">Completadas</p>
+                    <p className="text-sm text-green-600">Completed</p>
                   </div>
                 </div>
               )}
@@ -514,7 +514,7 @@ export default function Execution() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-white rounded-xl border p-4 text-center">
                   <p className="text-2xl font-bold text-blue-700">{inProgressWOs.length}</p>
-                  <p className="text-xs text-gray-500">OTs en Progreso</p>
+                  <p className="text-xs text-gray-500">OTs en Progress</p>
                 </div>
                 <div className="bg-white rounded-xl border p-4 text-center">
                   <p className="text-2xl font-bold text-amber-700">{fastTrackWOs.length}</p>
@@ -522,7 +522,7 @@ export default function Execution() {
                 </div>
                 <div className="bg-white rounded-xl border p-4 text-center">
                   <p className="text-2xl font-bold text-emerald-700">{completedWOs.length}</p>
-                  <p className="text-xs text-gray-500">Completadas Hoy</p>
+                  <p className="text-xs text-gray-500">Completed Hoy</p>
                 </div>
                 <div className="bg-white rounded-xl border p-4 text-center">
                   <p className="text-2xl font-bold text-gray-700">

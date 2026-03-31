@@ -257,14 +257,14 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
     VALIDATED: 'Aprobado',
     RECHAZADO: 'Rechazado',
     REJECTED: 'Rechazado',
-    CANCELADO: 'Cancelado',
-    CANCELLED: 'Cancelado',
-    CERRADO: 'Cerrado',
-    CLOSED: 'Cerrado',
+    CANCELADO: 'Cancelled',
+    CANCELLED: 'Cancelled',
+    CERRADO: 'Closed',
+    CLOSED: 'Closed',
     DRAFT: 'Pendiente',
     ASSIGNED: 'Aprobado',
     IN_PROGRESS: 'Aprobado',
-    COMPLETED: 'Cerrado',
+    COMPLETED: 'Closed',
   };
 
   const impactLabels = {
@@ -372,7 +372,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
 </div>
 
 <div class="section">
-  <div class="section-title">Accion Sugerida</div>
+  <div class="section-title">Suggested Action</div>
   <div class="text-box">${wr.suggested_action || pd.suggested_action || '-'}</div>
 </div>
 
@@ -393,7 +393,7 @@ ${resources.length ? `<div class="section">
 </div>` : ''}
 
 ${materials.length ? `<div class="section">
-  <div class="section-title">Materiales SAP</div>
+  <div class="section-title">SAP Materials</div>
   <table><thead><tr><th>SAP ID</th><th>Descripcion</th><th>Cant.</th><th>Unidad</th></tr></thead><tbody>
   ${materials.map(m => typeof m === 'string' ? `<tr><td colspan="4">${m}</td></tr>` : `<tr><td style="font-family:monospace">${m.sapId||''}</td><td>${m.description||''}</td><td>${m.quantity||1}</td><td>${m.unit||'PZ'}</td></tr>`).join('')}
   </tbody></table>
@@ -764,7 +764,7 @@ ${materials.length ? `<div class="section">
                 Guardar Cambios
               </button>
             )}
-            {/* Supervisor: Aprobar + Rechazar + Cancelar */}
+            {/* Supervisor: Approve + Reject + Cancelar */}
             {isPending && (
               <>
                 <button
@@ -774,7 +774,7 @@ ${materials.length ? `<div class="section">
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${allChecked ? 'bg-[#1B5E20] text-white hover:bg-[#2E7D32]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                 >
                   <CheckCircle size={16} />
-                  {editing ? 'Guardar y Aprobar' : t('workRequests.validateRequest')}
+                  {editing ? 'Guardar y Approve' : t('workRequests.validateRequest')}
                 </button>
                 <button
                   onClick={() => { onReject(item.id); onClose(); }}
@@ -792,14 +792,14 @@ ${materials.length ? `<div class="section">
                 </button>
               </>
             )}
-            {/* Planner: Crear OT from approved WR */}
+            {/* Planner: Create WO from approved WR */}
             {isValidated && (
               <button
                 onClick={() => { onPlannerCreateOT(item.id); onClose(); }}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
               >
                 <FileText size={16} />
-                Crear OT
+                Create WO
               </button>
             )}
             {canStart && (
@@ -817,7 +817,7 @@ ${materials.length ? `<div class="section">
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
               >
                 <CheckCircle size={16} />
-                Completar Trabajo
+                Complete Trabajo
               </button>
             )}
             {canClose && (
@@ -1071,14 +1071,14 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
     VALIDATED: 'Aprobado',
     RECHAZADO: 'Rechazado',
     REJECTED: 'Rechazado',
-    CANCELADO: 'Cancelado',
-    CANCELLED: 'Cancelado',
-    CERRADO: 'Cerrado',
-    CLOSED: 'Cerrado',
+    CANCELADO: 'Cancelled',
+    CANCELLED: 'Cancelled',
+    CERRADO: 'Closed',
+    CLOSED: 'Closed',
     DRAFT: 'Pendiente',
     ASSIGNED: 'Aprobado',
     IN_PROGRESS: 'Aprobado',
-    COMPLETED: 'Cerrado',
+    COMPLETED: 'Closed',
     SCHEDULED: 'Aprobado',
   }), [t]);
 
@@ -1096,7 +1096,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   }), [t]);
 
   /* ─── Actions ─── */
-  function handleValidate(id) { // Aprobar aviso
+  function handleValidate(id) { // Approve aviso
     const req = requests.find(r => r.id === id);
     const priority = req?.priority_requested || req?.priority_suggested || 'P3';
     const isFastTrack = ['P1', 'P2'].includes(priority);
@@ -1136,7 +1136,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
     if (!reason) return;
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'RECHAZADO', rejection_reason: reason } : r)));
     api.validateWorkRequest(id, { action: 'REJECT', rejection_reason: reason })
-      .then(() => toast.success('Aviso rechazado. El creador será notificado.'))
+      .then(() => toast.success('Notification rejected. El creador será notificado.'))
       .catch(() => toast.error('Error al rechazar aviso'))
       .finally(() => { onRefreshCounts?.(); refreshList(); });
   }
@@ -1144,7 +1144,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   function handleCancel(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CANCELADO' } : r)));
     api.cancelWorkRequest(id)
-      .then(() => toast.success(t('workRequests.cancelled') || 'Aviso cancelado'))
+      .then(() => toast.success(t('workRequests.cancelled') || 'Notification cancelled'))
       .finally(() => onRefreshCounts?.())
       .catch(() => toast.error(t('workRequests.errorCancel') || 'Error al cancelar'));
   }
@@ -1302,7 +1302,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           { label: 'Pendiente', count: queueFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
           { label: 'Aprobado', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
           { label: 'Rechazado', count: queueFiltered.filter(r => r.status === 'REJECTED').length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
-          { label: 'Cancelado', count: queueFiltered.filter(r => r.status === 'CANCELLED').length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
+          { label: 'Cancelled', count: queueFiltered.filter(r => r.status === 'CANCELLED').length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
         ].map(kpi => (
           <div key={kpi.label} className={`bg-white dark:bg-card rounded-lg border border-border ${kpi.borderColor ? 'border-l-4 ' + kpi.borderColor : ''} p-5`}>
             <p className={`text-sm ${kpi.textColor} mb-1`}>{kpi.label}</p>
@@ -1606,9 +1606,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                                 } catch (e) { toast.error('Error creando OT: ' + (e.message || '')); }
                               }}
                               className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
-                              title="Crear OT"
+                              title="Create WO"
                             >
-                              Crear OT
+                              Create WO
                             </button>
                             <button
                               onClick={() => handleStart(req.id)}
@@ -1628,9 +1628,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                             <button
                               onClick={() => handleComplete(req.id)}
                               className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
-                              title="Completar trabajo"
+                              title="Complete trabajo"
                             >
-                              Completar
+                              Complete
                             </button>
                           )}
                           {req.status === 'COMPLETED' && (

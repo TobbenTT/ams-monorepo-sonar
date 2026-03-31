@@ -121,7 +121,7 @@ export default function FailureCapture({ onNavigateTab }) {
     supportEquipment: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [wizardStep, setWizardStep] = useState(1);
+  const [wizardStep, setWizardStep] = useState(1); // 1=Ubicacion, 2=Falla, 3=Accion
   const [createdWRId, setCreatedWRId] = useState(null);
 
   // Equipment search
@@ -471,10 +471,39 @@ export default function FailureCapture({ onNavigateTab }) {
             ))}
           </div>
 
+          {/* Wizard Stepper */}
+          <div className="flex items-center justify-between mb-6 px-2">
+            {[
+              { step: 1, label: 'Ubicacion', icon: '\ud83d\udccd', desc: 'Donde ocurrio' },
+              { step: 2, label: 'Falla', icon: '\u26a0\ufe0f', desc: 'Que paso' },
+              { step: 3, label: 'Accion', icon: '\ud83d\udd27', desc: 'Que hacer' },
+            ].map((s, i) => (
+              <div key={s.step} className="flex items-center flex-1">
+                <button type="button" onClick={() => setWizardStep(s.step)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all w-full ${
+                    wizardStep === s.step
+                      ? 'bg-emerald-600 text-white shadow-lg'
+                      : wizardStep > s.step
+                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                        : 'bg-gray-100 text-gray-400 border border-gray-200'
+                  }`}>
+                  <span className="text-lg">{s.icon}</span>
+                  <div className="text-left">
+                    <div className="text-xs font-bold">Paso {s.step}: {s.label}</div>
+                    <div className="text-[10px] opacity-70">{s.desc}</div>
+                  </div>
+                  {wizardStep > s.step && <span className="ml-auto text-emerald-600">\u2713</span>}
+                </button>
+                {i < 2 && <div className={`w-8 h-0.5 mx-1 flex-shrink-0 ${wizardStep > s.step + 1 ? 'bg-emerald-400' : 'bg-gray-200'}`} />}
+              </div>
+            ))}
+          </div>
+
           {/* Hidden camera input */}
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} className="hidden" />
 
           <div style={{display:wizardStep===2?"block":"none"}}>
+          <div style={{display: wizardStep === 2 ? undefined : "none"}}>
           {/* 1. Que paso? + Voice / Camera */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -525,6 +554,8 @@ export default function FailureCapture({ onNavigateTab }) {
 
           </div>{/* end section1 step2 wrapper */}
           <div style={{display:wizardStep===1?"block":"none"}}>
+          </div>
+          <div style={{display: wizardStep === 1 ? undefined : "none"}}>
           {/* 2. Condicion de Planta + Prioridad */}
           <div className="grid grid-cols-2 gap-4">
             <div className="border rounded-xl p-4">
@@ -668,6 +699,8 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="flex justify-end pt-3"><button type="button" onClick={()=>setWizardStep(2)} className="flex items-center gap-2 px-5 py-2 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] text-sm font-medium">Next <ArrowRight size={14}/></button></div>
           </div>{/* end step 1 */}
           <div style={{display:wizardStep===2?"block":"none"}}>
+          </div>
+          <div style={{display: wizardStep === 2 ? undefined : "none"}}>
           {/* 5. Catalogo de Falla */}
           <div className="border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -742,6 +775,8 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="flex justify-between pt-3"><button type="button" onClick={()=>setWizardStep(1)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Back</button><button type="button" onClick={()=>setWizardStep(3)} className="flex items-center gap-2 px-5 py-2 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] text-sm font-medium">Next <ArrowRight size={14}/></button></div>
           </div>{/* end step 2 */}
           <div style={{display:wizardStep===3?"block":"none"}}>
+          </div>
+          <div style={{display: wizardStep === 3 ? undefined : "none"}}>
           {/* 6. Accion Sugerida */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Accion Sugerida</label>
@@ -963,6 +998,25 @@ export default function FailureCapture({ onNavigateTab }) {
 
           <div className="flex justify-start pt-3"><button type="button" onClick={()=>setWizardStep(2)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Back</button></div>
           </div>{/* end step 3 */}
+        </div>{/* close p-5 space-y-5 */}
+
+        {/* Wizard Navigation */}
+        <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50">
+          <button type="button" onClick={() => setWizardStep(s => Math.max(1, s - 1))} disabled={wizardStep === 1}
+            className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed">
+            ← Anterior
+          </button>
+          <div className="flex items-center gap-1.5">
+            {[1,2,3].map(s => (<div key={s} className={`w-2.5 h-2.5 rounded-full transition-all ${wizardStep === s ? "bg-emerald-600 scale-125" : wizardStep > s ? "bg-emerald-300" : "bg-gray-300"}`} />))}
+          </div>
+          {wizardStep < 3 ? (
+            <button type="button" onClick={() => setWizardStep(s => Math.min(3, s + 1))}
+              className="px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+              Siguiente →
+            </button>
+          ) : <span />}
+        </div>
+
         {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t p-5 flex justify-between items-center">
           <div className="text-xs text-gray-500">
@@ -976,7 +1030,7 @@ export default function FailureCapture({ onNavigateTab }) {
             <button onClick={handleReset} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               Cancelar
             </button>
-            <button onClick={handleSubmit} disabled={submitting || !canSubmit} style={{display:wizardStep===3?"inline-flex":"none"}}
+            <button onClick={handleSubmit} disabled={submitting || !canSubmit || wizardStep !== 3} style={{display:wizardStep===3?"inline-flex":"none"}}
               className="px-5 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2">
               {submitting
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Creando...</>

@@ -22,7 +22,7 @@ const TIME_RANGE_OPTIONS = [
 ];
 
 const AREA_OPTIONS = [
-    { value: 'All Areas',  label: 'Todas las Areas' },
+    { value: 'All Areas',  label: 'All Areas' },
     { value: 'Granulation Unit', label: 'Granulacion' },
     { value: 'Phosphoric Acid Unit', label: 'Acido Fosforico' },
     { value: 'Utilities & Steam', label: 'Utilities & Vapor' },

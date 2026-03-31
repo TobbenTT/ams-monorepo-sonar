@@ -317,7 +317,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 <div className="p-1.5 bg-red-600 rounded-lg">
                   <AlertCircle className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="font-bold text-red-900">Prediccion de Fallas IA</h3>
+                <h3 className="font-bold text-red-900">AI Failure Prediction</h3>
               </div>
               <Button variant="outline" size="sm"
                 disabled={summaryLoading}
@@ -330,7 +330,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                   finally { setSummaryLoading(false); }
                 }}
                 className="border-red-300 text-red-700 hover:bg-red-100 gap-1">
-                <AlertCircle className="w-3 h-3" /> Analizar Equipos
+                <AlertCircle className="w-3 h-3" /> Analyze Equipment
               </Button>
             </div>
             {aiSummary?.predictions?.length > 0 ? (
@@ -363,7 +363,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-red-600">Haz click en "Analizar Equipos" para predecir probabilidades de falla.</p>
+              <p className="text-sm text-red-600">Haz click en "Analyze Equipment" para predecir probabilidades de falla.</p>
             )}
           </div>
 
@@ -374,7 +374,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 <div className="p-1.5 bg-violet-600 rounded-lg">
                   <TrendingUp className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="font-bold text-violet-900">Resumen IA Semanal</h3>
+                <h3 className="font-bold text-violet-900">AI Weekly Summary</h3>
               </div>
               <Button variant="outline" size="sm"
                 disabled={summaryLoading}
@@ -383,11 +383,11 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                   try {
                     const res = await api.getAISummary(7);
                     setAiSummary(res);
-                  } catch { setAiSummary({ summary: 'Error al generar resumen', stats: {} }); }
+                  } catch { setAiSummary({ summary: 'Error generating summary', stats: {} }); }
                   finally { setSummaryLoading(false); }
                 }}
                 className="border-violet-300 text-violet-700 hover:bg-violet-100 gap-1">
-                {summaryLoading ? <><Loader2 className="w-3 h-3 animate-spin" /> Generando...</> : <><TrendingUp className="w-3 h-3" /> {aiSummary ? 'Actualizar' : 'Generar'}</>}
+                {summaryLoading ? <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</> : <><TrendingUp className="w-3 h-3" /> {aiSummary ? 'Refresh' : 'Generate'}</>}
               </Button>
               {aiSummary && (
                 <Button variant="outline" size="sm"
@@ -402,7 +402,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                       '',
                       '1. RESUMEN ESTADISTICO',
                       '-'.repeat(30),
-                      'Avisos creados: ' + (s.total_wrs || 0),
+                      'Notifications created: ' + (s.total_wrs || 0),
                       'Ordenes de trabajo: ' + (s.total_wos || 0),
                       'Horas-hombre reales: ' + (s.total_actual_hours || 0) + 'h',
                       '',
@@ -432,7 +432,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                     URL.revokeObjectURL(url);
                   }}
                   className="border-violet-300 text-violet-700 hover:bg-violet-100 gap-1">
-                  <TrendingUp className="w-3 h-3" /> Exportar
+                  <TrendingUp className="w-3 h-3" /> Export
                 </Button>
               )}
             </div>
@@ -441,7 +441,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 <div className="grid grid-cols-4 gap-3">
                   <div className="bg-white rounded-lg p-3 text-center border border-violet-100">
                     <span className="text-2xl font-bold text-violet-700">{aiSummary.stats?.total_wrs || 0}</span>
-                    <span className="text-xs text-gray-500 block">Avisos</span>
+                    <span className="text-xs text-gray-500 block">Notifications</span>
                   </div>
                   <div className="bg-white rounded-lg p-3 text-center border border-violet-100">
                     <span className="text-2xl font-bold text-violet-700">{aiSummary.stats?.total_wos || 0}</span>
@@ -449,11 +449,11 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                   </div>
                   <div className="bg-white rounded-lg p-3 text-center border border-violet-100">
                     <span className="text-2xl font-bold text-violet-700">{aiSummary.stats?.total_actual_hours || 0}h</span>
-                    <span className="text-xs text-gray-500 block">HH Reales</span>
+                    <span className="text-xs text-gray-500 block">Actual HH</span>
                   </div>
                   <div className="bg-white rounded-lg p-3 text-center border border-violet-100">
                     <span className="text-2xl font-bold text-violet-700">{aiSummary.stats?.top_equipment?.[0]?.tag || '-'}</span>
-                    <span className="text-xs text-gray-500 block">Top Equipo</span>
+                    <span className="text-xs text-gray-500 block">Top Equipment</span>
                   </div>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-violet-100 text-sm text-gray-700 whitespace-pre-line leading-relaxed">
@@ -461,7 +461,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-violet-600">Haz click en "Generar" para obtener un resumen inteligente de la actividad de mantenimiento de los ultimos 7 dias.</p>
+              <p className="text-sm text-violet-600">Click "Generate" to get an AI summary of maintenance activity for the last 7 days.</p>
             )}
           </div>
 
@@ -584,7 +584,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
           </div>
         </div>
         <div>
-          <div className="flex items-center gap-2 mb-4"><DollarSign className="w-5 h-5 text-emerald-600" /><h4 className="font-bold text-gray-900">{t('executive.costos')} — Gasto vs Costo</h4></div>
+          <div className="flex items-center gap-2 mb-4"><DollarSign className="w-5 h-5 text-emerald-600" /><h4 className="font-bold text-gray-900">{t('executive.costos')} — Budget vs Actual Cost</h4></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <KpiCard
               title={t('executive.equipmentHealth')}
@@ -596,7 +596,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
               icon={DollarSign}
             />
             <KpiCard
-              title="Gasto (Presupuesto)"
+              title="Budget (Planned)"
               value={wm.gasto_total != null ? wm.gasto_total.toLocaleString() : '—'}
               target="—"
               trend="stable"
@@ -605,7 +605,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
               icon={DollarSign}
             />
             <KpiCard
-              title="Costo (Real)"
+              title="Cost (Actual)"
               value={wm.costo_total != null ? wm.costo_total.toLocaleString() : '—'}
               target="—"
               trend="stable"
@@ -616,10 +616,10 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
           </div>
           {wm.gasto_total > 0 && (
             <div className="mt-3 p-3 rounded-lg border bg-gray-50 flex items-center gap-6 text-sm">
-              <div><span className="text-gray-500">Varianza:</span> <span className={wm.costo_variance >= 0 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold'}>{wm.costo_variance >= 0 ? '+' : ''}{wm.costo_variance?.toLocaleString()} MAD ({wm.costo_variance_pct}%)</span></div>
-              <div><span className="text-gray-500">Mano de obra:</span> <span className="font-medium">{(wm.costo_labor || 0).toLocaleString()} MAD</span></div>
+              <div><span className="text-gray-500">Variance:</span> <span className={wm.costo_variance >= 0 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold'}>{wm.costo_variance >= 0 ? '+' : ''}{wm.costo_variance?.toLocaleString()} MAD ({wm.costo_variance_pct}%)</span></div>
+              <div><span className="text-gray-500">Labor:</span> <span className="font-medium">{(wm.costo_labor || 0).toLocaleString()} MAD</span></div>
               <div><span className="text-gray-500">Material:</span> <span className="font-medium">{(wm.costo_material || 0).toLocaleString()} MAD</span></div>
-              <div><span className="text-gray-500">Externo:</span> <span className="font-medium">{(wm.costo_external || 0).toLocaleString()} MAD</span></div>
+              <div><span className="text-gray-500">External:</span> <span className="font-medium">{(wm.costo_external || 0).toLocaleString()} MAD</span></div>
             </div>
           )}
         </div>

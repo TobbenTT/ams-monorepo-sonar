@@ -359,7 +359,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       else if (ns === 'PLANIFICADO' || ns === 'APROBADO') upd = await api.planManagedWO(WO_ID);
       else if (ns === 'PROGRAMADO')   upd = await api.scheduleManagedWO(WO_ID, {});
       else if (ns === 'REPROGRAMADO') upd = await api.rescheduleManagedWO(WO_ID);
-      else if (ns === 'CANCELADO')    upd = await api.closeManagedWO(WO_ID);
+      else if (ns === 'CANCELADO')    upd = await api.cancelManagedWO(WO_ID);
       else if (ns === 'EN_EJECUCION' || ns === 'EN_PROGRESO') upd = await api.startManagedWO(WO_ID);
       else if (ns === 'CERRADO') {
         const hours = parseFloat(execData.actual_hours) || wo.actual_hours || 0;
@@ -491,16 +491,16 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 <tbody>
                   {managedWOs.map((wo, i) => {
                     const SAP_STATUS = {
-                      CREADO: { label: 'Creado', color: 'bg-yellow-100 text-yellow-700' },
-                      PLANIFICADO: { label: 'Planificado', color: 'bg-blue-100 text-blue-700' },
-                      PROGRAMADO: { label: 'Programado', color: 'bg-indigo-100 text-indigo-700' },
-                      REPROGRAMADO: { label: 'Reprogramado', color: 'bg-orange-100 text-orange-700' },
-                      EN_EJECUCION: { label: 'En Ejecucion', color: 'bg-amber-100 text-amber-700' },
-                      CERRADO: { label: 'Cerrado', color: 'bg-green-100 text-green-700' },
-                      CANCELADO: { label: 'Cancelado', color: 'bg-gray-300 text-gray-600' },
-                      PENDIENTE: { label: 'Creado', color: 'bg-yellow-100 text-yellow-700' },
-                      APROBADO: { label: 'Planificado', color: 'bg-blue-100 text-blue-700' },
-                      EN_PROGRESO: { label: 'En Ejecucion', color: 'bg-amber-100 text-amber-700' },
+                      CREADO: { label: 'Created', color: 'bg-yellow-100 text-yellow-700' },
+                      PLANIFICADO: { label: 'Planned', color: 'bg-blue-100 text-blue-700' },
+                      PROGRAMADO: { label: 'Scheduled', color: 'bg-indigo-100 text-indigo-700' },
+                      REPROGRAMADO: { label: 'Rescheduled', color: 'bg-orange-100 text-orange-700' },
+                      EN_EJECUCION: { label: 'In Execution', color: 'bg-amber-100 text-amber-700' },
+                      CERRADO: { label: 'Closed', color: 'bg-green-100 text-green-700' },
+                      CANCELADO: { label: 'Cancelled', color: 'bg-gray-300 text-gray-600' },
+                      PENDIENTE: { label: 'Created', color: 'bg-yellow-100 text-yellow-700' },
+                      APROBADO: { label: 'Planned', color: 'bg-blue-100 text-blue-700' },
+                      EN_PROGRESO: { label: 'In Execution', color: 'bg-amber-100 text-amber-700' },
                     };
                     const TYPE_LABEL = {
                       PM01: 'PM01', PM02: 'PM02', PM03: 'PM03', PM05: 'PM05',
@@ -993,13 +993,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-gray-800">Operations / Work Steps</h3>
-                      <button type="button" onClick={() => setEditOps(prev => [...prev, { type: 'INT', description: '', specialty: 'Mecanico', quantity: 1, hours: 4 }])}
-                        className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">+ Agregar</button>
+                      <button type="button" onClick={() => setEditOps(prev => [...prev, { type: 'INT', description: '', specialty: 'Mechanical', quantity: 1, hours: 4 }])}
+                        className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">+ Add</button>
                     </div>
                     {editOps.length === 0 ? (
                       <div className="text-center py-6 text-gray-400">
                         <p className="text-sm">No operations</p>
-                        <p className="text-xs">Click "+ Agregar" para crear pasos de trabajo</p>
+                        <p className="text-xs">Click "+ Add" para crear pasos de trabajo</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -1019,17 +1019,17 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               </button>
                             </div>
                             <div className="flex items-center gap-3 ml-7">
-                              <select value={op.specialty || 'Mecanico'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
+                              <select value={op.specialty || 'Mechanical'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
                                 className="text-xs border rounded px-2 py-1">
-                                {['Mecanico','Electrico','Instrumentista','Soldador','Lubricacion','Operador Grua','Andamiero','Supervisor','Otro'].map(s => <option key={s} value={s}>{s}</option>)}
+                                {['Mechanical','Electrical','Instrumentation','Welder','Lubrication','Crane Operator','Scaffolder','Supervisor','Other'].map(s => <option key={s} value={s}>{s}</option>)}
                               </select>
                               <div className="flex items-center gap-1">
-                                <label className="text-[10px] text-gray-500">Cant:</label>
+                                <label className="text-[10px] text-gray-500">Qty:</label>
                                 <input type="number" min="1" value={op.quantity || 1} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], quantity: parseInt(e.target.value)||1}; setEditOps(n); }}
                                   className="w-12 text-xs border rounded px-1 py-1 text-center" />
                               </div>
                               <div className="flex items-center gap-1">
-                                <label className="text-[10px] text-gray-500">Horas:</label>
+                                <label className="text-[10px] text-gray-500">Hours:</label>
                                 <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
                                   className="w-14 text-xs border rounded px-1 py-1 text-center" />
                               </div>
@@ -1149,12 +1149,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-gray-800">Materials / Spare Parts</h3>
                       <button type="button" onClick={() => setEditMats(prev => [...prev, { sapId: '', description: '', quantity: 1, unit: 'PZ', type: 'INT' }])}
-                        className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">+ Agregar</button>
+                        className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">+ Add</button>
                     </div>
                     {editMats.length === 0 ? (
                       <div className="text-center py-6 text-gray-400">
                         <p className="text-sm">No materials</p>
-                        <p className="text-xs">Click "+ Agregar" para agregar repuestos</p>
+                        <p className="text-xs">Click "+ Add" para agregar repuestos</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -1300,7 +1300,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>;
                     })()}
                     <div className="text-xs text-gray-400 space-y-1">
-                      <p>Creado: {wo.created_at ? new Date(wo.created_at).toLocaleString("es") : "\—"}</p>
+                      <p>Created: {wo.created_at ? new Date(wo.created_at).toLocaleString("es") : "\—"}</p>
                       {wo.planned_start && <p>Start planificado: {new Date(wo.planned_start).toLocaleString("es")}</p>}
                       {wo.planned_end && <p>Fin planificado: {new Date(wo.planned_end).toLocaleString("es")}</p>}
                     </div>

@@ -1022,7 +1022,7 @@ export default function FailureCapture({ onNavigateTab }) {
               )}
               {aiSuggested && (
                 <span className="text-xs text-violet-600 font-medium">
-                  ✓ Campos pre-llenados automáticamente
+                  ✓ Fields auto-filled by AIáticamente
                 </span>
               )}
             </div>

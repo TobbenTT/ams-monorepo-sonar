@@ -266,6 +266,20 @@ def update_progress(wo_id: str, data: WOProgressRequest, user=Depends(get_curren
     return result
 
 
+
+
+@router.put("/{wo_id}/cancel")
+def cancel_work_order(
+    wo_id: str,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Cancel a work order from any non-final status."""
+    result = managed_wo_service.cancel_wo(db, wo_id, getattr(user, "user_id", ""))
+    if not result:
+        raise HTTPException(status_code=400, detail="Cannot cancel - WO not found or already closed")
+    return result
+
 @router.delete("/{wo_id}", dependencies=[Depends(require_role("admin", "planner"))])
 def delete_work_order(wo_id: str, db: Session = Depends(get_db)):
     from api.database.models import ManagedWorkOrderModel

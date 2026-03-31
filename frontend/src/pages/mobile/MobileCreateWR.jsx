@@ -140,7 +140,7 @@ export default function MobileCreateWR() {
         failureObjectPart: '',
         failureCause: '',
         // SAP Aviso fields (IH01)
-        reportedBy: '',          // Autor del Aviso (quién reporta, puede ser distinto del creador)
+        reportedBy: '',          // Notification Author (quién reporta, puede ser distinto del creador)
         circumstances: '',       // Detalle/Circunstancias del aviso
         supportEquipment: '',    // Equipos de apoyo necesarios
     });
@@ -492,7 +492,7 @@ export default function MobileCreateWR() {
                         <ArrowLeft className="w-5 h-5" style={{ color: '#64748B' }} />
                     </button>
                     <div>
-                        <h1 className="text-lg font-bold" style={{ color: '#0F172A' }}>Crear Aviso</h1>
+                        <h1 className="text-lg font-bold" style={{ color: '#0F172A' }}>Create Notification</h1>
                         <p className="text-xs" style={{ color: '#64748B' }}>Documenta hallazgos y necesidades</p>
                     </div>
                 </div>
@@ -786,7 +786,7 @@ export default function MobileCreateWR() {
                                         ))
                                     }
                                     {failureCatalog[failureCategory].symptoms.filter(s => !symptomFilter || s.toLowerCase().includes(symptomFilter.toLowerCase())).length === 0 && (
-                                        <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados</div>
+                                        <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>No results</div>
                                     )}
                                 </div>
                             </div>
@@ -844,7 +844,7 @@ export default function MobileCreateWR() {
                                         ))
                                     }
                                     {failureCatalog[failureCategory].parts.filter(p => !partFilter || p.toLowerCase().includes(partFilter.toLowerCase())).length === 0 && (
-                                        <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados</div>
+                                        <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>No results</div>
                                     )}
                                 </div>
                             </div>
@@ -902,7 +902,7 @@ export default function MobileCreateWR() {
                                         ))
                                     }
                                     {failureCatalog[failureCategory].causes.filter(c => !causeFilter || c.toLowerCase().includes(causeFilter.toLowerCase())).length === 0 && (
-                                        <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados</div>
+                                        <div className="px-3 py-3 text-xs text-center" style={{ color: '#94A3B8' }}>No results</div>
                                     )}
                                 </div>
                             </div>
@@ -1096,7 +1096,7 @@ export default function MobileCreateWR() {
                                                     ))
                                                 }
                                                 {COMMON_MATERIALS.filter(m => !mat.sapId || m.sapId.includes(mat.sapId) || m.desc.toLowerCase().includes(mat.sapId.toLowerCase())).length === 0 && (
-                                                    <div className="px-3 py-2 text-xs text-center" style={{ color: '#94A3B8' }}>Sin resultados — usa ID manual</div>
+                                                    <div className="px-3 py-2 text-xs text-center" style={{ color: '#94A3B8' }}>No results — usa ID manual</div>
                                                 )}
                                             </div>
                                         )}
@@ -1156,7 +1156,7 @@ export default function MobileCreateWR() {
                     </div>
                 </div>
 
-                {/* Autor del Aviso (SAP IH01 — quién reporta el evento) */}
+                {/* Notification Author (SAP IH01 — quién reporta el evento) */}
                 <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
                     <label className="text-xs font-semibold mb-3 block" style={{ color: '#64748B', letterSpacing: '0.05em' }}>
                         AUTOR DEL AVISO

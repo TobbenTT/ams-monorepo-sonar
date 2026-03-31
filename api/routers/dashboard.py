@@ -154,15 +154,15 @@ def get_work_management_kpis(
     recent = [w for w in all_wos if w.created_at and to_naive(w.created_at) >= ps and to_naive(w.created_at) <= pe]
 
     total = len(recent)
-    completed = [w for w in recent if w.status in ("COMPLETED", "CLOSED")]
-    in_progress = [w for w in recent if w.status == "IN_PROGRESS"]
+    completed = [w for w in recent if w.status in ("COMPLETED", "CLOSED", "CERRADO")]
+    in_progress = [w for w in recent if w.status in ("IN_PROGRESS", "EN_EJECUCION")]
     programmed = [w for w in recent if w.work_class == "PROGRAMADO"]
     unplanned = [w for w in recent if w.work_class == "NO_PROGRAMADO"]
 
     # Schedule compliance: completed on time / total programmed
     on_time = sum(
         1 for w in programmed
-        if w.status in ("COMPLETED", "CLOSED")
+        if w.status in ("COMPLETED", "CLOSED", "CERRADO")
         and (not w.planned_end or not w.actual_end or w.actual_end <= w.planned_end)
     )
     schedule_compliance = round(on_time / len(programmed) * 100, 1) if programmed else 0
@@ -172,7 +172,7 @@ def get_work_management_kpis(
     schedule_adherence = round(sched_executed / len(completed) * 100, 1) if completed else 0
 
     # Backlog: pending hours
-    pending = [w for w in all_wos if w.status not in ("COMPLETED", "CLOSED")]
+    pending = [w for w in all_wos if w.status not in ("COMPLETED", "CLOSED", "CERRADO", "CANCELADO")]
     backlog_hours = round(sum(w.estimated_hours or 0 for w in pending), 1)
     backlog_count = len(pending)
 
@@ -186,24 +186,24 @@ def get_work_management_kpis(
     )
 
     # Cost by type (from budget_amount where available)
-    cost_correctivo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "CORRECTIVO")
-    cost_preventivo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "PREVENTIVO")
-    cost_predictivo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "PREDICTIVO")
-    cost_mejora = sum(w.budget_amount or 0 for w in recent if w.wo_type == "MEJORA")
-    cost_incidente = sum(w.budget_amount or 0 for w in recent if w.wo_type == "INCIDENTE_OPERACIONAL")
-    cost_monitoreo = sum(w.budget_amount or 0 for w in recent if w.wo_type == "MONITOREO_CONDICION")
+    cost_correctivo = sum(w.budget_amount or 0 for w in recent if w.wo_type in ("CORRECTIVO", "PM01"))
+    cost_preventivo = sum(w.budget_amount or 0 for w in recent if w.wo_type in ("PREVENTIVO", "PM02"))
+    cost_predictivo = sum(w.budget_amount or 0 for w in recent if w.wo_type in ("PREDICTIVO", "PM03"))
+    cost_mejora = sum(w.budget_amount or 0 for w in recent if w.wo_type in ("MEJORA", "PM05"))
+    cost_incidente = sum(w.budget_amount or 0 for w in recent if w.wo_type in ("INCIDENTE_OPERACIONAL", "PM06"))
+    cost_monitoreo = sum(w.budget_amount or 0 for w in recent if w.wo_type in ("MONITOREO_CONDICION", "PM07"))
 
     # Hours by type
-    hours_correctivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "CORRECTIVO"), 1)
-    hours_preventivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "PREVENTIVO"), 1)
-    hours_predictivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "PREDICTIVO"), 1)
-    hours_incidente = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "INCIDENTE_OPERACIONAL"), 1)
-    hours_monitoreo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type == "MONITOREO_CONDICION"), 1)
+    hours_correctivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type in ("CORRECTIVO", "PM01")), 1)
+    hours_preventivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type in ("PREVENTIVO", "PM02")), 1)
+    hours_predictivo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type in ("PREDICTIVO", "PM03")), 1)
+    hours_incidente = round(sum((w.actual_hours or 0) for w in recent if w.wo_type in ("INCIDENTE_OPERACIONAL", "PM06")), 1)
+    hours_monitoreo = round(sum((w.actual_hours or 0) for w in recent if w.wo_type in ("MONITOREO_CONDICION", "PM07")), 1)
 
     # MTBM — Mean Time Between Maintenance (days)
     # All completed WOs ordered by actual_end
     completed_with_dates = sorted(
-        [w for w in all_wos if w.status in ("COMPLETED", "CLOSED") and w.actual_end],
+        [w for w in all_wos if w.status in ("COMPLETED", "CLOSED", "CERRADO") and w.actual_end],
         key=lambda w: w.actual_end,
     )
     if len(completed_with_dates) >= 2:

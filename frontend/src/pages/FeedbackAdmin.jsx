@@ -163,7 +163,7 @@ export default function FeedbackAdmin() {
         </div>
       ) : feedback.length === 0 ? (
         <Card className="p-12 bg-white text-center text-gray-400">
-          <p className="text-lg">No hay feedback todavia</p>
+          <p className="text-lg">No feedback yet</p>
           <p className="text-sm mt-1">El feedback aparecera aqui cuando los usuarios lo envien</p>
         </Card>
       ) : (

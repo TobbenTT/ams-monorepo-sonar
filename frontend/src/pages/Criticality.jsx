@@ -185,7 +185,7 @@ function CriticalityTab({ nodes, t }) {
             </Scatter>
           </ScatterChart>
         </ResponsiveContainer>
-        ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+        ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
       </div>
 
       {/* AI-Driven Assessment */}
@@ -369,7 +369,7 @@ function AssetHealthTab({ t }) {
       </div>
 
       {/* Health Cards */}
-      {filtered.length === 0 && <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+      {filtered.length === 0 && <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filtered.map(asset => {
           const TrendIcon = TREND_ICON[asset.trend] || Minus;

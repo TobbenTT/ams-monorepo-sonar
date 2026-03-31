@@ -138,7 +138,7 @@ export default function FailureCapture({ onNavigateTab }) {
     { value: 'M01', label: 'M01 - Mina Perforacion', area: 'Mina' },
     { value: 'M02', label: 'M02 - Mina Carguio', area: 'Mina' },
     { value: 'M03', label: 'M03 - Mina Transporte', area: 'Mina' },
-    { value: 'M04', label: 'M04 - Mina Equipos de Apoyo', area: 'Mina' },
+    { value: 'M04', label: 'M04 - Mina Support Equipment', area: 'Mina' },
     { value: 'M05', label: 'M05 - Mina Equipos Auxiliares', area: 'Mina' },
   ];
 
@@ -886,7 +886,7 @@ export default function FailureCapture({ onNavigateTab }) {
         <div className="sticky top-0 bg-white border-b p-5 rounded-t-xl z-10">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Crear Aviso de Trabajo</h2>
+              <h2 className="text-lg font-bold text-gray-900">Create Notification de Trabajo</h2>
               <p className="text-xs text-gray-500 mt-0.5">Formulario SAP PM - Notificacion de Averia / Solicitud de Trabajo</p>
             </div>
             <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold">
@@ -1288,10 +1288,10 @@ export default function FailureCapture({ onNavigateTab }) {
 
           </div>
           <div style={{display: wizardStep === 3 ? undefined : "none"}}>
-          {/* 8. Recursos Necesarios */}
+          {/* 8. Required Resources */}
           <div className="border rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recursos Necesarios</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Required Resources</label>
               <div className="flex gap-2">
                 <button onClick={addResource} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
                   + Add
@@ -1360,10 +1360,10 @@ export default function FailureCapture({ onNavigateTab }) {
           {/* 9. Duracion Estimada */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" /> Duracion Estimada (horas)
+              <Clock className="w-3.5 h-3.5" /> Estimated Duration (hours)
             </label>
             <input type="text" value={form.estimatedDuration} onChange={e => setF('estimatedDuration', e.target.value)}
-              placeholder="Ej: 4 (horas)"
+              placeholder="e.g. 4 (hours)"
               className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
           </div>
 
@@ -1698,7 +1698,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
           {/* 11. Equipos Especiales */}
           <div className="border rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Equipos de Apoyo</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Support Equipment</label>
             {(form.supportEquipment || []).length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {(form.supportEquipment || []).map((se, i) => (
@@ -1715,7 +1715,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 onChange={e => { setF('specialEquipment', e.target.value); setShowSpecEquip(true); }}
                 onFocus={() => setShowSpecEquip(true)}
                 onBlur={() => setTimeout(() => setShowSpecEquip(false), 150)}
-                placeholder="Agregar equipo de apoyo..."
+                placeholder="Add support equipment..."
                 onKeyDown={e => {
                   if (e.key === 'Enter' && form.specialEquipment?.trim()) {
                     e.preventDefault();
@@ -1910,24 +1910,24 @@ export default function FailureCapture({ onNavigateTab }) {
         </div>
       )}
 
-          {/* 11b. Condiciones de Trabajo / Entorno */}
+          {/* 11b. Working Conditions / Environment */}
           <div className="border rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Condiciones de Trabajo / Entorno</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Working Conditions / Environment</label>
             <textarea value={form.workConditions} onChange={e => setF('workConditions', e.target.value)}
-              placeholder="Condiciones necesarias para ejecutar el trabajo (superficie plana, area despejada, equipo desconectado, etc.)"
+              placeholder="Conditions required to execute the work (flat surface, clear area, disconnected equipment, etc.)"
               rows={3} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
-            <div className="text-[10px] text-gray-400 mt-1">Pre-requisitos y condiciones del entorno para la intervencion</div>
+            <div className="text-[10px] text-gray-400 mt-1">Pre-requisites and environmental conditions for the intervention</div>
           </div>
 
-          {/* 12. Autor del Aviso */}
+          {/* 12. Notification Author */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" /> Autor del Aviso
+              <Users className="w-3.5 h-3.5" /> Notification Author
             </label>
             <input type="text" value={form.reportedBy} onChange={e => setF('reportedBy', e.target.value)}
               placeholder="Nombre del supervisor o reportante"
               className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-            <div className="text-[10px] text-gray-400 mt-1">SAP PM: Autor del aviso (campo QMNUM)</div>
+            <div className="text-[10px] text-gray-400 mt-1">SAP PM: Notification author (field QMNUM)</div>
           </div>
 
           {/* 14. Adjuntos */}
@@ -2015,7 +2015,7 @@ export default function FailureCapture({ onNavigateTab }) {
               className="px-5 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2">
               {submitting
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Creando...</>
-                : <>Crear Aviso de Trabajo <ArrowRight className="w-4 h-4" /></>
+                : <>Create Notification de Trabajo <ArrowRight className="w-4 h-4" /></>
               }
             </button>
           </div>

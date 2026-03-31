@@ -1102,7 +1102,7 @@ export default function WorkOrdersPage() {
             <div className="flex items-center justify-center h-[200px] text-gray-400">
               <div className="text-center">
                 <Wrench className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm">No hay órdenes de trabajo</p>
+                <p className="text-sm">No work orders</p>
                 <p className="text-xs mt-1">Crea una OT desde un aviso aprobado o manualmente</p>
               </div>
             </div>
@@ -1226,7 +1226,7 @@ export default function WorkOrdersPage() {
             <div className="sticky top-0 bg-white border-b p-5 rounded-t-xl z-10">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">{t('workOrders.createOTTitle') || 'Crear Orden de Trabajo'}</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('workOrders.createOTTitle') || 'Create Work Order'}</h3>
                   <p className="text-xs text-gray-500 mt-0.5">{t('workOrders.createOTSubtitle') || 'Selecciona un aviso aprobado para generar la OT'}</p>
                 </div>
                 <button onClick={() => setShowCreateOTModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
@@ -1738,7 +1738,7 @@ export default function WorkOrdersPage() {
                 </div>
               </div>
 
-              {/* 11. Autor del Aviso (auto - read only) */}
+              {/* 11. Notification Author (auto - read only) */}
               <div className="border rounded-xl p-4">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {t('workOrders.reportedByLabel')}</label>
                 <div className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 font-medium">
@@ -1747,7 +1747,7 @@ export default function WorkOrdersPage() {
                 <div className="text-[10px] text-gray-400 mt-1">Asignado automáticamente — no editable</div>
               </div>
 
-              {/* 12. Equipos de Apoyo */}
+              {/* 12. Support Equipment */}
               <div className="border rounded-xl p-4">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.supportEquipment')}</label>
                 <input

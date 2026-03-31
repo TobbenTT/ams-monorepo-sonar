@@ -295,7 +295,7 @@ export default function FMECA() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-3 py-8 text-center text-gray-400">
-                    No hay registros para el equipo seleccionado.
+                    No records for selected equipment.
                   </td>
                 </tr>
               )}

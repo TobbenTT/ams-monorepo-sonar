@@ -324,7 +324,7 @@ function ORProjectsTab() {
             ) : (
                 <div className="text-center py-12 text-muted-foreground text-sm">
                     <FolderOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p>No hay proyectos OR activos.</p>
+                    <p>No active OR projects.</p>
                     <p>Cree un nuevo proyecto para activar los 13 agentes CORTEX.</p>
                 </div>
             )}
@@ -656,7 +656,7 @@ function SessionsTab() {
                 </div>
             ) : (
                 <div className="text-center py-10 text-muted-foreground text-sm">
-                    No hay sesiones activas. Cree una nueva sesión para comenzar.
+                    No active sessions. Create a new session to start.
                 </div>
             )}
         </div>

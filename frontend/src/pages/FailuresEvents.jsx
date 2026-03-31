@@ -1560,7 +1560,7 @@ export default function FailuresEvents() {
                   }`}>{wr.status?.replace(/_/g, ' ')}</Badge>
                   <Badge className="bg-gray-100 text-gray-700">{wr.priority_code || 'P3'}</Badge>
                   {canEdit && !wrEditing && (
-                    <button onClick={startEdit} className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100">Editar</button>
+                    <button onClick={startEdit} className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100">Edit</button>
                   )}
                   <button onClick={() => { setSelectedWR(null); setWrEditing(false); setWrActionComment(''); }} className="ml-1 text-gray-400 hover:text-gray-700 text-xl">&times;</button>
                 </div>
@@ -1714,7 +1714,7 @@ export default function FailuresEvents() {
                     {canCreateOT && (
                       <div className="border-t pt-3">
                         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCreateOT} disabled={wrSaving}>
-                          {wrSaving ? 'Creando...' : 'Crear Orden de Trabajo desde este Aviso'}
+                          {wrSaving ? 'Creando...' : 'Create Work Order desde este Aviso'}
                         </Button>
                       </div>
                     )}

@@ -292,7 +292,7 @@ export default function WorkOrderDetailDialog({
           {/* Support Equipment */}
           {raw.support_equipment?.length > 0 && (
             <div>
-              <h4 className="font-semibold mb-3">Equipos de Apoyo</h4>
+              <h4 className="font-semibold mb-3">Support Equipment</h4>
               <div className="flex flex-wrap gap-2">
                 {raw.support_equipment.map((eq, i) => (
                   <Badge key={i} variant="outline" className="text-sm">

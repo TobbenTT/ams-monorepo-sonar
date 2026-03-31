@@ -386,7 +386,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
 </div>
 
 ${resources.length ? `<div class="section">
-  <div class="section-title">Recursos Necesarios</div>
+  <div class="section-title">Required Resources</div>
   <table><thead><tr><th>Especialidad</th><th>Cantidad</th><th>Horas</th></tr></thead><tbody>
   ${resources.map(r => typeof r === 'string' ? `<tr><td colspan="3">${r}</td></tr>` : `<tr><td>${r.type||''}</td><td>${r.quantity||1}</td><td>${r.hours||0}h</td></tr>`).join('')}
   </tbody></table>
@@ -411,7 +411,7 @@ ${materials.length ? `<div class="section">
             </button>
             {canEdit && !editing && (
             <button onClick={() => setEditing(true)} className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-300 font-semibold hover:bg-amber-100 transition-colors">
-                Editar
+                Edit
               </button>
             )}
             <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -601,7 +601,7 @@ ${materials.length ? `<div class="section">
               {item.reported_by && (
                 <div className="flex items-center gap-2">
                   <User size={14} className="text-muted-foreground flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground">Autor del Aviso:</span>
+                  <span className="text-xs text-muted-foreground">Notification Author:</span>
                   <span className="text-sm font-medium text-foreground">{item.reported_by}</span>
                 </div>
               )}
@@ -613,7 +613,7 @@ ${materials.length ? `<div class="section">
               )}
               {(item.support_equipment?.length > 0 || editing) && (
                 <div>
-                  <span className="text-xs text-muted-foreground">Equipos de Apoyo:</span>
+                  <span className="text-xs text-muted-foreground">Support Equipment:</span>
                   {editing ? (
                     <div className="mt-1">
                       <div className="flex flex-wrap gap-1 mb-1">

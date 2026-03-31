@@ -742,7 +742,7 @@ export default function MobileWRDetail() {
                     </div>
                 )}
 
-                {/* Approved → Assign technician + Crear OT */}
+                {/* Approved → Assign technician + Create WO */}
                 {['VALIDATED', 'APPROVED'].includes(status) && (
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border-2" style={{ borderColor: '#86EFAC' }}>
                         <div className="flex items-center gap-2 mb-3">
@@ -759,7 +759,7 @@ export default function MobileWRDetail() {
                                         style={{ backgroundColor: '#1D4ED8', color: '#FFFFFF' }}
                                     >
                                         <FileText className="w-5 h-5" />
-                                        Crear Orden de Trabajo
+                                        Create Work Order
                                     </button>
                                 )}
                                 <button

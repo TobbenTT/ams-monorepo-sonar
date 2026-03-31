@@ -30,7 +30,7 @@ function WeeklySummarySection({ scheduleWeeks, workRequests, backlogItems }) {
     if (!week) return (
         <div className="bg-card border border-border rounded-lg p-5 shadow-sm mb-5">
             <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">{t('reports.previewWeeklySummary')}</div>
-            <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">No data</p>
         </div>
     );
     const wos = week.work_orders || week.work_packages || [];

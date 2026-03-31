@@ -166,7 +166,7 @@ export default function PostMaintenance() {
           {reviews.length === 0 && !loading && (
             <div className="text-center py-10 text-gray-400">
               <FileText size={32} className="mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No hay revisiones</p>
+              <p className="text-sm">No reviews</p>
             </div>
           )}
           {reviews.map(r => (
@@ -279,7 +279,7 @@ export default function PostMaintenance() {
                   <h3 className="font-semibold text-gray-900">Reunion y Plan de Mejoras</h3>
                   {detail.status !== 'COMPLETED' && (
                     <button onClick={() => setEditMode(!editMode)} className="text-sm text-emerald-600 hover:underline">
-                      {editMode ? 'Cancelar' : 'Editar'}
+                      {editMode ? 'Cancelar' : 'Edit'}
                     </button>
                   )}
                 </div>
@@ -346,7 +346,7 @@ export default function PostMaintenance() {
                       </div>
                     )}
                     {!detail.meeting_date && !detail.meeting_notes && !detail.improvement_actions?.length && (
-                      <p className="text-gray-400 italic">Sin datos de reunion. Presiona "Editar" para agregar.</p>
+                      <p className="text-gray-400 italic">No data de reunion. Presiona "Edit" to add.</p>
                     )}
                   </div>
                 )}

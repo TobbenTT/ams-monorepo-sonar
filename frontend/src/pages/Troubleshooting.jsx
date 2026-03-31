@@ -181,7 +181,7 @@ export default function Troubleshooting() {
                                         </div>
                                         <div className="overflow-y-auto max-h-[220px]">
                                             {filteredEquipment.length === 0 ? (
-                                                <div className="p-3 text-xs text-muted-foreground text-center">Sin resultados para "{eqSearch}"</div>
+                                                <div className="p-3 text-xs text-muted-foreground text-center">No results para "{eqSearch}"</div>
                                             ) : filteredEquipment.slice(0, 50).map(eq => (
                                                 <div
                                                     key={eq.node_id || eq.tag || eq.code}

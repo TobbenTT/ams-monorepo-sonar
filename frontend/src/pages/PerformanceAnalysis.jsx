@@ -275,7 +275,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-400 text-center py-10">Sin datos de tendencia</p>
+            <p className="text-gray-400 text-center py-10">No data de tendencia</p>
           )}
         </div>
 
@@ -293,7 +293,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-400 text-center py-10">Sin datos</p>
+            <p className="text-gray-400 text-center py-10">No data</p>
           )}
         </div>
 
@@ -311,7 +311,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-400 text-center py-10">Sin datos de fallas</p>
+            <p className="text-gray-400 text-center py-10">No data de fallas</p>
           )}
         </div>
 

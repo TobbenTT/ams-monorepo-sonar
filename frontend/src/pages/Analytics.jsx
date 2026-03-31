@@ -114,7 +114,7 @@ export default function Analytics() {
                             />
                         </ComposedChart>
                     </ResponsiveContainer>
-                    ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+                    ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
                 </div>
 
                 {/* 2. Pareto Chart — Failure Modes */}
@@ -142,7 +142,7 @@ export default function Analytics() {
                             <ReferenceLine yAxisId="right" y={80} stroke="#F57F17" strokeDasharray="4 2" label={{ value: '80%', position: 'insideTopRight', fontSize: 10, fill: '#F57F17' }} />
                         </ComposedChart>
                     </ResponsiveContainer>
-                    ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+                    ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
                 </div>
             </div>
 
@@ -185,7 +185,7 @@ export default function Analytics() {
                             ))}
                         </div>
                     </div>
-                    ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+                    ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
                 </div>
 
                 {/* 4. Stacked Bar — Costos por Area */}
@@ -203,7 +203,7 @@ export default function Analytics() {
                             <Bar dataKey="labor" name={t('analyticsPage.labor')} stackId="cost" fill="#1565C0" radius={[3, 3, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
-                    ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+                    ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
                 </div>
             </div>
 
@@ -236,7 +236,7 @@ export default function Analytics() {
                         </LineChart>
                     </ResponsiveContainer>
                     </>
-                    ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+                    ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
                 </div>
 
                 {/* 6. MTBF / MTTR / Availability Table */}
@@ -276,7 +276,7 @@ export default function Analytics() {
                             </tbody>
                         </table>
                     </div>
-                    ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+                    ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
                 </div>
             </div>
 

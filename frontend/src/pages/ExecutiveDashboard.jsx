@@ -266,7 +266,7 @@ export default function ExecutiveDashboard() {
               <Line type="monotone" dataKey="oee_avg" name="OEE %" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+          ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
         </div>
 
         {/* Radar: 6 pillars */}
@@ -298,7 +298,7 @@ export default function ExecutiveDashboard() {
               <Bar dataKey="labor" name={t('executive.labor')} stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+          ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
         </div>
 
         {/* MTBF Bars */}
@@ -328,7 +328,7 @@ export default function ExecutiveDashboard() {
               );
             })}
           </div>
-          ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+          ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
         </div>
       </div>
 
@@ -356,7 +356,7 @@ export default function ExecutiveDashboard() {
           ))}
         </div>
         </>
-        ) : <p className="text-sm text-muted-foreground py-10 text-center">Sin datos</p>}
+        ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
       </div>
 
       {/* Equipment Report Modal */}

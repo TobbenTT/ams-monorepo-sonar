@@ -102,7 +102,7 @@ export default function Reliability() {
         <h1 className="text-2xl font-bold text-foreground">{t('reliability.title')}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t('reliability.subtitle')}</p>
         <div className="mt-12 text-center text-muted-foreground">
-          <p className="text-lg">{t('common.noData') || 'No hay datos de confiabilidad disponibles'}</p>
+          <p className="text-lg">{t('common.noData') || 'No data de confiabilidad disponibles'}</p>
           <p className="text-sm mt-2">{t('reliability.noFailures') || 'Configure los datos de equipos desde el backend para ver análisis de confiabilidad.'}</p>
         </div>
       </div>

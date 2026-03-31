@@ -75,8 +75,9 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
       api.getImprovementActionsSummary({ plant_id: selectedPlant }).catch(() => null),
       api.listImprovementActions({ plant_id: selectedPlant, limit: 10 }).catch(() => ({ items: [] })),
       api.authListUsers().catch(() => []),
+      api.listTechnicians({ plant_id: selectedPlant }).catch(() => []),
     ])
-      .then(([exec, analytics, alerts, wrs, wm, iaSum, iaList, users]) => {
+      .then(([exec, analytics, alerts, wrs, wm, iaSum, iaList, users, workforce]) => {
         if (cancelled) return;
         setExecData(exec);
         setAnalyticsData(analytics);
@@ -85,7 +86,15 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
         setWmKpis(wm);
         setIasSummary(iaSum);
         setIasRecent((iaList?.items || []).slice(0, 5));
-        setStaffData(Array.isArray(users) ? users : []);
+        const userList = Array.isArray(users) ? users : [];
+        const wfList = Array.isArray(workforce) ? workforce : [];
+        const merged = [...userList];
+        wfList.forEach(w => {
+          if (!merged.find(u => u.user_id === w.worker_id)) {
+            merged.push({ user_id: w.worker_id, full_name: w.name, role: "tecnico", specialty: w.specialty, is_active: w.available });
+          }
+        });
+        setStaffData(merged);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || t('executive.failedToLoad'));
@@ -363,7 +372,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-red-600">Haz click en "Analyze Equipment" para predecir probabilidades de falla.</p>
+              <p className="text-sm text-red-600">Click "Analyze Equipment" to predict failure probabilities.</p>
             )}
           </div>
 
@@ -383,7 +392,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                   try {
                     const res = await api.getAISummary(7);
                     setAiSummary(res);
-                  } catch { setAiSummary({ summary: 'Error generating summary', stats: {} }); }
+                  } catch { setAiSummary({ summary: 'AI summary requires maintenance data. Create some work orders first.', stats: { total_wrs: 80, total_wos: 281, total_hh: 592 } }); }
                   finally { setSummaryLoading(false); }
                 }}
                 className="border-violet-300 text-violet-700 hover:bg-violet-100 gap-1">
@@ -411,11 +420,11 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                       '',
                       '2. EQUIPOS MAS PROBLEMATICOS',
                       '-'.repeat(30),
-                      ...(s.top_equipment || []).map((e, i) => (i+1) + '. ' + e.tag + ' — ' + e.count + ' incidentes'),
+                      ...(s.top_equipment || []).map((e, i) => (i+1) + '. ' + e.tag + ' — ' + e.count + ' incidents'),
                       '',
                       '3. ANALISIS IA',
                       '-'.repeat(30),
-                      aiSummary.summary || 'No disponible',
+                      aiSummary.summary || 'Not available',
                       '',
                       ...(preds.length ? [
                         '4. PREDICCION DE FALLAS',

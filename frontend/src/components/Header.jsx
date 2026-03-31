@@ -69,10 +69,10 @@ export default function Header({
     ].map(p => ({ ...p, label: t(p.labelKey) })), [t]);
 
     useEffect(() => {
-        api.listNotifications({ plant_id: plant }).then(n => {
+        api.listNotifications({ limit: 50 }).then(n => {
             const list = Array.isArray(n) ? n : [];
-            setNotifCount(list.filter(x => !x.acknowledged).length || list.length);
-        }).catch(() => {});
+            setNotifCount(list.filter(x => !x.is_read).length);
+        }).catch(() => setNotifCount(0));
     }, [plant]);
 
     useEffect(() => {

@@ -41,7 +41,12 @@ const PRIORITY_COLOR = {
   P4: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700',
 };
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+const DAYS_WEEKDAY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+const DAYS_FULL = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const SHIFTS = [
+  { id: 'day', label: 'Day', icon: '☀️', hours: 8, start: '07:00', end: '19:00' },
+  { id: 'night', label: 'Night', icon: '🌙', hours: 8, start: '19:00', end: '07:00' },
+];
 
 const GANTT_COLORS = {
   CORRECTIVO: '#EF4444',
@@ -394,24 +399,30 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
 }
 
 /* ───── Weekly Calendar View (drag-and-drop scheduling grid) ───── */
-function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onPublish, publishing, canPublish }) {
+function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onPublish, publishing, canPublish, onOpenDetail }) {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewRange, setViewRange] = useState(1);
   const [search, setSearch] = useState('');
+  const [showShifts, setShowShifts] = useState(true);
+  const [includeWeekends, setIncludeWeekends] = useState(false);
   const [dragWO, setDragWO] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
 
   const days = useMemo(() => {
     const result = [];
     let d = new Date(weekStart);
-    const numDays = viewRange * 5;
+    const DAYS_LABELS = includeWeekends ? DAYS_FULL : DAYS_WEEKDAY;
+    const numDays = viewRange * (includeWeekends ? 7 : 5);
     for (let i = 0; i < numDays; i++) {
-      while (d.getDay() === 0 || d.getDay() === 6) d = addDays(d, 1);
-      result.push({ date: new Date(d), str: toDateStr(d), label: DAYS[d.getDay() - 1], dateLabel: fmtDateShort(d) });
+      if (!includeWeekends) {
+        while (d.getDay() === 0 || d.getDay() === 6) d = addDays(d, 1);
+      }
+      const dayIdx = includeWeekends ? ((d.getDay() + 6) % 7) : (d.getDay() - 1);
+      result.push({ date: new Date(d), str: toDateStr(d), label: DAYS_LABELS[dayIdx] || DAYS_LABELS[0], dateLabel: fmtDateShort(d), isWeekend: d.getDay() === 0 || d.getDay() === 6 });
       d = addDays(d, 1);
     }
     return result;
-  }, [weekStart, viewRange]);
+  }, [weekStart, viewRange, includeWeekends]);
 
   // Build assignment grid: "workerId:dateStr" -> [wo, ...]
   const grid = useMemo(() => {
@@ -419,14 +430,15 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     scheduledWOs.forEach(wo => {
       const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
       if (!start) return;
+      const shift = wo.shift || 'day';
       (wo.assigned_workers || []).forEach(w => {
-        const key = `${w.worker_id}:${start}`;
+        const key = showShifts ? `${w.worker_id}:${start}:${shift}` : `${w.worker_id}:${start}`;
         if (!g[key]) g[key] = [];
         g[key].push(wo);
       });
     });
     return g;
-  }, [scheduledWOs]);
+  }, [scheduledWOs, showShifts]);
 
   // Per-technician total hours in view
   const techHours = useMemo(() => {
@@ -476,7 +488,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   const handleDragEnd = () => { setDragWO(null); setDropTarget(null); };
   const handleDrop = (e, tech, day) => {
     e.preventDefault();
-    if (dragWO) onScheduleWO(dragWO, tech, day.date);
+    if (dragWO) onScheduleWO(dragWO, tech, day.date, 'day');
     setDragWO(null);
     setDropTarget(null);
   };
@@ -541,6 +553,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             </button>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => setShowShifts(s => !s)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${showShifts ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
+              {showShifts ? '☀️🌙 Shifts' : '📅 No Shifts'}
+            </button>
+            <button onClick={() => setIncludeWeekends(w => !w)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${includeWeekends ? 'bg-purple-600 text-white border-purple-600' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
+              {includeWeekends ? '7 Days' : '5 Days'}
+            </button>
             {[{ v: 1, l: 'Week' }, { v: 2, l: '2 Weeks' }].map(opt => (
               <button key={opt.v} onClick={() => setViewRange(opt.v)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${viewRange === opt.v ? 'bg-[#1B5E20] text-white border-[#1B5E20]' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
@@ -572,16 +592,22 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         {technicians.length > 0 ? (
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse" style={{ minWidth: days.length * 140 + 180 }}>
+              <table className="w-full border-collapse" style={{ minWidth: days.length * (showShifts ? 200 : 140) + 180 }}>
                 <thead>
                   <tr className="bg-muted/50">
                     <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase border-r border-border" style={{ width: 180, minWidth: 180 }}>
                       Technician
                     </th>
                     {days.map(d => (
-                      <th key={d.str} className="text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground border-r border-border last:border-r-0" style={{ minWidth: 140 }}>
+                      <th key={d.str} colSpan={showShifts ? 2 : 1} className={"text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground border-r border-border last:border-r-0" + (d.isWeekend ? " bg-gray-100 dark:bg-gray-800/50" : "")} style={{ minWidth: showShifts ? 200 : 140 }}>
                         <div className="font-bold">{d.label}</div>
                         <div className="text-[0.65rem] font-normal">{d.dateLabel}</div>
+                        {showShifts && (
+                          <div className="flex gap-0.5 mt-1 justify-center">
+                            <span className="text-[0.6rem] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 rounded">☀️ Day</span>
+                            <span className="text-[0.6rem] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-1.5 rounded">🌙 Night</span>
+                          </div>
+                        )}
                       </th>
                     ))}
                   </tr>
@@ -600,13 +626,46 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                           </div>
                         </td>
                         {days.map(d => {
+                          const isDragging = !!dragWO;
+                          if (showShifts) {
+                            return SHIFTS.map(shift => {
+                              const cellKey = `${tech.worker_id}:${d.str}:${shift.id}`;
+                              const cellWOs = grid[cellKey] || [];
+                              const isTarget = dropTarget === cellKey && dragWO;
+                              const shiftBg = shift.id === 'night' ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : '';
+                              return (
+                                <td key={`${d.str}-${shift.id}`}
+                                  className={`px-1 py-1 border-r border-border/50 align-top transition-colors ${d.isWeekend ? 'bg-gray-50 dark:bg-gray-800/30' : ''} ${shiftBg} ${isTarget ? 'bg-[#1B5E20]/10' : isDragging && cellWOs.length === 0 ? 'bg-emerald-50/30 dark:bg-emerald-900/5' : ''}`}
+                                  style={{ minHeight: 60, minWidth: 90 }}
+                                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
+                                  onDragLeave={() => setDropTarget(null)}
+                                  onDrop={e => { e.preventDefault(); if (dragWO) onScheduleWO(dragWO, tech, d.date, shift.id); setDragWO(null); setDropTarget(null); }}>
+                                  {cellWOs.map(wo => {
+                                    const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+                                    return (
+                                      <div key={wo.wo_id} className={`mb-1 p-1 rounded text-xs border cursor-default ${woType.bg}`}>
+                                        <div className="font-bold truncate text-[0.65rem]">{wo.wo_number}</div>
+                                        <div className="truncate text-[0.6rem]">{wo.equipment_tag}</div>
+                                        <div className="text-[0.55rem] mt-0.5">{wo.estimated_hours}h</div>
+                                      </div>
+                                    );
+                                  })}
+                                  {cellWOs.length === 0 && isTarget && (
+                                    <div className="h-10 border-2 border-dashed border-[#1B5E20] rounded flex items-center justify-center bg-[#1B5E20]/5">
+                                      <span className="text-[0.6rem] font-medium text-[#1B5E20]">Drop</span>
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            });
+                          }
+                          // No shifts mode
                           const cellKey = `${tech.worker_id}:${d.str}`;
                           const cellWOs = grid[cellKey] || [];
                           const isTarget = dropTarget === cellKey && dragWO;
-                          const isDragging = !!dragWO;
                           return (
                             <td key={d.str}
-                              className={`px-1 py-1.5 border-r border-border last:border-r-0 align-top transition-colors ${isTarget ? 'bg-[#1B5E20]/10' : isDragging && cellWOs.length === 0 ? 'bg-emerald-50/50 dark:bg-emerald-900/5' : ''}`}
+                              className={`px-1 py-1.5 border-r border-border last:border-r-0 align-top transition-colors ${d.isWeekend ? 'bg-gray-50 dark:bg-gray-800/30' : ''} ${isTarget ? 'bg-[#1B5E20]/10' : isDragging && cellWOs.length === 0 ? 'bg-emerald-50/50 dark:bg-emerald-900/5' : ''}`}
                               style={{ minHeight: 70, height: 70 }}
                               onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
                               onDragLeave={() => setDropTarget(null)}
@@ -623,7 +682,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                               })}
                               {cellWOs.length === 0 && isTarget && (
                                 <div className="h-14 border-2 border-dashed border-[#1B5E20] rounded flex items-center justify-center bg-[#1B5E20]/5">
-                                  <span className="text-xs font-medium text-[#1B5E20]">Soltar aquí</span>
+                                  <span className="text-xs font-medium text-[#1B5E20]">Drop here</span>
                                 </div>
                               )}
                               {cellWOs.length === 0 && isDragging && !isTarget && (
@@ -645,7 +704,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                       const maxDaily = technicians.length * 8;
                       const pct = maxDaily > 0 ? Math.min((total / maxDaily) * 100, 100) : 0;
                       return (
-                        <td key={d.str} className="px-2 py-2.5 border-r border-border last:border-r-0">
+                        <td key={d.str} colSpan={showShifts ? 2 : 1} className="px-2 py-2.5 border-r border-border last:border-r-0">
                           <div className="text-sm font-bold text-foreground mb-1">{Math.round(total)}h</div>
                           <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                             <div className={`h-full rounded-full transition-all ${total > 0 ? 'bg-[#1B5E20]' : ''}`} style={{ width: `${pct}%` }} />
@@ -675,7 +734,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
     return (
       <div className="bg-card border border-border rounded-xl p-12 text-center">
         <BarChart3 size={40} className="text-muted-foreground/40 mx-auto mb-3" />
-        <p className="text-muted-foreground">No hay OTs programadas para mostrar en el Gantt</p>
+        <p className="text-muted-foreground">No scheduled WOs to display in Gantt</p>
       </div>
     );
   }
@@ -697,7 +756,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
     <div className="space-y-4">
       {/* Range toggle */}
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-muted-foreground">Rango:</span>
+        <span className="text-sm font-medium text-muted-foreground">Range:</span>
         {[{ v: 2, l: t('scheduling.twoWeeks') }, { v: 12, l: t('scheduling.twelveWeeks') }].map(opt => (
           <button key={opt.v} onClick={() => onWeeksChange(opt.v)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${weeksRange === opt.v ? 'bg-[#1B5E20] text-white border-[#1B5E20]' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
@@ -809,7 +868,7 @@ function HHBalanceTab({ programId, t }) {
   if (!data) return (
     <div className="bg-card border border-border rounded-xl p-12 text-center">
       <Users size={40} className="text-muted-foreground/40 mx-auto mb-3" />
-      <p className="text-muted-foreground">Selecciona un programa para ver el balance de HH</p>
+      <p className="text-muted-foreground">Select a program to view HH balance</p>
     </div>
   );
 
@@ -863,7 +922,7 @@ function HHBalanceTab({ programId, t }) {
                   <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                 </div>
                 {spec.available < 0 && (
-                  <p className="text-xs text-red-500 mt-1">Sobrecargado: {Math.abs(spec.available)}h exceso</p>
+                  <p className="text-xs text-red-500 mt-1">Overloaded: {Math.abs(spec.available)}h excess</p>
                 )}
               </div>
             );
@@ -892,7 +951,7 @@ function MaterialsTab({ programId, t }) {
   if (!data) return (
     <div className="bg-card border border-border rounded-xl p-12 text-center">
       <Package size={40} className="text-muted-foreground/40 mx-auto mb-3" />
-      <p className="text-muted-foreground">Selecciona un programa para verificar materiales</p>
+      <p className="text-muted-foreground">Select a program to check materials</p>
     </div>
   );
 
@@ -904,22 +963,22 @@ function MaterialsTab({ programId, t }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard icon={Package} color="text-blue-500" label="Paquetes" value={data.total_packages} sub="total" />
         <KpiCard icon={CheckCircle} color="text-emerald-500" label={t('scheduling.confirmed')} value={data.confirmed} sub={t('scheduling.materialsOk')} />
-        <KpiCard icon={Clock} color="text-amber-500" label={t('scheduling.pendingMat')} value={data.pending} sub="parcial" highlight={data.pending > 0} />
-        <KpiCard icon={AlertTriangle} color="text-red-500" label={t('scheduling.unavailable')} value={data.unavailable} sub="sin stock" highlight={data.unavailable > 0} />
+        <KpiCard icon={Clock} color="text-amber-500" label={t('scheduling.pendingMat')} value={data.pending} sub="partial" highlight={data.pending > 0} />
+        <KpiCard icon={AlertTriangle} color="text-red-500" label={t('scheduling.unavailable')} value={data.unavailable} sub="out of stock" highlight={data.unavailable > 0} />
       </div>
 
       {/* Overall status */}
       <div className={`border rounded-xl p-4 flex items-center gap-3 ${allOk ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-700' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-700'}`}>
         {allOk ? <CheckCircle size={20} className="text-emerald-600 dark:text-emerald-400" /> : <AlertTriangle size={20} className="text-amber-600 dark:text-amber-400" />}
         <span className={`text-sm font-medium ${allOk ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
-          {allOk ? t('scheduling.materialsOk') + ' \u2014 Programa listo para publicar' : t('scheduling.materialsIncomplete') + ` \u2014 ${data.pending + data.unavailable} items pendientes`}
+          {allOk ? t('scheduling.materialsOk') + ' \u2014 Program ready to publish' : t('scheduling.materialsIncomplete') + ` \u2014 ${data.pending + data.unavailable} items pending`}
         </span>
       </div>
 
       {/* Details per work package */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-border">
-          <h2 className="font-semibold text-foreground">{t('scheduling.materialStatus')} por Paquete de Trabajo</h2>
+          <h2 className="font-semibold text-foreground">{t('scheduling.materialStatus')} per Work Package</h2>
         </div>
         <div className="divide-y divide-border">
           {(data.details || []).map((pkg, idx) => (
@@ -1005,10 +1064,12 @@ export default function Scheduling() {
     Promise.all([
       api.listTechnicians({ plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'RELEASED', plant_id: plant }).catch(() => []),
-      api.listManagedWOs({ status: 'SCHEDULED', plant_id: plant }).catch(() => []),
-    ]).then(([techs, released, scheduled]) => {
+      api.listManagedWOs({ status: 'PLANIFICADO', plant_id: plant }).catch(() => []),
+      api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
+    ]).then(([techs, released, planned, scheduled]) => {
       setTechnicians(Array.isArray(techs) ? techs : techs?.technicians || []);
-      setReleasedWOs(Array.isArray(released) ? released : []);
+      const toSchedule = [...(Array.isArray(released) ? released : []), ...(Array.isArray(planned) ? planned : [])];
+      setReleasedWOs(toSchedule);
       setScheduledWOs(Array.isArray(scheduled) ? scheduled : []);
     });
   };
@@ -1060,7 +1121,7 @@ export default function Scheduling() {
   useEffect(() => { loadPrograms(); loadCalendarData(); }, [plant]);
   useEffect(() => { loadGantt(); }, [plant, ganttWeeks]);
 
-  const handleScheduleWO = (wo, tech, dayDate) => {
+  const handleScheduleWO = (wo, tech, dayDate, shift = 'day') => {
     api.scheduleManagedWO(wo.wo_id, {
       assigned_workers: [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }],
       planned_start: toDateStr(dayDate),
@@ -1097,7 +1158,7 @@ export default function Scheduling() {
         toast.success(t('scheduling.programPublished'));
         loadPrograms();
       })
-      .catch(() => toast.error('Error al publicar programa'))
+      .catch(() => toast.error('Error publishing program'))
       .finally(() => setPublishing(false));
   };
 

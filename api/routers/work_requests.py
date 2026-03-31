@@ -617,39 +617,34 @@ def _claude_ai_assist(data, db, api_key):
         context_str = ctx_builder.format_context_for_prompt(ctx)
         examples_str = ctx_builder.get_validated_examples(db, equipment_tag, limit=5)
 
-    system_prompt = """Eres un experto en mantenimiento industrial de plantas OCP (fosfatos, Marruecos).
-Analiza la descripcion y devuelve JSON completo para aviso SAP PM.
-IMPORTANTE: Responde SOLO con JSON valido, sin markdown.
+    system_prompt = """You are an industrial maintenance expert for OCP plants (phosphates, Morocco).
+Analyze the description and return complete JSON for a SAP PM notification.
+IMPORTANT: Respond ONLY with valid JSON, no markdown.
 
 {
-  "enhanced_description": "Descripcion tecnica mejorada y estructurada del problema (SAP PM style, 2-3 oraciones, incluir equipo/TAG, ubicacion, sintoma, impacto)",
-  "enhanced_description": "Descripcion tecnica mejorada y estructurada del problema (SAP PM style, 2-3 oraciones, incluir equipo/TAG, ubicacion, sintoma, impacto)",
-  "enhanced_description": "Descripcion tecnica mejorada y estructurada del problema (SAP PM style, 2-3 oraciones, incluir equipo/TAG, ubicacion, sintoma, impacto)",
-  "enhanced_description": "Descripcion tecnica mejorada y estructurada del problema (SAP PM style, 2-3 oraciones, incluir equipo/TAG, ubicacion, sintoma, impacto)",
+  "enhanced_description": "Improved technical description of the problem (SAP PM style, 2-3 sentences, include equipment/TAG, location, symptom, impact)",
   "failureCategory": "MECANICO | ELECTRICO | INSTRUMENTACION",
   "priority": "P1 | P2 | P3 | P4",
   "activityClass": "M001 | M002 | M003",
-  "suggestedAction": "Accion correctiva detallada paso a paso",
-  "failureSymptom": "Sintoma del CATALOGO (valor EXACTO)",
-  "failureCause": "Causa del CATALOGO (valor EXACTO)",
-  "failureObjectPart": "Parte objeto del CATALOGO (valor EXACTO)",
-  "estimatedDuration": "horas (string numerico)",
+  "suggestedAction": "Detailed corrective action step by step",
+  "failureSymptom": "Symptom from CATALOG (EXACT value)",
+  "failureCause": "Cause from CATALOG (EXACT value)",
+  "failureObjectPart": "Object part from CATALOG (EXACT value)",
+  "estimatedDuration": "hours (numeric string)",
   "plantCondition": "running | stopped | reduced",
   "productionImpact": "CRITICAL | HIGH | MEDIUM | LOW",
-  "resources": [{"type": "Mecanico|Electrico|Instrumentacion|Supervisor", "quantity": N, "hours": N}],
-  "materials": [{"sapId": "8 digitos", "description": "material", "quantity": N, "unit": "PZ|KG|LT|UD"}],
-  "supportEquipment": ["equipo apoyo"],
-  "workConditions": "condiciones de trabajo"
+  "resources": [{"type": "Mechanical|Electrical|Instrumentation|Supervisor", "quantity": N, "hours": N}],
+  "materials": [{"sapId": "8 digits", "description": "material", "quantity": N, "unit": "PZ|KG|LT|UD"}],
+  "supportEquipment": ["support equipment"],
+  "workConditions": "working conditions"
 }
 
-CODIGOS SAP: 10001XXX=Rodamientos, 10002XXX=Sellos, 10003XXX=Filtros, 10004XXX=Lubricantes,
-10005XXX=Tornilleria, 10006XXX=Transmision, 10007XXX=Electrico, 10008XXX=Instrumentacion,
-10009XXX=Pintura, 10010XXX=Estructural
-EQUIPOS APOYO: Grua movil, Tecle, Montacargas, Andamio, Compresor, Soldadora, Hidrolavadora
-CONDICIONES: LOTO, area despejada, permisos, EPP
+SAP CODES: 10001XXX=Bearings, 10002XXX=Seals, 10003XXX=Filters, 10004XXX=Lubricants,
+10005XXX=Fasteners, 10006XXX=Transmission, 10007XXX=Electrical, 10008XXX=Instrumentation
+SUPPORT EQUIPMENT: Mobile crane, Hoist, Forklift, Scaffolding, Compressor, Welder, Pressure washer
+CONDITIONS: LOTO, clear area, permits, PPE
 
-
-CATALOGO DE FALLA (OBLIGATORIO - usa EXACTAMENTE estos valores, NO texto libre):
+FAILURE CATALOG (MANDATORY - use EXACTLY these values, NO free text):
 
 MECANICO:
   parts: RODAMIENTOS, SELLOS MECANICOS, ACOPLES, EJES, ENGRANAJES, CORREAS, BOMBAS, VALVULAS, FILTROS
@@ -666,49 +661,31 @@ INSTRUMENTACION:
   symptoms: LECTURA ERRONEA, SIN SENAL, SENAL INESTABLE, NO RESPONDE, ALARMA FALSA, COMUNICACION PERDIDA
   causes: DESCALIBRADO, CONTAMINADO, PERDIDA PARAMETROS, PERDIDA COMUNICACION, OBSTRUCCION
 
-REGLA: failureSymptom, failureCause y failureObjectPart DEBEN ser copias EXACTAS de los valores de arriba.
-NO inventes texto libre para estos campos. Elige el valor mas cercano del catalogo.
+RULE: failureSymptom, failureCause and failureObjectPart MUST be EXACT copies of the values above.
+DO NOT invent free text for these fields. Choose the closest catalog value.
 
-P1/P2->M002, P3/P4->M001. SIEMPRE incluir materials con sapId, supportEquipment y workConditions.
+P1/P2->M002, P3/P4->M001. ALWAYS include materials with sapId, supportEquipment and workConditions.
 
-REGLA enhanced_description: Reescribe la descripcion del usuario en formato tecnico SAP PM.
-- Incluir: TAG del equipo, ubicacion funcional si se conoce, sintoma principal, medicion si hay, impacto operacional
-- Formato: oraciones cortas y directas, terminologia tecnica de mantenimiento
-- Ejemplo entrada: "la bomba vibra mucho y esta caliente"
-- Ejemplo salida: "Bomba centrifuga P-1201A presenta vibracion excesiva en rodamiento lado acople. Temperatura de carcasa elevada. Requiere intervencion correctiva para evitar falla catastrofica."
-- Si el usuario ya escribio bien, solo mejorar redaccion sin cambiar significado.
+RULE enhanced_description: Rewrite the user description in SAP PM technical format.
+- Include: equipment TAG, functional location if known, main symptom, measurement if any, operational impact
+- Format: short direct sentences, maintenance technical terminology
+- If user already wrote well, just improve wording without changing meaning.
 
-REGLA enhanced_description: Reescribe la descripcion del usuario en formato tecnico SAP PM.
-- Incluir: TAG del equipo, ubicacion funcional si se conoce, sintoma principal, medicion si hay, impacto operacional
-- Formato: oraciones cortas y directas, terminologia tecnica de mantenimiento
-- Ejemplo entrada: "la bomba vibra mucho y esta caliente"
-- Ejemplo salida: "Bomba centrifuga P-1201A presenta vibracion excesiva en rodamiento lado acople. Temperatura de carcasa elevada. Requiere intervencion correctiva para evitar falla catastrofica."
-- Si el usuario ya escribio bien, solo mejorar redaccion sin cambiar significado.
-
-REGLA enhanced_description: Reescribe la descripcion del usuario en formato tecnico SAP PM.
-- Incluir: TAG del equipo, ubicacion funcional si se conoce, sintoma principal, medicion si hay, impacto operacional
-- Formato: oraciones cortas y directas, terminologia tecnica de mantenimiento
-- Ejemplo entrada: "la bomba vibra mucho y esta caliente"
-- Ejemplo salida: "Bomba centrifuga P-1201A presenta vibracion excesiva en rodamiento lado acople. Temperatura de carcasa elevada. Requiere intervencion correctiva para evitar falla catastrofica."
-- Si el usuario ya escribio bien, solo mejorar redaccion sin cambiar significado.
-
-REGLA enhanced_description: Reescribe la descripcion del usuario en formato tecnico SAP PM.
-- Incluir: TAG del equipo, ubicacion funcional si se conoce, sintoma principal, medicion si hay, impacto operacional
-- Formato: oraciones cortas y directas, terminologia tecnica de mantenimiento
-- Ejemplo entrada: "la bomba vibra mucho y esta caliente"
-- Ejemplo salida: "Bomba centrifuga P-1201A presenta vibracion excesiva en rodamiento lado acople. Temperatura de carcasa elevada. Requiere intervencion correctiva para evitar falla catastrofica."
-- Si el usuario ya escribio bien, solo mejorar redaccion sin cambiar significado."""
+IMPORTANT: Detect the language of the user input and respond in the SAME language.
+If user writes in Spanish, respond in Spanish. If in English, respond in English. If in French, respond in French.
+Catalog codes (RODAMIENTOS, ALTA VIBRACION, etc.) always stay as-is regardless of language.
+The enhanced_description and suggestedAction should match the user's language."""
 
     if context_str:
         system_prompt += "\n\n" + context_str
     if examples_str:
         system_prompt += "\n\n" + examples_str
 
-    user_msg = f"Descripcion del problema: \"{desc}\""
+    user_msg = f"Problem description: \"{desc}\""
     if equipment_tag:
-        user_msg += f"\nEquipo: {equipment_tag}"
+        user_msg += f"\nEquipment: {equipment_tag}"
     if data.plant_condition:
-        user_msg += f"\nCondicion planta: {data.plant_condition}"
+        user_msg += f"\nPlant condition: {data.plant_condition}"
 
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(

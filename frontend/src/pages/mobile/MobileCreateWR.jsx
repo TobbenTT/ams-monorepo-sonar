@@ -8,29 +8,29 @@ import * as api from '../../api';
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const PLANT_CONDITIONS = [
-    { value: 'operating', label: 'Operando', color: '#10B981' },
-    { value: 'stopped', label: 'Detenida', color: '#EF4444' },
+    { value: 'operating', label: 'Operating', color: '#10B981' },
+    { value: 'stopped', label: 'Stopped', color: '#EF4444' },
 ];
 
 const PRIORITIES = [
-    { value: 'P1', label: '1 - Urgente', sub: '< 24 horas', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03', claseOTLabel: 'No Programado' },
-    { value: 'P2', label: '2 - Programa en Ejecución', sub: '< 7 días', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03', claseOTLabel: 'No Programado' },
-    { value: 'P3', label: '3 - Próximo Programa', sub: '> 7 días', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01', claseOTLabel: 'Programado' },
-    { value: 'P4', label: '4 - Parada de Planta', sub: 'Parada programada', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01', claseOTLabel: 'Programado' },
+    { value: 'P1', label: '1 - Urgent', sub: '< 24 hours', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03', claseOTLabel: 'Unscheduled' },
+    { value: 'P2', label: '2 - Programa en Ejecución', sub: '< 7 días', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03', claseOTLabel: 'Unscheduled' },
+    { value: 'P3', label: '3 - Próximo Programa', sub: '> 7 días', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01', claseOTLabel: 'Scheduled' },
+    { value: 'P4', label: '4 - Plant Shutdown', sub: 'Planned shutdown', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01', claseOTLabel: 'Scheduled' },
 ];
 
 // SAP PM: Clase Aviso → Clase OT → Clases de Actividad
 const ACTIVITY_CLASSES = {
     PM01: [
-        { value: 'CR', label: 'CR - Correctivo' },
+        { value: 'CR', label: 'CR - Corrective' },
         { value: 'MC', label: 'MC - Monitoreo Condición' },
-        { value: 'MJ', label: 'MJ - Mejora' },
-        { value: 'IO', label: 'IO - Incidente Operacional' },
+        { value: 'MJ', label: 'MJ - Improvement' },
+        { value: 'IO', label: 'IO - Operational Incident' },
     ],
     PM03: [
-        { value: 'CR', label: 'CR - Correctivo' },
+        { value: 'CR', label: 'CR - Corrective' },
         { value: 'IP', label: 'IP - Imprevisto' },
-        { value: 'IO', label: 'IO - Incidente Operacional' },
+        { value: 'IO', label: 'IO - Operational Incident' },
     ],
 };
 

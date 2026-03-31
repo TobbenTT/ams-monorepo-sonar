@@ -20,25 +20,25 @@ export default function FailureCapture({ onNavigateTab }) {
 
   // ── SAP PM Constants ──
   const PLANT_CONDITIONS = [
-    { value: 'operating', label: 'Operando', color: '#10B981' },
-    { value: 'stopped', label: 'Detenido', color: '#EF4444' },
+    { value: 'operating', label: 'Operating', color: '#10B981' },
+    { value: 'stopped', label: 'Stopped', color: '#EF4444' },
   ];
 
   const PRIORITIES = [
     { value: 'P1', label: 'P1 (I) - Immediate', sub: '< 24h', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03' },
-    { value: 'P2', label: 'P2 (A) - Alta', sub: '< 7 dias', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03' },
-    { value: 'P3', label: 'P3 (M) - Media', sub: '> 7 dias', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01' },
-    { value: 'P4', label: 'P4 (B) - Baja', sub: 'Parada Planta', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01' },
+    { value: 'P2', label: 'P2 (A) - High', sub: '< 7 days', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03' },
+    { value: 'P3', label: 'P3 (M) - Medium', sub: '> 7 days', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01' },
+    { value: 'P4', label: 'P4 (B) - Low', sub: 'Plant Shutdown', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01' },
   ];
 
   const ACTIVITY_CLASSES = {
     PM01: [
-      { value: 'M001', label: 'Solicitud de mantenimiento' },
+      { value: 'M001', label: 'Maintenance Request' },
       { value: 'M002', label: 'Avería' },
       { value: 'M003', label: 'Reparación de componentes' },
     ],
     PM03: [
-      { value: 'M001', label: 'Solicitud de mantenimiento' },
+      { value: 'M001', label: 'Maintenance Request' },
       { value: 'M002', label: 'Avería' },
       { value: 'M003', label: 'Reparación de componentes' },
     ],
@@ -46,19 +46,19 @@ export default function FailureCapture({ onNavigateTab }) {
 
   const FAILURE_CATALOG = {
     MECANICO: {
-      label: 'Mecanico', color: '#6366F1',
+      label: 'Mechanical', color: '#6366F1',
       symptoms: ['ALTA VIBRACION', 'ALTA TEMPERATURA', 'RUIDO ANORMAL', 'TRABADO', 'SIN FLUJO', 'FILTRACION', 'DESGASTE VISIBLE', 'FUGA ACEITE', 'ATASCAMIENTO'],
       parts: ['RODAMIENTOS', 'SELLOS MECANICOS', 'ACOPLES', 'EJES', 'ENGRANAJES', 'CORREAS', 'BOMBAS', 'VALVULAS', 'FILTROS'],
       causes: ['DESGASTE', 'FALTA LUBRICACION', 'CORROSION', 'DESALINEADO', 'OBSTRUIDO', 'SOBRECARGA', 'FATIGA', 'MONTAJE INCORRECTO'],
     },
     ELECTRICO: {
-      label: 'Electrico', color: '#F59E0B',
+      label: 'Electrical', color: '#F59E0B',
       symptoms: ['NO ARRANCA', 'SOBRECALENTAMIENTO', 'CORTOCIRCUITO', 'DISPARO PROTECCION', 'BAJA AISLACION', 'OPERACION INTERMITENTE', 'CONSUMO EXCESIVO'],
       parts: ['MOTOR ELECTRICO', 'CABLES / CONDUCTORES', 'PROTECCIONES', 'TABLERO ELECTRICO', 'VARIADOR FRECUENCIA', 'CONTACTOR'],
       causes: ['PERDIDA AISLACION', 'DESGASTE', 'SUELTO', 'SOBRECARGA ELECTRICA', 'HUMEDAD', 'CALENTAMIENTO EXCESIVO'],
     },
     INSTRUMENTACION: {
-      label: 'Instrumentacion', color: '#06B6D4',
+      label: 'Instrumentation', color: '#06B6D4',
       symptoms: ['LECTURA ERRONEA', 'SIN SENAL', 'SENAL INESTABLE', 'NO RESPONDE', 'ALARMA FALSA', 'COMUNICACION PERDIDA'],
       parts: ['SENSOR / TRANSDUCTOR', 'TRANSMISOR', 'VALVULA DE CONTROL', 'PLC / DCS', 'ACTUADOR', 'POSICIONADOR'],
       causes: ['DESCALIBRADO', 'CONTAMINADO', 'PERDIDA PARAMETROS', 'PERDIDA COMUNICACION', 'OBSTRUCCION'],
@@ -80,7 +80,7 @@ export default function FailureCapture({ onNavigateTab }) {
   const SPECIAL_EQUIPMENT = [
     'Grua 20 Ton', 'Grua 50 Ton', 'Grua Horquilla', 'Andamio Multidireccional',
     'Andamio Tubular', 'Camion Pluma', 'Plataforma Elevadora', 'Soldadora MIG/MAG',
-    'Soldadora TIG', 'Soldadora Arco', 'Compresor Portatil', 'Generador Electrico',
+    'Soldadora TIG', 'Soldadora Arco', 'Compresor Portatil', 'Generador Electrical',
     'Bomba Sumergible', 'Hidrolavadora', 'Equipo Alineacion Laser',
     'Analizador de Vibraciones', 'Camara Termografica', 'Megohmetro',
     'Multimetro Industrial', 'Torquimetro', 'Extractor Hidraulico',
@@ -89,7 +89,7 @@ export default function FailureCapture({ onNavigateTab }) {
   ];
 
   const RESOURCE_TYPES = [
-    'Mecanico', 'Electrico', 'Instrumentista', 'Lubricador', 'Soldador',
+    'Mechanical', 'Electrical', 'Instrumentista', 'Lubricador', 'Soldador',
     'Operador Grua', 'Andamiero', 'Calderero', 'Ayudante General', 'Supervisor',
   ];
 
@@ -113,20 +113,20 @@ export default function FailureCapture({ onNavigateTab }) {
 
   // ── BBP SAP PM Master Data (AMSA_BBP_PM_04) ──
   const AVISO_CLASSES = [
-    { value: 'A1', label: 'A1 - Aviso de Mantenimiento', desc: 'Correctivo / Solicitud' },
-    { value: 'A2', label: 'A2 - Aviso Predictivo e Ing.', desc: 'Predictivo / Ingenieria' },
-    { value: 'A3', label: 'A3 - Aviso Plan Preventivo', desc: 'Plan de Mantenimiento' },
+    { value: 'A1', label: 'A1 - Maintenance Notification', desc: 'Correctivo / Solicitud' },
+    { value: 'A2', label: 'A2 - Aviso Predictive & Eng.', desc: 'Predictive / Engineering' },
+    { value: 'A3', label: 'A3 - Aviso Preventive Plan', desc: 'Plan de Mantenimiento' },
   ];
 
   const AVISO_CODING = {
     A1: [
-      { value: 'M001', label: 'M001 - Solicitud de mantenimiento' },
-      { value: 'M002', label: 'M002 - Averia' },
-      { value: 'M003', label: 'M003 - Reparacion de componentes' },
+      { value: 'M001', label: 'M001 - Maintenance Request' },
+      { value: 'M002', label: 'M002 - Breakdown' },
+      { value: 'M003', label: 'M003 - Component Repair' },
     ],
     A2: [
-      { value: 'P001', label: 'P001 - Predictivo' },
-      { value: 'P002', label: 'P002 - Ingenieria' },
+      { value: 'P001', label: 'P001 - Predictive' },
+      { value: 'P002', label: 'P002 - Engineering' },
     ],
     A3: [],
   };
@@ -155,22 +155,22 @@ export default function FailureCapture({ onNavigateTab }) {
   ];
 
   const WORK_CENTERS = [
-    { value: 'PASMEC01', label: 'Mecanico Area Seca', area: 'P01' },
-    { value: 'PASELE01', label: 'Electrico Area Seca', area: 'P01' },
+    { value: 'PASMEC01', label: 'Mechanical Area Seca', area: 'P01' },
+    { value: 'PASELE01', label: 'Electrical Area Seca', area: 'P01' },
     { value: 'PASINS01', label: 'Instrumentista Area Seca', area: 'P01' },
     { value: 'PASLUB01', label: 'Lubricacion Area Seca', area: 'P01' },
-    { value: 'PARELE01', label: 'Electrico Area Ripio', area: 'P02' },
+    { value: 'PARELE01', label: 'Electrical Area Ripio', area: 'P02' },
     { value: 'PARINS01', label: 'Instrumentista Area Ripio', area: 'P02' },
-    { value: 'PAHMEC01', label: 'Mecanico Area Humeda', area: 'P03' },
-    { value: 'PAHELE01', label: 'Electrico Area Humeda', area: 'P03' },
+    { value: 'PAHMEC01', label: 'Mechanical Area Humeda', area: 'P03' },
+    { value: 'PAHELE01', label: 'Electrical Area Humeda', area: 'P03' },
     { value: 'PAHINS01', label: 'Instrumentista Area Humeda', area: 'P03' },
-    { value: 'PSHSIN01', label: 'Sintomatico', area: 'P01' },
+    { value: 'PSHSIN01', label: 'Symptomtico', area: 'P01' },
     { value: 'PSHDCS01', label: 'DCS y Automatizacion', area: 'P01' },
-    { value: 'MPCMEC01', label: 'Mecanico Perforacion y Carguio', area: 'M01' },
-    { value: 'MTAMEC01', label: 'Mecanico Transporte y Apoyo', area: 'M03' },
-    { value: 'MPCELE01', label: 'Electrico Perforacion y Carguio', area: 'M01' },
-    { value: 'MTAELE01', label: 'Electrico Transporte y Apoyo', area: 'M03' },
-    { value: 'MPREDI01', label: 'Predictivo', area: 'M01' },
+    { value: 'MPCMEC01', label: 'Mechanical Perforacion y Carguio', area: 'M01' },
+    { value: 'MTAMEC01', label: 'Mechanical Transporte y Apoyo', area: 'M03' },
+    { value: 'MPCELE01', label: 'Electrical Perforacion y Carguio', area: 'M01' },
+    { value: 'MTAELE01', label: 'Electrical Transporte y Apoyo', area: 'M03' },
+    { value: 'MPREDI01', label: 'Predictive', area: 'M01' },
     { value: 'MEXTSOL1', label: 'Soldadura (Ext)', area: 'M04' },
     { value: 'MEXTLAV1', label: 'Lavado (Ext)', area: 'M04' },
     { value: 'MEXTNEU1', label: 'Neumaticos (Ext)', area: 'M04' },
@@ -183,11 +183,11 @@ export default function FailureCapture({ onNavigateTab }) {
     P1: { sap: 'I', label: 'Immediate', days: '< 24h' },
     P2: { sap: 'A', label: 'Alta', days: '< 7 dias' },
     P3: { sap: 'M', label: 'Media', days: '> 7 dias' },
-    P4: { sap: 'B', label: 'Baja', days: 'Parada Planta' },
+    P4: { sap: 'B', label: 'Low', days: 'Plant Shutdown' },
   };
 
   const ORDER_TYPES = [
-    { value: 'PM01', label: 'PM01 - Orden Mant. de Averia' },
+    { value: 'PM01', label: 'PM01 - Orden Mant. de Breakdown' },
     { value: 'PM02', label: 'PM02 - Orden Mant. Preventivo' },
     { value: 'PM03', label: 'PM03 - Orden de Solicitud de Mant.' },
     { value: 'PM06', label: 'PM06 - Orden de Inversion' },
@@ -766,7 +766,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <span className={`text-sm font-bold ${d.status === 'VALIDATED' ? 'text-green-700' : d.status === 'PENDING_VALIDATION' ? 'text-yellow-700' : 'text-gray-700'}`}>{d.status}</span>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
-                <span className="text-[10px] text-gray-500 block uppercase">Prioridad</span>
+                <span className="text-[10px] text-gray-500 block uppercase">Priority</span>
                 <span className={`text-sm font-bold ${['P1','P2'].includes(d.priority) ? 'text-red-600' : 'text-orange-600'}`}>{d.priority || '-'}</span>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -774,7 +774,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <span className="text-sm font-bold font-mono">{d.equipment_tag || '-'}</span>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
-                <span className="text-[10px] text-gray-500 block uppercase">Similitud</span>
+                <span className="text-[10px] text-gray-500 block uppercase">Similarity</span>
                 <span className="text-sm font-bold text-amber-600">{Math.round((d.similarity || 0) * 100)}%</span>
               </div>
             </div>
@@ -799,8 +799,8 @@ export default function FailureCapture({ onNavigateTab }) {
                 <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Catalogo de Falla</span>
                 <div className="grid grid-cols-3 gap-2">
                   {failureMode && <div className="bg-blue-50 rounded-lg p-2 text-center"><span className="text-[10px] text-blue-500 block">Categoria</span><span className="text-xs font-bold text-blue-700">{failureMode}</span></div>}
-                  {failureSymptom && <div className="bg-yellow-50 rounded-lg p-2 text-center"><span className="text-[10px] text-yellow-600 block">Sintoma</span><span className="text-xs font-bold text-yellow-700">{failureSymptom}</span></div>}
-                  {failureCause && <div className="bg-red-50 rounded-lg p-2 text-center"><span className="text-[10px] text-red-500 block">Causa</span><span className="text-xs font-bold text-red-700">{failureCause}</span></div>}
+                  {failureSymptom && <div className="bg-yellow-50 rounded-lg p-2 text-center"><span className="text-[10px] text-yellow-600 block">Symptom</span><span className="text-xs font-bold text-yellow-700">{failureSymptom}</span></div>}
+                  {failureCause && <div className="bg-red-50 rounded-lg p-2 text-center"><span className="text-[10px] text-red-500 block">Cause</span><span className="text-xs font-bold text-red-700">{failureCause}</span></div>}
                 </div>
               </div>
             )}
@@ -886,11 +886,11 @@ export default function FailureCapture({ onNavigateTab }) {
         <div className="sticky top-0 bg-white border-b p-5 rounded-t-xl z-10">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Create Notification de Trabajo</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Formulario SAP PM - Notificacion de Averia / Solicitud de Trabajo</p>
+              <h2 className="text-lg font-bold text-gray-900">Create Work Notification</h2>
+              <p className="text-xs text-gray-500 mt-0.5">SAP PM Form - Failure Notification / Work Request</p>
             </div>
             <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold">
-              Se creara Aviso (WR)
+              Will create Notification (WR)
             </span>
           </div>
         </div>
@@ -916,9 +916,9 @@ export default function FailureCapture({ onNavigateTab }) {
           {/* Wizard Stepper */}
           <div className="flex items-center justify-between mb-6 px-2">
             {[
-              { step: 1, label: 'Ubicacion', icon: '📍', desc: 'Donde ocurrio' },
-              { step: 2, label: 'Falla', icon: '⚠️', desc: 'Que paso' },
-              { step: 3, label: 'Accion', icon: '🔧', desc: 'Que hacer' },
+              { step: 1, label: 'Location', icon: '📍', desc: 'Where it happened' },
+              { step: 2, label: 'Failure', icon: '⚠️', desc: 'What happened' },
+              { step: 3, label: 'Action', icon: '🔧', desc: 'What to do' },
             ].map((s, i) => (
               <div key={s.step} className="flex items-center flex-1">
                 <button onClick={() => setWizardStep(s.step)}
@@ -945,10 +945,10 @@ export default function FailureCapture({ onNavigateTab }) {
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} className="hidden" />
 
           <div style={{display: wizardStep === 2 ? undefined : "none"}}>
-          {/* 1. Que paso? + Voice / Camera */}
+          {/* 1. What happened? + Voice / Camera */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Que paso?</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">What happened?</label>
               <div className="flex gap-2">
                 {SpeechRecognition ? (
                   <button type="button" onClick={handleVoice}
@@ -1010,7 +1010,7 @@ export default function FailureCapture({ onNavigateTab }) {
                     Analizando...
                   </>
                 ) : (
-                  <>{photos.length > 0 ? '📸 Analizar Foto con IA' : '✨ Asistir con IA'}</>
+                  <>{photos.length > 0 ? '📸 Analyze Photo with AI' : '✨ AI Assist'}</>
                 )}
               </button>
               {detectedEquipment && !form.whereTag && (
@@ -1059,10 +1059,10 @@ export default function FailureCapture({ onNavigateTab }) {
               rows={4} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
           </div>
 
-          {/* 3. Condicion del Equipo + Prioridad */}
+          {/* 3. Equipment Condition + Priority */}
           <div className="grid grid-cols-2 gap-4">
             <div className="border rounded-xl p-4">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Condicion del Equipo</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Equipment Condition</label>
               <div className="grid grid-cols-2 gap-2">
                 {PLANT_CONDITIONS.map(opt => (
                   <button key={opt.value}
@@ -1079,7 +1079,7 @@ export default function FailureCapture({ onNavigateTab }) {
               </div>
             </div>
             <div className="border rounded-xl p-4">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Prioridad</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Priority</label>
               <div className="grid grid-cols-2 gap-2">
                 {PRIORITIES.map(p => (
                   <button key={p.value}
@@ -1108,7 +1108,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <input type="text" value={locSearch}
                   onChange={e => { setLocSearch(e.target.value); setShowLocSearch(true); }}
                   onFocus={() => setShowLocSearch(true)}
-                  placeholder="Buscar ubicacion tecnica..."
+                  placeholder="Search technical location..."
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
                 {showLocSearch && locResults.length > 0 && (
@@ -1178,7 +1178,7 @@ export default function FailureCapture({ onNavigateTab }) {
                   <input type="text" value={equipSearch}
                     onChange={e => { setEquipSearch(e.target.value); setShowEquipSearch(true); }}
                     onFocus={() => { setShowEquipSearch(true); if (equipSearch.length < 2) setEquipResults(allEquipment.slice(0, 10)); }}
-                    placeholder="Buscar por TAG, codigo o nombre de equipo..."
+                    placeholder="Search by TAG, code or equipment name..."
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                 </div>
@@ -1228,9 +1228,9 @@ export default function FailureCapture({ onNavigateTab }) {
               ))}
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {/* Parte Objeto */}
+              {/* Object Part */}
               <div className="relative">
-                <div className="text-xs font-medium text-gray-600 mb-1">Parte Objeto</div>
+                <div className="text-xs font-medium text-gray-600 mb-1">Object Part</div>
                 <button onClick={() => { setShowParts(!showParts); setShowSymptoms(false); setShowCauses(false); }}
                   className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
                   style={{ borderColor: form.failureObjectPart ? FAILURE_CATALOG[form.failureCategory]?.color || '#e5e7eb' : '#e5e7eb' }}>
@@ -1246,9 +1246,9 @@ export default function FailureCapture({ onNavigateTab }) {
                   </div>
                 )}
               </div>
-              {/* Sintoma */}
+              {/* Symptom */}
               <div className="relative">
-                <div className="text-xs font-medium text-gray-600 mb-1">Sintoma</div>
+                <div className="text-xs font-medium text-gray-600 mb-1">Symptom</div>
                 <button onClick={() => { setShowSymptoms(!showSymptoms); setShowParts(false); setShowCauses(false); }}
                   className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
                   style={{ borderColor: form.failureSymptom ? FAILURE_CATALOG[form.failureCategory]?.color || '#e5e7eb' : '#e5e7eb' }}>
@@ -1264,9 +1264,9 @@ export default function FailureCapture({ onNavigateTab }) {
                   </div>
                 )}
               </div>
-              {/* Causa */}
+              {/* Cause */}
               <div className="relative">
-                <div className="text-xs font-medium text-gray-600 mb-1">Causa</div>
+                <div className="text-xs font-medium text-gray-600 mb-1">Cause</div>
                 <button onClick={() => { setShowCauses(!showCauses); setShowSymptoms(false); setShowParts(false); }}
                   className="w-full flex items-center justify-between p-2 rounded-lg border text-xs text-left"
                   style={{ borderColor: form.failureCause ? FAILURE_CATALOG[form.failureCategory]?.color || '#e5e7eb' : '#e5e7eb' }}>
@@ -1304,9 +1304,9 @@ export default function FailureCapture({ onNavigateTab }) {
             </div>
             {form.resources.length === 0 ? (
               <div className="grid grid-cols-3 gap-2">
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Tipo recurso</div>
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Cantidad</div>
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Horas</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Resource type</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Quantity</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Hours</div>
               </div>
             ) : (
               <div className="space-y-2">
@@ -1341,7 +1341,7 @@ export default function FailureCapture({ onNavigateTab }) {
                     <div className="relative">
                       <input type="text" placeholder="Cant" value={res.quantity} onChange={e => updateResource(i, 'quantity', e.target.value)}
                         className="w-full p-2 pr-16 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">personas</span>
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">people</span>
                     </div>
                     <div className="flex gap-1">
                       <div className="relative flex-1">
@@ -1387,7 +1387,7 @@ export default function FailureCapture({ onNavigateTab }) {
             {form.materials.length === 0 ? (
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">SAP ID</div>
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Cantidad</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Quantity</div>
                 <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Descripcion</div>
               </div>
             ) : (
@@ -1955,10 +1955,10 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          {/* 15. Clase de Aviso (SAP) */}
+          {/* 15. Notification Class (SAP) */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-              Clase de Aviso (SAP)
+              Notification Class (SAP)
             </label>
             <div className="grid grid-cols-3 gap-2">
               {actClasses.map(ac => (
@@ -2014,8 +2014,8 @@ export default function FailureCapture({ onNavigateTab }) {
             <button onClick={handleSubmit} disabled={submitting || !canSubmit || wizardStep !== 3}
               className="px-5 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2">
               {submitting
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Creando...</>
-                : <>Create Notification de Trabajo <ArrowRight className="w-4 h-4" /></>
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>
+                : <>Create Work Notification <ArrowRight className="w-4 h-4" /></>
               }
             </button>
           </div>

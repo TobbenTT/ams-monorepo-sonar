@@ -641,7 +641,7 @@ export default function WorkOrdersPage() {
       setShowCreateOTModal(false);
       reloadData();
     } catch (err) {
-      toast.error(err.message || t('workOrders.errorCreateOT') || 'Error al crear OT');
+      toast.error(err.message || t('workOrders.errorCreateOT') || 'Error creating WO');
     } finally {
       setCreatingOT(false);
     }
@@ -660,7 +660,7 @@ export default function WorkOrdersPage() {
       setOtCreateForm({ description: '', wo_type: 'PM01', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4, failureCategory: 'MECANICO' });
       reloadData();
     } catch (err) {
-      toast.error(err.message || t('workOrders.errorCreateOT') || 'Error al crear OT');
+      toast.error(err.message || t('workOrders.errorCreateOT') || 'Error creating WO');
     } finally {
       setCreatingOT(false);
     }

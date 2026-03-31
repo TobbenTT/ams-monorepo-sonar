@@ -114,13 +114,32 @@ router = APIRouter(prefix="/work-requests", tags=["work-requests"], dependencies
 
 @router.get("/search-materials")
 def search_materials(q: str = "", category: str = "", limit: int = 20, db: Session = Depends(get_db)):
-    """Search SAP materials catalog by description or SAP ID."""
+    """Search SAP materials catalog by description or SAP ID. Supports English query terms."""
     from sqlalchemy import text
+    # English->Spanish mapping for common maintenance terms
+    EN_ES_MAP = {
+        "bearing": "rodamiento", "seal": "sello", "filter": "filtro", "oil": "aceite",
+        "grease": "grasa", "belt": "correa", "bolt": "perno", "nut": "tuerca",
+        "washer": "golilla", "gasket": "junta", "coupling": "acople", "shaft": "eje",
+        "gear": "engranaje", "pump": "bomba", "valve": "valvula", "motor": "motor",
+        "cable": "cable", "fuse": "fusible", "contactor": "contactor", "sensor": "sensor",
+        "transmitter": "transmisor", "electrode": "electrodo", "welding": "soldadura",
+        "paint": "pintura", "screw": "tornillo", "spring": "resorte", "chain": "cadena",
+        "hose": "manguera", "pipe": "tuberia", "flange": "brida", "impeller": "impulsor",
+    }
     query = "SELECT sap_id, description, category, unit FROM sap_materials WHERE 1=1"
     params = {}
     if q:
-        query += " AND (sap_id LIKE :q OR LOWER(description) LIKE :q)"
-        params["q"] = f"%{q.lower()}%"
+        q_lower = q.lower()
+        # Check if English term, map to Spanish
+        es_term = EN_ES_MAP.get(q_lower, "")
+        if es_term:
+            query += " AND (sap_id LIKE :q OR LOWER(description) LIKE :q OR LOWER(description) LIKE :q2)"
+            params["q"] = f"%{q_lower}%"
+            params["q2"] = f"%{es_term}%"
+        else:
+            query += " AND (sap_id LIKE :q OR LOWER(description) LIKE :q)"
+            params["q"] = f"%{q_lower}%"
     if category:
         query += " AND category = :cat"
         params["cat"] = category.upper()

@@ -67,7 +67,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
   
   const [showExtModal, setShowExtModal] = useState(false);
-  const [extForm, setExtForm] = useState({ service: '', vendor: '', contract_ref: '', specialty: '', estimated_cost: '', duration_days: '', notes: '' });
+  const [extForm, setExtForm] = useState({ service: '', vendor: '', vendor_other: '', contract_ref: '', specialty: '', specialty_other: '', estimated_cost: '', duration_days: '', notes: '' });
 
   const SPECIAL_EQUIPMENT = [
     'Grua 20 Ton', 'Grua 50 Ton', 'Grua Horquilla', 'Andamio Multidireccional',
@@ -1499,7 +1499,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 {/* Vendor */}
                 <div>
                   <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Vendor / Contractor</label>
-                  <select value={extForm.vendor} onChange={e => setExtForm(p => ({...p, vendor: e.target.value}))}
+                  <select value={extForm.vendor} onChange={e => setExtForm(p => ({...p, vendor: e.target.value, vendor_other: e.target.value === 'OTHER' ? p.vendor_other : ''}))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500">
                     <option value="">-- Select --</option>
                     <option value="GRUAS_NORTE">Gruas del Norte SpA</option>
@@ -1507,14 +1507,19 @@ export default function FailureCapture({ onNavigateTab }) {
                     <option value="SERVICIOS_IND">Servicios Industriales OCP</option>
                     <option value="MANTTO_EXTERNO">Mantenimiento Externo S.A.</option>
                     <option value="EQUIP_ESPECIAL">Equipos Especiales Ltda</option>
-                    <option value="OTHER">Other (specify in notes)</option>
+                    <option value="OTHER">Other...</option>
                   </select>
+                  {extForm.vendor === 'OTHER' && (
+                    <input value={extForm.vendor_other || ''} onChange={e => setExtForm(p => ({...p, vendor_other: e.target.value}))}
+                      className="w-full mt-1.5 border border-purple-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 bg-purple-50/30"
+                      placeholder="Vendor name..." autoFocus />
+                  )}
                 </div>
 
                 {/* Specialty */}
                 <div>
                   <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Specialty</label>
-                  <select value={extForm.specialty} onChange={e => setExtForm(p => ({...p, specialty: e.target.value}))}
+                  <select value={extForm.specialty} onChange={e => setExtForm(p => ({...p, specialty: e.target.value, specialty_other: e.target.value === 'OTRO' ? p.specialty_other : ''}))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500">
                     <option value="">-- Select --</option>
                     <option value="MECANICA">Mechanical</option>
@@ -1525,8 +1530,13 @@ export default function FailureCapture({ onNavigateTab }) {
                     <option value="CIVIL">Civil Works</option>
                     <option value="ALINEACION">Alignment / Balancing</option>
                     <option value="INSPECCION">Inspection / NDT</option>
-                    <option value="OTRO">Other</option>
+                    <option value="OTRO">Other...</option>
                   </select>
+                  {extForm.specialty === 'OTRO' && (
+                    <input value={extForm.specialty_other || ''} onChange={e => setExtForm(p => ({...p, specialty_other: e.target.value}))}
+                      className="w-full mt-1.5 border border-purple-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 bg-purple-50/30"
+                      placeholder="Specialty description..." autoFocus />
+                  )}
                 </div>
               </div>
 
@@ -1569,7 +1579,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-center justify-between">
                   <div className="text-xs text-purple-600">
                     <div className="font-semibold uppercase">Cost Impact</div>
-                    <div className="text-[10px] text-purple-400 mt-0.5">{extForm.vendor || 'TBD'} · {extForm.specialty || 'TBD'} · {extForm.duration_days || '?'} days</div>
+                    <div className="text-[10px] text-purple-400 mt-0.5">{extForm.vendor === 'OTHER' ? (extForm.vendor_other || 'TBD') : (extForm.vendor || 'TBD')} · {extForm.specialty === 'OTRO' ? (extForm.specialty_other || 'TBD') : (extForm.specialty || 'TBD')} · {extForm.duration_days || '?'} days</div>
                   </div>
                   <div className="text-lg font-bold text-purple-800">${Number(extForm.estimated_cost || 0).toLocaleString()}</div>
                 </div>
@@ -1583,15 +1593,17 @@ export default function FailureCapture({ onNavigateTab }) {
                 Cancel
               </button>
               <button onClick={() => {
-                const label = '[EXT] ' + extForm.service + (extForm.vendor ? ' (' + extForm.vendor + ')' : '') + (extForm.estimated_cost ? ' $' + Number(extForm.estimated_cost).toLocaleString() : '');
+                const vendorName = extForm.vendor === 'OTHER' ? (extForm.vendor_other || 'Other') : (extForm.vendor || '');
+                const specName = extForm.specialty === 'OTRO' ? (extForm.specialty_other || 'Other') : (extForm.specialty || '');
+                const label = '[EXT] ' + extForm.service + (vendorName ? ' (' + vendorName + ')' : '') + (extForm.estimated_cost ? ' $' + Number(extForm.estimated_cost).toLocaleString() : '');
                 setF('supportEquipment', [...(form.supportEquipment || []), label]);
 
                 // Store external details in form for submission
-                const extDetails = [...(form.externalServices || []), { ...extForm }];
+                const extDetails = [...(form.externalServices || []), { ...extForm, vendor: vendorName, specialty: specName }];
                 setF('externalServices', extDetails);
 
                 setF('specialEquipment', '');
-                setExtForm({ service: '', vendor: '', contract_ref: '', specialty: '', estimated_cost: '', duration_days: '', notes: '' });
+                setExtForm({ service: '', vendor: '', vendor_other: '', contract_ref: '', specialty: '', specialty_other: '', estimated_cost: '', duration_days: '', notes: '' });
                 setShowExtModal(false);
               }}
                 disabled={!extForm.service}

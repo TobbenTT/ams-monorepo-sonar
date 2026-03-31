@@ -123,8 +123,8 @@ export default function SapPmPage() {
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Plan #</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Description</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Equipo</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Tipo</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Equipment</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Type</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Ciclo</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Estrategia</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Proxima Fecha</th>
@@ -207,13 +207,13 @@ export default function SapPmPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Equipo</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Equipment</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Punto</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Tipo</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Type</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Limites</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Ultimo Valor</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Unidad</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Estado</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -377,7 +377,7 @@ export default function SapPmPage() {
                     <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Centro Costo</th>
                     <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">%</th>
                     <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">Monto</th>
-                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Fecha</th>
+                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Date</th>
                     <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
                   </tr>
                 </thead>
@@ -419,7 +419,7 @@ export default function SapPmPage() {
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Disponible</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Min.</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Reorden</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Estado</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y">

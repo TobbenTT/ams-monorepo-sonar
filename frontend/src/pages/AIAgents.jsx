@@ -379,7 +379,7 @@ function TroubleshootTab() {
                             placeholder="ej: SAG-MILL-001" className="w-full px-3 py-2 border rounded-lg text-sm bg-background" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1">Planta</label>
+                        <label className="block text-sm font-medium mb-1">Plant</label>
                         <input type="text" value={plantId} onChange={(e) => setPlantId(e.target.value)}
                             className="w-full px-3 py-2 border rounded-lg text-sm bg-background" />
                     </div>

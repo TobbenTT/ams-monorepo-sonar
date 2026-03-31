@@ -411,7 +411,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg space-y-4" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-gray-900">Registrar Reunion de Desempeno</h2>
             <div>
-              <label className="text-sm font-medium text-gray-700">Fecha</label>
+              <label className="text-sm font-medium text-gray-700">Date</label>
               <input type="date" value={meetingForm.date} onChange={e => setMeetingForm({ ...meetingForm, date: e.target.value })} className="w-full border rounded-lg p-2 mt-1" />
             </div>
             <div>

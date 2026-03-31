@@ -289,7 +289,7 @@ export default function MobileWRDetail() {
             <div className="p-4">
                 <button onClick={() => navigate(-1)} className="flex items-center gap-2 mb-4">
                     <ArrowLeft className="w-5 h-5" style={{ color: '#64748B' }} />
-                    <span className="text-sm" style={{ color: '#64748B' }}>Volver</span>
+                    <span className="text-sm" style={{ color: '#64748B' }}>Back</span>
                 </button>
                 <div className="text-center py-12">
                     <div className="text-lg font-bold mb-2" style={{ color: '#0F172A' }}>Aviso no encontrado</div>

@@ -762,7 +762,7 @@ export default function FailureCapture({ onNavigateTab }) {
             {/* Status cards */}
             <div className="grid grid-cols-4 gap-3">
               <div className="bg-gray-50 rounded-lg p-3 text-center">
-                <span className="text-[10px] text-gray-500 block uppercase">Estado</span>
+                <span className="text-[10px] text-gray-500 block uppercase">Status</span>
                 <span className={`text-sm font-bold ${d.status === 'VALIDATED' ? 'text-green-700' : d.status === 'PENDING_VALIDATION' ? 'text-yellow-700' : 'text-gray-700'}`}>{d.status}</span>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -770,7 +770,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <span className={`text-sm font-bold ${['P1','P2'].includes(d.priority) ? 'text-red-600' : 'text-orange-600'}`}>{d.priority || '-'}</span>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
-                <span className="text-[10px] text-gray-500 block uppercase">Equipo</span>
+                <span className="text-[10px] text-gray-500 block uppercase">Equipment</span>
                 <span className="text-sm font-bold font-mono">{d.equipment_tag || '-'}</span>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">

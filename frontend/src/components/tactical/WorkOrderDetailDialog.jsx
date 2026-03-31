@@ -219,7 +219,7 @@ export default function WorkOrderDetailDialog({
                     )}
                     {raw.validation.validated_at && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Fecha</span>
+                        <span className="text-gray-600">Date</span>
                         <span className="font-medium">{fmtDate(raw.validation.validated_at)}</span>
                       </div>
                     )}
@@ -242,7 +242,7 @@ export default function WorkOrderDetailDialog({
                       <span className="font-medium">{raw.approver_id || '—'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Fecha</span>
+                      <span className="text-gray-600">Date</span>
                       <span className="font-medium">{fmtDate(raw.approved_at)}</span>
                     </div>
                     {raw.approval_comment && (

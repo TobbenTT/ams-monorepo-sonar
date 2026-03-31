@@ -335,7 +335,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   };
 
   const handleExport = () => {
-    const headers = ['ID', 'Equipment', 'Description', 'Priority', 'Planning Group', 'Work Center', 'Reported By', 'Fecha', 'Days'];
+    const headers = ['ID', 'Equipment', 'Description', 'Priority', 'Planning Group', 'Work Center', 'Reported By', 'Date', 'Days'];
     const rows = filteredWRs.map(wr => {
       const created = wr.created_at ? new Date(wr.created_at) : null;
       const days = created ? Math.max(0, Math.floor((Date.now() - created.getTime()) / 86400000)) : 0;
@@ -1237,7 +1237,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             className="w-full text-xs border rounded px-2 py-1.5" />
                         </div>
                         <div>
-                          <label className="text-[10px] text-gray-500">Fin</label>
+                          <label className="text-[10px] text-gray-500">End</label>
                           <input type="date" value={editDates.end} onChange={e => setEditDates(p => ({...p, end: e.target.value}))}
                             className="w-full text-xs border rounded px-2 py-1.5" />
                         </div>

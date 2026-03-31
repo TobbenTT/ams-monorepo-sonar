@@ -1023,9 +1023,9 @@ export default function WorkOrdersPage() {
                 <TableHeader>
                   <TableRow className="bg-gray-50">
                     <TableHead className="font-semibold">OT #</TableHead>
-                    <TableHead className="font-semibold">Equipo</TableHead>
+                    <TableHead className="font-semibold">Equipment</TableHead>
                     <TableHead className="font-semibold">Descripción</TableHead>
-                    <TableHead className="font-semibold">Tipo</TableHead>
+                    <TableHead className="font-semibold">Type</TableHead>
                     <TableHead className="font-semibold">Priority</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Progress</TableHead>
@@ -2007,7 +2007,7 @@ export default function WorkOrdersPage() {
                       </>
                     ) : (
                       <>
-                        <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Tipo</span><span className="font-medium">{WO_TYPE_LABELS[selectedOT.wo_type] || selectedOT.wo_type}</span></div>
+                        <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Type</span><span className="font-medium">{WO_TYPE_LABELS[selectedOT.wo_type] || selectedOT.wo_type}</span></div>
                         <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Clase</span><span className="font-medium">{selectedOT.work_class || '—'}</span></div>
                         <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Inicio Plan.</span><span className="font-medium">{selectedOT.planned_start ? new Date(selectedOT.planned_start).toLocaleDateString() : '—'}</span></div>
                         <div className="bg-gray-50 rounded-lg p-2.5"><span className="text-gray-500 text-xs block">Fin Plan.</span><span className="font-medium">{selectedOT.planned_end ? new Date(selectedOT.planned_end).toLocaleDateString() : '—'}</span></div>
@@ -2068,7 +2068,7 @@ export default function WorkOrdersPage() {
                           <tr>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-10">#</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Tipo</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Type</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">Especialidad</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Cant.</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Duración</th>
@@ -2234,7 +2234,7 @@ export default function WorkOrdersPage() {
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">Código SAP</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Tipo</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Type</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Cant.</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Unidad</th>
@@ -2510,7 +2510,7 @@ export default function WorkOrdersPage() {
                   className="gap-1 text-violet-600 border-violet-300 hover:bg-violet-50">
                   <Zap size={14} /> Verificar IA
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setSelectedOT(null)}>Cerrar</Button>
+                <Button variant="outline" size="sm" onClick={() => setSelectedOT(null)}>Close</Button>
               </div>
             </div>
           </div>

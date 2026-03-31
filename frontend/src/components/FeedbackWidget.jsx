@@ -595,7 +595,7 @@ export default function FeedbackWidget() {
                 <h4 className="text-sm font-bold text-gray-900">Resumen del feedback</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between p-2 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500">Tipo</span>
+                    <span className="text-gray-500">Type</span>
                     <span className="font-medium" style={{ color: selectedType?.color }}>{selectedType?.label}</span>
                   </div>
                   <div className="flex justify-between p-2 bg-gray-50 rounded-lg">

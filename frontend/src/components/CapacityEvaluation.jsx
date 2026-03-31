@@ -67,7 +67,7 @@ export default function CapacityEvaluation() {
               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Demanda HH</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Carga %</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Libre HH</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-500">Estado</th>
+              <th className="px-4 py-3 text-xs font-semibold text-gray-500">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y">

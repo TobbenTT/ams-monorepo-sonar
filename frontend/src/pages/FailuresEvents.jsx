@@ -1726,7 +1726,7 @@ export default function FailuresEvents() {
                 <Button variant="outline" size="sm" onClick={() => { navigate('/work-orders'); setSelectedWR(null); setWrEditing(false); }}>
                   Ver en Work Orders
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => { setSelectedWR(null); setWrEditing(false); setWrActionComment(''); }}>Cerrar</Button>
+                <Button variant="outline" size="sm" onClick={() => { setSelectedWR(null); setWrEditing(false); setWrActionComment(''); }}>Close</Button>
               </div>
             </div>
           </div>

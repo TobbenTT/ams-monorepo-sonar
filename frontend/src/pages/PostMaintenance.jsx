@@ -330,7 +330,7 @@ export default function PostMaintenance() {
                         <p className="text-gray-500 mb-2">Actions de mejora:</p>
                         <table className="w-full text-sm">
                           <thead><tr className="text-left text-gray-400 border-b">
-                            <th className="pb-1">Accion</th><th className="pb-1">Responsable</th><th className="pb-1">Plazo</th><th className="pb-1">Estado</th>
+                            <th className="pb-1">Action</th><th className="pb-1">Responsible</th><th className="pb-1">Deadline</th><th className="pb-1">Status</th>
                           </tr></thead>
                           <tbody>
                             {detail.improvement_actions.map((a, i) => (

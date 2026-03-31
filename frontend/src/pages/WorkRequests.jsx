@@ -355,7 +355,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
 </div>
 
 <div class="grid">
-  <div class="card"><div class="label">Estado</div><div class="value">${wr.status || '-'}</div></div>
+  <div class="card"><div class="label">Status</div><div class="value">${wr.status || '-'}</div></div>
   <div class="card"><div class="label">Priority</div><div class="value"><span class="priority ${(wr.priority_requested||'p3').toLowerCase()}">${wr.priority_requested || wr.priority || '-'}</span></div></div>
   <div class="card"><div class="label">Clase Actividad</div><div class="value">${ai.activity_class || '-'}</div></div>
   <div class="card"><div class="label">Equipo / TAG</div><div class="value">${wr.equipment_tag || '-'}</div></div>
@@ -363,7 +363,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
   <div class="card"><div class="label">Duracion Estimada</div><div class="value">${wr.estimated_duration || ai.estimated_duration_hours || '-'}h</div></div>
   <div class="card"><div class="label">Creado por</div><div class="value">${wr.created_by || '-'}</div></div>
   <div class="card"><div class="label">Fecha Creacion</div><div class="value">${wr.created_at ? new Date(wr.created_at).toLocaleDateString('es-CL') : '-'}</div></div>
-  <div class="card"><div class="label">Planta</div><div class="value">${ai.plant_id || 'OCP-JFC1'}</div></div>
+  <div class="card"><div class="label">Plant</div><div class="value">${ai.plant_id || 'OCP-JFC1'}</div></div>
 </div>
 
 <div class="section">

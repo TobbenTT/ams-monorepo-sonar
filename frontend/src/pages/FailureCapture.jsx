@@ -459,24 +459,15 @@ export default function FailureCapture({ onNavigateTab }) {
 
           {/* ── WIZARD STEPS ── */}
           <div className="flex items-center justify-center gap-3 mb-4">
-            {[{n:1,l:'Step 1: Location',s:'Where it happened'},{n:2,l:'Step 2: Failure',s:'What happened'},{n:3,l:'Step 3: Action',s:'What to do'}].map((s,idx)=>(
-              <div key={s.n} className="flex items-center gap-2">
-                <button type="button" onClick={()=>s.n<=wizardStep?setWizardStep(s.n):null}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all ${wizardStep===s.n?'bg-[#1B5E20] text-white shadow-lg':wizardStep>s.n?'bg-emerald-100 text-emerald-700 cursor-pointer':'bg-gray-100 text-gray-400'}`}>
-                  {wizardStep>s.n?<CheckCircle size={14}/>:<span className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs font-bold">{s.n}</span>}
-                  <div className="text-left"><div className="text-xs">{s.l}</div><div className="text-[9px] opacity-70">{s.s}</div></div>
-                </button>
-                {idx<2&&<ArrowRight size={14} className="text-gray-300"/>}
-              </div>
             ))}
           </div>
 
           {/* Wizard Stepper */}
           <div className="flex items-center justify-between mb-6 px-2">
             {[
-              { step: 1, label: 'Ubicacion', icon: '\ud83d\udccd', desc: 'Donde ocurrio' },
-              { step: 2, label: 'Falla', icon: '\u26a0\ufe0f', desc: 'Que paso' },
-              { step: 3, label: 'Accion', icon: '\ud83d\udd27', desc: 'Que hacer' },
+              { step: 1, label: 'Ubicacion', icon: '📍', desc: 'Donde ocurrio' },
+              { step: 2, label: 'Falla', icon: '⚠️', desc: 'Que paso' },
+              { step: 3, label: 'Accion', icon: '🔧', desc: 'Que hacer' },
             ].map((s, i) => (
               <div key={s.step} className="flex items-center flex-1">
                 <button type="button" onClick={() => setWizardStep(s.step)}
@@ -492,7 +483,7 @@ export default function FailureCapture({ onNavigateTab }) {
                     <div className="text-xs font-bold">Paso {s.step}: {s.label}</div>
                     <div className="text-[10px] opacity-70">{s.desc}</div>
                   </div>
-                  {wizardStep > s.step && <span className="ml-auto text-emerald-600">\u2713</span>}
+                  {wizardStep > s.step && <span className="ml-auto text-emerald-600">✓</span>}
                 </button>
                 {i < 2 && <div className={`w-8 h-0.5 mx-1 flex-shrink-0 ${wizardStep > s.step + 1 ? 'bg-emerald-400' : 'bg-gray-200'}`} />}
               </div>
@@ -696,7 +687,6 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          <div className="flex justify-end pt-3"><button type="button" onClick={()=>setWizardStep(2)} className="flex items-center gap-2 px-5 py-2 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] text-sm font-medium">Next <ArrowRight size={14}/></button></div>
           </div>{/* end step 1 */}
           <div style={{display:wizardStep===2?"block":"none"}}>
           </div>
@@ -772,7 +762,6 @@ export default function FailureCapture({ onNavigateTab }) {
             </div>
           </div>
 
-          <div className="flex justify-between pt-3"><button type="button" onClick={()=>setWizardStep(1)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Back</button><button type="button" onClick={()=>setWizardStep(3)} className="flex items-center gap-2 px-5 py-2 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] text-sm font-medium">Next <ArrowRight size={14}/></button></div>
           </div>{/* end step 2 */}
           <div style={{display:wizardStep===3?"block":"none"}}>
           </div>
@@ -996,7 +985,6 @@ export default function FailureCapture({ onNavigateTab }) {
           </div>
         </div>
 
-          <div className="flex justify-start pt-3"><button type="button" onClick={()=>setWizardStep(2)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Back</button></div>
           </div>{/* end step 3 */}
         </div>{/* close p-5 space-y-5 */}
 

@@ -45,23 +45,23 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   const FAILURE_CATALOG = {
-    MECANICO: {
+    MECHANICAL: {
       label: 'Mechanical', color: '#6366F1',
-      symptoms: ['ALTA VIBRACION', 'ALTA TEMPERATURA', 'RUIDO ANORMAL', 'TRABADO', 'SIN FLUJO', 'FILTRACION', 'DESGASTE VISIBLE', 'FUGA ACEITE', 'ATASCAMIENTO'],
-      parts: ['RODAMIENTOS', 'SELLOS MECANICOS', 'ACOPLES', 'EJES', 'ENGRANAJES', 'CORREAS', 'BOMBAS', 'VALVULAS', 'FILTROS'],
-      causes: ['DESGASTE', 'FALTA LUBRICACION', 'CORROSION', 'DESALINEADO', 'OBSTRUIDO', 'SOBRECARGA', 'FATIGA', 'MONTAJE INCORRECTO'],
+      symptoms: ['HIGH VIBRATION', 'HIGH TEMPERATURE', 'ABNORMAL NOISE', 'SEIZED', 'NO FLOW', 'LEAKAGE', 'VISIBLE WEAR', 'OIL LEAK', 'BLOCKAGE'],
+      parts: ['BEARINGS', 'MECHANICAL SEALS', 'COUPLINGS', 'SHAFTS', 'GEARS', 'BELTS', 'PUMPS', 'VALVES', 'FILTERS'],
+      causes: ['WEAR', 'LACK OF LUBRICATION', 'CORROSION', 'MISALIGNMENT', 'BLOCKED', 'OVERLOAD', 'FATIGUE', 'INCORRECT ASSEMBLY'],
     },
-    ELECTRICO: {
+    ELECTRICAL: {
       label: 'Electrical', color: '#F59E0B',
-      symptoms: ['NO ARRANCA', 'SOBRECALENTAMIENTO', 'CORTOCIRCUITO', 'DISPARO PROTECCION', 'BAJA AISLACION', 'OPERACION INTERMITENTE', 'CONSUMO EXCESIVO'],
-      parts: ['MOTOR ELECTRICO', 'CABLES / CONDUCTORES', 'PROTECCIONES', 'TABLERO ELECTRICO', 'VARIADOR FRECUENCIA', 'CONTACTOR'],
-      causes: ['PERDIDA AISLACION', 'DESGASTE', 'SUELTO', 'SOBRECARGA ELECTRICA', 'HUMEDAD', 'CALENTAMIENTO EXCESIVO'],
+      symptoms: ['WONT START', 'OVERHEATING', 'SHORT CIRCUIT', 'PROTECTION TRIP', 'LOW INSULATION', 'INTERMITTENT OPERATION', 'EXCESSIVE CONSUMPTION'],
+      parts: ['ELECTRIC MOTOR', 'CABLES / CONDUCTORS', 'PROTECTIONS', 'ELECTRICAL PANEL', 'VARIABLE FREQUENCY DRIVE', 'CONTACTOR'],
+      causes: ['INSULATION LOSS', 'WEAR', 'LOOSE', 'ELECTRICAL OVERLOAD', 'MOISTURE', 'EXCESSIVE HEATING'],
     },
-    INSTRUMENTACION: {
+    INSTRUMENTATION: {
       label: 'Instrumentation', color: '#06B6D4',
-      symptoms: ['LECTURA ERRONEA', 'SIN SENAL', 'SENAL INESTABLE', 'NO RESPONDE', 'ALARMA FALSA', 'COMUNICACION PERDIDA'],
-      parts: ['SENSOR / TRANSDUCTOR', 'TRANSMISOR', 'VALVULA DE CONTROL', 'PLC / DCS', 'ACTUADOR', 'POSICIONADOR'],
-      causes: ['DESCALIBRADO', 'CONTAMINADO', 'PERDIDA PARAMETROS', 'PERDIDA COMUNICACION', 'OBSTRUCCION'],
+      symptoms: ['ERRONEOUS READING', 'NO SIGNAL', 'UNSTABLE SIGNAL', 'NOT RESPONDING', 'FALSE ALARM', 'LOST COMMUNICATION'],
+      parts: ['SENSOR / TRANSDUCER', 'TRANSMITTER', 'CONTROL VALVE', 'PLC / DCS', 'ACTUATOR', 'POSITIONER'],
+      causes: ['OUT OF CALIBRATION', 'CONTAMINATED', 'PARAMETER LOSS', 'COMMUNICATION LOSS', 'OBSTRUCTION'],
     },
   };
 
@@ -205,7 +205,7 @@ export default function FailureCapture({ onNavigateTab }) {
     priority: 'P3',
     activityClass: 'M001',
     plantCondition: 'operating',
-    failureCategory: 'MECANICO',
+    failureCategory: 'MECHANICAL',
     failureSymptom: '',
     failureObjectPart: '',
     failureCause: '',
@@ -298,11 +298,11 @@ export default function FailureCapture({ onNavigateTab }) {
         const s = res.suggestions;
         if (s.failure_category) {
           const cat = s.failure_category.toUpperCase().trim();
-          const validCats = ['MECANICO', 'ELECTRICO', 'INSTRUMENTACION'];
+          const validCats = ['MECHANICAL', 'ELECTRICAL', 'INSTRUMENTATION'];
           if (validCats.includes(cat)) setF('failureCategory', cat);
-          else if (cat.includes('MEC')) setF('failureCategory', 'MECANICO');
-          else if (cat.includes('ELEC')) setF('failureCategory', 'ELECTRICO');
-          else if (cat.includes('INST')) setF('failureCategory', 'INSTRUMENTACION');
+          else if (cat.includes('MEC')) setF('failureCategory', 'MECHANICAL');
+          else if (cat.includes('ELEC')) setF('failureCategory', 'ELECTRICAL');
+          else if (cat.includes('INST')) setF('failureCategory', 'INSTRUMENTATION');
         }
         if (s.failure_symptom || s.failureSymptom) {
           const sym = (s.failure_symptom || s.failureSymptom).toUpperCase().trim();
@@ -541,13 +541,13 @@ export default function FailureCapture({ onNavigateTab }) {
         if (s.whatHappens) setF('whatHappens', s.whatHappens);
         if (s.failureCategory) {
           const cat = s.failureCategory.toUpperCase().trim();
-          if (['MECANICO', 'ELECTRICO', 'INSTRUMENTACION'].includes(cat)) setF('failureCategory', cat);
+          if (['MECHANICAL', 'ELECTRICAL', 'INSTRUMENTATION'].includes(cat)) setF('failureCategory', cat);
         }
         if (s.priority) setF('priority', s.priority);
         if (s.activityClass) setF('activityClass', s.activityClass);
         if (s.suggestedAction) setF('suggestedAction', s.suggestedAction);
         // Validate catalog values against FAILURE_CATALOG
-        const aiCat = (s.failureCategory || form.failureCategory || 'MECANICO').toUpperCase();
+        const aiCat = (s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase();
         const catData = FAILURE_CATALOG[aiCat] || FAILURE_CATALOG.MECANICO;
         if (s.failureSymptom) {
           const sym = s.failureSymptom.toUpperCase().trim();
@@ -681,7 +681,7 @@ export default function FailureCapture({ onNavigateTab }) {
     setForm({
       whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '',
       suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'M001',
-      plantCondition: 'operating', failureCategory: 'MECANICO', failureSymptom: '',
+      plantCondition: 'operating', failureCategory: 'MECHANICAL', failureSymptom: '',
       failureObjectPart: '', failureCause: '', resources: [], materials: [],
       specialEquipment: '', circumstances: '', reportedBy: form.reportedBy, supportEquipment: [],
       notificationClass: 'A1', avisoCoding: 'M001', planningGroup: '', areaEmpresa: '', workCenter: '', workConditions: '',

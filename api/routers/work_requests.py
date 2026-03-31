@@ -623,7 +623,7 @@ IMPORTANT: Respond ONLY with valid JSON, no markdown.
 
 {
   "enhanced_description": "Improved technical description of the problem (SAP PM style, 2-3 sentences, include equipment/TAG, location, symptom, impact)",
-  "failureCategory": "MECANICO | ELECTRICO | INSTRUMENTACION",
+  "failureCategory": "MECHANICAL | ELECTRICAL | INSTRUMENTATION",
   "priority": "P1 | P2 | P3 | P4",
   "activityClass": "M001 | M002 | M003",
   "suggestedAction": "Detailed corrective action step by step",
@@ -646,20 +646,20 @@ CONDITIONS: LOTO, clear area, permits, PPE
 
 FAILURE CATALOG (MANDATORY - use EXACTLY these values, NO free text):
 
-MECANICO:
-  parts: RODAMIENTOS, SELLOS MECANICOS, ACOPLES, EJES, ENGRANAJES, CORREAS, BOMBAS, VALVULAS, FILTROS
-  symptoms: ALTA VIBRACION, ALTA TEMPERATURA, RUIDO ANORMAL, TRABADO, SIN FLUJO, FILTRACION, DESGASTE VISIBLE, FUGA ACEITE, ATASCAMIENTO
-  causes: DESGASTE, FALTA LUBRICACION, CORROSION, DESALINEADO, OBSTRUIDO, SOBRECARGA, FATIGA, MONTAJE INCORRECTO
+MECHANICAL:
+  parts: BEARINGS, MECHANICAL SEALS, COUPLINGS, SHAFTS, GEARS, BELTS, PUMPS, VALVES, FILTERS
+  symptoms: HIGH VIBRATION, HIGH TEMPERATURE, ABNORMAL NOISE, SEIZED, NO FLOW, LEAKAGE, VISIBLE WEAR, OIL LEAK, BLOCKAGE
+  causes: WEAR, LACK OF LUBRICATION, CORROSION, MISALIGNMENT, BLOCKED, OVERLOAD, FATIGUE, INCORRECT ASSEMBLY
 
-ELECTRICO:
-  parts: MOTOR ELECTRICO, CABLES / CONDUCTORES, PROTECCIONES, TABLERO ELECTRICO, VARIADOR FRECUENCIA, CONTACTOR
-  symptoms: NO ARRANCA, SOBRECALENTAMIENTO, CORTOCIRCUITO, DISPARO PROTECCION, BAJA AISLACION, OPERACION INTERMITENTE, CONSUMO EXCESIVO
-  causes: PERDIDA AISLACION, DESGASTE, SUELTO, SOBRECARGA ELECTRICA, HUMEDAD, CALENTAMIENTO EXCESIVO
+ELECTRICAL:
+  parts: ELECTRIC MOTOR, CABLES / CONDUCTORS, PROTECTIONS, ELECTRICAL PANEL, VARIABLE FREQUENCY DRIVE, CONTACTOR
+  symptoms: WONT START, OVERHEATING, SHORT CIRCUIT, PROTECTION TRIP, LOW INSULATION, INTERMITTENT OPERATION, EXCESSIVE CONSUMPTION
+  causes: INSULATION LOSS, WEAR, LOOSE, OVERLOAD ELECTRICA, MOISTURE, EXCESSIVE HEATING
 
-INSTRUMENTACION:
-  parts: SENSOR / TRANSDUCTOR, TRANSMISOR, VALVULA DE CONTROL, PLC / DCS, ACTUADOR, POSICIONADOR
-  symptoms: LECTURA ERRONEA, SIN SENAL, SENAL INESTABLE, NO RESPONDE, ALARMA FALSA, COMUNICACION PERDIDA
-  causes: DESCALIBRADO, CONTAMINADO, PERDIDA PARAMETROS, PERDIDA COMUNICACION, OBSTRUCCION
+INSTRUMENTATION:
+  parts: SENSOR / TRANSDUCER, TRANSMITTER, CONTROL VALVE, PLC / DCS, ACTUATOR, POSITIONER
+  symptoms: ERRONEOUS READING, NO SIGNAL, UNSTABLE SIGNAL, NOT RESPONDING, FALSE ALARM, LOST COMMUNICATION
+  causes: OUT OF CALIBRATION, CONTAMINATED, PARAMETER LOSS, COMMUNICATION LOSS, OBSTRUCTION
 
 RULE: failureSymptom, failureCause and failureObjectPart MUST be EXACT copies of the values above.
 DO NOT invent free text for these fields. Choose the closest catalog value.
@@ -673,7 +673,7 @@ RULE enhanced_description: Rewrite the user description in SAP PM technical form
 
 IMPORTANT: Detect the language of the user input and respond in the SAME language.
 If user writes in Spanish, respond in Spanish. If in English, respond in English. If in French, respond in French.
-Catalog codes (RODAMIENTOS, ALTA VIBRACION, etc.) always stay as-is regardless of language.
+Catalog codes (BEARINGS, HIGH VIBRATION, etc.) always stay as-is regardless of language.
 The enhanced_description and suggestedAction should match the user's language."""
 
     if context_str:
@@ -724,11 +724,11 @@ def _rule_based_assist(data, db):
     # 1. Detect failure category
     if not data.existing_category:
         cat_keywords = {
-            "ELECTRICO": ["electr", "voltaje", "corriente", "cable", "variador", "transformador", "cortocircuito", "fusible"],
-            "INSTRUMENTACION": ["instrument", "sensor", "valvula", "transmisor", "plc", "caudalimetro", "presostato", "termocupla", "calibr"],
-            "MECANICO": ["mecanic", "bomba", "rodamiento", "vibracion", "fuga", "correa", "engranaje", "eje", "sello", "lubricacion", "aceite", "desgaste"],
+            "ELECTRICAL": ["electr", "voltaje", "corriente", "cable", "variador", "transformador", "cortocircuito", "fusible"],
+            "INSTRUMENTATION": ["instrument", "sensor", "valvula", "transmisor", "plc", "caudalimetro", "presostato", "termocupla", "calibr"],
+            "MECHANICAL": ["mecanic", "bomba", "rodamiento", "vibracion", "fuga", "correa", "engranaje", "eje", "sello", "lubricacion", "aceite", "desgaste"],
         }
-        detected = "MECANICO"
+        detected = "MECHANICAL"
         max_hits = 0
         for cat, kws in cat_keywords.items():
             hits = sum(1 for kw in kws if kw in desc)
@@ -779,13 +779,13 @@ def _rule_based_assist(data, db):
         suggestions["estimatedDuration"] = "4"
 
     # 6. Suggest resources
-    cat = suggestions.get("failureCategory", data.existing_category or "MECANICO")
+    cat = suggestions.get("failureCategory", data.existing_category or "MECHANICAL")
     default_resources = {
-        "MECANICO": [{"type": "Mecánico", "quantity": 2, "hours": 4}, {"type": "Supervisor", "quantity": 1, "hours": 1}],
-        "ELECTRICO": [{"type": "Eléctrico", "quantity": 1, "hours": 4}, {"type": "Supervisor", "quantity": 1, "hours": 1}],
-        "INSTRUMENTACION": [{"type": "Instrumentación", "quantity": 1, "hours": 3}, {"type": "Supervisor", "quantity": 1, "hours": 1}],
+        "MECHANICAL": [{"type": "Mecánico", "quantity": 2, "hours": 4}, {"type": "Supervisor", "quantity": 1, "hours": 1}],
+        "ELECTRICAL": [{"type": "Eléctrico", "quantity": 1, "hours": 4}, {"type": "Supervisor", "quantity": 1, "hours": 1}],
+        "INSTRUMENTATION": [{"type": "Instrumentación", "quantity": 1, "hours": 3}, {"type": "Supervisor", "quantity": 1, "hours": 1}],
     }
-    suggestions["resources"] = default_resources.get(cat, default_resources["MECANICO"])
+    suggestions["resources"] = default_resources.get(cat, default_resources["MECHANICAL"])
 
     # 7. Suggest materials from similar closed WRs (historical lookup)
     suggestions["materials"] = []

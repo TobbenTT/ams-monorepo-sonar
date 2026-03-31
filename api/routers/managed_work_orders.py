@@ -366,3 +366,76 @@ def verify_close_with_ai(
         "ai_summary": ai_summary,
         "message": "\n\n".join(message_parts),
     }
+
+
+
+@router.post("/{wo_id}/ai-estimate")
+def ai_estimate_duration(
+    wo_id: str,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """AI predicts actual duration based on WO details and similar past WOs."""
+    import os, json
+    wo = managed_wo_service.get_work_order(db, wo_id)
+    if not wo:
+        raise HTTPException(status_code=404, detail="Work order not found")
+
+    # Get similar closed WOs for reference
+    from api.database.models import ManagedWorkOrderModel
+    similar = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.status.in_(["CERRADO", "COMPLETED"]),
+        ManagedWorkOrderModel.equipment_tag == wo.get("equipment_tag", ""),
+    ).order_by(ManagedWorkOrderModel.closed_at.desc()).limit(5).all()
+
+    similar_data = []
+    for s in similar:
+        similar_data.append({
+            "wo_number": s.wo_number,
+            "estimated_hours": s.estimated_hours,
+            "actual_hours": s.actual_hours,
+            "wo_type": s.wo_type,
+            "description": (s.description or "")[:80],
+        })
+
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        avg = wo.get("estimated_hours", 4)
+        if similar_data:
+            actuals = [s["actual_hours"] for s in similar_data if s.get("actual_hours")]
+            if actuals:
+                avg = sum(actuals) / len(actuals)
+        return {"predicted_hours": round(avg, 1), "confidence": 60, "basis": "historical_average", "similar_count": len(similar_data)}
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = (
+            "Predict the actual duration for this maintenance work order.\n\n"
+            "CURRENT WO:\n"
+            "- Type: " + str(wo.get("wo_type", "")) + "\n"
+            "- Equipment: " + str(wo.get("equipment_tag", "")) + "\n"
+            "- Description: " + str(wo.get("description", ""))[:200] + "\n"
+            "- Planned hours: " + str(wo.get("estimated_hours", 4)) + "h\n"
+            "- Operations: " + str(len(wo.get("operations", []))) + " steps\n"
+            "- Materials: " + str(len(wo.get("materials", []))) + " items\n"
+            "- Priority: " + str(wo.get("priority_code", "")) + "\n\n"
+            "SIMILAR PAST WOs on same equipment:\n" + json.dumps(similar_data, indent=2) + "\n\n"
+            "Return ONLY a JSON object: {\"predicted_hours\": X.X, \"confidence\": 0-100, \"reasoning\": \"brief\"}"
+        )
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=200,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        import re
+        text = resp.content[0].text
+        json_match = re.search(r'\{.*\}', text, re.DOTALL)
+        if json_match:
+            result = json.loads(json_match.group())
+            result["similar_count"] = len(similar_data)
+            result["ai_used"] = True
+            return result
+        return {"predicted_hours": wo.get("estimated_hours", 4), "confidence": 50, "basis": "fallback", "ai_used": False}
+    except Exception as e:
+        return {"predicted_hours": wo.get("estimated_hours", 4), "confidence": 30, "error": str(e)[:80], "ai_used": False}

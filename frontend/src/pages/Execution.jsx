@@ -12,6 +12,7 @@ import {
   confirmTaskUnderstood, createHandover, listHandovers,
   listManagedWOs, authListUsers, completeManagedWO,
   updateManagedWO, verifyCloseManagedWO, closeManagedWO,
+  aiDailyBriefing, aiEstimateDuration,
 } from '../api';
 
 const STATUS_COLORS = {
@@ -55,6 +56,10 @@ export default function Execution() {
   const [closing, setClosing] = useState(false);
   const [enExecutionWOs, setEnExecutionWOs] = useState([]);
   const [cerradoWOs, setCerradoWOs] = useState([]);
+  const [briefing, setBriefing] = useState(null);
+  const [briefingLoading, setBriefingLoading] = useState(false);
+  const [estimateResult, setEstimateResult] = useState(null);
+  const [estimating, setEstimating] = useState(false);
 
   useEffect(() => { refresh(); loadFastTrack(); loadWOsForTabs(); }, [tab]);
 
@@ -79,6 +84,27 @@ export default function Execution() {
       setEnExecutionWOs(Array.isArray(ejRes) ? ejRes : ejRes.items || []);
       setCerradoWOs(Array.isArray(cerRes) ? cerRes : cerRes.items || []);
     } catch { /* ignore */ }
+  }
+
+  async function generateBriefing() {
+    setBriefingLoading(true);
+    try {
+      const result = await aiDailyBriefing(plant);
+      setBriefing(result);
+    } catch (e) { toast.error('Briefing error: ' + e.message); }
+    finally { setBriefingLoading(false); }
+  }
+
+  async function estimateDuration(wo) {
+    setEstimating(true);
+    try {
+      const result = await aiEstimateDuration(wo.wo_id);
+      setEstimateResult(result);
+      if (result.predicted_hours) {
+        setClosureForm(p => ({...p, actual_hours: String(result.predicted_hours)}));
+      }
+    } catch (e) { toast.error('Estimate error: ' + e.message); }
+    finally { setEstimating(false); }
   }
 
   async function saveExecutionData(wo) {
@@ -565,6 +591,21 @@ export default function Execution() {
                 </p>
               </div>
 
+              {/* AI Briefing */}
+              {briefing && (
+                <div className="bg-white rounded-xl border border-purple-200 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-purple-700 uppercase flex items-center gap-1">
+                      <Zap size={12} /> AI Daily Briefing
+                    </span>
+                    <button onClick={() => setBriefing(null)} className="text-xs text-gray-400 hover:text-gray-600">Dismiss</button>
+                  </div>
+                  <div className="prose prose-sm max-w-none text-gray-700 text-sm whitespace-pre-line">
+                    {briefing.briefing}
+                  </div>
+                </div>
+              )}
+
               {/* Daily summary */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-white rounded-xl border p-4 text-center">
@@ -771,9 +812,23 @@ export default function Execution() {
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-gray-600 block mb-1">Actual Hours Worked *</label>
-                      <input type="number" step="0.5" min="0" value={closureForm.actual_hours}
-                        onChange={e => setClosureForm(p => ({...p, actual_hours: e.target.value}))}
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500" placeholder="e.g. 6.5" />
+                      <div className="flex gap-2">
+                        <input type="number" step="0.5" min="0" value={closureForm.actual_hours}
+                          onChange={e => setClosureForm(p => ({...p, actual_hours: e.target.value}))}
+                          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500" placeholder="e.g. 6.5" />
+                        <button onClick={() => estimateDuration(closureWO)} disabled={estimating}
+                          className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap">
+                          {estimating ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                          AI Estimate
+                        </button>
+                      </div>
+                      {estimateResult && (
+                        <div className="mt-1 text-xs text-purple-600 bg-purple-50 rounded px-2 py-1">
+                          AI prediction: <strong>{estimateResult.predicted_hours}h</strong>
+                          {estimateResult.confidence && <span className="text-gray-400 ml-1">({estimateResult.confidence}% confidence)</span>}
+                          {estimateResult.reasoning && <span className="text-gray-500 ml-1">- {estimateResult.reasoning}</span>}
+                        </div>
+                      )}
                     </div>
                   </div>
 

@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../api';
+import { Sparkles as SparklesIcon } from 'lucide-react';
 import {
   Calendar, Clock, Users, CheckCircle, Circle, Play, Loader2,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Inbox, Camera, Sparkles, Send, X,
@@ -1048,6 +1049,8 @@ export default function Scheduling() {
   const [closureOrder, setClosureOrder] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [aiScheduling, setAiScheduling] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
 
   // Calendar view state
   const [technicians, setTechnicians] = useState([]);
@@ -1134,6 +1137,36 @@ export default function Scheduling() {
       .catch(() => toast.error(`Error scheduling ${wo.wo_number}`));
   };
 
+  const handleAISchedule = async () => {
+    setAiScheduling(true);
+    setAiResult(null);
+    try {
+      const result = await api.aiAutoSchedule({ plant_id: plant });
+      setAiResult(result);
+      if (result.assignments && result.assignments.length > 0) {
+        // Apply assignments
+        for (const a of result.assignments) {
+          try {
+            await api.scheduleManagedWO(a.wo_id, {
+              assigned_workers: [{ worker_id: a.worker_id, name: a.worker_name, specialty: '' }],
+              planned_start: a.suggested_date || new Date().toISOString().slice(0, 10),
+              planned_end: a.suggested_date || new Date().toISOString().slice(0, 10),
+            });
+          } catch { /* skip failed */ }
+        }
+        toast.success(result.message || 'AI scheduled ' + result.assignments.length + ' WOs');
+        loadCalendarData();
+        loadGantt();
+      } else {
+        toast.info(result.message || 'No assignments generated');
+      }
+    } catch (e) {
+      toast.error('AI Schedule error: ' + (e.message || ''));
+    } finally {
+      setAiScheduling(false);
+    }
+  };
+
   const handleGenerate = () => {
     const now = new Date();
     const weekNum = Math.ceil(((now - new Date(now.getFullYear(), 0, 1)) / 86400000 + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7);
@@ -1213,6 +1246,14 @@ export default function Scheduling() {
               </span>
             )}
             <button
+              onClick={handleAISchedule}
+              disabled={aiScheduling}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {aiScheduling ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              {aiScheduling ? 'AI Scheduling...' : 'AI Auto-Schedule'}
+            </button>
+            <button
               onClick={handleGenerate}
               disabled={generating}
               className="flex items-center gap-2 px-4 py-2 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] transition-colors text-sm font-medium disabled:opacity-50"
@@ -1233,6 +1274,31 @@ export default function Scheduling() {
           </button>
         ))}
       </div>
+
+      {/* AI Result Banner */}
+      {aiResult && (
+        <div className={"border rounded-xl p-4 " + (aiResult.assignments?.length > 0 ? "bg-purple-50 border-purple-200" : "bg-gray-50 border-gray-200")}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-purple-600" />
+              <span className="text-sm font-semibold text-purple-800">{aiResult.message}</span>
+            </div>
+            <button onClick={() => setAiResult(null)} className="text-gray-400 hover:text-gray-600 text-xs">Dismiss</button>
+          </div>
+          {aiResult.assignments?.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {aiResult.assignments.map((a, i) => (
+                <span key={i} className="text-xs bg-white border border-purple-200 rounded-lg px-2 py-1">
+                  <span className="font-mono font-bold text-purple-700">{a.wo_number}</span>
+                  <span className="text-gray-500 mx-1">&rarr;</span>
+                  <span className="text-gray-700">{a.worker_name}</span>
+                  {a.reason && <span className="text-gray-400 ml-1">({a.reason})</span>}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tab Content */}
       {tab === 'inbox' && (

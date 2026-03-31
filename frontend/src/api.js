@@ -196,6 +196,11 @@ export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id
 export const verifyCloseManagedWO = (id, d) => post(`/managed-work-orders/${id}/verify-close`, d);
 export const getManagedWOStats = (p) => get('/managed-work-orders/stats', p);
 
+
+// ── AI Automation ──
+export const aiAutoSchedule = (d) => post('/scheduling/ai-auto-schedule', d || {});
+export const aiDailyBriefing = (plantId) => post('/scheduling/ai-daily-briefing', {}, { plant_id: plantId });
+export const aiEstimateDuration = (woId) => post(`/managed-work-orders/${woId}/ai-estimate`);
 // ── Detailed Feedback ──
 export const submitFeedback = (d) => post('/feedback/', d);
 export const listFeedback = (p) => get('/feedback/', p);

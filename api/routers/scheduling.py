@@ -1,5 +1,6 @@
 """Scheduling router — weekly program management, Gantt, HH balance, materials."""
 
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -144,3 +145,213 @@ def export_gantt_excel(program_id: str, db: Session = Depends(get_db)):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename=f"gantt_{program_id}.xlsx",
     )
+
+
+
+# ── AI Auto-Schedule ─────────────────────────────────────────────────
+
+class AIAutoScheduleRequest(BaseModel):
+    plant_id: str = "OCP-JFC1"
+    week_start: str = ""  # ISO date, defaults to current week
+
+
+from pydantic import BaseModel as BaseModel2
+
+
+@router.post("/ai-auto-schedule")
+def ai_auto_schedule(
+    data: AIAutoScheduleRequest = None,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """AI auto-assigns unscheduled WOs to optimal technicians based on
+    skills, availability, priority, and workload balance."""
+    import os, json
+    from api.database.models import ManagedWorkOrderModel
+    from api.services import assignment_service
+
+    plant_id = data.plant_id if data else "OCP-JFC1"
+
+    # Get unscheduled WOs (PLANIFICADO + RELEASED)
+    wos = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.status.in_(["PLANIFICADO", "RELEASED", "CREADO"]),
+        ManagedWorkOrderModel.plant_id == plant_id,
+    ).order_by(
+        # P1 first, then P2, etc.
+        ManagedWorkOrderModel.priority_code.asc(),
+        ManagedWorkOrderModel.created_at.asc(),
+    ).limit(20).all()
+
+    if not wos:
+        return {"assignments": [], "message": "No unscheduled WOs found"}
+
+    # Get available technicians
+    techs = assignment_service.get_technician_profiles(db, plant_id=plant_id)
+    if not techs:
+        return {"assignments": [], "message": "No technicians available"}
+
+    # Build context for AI
+    wo_list = []
+    for wo in wos:
+        ops = wo.operations or []
+        specialties = list(set(op.get("specialty", "") for op in ops if isinstance(op, dict)))
+        wo_list.append({
+            "wo_id": wo.wo_id,
+            "wo_number": wo.wo_number,
+            "priority": wo.priority_code,
+            "equipment": wo.equipment_tag,
+            "description": (wo.description or "")[:100],
+            "hours": wo.estimated_hours or 4,
+            "specialties_needed": specialties or ["MECHANICAL"],
+            "wo_type": wo.wo_type,
+        })
+
+    tech_list = []
+    for t in techs:
+        tech_list.append({
+            "worker_id": t.worker_id,
+            "name": t.name,
+            "specialty": t.specialty,
+            "shift": t.shift,
+            "available": t.available,
+            "years_exp": t.years_experience,
+            "equipment_expertise": (t.equipment_expertise or [])[:5],
+        })
+
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        # Fallback: simple round-robin assignment
+        assignments = []
+        available_techs = [t for t in tech_list if t["available"]]
+        for i, wo in enumerate(wo_list):
+            if not available_techs:
+                break
+            tech = available_techs[i % len(available_techs)]
+            assignments.append({
+                "wo_id": wo["wo_id"],
+                "wo_number": wo["wo_number"],
+                "worker_id": tech["worker_id"],
+                "worker_name": tech["name"],
+                "reason": "Round-robin (no AI key)",
+                "shift": "day",
+            })
+        return {"assignments": assignments, "message": "Assigned via round-robin (no AI)", "ai_used": False}
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+
+        prompt = (
+            "You are a maintenance scheduling AI. Assign these work orders to the best technicians.\n\n"
+            "WORK ORDERS:\n" + json.dumps(wo_list, indent=2) + "\n\n"
+            "TECHNICIANS:\n" + json.dumps(tech_list, indent=2) + "\n\n"
+            "Rules:\n"
+            "- Match specialty: mechanical WOs to FITTER/MECHANICAL techs, electrical to ELECTRICAL, etc.\n"
+            "- P1/P2 get the most experienced technicians\n"
+            "- Balance workload across technicians (don't overload one person)\n"
+            "- Consider equipment_expertise match when possible\n"
+            "- Assign shift: 'day' or 'night' based on priority (P1 = day shift priority)\n\n"
+            "Return ONLY a JSON array of assignments:\n"
+            '[{"wo_id": "...", "wo_number": "...", "worker_id": "...", "worker_name": "...", "reason": "brief reason", "shift": "day|night", "suggested_date": "YYYY-MM-DD"}]'
+        )
+
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        text = resp.content[0].text
+        # Extract JSON from response
+        import re
+        json_match = re.search(r'\[.*\]', text, re.DOTALL)
+        if json_match:
+            assignments = json.loads(json_match.group())
+        else:
+            assignments = []
+
+        return {
+            "assignments": assignments,
+            "message": "AI assigned " + str(len(assignments)) + " work orders to " + str(len(set(a.get("worker_id", "") for a in assignments))) + " technicians",
+            "ai_used": True,
+            "wo_count": len(wo_list),
+            "tech_count": len(tech_list),
+        }
+
+    except Exception as e:
+        return {"assignments": [], "message": "AI error: " + str(e)[:100], "ai_used": False}
+
+
+# ── AI Daily Briefing ────────────────────────────────────────────────
+
+@router.post("/ai-daily-briefing")
+def ai_daily_briefing(
+    plant_id: str = "OCP-JFC1",
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Generate AI daily briefing for the execution meeting."""
+    import os, json
+    from datetime import datetime
+    from api.database.models import ManagedWorkOrderModel
+
+    # Gather data
+    all_wos = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == plant_id,
+    ).all()
+
+    by_status = {}
+    for wo in all_wos:
+        by_status.setdefault(wo.status, []).append(wo)
+
+    in_exec = by_status.get("EN_EJECUCION", []) + by_status.get("IN_PROGRESS", [])
+    scheduled = by_status.get("PROGRAMADO", []) + by_status.get("SCHEDULED", [])
+    completed_today = [w for w in by_status.get("CERRADO", []) + by_status.get("COMPLETED", [])
+                       if w.closed_at and w.closed_at.date() == datetime.now().date()]
+    overdue = [w for w in in_exec if w.planned_end and w.planned_end < datetime.now()]
+    fast_track = [w for w in all_wos if w.is_fast_track and w.status not in ("CERRADO", "CANCELADO", "COMPLETED")]
+
+    summary_data = {
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "plant": plant_id,
+        "in_execution": len(in_exec),
+        "scheduled_today": len(scheduled),
+        "completed_today": len(completed_today),
+        "overdue": len(overdue),
+        "fast_track_active": len(fast_track),
+        "total_open": len([w for w in all_wos if w.status not in ("CERRADO", "CANCELADO", "COMPLETED")]),
+        "total_hh_planned": sum(w.estimated_hours or 0 for w in in_exec),
+        "overdue_details": [{"wo": w.wo_number, "equip": w.equipment_tag, "priority": w.priority_code, "planned_end": w.planned_end.isoformat() if w.planned_end else ""} for w in overdue[:5]],
+        "fast_track_details": [{"wo": w.wo_number, "equip": w.equipment_tag, "priority": w.priority_code, "desc": (w.description or "")[:60]} for w in fast_track[:5]],
+    }
+
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return {"briefing": "AI unavailable. Manual data:\n" + json.dumps(summary_data, indent=2), "data": summary_data}
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+
+        prompt = (
+            "You are the AI assistant for a daily maintenance execution meeting at a mining plant.\n"
+            "Generate a concise daily briefing (max 300 words) covering:\n"
+            "1. Executive summary (1-2 sentences)\n"
+            "2. Active emergencies / fast-track WOs\n"
+            "3. Overdue WOs requiring attention\n"
+            "4. Today's workload summary\n"
+            "5. Key risks or recommendations\n\n"
+            "Data:\n" + json.dumps(summary_data, indent=2) + "\n\n"
+            "Format with markdown headers. Be direct and actionable. Respond in English."
+        )
+
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=500,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        briefing = resp.content[0].text
+        return {"briefing": briefing, "data": summary_data, "ai_used": True}
+
+    except Exception as e:
+        return {"briefing": "AI error: " + str(e)[:100], "data": summary_data, "ai_used": False}

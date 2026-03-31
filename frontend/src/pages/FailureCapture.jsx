@@ -67,6 +67,10 @@ export default function FailureCapture({ onNavigateTab }) {
 
   
   const [showExtModal, setShowExtModal] = useState(false);
+  const [showExtMatModal, setShowExtMatModal] = useState(false);
+  const [extMatIdx, setExtMatIdx] = useState(-1);
+  const [extMatForm, setExtMatForm] = useState({ description: '', vendor: '', vendor_other: '', part_number: '', estimated_cost: '', lead_time_days: '', notes: '' });
+
   const [extForm, setExtForm] = useState({ service: '', vendor: '', vendor_other: '', contract_ref: '', specialty: '', specialty_other: '', estimated_cost: '', duration_days: '', notes: '' });
 
   const SPECIAL_EQUIPMENT = [
@@ -1297,7 +1301,7 @@ export default function FailureCapture({ onNavigateTab }) {
             ) : (
               <div className="space-y-2">
                 {form.resources.map((res, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-gray-50">
+                  <div key={i} className={"grid grid-cols-3 gap-2 p-2 rounded-lg " + (mat.isExternal ? "bg-purple-50/50 border border-purple-200" : "bg-gray-50")}>
                     <div className="relative">
                       <input type="text" placeholder="Tipo" value={res.type}
                         onChange={e => { updateResource(i, 'type', e.target.value); setActiveResTypeIdx(i); }}
@@ -1349,9 +1353,15 @@ export default function FailureCapture({ onNavigateTab }) {
                 <Package className="w-4 h-4 text-gray-400" />
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">SAP Materials</label>
               </div>
-              <button onClick={addMaterial} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
-                + Agregar
-              </button>
+              <div className="flex gap-2">
+                <button onClick={addMaterial} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
+                  + Add
+                </button>
+                <button onClick={() => { setExtMatIdx(-1); setExtMatForm({ description: '', vendor: '', vendor_other: '', part_number: '', estimated_cost: '', lead_time_days: '', notes: '' }); setShowExtMatModal(true); }}
+                  className="text-xs font-semibold px-3 py-1 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors">
+                  + Direct Purchase
+                </button>
+              </div>
             </div>
             {form.materials.length === 0 ? (
               <div className="grid grid-cols-3 gap-2">
@@ -1362,7 +1372,7 @@ export default function FailureCapture({ onNavigateTab }) {
             ) : (
               <div className="space-y-2">
                 {form.materials.map((mat, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-gray-50">
+                  <div key={i} className={"grid grid-cols-3 gap-2 p-2 rounded-lg " + (mat.isExternal ? "bg-purple-50/50 border border-purple-200" : "bg-gray-50")}>
                     <div className="relative">
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
                       <input type="text" placeholder="Buscar material SAP..." value={mat.sapId}
@@ -1378,6 +1388,17 @@ export default function FailureCapture({ onNavigateTab }) {
                               <span className="font-mono text-emerald-700">{m.sapId}</span> - {m.desc}
                             </button>
                           ))}
+                          {mat.sapId && mat.sapId.trim() && !COMMON_MATERIALS.some(m => m.sapId === mat.sapId || m.desc.toLowerCase() === mat.sapId.toLowerCase()) && (
+                            <button onClick={() => {
+                              setExtMatIdx(i);
+                              setExtMatForm(prev => ({ ...prev, description: mat.sapId }));
+                              setShowExtMatModal(true);
+                              setActiveMatSapIdx(-1);
+                            }} className="w-full text-left px-3 py-2.5 text-xs hover:bg-purple-50 border-t-2 border-purple-200 bg-purple-50/50 text-purple-700 font-semibold">
+                              <span className="bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded text-[10px] mr-1">EXT</span>
+                              Direct Purchase: "{mat.sapId.trim()}"
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1401,6 +1422,130 @@ export default function FailureCapture({ onNavigateTab }) {
               </div>
             )}
           </div>
+
+
+
+      {/* ═══ EXTERNAL MATERIAL / DIRECT PURCHASE MODAL (SAP ME51N style) ═══ */}
+      {showExtMatModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowExtMatModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-t-2xl px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-mono">SAP ME51N</span>
+                    Direct Purchase Request
+                  </h3>
+                  <p className="text-amber-100 text-xs mt-0.5">Material not in catalog - Purchase Requisition</p>
+                </div>
+                <button onClick={() => setShowExtMatModal(false)} className="text-white/70 hover:text-white p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Material Description</label>
+                <input value={extMatForm.description} onChange={e => setExtMatForm(p => ({...p, description: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  placeholder="e.g. Special bearing NSK 6308..." />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Vendor / Supplier</label>
+                  <select value={extMatForm.vendor} onChange={e => setExtMatForm(p => ({...p, vendor: e.target.value, vendor_other: e.target.value === 'OTHER' ? p.vendor_other : ''}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500">
+                    <option value="">-- Select --</option>
+                    <option value="SKF">SKF</option>
+                    <option value="NSK">NSK</option>
+                    <option value="SIEMENS">Siemens</option>
+                    <option value="ABB">ABB</option>
+                    <option value="FLENDER">Flender</option>
+                    <option value="GRUNDFOS">Grundfos</option>
+                    <option value="FLOWSERVE">Flowserve</option>
+                    <option value="JOHN_CRANE">John Crane</option>
+                    <option value="FERRETERIA">Hardware Store</option>
+                    <option value="OTHER">Other...</option>
+                  </select>
+                  {extMatForm.vendor === 'OTHER' && (
+                    <input value={extMatForm.vendor_other || ''} onChange={e => setExtMatForm(p => ({...p, vendor_other: e.target.value}))}
+                      className="w-full mt-1.5 border border-amber-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 bg-amber-50/30"
+                      placeholder="Vendor name..." autoFocus />
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Vendor Part Number</label>
+                  <input value={extMatForm.part_number} onChange={e => setExtMatForm(p => ({...p, part_number: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                    placeholder="e.g. 6308-2RS1" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Estimated Unit Cost (USD)</label>
+                  <input type="number" min="0" step="1" value={extMatForm.estimated_cost} onChange={e => setExtMatForm(p => ({...p, estimated_cost: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                    placeholder="0" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Lead Time (days)</label>
+                  <input type="number" min="0" value={extMatForm.lead_time_days} onChange={e => setExtMatForm(p => ({...p, lead_time_days: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                    placeholder="e.g. 5" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Notes / Specifications</label>
+                <textarea rows={2} value={extMatForm.notes} onChange={e => setExtMatForm(p => ({...p, notes: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 resize-none"
+                  placeholder="Technical specs, tolerances, certifications required..." />
+              </div>
+
+              {extMatForm.estimated_cost && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
+                  <div className="text-xs text-amber-600">
+                    <div className="font-semibold uppercase">Purchase Impact</div>
+                    <div className="text-[10px] text-amber-400 mt-0.5">
+                      {extMatForm.vendor === 'OTHER' ? (extMatForm.vendor_other || 'TBD') : (extMatForm.vendor || 'TBD')}
+                      {extMatForm.part_number ? ' / ' + extMatForm.part_number : ''}
+                      {extMatForm.lead_time_days ? ' / ' + extMatForm.lead_time_days + ' days' : ''}
+                    </div>
+                  </div>
+                  <div className="text-lg font-bold text-amber-800">${Number(extMatForm.estimated_cost || 0).toLocaleString()}</div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t px-6 py-3 rounded-b-2xl bg-gray-50 flex items-center justify-between">
+              <button onClick={() => setShowExtMatModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+              <button onClick={() => {
+                const vendorName = extMatForm.vendor === 'OTHER' ? (extMatForm.vendor_other || '') : (extMatForm.vendor || '');
+                const sapId = '[EXT]' + (extMatForm.part_number ? ' ' + extMatForm.part_number : '');
+                const desc = extMatForm.description + (vendorName ? ' (' + vendorName + ')' : '') + (extMatForm.estimated_cost ? ' ~$' + Number(extMatForm.estimated_cost).toLocaleString() : '');
+
+                if (extMatIdx >= 0 && extMatIdx < form.materials.length) {
+                  updateMaterial(extMatIdx, { sapId: sapId, description: desc, unit: form.materials[extMatIdx].unit || 'UD', quantity: form.materials[extMatIdx].quantity || '1', isExternal: true, extDetails: { ...extMatForm, vendor: vendorName } });
+                } else {
+                  setF('materials', [...form.materials, { sapId: sapId, description: desc, quantity: '1', unit: 'UD', isExternal: true, extDetails: { ...extMatForm, vendor: vendorName } }]);
+                }
+
+                setExtMatForm({ description: '', vendor: '', vendor_other: '', part_number: '', estimated_cost: '', lead_time_days: '', notes: '' });
+                setShowExtMatModal(false);
+              }}
+                disabled={!extMatForm.description}
+                className="px-5 py-2 text-sm font-semibold bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4" />
+                Add Purchase Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
           {/* 11. Equipos Especiales */}
           <div className="border rounded-xl p-4">

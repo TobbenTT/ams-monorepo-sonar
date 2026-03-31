@@ -36,8 +36,8 @@ def list_notifications(
         {
             "notification_id": r[0], "type": r[1], "title": r[2], "message": r[3],
             "priority": r[4], "entity_id": r[5],
-            "is_read": bool(r[6]), "read_at": r[7].isoformat() if r[7] else None,
-            "created_at": r[8].isoformat() if r[8] else None,
+            "is_read": bool(r[6]), "read_at": (r[7].isoformat() if hasattr(r[7], 'isoformat') else str(r[7])) if r[7] else None,
+            "created_at": (r[8].isoformat() if hasattr(r[8], 'isoformat') else str(r[8])) if r[8] else None,
             "recipient_id": r[9], "channel": r[10],
         }
         for r in rows

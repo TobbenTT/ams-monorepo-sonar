@@ -365,7 +365,7 @@ def get_gantt_managed(db: Session, plant_id: str, weeks: int = 2) -> list[dict]:
     wos = (
         db.query(ManagedWorkOrderModel)
         .filter(ManagedWorkOrderModel.plant_id == plant_id)
-        .filter(ManagedWorkOrderModel.status.in_(["SCHEDULED", "IN_PROGRESS", "RELEASED", "PLANNED"]))
+        .filter(ManagedWorkOrderModel.status.in_(["SCHEDULED", "IN_PROGRESS", "RELEASED", "PLANNED", "PROGRAMADO", "EN_EJECUCION", "PLANIFICADO", "REPROGRAMADO"]))
         .all()
     )
 

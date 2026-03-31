@@ -1301,7 +1301,7 @@ export default function FailureCapture({ onNavigateTab }) {
             ) : (
               <div className="space-y-2">
                 {form.resources.map((res, i) => (
-                  <div key={i} className={"grid grid-cols-3 gap-2 p-2 rounded-lg " + (mat.isExternal ? "bg-purple-50/50 border border-purple-200" : "bg-gray-50")}>
+                  <div key={i} className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-gray-50">
                     <div className="relative">
                       <input type="text" placeholder="Tipo" value={res.type}
                         onChange={e => { updateResource(i, 'type', e.target.value); setActiveResTypeIdx(i); }}

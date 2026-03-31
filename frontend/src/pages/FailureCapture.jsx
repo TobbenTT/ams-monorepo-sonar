@@ -1539,7 +1539,7 @@ export default function FailureCapture({ onNavigateTab }) {
               }}
                 disabled={!extMatForm.description}
                 className="px-5 py-2 text-sm font-semibold bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4" />
+                <Package className="w-4 h-4" />
                 Add Purchase Request
               </button>
             </div>

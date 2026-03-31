@@ -121,7 +121,6 @@ export default function FailureCapture({ onNavigateTab }) {
     supportEquipment: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [wizardStep, setWizardStep] = useState(1);
   const [createdWRId, setCreatedWRId] = useState(null);
 
   // Equipment search
@@ -456,30 +455,10 @@ export default function FailureCapture({ onNavigateTab }) {
         </div>
 
         <div className="p-5 space-y-5">
-
-          {/* ── WIZARD STEP INDICATOR ── */}
-          <div className="flex items-center justify-center gap-4 mb-6">
-            {[
-              { n: 1, label: 'Step 1: Location', sub: 'Where it happened' },
-              { n: 2, label: 'Step 2: Failure', sub: 'What happened' },
-              { n: 3, label: 'Step 3: Action', sub: 'What to do' },
-            ].map((s, idx) => (
-              <div key={s.n} className="flex items-center gap-2">
-                <button onClick={() => s.n <= wizardStep ? setWizardStep(s.n) : null}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${wizardStep === s.n ? 'bg-[#1B5E20] text-white shadow-lg' : wizardStep > s.n ? 'bg-emerald-100 text-emerald-700 cursor-pointer' : 'bg-gray-100 text-gray-400'}`}>
-                  {wizardStep > s.n ? <CheckCircle size={16} /> : <span className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs font-bold">{s.n}</span>}
-                  <div className="text-left"><div>{s.label}</div><div className="text-[10px] opacity-70">{s.sub}</div></div>
-                </button>
-                {idx < 2 && <ArrowRight size={16} className="text-gray-300" />}
-              </div>
-            ))}
-          </div>
-
           {/* Hidden camera input */}
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} className="hidden" />
 
-          {/* 1. Que paso? + Voice / Camera (shown in Step 2) */}
-          <div style={{ display: wizardStep === 2 ? 'block' : 'none' }}>
+          {/* 1. Que paso? + Voice / Camera */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Que paso?</label>
@@ -527,9 +506,6 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          </div>
-          {/* ══ STEP 1: LOCATION ══ */}
-          <div style={{ display: wizardStep === 1 ? 'block' : 'none' }}>
           {/* 2. Condicion de Planta + Prioridad */}
           <div className="grid grid-cols-2 gap-4">
             <div className="border rounded-xl p-4">
@@ -670,17 +646,6 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          {/* Step 1 navigation */}
-          <div className="flex justify-end mt-4">
-            <button type="button" onClick={() => setWizardStep(2)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] font-medium transition-colors">
-              Next <ArrowRight size={16} />
-            </button>
-          </div>
-          </div>
-
-          {/* ══ STEP 2: FAILURE ══ */}
-          <div style={{ display: wizardStep === 2 ? 'block' : 'none' }}>
           {/* 5. Catalogo de Falla */}
           <div className="border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -752,21 +717,6 @@ export default function FailureCapture({ onNavigateTab }) {
             </div>
           </div>
 
-          {/* Step 2 navigation */}
-          <div className="flex justify-between mt-4">
-            <button type="button" onClick={() => setWizardStep(1)}
-              className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
-              Back
-            </button>
-            <button type="button" onClick={() => setWizardStep(3)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] font-medium transition-colors">
-              Next <ArrowRight size={16} />
-            </button>
-          </div>
-          </div>
-
-          {/* ══ STEP 3: ACTION ══ */}
-          <div style={{ display: wizardStep === 3 ? 'block' : 'none' }}>
           {/* 6. Accion Sugerida */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Accion Sugerida</label>
@@ -985,15 +935,6 @@ export default function FailureCapture({ onNavigateTab }) {
             </div>
           </div>
         </div>
-
-          {/* Step 3 navigation */}
-          <div className="flex justify-between mt-4">
-            <button type="button" onClick={() => setWizardStep(2)}
-              className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
-              Back
-            </button>
-          </div>
-          </div>
 
         {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t p-5 flex justify-between items-center">

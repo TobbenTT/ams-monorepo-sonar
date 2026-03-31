@@ -65,6 +65,10 @@ export default function FailureCapture({ onNavigateTab }) {
     },
   };
 
+  
+  const [showExtModal, setShowExtModal] = useState(false);
+  const [extForm, setExtForm] = useState({ service: '', vendor: '', contract_ref: '', specialty: '', estimated_cost: '', duration_days: '', notes: '' });
+
   const SPECIAL_EQUIPMENT = [
     'Grua 20 Ton', 'Grua 50 Ton', 'Grua Horquilla', 'Andamio Multidireccional',
     'Andamio Tubular', 'Camion Pluma', 'Plataforma Elevadora', 'Soldadora MIG/MAG',
@@ -1423,10 +1427,15 @@ export default function FailureCapture({ onNavigateTab }) {
                     e.preventDefault();
                     const val = form.specialEquipment.trim();
                     const isInList = SPECIAL_EQUIPMENT.some(se => se.toLowerCase() === val.toLowerCase());
-                    const prefix = isInList ? '' : '[EXT] ';
-                    setF('supportEquipment', [...(form.supportEquipment || []), prefix + val]);
-                    setF('specialEquipment', '');
-                    setShowSpecEquip(false);
+                    if (isInList) {
+                      setF('supportEquipment', [...(form.supportEquipment || []), val]);
+                      setF('specialEquipment', '');
+                      setShowSpecEquip(false);
+                    } else {
+                      setExtForm(prev => ({ ...prev, service: val }));
+                      setShowExtModal(true);
+                      setShowSpecEquip(false);
+                    }
                   }
                 }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
@@ -1444,18 +1453,156 @@ export default function FailureCapture({ onNavigateTab }) {
                   ))}
                   {form.specialEquipment?.trim() && !SPECIAL_EQUIPMENT.some(se => se.toLowerCase() === form.specialEquipment.toLowerCase()) && (
                     <button onMouseDown={() => {
-                      setF('supportEquipment', [...(form.supportEquipment || []), '[EXT] ' + form.specialEquipment.trim()]);
-                      setF('specialEquipment', '');
+                      setExtForm(prev => ({ ...prev, service: form.specialEquipment.trim() }));
+                      setShowExtModal(true);
                       setShowSpecEquip(false);
                     }} className="w-full text-left px-3 py-2.5 text-xs hover:bg-purple-50 border-t-2 border-purple-200 bg-purple-50/50 text-purple-700 font-semibold">
                       <span className="bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded text-[10px] mr-1">EXT</span>
-                      Contratar externo: "{form.specialEquipment.trim()}"
+                      External Contract: "{form.specialEquipment.trim()}"
                     </button>
                   )}
                 </div>
               )}
             </div>
 
+
+      {/* ═══ EXTERNAL SERVICE CONTRACT MODAL (SAP-style) ═══ */}
+      {showExtModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowExtModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            {/* Header - SAP style */}
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-2xl px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-mono">SAP ME51N</span>
+                    External Service Request
+                  </h3>
+                  <p className="text-purple-200 text-xs mt-0.5">Framework Contract / Direct Procurement</p>
+                </div>
+                <button onClick={() => setShowExtModal(false)} className="text-white/70 hover:text-white p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              {/* Service description */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Service / Equipment Required</label>
+                <input value={extForm.service} onChange={e => setExtForm(p => ({...p, service: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                  placeholder="e.g. Crane 100 Ton, Specialized Welding..." />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Vendor */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Vendor / Contractor</label>
+                  <select value={extForm.vendor} onChange={e => setExtForm(p => ({...p, vendor: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500">
+                    <option value="">-- Select --</option>
+                    <option value="GRUAS_NORTE">Gruas del Norte SpA</option>
+                    <option value="SOLDADURAS_PRO">Soldaduras Profesionales Ltda</option>
+                    <option value="SERVICIOS_IND">Servicios Industriales OCP</option>
+                    <option value="MANTTO_EXTERNO">Mantenimiento Externo S.A.</option>
+                    <option value="EQUIP_ESPECIAL">Equipos Especiales Ltda</option>
+                    <option value="OTHER">Other (specify in notes)</option>
+                  </select>
+                </div>
+
+                {/* Specialty */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Specialty</label>
+                  <select value={extForm.specialty} onChange={e => setExtForm(p => ({...p, specialty: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500">
+                    <option value="">-- Select --</option>
+                    <option value="MECANICA">Mechanical</option>
+                    <option value="ELECTRICA">Electrical</option>
+                    <option value="SOLDADURA">Welding</option>
+                    <option value="IZAJE">Lifting / Rigging</option>
+                    <option value="INSTRUMENTACION">Instrumentation</option>
+                    <option value="CIVIL">Civil Works</option>
+                    <option value="ALINEACION">Alignment / Balancing</option>
+                    <option value="INSPECCION">Inspection / NDT</option>
+                    <option value="OTRO">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Contract reference */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Framework Contract</label>
+                  <input value={extForm.contract_ref} onChange={e => setExtForm(p => ({...p, contract_ref: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                    placeholder="e.g. CM-2026-0045" />
+                </div>
+
+                {/* Estimated cost */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Estimated Cost (USD)</label>
+                  <input type="number" min="0" step="100" value={extForm.estimated_cost} onChange={e => setExtForm(p => ({...p, estimated_cost: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                    placeholder="0" />
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Estimated Duration (days)</label>
+                <input type="number" min="1" value={extForm.duration_days} onChange={e => setExtForm(p => ({...p, duration_days: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                  placeholder="1" />
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Additional Notes</label>
+                <textarea rows={2} value={extForm.notes} onChange={e => setExtForm(p => ({...p, notes: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500/30 resize-none"
+                  placeholder="Scope details, safety requirements, certifications needed..." />
+              </div>
+
+              {/* Cost summary */}
+              {extForm.estimated_cost && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-center justify-between">
+                  <div className="text-xs text-purple-600">
+                    <div className="font-semibold uppercase">Cost Impact</div>
+                    <div className="text-[10px] text-purple-400 mt-0.5">{extForm.vendor || 'TBD'} · {extForm.specialty || 'TBD'} · {extForm.duration_days || '?'} days</div>
+                  </div>
+                  <div className="text-lg font-bold text-purple-800">${Number(extForm.estimated_cost || 0).toLocaleString()}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t px-6 py-3 rounded-b-2xl bg-gray-50 flex items-center justify-between">
+              <button onClick={() => setShowExtModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+                Cancel
+              </button>
+              <button onClick={() => {
+                const label = '[EXT] ' + extForm.service + (extForm.vendor ? ' (' + extForm.vendor + ')' : '') + (extForm.estimated_cost ? ' $' + Number(extForm.estimated_cost).toLocaleString() : '');
+                setF('supportEquipment', [...(form.supportEquipment || []), label]);
+
+                // Store external details in form for submission
+                const extDetails = [...(form.externalServices || []), { ...extForm }];
+                setF('externalServices', extDetails);
+
+                setF('specialEquipment', '');
+                setExtForm({ service: '', vendor: '', contract_ref: '', specialty: '', estimated_cost: '', duration_days: '', notes: '' });
+                setShowExtModal(false);
+              }}
+                disabled={!extForm.service}
+                className="px-5 py-2 text-sm font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Add External Service
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
           {/* 11b. Condiciones de Trabajo / Entorno */}
           <div className="border rounded-xl p-4">

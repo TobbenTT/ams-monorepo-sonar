@@ -121,6 +121,7 @@ export default function FailureCapture({ onNavigateTab }) {
     supportEquipment: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
   const [createdWRId, setCreatedWRId] = useState(null);
 
   // Equipment search
@@ -455,9 +456,25 @@ export default function FailureCapture({ onNavigateTab }) {
         </div>
 
         <div className="p-5 space-y-5">
+
+          {/* ── WIZARD STEPS ── */}
+          <div className="flex items-center justify-center gap-3 mb-4">
+            {[{n:1,l:'Step 1: Location',s:'Where it happened'},{n:2,l:'Step 2: Failure',s:'What happened'},{n:3,l:'Step 3: Action',s:'What to do'}].map((s,idx)=>(
+              <div key={s.n} className="flex items-center gap-2">
+                <button type="button" onClick={()=>s.n<=wizardStep?setWizardStep(s.n):null}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all ${wizardStep===s.n?'bg-[#1B5E20] text-white shadow-lg':wizardStep>s.n?'bg-emerald-100 text-emerald-700 cursor-pointer':'bg-gray-100 text-gray-400'}`}>
+                  {wizardStep>s.n?<CheckCircle size={14}/>:<span className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs font-bold">{s.n}</span>}
+                  <div className="text-left"><div className="text-xs">{s.l}</div><div className="text-[9px] opacity-70">{s.s}</div></div>
+                </button>
+                {idx<2&&<ArrowRight size={14} className="text-gray-300"/>}
+              </div>
+            ))}
+          </div>
+
           {/* Hidden camera input */}
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} className="hidden" />
 
+          <div style={{display:wizardStep===2?"block":"none"}}>
           {/* 1. Que paso? + Voice / Camera */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -506,6 +523,8 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
+          </div>{/* end section1 step2 wrapper */}
+          <div style={{display:wizardStep===1?"block":"none"}}>
           {/* 2. Condicion de Planta + Prioridad */}
           <div className="grid grid-cols-2 gap-4">
             <div className="border rounded-xl p-4">
@@ -646,6 +665,9 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
+          <div className="flex justify-end pt-3"><button type="button" onClick={()=>setWizardStep(2)} className="flex items-center gap-2 px-5 py-2 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] text-sm font-medium">Next <ArrowRight size={14}/></button></div>
+          </div>{/* end step 1 */}
+          <div style={{display:wizardStep===2?"block":"none"}}>
           {/* 5. Catalogo de Falla */}
           <div className="border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -717,6 +739,9 @@ export default function FailureCapture({ onNavigateTab }) {
             </div>
           </div>
 
+          <div className="flex justify-between pt-3"><button type="button" onClick={()=>setWizardStep(1)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Back</button><button type="button" onClick={()=>setWizardStep(3)} className="flex items-center gap-2 px-5 py-2 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] text-sm font-medium">Next <ArrowRight size={14}/></button></div>
+          </div>{/* end step 2 */}
+          <div style={{display:wizardStep===3?"block":"none"}}>
           {/* 6. Accion Sugerida */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Accion Sugerida</label>
@@ -936,6 +961,8 @@ export default function FailureCapture({ onNavigateTab }) {
           </div>
         </div>
 
+          <div className="flex justify-start pt-3"><button type="button" onClick={()=>setWizardStep(2)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Back</button></div>
+          </div>{/* end step 3 */}
         {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t p-5 flex justify-between items-center">
           <div className="text-xs text-gray-500">
@@ -949,7 +976,7 @@ export default function FailureCapture({ onNavigateTab }) {
             <button onClick={handleReset} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               Cancelar
             </button>
-            <button onClick={handleSubmit} disabled={submitting || !canSubmit}
+            <button onClick={handleSubmit} disabled={submitting || !canSubmit} style={{display:wizardStep===3?"inline-flex":"none"}}
               className="px-5 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2">
               {submitting
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Creando...</>

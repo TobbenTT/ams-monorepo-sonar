@@ -456,18 +456,12 @@ export default function FailureCapture({ onNavigateTab }) {
         </div>
 
         <div className="p-5 space-y-5">
-
-          {/* ── WIZARD STEPS ── */}
-          <div className="flex items-center justify-center gap-3 mb-4">
-            ))}
-          </div>
-
           {/* Wizard Stepper */}
           <div className="flex items-center justify-between mb-6 px-2">
             {[
-              { step: 1, label: 'Ubicacion', icon: '📍', desc: 'Donde ocurrio' },
-              { step: 2, label: 'Falla', icon: '⚠️', desc: 'Que paso' },
-              { step: 3, label: 'Accion', icon: '🔧', desc: 'Que hacer' },
+              { step: 1, label: 'Ubicacion', icon: '\ud83d\udccd', desc: 'Donde ocurrio' },
+              { step: 2, label: 'Falla', icon: '\u26a0\ufe0f', desc: 'Que paso' },
+              { step: 3, label: 'Accion', icon: '\ud83d\udd27', desc: 'Que hacer' },
             ].map((s, i) => (
               <div key={s.step} className="flex items-center flex-1">
                 <button type="button" onClick={() => setWizardStep(s.step)}
@@ -493,7 +487,6 @@ export default function FailureCapture({ onNavigateTab }) {
           {/* Hidden camera input */}
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} className="hidden" />
 
-          <div style={{display:wizardStep===2?"block":"none"}}>
           <div style={{display: wizardStep === 2 ? undefined : "none"}}>
           {/* 1. Que paso? + Voice / Camera */}
           <div>
@@ -543,8 +536,6 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          </div>{/* end section1 step2 wrapper */}
-          <div style={{display:wizardStep===1?"block":"none"}}>
           </div>
           <div style={{display: wizardStep === 1 ? undefined : "none"}}>
           {/* 2. Condicion de Planta + Prioridad */}
@@ -687,8 +678,6 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          </div>{/* end step 1 */}
-          <div style={{display:wizardStep===2?"block":"none"}}>
           </div>
           <div style={{display: wizardStep === 2 ? undefined : "none"}}>
           {/* 5. Catalogo de Falla */}
@@ -762,8 +751,6 @@ export default function FailureCapture({ onNavigateTab }) {
             </div>
           </div>
 
-          </div>{/* end step 2 */}
-          <div style={{display:wizardStep===3?"block":"none"}}>
           </div>
           <div style={{display: wizardStep === 3 ? undefined : "none"}}>
           {/* 6. Accion Sugerida */}
@@ -983,26 +970,31 @@ export default function FailureCapture({ onNavigateTab }) {
               ))}
             </div>
           </div>
+          </div>
         </div>
-
-          </div>{/* end step 3 */}
-        </div>{/* close p-5 space-y-5 */}
 
         {/* Wizard Navigation */}
         <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50">
-          <button type="button" onClick={() => setWizardStep(s => Math.max(1, s - 1))} disabled={wizardStep === 1}
+          <button type="button"
+            onClick={() => setWizardStep(s => Math.max(1, s - 1))}
+            disabled={wizardStep === 1}
             className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed">
-            ← Anterior
+            &larr; Anterior
           </button>
           <div className="flex items-center gap-1.5">
-            {[1,2,3].map(s => (<div key={s} className={`w-2.5 h-2.5 rounded-full transition-all ${wizardStep === s ? "bg-emerald-600 scale-125" : wizardStep > s ? "bg-emerald-300" : "bg-gray-300"}`} />))}
+            {[1,2,3].map(s => (
+              <div key={s} className={`w-2.5 h-2.5 rounded-full transition-all ${wizardStep === s ? "bg-emerald-600 scale-125" : wizardStep > s ? "bg-emerald-300" : "bg-gray-300"}`} />
+            ))}
           </div>
           {wizardStep < 3 ? (
-            <button type="button" onClick={() => setWizardStep(s => Math.min(3, s + 1))}
+            <button type="button"
+              onClick={() => setWizardStep(s => Math.min(3, s + 1))}
               className="px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
-              Siguiente →
+              Siguiente &rarr;
             </button>
-          ) : <span />}
+          ) : (
+            <span />
+          )}
         </div>
 
         {/* Footer */}
@@ -1018,7 +1010,7 @@ export default function FailureCapture({ onNavigateTab }) {
             <button onClick={handleReset} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               Cancelar
             </button>
-            <button onClick={handleSubmit} disabled={submitting || !canSubmit || wizardStep !== 3} style={{display:wizardStep===3?"inline-flex":"none"}}
+            <button onClick={handleSubmit} disabled={submitting || !canSubmit || wizardStep !== 3}
               className="px-5 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2">
               {submitting
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Creando...</>

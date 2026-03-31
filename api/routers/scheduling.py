@@ -53,7 +53,7 @@ def get_program(program_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/programs/{program_id}/finalize")
-def finalize_program(program_id: str, db: Session = Depends(get_db)):
+def finalize_program(program_id: str, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     result = scheduling_service.finalize_program(db, program_id)
     if not result:
         raise HTTPException(status_code=404, detail="Program not found")
@@ -61,7 +61,7 @@ def finalize_program(program_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/programs/{program_id}/activate")
-def activate_program(program_id: str, db: Session = Depends(get_db)):
+def activate_program(program_id: str, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     result = scheduling_service.activate_program(db, program_id)
     if not result:
         raise HTTPException(status_code=404, detail="Program not found")
@@ -69,7 +69,7 @@ def activate_program(program_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/programs/{program_id}/complete")
-def complete_program(program_id: str, db: Session = Depends(get_db)):
+def complete_program(program_id: str, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     result = scheduling_service.complete_program(db, program_id)
     if not result:
         raise HTTPException(status_code=404, detail="Program not found")

@@ -349,7 +349,7 @@ def verify_close_with_ai(
             )
             ai_summary = resp.content[0].text
         except Exception as e:
-            ai_summary = "AI verification unavailable: " + str(e)[:80]
+            ai_summary = "AI verification temporarily unavailable"
 
     ready = len(issues) == 0
     message_parts = []
@@ -441,7 +441,7 @@ def ai_estimate_duration(
             return result
         return {"predicted_hours": wo.get("estimated_hours", 4), "confidence": 50, "basis": "fallback", "ai_used": False}
     except Exception as e:
-        return {"predicted_hours": wo.get("estimated_hours", 4), "confidence": 30, "error": str(e)[:80], "ai_used": False}
+        return {"predicted_hours": wo.get("estimated_hours", 4), "confidence": 30, "error": "AI estimation unavailable", "ai_used": False}
 
 
 
@@ -458,22 +458,23 @@ def generate_closure_report(
 
     from io import BytesIO
     from datetime import datetime
+    from html import escape as esc
 
     # Build HTML report
     ops_html = ""
     for i, op in enumerate(wo.get("operations", []) or []):
         if isinstance(op, dict):
-            ops_html += f"<tr><td>{i+1}</td><td>{op.get('description','')}</td><td>{op.get('specialty','')}</td><td>{op.get('quantity',1)} x {op.get('hours',0)}h</td></tr>"
+            ops_html += f"<tr><td>{i+1}</td><td>{esc(str(op.get('description','')))}</td><td>{esc(str(op.get('specialty','')))}</td><td>{esc(str(op.get('quantity',1)))} x {esc(str(op.get('hours',0)))}h</td></tr>"
 
     mats_html = ""
     for m in wo.get("materials", []) or []:
         if isinstance(m, dict):
-            mats_html += f"<tr><td>{m.get('sapId', m.get('code',''))}</td><td>{m.get('description','')}</td><td>{m.get('quantity',0)} {m.get('unit','PZ')}</td></tr>"
+            mats_html += f"<tr><td>{esc(str(m.get('sapId', m.get('code',''))))}</td><td>{esc(str(m.get('description','')))}</td><td>{esc(str(m.get('quantity',0)))} {esc(str(m.get('unit','PZ')))}</td></tr>"
 
     notes_html = ""
     for n in wo.get("execution_notes", []) or []:
         if isinstance(n, dict):
-            notes_html += f"<tr><td>{n.get('timestamp','')[:16]}</td><td>{n.get('user','')}</td><td>{n.get('note','')}</td></tr>"
+            notes_html += f"<tr><td>{esc(str(n.get('timestamp',''))[:16])}</td><td>{esc(str(n.get('user','')))}</td><td>{esc(str(n.get('note','')))}</td></tr>"
 
     variance = ""
     est = wo.get("estimated_hours", 0) or 0
@@ -501,15 +502,15 @@ th {{ background: #E8F5E9; color: #1B5E20; font-weight: bold; }}
 .footer {{ margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #999; }}
 </style></head><body>
 <div class="header">
-  <h1>WO Closure Report — {wo.get("wo_number","")}</h1>
-  <span class="badge" style="background:#E8F5E9;color:#1B5E20">{wo.get("status","")}</span>
+  <h1>WO Closure Report — {esc(str(wo.get("wo_number","")))}</h1>
+  <span class="badge" style="background:#E8F5E9;color:#1B5E20">{esc(str(wo.get("status","")))}</span>
 </div>
 
 <div class="info-grid">
-  <div class="info-item"><div class="info-label">Equipment</div><div class="info-value">{wo.get("equipment_tag","")}</div></div>
-  <div class="info-item"><div class="info-label">WO Type</div><div class="info-value">{wo.get("wo_type","")}</div></div>
-  <div class="info-item"><div class="info-label">Priority</div><div class="info-value">{wo.get("priority_code","")}</div></div>
-  <div class="info-item"><div class="info-label">Plant</div><div class="info-value">{wo.get("plant_id","")}</div></div>
+  <div class="info-item"><div class="info-label">Equipment</div><div class="info-value">{esc(str(wo.get("equipment_tag","")))}</div></div>
+  <div class="info-item"><div class="info-label">WO Type</div><div class="info-value">{esc(str(wo.get("wo_type","")))}</div></div>
+  <div class="info-item"><div class="info-label">Priority</div><div class="info-value">{esc(str(wo.get("priority_code","")))}</div></div>
+  <div class="info-item"><div class="info-label">Plant</div><div class="info-value">{esc(str(wo.get("plant_id","")))}</div></div>
   <div class="info-item"><div class="info-label">Planned Hours</div><div class="info-value">{est}h</div></div>
   <div class="info-item"><div class="info-label">Actual Hours</div><div class="info-value">{act}h {variance}</div></div>
   <div class="info-item"><div class="info-label">Planned Start</div><div class="info-value">{wo.get("planned_start","—")}</div></div>
@@ -519,7 +520,7 @@ th {{ background: #E8F5E9; color: #1B5E20; font-weight: bold; }}
 </div>
 
 <h2>Description</h2>
-<p>{wo.get("description","No description")}</p>
+<p>{esc(str(wo.get("description","No description")))}</p>
 
 <h2>Operations</h2>
 <table><tr><th>#</th><th>Description</th><th>Specialty</th><th>Resources</th></tr>{ops_html or "<tr><td colspan=4>No operations recorded</td></tr>"}</table>
@@ -540,7 +541,7 @@ th {{ background: #E8F5E9; color: #1B5E20; font-weight: bold; }}
 <table><tr><th>Time</th><th>User</th><th>Note</th></tr>{notes_html or "<tr><td colspan=3>No notes</td></tr>"}</table>
 
 <div class="footer">
-  Generated {datetime.now().strftime("%Y-%m-%d %H:%M")} | OCP Maintenance Platform | {wo.get("wo_number","")}
+  Generated {datetime.now().strftime("%Y-%m-%d %H:%M")} | OCP Maintenance Platform | {esc(str(wo.get("wo_number","")))}
 </div>
 </body></html>"""
 

@@ -312,13 +312,19 @@ def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(req
 
 
 @router.put("/{request_id}/cancel")
-def cancel_work_request(request_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Cancel a work request."""
+def cancel_work_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_role("admin", "manager", "planner")),
+):
+    """Cancel a work request. Requires planner+ role. Cannot cancel already approved/closed WRs."""
     from api.database.models import WorkRequestModel
     from datetime import datetime
     wr_model = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
     if not wr_model:
         raise HTTPException(status_code=404, detail="Work request not found")
+    if wr_model.status in ("CERRADO", "CLOSED", "COMPLETED"):
+        raise HTTPException(status_code=400, detail="Cannot cancel a closed work request")
     wr_model.status = "CANCELADO"
     wr_model.updated_at = datetime.now()
     db.commit()

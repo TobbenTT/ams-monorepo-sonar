@@ -3,19 +3,21 @@ import { useOutletContext } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { LoadingSpinner } from '../components/Shared';
 import { useLanguage } from '../contexts/LanguageContext';
-import { AlertTriangle, ClipboardList, CalendarRange, Calendar } from 'lucide-react';
+import { AlertTriangle, ClipboardList, CalendarRange, Calendar, Wrench } from 'lucide-react';
 import * as api from '../api';
 
 const FailureCapture = lazy(() => import('./FailureCapture'));
 const WorkRequests = lazy(() => import('./WorkRequests'));
 const Planning = lazy(() => import('./Planning'));
 const Scheduling = lazy(() => import('./Scheduling'));
+const Execution = lazy(() => import('./Execution'));
 
 const TABS = [
   { id: 'failure-capture', label: 'Failure Capture',  icon: AlertTriangle,  component: FailureCapture },
   { id: 'identification',  label: 'Identification',   icon: ClipboardList,  component: WorkRequests },
   { id: 'planning',        label: 'Planning',         icon: CalendarRange,  component: Planning },
   { id: 'scheduling',      label: 'Scheduling',       icon: Calendar,       component: Scheduling },
+  { id: 'execution',       label: 'Execution',        icon: Wrench,         component: Execution },
 ];
 
 export default function WorkManagement() {

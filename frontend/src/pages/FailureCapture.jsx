@@ -68,6 +68,10 @@ export default function FailureCapture({ onNavigateTab }) {
   
   const [showExtModal, setShowExtModal] = useState(false);
   const [showExtMatModal, setShowExtMatModal] = useState(false);
+  const [showExtResModal, setShowExtResModal] = useState(false);
+  const [extResIdx, setExtResIdx] = useState(-1);
+  const [extResForm, setExtResForm] = useState({ specialty: '', vendor: '', vendor_other: '', contract_ref: '', rate_per_hour: '', estimated_hours: '', estimated_cost: '', notes: '' });
+
   const [extMatIdx, setExtMatIdx] = useState(-1);
   const [extMatForm, setExtMatForm] = useState({ description: '', vendor: '', vendor_other: '', part_number: '', estimated_cost: '', lead_time_days: '', notes: '' });
 
@@ -1288,9 +1292,15 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="border rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recursos Necesarios</label>
-              <button onClick={addResource} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
-                + Agregar
-              </button>
+              <div className="flex gap-2">
+                <button onClick={addResource} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
+                  + Add
+                </button>
+                <button onClick={() => { setExtResIdx(-1); setExtResForm({ specialty: '', vendor: '', vendor_other: '', contract_ref: '', rate_per_hour: '', estimated_hours: '', estimated_cost: '', notes: '' }); setShowExtResModal(true); }}
+                  className="text-xs font-semibold px-3 py-1 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors">
+                  + External
+                </button>
+              </div>
             </div>
             {form.resources.length === 0 ? (
               <div className="grid grid-cols-3 gap-2">
@@ -1301,7 +1311,7 @@ export default function FailureCapture({ onNavigateTab }) {
             ) : (
               <div className="space-y-2">
                 {form.resources.map((res, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-gray-50">
+                  <div key={i} className={"grid grid-cols-3 gap-2 p-2 rounded-lg " + (res.isExternal ? "bg-purple-50/50 border border-purple-200" : "bg-gray-50")}>
                     <div className="relative">
                       <input type="text" placeholder="Tipo" value={res.type}
                         onChange={e => { updateResource(i, 'type', e.target.value); setActiveResTypeIdx(i); }}
@@ -1314,6 +1324,17 @@ export default function FailureCapture({ onNavigateTab }) {
                             <button key={rt} onClick={() => { updateResource(i, 'type', rt); setActiveResTypeIdx(-1); }}
                               className="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 border-b last:border-b-0">{rt}</button>
                           ))}
+                          {res.type && res.type.trim() && !RESOURCE_TYPES.some(rt => rt.toLowerCase() === res.type.toLowerCase()) && (
+                            <button onClick={() => {
+                              setExtResIdx(i);
+                              setExtResForm(prev => ({ ...prev, specialty: res.type.trim() }));
+                              setShowExtResModal(true);
+                              setActiveResTypeIdx(-1);
+                            }} className="w-full text-left px-3 py-2.5 text-xs hover:bg-purple-50 border-t-2 border-purple-200 bg-purple-50/50 text-purple-700 font-semibold">
+                              <span className="bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded text-[10px] mr-1">EXT</span>
+                              External Contract: "{res.type.trim()}"
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1424,6 +1445,134 @@ export default function FailureCapture({ onNavigateTab }) {
           </div>
 
 
+
+
+      {/* ═══ EXTERNAL RESOURCE / CONTRACT MODAL (SAP style) ═══ */}
+      {showExtResModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowExtResModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-t-2xl px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-mono">SAP PM03</span>
+                    External Resource Contract
+                  </h3>
+                  <p className="text-blue-200 text-xs mt-0.5">Framework Contract / External Workforce</p>
+                </div>
+                <button onClick={() => setShowExtResModal(false)} className="text-white/70 hover:text-white p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Specialty / Service Type</label>
+                <input value={extResForm.specialty} onChange={e => setExtResForm(p => ({...p, specialty: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                  placeholder="e.g. Specialized Welder, Crane Operator..." />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Contractor / Vendor</label>
+                  <select value={extResForm.vendor} onChange={e => setExtResForm(p => ({...p, vendor: e.target.value, vendor_other: e.target.value === 'OTHER' ? p.vendor_other : ''}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+                    <option value="">-- Select --</option>
+                    <option value="GRUAS_NORTE">Gruas del Norte SpA</option>
+                    <option value="SOLDADURAS_PRO">Soldaduras Profesionales Ltda</option>
+                    <option value="SERVICIOS_IND">Servicios Industriales OCP</option>
+                    <option value="MANTTO_EXTERNO">Mantenimiento Externo S.A.</option>
+                    <option value="EQUIP_ESPECIAL">Equipos Especiales Ltda</option>
+                    <option value="OTHER">Other...</option>
+                  </select>
+                  {extResForm.vendor === 'OTHER' && (
+                    <input value={extResForm.vendor_other || ''} onChange={e => setExtResForm(p => ({...p, vendor_other: e.target.value}))}
+                      className="w-full mt-1.5 border border-indigo-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/30 bg-indigo-50/30"
+                      placeholder="Contractor name..." autoFocus />
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Framework Contract</label>
+                  <input value={extResForm.contract_ref} onChange={e => setExtResForm(p => ({...p, contract_ref: e.target.value}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                    placeholder="e.g. CM-2026-0045" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Rate ($/hr)</label>
+                  <input type="number" min="0" step="5" value={extResForm.rate_per_hour} onChange={e => setExtResForm(p => ({...p, rate_per_hour: e.target.value, estimated_cost: (parseFloat(e.target.value)||0) * (parseFloat(p.estimated_hours)||0)}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/30"
+                    placeholder="75" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Est. Hours</label>
+                  <input type="number" min="0" step="0.5" value={extResForm.estimated_hours} onChange={e => setExtResForm(p => ({...p, estimated_hours: e.target.value, estimated_cost: (parseFloat(p.rate_per_hour)||0) * (parseFloat(e.target.value)||0)}))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/30"
+                    placeholder="8" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Total Cost</label>
+                  <div className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm font-bold text-indigo-700">
+                    ${Number(extResForm.estimated_cost || 0).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Notes</label>
+                <textarea rows={2} value={extResForm.notes} onChange={e => setExtResForm(p => ({...p, notes: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/30 resize-none"
+                  placeholder="Certifications required, shift schedule, safety briefing..." />
+              </div>
+
+              {extResForm.estimated_cost > 0 && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 flex items-center justify-between">
+                  <div className="text-xs text-indigo-600">
+                    <div className="font-semibold uppercase">Contract Cost</div>
+                    <div className="text-[10px] text-indigo-400 mt-0.5">
+                      {extResForm.vendor === 'OTHER' ? (extResForm.vendor_other || 'TBD') : (extResForm.vendor || 'TBD')}
+                      {extResForm.contract_ref ? ' / ' + extResForm.contract_ref : ''}
+                      {' / '}{extResForm.rate_per_hour || '?'}$/hr x {extResForm.estimated_hours || '?'}h
+                    </div>
+                  </div>
+                  <div className="text-lg font-bold text-indigo-800">${Number(extResForm.estimated_cost || 0).toLocaleString()}</div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t px-6 py-3 rounded-b-2xl bg-gray-50 flex items-center justify-between">
+              <button onClick={() => setShowExtResModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+              <button onClick={() => {
+                const vendorName = extResForm.vendor === 'OTHER' ? (extResForm.vendor_other || '') : (extResForm.vendor || '');
+                const typeName = '[EXT] ' + extResForm.specialty + (vendorName ? ' (' + vendorName + ')' : '');
+                const hours = extResForm.estimated_hours || '0';
+                const qty = '1';
+
+                if (extResIdx >= 0 && extResIdx < form.resources.length) {
+                  const updated = [...form.resources];
+                  updated[extResIdx] = { type: typeName, quantity: qty, hours: hours, isExternal: true, extDetails: { ...extResForm, vendor: vendorName } };
+                  setF('resources', updated);
+                } else {
+                  setF('resources', [...form.resources, { type: typeName, quantity: qty, hours: hours, isExternal: true, extDetails: { ...extResForm, vendor: vendorName } }]);
+                }
+
+                setExtResForm({ specialty: '', vendor: '', vendor_other: '', contract_ref: '', rate_per_hour: '', estimated_hours: '', estimated_cost: '', notes: '' });
+                setShowExtResModal(false);
+              }}
+                disabled={!extResForm.specialty}
+                className="px-5 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Add External Resource
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ EXTERNAL MATERIAL / DIRECT PURCHASE MODAL (SAP ME51N style) ═══ */}
       {showExtMatModal && (

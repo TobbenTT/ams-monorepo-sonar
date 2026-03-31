@@ -169,7 +169,7 @@ export default function Reports() {
                     rows: [
                         ['Plan Adherence', `${adh}%`, '≥90%', adh >= 90 ? 'OK' : 'Below Target'],
                         ['WO Completed', `${wos.filter(w => w.status === 'COMPLETED').length}/${wos.length}`, '≥80%', 'OK'],
-                        ['Avisos Pendientes', String(workRequests.filter(w => w.status === 'PENDING_VALIDATION' || w.status === 'DRAFT').length), '≤3', ''],
+                        ['Avisos Pendings', String(workRequests.filter(w => w.status === 'PENDING_VALIDATION' || w.status === 'DRAFT').length), '≤3', ''],
                         ['Total Backlog', String(backlogItems.length), '≤8', ''],
                         ['Planned Hours', `${week.planned_hours ?? 0}h`, '', ''],
                         ['Executed Hours', `${week.executed_hours ?? 0}h`, '', ''],

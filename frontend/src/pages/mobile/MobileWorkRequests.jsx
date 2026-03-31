@@ -8,7 +8,7 @@ import { useToast } from '../../components/Toast';
 import * as api from '../../api';
 
 const PRIORITY_META = {
-    P1: { bg: '#FEE2E2', text: '#991B1B', label: '1-Urgente', sub: '<24h' },
+    P1: { bg: '#FEE2E2', text: '#991B1B', label: '1-Urgent', sub: '<24h' },
     P2: { bg: '#FED7AA', text: '#9A3412', label: '2-Prog. Ejec.', sub: '<7d' },
     P3: { bg: '#FEF3C7', text: '#92400E', label: '3-Próx. Prog.', sub: '> 7d' },
     P4: { bg: '#DBEAFE', text: '#1E40AF', label: '4-Parada Planta', sub: 'Parada' },
@@ -30,14 +30,14 @@ function flowStatus(s) {
 const FLOW_STEPS = [
     { key: 'created', label: 'Creado', color: '#94A3B8' },
     { key: 'in_review', label: 'En Revisión', color: '#3B82F6' },
-    { key: 'approved', label: 'Aprobado', color: '#10B981' },
+    { key: 'approved', label: 'Approved', color: '#10B981' },
     { key: 'in_execution', label: 'En Ejecución', color: '#F59E0B' },
     { key: 'closed', label: 'Cerrado', color: '#6366F1' },
 ];
 
 const STATUS_LABELS = {
-    created: 'Creado', in_review: 'En Revisión', approved: 'Aprobado',
-    in_execution: 'En Ejecución', closed: 'Cerrado', rejected: 'Rechazado',
+    created: 'Creado', in_review: 'En Revisión', approved: 'Approved',
+    in_execution: 'En Ejecución', closed: 'Cerrado', rejected: 'Rejected',
 };
 
 function derivePriority(wr) {
@@ -184,7 +184,7 @@ export default function MobileWorkRequests() {
                             onClick={() => { setSelectedStatus('created'); setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }} />
                         <MetricCard icon={Zap} color="#F59E0B" label="En Proceso" value={inProcess}
                             onClick={() => { setSelectedStatus('in_process'); setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }} />
-                        <MetricCard icon={Clock} color="#F97316" label="Pendiente Acción" value={pendingAction}
+                        <MetricCard icon={Clock} color="#F97316" label="Pending Acción" value={pendingAction}
                             onClick={() => { setSelectedStatus('pending_action'); setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }} />
                         <MetricCard icon={AlertTriangle} color="#EF4444" label="Con Retraso" value={delayed} border
                             onClick={() => { setSelectedStatus('delayed'); setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }} />
@@ -265,7 +265,7 @@ export default function MobileWorkRequests() {
                             <ProblemCard
                                 icon={Zap} iconBg="#FED7AA" iconColor="#F97316"
                                 gradient="from-orange-50 to-yellow-50" border="#FDBA74"
-                                title={`${atRiskWRs.length} Avisos de Alta Prioridad Sin Revisar`}
+                                title={`${atRiskWRs.length} Avisos de Alta Priority Sin Revisar`}
                                 subtitle="P1/P2 creados pero no aprobados aún"
                                 titleColor="#9A3412" subtitleColor="#7C2D12"
                                 items={atRiskWRs} badgeBg="#FED7AA" badgeColor="#9A3412"
@@ -276,7 +276,7 @@ export default function MobileWorkRequests() {
 
                 {/* 4. CARGA DE TRABAJO POR PRIORIDAD */}
                 <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
-                    <div className="text-sm font-bold mb-4" style={{ color: '#0F172A' }}>Carga de Trabajo por Prioridad</div>
+                    <div className="text-sm font-bold mb-4" style={{ color: '#0F172A' }}>Carga de Trabajo por Priority</div>
                     <div className="space-y-3">
                         {loadByPriority.map(item => {
                             const pct = enriched.length > 0 ? Math.round((item.count / enriched.length) * 100) : 0;
@@ -342,7 +342,7 @@ export default function MobileWorkRequests() {
                         <div className="text-sm font-bold" style={{ color: '#0F172A' }}>Avisos Activos</div>
                         {selectedStatus !== 'all' && (
                             <button onClick={() => setSelectedStatus('all')} className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#047857' }}>
-                                Ver todos
+                                View alls
                             </button>
                         )}
                     </div>

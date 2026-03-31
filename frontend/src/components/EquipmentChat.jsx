@@ -18,7 +18,7 @@ function simpleMarkdown(text) {
 }
 
 const QUICK_ASKS = [
-  'Historial de fallas',
+  'History de fallas',
   'Materiales frecuentes',
   'Ultima intervención',
 ];

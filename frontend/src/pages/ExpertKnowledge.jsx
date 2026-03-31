@@ -38,7 +38,7 @@ export default function ExpertKnowledge() {
 
     useEffect(() => { load(); }, [load]);
 
-    if (loading) return <LoadingSpinner message="Cargando portal de expertos..." />;
+    if (loading) return <LoadingSpinner message="Loading portal de expertos..." />;
 
     const tabs = [
         { id: 'experts', label: 'Expert Directory', count: experts.length },

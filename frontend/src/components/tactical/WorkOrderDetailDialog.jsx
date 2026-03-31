@@ -101,7 +101,7 @@ export default function WorkOrderDetailDialog({
                 <p className="font-semibold text-yellow-800">Atención requerida</p>
                 <p className="text-sm text-yellow-700 mt-1">
                   {isOverdue && `SLA vencido (límite: ${fmtDate(raw.sla_deadline)}). `}
-                  {(priority === 'P1' || priority === 'P2') && `Prioridad alta (${priority}).`}
+                  {(priority === 'P1' || priority === 'P2') && `Priority alta (${priority}).`}
                 </p>
               </div>
             </div>
@@ -185,7 +185,7 @@ export default function WorkOrderDetailDialog({
                     )}
                     {aiClass.recommended_priority && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Prioridad Sugerida</span>
+                        <span className="text-gray-600">Priority Sugerida</span>
                         <Badge className={PRIORITY_COLORS[aiClass.recommended_priority] || 'bg-gray-100'}>
                           {aiClass.recommended_priority}
                         </Badge>
@@ -238,7 +238,7 @@ export default function WorkOrderDetailDialog({
                   <h4 className="font-semibold mb-3">Aprobación</h4>
                   <div className="p-4 bg-emerald-50 rounded-lg space-y-2 mb-4">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Aprobado por</span>
+                      <span className="text-gray-600">Approved por</span>
                       <span className="font-medium">{raw.approver_id || '—'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -265,7 +265,7 @@ export default function WorkOrderDetailDialog({
               {/* Spare Parts */}
               {raw.spare_parts?.length > 0 && (
                 <>
-                  <h4 className="font-semibold mb-3">Repuestos Requeridos</h4>
+                  <h4 className="font-semibold mb-3">Spare parts Requeridos</h4>
                   <div className="border rounded-lg overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50">
@@ -325,7 +325,7 @@ export default function WorkOrderDetailDialog({
           </Button>
           <Button variant="outline" onClick={() => handlePrintWorkOrder(workOrder)}>
             <Printer className="w-4 h-4 mr-2" />
-            Imprimir
+            Print
           </Button>
           {isUrgent && onCreateAction && (
             <Button

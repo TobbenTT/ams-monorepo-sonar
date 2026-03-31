@@ -56,7 +56,7 @@ export default function Backlog() {
   // KPIs
   const totalBacklog = items.length;
   const totalHours = items.reduce((acc, b) => acc + (b.estimated_hours || 0), 0);
-  const p1Urgentes = items.filter((b) => b.priority === 'P1').length;
+  const p1Urgents = items.filter((b) => b.priority === 'P1').length;
   const sinMateriales = items.filter((b) => b.reason === 'AWAITING_MATERIALS').length;
 
   // Sort
@@ -147,7 +147,7 @@ export default function Backlog() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('backlog.urgentP1')}</p>
-            <p className="text-2xl font-bold text-red-700">{p1Urgentes}</p>
+            <p className="text-2xl font-bold text-red-700">{p1Urgents}</p>
             <p className="text-xs text-gray-400">{t('backlog.requireAction')}</p>
           </div>
         </div>

@@ -311,7 +311,7 @@ export default function LateWorkOrdersDetail({ onBack }) {
             <TableHeader>
               <TableRow className="bg-gray-50">
                 <TableHead className="font-semibold">ID de Orden</TableHead>
-                <TableHead className="font-semibold">Descripcion</TableHead>
+                <TableHead className="font-semibold">Description</TableHead>
                 <TableHead className="font-semibold">Area</TableHead>
                 <TableHead className="font-semibold">Criticidad</TableHead>
                 <TableHead className="font-semibold">Dias de Atraso</TableHead>

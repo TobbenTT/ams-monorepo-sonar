@@ -102,7 +102,7 @@ export default function FMECA() {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-        <span className="ml-2 text-sm text-gray-500">Cargando datos FMECA...</span>
+        <span className="ml-2 text-sm text-gray-500">Loading datos FMECA...</span>
       </div>
     );
   }
@@ -161,7 +161,7 @@ export default function FMECA() {
           <div className="space-y-3">
             {[
               { cls: 'CRITICO',    rule: 'Clase AA + RPN ≥ 150', action: 'Acción inmediata requerida. Intervención urgente.' },
-              { cls: 'ALTO',       rule: 'Clase AA + RPN ≥ 100', action: 'Prioridad alta. Planificar en próximo turno.' },
+              { cls: 'ALTO',       rule: 'Clase AA + RPN ≥ 100', action: 'Priority alta. Planificar en próximo turno.' },
               { cls: 'MEDIO-ALTO', rule: 'Clase A+ (cualquier RPN)', action: 'Incluir en próxima parada programada.' },
               { cls: 'MEDIO',      rule: 'Clase A (cualquier RPN)', action: 'Programar en plan mensual.' },
               { cls: 'BAJO',       rule: 'Resto de casos', action: 'Monitorear. Sin urgencia inmediata.' },

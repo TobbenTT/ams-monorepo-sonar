@@ -963,14 +963,14 @@ export default function MobileCreateWR() {
                     </div>
                 </div>
 
-                {/* 4. Recursos necesarios */}
+                {/* 4. Resources necesarios */}
                 <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
                     <div className="flex items-center justify-between mb-3">
                         <label className="text-xs font-semibold" style={{ color: '#64748B', letterSpacing: '0.05em' }}>
                             RECURSOS NECESARIOS *
                         </label>
                         <button onClick={addResource} className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#047857' }}>
-                            + Agregar
+                            + Add
                         </button>
                     </div>
                     {form.resources.length === 0 ? (
@@ -1058,7 +1058,7 @@ export default function MobileCreateWR() {
                             MATERIALES (SAP)
                         </label>
                         <button onClick={addMaterial} className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: '#ECFDF5', color: '#047857' }}>
-                            + Agregar
+                            + Add
                         </button>
                     </div>
                     {form.materials.length === 0 ? (
@@ -1223,12 +1223,12 @@ export default function MobileCreateWR() {
                     {form.plantCondition === 'stopped' && (
                         <div className="flex items-center gap-2 mt-3 p-3 rounded-xl" style={{ backgroundColor: '#FEE2E2', border: '1px solid #FECACA' }}>
                             <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#EF4444' }} />
-                            <span className="text-xs font-medium" style={{ color: '#B91C1C' }}>Equipo detenido — Prioridad ajustada a P1 (Urgente)</span>
+                            <span className="text-xs font-medium" style={{ color: '#B91C1C' }}>Equipo detenido — Priority ajustada a P1 (Urgent)</span>
                         </div>
                     )}
                 </div>
 
-                {/* 9. Prioridad + Clasificación SAP PM */}
+                {/* 9. Priority + Clasificación SAP PM */}
                 <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
                     <label className="text-xs font-semibold mb-3 block" style={{ color: '#64748B', letterSpacing: '0.05em' }}>
                         PRIORIDAD DEL AVISO
@@ -1350,7 +1350,7 @@ export default function MobileCreateWR() {
                         {[
                             { icon: FileText, label: 'Manual de Equipo', id: form.whereTag || '—' },
                             { icon: Wrench, label: 'Troubleshooting', id: 'TS-BOMBA' },
-                            { icon: Package, label: 'Catálogo Repuestos', id: 'CAT-REP' },
+                            { icon: Package, label: 'Catálogo Spare parts', id: 'CAT-REP' },
                         ].map((doc, i) => {
                             const Icon = doc.icon;
                             return (

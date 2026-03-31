@@ -9,7 +9,7 @@ import { useToast } from '../../components/Toast';
 import * as api from '../../api';
 
 const PRIORITY_META = {
-    P1: { label: '1 - Urgente', color: '#EF4444', bg: '#FEE2E2', sub: '< 24 horas', claseOT: 'PM03', claseOTLabel: 'No Programado' },
+    P1: { label: '1 - Urgent', color: '#EF4444', bg: '#FEE2E2', sub: '< 24 horas', claseOT: 'PM03', claseOTLabel: 'No Programado' },
     P2: { label: '2 - Programa en Ejecución', color: '#F97316', bg: '#FED7AA', sub: '< 7 días', claseOT: 'PM03', claseOTLabel: 'No Programado' },
     P3: { label: '3 - Próximo Programa', color: '#EAB308', bg: '#FEF3C7', sub: '> 7 días', claseOT: 'PM01', claseOTLabel: 'Programado' },
     P4: { label: '4 - Parada de Planta', color: '#3B82F6', bg: '#DBEAFE', sub: 'Parada programada', claseOT: 'PM01', claseOTLabel: 'Programado' },
@@ -23,7 +23,7 @@ const ACTIVITY_CLASS_LABELS = {
     IP: 'IP - Imprevisto',
     PV: 'PV - Preventivo',
     PD: 'PD - Predictivo',
-    CC: 'CC - Cambio Componentes',
+    CC: 'CC - Cambio Components',
     PP: 'PP - Parada Mayor',
 };
 
@@ -31,18 +31,18 @@ const STATUS_META = {
     DRAFT: { label: 'Borrador', color: '#94A3B8', step: 0 },
     PENDING_VALIDATION: { label: 'En Revisión', color: '#3B82F6', step: 1 },
     VALIDATED: { label: 'Validado', color: '#10B981', step: 2 },
-    APPROVED: { label: 'Aprobado', color: '#10B981', step: 2 },
+    APPROVED: { label: 'Approved', color: '#10B981', step: 2 },
     ACTIVE: { label: 'Activo', color: '#F59E0B', step: 3 },
-    IN_PROGRESS: { label: 'En Progreso', color: '#F59E0B', step: 3 },
+    IN_PROGRESS: { label: 'En Progress', color: '#F59E0B', step: 3 },
     ASSIGNED: { label: 'Asignado', color: '#8B5CF6', step: 3 },
     SCHEDULED: { label: 'Programado', color: '#8B5CF6', step: 3 },
-    COMPLETED: { label: 'Completado', color: '#047857', step: 4 },
+    COMPLETED: { label: 'Completed', color: '#047857', step: 4 },
     CLOSED: { label: 'Cerrado', color: '#6366F1', step: 4 },
-    REJECTED: { label: 'Rechazado', color: '#EF4444', step: -1 },
+    REJECTED: { label: 'Rejected', color: '#EF4444', step: -1 },
     CANCELLED: { label: 'Cancelado', color: '#6B7280', step: -1 },
 };
 
-const FLOW_STEPS = ['Creado', 'Revisión', 'Aprobado', 'Ejecución', 'Cerrado'];
+const FLOW_STEPS = ['Creado', 'Revisión', 'Approved', 'Ejecución', 'Cerrado'];
 const PLANT_CONDITION_LABELS = { operating: 'Operando', stopped: 'Detenida', partial: 'Parcial' };
 
 function derivePriority(wr) {
@@ -65,12 +65,12 @@ function parseOldText(text) {
 
     // Define extraction patterns — order matters (greedy patterns last)
     const extractions = [
-        { key: 'suggestedAction', re: /Acci[oó]n sugerida:\s*(.+?)(?=\s*(?:Recursos:|Duraci[oó]n estimada:|Equipos especiales:|Condici[oó]n (?:planta|equipo|del equipo):|Prioridad:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
-        { key: 'resourcesText', re: /Recursos:\s*(.+?)(?=\s*(?:Duraci[oó]n estimada:|Equipos especiales:|Condici[oó]n (?:planta|equipo|del equipo):|Prioridad:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
+        { key: 'suggestedAction', re: /Acci[oó]n sugerida:\s*(.+?)(?=\s*(?:Resources:|Duraci[oó]n estimada:|Equipos especiales:|Condici[oó]n (?:planta|equipo|del equipo):|Priority:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
+        { key: 'resourcesText', re: /Resources:\s*(.+?)(?=\s*(?:Duraci[oó]n estimada:|Equipos especiales:|Condici[oó]n (?:planta|equipo|del equipo):|Priority:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
         { key: 'estimatedDurationText', re: /Duraci[oó]n estimada:\s*(\d+\.?\d*)h?/i },
-        { key: 'specialEquipment', re: /Equipos especiales:\s*(.+?)(?=\s*(?:Condici[oó]n (?:planta|equipo|del equipo):|Prioridad:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
+        { key: 'specialEquipment', re: /Equipos especiales:\s*(.+?)(?=\s*(?:Condici[oó]n (?:planta|equipo|del equipo):|Priority:|Ubicaci[oó]n t[eé]cnica:|Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
         { key: 'plantCondition', re: /Condici[oó]n (?:planta|equipo|del equipo):\s*(\S+)/i },
-        { key: 'priorityText', re: /Prioridad:\s*(\S+)/i },
+        { key: 'priorityText', re: /Priority:\s*(\S+)/i },
         { key: 'locationText', re: /Ubicaci[oó]n t[eé]cnica:\s*(.+?)(?=\s*(?:Materiales:|Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
         { key: 'materialsText', re: /Materiales:\s*(.+?)(?=\s*(?:Cat[aá]logo falla|Parte objeto:|Causa:|$))/i },
         { key: '_catalogFull', re: /Cat[aá]logo falla\s*\[(.+?)\]\s*[—-]\s*S[ií]ntoma:\s*(.+?)(?=\s*(?:Parte objeto:|Causa:|$))/i },
@@ -272,7 +272,7 @@ export default function MobileWRDetail() {
             const wo = await api.createWOFromWR({ work_request_id: wr.request_id });
             toast.success(`OT ${wo.wo_number || ''} creada desde aviso`);
             loadWr();
-        } catch (e) { toast.error('Error al crear OT: ' + (e.message || e)); }
+        } catch (e) { toast.error('Error creating OT: ' + (e.message || e)); }
         setActionLoading(false);
     };
 
@@ -545,7 +545,7 @@ export default function MobileWRDetail() {
                     <div className="flex items-center gap-3 p-3 rounded-xl mb-3" style={{ backgroundColor: pm.bg }}>
                         <AlertTriangle className="w-5 h-5 flex-shrink-0" style={{ color: pm.color }} />
                         <div className="flex-1">
-                            <div className="text-sm font-bold" style={{ color: pm.color }}>Prioridad {pm.label}</div>
+                            <div className="text-sm font-bold" style={{ color: pm.color }}>Priority {pm.label}</div>
                             <div className="text-xs" style={{ color: pm.color }}>Plazo: {pm.sub}</div>
                         </div>
                     </div>
@@ -592,7 +592,7 @@ export default function MobileWRDetail() {
                                 <div className="flex items-center gap-3 px-1">
                                     <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#F59E0B' }} />
                                     <div className="flex-1">
-                                        <div className="text-xs" style={{ color: '#64748B' }}>Prioridad</div>
+                                        <div className="text-xs" style={{ color: '#64748B' }}>Priority</div>
                                         <select
                                             value={editData.priority || 'P3'}
                                             onChange={(e) => setEditData(prev => ({ ...prev, priority: e.target.value }))}
@@ -641,7 +641,7 @@ export default function MobileWRDetail() {
                                     style={{ backgroundColor: '#047857', color: '#FFFFFF' }}
                                 >
                                     <CheckCircle2 className="w-5 h-5" />
-                                    Guardar y Aprobar
+                                    Save y Approve
                                 </button>
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
@@ -651,14 +651,14 @@ export default function MobileWRDetail() {
                                         style={{ backgroundColor: '#EEF2FF', color: '#4F46E5' }}
                                     >
                                         <Save className="w-4 h-4" />
-                                        Solo Guardar
+                                        Solo Save
                                     </button>
                                     <button
                                         onClick={() => setEditing(false)}
                                         className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-95"
                                         style={{ backgroundColor: '#F1F5F9', color: '#64748B' }}
                                     >
-                                        Cancelar Edición
+                                        Cancel Edición
                                     </button>
                                 </div>
                             </div>
@@ -672,7 +672,7 @@ export default function MobileWRDetail() {
                                         style={{ backgroundColor: '#047857', color: '#FFFFFF' }}
                                     >
                                         <CheckCircle2 className="w-5 h-5" />
-                                        Aprobar
+                                        Approve
                                     </button>
                                     <button
                                         onClick={() => setShowRejectForm(true)}
@@ -681,7 +681,7 @@ export default function MobileWRDetail() {
                                         style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}
                                     >
                                         <XCircle className="w-5 h-5" />
-                                        Rechazar
+                                        Reject
                                     </button>
                                 </div>
                                 <button
@@ -691,7 +691,7 @@ export default function MobileWRDetail() {
                                     style={{ backgroundColor: '#F1F5F9', color: '#64748B' }}
                                 >
                                     <XCircle className="w-5 h-5" />
-                                    Cancelar Aviso
+                                    Cancel Aviso
                                 </button>
                             </div>
                         ) : (
@@ -713,7 +713,7 @@ export default function MobileWRDetail() {
                                         className="py-3 rounded-xl font-bold text-sm transition-all active:scale-95"
                                         style={{ backgroundColor: '#F1F5F9', color: '#64748B' }}
                                     >
-                                        Cancelar
+                                        Cancel
                                     </button>
                                     <button
                                         onClick={handleReject}
@@ -721,7 +721,7 @@ export default function MobileWRDetail() {
                                         className="py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
                                         style={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}
                                     >
-                                        Confirmar Rechazo
+                                        Confirm Rechazo
                                     </button>
                                 </div>
                             </div>
@@ -734,7 +734,7 @@ export default function MobileWRDetail() {
                     <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-4 border-2" style={{ borderColor: '#FCA5A5' }}>
                         <div className="flex items-center gap-2 mb-2">
                             <XCircle className="w-5 h-5" style={{ color: '#EF4444' }} />
-                            <span className="text-sm font-bold" style={{ color: '#991B1B' }}>Aviso Rechazado</span>
+                            <span className="text-sm font-bold" style={{ color: '#991B1B' }}>Aviso Rejected</span>
                         </div>
                         {wr.validation?.modifications?.reason && (
                             <p className="text-sm" style={{ color: '#7C2D12' }}>{wr.validation.modifications.reason}</p>
@@ -747,7 +747,7 @@ export default function MobileWRDetail() {
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border-2" style={{ borderColor: '#86EFAC' }}>
                         <div className="flex items-center gap-2 mb-3">
                             <CheckCircle2 className="w-5 h-5" style={{ color: '#16A34A' }} />
-                            <span className="text-sm font-bold" style={{ color: '#166534' }}>Aviso Aprobado</span>
+                            <span className="text-sm font-bold" style={{ color: '#166534' }}>Aviso Approved</span>
                         </div>
                         {!showAssignPanel ? (
                             <div className="space-y-2">
@@ -794,7 +794,7 @@ export default function MobileWRDetail() {
                                 />
                                 <div className="max-h-56 overflow-y-auto space-y-2">
                                     {techLoading ? (
-                                        <div className="text-center py-4 text-sm" style={{ color: '#94A3B8' }}>Cargando técnicos...</div>
+                                        <div className="text-center py-4 text-sm" style={{ color: '#94A3B8' }}>Loading técnicos...</div>
                                     ) : technicians
                                         .filter(t => t.available !== false)
                                         .filter(t => !techFilter || t.name?.toLowerCase().includes(techFilter.toLowerCase()) || t.specialty?.toLowerCase().includes(techFilter.toLowerCase()))
@@ -834,7 +834,7 @@ export default function MobileWRDetail() {
                                         className="py-3 rounded-xl font-bold text-sm"
                                         style={{ backgroundColor: '#F1F5F9', color: '#64748B' }}
                                     >
-                                        Cancelar
+                                        Cancel
                                     </button>
                                     <button
                                         onClick={handleAssign}

@@ -50,7 +50,7 @@ export default function Financial() {
         setRoiLoading(false);
     };
 
-    if (loading) return <LoadingSpinner message="Cargando datos financieros..." />;
+    if (loading) return <LoadingSpinner message="Loading datos financieros..." />;
 
     const summary = data?.summary || {};
     const budget = data?.budget || {};

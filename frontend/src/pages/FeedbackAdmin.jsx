@@ -102,11 +102,11 @@ export default function FeedbackAdmin() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={load} className="flex items-center gap-2">
-            <RefreshCw className="w-4 h-4" /> Actualizar
+            <RefreshCw className="w-4 h-4" /> Refresh
           </Button>
           <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={handleDownloadJSON} disabled={downloading}>
             <Download className="w-4 h-4" />
-            {downloading ? 'Descargando...' : 'Descargar JSON'}
+            {downloading ? 'Descargando...' : 'Download JSON'}
           </Button>
         </div>
       </div>
@@ -150,7 +150,7 @@ export default function FeedbackAdmin() {
           <option value="">Todos los estados</option>
           <option value="new">Nuevo</option>
           <option value="reviewed">Revisado</option>
-          <option value="in_progress">En Progreso</option>
+          <option value="in_progress">En Progress</option>
           <option value="resolved">Resuelto</option>
           <option value="closed">Cerrado</option>
         </select>
@@ -208,7 +208,7 @@ export default function FeedbackAdmin() {
                   <div className="border-t px-4 pb-4 pt-3 space-y-3 bg-gray-50/50">
                     {fb.description && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Descripcion</div>
+                        <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Description</div>
                         <p className="text-sm text-gray-700 whitespace-pre-wrap">{fb.description}</p>
                       </div>
                     )}
@@ -284,7 +284,7 @@ export default function FeedbackAdmin() {
                     )}
 
                     {fb.component && (
-                      <div className="text-sm"><span className="text-gray-500">Componente:</span> <span className="font-medium">{fb.component}</span></div>
+                      <div className="text-sm"><span className="text-gray-500">Component:</span> <span className="font-medium">{fb.component}</span></div>
                     )}
 
                     {/* Context info */}

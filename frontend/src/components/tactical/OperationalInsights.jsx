@@ -47,7 +47,7 @@ function computeInsights(workRequests) {
       type: 'deviation',
       severity: overdue.length >= 5 ? 'critical' : 'warning',
       title: `${overdue.length} Solicitudes Vencidas (SLA)`,
-      description: `Hay ${overdue.length} WRs que han superado su fecha límite SLA sin completarse. Prioridades: ${[...new Set(overdue.map(w => w.priority_code || 'P3'))].join(', ')}.`,
+      description: `Hay ${overdue.length} WRs que han superado su fecha límite SLA sin completarse. Priorityes: ${[...new Set(overdue.map(w => w.priority_code || 'P3'))].join(', ')}.`,
       recommendation: 'Revisar backlog y reprogramar con recursos adicionales',
       area: 'Todas',
       impact: 'Alto',
@@ -68,7 +68,7 @@ function computeInsights(workRequests) {
       id: 'bottleneck',
       type: 'planning',
       severity: bottleneck > 15 ? 'critical' : 'warning',
-      title: `Cuello de Botella: ${bottleneck} WRs Pendientes de Validación`,
+      title: `Bottleneck: ${bottleneck} WRs Pendings de Validación`,
       description: `${draft} en DRAFT y ${pending} pendientes de validación. Posible retraso en la planificación.`,
       recommendation: 'Acelerar proceso de aprobación del supervisor',
       area: 'Planificación',
@@ -86,12 +86,12 @@ function computeInsights(workRequests) {
       id: 'urgent',
       type: 'resource',
       severity: urgent.length >= 3 ? 'critical' : 'info',
-      title: `${urgent.length} Trabajos de Alta Prioridad Activos`,
+      title: `${urgent.length} Trabajos de Active High Priority`,
       description: `Hay ${urgent.length} WRs con prioridad P1/P2 sin completar. Estos requieren atención inmediata.`,
       recommendation: 'Asignar recursos dedicados y monitorear avance diario',
       area: 'Operaciones',
       impact: 'Alto',
-      data: { type: 'Alta Prioridad', count: urgent.length },
+      data: { type: 'Alta Priority', count: urgent.length },
     });
   }
 

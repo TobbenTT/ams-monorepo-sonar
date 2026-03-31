@@ -210,7 +210,7 @@ export default function Analytics() {
             {/* ── Charts row 3: Planning Time + MTBF/MTTR Table ────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                {/* 5. Line Chart — Tiempo de Planificacion */}
+                {/* 5. Line Chart — Tiempo de Planning */}
                 <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
                     <ChartTitle>{t('analyticsPage.planningTimeTitle')}</ChartTitle>
                     {kpiHistory.length > 0 ? (

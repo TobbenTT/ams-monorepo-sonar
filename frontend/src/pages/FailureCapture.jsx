@@ -191,7 +191,7 @@ export default function FailureCapture({ onNavigateTab }) {
     { value: 'PM02', label: 'PM02 - Orden Mant. Preventivo' },
     { value: 'PM03', label: 'PM03 - Orden de Solicitud de Mant.' },
     { value: 'PM06', label: 'PM06 - Orden de Inversion' },
-    { value: 'PM07', label: 'PM07 - Orden de Reparacion de Componentes' },
+    { value: 'PM07', label: 'PM07 - Orden de Reparacion de Components' },
   ];
 
   // ── Form State ──
@@ -781,7 +781,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
             {/* Description */}
             <div>
-              <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Descripcion de Falla</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Description de Falla</span>
               <p className="text-sm bg-gray-50 rounded-lg p-3 border border-gray-200 leading-relaxed">{desc}</p>
             </div>
 
@@ -808,7 +808,7 @@ export default function FailureCapture({ onNavigateTab }) {
             {/* Resources */}
             {resources.length > 0 && (
               <div>
-                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Recursos</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Resources</span>
                 <div className="space-y-1">
                   {resources.map((r, i) => (
                     <div key={i} className="text-xs bg-gray-50 rounded px-3 py-1.5 border border-gray-200">
@@ -822,7 +822,7 @@ export default function FailureCapture({ onNavigateTab }) {
             {/* Materials */}
             {materials.length > 0 && (
               <div>
-                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Materiales</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Materials</span>
                 <div className="space-y-1">
                   {materials.map((m, i) => (
                     <div key={i} className="text-xs bg-gray-50 rounded px-3 py-1.5 border border-gray-200 flex items-center gap-2">
@@ -1146,11 +1146,11 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          {/* 3c. Grupo de Planificacion + Work Center */}
+          {/* 3c. Grupo de Planning + Work Center */}
           {(form.planningGroup || form.workCenter) && (
             <div className="grid grid-cols-2 gap-3">
               <div className="border rounded-xl p-3 bg-blue-50 border-blue-200">
-                <div className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider mb-1">Grupo de Planificacion</div>
+                <div className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider mb-1">Grupo de Planning</div>
                 <select value={form.planningGroup} onChange={e => setF('planningGroup', e.target.value)}
                   className="w-full text-sm font-semibold text-blue-800 bg-transparent border-none focus:outline-none cursor-pointer">
                   <option value="">-- Select --</option>
@@ -1388,7 +1388,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">SAP ID</div>
                 <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Quantity</div>
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Descripcion</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Description</div>
               </div>
             ) : (
               <div className="space-y-2">
@@ -1434,7 +1434,7 @@ export default function FailureCapture({ onNavigateTab }) {
                       </select>
                     </div>
                     <div className="flex gap-1">
-                      <input type="text" placeholder="Descripcion" value={mat.description} onChange={e => updateMaterial(i, 'description', e.target.value)}
+                      <input type="text" placeholder="Description" value={mat.description} onChange={e => updateMaterial(i, 'description', e.target.value)}
                         className="flex-1 p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
                       <button onClick={() => removeMaterial(i)} className="px-1 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
                     </div>

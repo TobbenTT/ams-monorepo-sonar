@@ -8,7 +8,7 @@ import * as api from '../../api';
 
 const STATUS_CONFIG = {
     DRAFT:              { label: 'Creada',       color: '#94A3B8', bg: '#F1F5F9',  step: 1 },
-    PENDING:            { label: 'Pendiente',    color: '#3B82F6', bg: '#DBEAFE',  step: 2 },
+    PENDING:            { label: 'Pending',    color: '#3B82F6', bg: '#DBEAFE',  step: 2 },
     ASSIGNED:           { label: 'Asignada',     color: '#06B6D4', bg: '#CFFAFE',  step: 4 },
     IN_PROGRESS:        { label: 'En Ejecución', color: '#10B981', bg: '#D1FAE5',  step: 5 },
     PAUSED:             { label: 'Pausada',      color: '#F97316', bg: '#FFF7ED',  step: 5 },
@@ -126,14 +126,14 @@ export default function MobileWorkOrders() {
         ? [
             { value: 'all', label: 'Todas' },
             { value: 'unassigned', label: 'Sin Asignar' },
-            { value: 'ASSIGNED', label: 'Asignadas' },
-            { value: 'IN_PROGRESS', label: 'En Progreso' },
+            { value: 'ASSIGNED', label: 'Assigned' },
+            { value: 'IN_PROGRESS', label: 'En Progress' },
             { value: 'delayed', label: 'Atrasadas' },
         ]
         : [
             { value: 'all', label: 'Todas' },
-            { value: 'ASSIGNED', label: 'Asignadas' },
-            { value: 'IN_PROGRESS', label: 'En Progreso' },
+            { value: 'ASSIGNED', label: 'Assigned' },
+            { value: 'IN_PROGRESS', label: 'En Progress' },
             { value: 'delayed', label: 'Atrasadas' },
         ];
 
@@ -171,7 +171,7 @@ export default function MobileWorkOrders() {
             {/* HEADER */}
             <div className="bg-white border-b p-4 sticky top-0 z-10" style={{ borderColor: '#E2E8F0' }}>
                 <h1 className="text-xl font-bold mb-4" style={{ color: '#0F172A' }}>
-                    {mobileRole === 'supervisor' ? 'Gestión de Tareas' : 'Mis Tareas'}
+                    {mobileRole === 'supervisor' ? 'Gestión de Tareas' : 'My Tasks'}
                 </h1>
 
                 {/* SEARCH */}
@@ -218,7 +218,7 @@ export default function MobileWorkOrders() {
             <div className="p-4 space-y-3">
                 {filtered.length === 0 && (
                     <div className="bg-white rounded-2xl p-6 border text-center" style={{ borderColor: '#E2E8F0' }}>
-                        <div className="text-sm" style={{ color: '#94A3B8' }}>No hay tareas{filter !== 'all' ? ' con este filtro' : ''}</div>
+                        <div className="text-sm" style={{ color: '#94A3B8' }}>No tasks{filter !== 'all' ? ' con este filtro' : ''}</div>
                     </div>
                 )}
 
@@ -443,7 +443,7 @@ export default function MobileWorkOrders() {
                             className="w-full py-3 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-50"
                             style={{ backgroundColor: '#047857', color: '#FFFFFF' }}
                         >
-                            {actionLoading ? 'Asignando...' : 'Confirmar Asignación'}
+                            {actionLoading ? 'Asignando...' : 'Confirm Asignación'}
                         </button>
                     </div>
                 </div>

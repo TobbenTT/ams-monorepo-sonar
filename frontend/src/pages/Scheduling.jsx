@@ -1212,13 +1212,13 @@ export default function Scheduling() {
     );
   }
 
-  const isTecnico = user?.role === 'tecnico';
+  const isTechnician = user?.role === 'tecnico';
   const activeProgramId = programs[0]?.program_id;
   const activeProgram = programs[0];
   const canPublish = activeProgram && !activeProgram.published_at && (activeProgram.status === 'FINAL' || activeProgram.status === 'ACTIVE');
 
   const TABS = [
-    ...(isTecnico ? [{ id: 'inbox', icon: Inbox, label: t('scheduling.myInbox') }] : []),
+    ...(isTechnician ? [{ id: 'inbox', icon: Inbox, label: t('scheduling.myInbox') }] : []),
     { id: 'schedule', icon: Calendar, label: t('scheduling.weeklySchedule') },
     { id: 'gantt', icon: BarChart3, label: t('scheduling.ganttView') },
     { id: 'hh', icon: Users, label: t('scheduling.hhBalance') },
@@ -1238,7 +1238,7 @@ export default function Scheduling() {
             <p className="text-sm text-muted-foreground">{t('scheduling.subtitle')}</p>
           </div>
         </div>
-        {!isTecnico && (
+        {!isTechnician && (
           <div className="flex items-center gap-2">
             {activeProgram?.published_at && (
               <span className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg text-xs font-medium text-emerald-700 dark:text-emerald-300">

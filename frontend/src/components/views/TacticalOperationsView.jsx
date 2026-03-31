@@ -288,7 +288,7 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
 
       {/* SECTION III - RELIABILITY & ASSET HEALTH */}
       <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-4">III. Reliability & Asset Health (Focus: Confiabilidad)</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">III. Reliability & Asset Health (Focus: Reliability)</h3>
         <div className="grid grid-cols-2 gap-6">
           {/* Top 5 Failing Assets */}
           <Card className="p-6 bg-white">

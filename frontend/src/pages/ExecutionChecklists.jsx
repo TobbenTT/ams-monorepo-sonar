@@ -81,7 +81,7 @@ export default function ExecutionChecklists() {
         }
     };
 
-    if (loading) return <LoadingSpinner message="Cargando checklists..." />;
+    if (loading) return <LoadingSpinner message="Loading checklists..." />;
 
     const steps = activeChecklist?.steps || [];
     const completedSteps = steps.filter(s => s.completed).length;

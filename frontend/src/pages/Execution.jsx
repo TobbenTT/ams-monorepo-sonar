@@ -374,7 +374,7 @@ export default function Execution() {
           <div>
             <label className="text-sm font-medium text-gray-700">Technician</label>
             <select value={form.assigned_to} onChange={e => setForm({...form, assigned_to: e.target.value})} className="w-full border rounded-lg p-2 mt-1">
-              <option value="">Seleccionar...</option>
+              <option value="">Select...</option>
               {users.map(u => <option key={u.user_id} value={u.username}>{u.full_name || u.username} ({u.role})</option>)}
             </select>
           </div>

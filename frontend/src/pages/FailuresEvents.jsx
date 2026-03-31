@@ -401,7 +401,7 @@ export default function FailuresEvents() {
       const wo = await api.createWOFromWR({ work_request_id: pending.request_id });
       toast.success(`OT ${wo.wo_number || wo.id} creada desde ${pending.equipment_tag || pending.request_id}`);
     } catch (err) {
-      toast.error(err?.message || 'Error al crear OT');
+      toast.error(err?.message || 'Error creating OT');
     } finally { setActionLoading(null); }
   };
 
@@ -1502,7 +1502,7 @@ export default function FailuresEvents() {
             const updated = await api.getWorkRequest(wr.request_id);
             setSelectedWR(updated);
             setWrEditing(false);
-          } catch (e) { console.error(e); toast.error('Error al guardar'); }
+          } catch (e) { console.error(e); toast.error('Error saving'); }
           setWrSaving(false);
         };
 
@@ -1535,7 +1535,7 @@ export default function FailuresEvents() {
           try {
             const result = await api.createWOFromWR({ work_request_id: wr.request_id });
             toast.success(`OT ${result.wo_number} creada exitosamente`);
-          } catch (e) { console.error(e); toast.error('Error al crear OT'); }
+          } catch (e) { console.error(e); toast.error('Error creating OT'); }
           setWrSaving(false);
         };
 
@@ -1571,17 +1571,17 @@ export default function FailuresEvents() {
                   <>
                     {/* Edit mode */}
                     <div>
-                      <label className="text-sm font-semibold text-gray-700">Prioridad</label>
+                      <label className="text-sm font-semibold text-gray-700">Priority</label>
                       <select value={wrEditForm.priority_code} onChange={e => setWrEditForm({...wrEditForm, priority_code: e.target.value})}
                         className="w-full mt-1 border rounded-lg p-2 text-sm">
                         <option value="P1">P1 - Emergencia</option>
-                        <option value="P2">P2 - Urgente</option>
+                        <option value="P2">P2 - Urgent</option>
                         <option value="P3">P3 - Normal</option>
                         <option value="P4">P4 - Baja</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-sm font-semibold text-gray-700">Descripcion del problema</label>
+                      <label className="text-sm font-semibold text-gray-700">Description del problema</label>
                       <textarea value={wrEditForm.description} onChange={e => setWrEditForm({...wrEditForm, description: e.target.value})}
                         className="w-full mt-1 border rounded-lg p-2 text-sm" rows={3} />
                     </div>
@@ -1616,16 +1616,16 @@ export default function FailuresEvents() {
                     </div>
                     <div className="flex gap-2 pt-2">
                       <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveEdit} disabled={wrSaving}>
-                        {wrSaving ? 'Guardando...' : 'Guardar cambios'}
+                        {wrSaving ? 'Guardando...' : 'Save changes'}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setWrEditing(false)}>Cancelar</Button>
+                      <Button variant="outline" size="sm" onClick={() => setWrEditing(false)}>Cancel</Button>
                     </div>
                   </>
                 ) : (
                   <>
                     {/* View mode */}
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-1">Descripcion del problema</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-1">Description del problema</h3>
                       <p className="text-sm text-gray-600 bg-gray-50 rounded p-3">{pd.original_text || String(wr.problem_description || 'Sin descripcion')}</p>
                     </div>
                     {(pd.failure_mode_detected || pd.failure_symptom || pd.failure_cause) && (
@@ -1669,7 +1669,7 @@ export default function FailuresEvents() {
                     )}
                     {workers.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Tecnicos asignados</h3>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Technicians asignados</h3>
                         <div className="flex flex-wrap gap-2">
                           {workers.map((w, i) => (
                             <span key={i} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">{w.name} ({w.specialty || 'General'})</span>
@@ -1679,7 +1679,7 @@ export default function FailuresEvents() {
                     )}
                     {pd.resources && pd.resources.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Recursos</h3>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Resources</h3>
                         <div className="text-xs text-gray-600 bg-gray-50 rounded p-2">
                           {pd.resources.map((r, i) => <div key={i}>{r.type}: {r.quantity} ({r.hours}h)</div>)}
                         </div>
@@ -1688,7 +1688,7 @@ export default function FailuresEvents() {
                     <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 border-t pt-3">
                       <div>Creado: {wr.created_at ? new Date(wr.created_at).toLocaleString() : '—'}</div>
                       <div>Actualizado: {wr.updated_at ? new Date(wr.updated_at).toLocaleString() : '—'}</div>
-                      {wr.approved_at && <div>Aprobado: {new Date(wr.approved_at).toLocaleString()}</div>}
+                      {wr.approved_at && <div>Approved: {new Date(wr.approved_at).toLocaleString()}</div>}
                       {wr.approval_comment && <div>Comentario: {wr.approval_comment}</div>}
                     </div>
 
@@ -1701,10 +1701,10 @@ export default function FailuresEvents() {
                           className="w-full border rounded-lg p-2 text-sm" rows={2} />
                         <div className="flex gap-2">
                           <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleApprove} disabled={wrSaving}>
-                            {wrSaving ? '...' : 'Aprobar'}
+                            {wrSaving ? '...' : 'Approve'}
                           </Button>
                           <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={handleReject} disabled={wrSaving}>
-                            {wrSaving ? '...' : 'Rechazar'}
+                            {wrSaving ? '...' : 'Reject'}
                           </Button>
                         </div>
                       </div>

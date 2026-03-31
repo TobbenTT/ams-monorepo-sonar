@@ -52,7 +52,7 @@ function MaterialEditor({ materials, onChange }) {
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-[90px_1fr_60px_50px_30px] gap-2 text-xs text-muted-foreground font-semibold">
-        <span>SAP ID</span><span>Descripcion</span><span>Cant</span><span>Ud</span><span></span>
+        <span>SAP ID</span><span>Description</span><span>Cant</span><span>Ud</span><span></span>
       </div>
       {materials.map((m, i) => {
         const mat = typeof m === 'object' ? m : { description: m, quantity: 1 };
@@ -92,7 +92,7 @@ function MaterialEditor({ materials, onChange }) {
         );
       })}
       <button onClick={() => onChange([...materials, { sapId: '', description: '', quantity: 1, unit: 'PZ' }])}
-        className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Agregar material</button>
+        className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Add material</button>
     </div>
   );
 }
@@ -251,19 +251,19 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
   });
 
   const statusLabels = {
-    PENDIENTE: 'Pendiente',
-    PENDING_VALIDATION: 'Pendiente',
-    APROBADO: 'Aprobado',
-    VALIDATED: 'Aprobado',
-    RECHAZADO: 'Rechazado',
-    REJECTED: 'Rechazado',
+    PENDIENTE: 'Pending',
+    PENDING_VALIDATION: 'Pending',
+    APROBADO: 'Approved',
+    VALIDATED: 'Approved',
+    RECHAZADO: 'Rejected',
+    REJECTED: 'Rejected',
     CANCELADO: 'Cancelled',
     CANCELLED: 'Cancelled',
     CERRADO: 'Closed',
     CLOSED: 'Closed',
-    DRAFT: 'Pendiente',
-    ASSIGNED: 'Aprobado',
-    IN_PROGRESS: 'Aprobado',
+    DRAFT: 'Pending',
+    ASSIGNED: 'Approved',
+    IN_PROGRESS: 'Approved',
     COMPLETED: 'Closed',
   };
 
@@ -356,7 +356,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
 
 <div class="grid">
   <div class="card"><div class="label">Estado</div><div class="value">${wr.status || '-'}</div></div>
-  <div class="card"><div class="label">Prioridad</div><div class="value"><span class="priority ${(wr.priority_requested||'p3').toLowerCase()}">${wr.priority_requested || wr.priority || '-'}</span></div></div>
+  <div class="card"><div class="label">Priority</div><div class="value"><span class="priority ${(wr.priority_requested||'p3').toLowerCase()}">${wr.priority_requested || wr.priority || '-'}</span></div></div>
   <div class="card"><div class="label">Clase Actividad</div><div class="value">${ai.activity_class || '-'}</div></div>
   <div class="card"><div class="label">Equipo / TAG</div><div class="value">${wr.equipment_tag || '-'}</div></div>
   <div class="card"><div class="label">Equipo Nombre</div><div class="value">${wr.equipment_name || '-'}</div></div>
@@ -367,7 +367,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
 </div>
 
 <div class="section">
-  <div class="section-title">Descripcion de Falla</div>
+  <div class="section-title">Description de Falla</div>
   <div class="text-box">${pd.original_text || wr.failure_description || '-'}</div>
 </div>
 
@@ -387,14 +387,14 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
 
 ${resources.length ? `<div class="section">
   <div class="section-title">Required Resources</div>
-  <table><thead><tr><th>Especialidad</th><th>Cantidad</th><th>Horas</th></tr></thead><tbody>
+  <table><thead><tr><th>Especialidad</th><th>Quantity</th><th>Horas</th></tr></thead><tbody>
   ${resources.map(r => typeof r === 'string' ? `<tr><td colspan="3">${r}</td></tr>` : `<tr><td>${r.type||''}</td><td>${r.quantity||1}</td><td>${r.hours||0}h</td></tr>`).join('')}
   </tbody></table>
 </div>` : ''}
 
 ${materials.length ? `<div class="section">
   <div class="section-title">SAP Materials</div>
-  <table><thead><tr><th>SAP ID</th><th>Descripcion</th><th>Cant.</th><th>Unidad</th></tr></thead><tbody>
+  <table><thead><tr><th>SAP ID</th><th>Description</th><th>Cant.</th><th>Unidad</th></tr></thead><tbody>
   ${materials.map(m => typeof m === 'string' ? `<tr><td colspan="4">${m}</td></tr>` : `<tr><td style="font-family:monospace">${m.sapId||''}</td><td>${m.description||''}</td><td>${m.quantity||1}</td><td>${m.unit||'PZ'}</td></tr>`).join('')}
   </tbody></table>
 </div>` : ''}
@@ -646,7 +646,7 @@ ${materials.length ? `<div class="section">
         {(item.resources?.length > 0 || item.materials?.length > 0 || editing) && (
           <div className="px-6 pb-4">
             <div className="mb-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Recursos</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Resources</p>
               {editing ? (
                 <div className="space-y-2">
                   <div className="grid grid-cols-[1fr_80px_80px_30px] gap-2 text-xs text-muted-foreground font-semibold">
@@ -661,7 +661,7 @@ ${materials.length ? `<div class="section">
                         arr[i] = { ...res, type: e.target.value };
                         setEditData(d => ({ ...d, resources: arr }));
                       }} className="text-sm px-2 py-1.5 border border-border rounded bg-background">
-                        <option value="">Seleccionar...</option>
+                        <option value="">Select...</option>
                         <option value="Mecanico">Mecanico</option>
                         <option value="Electrico">Electrico</option>
                         <option value="Instrumentacion">Instrumentacion</option>
@@ -684,7 +684,7 @@ ${materials.length ? `<div class="section">
                     );
                   })}
                   <button onClick={() => setEditData(d => ({ ...d, resources: [...(d.resources || []), { type: 'Mecanico', quantity: 1, hours: 4 }] }))}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Agregar recurso</button>
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Add recurso</button>
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -699,7 +699,7 @@ ${materials.length ? `<div class="section">
               )}
             </div>
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Materiales</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Materials</p>
               {editing ? (
                 <MaterialEditor materials={editData.materials || []} onChange={(mats) => setEditData(d => ({ ...d, materials: mats }))} />
               ) : (
@@ -761,10 +761,10 @@ ${materials.length ? `<div class="section">
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
               >
                 <Save size={16} />
-                Guardar Cambios
+                Save Cambios
               </button>
             )}
-            {/* Supervisor: Approve + Reject + Cancelar */}
+            {/* Supervisor: Approve + Reject + Cancel */}
             {isPending && (
               <>
                 <button
@@ -774,7 +774,7 @@ ${materials.length ? `<div class="section">
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${allChecked ? 'bg-[#1B5E20] text-white hover:bg-[#2E7D32]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                 >
                   <CheckCircle size={16} />
-                  {editing ? 'Guardar y Approve' : t('workRequests.validateRequest')}
+                  {editing ? 'Save y Approve' : t('workRequests.validateRequest')}
                 </button>
                 <button
                   onClick={() => { onReject(item.id); onClose(); }}
@@ -788,7 +788,7 @@ ${materials.length ? `<div class="section">
                   className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 >
                   <XCircle size={16} />
-                  Cancelar
+                  Cancel
                 </button>
               </>
             )}
@@ -1065,21 +1065,21 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   /* ─── Status labels (i18n) ─── */
   const statusLabels = useMemo(() => ({
     ALL: 'Todos',
-    PENDIENTE: 'Pendiente',
-    PENDING_VALIDATION: 'Pendiente',
-    APROBADO: 'Aprobado',
-    VALIDATED: 'Aprobado',
-    RECHAZADO: 'Rechazado',
-    REJECTED: 'Rechazado',
+    PENDIENTE: 'Pending',
+    PENDING_VALIDATION: 'Pending',
+    APROBADO: 'Approved',
+    VALIDATED: 'Approved',
+    RECHAZADO: 'Rejected',
+    REJECTED: 'Rejected',
     CANCELADO: 'Cancelled',
     CANCELLED: 'Cancelled',
     CERRADO: 'Closed',
     CLOSED: 'Closed',
-    DRAFT: 'Pendiente',
-    ASSIGNED: 'Aprobado',
-    IN_PROGRESS: 'Aprobado',
+    DRAFT: 'Pending',
+    ASSIGNED: 'Approved',
+    IN_PROGRESS: 'Approved',
     COMPLETED: 'Closed',
-    SCHEDULED: 'Aprobado',
+    SCHEDULED: 'Approved',
   }), [t]);
 
   const impactLabels = useMemo(() => ({
@@ -1111,7 +1111,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             toast.success('FAST TRACK: OT ' + (wo.wo_number || '') + ' creada — abriendo en Planning...');
             if (onNavigateTab) onNavigateTab('planning', null, wo.wo_id || wo.wo_number);
           } catch {
-            toast.success(t('workRequests.validatedNoOT') || 'Aviso aprobado. Error al crear OT automática — créala manualmente.');
+            toast.success(t('workRequests.validatedNoOT') || 'Aviso aprobado. Error creating OT automática — créala manualmente.');
           }
         } else {
           toast.success(
@@ -1174,7 +1174,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             8000
           );
         } catch {
-          toast.success(t('workRequests.approvedNoOT') || 'Aviso aprobado. Error al crear OT — créala manualmente desde Work Orders.');
+          toast.success(t('workRequests.approvedNoOT') || 'Aviso aprobado. Error creating OT — créala manualmente desde Work Orders.');
         }
       })
       .catch(() => toast.error(t('workRequests.errorApprove') || 'Error al aprobar'));
@@ -1213,7 +1213,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
 
   function handleDelete(id) {
     const msg = t('workRequests.confirmDelete');
-    if (!window.confirm(msg !== 'workRequests.confirmDelete' ? msg : '¿Eliminar este aviso de trabajo?')) return;
+    if (!window.confirm(msg !== 'workRequests.confirmDelete' ? msg : '¿Delete este aviso de trabajo?')) return;
     setRequests((prev) => prev.filter((r) => r.id !== id));
     api.deleteWorkRequest(id).catch(() => {
       // Re-fetch on error to restore state
@@ -1226,7 +1226,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
 
   function handleExportWRs() {
     if (!sorted.length) return;
-    const headers = ['ID', 'Equipo TAG', 'Equipo', 'Descripción Falla', 'Prioridad', 'Status', 'Impacto', 'Duración Est. (h)', 'Categoría Falla', 'Síntoma', 'Causa', 'Acción Sugerida', 'Técnico', 'Creado'];
+    const headers = ['ID', 'Equipo TAG', 'Equipo', 'Descripción Falla', 'Priority', 'Status', 'Impacto', 'Duración Est. (h)', 'Categoría Falla', 'Síntoma', 'Causa', 'Acción Sugerida', 'Técnico', 'Creado'];
     const rows = sorted.map(r => [
       r.id, r.equipment_tag, r.equipment_name, r.failure_description,
       r.priority_requested, r.status, r.production_impact,
@@ -1299,9 +1299,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Pendiente', count: queueFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
-          { label: 'Aprobado', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
-          { label: 'Rechazado', count: queueFiltered.filter(r => r.status === 'REJECTED').length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
+          { label: 'Pending', count: queueFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
+          { label: 'Approved', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
+          { label: 'Rejected', count: queueFiltered.filter(r => r.status === 'REJECTED').length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
           { label: 'Cancelled', count: queueFiltered.filter(r => r.status === 'CANCELLED').length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
         ].map(kpi => (
           <div key={kpi.label} className={`bg-white dark:bg-card rounded-lg border border-border ${kpi.borderColor ? 'border-l-4 ' + kpi.borderColor : ''} p-5`}>
@@ -1645,7 +1645,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           <button
                             onClick={() => handleDelete(req.id)}
                             className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                            title={t('common.delete') || 'Eliminar'}
+                            title={t('common.delete') || 'Delete'}
                           >
                             <Trash2 size={16} />
                           </button>

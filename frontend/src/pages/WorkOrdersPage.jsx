@@ -92,8 +92,8 @@ export default function WorkOrdersPage() {
   ];
 
   const ACTIVITY_CLASSES = {
-    PM01: [{ value: 'M001', label: 'M001 — Solicitud de Mantenimiento' }, { value: 'M003', label: 'M003 — Reparación / Prep. Componentes' }],
-    PM03: [{ value: 'M002', label: 'M002 — Avería' }, { value: 'M003', label: 'M003 — Reparación / Prep. Componentes' }],
+    PM01: [{ value: 'M001', label: 'M001 — Solicitud de Mantenimiento' }, { value: 'M003', label: 'M003 — Reparación / Prep. Components' }],
+    PM03: [{ value: 'M002', label: 'M002 — Avería' }, { value: 'M003', label: 'M003 — Reparación / Prep. Components' }],
   };
 
   const SPECIAL_EQUIPMENT = [
@@ -323,7 +323,7 @@ export default function WorkOrdersPage() {
   // ── Export WRs to Excel ──
   const handleExportWRs = useCallback(() => {
     if (!workOrdersData.length) return;
-    const headers = ['ID', 'Equipo TAG', 'Descripción', 'Prioridad', 'Clase', 'Días', 'Asignado', 'Status'];
+    const headers = ['ID', 'Equipo TAG', 'Descripción', 'Priority', 'Clase', 'Días', 'Asignado', 'Status'];
     const rows = workOrdersData.map(wo => [
       wo.id,
       wo._raw?.equipment_tag || '',
@@ -340,7 +340,7 @@ export default function WorkOrdersPage() {
   // ── Export OTs to Excel ──
   const handleExportOTs = useCallback(() => {
     if (!managedWOs.length) return;
-    const headers = ['OT #', 'Equipo', 'Descripción', 'Tipo OT', 'Prioridad', 'Status', 'Progress %', 'Fast Track', 'Creado'];
+    const headers = ['OT #', 'Equipo', 'Descripción', 'Tipo OT', 'Priority', 'Status', 'Progress %', 'Fast Track', 'Creado'];
     const rows = managedWOs.map(wo => [
       wo.wo_number,
       wo.equipment_tag || '',
@@ -588,11 +588,11 @@ export default function WorkOrdersPage() {
     PLANIFICADO: { label: 'Programar', action: 'schedule', icon: ClipboardCheck },
     PROGRAMADO: { label: 'Iniciar Ejecucion', action: 'start', icon: Play },
     REPROGRAMADO: { label: 'Reprogramar', action: 'schedule', icon: ClipboardCheck },
-    EN_EJECUCION: { label: 'Cerrar', action: 'complete', icon: CheckCircle },
+    EN_EJECUCION: { label: 'Close', action: 'complete', icon: CheckCircle },
     // Legacy compat
     PENDIENTE: { label: 'Planificar', action: 'plan', icon: ArrowRight },
     APROBADO: { label: 'Iniciar', action: 'start', icon: Play },
-    EN_PROGRESO: { label: 'Cerrar', action: 'complete', icon: CheckCircle },
+    EN_PROGRESO: { label: 'Close', action: 'complete', icon: CheckCircle },
   };
 
   const handleOTTransition = async (wo, actionName) => {
@@ -626,7 +626,7 @@ export default function WorkOrdersPage() {
 
   const handleRejectWR = async (wrId) => {
     try {
-      await api.validateWorkRequest(wrId, { action: 'REJECT', modifications: { rejection_reason: 'Rechazado' } });
+      await api.validateWorkRequest(wrId, { action: 'REJECT', modifications: { rejection_reason: 'Rejected' } });
       toast.success('Notification rejected');
       reloadData();
     } catch (err) {
@@ -1026,7 +1026,7 @@ export default function WorkOrdersPage() {
                     <TableHead className="font-semibold">Equipo</TableHead>
                     <TableHead className="font-semibold">Descripción</TableHead>
                     <TableHead className="font-semibold">Tipo</TableHead>
-                    <TableHead className="font-semibold">Prioridad</TableHead>
+                    <TableHead className="font-semibold">Priority</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Progress</TableHead>
                     <TableHead className="font-semibold">Acción</TableHead>
@@ -1367,7 +1367,7 @@ export default function WorkOrdersPage() {
                 )}
               </div>
 
-              {/* 2. Condición del Equipo + Prioridad (arriba para visibilidad) */}
+              {/* 2. Condición del Equipo + Priority (arriba para visibilidad) */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="border rounded-xl p-4">
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.plantCondition')}</label>
@@ -1416,7 +1416,7 @@ export default function WorkOrdersPage() {
               {createForm.plantCondition === 'stopped' && (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-sm">
                   <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                  <span className="text-red-700 font-medium">{t('workOrders.breakdownAlert') || 'Equipo detenido — Prioridad ajustada a P1 (Urgente). Clase OT: PM03 No Scheduled.'}</span>
+                  <span className="text-red-700 font-medium">{t('workOrders.breakdownAlert') || 'Equipo detenido — Priority ajustada a P1 (Urgent). Clase OT: PM03 No Scheduled.'}</span>
                 </div>
               )}
 
@@ -1601,7 +1601,7 @@ export default function WorkOrdersPage() {
                 <div className="text-[10px] text-gray-400 mt-1">{t('workOrders.circumstancesSapNote')}</div>
               </div>
 
-              {/* 7. Recursos necesarios */}
+              {/* 7. Resources necesarios */}
               <div className="border rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('workOrders.requiredResources')}</label>
@@ -1760,7 +1760,7 @@ export default function WorkOrdersPage() {
                 <div className="text-[10px] text-gray-400 mt-1">{t('workOrders.supportEquipmentNote')}</div>
               </div>
 
-              {/* 13-14. Condición y Prioridad movidos arriba del formulario */}
+              {/* 13-14. Condición y Priority movidos arriba del formulario */}
 
               {/* 15. Clase de Actividad */}
               <div className="border rounded-xl p-4">
@@ -1833,11 +1833,11 @@ export default function WorkOrdersPage() {
         const SPECIALTY_OPTIONS = ['Mecánico', 'Eléctrico', 'Instrumentación', 'Soldador', 'Lubricación', 'Andamios', 'Aislamiento', 'Operador', 'Supervisor', 'Otro'];
         const OP_TYPE_OPTIONS = [{ value: 'INT', label: 'INT' }, { value: 'EXT', label: 'EXT' }];
         const OT_TABS = [
-          { id: 'resumen', label: 'Resumen', icon: Info },
+          { id: 'resumen', label: 'Summary', icon: Info },
           { id: 'operaciones', label: 'Operaciones', icon: List },
-          { id: 'materiales', label: 'Materiales', icon: Package },
+          { id: 'materiales', label: 'Materials', icon: Package },
           { id: 'costos', label: 'Costos', icon: DollarSign },
-          { id: 'historial', label: 'Historial', icon: MessageSquare },
+          { id: 'historial', label: 'History', icon: MessageSquare },
         ];
         return (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedOT(null)}>
@@ -1985,10 +1985,10 @@ export default function WorkOrdersPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="text-gray-500 text-xs block mb-1">Prioridad</label>
+                          <label className="text-gray-500 text-xs block mb-1">Priority</label>
                           <select className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.priority_code}
                             onChange={async (e) => { await api.updateManagedWO(selectedOT.wo_id, { priority_code: e.target.value }); reloadData(); }}>
-                            <option value="P1">P1 - Urgente</option>
+                            <option value="P1">P1 - Urgent</option>
                             <option value="P2">P2 - Programa en Ejecución</option>
                             <option value="P3">P3 - Próximo Programa</option>
                             <option value="P4">P4 - Parada de Planta</option>
@@ -2000,7 +2000,7 @@ export default function WorkOrdersPage() {
                             onBlur={async (e) => { const val = parseFloat(e.target.value); if (val !== selectedOT.estimated_hours) { await api.updateManagedWO(selectedOT.wo_id, { estimated_hours: val }); reloadData(); } }} />
                         </div>
                         <div>
-                          <label className="text-gray-500 text-xs block mb-1">Presupuesto ($)</label>
+                          <label className="text-gray-500 text-xs block mb-1">Budget ($)</label>
                           <input type="number" className="w-full border rounded-lg p-2 text-sm" defaultValue={selectedOT.budget_amount || 0}
                             onBlur={async (e) => { await api.updateManagedWO(selectedOT.wo_id, { budget_amount: parseFloat(e.target.value) || 0 }); reloadData(); }} />
                         </div>
@@ -2049,7 +2049,7 @@ export default function WorkOrdersPage() {
                       )}
                       {isEditable && otOps.length > 0 && (
                         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveOps} disabled={otSaving}>
-                          <Save className="w-3 h-3 mr-1" /> Guardar
+                          <Save className="w-3 h-3 mr-1" /> Save
                         </Button>
                       )}
                     </div>
@@ -2161,7 +2161,7 @@ export default function WorkOrdersPage() {
 
                   {isExecuting && otOps.length > 0 && (
                     <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveOps} disabled={otSaving}>
-                      <Save className="w-3 h-3 mr-1" /> Guardar Actual Hours
+                      <Save className="w-3 h-3 mr-1" /> Save Actual Hours
                     </Button>
                   )}
 
@@ -2216,7 +2216,7 @@ export default function WorkOrdersPage() {
                       )}
                       {isEditable && otMats.length > 0 && (
                         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveMats} disabled={otSaving}>
-                          <Save className="w-3 h-3 mr-1" /> Guardar
+                          <Save className="w-3 h-3 mr-1" /> Save
                         </Button>
                       )}
                     </div>
@@ -2308,14 +2308,14 @@ export default function WorkOrdersPage() {
                     {/* Budget vs Actual */}
                     <div className={`rounded-xl p-4 border ${overBudget ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Presupuesto vs Real</span>
+                        <span className="text-sm font-medium">Budget vs Real</span>
                         {budget > 0 && <span className={`text-xs font-bold px-2 py-0.5 rounded ${overBudget ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
                           {variance > 0 ? '+' : ''}{variance.toFixed(1)}% variación
                         </span>}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="text-center">
-                          <div className="text-xs text-gray-500">Presupuesto</div>
+                          <div className="text-xs text-gray-500">Budget</div>
                           <div className="text-2xl font-bold text-gray-900">${budget.toLocaleString()}</div>
                         </div>
                         <div className="text-center">
@@ -2346,7 +2346,7 @@ export default function WorkOrdersPage() {
                     <div className="grid grid-cols-3 gap-4">
                       {[
                         { key: 'labor_cost', pkey: 'planned_labor', label: 'Labor', icon: Users, color: 'blue' },
-                        { key: 'material_cost', pkey: 'planned_material', label: 'Materiales', icon: Package, color: 'amber' },
+                        { key: 'material_cost', pkey: 'planned_material', label: 'Materials', icon: Package, color: 'amber' },
                         { key: 'external_cost', pkey: 'planned_external', label: 'Servicios Ext.', icon: Wrench, color: 'purple' },
                       ].map(({ key, pkey, label, icon: CIcon, color }) => {
                         const planned = parseFloat(otCosts[pkey]) || selectedOT[pkey.replace('planned_', 'planned_') + '_cost'] || 0;
@@ -2391,7 +2391,7 @@ export default function WorkOrdersPage() {
 
                     {(isExecuting || isEditable) && (
                       <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveCosts} disabled={otSaving}>
-                        <Save className="w-3 h-3 mr-1" /> Guardar Costos
+                        <Save className="w-3 h-3 mr-1" /> Save Costos
                       </Button>
                     )}
                   </div>
@@ -2401,7 +2401,7 @@ export default function WorkOrdersPage() {
               {/* ─── TAB: HISTORIAL ─── */}
               {otDetailTab === 'historial' && (
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-800">Historial de Ejecución</h3>
+                  <h3 className="text-sm font-semibold text-gray-800">History de Ejecución</h3>
 
                   {/* Status timeline */}
                   <div className="flex items-center gap-1 overflow-x-auto pb-2">

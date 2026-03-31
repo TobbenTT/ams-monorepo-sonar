@@ -62,7 +62,7 @@ export default function ImprovementActionsPage() {
   const plantId = selectedPlant?.plant_id || selectedPlant || 'OCP-JFC1';
 
   const [activeModule, setActiveModule] = useState('acciones'); // 'acciones' | 'hallazgos'
-  const [hallazgos, setHallazgos] = useState([]);
+  const [hallazgos, setFindings] = useState([]);
     const [automaticCreation, setAutomaticCreation] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -120,7 +120,7 @@ export default function ImprovementActionsPage() {
       setActions(actionsRes?.items || []);
       setSummary(summaryRes || {});
       const wrItems = Array.isArray(hallazgosRes) ? hallazgosRes : (hallazgosRes?.items || []);
-      setHallazgos(wrItems.filter(r => !['COMPLETED','CLOSED','CANCELLED','REJECTED'].includes(r.status)));
+      setFindings(wrItems.filter(r => !['COMPLETED','CLOSED','CANCELLED','REJECTED'].includes(r.status)));
     } catch (err) {
       setError(err.message || t('improvementActions.failedToLoad'));
     } finally {
@@ -292,7 +292,7 @@ export default function ImprovementActionsPage() {
           onClick={() => setActiveModule('hallazgos')}
           className={`pb-3 px-5 text-sm font-semibold border-b-2 transition-colors ${activeModule === 'hallazgos' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
-          Hallazgos / Avisos
+          Findings / Avisos
           {hallazgos.length > 0 && <span className="ml-1.5 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">{hallazgos.length}</span>}
         </button>
       </div>
@@ -300,7 +300,7 @@ export default function ImprovementActionsPage() {
       {activeModule === 'hallazgos' ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Hallazgos y Avisos de Trabajo</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Findings y Avisos de Trabajo</h2>
             <span className="text-sm text-gray-400">{hallazgos.length} hallazgos activos</span>
           </div>
           <div className="grid gap-3">
@@ -312,7 +312,7 @@ export default function ImprovementActionsPage() {
             ) : hallazgos.map(h => {
               const pColor = { P1: 'bg-red-100 text-red-700 border-red-300', P2: 'bg-orange-100 text-orange-700 border-orange-300', P3: 'bg-yellow-100 text-yellow-700 border-yellow-300', P4: 'bg-blue-100 text-blue-700 border-blue-300' };
               const sColor = { PENDING_VALIDATION: 'bg-amber-50 text-amber-700', VALIDATED: 'bg-emerald-50 text-emerald-700', IN_PROGRESS: 'bg-blue-50 text-blue-700', COMPLETED: 'bg-purple-50 text-purple-700' };
-              const sLabel = { PENDING_VALIDATION: 'Pendiente', VALIDATED: 'Aprobado', IN_PROGRESS: 'En Ejecución', COMPLETED: 'Completado', REJECTED: 'Rechazado' };
+              const sLabel = { PENDING_VALIDATION: 'Pending', VALIDATED: 'Approved', IN_PROGRESS: 'En Ejecución', COMPLETED: 'Completed', REJECTED: 'Rejected' };
               return (
                 <div key={h.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
                   <div className="flex items-start gap-3">

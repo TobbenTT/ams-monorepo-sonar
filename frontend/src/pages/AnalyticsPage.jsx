@@ -296,11 +296,11 @@ export default function AnalyticsPage() {
           </Card>
         </div>
 
-        {/* KPIs de Confiabilidad */}
+        {/* KPIs de Reliability */}
         <div className="col-span-5">
           <Card className="p-6 bg-white h-full">
             <h3 className="text-base font-semibold text-gray-900 mb-2">
-              KPIs de Confiabilidad
+              KPIs de Reliability
             </h3>
             <p className="text-xs text-gray-500 mb-4">{healthAssetName}</p>
 

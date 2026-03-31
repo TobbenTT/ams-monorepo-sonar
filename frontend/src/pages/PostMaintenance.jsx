@@ -279,7 +279,7 @@ export default function PostMaintenance() {
                   <h3 className="font-semibold text-gray-900">Reunion y Plan de Mejoras</h3>
                   {detail.status !== 'COMPLETED' && (
                     <button onClick={() => setEditMode(!editMode)} className="text-sm text-emerald-600 hover:underline">
-                      {editMode ? 'Cancelar' : 'Edit'}
+                      {editMode ? 'Cancel' : 'Edit'}
                     </button>
                   )}
                 </div>
@@ -300,7 +300,7 @@ export default function PostMaintenance() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-sm font-medium text-gray-700">Actions de Mejora</label>
-                        <button onClick={addAction} className="text-xs text-emerald-600 hover:underline">+ Agregar</button>
+                        <button onClick={addAction} className="text-xs text-emerald-600 hover:underline">+ Add</button>
                       </div>
                       {meetingForm.improvement_actions.map((a, i) => (
                         <div key={i} className="grid grid-cols-4 gap-2 mb-2">
@@ -314,7 +314,7 @@ export default function PostMaintenance() {
                       ))}
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={saveReview} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">Guardar</button>
+                      <button onClick={saveReview} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">Save</button>
                       {detail.status !== 'COMPLETED' && (
                         <button onClick={handleComplete} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Complete Revision</button>
                       )}
@@ -360,7 +360,7 @@ export default function PostMaintenance() {
       {completedWOs.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
-            <RotateCcw size={18} className="text-blue-600" /> Cierre Tecnico — Reset de Contadores SAP
+            <RotateCcw size={18} className="text-blue-600" /> Cierre Technician — Reset de Contadores SAP
           </h2>
           <p className="text-sm text-gray-500 mb-3">
             OTs completadas pendientes de cierre tecnico. Al cerrar se reinician los contadores SAP del equipo.
@@ -385,7 +385,7 @@ export default function PostMaintenance() {
                   ) : (
                     <RotateCcw size={12} />
                   )}
-                  Cierre Tecnico
+                  Cierre Technician
                 </button>
               </div>
             ))}
@@ -407,7 +407,7 @@ export default function PostMaintenance() {
               <input type="date" name="end" required className="w-full border rounded-lg p-2 mt-1" />
             </div>
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg text-sm">Cancelar</button>
+              <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
               <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">Crear y Analizar</button>
             </div>
           </form>

@@ -40,7 +40,7 @@ export function handlePrintWorkOrder(workOrder) {
   const externalCost = workOrder.external_cost || raw.external_cost || 0;
   const totalCost = workOrder.actual_total_cost || (parseFloat(laborCost) + parseFloat(materialCost) + parseFloat(externalCost)) || 0;
   const budgetAmount = workOrder.budget_amount || raw.budget_amount || 0;
-  const priorityLabel = { P1: 'P1 - Emergencia', P2: 'P2 - Urgente', P3: 'P3 - Normal', P4: 'P4 - Planificado' };
+  const priorityLabel = { P1: 'P1 - Emergencia', P2: 'P2 - Urgent', P3: 'P3 - Normal', P4: 'P4 - Planificado' };
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
   let opsHTML = '';
@@ -87,7 +87,7 @@ export function handlePrintWorkOrder(workOrder) {
     '<div style="margin-top:20px;"><h3 style="font-size:14px;font-weight:700;margin-bottom:8px;color:#1a1a1a;border-bottom:2px solid #059669;padding-bottom:4px;">COST SUMMARY</h3><table style="width:50%;border-collapse:collapse;font-size:12px;"><tbody><tr><td style="padding:5px 8px;border:1px solid #ddd;font-weight:600;background:#f9fafb;">Labor</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right;">' + fmtCurrency(laborCost) + '</td></tr><tr><td style="padding:5px 8px;border:1px solid #ddd;font-weight:600;background:#f9fafb;">Materials</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right;">' + fmtCurrency(materialCost) + '</td></tr><tr><td style="padding:5px 8px;border:1px solid #ddd;font-weight:600;background:#f9fafb;">External Services</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right;">' + fmtCurrency(externalCost) + '</td></tr><tr style="background:#ecfdf5;"><td style="padding:6px 8px;border:1px solid #059669;font-weight:700;">TOTAL</td><td style="padding:6px 8px;border:1px solid #059669;text-align:right;font-weight:700;">' + fmtCurrency(totalCost) + '</td></tr>' + (parseFloat(budgetAmount) > 0 ? '<tr><td style="padding:5px 8px;border:1px solid #ddd;font-weight:600;background:#f9fafb;">Budget</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right;">' + fmtCurrency(budgetAmount) + '</td></tr>' : '') + '</tbody></table></div>' +
     '<div style="margin-top:40px;page-break-inside:avoid;"><h3 style="font-size:14px;font-weight:700;margin-bottom:20px;color:#1a1a1a;border-bottom:2px solid #059669;padding-bottom:4px;">SIGNATURES</h3><div style="display:flex;justify-content:space-between;gap:24px;"><div style="flex:1;text-align:center;"><div style="border-bottom:1px solid #333;height:50px;margin-bottom:6px;"></div><p style="font-size:11px;font-weight:600;">Prepared By</p><p style="font-size:10px;color:#666;">Name / Date</p></div><div style="flex:1;text-align:center;"><div style="border-bottom:1px solid #333;height:50px;margin-bottom:6px;"></div><p style="font-size:11px;font-weight:600;">Approved By</p><p style="font-size:10px;color:#666;">Name / Date</p></div><div style="flex:1;text-align:center;"><div style="border-bottom:1px solid #333;height:50px;margin-bottom:6px;"></div><p style="font-size:11px;font-weight:600;">Executed By</p><p style="font-size:10px;color:#666;">Name / Date</p></div></div></div>' +
     '<div style="margin-top:30px;padding-top:8px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:9px;color:#999;"><span>OCP Group - Sistema AMS</span><span>Impreso: ' + new Date().toLocaleString('es-MX') + '</span><span>Pagina 1 de 1</span></div>' +
-    '<div class="no-print" style="position:fixed;top:16px;right:16px;z-index:9999;"><button onclick="window.print()" style="padding:10px 20px;background:#059669;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">Imprimir / PDF</button><button onclick="window.close()" style="margin-left:8px;padding:10px 20px;background:#6b7280;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">Cerrar</button></div>' +
+    '<div class="no-print" style="position:fixed;top:16px;right:16px;z-index:9999;"><button onclick="window.print()" style="padding:10px 20px;background:#059669;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">Print / PDF</button><button onclick="window.close()" style="margin-left:8px;padding:10px 20px;background:#6b7280;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">Cerrar</button></div>' +
     '</body></html>';
 
   const printWindow = window.open('', '_blank', 'width=900,height=700');
@@ -103,10 +103,10 @@ export default function PrintWorkOrderButton({ workOrder, className = '' }) {
     <button
       onClick={() => handlePrintWorkOrder(workOrder)}
       className={"inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors " + className}
-      title="Imprimir Orden de Trabajo"
+      title="Print Work Order"
     >
       <Printer className="w-4 h-4" />
-      Imprimir
+      Print
     </button>
   );
 }

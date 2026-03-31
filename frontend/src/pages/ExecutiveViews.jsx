@@ -58,7 +58,7 @@ export function ExecRiskManagement() {
         { area: 'Relaves', score: 68, exposure: '$35k/día' },
     ];
     const topRiskAssets = [
-        { asset: 'Molino de Bolas #1', area: 'Molienda', riskScore: 92, probability: 'Alta', impact: '$120k/día', status: 'En Progreso', plan: 'Reemplazo de rodamientos programado para próxima parada' },
+        { asset: 'Molino de Bolas #1', area: 'Molienda', riskScore: 92, probability: 'Alta', impact: '$120k/día', status: 'En Progress', plan: 'Reemplazo de rodamientos programado para próxima parada' },
         { asset: 'Trituradora Primaria', area: 'Trituración', riskScore: 87, probability: 'Alta', impact: '$95k/día', status: 'Planificado', plan: 'Inspección de revestimientos y guardas' },
         { asset: 'Bomba Principal P-201', area: 'Bombeo', riskScore: 85, probability: 'Crítica', impact: '$85k/día', status: 'Activo', plan: 'Bomba standby activa, reemplazo de sellos urgente' },
         { asset: 'Espesador #3', area: 'Espesamiento', riskScore: 78, probability: 'Media', impact: '$45k/día', status: 'Monitoreo', plan: 'Plan de respuesta de emergencia actualizado' },
@@ -66,7 +66,7 @@ export function ExecRiskManagement() {
     ];
 
     const probColor = (p) => p === 'Crítica' ? 'bg-red-100 text-red-700' : p === 'Alta' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700';
-    const statusColor = (s) => s === 'Activo' ? 'bg-green-100 text-green-700' : s === 'En Progreso' ? 'bg-blue-100 text-blue-700' : s === 'Planificado' ? 'bg-yellow-100 text-yellow-700' : 'bg-muted text-muted-foreground';
+    const statusColor = (s) => s === 'Activo' ? 'bg-green-100 text-green-700' : s === 'En Progress' ? 'bg-blue-100 text-blue-700' : s === 'Planificado' ? 'bg-yellow-100 text-yellow-700' : 'bg-muted text-muted-foreground';
 
     return (
         <div className="space-y-6">
@@ -78,7 +78,7 @@ export function ExecRiskManagement() {
                 <KPIBox icon={TrendingUp} value="8" label="Planes de Mitigación Activos" iconBg="bg-emerald-50 border-emerald-200" iconColor="text-emerald-600" badge={{ text: '↓ 12%', color: 'text-emerald-600' }} />
             </div>
             <div>
-                <SectionTitle>Tendencia de Exposición al Riesgo por Categoría</SectionTitle>
+                <SectionTitle>Trend de Exposición al Riesgo por Categoría</SectionTitle>
                 <div className="bg-card border border-border rounded-lg p-5">
                     <ResponsiveContainer width="100%" height={350}>
                         <LineChart data={riskTrend}>
@@ -148,7 +148,7 @@ export function ExecPlantReliability() {
 
     return (
         <div className="space-y-6">
-            <div><h2 className="text-2xl text-foreground font-semibold mb-1">Confiabilidad de Planta</h2><p className="text-muted-foreground text-sm">Indicadores de rendimiento y confiabilidad de equipos — {plant}</p></div>
+            <div><h2 className="text-2xl text-foreground font-semibold mb-1">Reliability de Planta</h2><p className="text-muted-foreground text-sm">Indicadores de rendimiento y confiabilidad de equipos — {plant}</p></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <KPIBox icon={TrendingUp} value="820h" label="MTBF (Actual)" iconBg="bg-emerald-50 border-emerald-200" iconColor="text-emerald-600" badge={{ text: '↑ 14%', color: 'text-emerald-600' }} />
                 <KPIBox icon={Clock} value="3.5h" label="MTTR (Actual)" iconBg="bg-blue-50 border-blue-200" iconColor="text-blue-600" badge={{ text: '↓ 22%', color: 'text-blue-600' }} />
@@ -157,20 +157,20 @@ export function ExecPlantReliability() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-card border border-border rounded-lg p-5">
-                    <SectionTitle>Tendencia MTBF (Horas)</SectionTitle>
+                    <SectionTitle>Trend MTBF (Horas)</SectionTitle>
                     <ResponsiveContainer width="100%" height={280}>
                         <LineChart data={mtbfTrend}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="month" tick={axisTick} stroke="var(--border)" /><YAxis tick={axisTick} stroke="var(--border)" /><Tooltip contentStyle={chartTooltip} /><Line type="monotone" dataKey="mtbf" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} name="MTBF" /></LineChart>
                     </ResponsiveContainer>
                 </div>
                 <div className="bg-card border border-border rounded-lg p-5">
-                    <SectionTitle>Tendencia MTTR (Horas)</SectionTitle>
+                    <SectionTitle>Trend MTTR (Horas)</SectionTitle>
                     <ResponsiveContainer width="100%" height={280}>
                         <LineChart data={mttrTrend}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="month" tick={axisTick} stroke="var(--border)" /><YAxis tick={axisTick} stroke="var(--border)" /><Tooltip contentStyle={chartTooltip} /><Line type="monotone" dataKey="mttr" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} name="MTTR" /></LineChart>
                     </ResponsiveContainer>
                 </div>
             </div>
             <div>
-                <SectionTitle>Disponibilidad de Equipos por Área</SectionTitle>
+                <SectionTitle>Availability de Equipos por Área</SectionTitle>
                 <div className="bg-card border border-border rounded-lg p-5">
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={availByArea}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="area" tick={axisTick} stroke="var(--border)" /><YAxis domain={[90, 100]} tick={axisTick} stroke="var(--border)" /><Tooltip contentStyle={chartTooltip} formatter={(v) => `${v}%`} /><Bar dataKey="availability" fill="#10b981" radius={[4, 4, 0, 0]} /></BarChart>
@@ -211,13 +211,13 @@ export function ExecMaintPerformance() {
                 <KPIBox icon={BarChart3} value="1,595h" sublabel="horas de backlog" label="Exposición de Backlog" iconBg="bg-purple-50 border-purple-200" iconColor="text-purple-600" />
             </div>
             <div>
-                <SectionTitle>Tendencia Mantenimiento Planificado vs No Planificado</SectionTitle>
+                <SectionTitle>Trend Mantenimiento Planificado vs No Planificado</SectionTitle>
                 <div className="bg-card border border-border rounded-lg p-5">
                     <ResponsiveContainer width="100%" height={300}><BarChart data={plannedVs}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="month" tick={axisTick} stroke="var(--border)" /><YAxis domain={[0, 100]} tick={axisTick} stroke="var(--border)" /><Tooltip contentStyle={chartTooltip} formatter={(v) => `${v}%`} /><Legend /><Bar dataKey="planned" stackId="a" fill="#10b981" name="Planificado %" /><Bar dataKey="unplanned" stackId="a" fill="#ef4444" name="No Planificado %" /></BarChart></ResponsiveContainer>
                 </div>
             </div>
             <div>
-                <SectionTitle>Tendencia Tasa de Completitud</SectionTitle>
+                <SectionTitle>Trend Tasa de Completitud</SectionTitle>
                 <div className="bg-card border border-border rounded-lg p-5">
                     <ResponsiveContainer width="100%" height={300}><LineChart data={completionRate}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="month" tick={axisTick} stroke="var(--border)" /><YAxis domain={[70, 100]} tick={axisTick} stroke="var(--border)" /><Tooltip contentStyle={chartTooltip} formatter={(v) => `${v}%`} /><Line type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} /></LineChart></ResponsiveContainer>
                 </div>
@@ -225,7 +225,7 @@ export function ExecMaintPerformance() {
             <div>
                 <SectionTitle>Exposición de Riesgo del Backlog</SectionTitle>
                 <div className="bg-card border border-border rounded-lg overflow-hidden">
-                    <table className="w-full"><thead className="bg-muted border-b border-border"><tr>{['Prioridad', 'Órdenes', 'Horas Totales', 'Nivel de Riesgo'].map(h => <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
+                    <table className="w-full"><thead className="bg-muted border-b border-border"><tr>{['Priority', 'Órdenes', 'Horas Totales', 'Nivel de Riesgo'].map(h => <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
                         <tbody className="divide-y divide-border">{backlogRisk.map((r, i) => (
                             <tr key={i} className="hover:bg-muted"><td className="px-6 py-4"><span className={`px-3 py-1 rounded-full text-xs font-medium ${r.category === 'Crítico' ? 'bg-red-100 text-red-700' : r.category === 'Alto' ? 'bg-orange-100 text-orange-700' : r.category === 'Medio' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>{r.category}</span></td><td className="px-6 py-4 text-lg font-bold text-foreground">{r.count}</td><td className="px-6 py-4 text-lg font-bold text-foreground">{r.hours}h</td><td className="px-6 py-4">{r.category === 'Crítico' || r.category === 'Alto' ? <span className="flex items-center gap-2 text-red-600"><AlertCircle className="w-4 h-4" /><span className="text-xs font-semibold">Alto Riesgo</span></span> : <span className="text-xs font-semibold text-blue-600">Manejable</span>}</td></tr>
                         ))}</tbody>
@@ -253,7 +253,7 @@ export function ExecMaintFinancials() {
     const { plant } = useOutletContext();
     const costTrend = [{ month: 'Ene', planned: 195000, unplanned: 65000, total: 260000 }, { month: 'Feb', planned: 210000, unplanned: 72000, total: 282000 }, { month: 'Mar', planned: 188000, unplanned: 58000, total: 246000 }, { month: 'Abr', planned: 205000, unplanned: 68000, total: 273000 }, { month: 'May', planned: 218000, unplanned: 61000, total: 279000 }, { month: 'Jun', planned: 225000, unplanned: 55000, total: 280000 }];
     const costByArea = [{ area: 'Molienda', cost: 485000, budget: 520000, variance: -6.7 }, { area: 'Trituración', cost: 342000, budget: 350000, variance: -2.3 }, { area: 'Flotación', cost: 298000, budget: 280000, variance: 6.4 }, { area: 'Espesamiento', cost: 215000, budget: 230000, variance: -6.5 }, { area: 'Relaves', cost: 175000, budget: 165000, variance: 6.1 }];
-    const breakdown = [{ category: 'Mano de Obra', value: 42, color: '#3b82f6' }, { category: 'Repuestos', value: 35, color: '#10b981' }, { category: 'Contratistas', value: 15, color: '#f59e0b' }, { category: 'Herramientas', value: 8, color: '#8b5cf6' }];
+    const breakdown = [{ category: 'Mano de Obra', value: 42, color: '#3b82f6' }, { category: 'Spare parts', value: 35, color: '#10b981' }, { category: 'Contratistas', value: 15, color: '#f59e0b' }, { category: 'Tools', value: 8, color: '#8b5cf6' }];
 
     return (
         <div className="space-y-6">
@@ -265,7 +265,7 @@ export function ExecMaintFinancials() {
                 <KPIBox icon={DollarSign} value="$280k" sublabel="Este mes" label="Tasa Mensual Actual" iconBg="bg-purple-50 border-purple-200" iconColor="text-purple-600" badge={{ text: '↓ $125k', color: 'text-emerald-600' }} />
             </div>
             <div>
-                <SectionTitle>Tendencia de Costos — Planificado vs No Planificado</SectionTitle>
+                <SectionTitle>Trend de Costos — Planificado vs No Planificado</SectionTitle>
                 <div className="bg-card border border-border rounded-lg p-5">
                     <ResponsiveContainer width="100%" height={350}><LineChart data={costTrend}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="month" tick={axisTick} stroke="var(--border)" /><YAxis tick={axisTick} stroke="var(--border)" tickFormatter={(v) => `$${v / 1000}k`} /><Tooltip contentStyle={chartTooltip} formatter={(v) => `$${v.toLocaleString()}`} /><Legend /><Line type="monotone" dataKey="planned" stroke="#10b981" strokeWidth={2} name="Planificado" /><Line type="monotone" dataKey="unplanned" stroke="#ef4444" strokeWidth={2} name="No Planificado" /><Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} strokeDasharray="5 5" name="Total" /></LineChart></ResponsiveContainer>
                 </div>
@@ -293,7 +293,7 @@ export function ExecSafetyCompliance() {
     const { plant } = useOutletContext();
     const trirTrend = [{ month: 'Ene', trir: 0.65 }, { month: 'Feb', trir: 0.58 }, { month: 'Mar', trir: 0.52 }, { month: 'Abr', trir: 0.48 }, { month: 'May', trir: 0.45 }, { month: 'Jun', trir: 0.42 }];
     const nearMiss = [{ area: 'Molienda', count: 12 }, { area: 'Trituración', count: 8 }, { area: 'Flotación', count: 5 }, { area: 'Espesamiento', count: 4 }, { area: 'Relaves', count: 3 }];
-    const metrics = [{ metric: 'Reportes de Cuasi-Accidentes', value: 32, trend: '↑', change: 15, status: 'positive' }, { metric: 'Observaciones de Seguridad', value: 128, trend: '↑', change: 22, status: 'positive' }, { metric: 'Horas de Capacitación', value: 456, trend: '↑', change: 12, status: 'positive' }, { metric: 'Auditorías Completadas', value: 18, trend: '→', change: 0, status: 'neutral' }];
+    const metrics = [{ metric: 'Reportes de Cuasi-Accidentes', value: 32, trend: '↑', change: 15, status: 'positive' }, { metric: 'Observations de Seguridad', value: 128, trend: '↑', change: 22, status: 'positive' }, { metric: 'Horas de Capacitación', value: 456, trend: '↑', change: 12, status: 'positive' }, { metric: 'Auditorías Completadas', value: 18, trend: '→', change: 0, status: 'neutral' }];
 
     return (
         <div className="space-y-6">
@@ -301,11 +301,11 @@ export function ExecSafetyCompliance() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <KPIBox icon={ShieldCheck} value="0.42" sublabel="Mejor industria: 0.35" label="TRIR" iconBg="bg-green-50 border-green-200" iconColor="text-green-600" badge={{ text: '↓ 35%', color: 'text-green-600' }} />
                 <KPIBox icon={AlertTriangle} value="32" sublabel="YTD" label="Reportes de Cuasi-Accidentes" iconBg="bg-blue-50 border-blue-200" iconColor="text-blue-600" badge={{ text: '↑ 15%', color: 'text-blue-600' }} />
-                <KPIBox icon={Eye} value="128" sublabel="YTD" label="Observaciones de Seguridad" iconBg="bg-purple-50 border-purple-200" iconColor="text-purple-600" badge={{ text: '↑ 22%', color: 'text-purple-600' }} />
+                <KPIBox icon={Eye} value="128" sublabel="YTD" label="Observations de Seguridad" iconBg="bg-purple-50 border-purple-200" iconColor="text-purple-600" badge={{ text: '↑ 22%', color: 'text-purple-600' }} />
                 <KPIBox icon={Calendar} value="182" sublabel="Récord: 245 días" label="Días Sin Incidente con Tiempo Perdido" iconBg="bg-emerald-50 border-emerald-200" iconColor="text-emerald-600" />
             </div>
             <div>
-                <SectionTitle>Tendencia TRIR (6 Meses)</SectionTitle>
+                <SectionTitle>Trend TRIR (6 Meses)</SectionTitle>
                 <div className="bg-card border border-border rounded-lg p-5">
                     <ResponsiveContainer width="100%" height={300}><LineChart data={trirTrend}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="month" tick={axisTick} stroke="var(--border)" /><YAxis domain={[0, 1]} tick={axisTick} stroke="var(--border)" /><Tooltip contentStyle={chartTooltip} /><Line type="monotone" dataKey="trir" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} /></LineChart></ResponsiveContainer>
                 </div>
@@ -319,7 +319,7 @@ export function ExecSafetyCompliance() {
             <div>
                 <SectionTitle>Métricas de Desempeño de Seguridad</SectionTitle>
                 <div className="bg-card border border-border rounded-lg overflow-hidden">
-                    <table className="w-full"><thead className="bg-muted border-b border-border"><tr>{['Métrica', 'Valor Actual (YTD)', 'Tendencia', 'vs Año Anterior', 'Estado'].map(h => <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
+                    <table className="w-full"><thead className="bg-muted border-b border-border"><tr>{['Métrica', 'Valor Actual (YTD)', 'Trend', 'vs Año Previous', 'Estado'].map(h => <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
                         <tbody className="divide-y divide-border">{metrics.map((m, i) => (
                             <tr key={i} className="hover:bg-muted"><td className="px-6 py-4 text-sm font-semibold text-foreground">{m.metric}</td><td className="px-6 py-4 text-lg font-bold text-foreground">{m.value}</td><td className="px-6 py-4 text-lg">{m.trend}</td><td className="px-6 py-4"><span className={`text-sm font-semibold ${m.status === 'positive' ? 'text-emerald-600' : 'text-muted-foreground'}`}>{m.change > 0 ? '+' : ''}{m.change}%</span></td><td className="px-6 py-4"><span className={`px-3 py-1 rounded-full text-xs font-medium ${m.status === 'positive' ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>{m.status === 'positive' ? 'Mejorando' : 'Estable'}</span></td></tr>
                         ))}</tbody>

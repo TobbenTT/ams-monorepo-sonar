@@ -130,7 +130,7 @@ export default function Troubleshooting() {
         } catch { /* ignore */ }
     };
 
-    if (loading) return <LoadingSpinner message="Cargando sesiones de troubleshooting..." />;
+    if (loading) return <LoadingSpinner message="Loading sesiones de troubleshooting..." />;
 
     return (
         <div className="space-y-5">
@@ -314,13 +314,13 @@ export default function Troubleshooting() {
                             {/* Record test result */}
                             {activeSession.status === 'IN_PROGRESS' && (
                                 <div>
-                                    <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Registrar Resultado de Prueba</div>
+                                    <div className="text-xs font-bold uppercase text-muted-foreground mb-2">Registrar Result de Prueba</div>
                                     <div className="flex gap-2 flex-wrap">
                                         <input className="border rounded px-2 py-1 text-sm w-32" placeholder="ID Prueba"
                                             value={testForm.test_id} onChange={e => setTestForm({ ...testForm, test_id: e.target.value })} />
                                         <select className="border rounded px-2 py-1 text-sm" value={testForm.result}
                                             onChange={e => setTestForm({ ...testForm, result: e.target.value })}>
-                                            <option value="">Resultado...</option>
+                                            <option value="">Result...</option>
                                             <option value="PASS">PASS (Normal)</option>
                                             <option value="FAIL">FAIL (Anormal)</option>
                                             <option value="INCONCLUSIVE">Inconcluso</option>

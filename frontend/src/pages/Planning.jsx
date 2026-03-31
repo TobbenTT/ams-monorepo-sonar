@@ -346,7 +346,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         wr.reported_by || wr.created_by || '', created ? created.toLocaleDateString() : '', days,
       ];
     });
-    downloadExport({ format: 'EXCEL', sheets: [{ name: 'Avisos Aprobados', headers, rows }] }, `approved_notifications_${new Date().toISOString().slice(0, 10)}`);
+    downloadExport({ format: 'EXCEL', sheets: [{ name: 'Avisos Approveds', headers, rows }] }, `approved_notifications_${new Date().toISOString().slice(0, 10)}`);
     toast.success('Exported ' + filteredWRs.length + ' notifications');
   };
 
@@ -526,7 +526,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         </td>
                         <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
                           <button onClick={async () => {
-                            if (!confirm(`¿Eliminar ${wo.wo_number}?`)) return;
+                            if (!confirm(`¿Delete ${wo.wo_number}?`)) return;
                             try { await api.deleteManagedWO(wo.wo_id); toast.success('WO deleted'); fetchData(); }
                             catch(e) { toast.error('Error deleting'); }
                           }} className="p-1 text-gray-300 hover:text-red-500 rounded transition-colors" title="Delete WO">
@@ -837,7 +837,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </button>
                       <button onClick={() => handleCancel(selectedWR)} disabled={!!actionLoading}
                         className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-300 transition-colors disabled:opacity-50">
-                        <Ban className="w-4 h-4" /> Cancelar
+                        <Ban className="w-4 h-4" /> Cancel
                       </button>
                     </div>
                   </div>

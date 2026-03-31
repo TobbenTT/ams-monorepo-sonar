@@ -20,13 +20,13 @@ const PRIORITIES = [
 
 const APP_SECTIONS = [
   'Dashboard',
-  'Ordenes de Trabajo',
+  'Work Orders',
   'Fallas y Eventos',
   'Acciones de Mejora',
   'Analitica',
   'Reportes',
   'Equipo',
-  'Configuracion',
+  'Settings',
   'Sidebar / Menu',
   'Header / Barra superior',
   'Login',
@@ -354,7 +354,7 @@ export default function FeedbackWidget() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Prioridad</label>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Priority</label>
                   <div className="flex gap-2">
                     {PRIORITIES.map(p => (
                       <button key={p.value} onClick={() => setF('priority', p.value)}
@@ -402,7 +402,7 @@ export default function FeedbackWidget() {
                     className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Descripcion detallada</label>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Description detallada</label>
                   <textarea value={form.description} onChange={e => setF('description', e.target.value)}
                     placeholder="Explica en detalle..."
                     rows={3}
@@ -599,7 +599,7 @@ export default function FeedbackWidget() {
                     <span className="font-medium" style={{ color: selectedType?.color }}>{selectedType?.label}</span>
                   </div>
                   <div className="flex justify-between p-2 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500">Prioridad</span>
+                    <span className="text-gray-500">Priority</span>
                     <span className="font-medium" style={{ color: PRIORITIES.find(p => p.value === form.priority)?.color }}>{PRIORITIES.find(p => p.value === form.priority)?.label}</span>
                   </div>
                   <div className="flex justify-between p-2 bg-gray-50 rounded-lg">
@@ -620,7 +620,7 @@ export default function FeedbackWidget() {
                   )}
                   {form.description && (
                     <div className="p-2 bg-gray-50 rounded-lg">
-                      <span className="text-gray-500 text-xs">Descripcion</span>
+                      <span className="text-gray-500 text-xs">Description</span>
                       <div className="text-gray-700 whitespace-pre-wrap text-xs">{form.description}</div>
                     </div>
                   )}
@@ -684,7 +684,7 @@ export default function FeedbackWidget() {
                   {step < 3 && (
                     <button onClick={() => setStep(s => s + 1)}
                       className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors">
-                      Siguiente
+                      Next
                     </button>
                   )}
                   {step === 3 && (

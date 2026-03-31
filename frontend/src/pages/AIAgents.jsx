@@ -10,7 +10,7 @@ const TABS = [
     { id: 'checklists', icon: ClipboardCheck, label: 'Checklists' },
     { id: 'sessions', icon: BrainCircuit, label: 'Sesiones' },
     { id: 'or_projects', icon: FolderOpen, label: 'Proyectos OR' },
-    { id: 'tools', icon: Wrench, label: 'Herramientas' },
+    { id: 'tools', icon: Wrench, label: 'Tools' },
 ];
 
 // Agent display metadata
@@ -90,7 +90,7 @@ function StatusTab() {
     }, []);
 
     if (loading) return <LoadingCard />;
-    if (!status) return <ErrorCard message="No se pudo conectar con el sistema de IA" />;
+    if (!status) return <ErrorCard message="Could not conectar con el sistema de IA" />;
 
     const ready = status.status === 'ready';
     const agentTools = status.agent_tools || {};
@@ -124,7 +124,7 @@ function StatusTab() {
 
                 {/* Tools count */}
                 <div className="rounded-xl border p-5">
-                    <h3 className="font-semibold mb-1">Herramientas Registradas</h3>
+                    <h3 className="font-semibold mb-1">Tools Registradas</h3>
                     <div className="text-4xl font-bold text-primary">{status.total_tools}</div>
                     <p className="text-sm text-muted-foreground mt-1">herramientas de dominio disponibles</p>
                 </div>
@@ -196,7 +196,7 @@ function ORProjectsTab() {
             setForm({ client_name: '', plant_code: '', project_type: 'greenfield' });
             setShowForm(false);
         } catch (err) {
-            toast.error('Error al crear proyecto: ' + err.message);
+            toast.error('Error creating proyecto: ' + err.message);
         } finally {
             setCreating(false);
         }
@@ -271,7 +271,7 @@ function ORProjectsTab() {
                             Crear
                         </button>
                         <button onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-lg text-sm">
-                            Cancelar
+                            Cancel
                         </button>
                     </div>
                 </div>
@@ -398,11 +398,11 @@ function TroubleshootTab() {
             </div>
 
             <div className="rounded-xl border p-5">
-                <h3 className="font-semibold mb-4">Resultado del Diagnóstico</h3>
+                <h3 className="font-semibold mb-4">Result del Diagnóstico</h3>
                 {loading && (
                     <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
                         <Loader className="w-8 h-8 animate-spin mb-3" />
-                        <p className="text-sm">El agente de Confiabilidad está analizando...</p>
+                        <p className="text-sm">El agente de Reliability está analizando...</p>
                     </div>
                 )}
                 {result && !result.error && (
@@ -443,7 +443,7 @@ function TroubleshootTab() {
 
             {history.length > 0 && (
                 <div className="rounded-xl border p-5 lg:col-span-2">
-                    <h3 className="font-semibold mb-3">Historial de Diagnósticos</h3>
+                    <h3 className="font-semibold mb-3">History de Diagnósticos</h3>
                     <div className="divide-y max-h-60 overflow-y-auto">
                         {history.map((d) => (
                             <div key={d.diagnostic_id} className="py-2 flex justify-between items-center text-sm">
@@ -498,7 +498,7 @@ function ChecklistsTab() {
     return (
         <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border p-5">
-                <h3 className="font-semibold mb-4 flex items-center gap-2"><ClipboardCheck className="w-5 h-5" /> Generar Checklist</h3>
+                <h3 className="font-semibold mb-4 flex items-center gap-2"><ClipboardCheck className="w-5 h-5" /> Generate Checklist</h3>
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium mb-1">ID del Work Package</label>
@@ -513,7 +513,7 @@ function ChecklistsTab() {
                     <button onClick={handleGenerate} disabled={loading || !wpId.trim()}
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium disabled:opacity-50">
                         {loading ? <Loader className="w-4 h-4 animate-spin" /> : <ClipboardCheck className="w-4 h-4" />}
-                        {loading ? 'Generando...' : 'Generar Checklist'}
+                        {loading ? 'Generando...' : 'Generate Checklist'}
                     </button>
                 </div>
             </div>
@@ -523,7 +523,7 @@ function ChecklistsTab() {
                 {checklist && !checklist.error && (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm">
-                            <span>Progreso:</span>
+                            <span>Progress:</span>
                             <span className="font-bold">{checklist.completed_items}/{checklist.total_items}</span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">

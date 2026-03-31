@@ -12,7 +12,7 @@ const STATUS_ORDER = ['DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'APPROVED', 'A
 const PIPELINE_STEPS = [
     { key: 'draft', statuses: ['DRAFT'], label: 'Borrador', color: '#94A3B8', bg: '#F1F5F9' },
     { key: 'pending', statuses: ['PENDING_VALIDATION'], label: 'Revisión', color: '#F59E0B', bg: '#FFFBEB' },
-    { key: 'validated', statuses: ['VALIDATED', 'APPROVED'], label: 'Aprobado', color: '#10B981', bg: '#ECFDF5' },
+    { key: 'validated', statuses: ['VALIDATED', 'APPROVED'], label: 'Approved', color: '#10B981', bg: '#ECFDF5' },
     { key: 'assigned', statuses: ['ASSIGNED'], label: 'Asignado', color: '#8B5CF6', bg: '#F5F3FF' },
     { key: 'execution', statuses: ['IN_PROGRESS'], label: 'Ejecución', color: '#3B82F6', bg: '#EFF6FF' },
     { key: 'done', statuses: ['COMPLETED'], label: 'Cerrado', color: '#047857', bg: '#ECFDF5' },
@@ -276,7 +276,7 @@ export default function MobileDashboard() {
                             <span className="text-sm font-bold" style={{ color: '#0F172A' }}>Backlog</span>
                         </div>
                         <span className="text-xs font-semibold flex items-center gap-1" style={{ color: '#047857' }}>
-                            Ver todo <ChevronRight className="w-3 h-3" />
+                            View all <ChevronRight className="w-3 h-3" />
                         </span>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
@@ -302,7 +302,7 @@ export default function MobileDashboard() {
                     <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
                         <div className="flex items-center gap-2 mb-3">
                             <TrendingUp className="w-4 h-4" style={{ color: '#047857' }} />
-                            <span className="text-sm font-bold" style={{ color: '#0F172A' }}>Tendencia KPIs</span>
+                            <span className="text-sm font-bold" style={{ color: '#0F172A' }}>Trend KPIs</span>
                         </div>
                         <div className="space-y-3">
                             {trendData.map((entry, i) => (
@@ -514,11 +514,11 @@ const STATUS_LABELS = {
     DRAFT: 'Borrador',
     PENDING_VALIDATION: 'Revisión',
     VALIDATED: 'Validado',
-    APPROVED: 'Aprobado',
+    APPROVED: 'Approved',
     ASSIGNED: 'Asignado',
-    IN_PROGRESS: 'En Progreso',
-    COMPLETED: 'Completado',
-    REJECTED: 'Rechazado',
+    IN_PROGRESS: 'En Progress',
+    COMPLETED: 'Completed',
+    REJECTED: 'Rejected',
 };
 
 function StatusDot({ status }) {

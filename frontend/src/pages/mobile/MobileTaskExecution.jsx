@@ -152,7 +152,7 @@ export default function MobileTaskExecution() {
                     {/* Progress Bar */}
                     <div className="mb-3">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-semibold" style={{ color: '#64748B' }}>Progreso General</span>
+                            <span className="text-xs font-semibold" style={{ color: '#64748B' }}>Progress General</span>
                             <span className="text-sm font-bold" style={{ color: '#10B981' }}>{progress}%</span>
                         </div>
                         <div className="h-3 rounded-full" style={{ backgroundColor: '#E2E8F0' }}>
@@ -166,7 +166,7 @@ export default function MobileTaskExecution() {
                             {status === 'running' ? (
                                 <>
                                     <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#10B981' }} />
-                                    <span className="text-sm font-semibold" style={{ color: '#10B981' }}>En Progreso</span>
+                                    <span className="text-sm font-semibold" style={{ color: '#10B981' }}>En Progress</span>
                                 </>
                             ) : (
                                 <>
@@ -395,7 +395,7 @@ export default function MobileTaskExecution() {
                         className="w-full py-3 rounded-xl text-sm font-semibold border-2 transition-all active:scale-95"
                         style={{ borderColor: '#E2E8F0', color: '#64748B' }}
                     >
-                        Guardar Progreso (Cambio de Turno)
+                        Save Progress (Cambio de Turno)
                     </button>
                 </div>
             </div>

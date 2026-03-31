@@ -187,9 +187,9 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       });
       const updated = await api.listImprovementActions({ plant_id: plant });
       setImprovementActions(Array.isArray(updated) ? updated : updated?.items || []);
-      toast.success(`Accion de mejora creada: ${category}`);
+      toast.success(`Improvement action creada: ${category}`);
     } catch {
-      toast.error('Error al crear accion de mejora');
+      toast.error('Error creating accion de mejora');
     }
     setCreatingAction(false);
   };
@@ -244,7 +244,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <KpiCard label="MTBF" value={kpis.mtbf} unit="dias" icon={Clock} target={30} color="blue" />
         <KpiCard label="MTTR" value={kpis.mttr} unit="hrs" icon={Clock} target={8} color="amber" />
-        <KpiCard label="Disponibilidad" value={kpis.availability} unit="%" icon={CheckCircle2} target={90} />
+        <KpiCard label="Availability" value={kpis.availability} unit="%" icon={CheckCircle2} target={90} />
         <KpiCard label="Cumplimiento Prog." value={kpis.compliance} unit="%" icon={Target} target={85} color="blue" />
         <KpiCard label="Cumplimiento PM" value={kpis.pmCompliance} unit="%" icon={CheckCircle2} target={90} />
         <KpiCard label="Backlog" value={Math.round(kpis.backlogHours)} unit="hrs" icon={BarChart3} color="amber" />
@@ -261,7 +261,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Trend */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Tendencia Mensual de OTs</h3>
+          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Trend Mensual de OTs</h3>
           {monthlyTrend.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={monthlyTrend}>
@@ -345,8 +345,8 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: 'Crear Accion — Estrategia', cat: 'Strategy', icon: TrendingUp, color: 'bg-purple-600' },
-            { label: 'Crear Accion — Planificacion', cat: 'Planning', icon: Calendar, color: 'bg-blue-600' },
-            { label: 'Crear Accion — Repuestos', cat: 'Spare Parts', icon: AlertTriangle, color: 'bg-amber-600' },
+            { label: 'Crear Accion — Planning', cat: 'Planning', icon: Calendar, color: 'bg-blue-600' },
+            { label: 'Crear Accion — Spare parts', cat: 'Spare Parts', icon: AlertTriangle, color: 'bg-amber-600' },
             { label: 'Crear Accion — Ejecucion', cat: 'Execution', icon: Users, color: 'bg-emerald-600' },
           ].map(item => (
             <button
@@ -369,8 +369,8 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         <div className="flex flex-wrap gap-2">
           {[
             { id: 'identification', label: '1. Identificacion' },
-            { id: 'planning', label: '2. Planificacion' },
-            { id: 'scheduling', label: '3. Programacion' },
+            { id: 'planning', label: '2. Planning' },
+            { id: 'scheduling', label: '3. Scheduling' },
             { id: 'execution', label: '4. Ejecucion' },
             { id: 'closure', label: '5. Cierre' },
           ].map(phase => (
@@ -423,8 +423,8 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
               <textarea value={meetingForm.notes} onChange={e => setMeetingForm({ ...meetingForm, notes: e.target.value })} className="w-full border rounded-lg p-2 mt-1" rows={3} placeholder="Resumen de la reunion y decisiones tomadas..." />
             </div>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowMeetingForm(false)} className="px-4 py-2 border rounded-lg text-sm">Cancelar</button>
-              <button onClick={handleSaveMeeting} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">Guardar</button>
+              <button onClick={() => setShowMeetingForm(false)} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
+              <button onClick={handleSaveMeeting} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">Save</button>
             </div>
           </div>
         </div>

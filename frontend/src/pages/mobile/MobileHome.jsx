@@ -122,7 +122,7 @@ function MaintainerHome({ plant }) {
             {/* Rejected WRs */}
             {rejected.length > 0 && (
                 <div>
-                    <SectionHeader icon={XCircle} iconColor="#F59E0B" title={`Avisos Rechazados (${rejected.length})`} />
+                    <SectionHeader icon={XCircle} iconColor="#F59E0B" title={`Avisos Rejecteds (${rejected.length})`} />
                     <div className="space-y-3">
                         {rejected.map(wr => (
                             <WRRejectedCard key={wr.request_id || wr.id} wr={wr} onAction={() => navigate('/m/avisos')} />
@@ -136,7 +136,7 @@ function MaintainerHome({ plant }) {
                 <div>
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#10B981' }} />
-                        <h2 className="text-sm font-bold" style={{ color: '#0F172A' }}>En Progreso ({inProgress.length})</h2>
+                        <h2 className="text-sm font-bold" style={{ color: '#0F172A' }}>En Progress ({inProgress.length})</h2>
                     </div>
                     <div className="space-y-3">
                         {inProgress.map(task => (
@@ -148,10 +148,10 @@ function MaintainerHome({ plant }) {
 
             {/* Assigned Today */}
             <div>
-                <SectionHeader title={`Asignadas (${assigned.length})`} />
+                <SectionHeader title={`Assigned (${assigned.length})`} />
                 <div className="space-y-3">
                     {assigned.length === 0 ? (
-                        <EmptyState text="No hay tareas asignadas" />
+                        <EmptyState text="No tasks asignadas" />
                     ) : assigned.map(task => (
                         <TaskAssignedCard key={task.id} task={task} onStart={() => navigate(`/m/tarea/${task.id}`)} />
                     ))}
@@ -281,10 +281,10 @@ function SupervisorHome({ plant }) {
                 <div>
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-sm font-bold" style={{ color: '#0F172A' }}>
-                            Avisos Pendientes de Aprobación ({pendingWRs.length})
+                            Avisos Pendings de Aprobación ({pendingWRs.length})
                         </h2>
                         <button onClick={() => navigate('/m/avisos')} className="text-xs font-semibold" style={{ color: '#047857' }}>
-                            Ver todos
+                            View alls
                         </button>
                     </div>
                     <div className="space-y-3">
@@ -437,7 +437,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                 <div className="sticky top-0 bg-white rounded-t-3xl border-b px-4 py-4 flex items-center justify-between z-10" style={{ borderColor: '#E2E8F0' }}>
                     <div>
                         <div className="text-sm font-bold" style={{ color: '#0F172A' }}>
-                            {isApprove ? 'Aprobar Aviso' : 'Rechazar Aviso'}
+                            {isApprove ? 'Approve Aviso' : 'Reject Aviso'}
                         </div>
                         <div className="text-xs" style={{ color: '#64748B' }}>{tag} — {(wr.request_id || '').slice(0, 10)}</div>
                     </div>
@@ -466,7 +466,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                             <div className="flex gap-2">
                                 {['P1', 'P2', 'P3', 'P4'].map(p => {
                                     const colors = pc(p);
-                                    const labels = { P1: 'Urgente', P2: 'En ejecución', P3: 'Próx. programa', P4: 'Parada' };
+                                    const labels = { P1: 'Urgent', P2: 'En ejecución', P3: 'Próx. programa', P4: 'Parada' };
                                     return (
                                         <button
                                             key={p}
@@ -543,7 +543,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                             value={comment}
                             onChange={e => setComment(e.target.value)}
                             placeholder={isApprove
-                                ? 'Ej: Aprobado, programar para siguiente semana...'
+                                ? 'Ej: Approved, programar para siguiente semana...'
                                 : 'Ej: Falta información del equipo, contactar técnico...'
                             }
                             className="w-full h-24 p-3 rounded-xl border text-sm resize-none outline-none"
@@ -564,7 +564,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                     >
                         {submitting
                             ? 'Procesando...'
-                            : isApprove ? 'Aprobar Aviso' : 'Rechazar Aviso'
+                            : isApprove ? 'Approve Aviso' : 'Reject Aviso'
                         }
                     </button>
                 </div>
@@ -745,7 +745,7 @@ function TaskDelayedCard({ task, onStart }) {
                 <PriorityBadge priority={task.priority} />
             </div>
             <button onClick={onStart} className="w-full rounded-xl py-3 text-sm font-semibold transition-all active:scale-95" style={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}>
-                Iniciar Urgente
+                Iniciar Urgent
             </button>
         </div>
     );
@@ -790,14 +790,14 @@ function PendingWRCard({ wr, onApprove, onReject, onTap }) {
                     className="py-2.5 rounded-lg text-xs font-bold text-center transition-all active:scale-95"
                     style={{ backgroundColor: '#D1FAE5', color: '#047857' }}
                 >
-                    Aprobar
+                    Approve
                 </button>
                 <button
                     onClick={onReject}
                     className="py-2.5 rounded-lg text-xs font-bold text-center transition-all active:scale-95"
                     style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}
                 >
-                    Rechazar
+                    Reject
                 </button>
             </div>
         </div>

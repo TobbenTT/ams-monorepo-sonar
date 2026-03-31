@@ -194,7 +194,11 @@ export default function Login() {
                         <div className="text-xs text-muted-foreground text-center mb-3">{t('auth.quickAccess') || 'Acceso rápido'}</div>
                         <div className="grid grid-cols-1 gap-2">
                             {[
-                                { user: 'admin', role: 'Administrador', color: '#047857' },
+                                { user: 'admin', role: 'Administrator', color: '#047857' },
+                                { user: 'manager', role: 'Manager', color: '#1E40AF' },
+                                { user: 'planner', role: 'Planner', color: '#7C3AED' },
+                                { user: 'supervisor1', role: 'Supervisor', color: '#B45309' },
+                                { user: 'tecnico', role: 'Technician', color: '#059669' },
                             ].map(({ user, role, color }) => (
                                 <button
                                     key={user}

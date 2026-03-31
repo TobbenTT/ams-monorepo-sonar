@@ -4,7 +4,7 @@ import { KPICard, PriorityBadge, StatusBadge, LoadingSpinner } from '../componen
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
-  Eye, Clock, ChevronRight, ChevronLeft, Download, AlertCircle, Plus, XCircle, Ban
+  Eye, Clock, ChevronRight, ChevronLeft, Download, AlertCircle, Plus, XCircle, Ban, X, Wrench, Play
 } from 'lucide-react';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
@@ -17,10 +17,10 @@ const PRIORITY_COLORS = {
 };
 
 const PRIORITY_LABELS = {
-  P1: 'Urgente',
-  P2: 'Alta',
-  P3: 'Media',
-  P4: 'Parada Planta',
+  P1: 'Immediate',
+  P2: 'High',
+  P3: 'Medium',
+  P4: 'Plant Shutdown',
 };
 
 function PriorityLabel({ priority }) {
@@ -53,11 +53,36 @@ export default function Planning({ onNavigateTab }) {
     }).finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchData(); }, [plant]);
+  // OTs state
+  const [managedWOs, setManagedWOs] = useState([]);
+  const [activeTab, setActiveTab] = useState('ots');
+  const [selectedOT, setSelectedOT] = useState(null);
+
+  const fetchOTs = () => {
+    api.listManagedWOs({ plant_id: plant }).then(res => {
+      setManagedWOs(Array.isArray(res) ? res : []);
+    }).catch(() => setManagedWOs([]));
+  };
+
+  useEffect(() => { fetchData(); fetchOTs(); }, [plant]);
+
+  const changeOTStatus = async (wo, newStatus) => {
+    try {
+      let upd;
+      const WO_ID = wo.wo_id;
+      if (newStatus === 'PLANIFICADO') upd = await api.planManagedWO(WO_ID);
+      else if (newStatus === 'PROGRAMADO') upd = await api.scheduleManagedWO(WO_ID, {});
+      else if (newStatus === 'EN_EJECUCION') upd = await api.startManagedWO(WO_ID);
+      else if (newStatus === 'CERRADO') upd = await api.completeManagedWO(WO_ID, { actual_hours: wo.estimated_hours || 0 });
+      else if (newStatus === 'CANCELADO') upd = await api.closeManagedWO(WO_ID);
+      else if (newStatus === 'REPROGRAMADO') upd = await api.rescheduleManagedWO(WO_ID);
+      if (upd) { toast.success('Status updated: ' + newStatus); setSelectedOT(upd); fetchOTs(); }
+    } catch(e) { toast.error('Error: ' + (e.message || '')); }
+  };
 
   // Only approved WRs (VALIDATED status)
   const approvedWRs = useMemo(() =>
-    workRequests.filter(wr => wr.status === 'VALIDATED'),
+    workRequests.filter(wr => ['VALIDATED', 'APROBADO', 'APPROVED'].includes(wr.status)),
   [workRequests]);
 
   // Apply priority filter
@@ -188,8 +213,73 @@ export default function Planning({ onNavigateTab }) {
 
       {/* Title Row */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold text-gray-900">Avisos Aprobados - Backlog de Planificacion</h3>
+        {/* Tab selector */}
+      <div className="flex gap-1 mb-4 border-b border-gray-200">
+        <button onClick={() => setActiveTab('ots')} className={'px-4 py-2 text-sm font-medium border-b-2 transition-colors ' + (activeTab === 'ots' ? 'border-[#1B5E20] text-[#1B5E20]' : 'border-transparent text-gray-500 hover:text-gray-700')}>
+          Work Orders ({managedWOs.length})
+        </button>
+        <button onClick={() => setActiveTab('backlog')} className={'px-4 py-2 text-sm font-medium border-b-2 transition-colors ' + (activeTab === 'backlog' ? 'border-[#1B5E20] text-[#1B5E20]' : 'border-transparent text-gray-500 hover:text-gray-700')}>
+          Notifications ({approvedWRs.length})
+        </button>
+      </div>
+
+      {/* OTs Tab */}
+      {activeTab === 'ots' && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900">Work Orders</h3>
+            <span className="text-sm text-gray-400">{managedWOs.length} WOs</span>
+          </div>
+          {managedWOs.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <Wrench className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p>No work orders yet</p>
+              <p className="text-xs mt-1">Create WOs from approved notifications</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full">
+                <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left">WO #</th>
+                  <th className="px-4 py-3 text-left">Equipment</th>
+                  <th className="px-4 py-3 text-left">Description</th>
+                  <th className="px-4 py-3 text-left">Type</th>
+                  <th className="px-4 py-3 text-left">Priority</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">Action</th>
+                </tr></thead>
+                <tbody>
+                  {managedWOs.map((wo, i) => {
+                    const STATUS_COLORS = { CREADO: 'bg-gray-100 text-gray-700', PLANIFICADO: 'bg-blue-100 text-blue-700', PROGRAMADO: 'bg-indigo-100 text-indigo-700', EN_EJECUCION: 'bg-amber-100 text-amber-700', CERRADO: 'bg-green-100 text-green-700', CANCELADO: 'bg-red-100 text-red-700', REPROGRAMADO: 'bg-purple-100 text-purple-700' };
+                    const STATUS_LABELS = { CREADO: 'Created', PLANIFICADO: 'Planned', PROGRAMADO: 'Scheduled', EN_EJECUCION: 'In Execution', CERRADO: 'Closed', CANCELADO: 'Cancelled', REPROGRAMADO: 'Rescheduled' };
+                    const NEXT = { CREADO: ['PLANIFICADO', 'Plan'], PLANIFICADO: ['PROGRAMADO', 'Schedule'], PROGRAMADO: ['EN_EJECUCION', 'Start Execution'], EN_EJECUCION: ['CERRADO', 'Close'], REPROGRAMADO: ['PROGRAMADO', 'Reschedule'] };
+                    const next = NEXT[wo.status];
+                    return (
+                      <tr key={wo.wo_id || i} className="border-t border-gray-100 hover:bg-blue-50/30 cursor-pointer" onClick={() => setSelectedOT(wo)}>
+                        <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{wo.wo_number}{wo.is_fast_track && <span className="ml-1 text-[9px] bg-amber-100 text-amber-700 px-1 rounded">FT</span>}</td>
+                        <td className="px-4 py-3 text-xs">{wo.equipment_tag || '—'}</td>
+                        <td className="px-4 py-3 text-xs text-gray-700 max-w-xs truncate">{wo.description || wo.failure_description || '—'}</td>
+                        <td className="px-4 py-3"><span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{wo.wo_type || '—'}</span></td>
+                        <td className="px-4 py-3"><PriorityLabel priority={wo.priority_code || wo.priority} /></td>
+                        <td className="px-4 py-3"><span className={'text-xs px-2 py-0.5 rounded font-semibold ' + (STATUS_COLORS[wo.status] || 'bg-gray-100')}>{STATUS_LABELS[wo.status] || wo.status}</span></td>
+                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                          {next && <button onClick={() => changeOTStatus(wo, next[0])} className="text-xs px-2 py-1 rounded bg-[#1B5E20] text-white hover:bg-[#2E7D32] font-medium">{next[1]}</button>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* WR Backlog Tab */}
+      {activeTab === "backlog" && (<>
+      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3">
+          <h3 className="text-lg font-bold text-gray-900">Approved Notifications - Planning Backlog</h3>
           <span className="text-sm text-gray-400">{filteredWRs.length} avisos</span>
         </div>
         <button onClick={handleExport}
@@ -319,6 +409,12 @@ export default function Planning({ onNavigateTab }) {
           </div>
         )}
       </div>
+    </>)}
+
+      {/* OT Detail Modal */}
+      {selectedOT && (() => { const wo = selectedOT; const SAP = { CREADO: {label:'Created',color:'bg-gray-100 text-gray-700'}, PLANIFICADO: {label:'Planned',color:'bg-blue-100 text-blue-700'}, PROGRAMADO: {label:'Scheduled',color:'bg-indigo-100 text-indigo-700'}, EN_EJECUCION: {label:'In Execution',color:'bg-amber-100 text-amber-700'}, CERRADO: {label:'Closed',color:'bg-green-100 text-green-700'}, CANCELADO: {label:'Cancelled',color:'bg-red-100 text-red-700'} }; const s = SAP[wo.status] || {label:wo.status,color:'bg-gray-100'}; const NEXT = { CREADO:[['PLANIFICADO','Plan','bg-blue-600 text-white']], PLANIFICADO:[['PROGRAMADO','Schedule','bg-indigo-600 text-white']], PROGRAMADO:[['EN_EJECUCION','Start Execution','bg-amber-500 text-white'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white']], EN_EJECUCION:[['CERRADO','Close','bg-green-600 text-white']], REPROGRAMADO:[['PROGRAMADO','Reschedule','bg-indigo-600 text-white']] }; const actions = NEXT[wo.status] || []; const ALL = ['CREADO','PLANIFICADO','PROGRAMADO','EN_EJECUCION','CERRADO']; return (<div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOT(null)}><div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}><div className="sticky top-0 bg-white border-b px-6 py-4 rounded-t-2xl flex items-center justify-between"><div><div className="flex items-center gap-2 flex-wrap"><span className="font-mono text-lg font-bold text-blue-700">{wo.wo_number}</span><span className={'text-xs px-2 py-0.5 rounded font-semibold '+s.color}>{s.label}</span><span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded">{wo.wo_type||''}</span>{wo.is_fast_track&&<span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">FAST TRACK</span>}</div><p className="text-sm text-gray-500 mt-0.5">{wo.equipment_tag||'No equipment'}</p></div><button onClick={() => setSelectedOT(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button></div><div className="px-6 py-5 space-y-4"><div><label className="text-xs font-semibold text-gray-500 uppercase">Description</label><p className="text-sm text-gray-800 mt-1 bg-gray-50 rounded-lg p-3">{wo.description||wo.failure_description||'No description'}</p></div><div className="grid grid-cols-3 gap-3"><div className="bg-blue-50 rounded-lg p-3 text-center"><div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Hrs</div><div className="text-lg font-bold text-blue-700">{wo.estimated_hours||'0'}h</div></div><div className="bg-green-50 rounded-lg p-3 text-center"><div className="text-[10px] text-green-600 font-semibold uppercase">Actual Hrs</div><div className="text-lg font-bold text-green-700">{wo.actual_hours||'0'}h</div></div><div className="bg-purple-50 rounded-lg p-3 text-center"><div className="text-[10px] text-purple-600 font-semibold uppercase">Budget</div><div className="text-lg font-bold text-purple-700">${wo.estimated_budget||'0'}</div></div></div><div><label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">SAP Flow</label><div className="flex items-center gap-1 text-xs flex-wrap">{ALL.map((st,i) => (<span key={st} className="flex items-center gap-1"><span className={'px-2 py-1 rounded font-semibold '+(wo.status===st?((SAP[st]?.color||'')+' ring-2 ring-offset-1 ring-current'):'bg-gray-100 text-gray-400')}>{SAP[st]?.label}</span>{i<ALL.length-1&&<span className="text-gray-300">{'>'}</span>}</span>))}</div></div>{actions.length>0 ? (<div className="flex items-center gap-3 flex-wrap mt-2">{actions.map(([st,lbl,cls]) => (<button key={st} onClick={() => changeOTStatus(wo, st)} className={'px-4 py-2 rounded-lg text-sm font-semibold transition-colors hover:opacity-90 '+cls}>{lbl}</button>))}<button onClick={() => changeOTStatus(wo, 'CANCELADO')} className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Cancel</button></div>) : (<p className="text-xs text-gray-400 italic">Final status — no transitions</p>)}{wo.execution_notes && <div><label className="text-xs font-semibold text-gray-500 uppercase">Execution History</label><pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans mt-1 bg-gray-50 rounded-lg p-3">{typeof wo.execution_notes === 'string' ? wo.execution_notes : JSON.stringify(wo.execution_notes, null, 2)}</pre></div>}</div></div></div>); })()}
+
+  </div>
     </div>
   );
 }

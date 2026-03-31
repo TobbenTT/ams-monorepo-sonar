@@ -157,15 +157,15 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
   });
 
   const statusLabels = {
-    DRAFT: 'Pendiente',
-    PENDING_VALIDATION: 'Pendiente',
-    VALIDATED: 'Aprobado',
+    DRAFT: 'Pending',
+    PENDING_VALIDATION: 'Pending',
+    VALIDATED: 'Approved',
     ASSIGNED: 'Asignado',
-    REJECTED: 'Rechazado',
-    CANCELLED: 'Cancelado',
+    REJECTED: 'Rejected',
+    CANCELLED: 'Cancelled',
     IN_PROGRESS: 'En Ejecución',
     COMPLETED: 'Completado',
-    CLOSED: 'Cerrado',
+    CLOSED: 'Closed',
     SCHEDULED: t('workRequests.scheduled'),
   };
 
@@ -821,15 +821,15 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
   /* ─── Status labels (i18n) ─── */
   const statusLabels = useMemo(() => ({
     ALL: t('common.all'),
-    DRAFT: 'Pendiente',
-    PENDING_VALIDATION: 'Pendiente',
-    VALIDATED: 'Aprobado',
+    DRAFT: 'Pending',
+    PENDING_VALIDATION: 'Pending',
+    VALIDATED: 'Approved',
     ASSIGNED: 'Asignado',
-    REJECTED: 'Rechazado',
-    CANCELLED: 'Cancelado',
+    REJECTED: 'Rejected',
+    CANCELLED: 'Cancelled',
     IN_PROGRESS: 'En Ejecución',
     COMPLETED: 'Completado',
-    CLOSED: 'Cerrado',
+    CLOSED: 'Closed',
     SCHEDULED: t('workRequests.scheduled'),
   }), [t]);
 
@@ -1309,22 +1309,9 @@ export default function WorkRequests({ onNavigateTab, viewMode } = {}) {
                             <Eye size={16} />
                           </button>
                           {isPending && (
-                            <>
-                              <button
-                                onClick={() => handleValidate(req.id)}
-                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors"
-                                title={t('workRequests.validate')}
-                              >
-                                <CheckCircle size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleReject(req.id)}
-                                className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                                title={t('common.reject')}
-                              >
-                                <XCircle size={16} />
-                              </button>
-                            </>
+                            <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded">
+                              Abrir detalle para validar
+                            </span>
                           )}
                           {['VALIDATED', 'ASSIGNED', 'SCHEDULED'].includes(req.status) && (
                             <button

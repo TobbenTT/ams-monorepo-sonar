@@ -68,7 +68,7 @@ def approve_work_request(
     now = datetime.now()
     priority = priority_override or wr.priority_code or "P3"
 
-    wr.status = "VALIDATED"
+    wr.status = "APROBADO"
     wr.approver_id = approver_id
     wr.approved_at = now
     wr.approval_comment = comment
@@ -107,7 +107,7 @@ def reject_work_request(
     if not wr:
         return None
 
-    wr.status = "REJECTED"
+    wr.status = "RECHAZADO"
     wr.approver_id = approver_id
     wr.rejection_reason = reason
 
@@ -133,7 +133,7 @@ def cancel_work_request(
         return None
     if wr.status in ("CLOSED", "CANCELLED"):
         return None
-    wr.status = "CANCELLED"
+    wr.status = "CANCELADO"
     if reason:
         wr.rejection_reason = reason
     validation = dict(wr.validation) if isinstance(wr.validation, dict) else {}
@@ -146,6 +146,48 @@ def cancel_work_request(
     return _to_dict(wr)
 
 
+def _record_ai_feedback(db, wr, modifications):
+    """Auto-record feedback when planner corrects AI predictions."""
+    try:
+        from api.database.models import AIFeedbackModel
+        import uuid
+
+        ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+        pd = wr.problem_description if isinstance(wr.problem_description, dict) else {}
+        if not ai:
+            return
+
+        tag = wr.equipment_tag or ""
+
+        # Compare AI predictions with planner modifications
+        field_map = {
+            "priority_code": ("priority", ai.get("priority_suggested", "")),
+            "estimated_duration": ("duration", str(ai.get("estimated_duration_hours", ""))),
+            "failure_category": ("failure_category", pd.get("failure_mode_detected", "")),
+        }
+
+        for mod_key, (field_name, predicted) in field_map.items():
+            if mod_key in modifications and predicted:
+                actual = str(modifications[mod_key])
+                is_same = actual.lower().strip() == str(predicted).lower().strip()
+                fb = AIFeedbackModel(
+                    feedback_id=str(uuid.uuid4()),
+                    work_request_id=wr.request_id,
+                    equipment_tag=tag,
+                    field_name=field_name,
+                    predicted_value=str(predicted),
+                    actual_value=actual,
+                    rating=1 if is_same else -1,
+                    feedback_source="planner_correction",
+                )
+                db.add(fb)
+
+        db.commit()
+    except Exception as e:
+        import logging
+        logging.getLogger("ocp_maintenance").warning(f"Auto-feedback failed: {e}")
+
+
 def validate_work_request(
     db: Session, request_id: str, action: str, modifications: dict | None = None
 ) -> dict | None:
@@ -155,7 +197,7 @@ def validate_work_request(
         return None
 
     if action == "APPROVE":
-        wr.status = "VALIDATED"
+        wr.status = "APROBADO"
         if modifications:
             _apply_modifications(wr, modifications)
         # Compute SLA on approval
@@ -163,7 +205,7 @@ def validate_work_request(
         wr.sla_deadline = compute_sla_deadline(priority)
         wr.work_class = derive_work_class(priority)
     elif action == "REJECT":
-        wr.status = "REJECTED"
+        wr.status = "RECHAZADO"
         if modifications and modifications.get("rejection_reason"):
             wr.rejection_reason = modifications["rejection_reason"]
     elif action == "MODIFY":
@@ -183,6 +225,10 @@ def validate_work_request(
     log_action(db, "work_request", request_id, f"VALIDATE_{action}")
     db.commit()
     db.refresh(wr)
+
+    # Auto-capture AI feedback when planner modifies AI suggestions
+    if action in ("APPROVE", "MODIFY") and modifications:
+        _record_ai_feedback(db, wr, modifications)
 
     # Auto-add to backlog after commit so there's no transaction conflict
     if action == "APPROVE":

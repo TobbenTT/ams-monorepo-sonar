@@ -10,15 +10,20 @@ from api.services.audit_service import log_action
 
 # Valid status transitions
 TRANSITIONS = {
-    "DRAFT": ["PLANNED"],
-    "PLANNED": ["RELEASED", "DRAFT"],
-    "RELEASED": ["SCHEDULED", "PLANNED"],
-    "SCHEDULED": ["IN_PROGRESS", "RELEASED"],
-    "IN_PROGRESS": ["COMPLETED"],
-    "COMPLETED": ["CLOSED", "IN_PROGRESS"],
+    "CREADO": ["PLANIFICADO", "CANCELADO"],
+    "PLANIFICADO": ["PROGRAMADO", "CANCELADO"],
+    "PROGRAMADO": ["EN_EJECUCION", "REPROGRAMADO", "CANCELADO"],
+    "REPROGRAMADO": ["PROGRAMADO", "CANCELADO"],
+    "EN_EJECUCION": ["CERRADO", "REPROGRAMADO"],
+    "CERRADO": [],
+    "CANCELADO": [],
+    # Legacy compat: old statuses redirect to new equivalents
+    "PENDIENTE": ["PLANIFICADO", "CANCELADO"],
+    "APROBADO": ["PROGRAMADO", "EN_EJECUCION", "CANCELADO"],
+    "EN_PROGRESO": ["CERRADO", "REPROGRAMADO"],
 }
 
-WO_TYPES = ("CORRECTIVO", "PREVENTIVO", "PREDICTIVO", "MEJORA", "INCIDENTE_OPERACIONAL", "MONITOREO_CONDICION")
+WO_TYPES = ("PM01", "PM02", "PM03", "PM05")
 
 
 def _generate_wo_number(db: Session) -> str:
@@ -90,7 +95,7 @@ def create_work_order(
     db: Session,
     equipment_tag: str,
     description: str,
-    wo_type: str = "CORRECTIVO",
+    wo_type: str = "PM01",
     priority_code: str = "P3",
     plant_id: str = "OCP-JFC1",
     work_request_id: str | None = None,
@@ -129,21 +134,21 @@ def create_work_order(
         is_fast_track=is_fast_track,
     )
 
-    # Fast track: P1/P2 skip planning → go directly to RELEASED
+    # Fast track: P1/P2 skip planning → go directly to APROBADO
     if is_fast_track:
-        wo.status = "RELEASED"
+        wo.status = "PROGRAMADO"
         wo.released_by = planned_by
         wo.released_at = datetime.now()
         wo.execution_notes = [{
             "timestamp": datetime.now().isoformat(),
             "user": planned_by or "system",
-            "note": f"[FAST TRACK] OT creada directamente en RELEASED por prioridad {priority_code}",
+            "note": f"[FAST TRACK] OT creada directamente en PROGRAMADO por prioridad {priority_code}",
         }]
 
     db.add(wo)
     log_action(db, "managed_work_order", wo.wo_id, "CREATE")
     if is_fast_track:
-        log_action(db, "managed_work_order", wo.wo_id, "FAST_TRACK_RELEASED")
+        log_action(db, "managed_work_order", wo.wo_id, "FAST_TRACK_PROGRAMADO")
     db.commit()
     db.refresh(wo)
     return _to_dict(wo)
@@ -154,27 +159,45 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "")
     wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
     if not wr:
         return None
-    if wr.status not in ("VALIDATED", "APPROVED", "ASSIGNED"):
+    if wr.status not in ("VALIDATED", "APPROVED", "ASSIGNED", "APROBADO"):
         return None
 
     ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
     pd = wr.problem_description if isinstance(wr.problem_description, dict) else {}
     desc_text = pd.get("original_text", "") if isinstance(pd, dict) else str(wr.problem_description or "")
 
-    # Build materials from WR spare_parts
+    # Build materials from WR spare_parts or materials field
     materials = []
-    if isinstance(wr.spare_parts, list):
+    wr_mats = getattr(wr, "materials", None)
+    if isinstance(wr_mats, list) and wr_mats:
+        for m in wr_mats:
+            if isinstance(m, dict):
+                materials.append({
+                    "code": m.get("sapId", m.get("code", m.get("material_code", ""))),
+                    "description": m.get("description", m.get("name", "")),
+                    "quantity": int(m.get("quantity", 1) or 1),
+                    "unit": m.get("unit", "PZ"),
+                })
+    if not materials and isinstance(wr.spare_parts, list):
         for sp in wr.spare_parts:
             if isinstance(sp, dict):
                 materials.append({
-                    "code": sp.get("code", sp.get("material_code", "")),
+                    "code": sp.get("code", sp.get("sapId", sp.get("material_code", ""))),
                     "description": sp.get("description", sp.get("name", "")),
-                    "quantity": sp.get("quantity", sp.get("qty", 1)),
+                    "quantity": int(sp.get("quantity", sp.get("qty", 1)) or 1),
+                    "unit": sp.get("unit", "PZ"),
                 })
     if not materials and isinstance(pd, dict):
-        materials = pd.get("materials", [])
+        for m in (pd.get("materials", []) or []):
+            if isinstance(m, dict):
+                materials.append({
+                    "code": m.get("sapId", m.get("code", "")),
+                    "description": m.get("description", ""),
+                    "quantity": int(m.get("quantity", 1) or 1),
+                    "unit": m.get("unit", "PZ"),
+                })
 
-    # Build operations from WR classification data
+    # Build operations from WR resources or classification data
     operations = []
     op_num = 1
     suggested = pd.get("suggested_action", "") if isinstance(pd, dict) else ""
@@ -182,36 +205,71 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "")
         suggested = ai.get("recommended_action", "")
     failure_type = ai.get("failure_type", "")
     failure_class = ai.get("failure_class", "")
+    est_hours = ai.get("estimated_duration_hours", 4.0) or 4.0
 
-    if suggested:
-        operations.append({
-            "op_number": op_num,
-            "description": suggested,
-            "specialty": failure_type or "MECANICO",
-            "estimated_hours": ai.get("estimated_duration_hours", 4.0) or 4.0,
-        })
-        op_num += 1
+    # Try WR resources first (populated by user or AI)
+    wr_resources = getattr(wr, "resources", None)
+    if isinstance(wr_resources, list) and wr_resources:
+        for res in wr_resources:
+            if isinstance(res, dict):
+                qty = int(res.get("quantity", 1) or 1)
+                dur = float(res.get("hours", 1) or 1)
+                operations.append({
+                    "op_number": op_num,
+                    "description": suggested or res.get("type", "Intervención"),
+                    "op_type": res.get("op_type", "INT"),
+                    "specialty": res.get("type", failure_type or "Mecánico"),
+                    "quantity": qty,
+                    "duration": dur,
+                    "estimated_hours": qty * dur,
+                    "planned_hours": qty * dur,
+                })
+                op_num += 1
+    else:
+        # Fallback: build from AI classification
+        if suggested:
+            operations.append({
+                "op_number": op_num,
+                "description": suggested,
+                "op_type": "INT",
+                "specialty": failure_type or "Mecánico",
+                "quantity": 1,
+                "duration": est_hours,
+                "estimated_hours": est_hours,
+                "planned_hours": est_hours,
+            })
+            op_num += 1
 
-    if failure_class and failure_class != suggested:
-        operations.append({
-            "op_number": op_num,
-            "description": f"Inspección: {failure_class}",
-            "specialty": failure_type or "MECANICO",
-            "estimated_hours": 1.0,
-        })
-        op_num += 1
+        if failure_class and failure_class != suggested:
+            operations.append({
+                "op_number": op_num,
+                "description": f"Inspección: {failure_class}",
+                "op_type": "INT",
+                "specialty": failure_type or "Mecánico",
+                "quantity": 1,
+                "duration": 1.0,
+                "estimated_hours": 1.0,
+                "planned_hours": 1.0,
+            })
+            op_num += 1
 
     # Fallback: at least one generic operation
     if not operations:
         operations.append({
             "op_number": 1,
-            "description": desc_text[:200] or "Intervención correctiva",
-            "specialty": failure_type or "MECANICO",
-            "estimated_hours": ai.get("estimated_duration_hours", 4.0) or 4.0,
+            "description": suggested or desc_text[:200] or "Intervención correctiva",
+            "op_type": "INT",
+            "specialty": failure_type or "Mecánico",
+            "quantity": 1,
+            "duration": est_hours,
+            "estimated_hours": est_hours,
+            "planned_hours": est_hours,
         })
 
-    wo_type_map = {"P1": "CORRECTIVO", "P2": "CORRECTIVO", "P3": "PREVENTIVO", "P4": "PREVENTIVO"}
-    wo_type = ai.get("work_order_type") or wo_type_map.get(wr.priority_code, "CORRECTIVO")
+    wo_type_map = {"P1": "PM01", "P2": "PM01", "P3": "PM02", "P4": "PM02"}
+    text_to_pm = {"CORRECTIVO": "PM01", "PREVENTIVO": "PM02", "PREDICTIVO": "PM03", "MEJORA": "PM03"}
+    raw_type = ai.get("work_order_type", "")
+    wo_type = text_to_pm.get(raw_type, raw_type) if raw_type and not raw_type.startswith("PM") else (raw_type or wo_type_map.get(wr.priority_code, "PM01"))
 
     return create_work_order(
         db=db,
@@ -242,7 +300,6 @@ def list_work_orders(
     limit: int = 200,
     offset: int = 0,
     fast_track: bool | None = None,
-    equipment_tag: str | None = None,
 ) -> list[dict]:
     q = db.query(ManagedWorkOrderModel)
     if status:
@@ -255,8 +312,6 @@ def list_work_orders(
         q = q.filter(ManagedWorkOrderModel.priority_code == priority)
     if fast_track is not None:
         q = q.filter(ManagedWorkOrderModel.is_fast_track == fast_track)
-    if equipment_tag:
-        q = q.filter(ManagedWorkOrderModel.equipment_tag == equipment_tag)
     items = q.order_by(ManagedWorkOrderModel.created_at.desc()).offset(offset).limit(limit).all()
     return [_to_dict(wo) for wo in items]
 
@@ -266,7 +321,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
     if not wo:
         return None
-    if wo.status not in ("DRAFT", "PLANNED", "RELEASED", "SCHEDULED"):
+    if wo.status not in ("CREADO", "PLANIFICADO", "PROGRAMADO", "PENDIENTE", "APROBADO"):
         return None
 
     updatable = [
@@ -296,7 +351,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
 
 
 def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", **kwargs) -> dict | None:
-    """Generic status transition with validation."""
+    """Generic status transition with validation + timestamp logging."""
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
     if not wo:
         return None
@@ -304,22 +359,43 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
     if target_status not in allowed:
         return None
 
+    old_status = wo.status
     wo.status = target_status
     wo.updated_at = datetime.now()
 
-    if target_status == "RELEASED":
+    # ── Timestamp logging: record every status change ──
+    notes = list(wo.execution_notes or [])
+    notes.append({
+        "timestamp": datetime.now().isoformat(),
+        "user": user_id or "system",
+        "note": f"Status: {old_status} -> {target_status}",
+    })
+    wo.execution_notes = notes
+
+    # ── Status-specific side effects ──
+    if target_status == "PLANIFICADO":
+        wo.planned_by = user_id or wo.planned_by
+    elif target_status == "PROGRAMADO":
         wo.released_by = user_id
         wo.released_at = datetime.now()
-    elif target_status == "IN_PROGRESS":
+    elif target_status == "REPROGRAMADO":
+        # Return to planner — supervisor could not execute
+        pass
+    elif target_status == "EN_EJECUCION":
         wo.actual_start = wo.actual_start or datetime.now()
-    elif target_status == "COMPLETED":
-        wo.actual_end = datetime.now()
+    elif target_status == "CERRADO":
+        wo.actual_end = wo.actual_end or datetime.now()
         wo.completion_pct = 100.0
-        if "actual_hours" in kwargs:
-            wo.actual_hours = kwargs["actual_hours"]
-    elif target_status == "CLOSED":
         wo.closed_by = user_id
         wo.closed_at = datetime.now()
+        if "actual_hours" in kwargs:
+            wo.actual_hours = kwargs["actual_hours"]
+    # Legacy compat
+    elif target_status == "APROBADO":
+        wo.released_by = user_id
+        wo.released_at = datetime.now()
+    elif target_status == "EN_PROGRESO":
+        wo.actual_start = wo.actual_start or datetime.now()
 
     # Extra kwargs
     if "assigned_workers" in kwargs:
@@ -332,43 +408,58 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
 
 
 def plan_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
-    return _transition(db, wo_id, "PLANNED", user_id)
+    """Planner completes planning -> PLANIFICADO."""
+    return _transition(db, wo_id, "PLANIFICADO", user_id)
+
+
+def schedule_wo(db: Session, wo_id: str, user_id: str = "", assigned_workers: list | None = None, planned_start=None, planned_end=None) -> dict | None:
+    """Programmer schedules -> PROGRAMADO."""
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if wo and planned_start:
+        wo.planned_start = planned_start
+    if wo and planned_end:
+        wo.planned_end = planned_end
+    return _transition(db, wo_id, "PROGRAMADO", user_id, assigned_workers=assigned_workers)
+
+
+def reschedule_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
+    """Supervisor returns to planner -> REPROGRAMADO."""
+    return _transition(db, wo_id, "REPROGRAMADO", user_id)
 
 
 def release_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
-    return _transition(db, wo_id, "RELEASED", user_id)
+    """Alias for plan_wo (legacy compat)."""
+    return plan_wo(db, wo_id, user_id)
 
 
-def schedule_wo(db: Session, wo_id: str, user_id: str = "", assigned_workers: list | None = None) -> dict | None:
-    return _transition(db, wo_id, "SCHEDULED", user_id, assigned_workers=assigned_workers)
+# Legacy alias
+approve_wo = plan_wo
+
+
+def reject_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
+    """Legacy: reject now cancels."""
+    return _transition(db, wo_id, "CANCELADO", user_id)
+
+
+def cancel_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
+    return _transition(db, wo_id, "CANCELADO", user_id)
+
+
+# schedule_wo defined above with plan_wo/reschedule_wo
 
 
 def start_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
-    return _transition(db, wo_id, "IN_PROGRESS", user_id)
+    """Supervisor starts execution -> EN_EJECUCION."""
+    return _transition(db, wo_id, "EN_EJECUCION", user_id)
 
 
 def complete_wo(db: Session, wo_id: str, user_id: str = "", actual_hours: float = 0) -> dict | None:
-    return _transition(db, wo_id, "COMPLETED", user_id, actual_hours=actual_hours)
+    """Complete is now mapped to close (CERRADO) since COMPLETED status no longer exists."""
+    return _transition(db, wo_id, "CERRADO", user_id, actual_hours=actual_hours)
 
 
 def close_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
-    result = _transition(db, wo_id, "CLOSED", user_id)
-    if result and result.get("work_request_id"):
-        # Auto-close the linked WR when OT is closed
-        wr = db.query(WorkRequestModel).filter(
-            WorkRequestModel.request_id == result["work_request_id"]
-        ).first()
-        if wr and wr.status not in ("CLOSED", "CANCELLED"):
-            wr.status = "CLOSED"
-            validation = dict(wr.validation) if isinstance(wr.validation, dict) else {}
-            validation["closed_by"] = user_id
-            validation["closed_at"] = datetime.now().isoformat()
-            validation["closure_notes"] = f"Auto-cerrada al cerrar OT {result.get('wo_number', wo_id)}"
-            wr.validation = validation
-            log_action(db, "work_request", wr.request_id, "CLOSE_AUTO")
-            db.commit()
-            db.refresh(wr)
-    return result
+    return _transition(db, wo_id, "CERRADO", user_id)
 
 
 def add_note(db: Session, wo_id: str, user_id: str, note: str) -> dict | None:
@@ -386,7 +477,7 @@ def add_note(db: Session, wo_id: str, user_id: str, note: str) -> dict | None:
 
 def update_progress(db: Session, wo_id: str, pct: float) -> dict | None:
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
-    if not wo or wo.status != "IN_PROGRESS":
+    if not wo or wo.status not in ("EN_EJECUCION", "EN_PROGRESO"):
         return None
     wo.completion_pct = min(max(pct, 0), 100)
     wo.updated_at = datetime.now()

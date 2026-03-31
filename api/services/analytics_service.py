@@ -55,6 +55,91 @@ def calculate_kpis(db: Session, plant_id: str, failure_dates: list[str] | None =
     return result
 
 
+
+
+def recalculate_kpis_from_history(db: Session, plant_id: str, days: int = 30) -> dict:
+    """
+    Recalcula KPIs desde el historial real de OTs.
+
+    Segun spec SAP PM (Jorge):
+    - P1/P2 o wo_type CORRECTIVO (PM03) → is_failure=True → MTBF + MTTR
+    - P3/P4 o wo_type PREVENTIVO (PM01/PM02) → cumplimiento programa
+    """
+    from api.database.models import ManagedWorkOrderModel
+    from tools.engines.kpi_engine import WorkOrderRecord
+    from datetime import datetime, timedelta
+
+    period_end = date.today()
+    period_start = period_end - timedelta(days=days)
+    total_period_hours = days * 24.0
+
+    # Fetch completed/closed OTs in the period
+    wos = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == plant_id,
+        ManagedWorkOrderModel.status.in_(["COMPLETED", "CLOSED"]),
+    ).all()
+
+    records = []
+    for wo in wos:
+        is_failure = (
+            wo.priority_code in ("P1", "P2") or
+            wo.wo_type in ("CORRECTIVO", "PM03", "NO_PROGRAMADO")
+        )
+        records.append(WorkOrderRecord(
+            wo_id=wo.wo_id,
+            equipment_id=wo.equipment_tag or wo.equipment_id or "",
+            order_type="PM03" if is_failure else "PM02",
+            created_date=(wo.created_at or datetime.now()).date(),
+            planned_start=(wo.planned_start or wo.created_at or datetime.now()).date(),
+            planned_end=(wo.planned_end or wo.created_at or datetime.now()).date(),
+            actual_start=wo.actual_start.date() if wo.actual_start else None,
+            actual_end=wo.actual_end.date() if wo.actual_end else None,
+            actual_duration_hours=wo.actual_hours if wo.actual_hours and wo.actual_hours > 0 else wo.estimated_hours,
+            is_failure=is_failure,
+        ))
+
+    kpis = KPIEngine.calculate_from_records(
+        records=records,
+        plant_id=plant_id,
+        period_start=period_start,
+        period_end=period_end,
+        total_period_hours=total_period_hours,
+    )
+
+    # Persist
+    obj = KPIMetricsModel(
+        plant_id=plant_id,
+        period_start=period_start,
+        period_end=period_end,
+        calculated_at=datetime.now(),
+        mtbf_days=kpis.mtbf_days,
+        mttr_hours=kpis.mttr_hours,
+        availability_pct=kpis.availability_pct,
+        oee_pct=kpis.oee_pct,
+        schedule_compliance_pct=kpis.schedule_compliance_pct,
+        pm_compliance_pct=kpis.pm_compliance_pct,
+        total_work_orders=kpis.total_work_orders,
+        corrective_wo_count=kpis.corrective_wo_count,
+        preventive_wo_count=kpis.preventive_wo_count,
+        reactive_ratio_pct=kpis.reactive_ratio_pct,
+    )
+    db.add(obj)
+    log_action(db, "kpi_metrics", obj.metrics_id, "RECALC")
+    db.commit()
+
+    return {
+        "plant_id": plant_id,
+        "period_days": days,
+        "wo_count": len(records),
+        "failure_count": sum(1 for r in records if r.is_failure),
+        "mtbf_days": kpis.mtbf_days,
+        "mttr_hours": kpis.mttr_hours,
+        "availability_pct": kpis.availability_pct,
+        "schedule_compliance_pct": kpis.schedule_compliance_pct,
+        "pm_compliance_pct": kpis.pm_compliance_pct,
+        "total_work_orders": kpis.total_work_orders,
+    }
+
 def fit_weibull(failure_intervals: list[float]) -> dict:
     params = WeibullEngine.fit_parameters(failure_intervals)
     return params.model_dump()

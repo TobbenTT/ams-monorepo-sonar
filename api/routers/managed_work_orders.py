@@ -12,7 +12,7 @@ from api.services import managed_wo_service
 class WOCreateRequest(BaseModel):
     equipment_tag: str
     description: str = ""
-    wo_type: str = "CORRECTIVO"
+    wo_type: str = "PM01"
     priority_code: str = "P3"
     plant_id: str = "OCP-JFC1"
     work_request_id: str | None = None
@@ -45,6 +45,8 @@ class WOUpdateRequest(BaseModel):
 
 class WOScheduleRequest(BaseModel):
     assigned_workers: list | None = None
+    planned_start: str | None = None
+    planned_end: str | None = None
 
 
 class WOCompleteRequest(BaseModel):
@@ -141,9 +143,20 @@ def update_work_order(
     update_data = data.model_dump(exclude_none=True)
     result = managed_wo_service.update_work_order(db, wo_id, update_data)
     if not result:
-        raise HTTPException(status_code=400, detail="WO not found or not editable (must be DRAFT/PLANNED)")
+        raise HTTPException(status_code=400, detail="WO not found or not editable (must be PENDIENTE/APROBADO)")
     return result
 
+
+@router.put("/{wo_id}/draft")
+def draft_work_order(
+    wo_id: str,
+    user=Depends(require_role("admin", "manager", "planner")),
+    db: Session = Depends(get_db),
+):
+    result = managed_wo_service.draft_wo(db, wo_id, getattr(user, "user_id", ""))
+    if not result:
+        raise HTTPException(status_code=400, detail="Cannot revert to draft — WO not found or invalid status")
+    return result
 
 @router.put("/{wo_id}/plan")
 def plan_work_order(
@@ -177,9 +190,24 @@ def schedule_work_order(
     db: Session = Depends(get_db),
 ):
     workers = data.assigned_workers if data else None
-    result = managed_wo_service.schedule_wo(db, wo_id, getattr(user, "user_id", ""), workers)
+    p_start = data.planned_start if data else None
+    p_end = data.planned_end if data else None
+    result = managed_wo_service.schedule_wo(db, wo_id, getattr(user, "user_id", ""), workers, planned_start=p_start, planned_end=p_end)
     if not result:
         raise HTTPException(status_code=400, detail="Cannot schedule — WO not found or invalid status")
+    return result
+
+
+@router.put("/{wo_id}/reschedule")
+def reschedule_work_order(
+    wo_id: str,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Supervisor returns WO to planner (REPROGRAMADO)."""
+    result = managed_wo_service.reschedule_wo(db, wo_id, getattr(user, "user_id", ""))
+    if not result:
+        raise HTTPException(status_code=400, detail="Cannot reschedule — WO not found or invalid status")
     return result
 
 
@@ -226,5 +254,16 @@ def add_note(wo_id: str, data: WONoteRequest, user=Depends(get_current_user), db
 def update_progress(wo_id: str, data: WOProgressRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
     result = managed_wo_service.update_progress(db, wo_id, data.completion_pct)
     if not result:
-        raise HTTPException(status_code=400, detail="WO not found or not IN_PROGRESS")
+        raise HTTPException(status_code=400, detail="WO not found or not EN_PROGRESO")
     return result
+
+
+@router.delete("/{wo_id}", dependencies=[Depends(require_role("admin", "planner"))])
+def delete_work_order(wo_id: str, db: Session = Depends(get_db)):
+    from api.database.models import ManagedWorkOrderModel
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        raise HTTPException(status_code=404, detail="Work order not found")
+    db.delete(wo)
+    db.commit()
+    return {"deleted": wo_id, "wo_number": wo.wo_number}

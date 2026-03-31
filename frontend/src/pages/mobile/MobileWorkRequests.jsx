@@ -28,16 +28,16 @@ function flowStatus(s) {
 }
 
 const FLOW_STEPS = [
-    { key: 'created', label: 'Creado', color: '#94A3B8' },
+    { key: 'created', label: 'Created', color: '#94A3B8' },
     { key: 'in_review', label: 'En Revisión', color: '#3B82F6' },
-    { key: 'approved', label: 'Aprobado', color: '#10B981' },
+    { key: 'approved', label: 'Approved', color: '#10B981' },
     { key: 'in_execution', label: 'En Ejecución', color: '#F59E0B' },
-    { key: 'closed', label: 'Cerrado', color: '#6366F1' },
+    { key: 'closed', label: 'Closed', color: '#6366F1' },
 ];
 
 const STATUS_LABELS = {
-    created: 'Creado', in_review: 'En Revisión', approved: 'Aprobado',
-    in_execution: 'En Ejecución', closed: 'Cerrado', rejected: 'Rechazado',
+    created: 'Created', in_review: 'En Revisión', approved: 'Approved',
+    in_execution: 'En Ejecución', closed: 'Closed', rejected: 'Rejected',
 };
 
 function derivePriority(wr) {
@@ -402,7 +402,7 @@ export default function MobileWorkRequests() {
                                                     backgroundColor: wr.work_class === 'NO_PROGRAMADO' ? '#FEE2E2' : '#DBEAFE',
                                                     color: wr.work_class === 'NO_PROGRAMADO' ? '#991B1B' : '#1E40AF',
                                                 }}>
-                                                    {wr.work_class === 'NO_PROGRAMADO' ? 'No Prog.' : 'Programado'}
+                                                    {wr.work_class === 'NO_PROGRAMADO' ? 'No Prog.' : 'Scheduled'}
                                                 </span>
                                             )}
                                             {wr.assignee && (

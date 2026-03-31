@@ -35,6 +35,7 @@ from api.routers import (
     managed_work_orders, feedback,
     execution, post_maintenance,
     catalogs,
+    sap_pm,
 )
 
 
@@ -200,6 +201,7 @@ def create_app() -> FastAPI:
     # Improvement Actions
     app.include_router(improvement_actions.router, prefix=prefix)
     # Jorge Phase 2 — Managed Work Orders (full OT lifecycle)
+    app.include_router(sap_pm.router, prefix=prefix, tags=["SAP PM"])
     app.include_router(managed_work_orders.router, prefix=prefix)
     # Detailed Feedback system
     app.include_router(feedback.router, prefix=prefix)

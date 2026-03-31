@@ -479,6 +479,14 @@ class WorkRequestModel(Base):
     documents: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{name, url, type}] adjuntos
     support_equipment: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{tag, description}] equipos de apoyo
     circumstances: Mapped[str | None] = mapped_column(Text, nullable=True)  # Detalle/Circunstancias (SAP campo 8)
+    # BBP SAP PM Master Data (AMSA_BBP_PM_04)
+    aviso_coding: Mapped[str | None] = mapped_column(String(10), nullable=True)  # M001, M002, M003, P001, P002
+    planning_group: Mapped[str | None] = mapped_column(String(10), nullable=True)  # M01-M05, P01-P03
+    area_empresa: Mapped[str | None] = mapped_column(String(10), nullable=True)  # SEC, HUM, RIP, PER, CAR, TRA, APO, AUX, TAL
+    work_center: Mapped[str | None] = mapped_column(String(20), nullable=True)  # PASMEC01, MPCMEC01, etc.
+    failure_object_part: Mapped[str | None] = mapped_column(String(100), nullable=True)  # Parte Objeto (Cat B)
+    technical_location: Mapped[str | None] = mapped_column(String(100), nullable=True)  # Ubicacion tecnica SAP
+    aviso_number: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Numero correlativo secuencial
 
     __table_args__ = (
         Index("ix_work_requests_status", "status"),
@@ -520,8 +528,8 @@ class ManagedWorkOrderModel(Base):
     estimated_hours: Mapped[float] = mapped_column(Float, default=4.0)
     actual_hours: Mapped[float] = mapped_column(Float, default=0.0)
 
-    # Workflow: DRAFT → PLANNED → RELEASED → SCHEDULED → IN_PROGRESS → COMPLETED → CLOSED
-    status: Mapped[str] = mapped_column(String(20), default="DRAFT")
+    # Workflow: CREADO -> PLANIFICADO -> PROGRAMADO -> EN_EJECUCION -> CERRADO (also REPROGRAMADO, CANCELADO)
+    status: Mapped[str] = mapped_column(String(30), default="CREADO")
     planned_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
     released_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
     released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -531,6 +539,10 @@ class ManagedWorkOrderModel(Base):
 
     # Fast track (P1/P2 imprevistos skip planning)
     is_fast_track: Mapped[bool] = mapped_column(Boolean, default=False)
+    # SAP PM fields (inherited from WR)
+    technical_location: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    planning_group: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    work_center: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Execution
     completion_pct: Mapped[float] = mapped_column(Float, default=0.0)
@@ -540,9 +552,11 @@ class ManagedWorkOrderModel(Base):
     risk_analysis: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     budget_approved: Mapped[bool] = mapped_column(Boolean, default=False)
     budget_amount: Mapped[float | None] = mapped_column(Float, nullable=True)  # Gasto (presupuestado)
-    labor_cost: Mapped[float | None] = mapped_column(Float, nullable=True)     # Costo mano de obra
-    material_cost: Mapped[float | None] = mapped_column(Float, nullable=True)  # Costo materiales
-    external_cost: Mapped[float | None] = mapped_column(Float, nullable=True)  # Costo servicios externos
+    labor_cost: Mapped[float | None] = mapped_column(Float, nullable=True)               # Costo mano de obra
+    material_cost: Mapped[float | None] = mapped_column(Float, nullable=True)            # Costo materiales real
+    external_cost: Mapped[float | None] = mapped_column(Float, nullable=True)            # Costo servicios externos real
+    planned_material_cost: Mapped[float | None] = mapped_column(Float, nullable=True)    # Costo materiales plan
+    planned_external_cost: Mapped[float | None] = mapped_column(Float, nullable=True)    # Costo servicios externos plan
     actual_total_cost: Mapped[float | None] = mapped_column(Float, nullable=True)  # Costo total real
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
@@ -1430,3 +1444,25 @@ class PostMaintenanceReviewModel(Base):
     created_by: Mapped[str] = mapped_column(String(50), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class AIFeedbackModel(Base):
+    """Tracks AI prediction accuracy for learning loop."""
+    __tablename__ = "ai_feedback"
+
+    feedback_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    work_request_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    work_order_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    equipment_tag: Mapped[str] = mapped_column(String(100), default="")
+    field_name: Mapped[str] = mapped_column(String(50), default="")  # priority, duration, failure_category, materials
+    predicted_value: Mapped[str] = mapped_column(Text, default="")
+    actual_value: Mapped[str] = mapped_column(Text, default="")
+    rating: Mapped[int] = mapped_column(Integer, default=0)  # -1 bad, 0 neutral, 1 good
+    feedback_source: Mapped[str] = mapped_column(String(30), default="manual")  # manual, planner_correction, wo_completion
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    __table_args__ = (
+        Index("ix_ai_feedback_equipment", "equipment_tag"),
+        Index("ix_ai_feedback_field", "field_name"),
+    )
+

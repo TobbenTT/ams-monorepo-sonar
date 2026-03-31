@@ -323,3 +323,11 @@ def get_analytics_page_data(
         "cost_by_area": cost_by_area,
         "reliability_kpis": equipment_kpis,
     }
+
+
+@router.post("/recalculate")
+def recalculate_kpis(plant_id: str = "OCP-JFC1", days: int = 30,
+                     user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fuerza recalculo de KPIs desde historial real de OTs (admin/planner)."""
+    from api.services.analytics_service import recalculate_kpis_from_history
+    return recalculate_kpis_from_history(db, plant_id, days)

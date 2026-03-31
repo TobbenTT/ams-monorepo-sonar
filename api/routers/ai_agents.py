@@ -14,6 +14,7 @@ import os
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
@@ -30,6 +31,13 @@ from api.schemas import (
 )
 
 log = logging.getLogger(__name__)
+
+
+
+class SuggestFailureRequest(BaseModel):
+    description: str
+    equipment_tag: str | None = None
+    equipment_name: str | None = None
 
 router = APIRouter(
     prefix="/ai",
@@ -598,3 +606,62 @@ def equipment_chat(
         raise HTTPException(status_code=500, detail=result["error"])
 
     return result
+
+@router.post("/suggest-failure")
+def suggest_failure_fields(data: SuggestFailureRequest, _user=Depends(get_current_user)):
+    """Use AI to suggest failure classification fields from a text description."""
+    import json as _json
+    key = _check_anthropic_key()
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=key)
+        equip_ctx = f"Equipo: {data.equipment_tag} ({data.equipment_name})" if data.equipment_tag else ""
+        prompt = f"""Eres un experto en mantenimiento industrial SAP PM.
+Un técnico describió esta falla: "{data.description}"
+{equip_ctx}
+
+Clasifica la falla eligiendo EXACTAMENTE uno de los valores listados abajo.
+
+CATALOGO (debes elegir exactamente uno de los valores de cada lista):
+
+MECANICO:
+  partes: RODAMIENTOS, SELLOS MECANICOS, ACOPLES, EJES, ENGRANAJES, CORREAS, BOMBAS, VALVULAS, FILTROS
+  sintomas: ALTA VIBRACION, ALTA TEMPERATURA, RUIDO ANORMAL, TRABADO, SIN FLUJO, FILTRACION, DESGASTE VISIBLE, FUGA ACEITE, ATASCAMIENTO
+  causas: DESGASTE, FALTA LUBRICACION, CORROSION, DESALINEADO, OBSTRUIDO, SOBRECARGA, FATIGA, MONTAJE INCORRECTO
+
+ELECTRICO:
+  partes: MOTOR ELECTRICO, CABLES / CONDUCTORES, PROTECCIONES, TABLERO ELECTRICO, VARIADOR FRECUENCIA, CONTACTOR
+  sintomas: NO ARRANCA, SOBRECALENTAMIENTO, CORTOCIRCUITO, DISPARO PROTECCION, BAJA AISLACION, OPERACION INTERMITENTE, CONSUMO EXCESIVO
+  causas: PERDIDA AISLACION, DESGASTE, SUELTO, SOBRECARGA ELECTRICA, HUMEDAD, CALENTAMIENTO EXCESIVO
+
+INSTRUMENTACION:
+  partes: SENSOR / TRANSDUCTOR, TRANSMISOR, VALVULA DE CONTROL, PLC / DCS, ACTUADOR, POSICIONADOR
+  sintomas: LECTURA ERRONEA, SIN SENAL, SENAL INESTABLE, NO RESPONDE, ALARMA FALSA, COMUNICACION PERDIDA
+  causas: DESCALIBRADO, CONTAMINADO, PERDIDA PARAMETROS, PERDIDA COMUNICACION, OBSTRUCCION
+
+Responde SOLO con un JSON con estas claves exactas:
+{{
+  "failure_category": "uno de: MECANICO, ELECTRICO, INSTRUMENTACION",
+  "failure_object_part": "copia exacta de uno de los valores de partes del catalogo",
+  "failure_symptom": "copia exacta de uno de los valores de sintomas del catalogo",
+  "failure_cause": "copia exacta de uno de los valores de causas del catalogo",
+  "suggested_action": "acción de mantenimiento recomendada (max 80 chars, texto libre)",
+  "priority": "P1, P2, P3 o P4",
+  "activity_class": "uno de: EM, UC, PR, PM",
+  "work_conditions": "condiciones de seguridad necesarias para ejecutar el trabajo (max 100 chars, ej: Equipo bloqueado LOTO, area despejada, permiso trabajo en caliente)"
+}}"""
+
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=600,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        text = response.content[0].text.strip()
+        start = text.find('{')
+        end = text.rfind('}') + 1
+        result = _json.loads(text[start:end]) if start >= 0 else {}
+        return {"status": "ok", "suggestions": result}
+    except Exception as e:
+        log.error("suggest-failure error: %s", e)
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+

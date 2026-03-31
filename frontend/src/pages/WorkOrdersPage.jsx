@@ -564,7 +564,7 @@ export default function WorkOrdersPage() {
 
   const handleRejectWR = async (wrId) => {
     try {
-      await api.validateWorkRequest(wrId, { action: 'REJECT', modifications: { rejection_reason: 'Rechazado' } });
+      await api.validateWorkRequest(wrId, { action: 'REJECT', modifications: { rejection_reason: 'Rejected' } });
       toast.success('Aviso rechazado');
       reloadData();
     } catch (err) {
@@ -998,7 +998,7 @@ export default function WorkOrdersPage() {
                             wo.wo_type === 'INCIDENTE_OPERACIONAL' ? 'bg-red-200 text-red-800' :
                             wo.wo_type === 'MONITOREO_CONDICION' ? 'bg-cyan-100 text-cyan-700' :
                             'bg-gray-100 text-gray-700'
-                          }`}>{{ CORRECTIVO: 'Correctivo', PREVENTIVO: 'Preventivo', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' }[wo.wo_type] || wo.wo_type}</Badge>
+                          }`}>{{ CORRECTIVO: 'Corrective', PREVENTIVO: 'Preventive', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' }[wo.wo_type] || wo.wo_type}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getCriticalityColor(wo.priority_code === 'P1' || wo.priority_code === 'P2' ? 'High' : wo.priority_code === 'P3' ? 'Medium' : 'Low')}>
@@ -1159,7 +1159,7 @@ export default function WorkOrdersPage() {
       {/* ── Professional OT Detail Modal ── */}
       {selectedOT && (() => {
         const sla = getSlaDays(selectedOT);
-        const WO_TYPE_LABELS = { CORRECTIVO: 'Correctivo', PREVENTIVO: 'Preventivo', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' };
+        const WO_TYPE_LABELS = { CORRECTIVO: 'Corrective', PREVENTIVO: 'Preventive', PREDICTIVO: 'Predictivo', MEJORA: 'Mejora', INCIDENTE_OPERACIONAL: 'Incidente Op.', MONITOREO_CONDICION: 'Monitoreo' };
         const SPECIALTY_OPTIONS = ['Mecánico', 'Eléctrico', 'Instrumentación', 'Soldador', 'Lubricación', 'Andamios', 'Aislamiento', 'Operador', 'Supervisor', 'Otro'];
         const OT_TABS = [
           { id: 'resumen', label: 'Resumen', icon: Info },

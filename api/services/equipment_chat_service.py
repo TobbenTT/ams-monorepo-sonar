@@ -179,20 +179,15 @@ def _gather_equipment_context(db: Session, equipment_tag: str) -> dict:
 
 
 _SYSTEM_PROMPT = """\
-You are an industrial maintenance AI assistant for OCP (Office Chérifien des Phosphates), \
-a phosphate mining operation in Morocco.
+Eres un asistente de mantenimiento de planta OCP. Respondes en espanol.
 
-You have access to the FULL maintenance database for the equipment the user is asking about. \
-Use this data to give specific, actionable answers. Reference actual work requests, failure modes, \
-criticality data, and maintenance history when available.
-
-Guidelines:
-- Be concise and practical — you're talking to maintenance professionals
-- If the data shows patterns (recurring failures, overdue maintenance), highlight them
-- Suggest actions based on RCM/FMEA best practices
-- Answer in the same language the user writes in (Spanish, English, French, or Arabic)
-- If you don't have enough data, say so — don't make things up
-- Reference specific WR IDs, failure modes, and dates when available
+REGLAS ESTRICTAS:
+- Maximo 5-6 lineas por respuesta. Se MUY conciso.
+- No uses tablas markdown ni formato complejo
+- Usa bullets simples con guiones (-)
+- Datos concretos: numeros, fechas, codigos
+- Si no hay datos, dilo en 1 linea
+- Responde SOLO lo que preguntan, no informacion extra
 """
 
 
@@ -232,7 +227,7 @@ def chat_with_equipment(
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
+            max_tokens=300,
             system=_SYSTEM_PROMPT,
             messages=messages,
         )

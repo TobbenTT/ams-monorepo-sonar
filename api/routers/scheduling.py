@@ -232,19 +232,25 @@ def ai_auto_schedule(
         monday = today - timedelta(days=weekday)
         work_days = [monday + timedelta(days=d) for d in range(5)]
         
+        # Track how many WOs each tech has, to spread across days
+        tech_wo_count = {}
         for i, wo in enumerate(wo_list):
             if not available_techs:
                 break
             tech = available_techs[i % len(available_techs)]
-            day = work_days[i % len(work_days)]
+            tid = tech["worker_id"]
+            n = tech_wo_count.get(tid, 0)
+            tech_wo_count[tid] = n + 1
+            day = work_days[n % len(work_days)]
+            shift = "night" if n % 2 == 1 else "day"
             assignments.append({
                 "wo_id": wo["wo_id"],
                 "wo_number": wo["wo_number"],
-                "worker_id": tech["worker_id"],
+                "worker_id": tid,
                 "worker_name": tech["name"],
                 "suggested_date": day.isoformat(),
                 "reason": "AI fallback: round-robin by specialty",
-                "shift": "day" if i % 3 != 2 else "night",
+                "shift": shift,
             })
         return {"assignments": assignments, "message": f"Assigned {len(assignments)} WOs to {len(set(a['worker_id'] for a in assignments))} technicians", "ai_used": False}
 

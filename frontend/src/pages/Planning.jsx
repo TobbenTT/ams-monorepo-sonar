@@ -83,6 +83,23 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [editBudget, setEditBudget] = useState({ labor: '', material: '', external: '' });
   const [editDates, setEditDates] = useState({ start: '', end: '' });
   const [savingOT, setSavingOT] = useState(false);
+  const [woSearch, setWoSearch] = useState("");
+  const [woStatusFilter, setWoStatusFilter] = useState("All");
+  const [woPriorityFilter, setWoPriorityFilter] = useState("All");
+  const [woTypeFilter, setWoTypeFilter] = useState("All");
+
+  const filteredWOs = useMemo(() => {
+    let wos = managedWOs;
+    if (woSearch) {
+      const q = woSearch.toLowerCase();
+      wos = wos.filter(wo => (wo.wo_number || "").toLowerCase().includes(q) || (wo.equipment_tag || "").toLowerCase().includes(q) || (wo.description || "").toLowerCase().includes(q));
+    }
+    if (woStatusFilter !== "All") wos = wos.filter(wo => wo.status === woStatusFilter);
+    if (woPriorityFilter !== "All") wos = wos.filter(wo => (wo.priority_code || wo.priority) === woPriorityFilter);
+    if (woTypeFilter !== "All") wos = wos.filter(wo => wo.wo_type === woTypeFilter);
+    return wos;
+  }, [managedWOs, woSearch, woStatusFilter, woPriorityFilter, woTypeFilter]);
+
   const [execData, setExecData] = useState({ actual_hours: '', observations: '', materials_used: [] });
   const [closingWithAI, setClosingWithAI] = useState(false);
   const [matSearchQuery, setMatSearchQuery] = useState('');
@@ -451,8 +468,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           Notifications ({workRequests.length})
         </button>
         <button
-          onClick={() => setActiveTab('capacidades')}
-          className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'capacidades' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          onClick={() => setActiveTab('capacity')}
+          className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'capacity' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Capacidades
         </button>
@@ -460,9 +477,50 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
       {activeTab === "ots" && (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900">Work Orders</h3>
-            <span className="text-sm text-gray-400">{managedWOs.length} OTs</span>
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Work Orders</h3>
+              <span className="text-sm text-gray-400">{filteredWOs.length} / {managedWOs.length} OTs</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input type="text" value={woSearch} onChange={e => setWoSearch(e.target.value)}
+                  placeholder="Search WO number, equipment, description..."
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+              </div>
+              <select value={woStatusFilter} onChange={e => setWoStatusFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
+                <option value="All">All Status</option>
+                <option value="CREADO">Created</option>
+                <option value="PLANIFICADO">Planned</option>
+                <option value="PROGRAMADO">Scheduled</option>
+                <option value="EN_EJECUCION">In Execution</option>
+                <option value="CERRADO">Closed</option>
+                <option value="CANCELADO">Cancelled</option>
+              </select>
+              <select value={woPriorityFilter} onChange={e => setWoPriorityFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
+                <option value="All">All Priority</option>
+                <option value="P1">P1 - Immediate</option>
+                <option value="P2">P2 - High</option>
+                <option value="P3">P3 - Medium</option>
+                <option value="P4">P4 - Low</option>
+              </select>
+              <select value={woTypeFilter} onChange={e => setWoTypeFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
+                <option value="All">All Types</option>
+                <option value="PM01">PM01 - Corrective</option>
+                <option value="PM02">PM02 - Preventive</option>
+                <option value="PM03">PM03 - Predictive</option>
+                <option value="PM05">PM05 - Improvement</option>
+                <option value="PM07">PM07</option>
+              </select>
+              {(woSearch || woStatusFilter !== "All" || woPriorityFilter !== "All" || woTypeFilter !== "All") && (
+                <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter("All"); setWoTypeFilter("All"); }}
+                  className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
+              )}
+            </div>
           </div>
           {wosLoading ? (
             <div className="flex items-center justify-center py-16 text-gray-400">
@@ -489,7 +547,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   </tr>
                 </thead>
                 <tbody>
-                  {managedWOs.map((wo, i) => {
+                  {filteredWOs.map((wo, i) => {
                     const SAP_STATUS = {
                       CREADO: { label: 'Created', color: 'bg-yellow-100 text-yellow-700' },
                       PLANIFICADO: { label: 'Planned', color: 'bg-blue-100 text-blue-700' },
@@ -1338,7 +1396,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         );
       })()}
 
-      {activeTab === 'capacidades' && (
+      {activeTab === 'capacity' && (
         <CapacityEvaluation />
       )}
 

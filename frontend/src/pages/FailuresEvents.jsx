@@ -345,9 +345,8 @@ export default function FailuresEvents() {
 
   const handleOptimizeStrategy = () => {
     runAction('optimizeStrategy', () => api.createAiSession({
-      session_type: 'STRATEGY_OPTIMIZATION',
-      plant_id: plant,
-      context: { area: planningGroup, failures: filteredWRs.length },
+      equipment_tag: (filteredWRs[0]?.equipment_tag || 'OCP-CON1-CHAN01'),
+      plant_id: plant || 'OCP-JFC1',
     })).then(r => { if (r) navigate('/ai-agents'); });
   };
 
@@ -409,7 +408,7 @@ export default function FailuresEvents() {
     const unassigned = filteredWRs.find(w => !w.assigned_to_name && ['VALIDATED', 'APPROVED'].includes(w.status));
     if (!unassigned) { toast.warning(t('failuresEvents.action.dispatchSupport.noData') || 'No hay avisos sin asignar'); return; }
     runAction('dispatchSupport', () => api.assignWorkRequest(unassigned.request_id, {
-      workers: [{ name: topAssignee.name, specialty: 'General' }],
+      workers: [{ worker_id: topAssignee.name || 'auto', worker_name: topAssignee.name || 'Auto-assigned' }],
     }));
   };
 
@@ -429,15 +428,14 @@ export default function FailuresEvents() {
 
   const handleReviewStrategy = () => {
     runAction('reviewStrategy', () => api.createAiSession({
-      session_type: 'STRATEGY_REVIEW',
-      plant_id: plant,
-      context: { area: planningGroup, wrs: filteredWRs.length },
+      equipment_tag: (filteredWRs[0]?.equipment_tag || 'OCP-CON1-CHAN01'),
+      plant_id: plant || 'OCP-JFC1',
     })).then(r => { if (r) navigate('/ai-agents'); });
   };
 
   const handleOptimizeAiStrategy = () => {
     runAction('optimizeAiStrategy', () => api.createAiSession({
-      session_type: 'OPTIMIZATION',
+      equipment_tag: (filteredWRs[0]?.equipment_tag || 'OCP-CON1-CHAN01'),
       plant_id: plant,
       context: { area: planningGroup, repetitive: repetitiveFailuresData.length },
     })).then(r => { if (r) navigate('/ai-agents'); });
@@ -1433,7 +1431,7 @@ export default function FailuresEvents() {
         </div>
         <div className="grid grid-cols-3 gap-3">
           {[
-            { key: 'checkAiStatus', label: t('failuresEvents.action.checkAiStatus.label') || 'CoPilot Ready', icon: '\uD83E\uDD16', handler: handleCheckAiStatus, color: 'bg-emerald-600 hover:bg-emerald-500' },
+            
             { key: 'generateWO', label: t('failuresEvents.action.generateWO.label') || 'Generate Work Order', icon: '\uD83D\uDCDD', handler: handleGenerateWorkOrder, color: 'bg-blue-600 hover:bg-blue-500' },
             { key: 'dispatchSupport', label: t('failuresEvents.action.dispatchSupport.label') || 'Dispatch Support', icon: '\uD83D\uDC77', handler: handleDispatchSupport, color: 'bg-amber-600 hover:bg-amber-500' },
             { key: 'escalateIssue', label: t('failuresEvents.action.escalateIssue.label') || 'Escalate Issue', icon: '\u26A1', handler: handleEscalateIssue, color: 'bg-red-600 hover:bg-red-500' },

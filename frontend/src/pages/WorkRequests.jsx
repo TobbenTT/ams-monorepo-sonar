@@ -443,7 +443,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
 
 ${resources.length ? `<div class="section">
   <div class="section-title">Required Resources</div>
-  <table><thead><tr><th>Especialidad</th><th>Quantity</th><th>Horas</th></tr></thead><tbody>
+  <table><thead><tr><th>Specialty</th><th>Quantity</th><th>Hours</th></tr></thead><tbody>
   ${resources.map(r => typeof r === 'string' ? `<tr><td colspan="3">${r}</td></tr>` : `<tr><td>${r.type||''}</td><td>${r.quantity||1}</td><td>${r.hours||0}h</td></tr>`).join('')}
   </tbody></table>
 </div>` : ''}
@@ -584,7 +584,7 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Wrench} label="Activity Class" value={item.activity_class} />
           )}
           {item.plant_condition && (
-            <DetailCard icon={Zap} label="Condición de Planta" value={item.plant_condition} />
+            <DetailCard icon={Zap} label="Plant Condition" value={item.plant_condition} />
           )}
           {item.created_at && (
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
@@ -729,7 +729,7 @@ ${materials.length ? `<div class="section">
                           </span>
                         ))}
                       </div>
-                      <input type="text" placeholder="Agregar equipo + Enter" className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none w-full"
+                      <input type="text" placeholder="Add equipment + Enter" className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none w-full"
                         onKeyDown={(e) => { if (e.key === 'Enter' && e.target.value.trim()) { setEditData(d => ({ ...d, support_equipment: [...(d.support_equipment || []), e.target.value.trim()] })); e.target.value = ''; } }} />
                     </div>
                   ) : (
@@ -755,7 +755,7 @@ ${materials.length ? `<div class="section">
               {editing ? (
                 <div className="space-y-2">
                   <div className="grid grid-cols-[1fr_80px_80px_30px] gap-2 text-xs text-muted-foreground font-semibold">
-                    <span>Especialidad</span><span>Personas</span><span>Horas</span><span></span>
+                    <span>Specialty</span><span>People</span><span>Hours</span><span></span>
                   </div>
                   {(editData.resources || []).map((r, i) => {
                     const res = typeof r === 'object' ? r : { type: r, quantity: 1, hours: 4 };
@@ -767,11 +767,11 @@ ${materials.length ? `<div class="section">
                         setEditData(d => ({ ...d, resources: arr }));
                       }} className="text-sm px-2 py-1.5 border border-border rounded bg-background">
                         <option value="">Select...</option>
-                        <option value="Mecanico">Mecanico</option>
-                        <option value="Electrico">Electrico</option>
-                        <option value="Instrumentacion">Instrumentacion</option>
+                        <option value="Mecanico">Mechanical</option>
+                        <option value="Electrico">Electrical</option>
+                        <option value="Instrumentacion">Instrumentation</option>
                         <option value="Supervisor">Supervisor</option>
-                        <option value="Soldador">Soldador</option>
+                        <option value="Soldador">Welder</option>
                         <option value="Rigger">Rigger</option>
                       </select>
                       <input type="number" min="1" value={res.quantity || 1} onChange={e => {
@@ -788,7 +788,7 @@ ${materials.length ? `<div class="section">
                     </div>
                     );
                   })}
-                  <button onClick={() => setEditData(d => ({ ...d, resources: [...(d.resources || []), { type: 'Mecanico', quantity: 1, hours: 4 }] }))}
+                  <button onClick={() => setEditData(d => ({ ...d, resources: [...(d.resources || []), { type: 'Mechanical', quantity: 1, hours: 4 }] }))}
                     className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Add recurso</button>
                 </div>
               ) : (
@@ -879,7 +879,7 @@ ${materials.length ? `<div class="section">
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${allChecked ? 'bg-[#1B5E20] text-white hover:bg-[#2E7D32]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                 >
                   <CheckCircle size={16} />
-                  {editing ? 'Save y Approve' : t('workRequests.validateRequest')}
+                  {editing ? 'Save & Approve' : t('workRequests.validateRequest')}
                 </button>
                 <button
                   onClick={() => { onReject(item.id); onClose(); }}

@@ -78,8 +78,8 @@ export default function FailureCapture({ onNavigateTab }) {
 
   const SPECIAL_EQUIPMENT = [
     'Grua 20 Ton', 'Grua 50 Ton', 'Grua Horquilla', 'Andamio Multidireccional',
-    'Andamio Tubular', 'Camion Pluma', 'Plataforma Elevadora', 'Soldadora MIG/MAG',
-    'Soldadora TIG', 'Soldadora Arco', 'Compresor Portatil', 'Generador Electrical',
+    'Tubular Scaffold', 'Crane Truck', 'Lift Platform', 'MIG/MAG Welder',
+    'TIG Welder', 'Arc Welder', 'Portable Compressor', 'Electric Generator',
     'Bomba Sumergible', 'Hidrolavadora', 'Equipo Alineacion Laser',
     'Analizador de Vibraciones', 'Camara Termografica', 'Megohmetro',
     'Multimetro Industrial', 'Torquimetro', 'Extractor Hidraulico',
@@ -88,7 +88,7 @@ export default function FailureCapture({ onNavigateTab }) {
   ];
 
   const RESOURCE_TYPES = [
-    'Mechanical', 'Electrical', 'Instrumentista', 'Lubricador', 'Soldador',
+    'Mechanical', 'Electrical', 'Instrumentation', 'Lubrication', 'Soldador',
     'Operador Grua', 'Andamiero', 'Calderero', 'Ayudante General', 'Supervisor',
   ];
 

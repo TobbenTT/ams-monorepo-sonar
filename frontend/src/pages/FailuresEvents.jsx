@@ -1594,9 +1594,9 @@ export default function FailuresEvents() {
                         <select value={wrEditForm.failure_category} onChange={e => setWrEditForm({...wrEditForm, failure_category: e.target.value})}
                           className="w-full mt-1 border rounded-lg p-2 text-sm">
                           <option value="">—</option>
-                          <option value="MECANICO">Mecanico</option>
-                          <option value="ELECTRICO">Electrico</option>
-                          <option value="INSTRUMENTACION">Instrumentacion</option>
+                          <option value="MECANICO">Mechanical</option>
+                          <option value="ELECTRICO">Electrical</option>
+                          <option value="INSTRUMENTACION">Instrumentation</option>
                           <option value="PROCESO">Proceso</option>
                           <option value="ESTRUCTURAL">Estructural</option>
                         </select>
@@ -1659,7 +1659,7 @@ export default function FailuresEvents() {
                         <h3 className="text-sm font-semibold text-gray-700 mb-1">Clasificacion AI</h3>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           {ai.work_order_type && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Tipo OT:</span> <span className="font-medium">{ai.work_order_type}</span></div>}
-                          {ai.estimated_duration_hours && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Horas est.:</span> <span className="font-medium">{ai.estimated_duration_hours}h</span></div>}
+                          {ai.estimated_duration_hours && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Est. hours:</span> <span className="font-medium">{ai.estimated_duration_hours}h</span></div>}
                           {ai.plant_id && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Planta:</span> <span className="font-medium">{ai.plant_id}</span></div>}
                           {ai.criticality && <div className="bg-gray-50 rounded p-2"><span className="text-gray-400">Criticidad:</span> <span className="font-medium">{ai.criticality}</span></div>}
                         </div>

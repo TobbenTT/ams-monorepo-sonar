@@ -98,8 +98,8 @@ export default function WorkOrdersPage() {
 
   const SPECIAL_EQUIPMENT = [
     'Grúa 20 Ton', 'Grúa 50 Ton', 'Grúa Horquilla', 'Andamio Multidireccional',
-    'Andamio Tubular', 'Camión Pluma', 'Plataforma Elevadora', 'Soldadora MIG/MAG',
-    'Soldadora TIG', 'Soldadora Arco', 'Compresor Portátil', 'Generador Eléctrico',
+    'Tubular Scaffold', 'Crane Truck', 'Lift Platform', 'MIG/MAG Welder',
+    'TIG Welder', 'Arc Welder', 'Portable Compressor', 'Electric Generator',
     'Bomba Sumergible', 'Hidrolavadora', 'Equipo Alineación Láser',
     'Analizador de Vibraciones', 'Cámara Termográfica', 'Megóhmetro',
     'Multímetro Industrial', 'Torquímetro', 'Extractor Hidráulico',
@@ -108,7 +108,7 @@ export default function WorkOrdersPage() {
   ];
 
   const RESOURCE_TYPES = [
-    'Mecánico', 'Eléctrico', 'Instrumentista', 'Lubricador', 'Soldador',
+    'Mechanical', 'Electrical', 'Instrumentation', 'Lubrication', 'Welder',
     'Operador Grúa', 'Andamiero', 'Calderero', 'Ayudante General', 'Supervisor',
   ];
   const COMMON_MATERIALS = [
@@ -1819,7 +1819,7 @@ export default function WorkOrdersPage() {
                 onClick={() => { setCreatedWRId(null); }}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
               >
-                Crear Otro
+                Create Another
               </button>
             </div>
           </div>
@@ -1830,7 +1830,7 @@ export default function WorkOrdersPage() {
       {selectedOT && (() => {
         const sla = getSlaDays(selectedOT);
         const WO_TYPE_LABELS = { PM01: 'PM01 - Corrective', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Scheduled', PM05: 'PM05 - Calib./Reparación' };
-        const SPECIALTY_OPTIONS = ['Mecánico', 'Eléctrico', 'Instrumentación', 'Soldador', 'Lubricación', 'Andamios', 'Aislamiento', 'Operador', 'Supervisor', 'Otro'];
+        const SPECIALTY_OPTIONS = ['Mechanical', 'Electrical', 'Instrumentation', 'Welder', 'Lubrication', 'Scaffolding', 'Insulation', 'Operator', 'Supervisor', 'Other'];
         const OP_TYPE_OPTIONS = [{ value: 'INT', label: 'INT' }, { value: 'EXT', label: 'EXT' }];
         const OT_TABS = [
           { id: 'resumen', label: 'Summary', icon: Info },
@@ -1940,11 +1940,11 @@ export default function WorkOrdersPage() {
                   {/* Key metrics */}
                   <div className="grid grid-cols-4 gap-3">
                     <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Horas Plan.</div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Planned Hrs</div>
                       <div className="text-lg font-bold text-gray-900">{selectedOT.estimated_hours || 0}h</div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Horas Real</div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Actual Hrs</div>
                       <div className={`text-lg font-bold ${(selectedOT.actual_hours || 0) > (selectedOT.estimated_hours || 0) ? 'text-red-600' : 'text-gray-900'}`}>{selectedOT.actual_hours || 0}h</div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -2043,8 +2043,8 @@ export default function WorkOrdersPage() {
                     </div>
                     <div className="flex gap-2">
                       {isEditable && (
-                        <Button size="sm" variant="outline" onClick={() => setOtOps(prev => [...prev, { _id: Date.now(), step: prev.length + 1, description: '', op_type: 'INT', specialty: 'Mecánico', quantity: 1, duration: 1, planned_hours: 1, actual_hours: 0 }])}>
-                          <Plus className="w-3 h-3 mr-1" /> Agregar
+                        <Button size="sm" variant="outline" onClick={() => setOtOps(prev => [...prev, { _id: Date.now(), step: prev.length + 1, description: '', op_type: 'INT', specialty: 'Mechanical', quantity: 1, duration: 1, planned_hours: 1, actual_hours: 0 }])}>
+                          <Plus className="w-3 h-3 mr-1" /> Add
                         </Button>
                       )}
                       {isEditable && otOps.length > 0 && (
@@ -2069,7 +2069,7 @@ export default function WorkOrdersPage() {
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-10">#</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Type</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">Especialidad</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">Specialty</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Cant.</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Duración</th>
                             <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">HH Plan</th>
@@ -2100,7 +2100,7 @@ export default function WorkOrdersPage() {
                               <td className="px-3 py-2">
                                 {isEditable ? (
                                   <select className="w-full border-0 border-b border-gray-200 p-0 text-xs focus:border-emerald-400 focus:ring-0 bg-transparent"
-                                    value={op.specialty || 'Mecánico'} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, specialty: e.target.value } : o))}>
+                                    value={op.specialty || 'Mechanical'} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, specialty: e.target.value } : o))}>
                                     {SPECIALTY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                                   </select>
                                 ) : <span className="text-xs">{op.specialty || '—'}</span>}
@@ -2148,7 +2148,7 @@ export default function WorkOrdersPage() {
                   {/* Labour summary by specialty */}
                   {otOps.length > 0 && (
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Resumen por Especialidad</label>
+                      <label className="text-xs text-gray-500 mb-1 block">Summary by Specialty</label>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(otOps.reduce((acc, op) => { const s = op.specialty || 'Sin definir'; acc[s] = (acc[s] || 0) + (parseFloat(op.planned_hours) || 0); return acc; }, {})).map(([spec, hrs]) => (
                           <span key={spec} className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs border border-emerald-200">
@@ -2183,7 +2183,7 @@ export default function WorkOrdersPage() {
                             _id: Date.now() + i,
                             description: s.suggestedAction || selectedOT.description?.slice(0, 100) || 'Intervención',
                             op_type: r.op_type || 'INT',
-                            specialty: r.type || 'Mecánico',
+                            specialty: r.type || 'Mechanical',
                             quantity: r.quantity || 1,
                             duration: r.hours || 1,
                             planned_hours: (r.quantity || 1) * (r.hours || 1),
@@ -2211,7 +2211,7 @@ export default function WorkOrdersPage() {
                     <div className="flex gap-2">
                       {isEditable && (
                         <Button size="sm" variant="outline" onClick={() => setOtMats(prev => [...prev, { _id: Date.now(), code: '', description: '', quantity: 1, unit: 'PZ', reserved: false }])}>
-                          <Plus className="w-3 h-3 mr-1" /> Agregar
+                          <Plus className="w-3 h-3 mr-1" /> Add
                         </Button>
                       )}
                       {isEditable && otMats.length > 0 && (
@@ -2453,11 +2453,11 @@ export default function WorkOrdersPage() {
                   {/* Add note */}
                   {!['CLOSED', 'CANCELLED'].includes(selectedOT.status) && (
                     <div className="flex gap-2">
-                      <input type="text" className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="Agregar nota de ejecución..."
+                      <input type="text" className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="Add nota de ejecución..."
                         value={newNote} onChange={(e) => setNewNote(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') addNote(); }} />
                       <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={addNote} disabled={otSaving || !newNote.trim()}>
-                        <MessageSquare className="w-3 h-3 mr-1" /> Agregar
+                        <MessageSquare className="w-3 h-3 mr-1" /> Add
                       </Button>
                     </div>
                   )}

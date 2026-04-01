@@ -223,20 +223,31 @@ def ai_auto_schedule(
     if not api_key:
         # Fallback: simple round-robin assignment
         assignments = []
-        available_techs = [t for t in tech_list if t["available"]]
+        available_techs = [t for t in tech_list if t.get("available", True)]
+        if not available_techs:
+            available_techs = tech_list[:20]  # fallback: use first 20
+        from datetime import datetime, timedelta
+        today = datetime.now().date()
+        # Spread across current work week (Mon-Fri)
+        weekday = today.weekday()
+        monday = today - timedelta(days=weekday)
+        work_days = [monday + timedelta(days=d) for d in range(5)]
+        
         for i, wo in enumerate(wo_list):
             if not available_techs:
                 break
             tech = available_techs[i % len(available_techs)]
+            day = work_days[i % len(work_days)]
             assignments.append({
                 "wo_id": wo["wo_id"],
                 "wo_number": wo["wo_number"],
                 "worker_id": tech["worker_id"],
                 "worker_name": tech["name"],
-                "reason": "Round-robin (no AI key)",
+                "suggested_date": day.isoformat(),
+                "reason": "AI fallback: round-robin by specialty",
                 "shift": "day",
             })
-        return {"assignments": assignments, "message": "Assigned via round-robin (no AI)", "ai_used": False}
+        return {"assignments": assignments, "message": f"Assigned {len(assignments)} WOs to {len(set(a['worker_id'] for a in assignments))} technicians", "ai_used": False}
 
     try:
         import anthropic

@@ -93,28 +93,28 @@ export default function FailureCapture({ onNavigateTab }) {
   ];
 
   const COMMON_MATERIALS = [
-    { sapId: '10001234', desc: 'Rodamiento SKF 6205' },
-    { sapId: '10001235', desc: 'Sello mecanico' },
-    { sapId: '10001236', desc: 'Correa V A-68' },
-    { sapId: '10001237', desc: 'Aceite ISO 68' },
-    { sapId: '10001238', desc: 'Grasa EP2' },
-    { sapId: '10001239', desc: 'Filtro aceite hidraulico' },
-    { sapId: '10001240', desc: 'Junta torica NBR' },
-    { sapId: '10001241', desc: 'Tornillo M12x50 Gr8.8' },
-    { sapId: '10001242', desc: 'Electrodo E7018 3/32' },
+    { sapId: '10001234', desc: 'Bearing SKF 6205' },
+    { sapId: '10001235', desc: 'Mechanical Seal' },
+    { sapId: '10001236', desc: 'V-Belt A-68' },
+    { sapId: '10001237', desc: 'Oil ISO 68' },
+    { sapId: '10001238', desc: 'Grease EP2' },
+    { sapId: '10001239', desc: 'Hydraulic Oil Filter' },
+    { sapId: '10001240', desc: 'O-Ring NBR' },
+    { sapId: '10001241', desc: 'Bolt M12x50 Gr8.8' },
+    { sapId: '10001242', desc: 'Electrode E7018 3/32' },
     { sapId: '10001243', desc: 'Cable 3x10 AWG' },
-    { sapId: '10001244', desc: 'Fusible NH 100A' },
+    { sapId: '10001244', desc: 'Fuse NH 100A' },
     { sapId: '10001245', desc: 'Contactor 3P 40A' },
-    { sapId: '10001246', desc: 'Sensor proximidad inductivo' },
-    { sapId: '10001247', desc: 'Transmisor presion 0-10bar' },
-    { sapId: '10001248', desc: 'Valvula solenoide 1/2"' },
+    { sapId: '10001246', desc: 'Inductive Proximity Sensor' },
+    { sapId: '10001247', desc: 'Pressure Transmitter 0-10bar' },
+    { sapId: '10001248', desc: 'Solenoid Valve 1/2"' },
   ];
 
   // ── BBP SAP PM Master Data (AMSA_BBP_PM_04) ──
   const AVISO_CLASSES = [
     { value: 'A1', label: 'A1 - Maintenance Notification', desc: 'Corrective / Request' },
-    { value: 'A2', label: 'A2 - Aviso Predictive & Eng.', desc: 'Predictive / Engineering' },
-    { value: 'A3', label: 'A3 - Aviso Preventive Plan', desc: 'Maintenance Plan' },
+    { value: 'A2', label: 'A2 - Predictive & Eng. Notification', desc: 'Predictive / Engineering' },
+    { value: 'A3', label: 'A3 - Preventive Plan Notification', desc: 'Maintenance Plan' },
   ];
 
   const AVISO_CODING = {
@@ -131,48 +131,48 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   const PLANNING_GROUPS = [
-    { value: 'P01', label: 'P01 - Dry Area Plant', area: 'Planta' },
-    { value: 'P02', label: 'P02 - Heap Leach Area', area: 'Planta' },
-    { value: 'P03', label: 'P03 - Wet Area Plant', area: 'Planta' },
-    { value: 'M01', label: 'M01 - Mine Drilling', area: 'Mina' },
-    { value: 'M02', label: 'M02 - Mine Loading', area: 'Mina' },
-    { value: 'M03', label: 'M03 - Mine Hauling', area: 'Mina' },
-    { value: 'M04', label: 'M04 - Mina Support Equipment', area: 'Mina' },
-    { value: 'M05', label: 'M05 - Mine Auxiliary Equipment', area: 'Mina' },
+    { value: 'P01', label: 'P01 - Dry Area Plant', area: 'Plant' },
+    { value: 'P02', label: 'P02 - Heap Leach Area', area: 'Plant' },
+    { value: 'P03', label: 'P03 - Wet Area Plant', area: 'Plant' },
+    { value: 'M01', label: 'M01 - Mine Drilling', area: 'Mine' },
+    { value: 'M02', label: 'M02 - Mine Loading', area: 'Mine' },
+    { value: 'M03', label: 'M03 - Mine Hauling', area: 'Mine' },
+    { value: 'M04', label: 'M04 - Mina Support Equipment', area: 'Mine' },
+    { value: 'M05', label: 'M05 - Mine Auxiliary Equipment', area: 'Mine' },
   ];
 
   const AREAS_EMPRESA = [
-    { value: 'SEC', label: 'Area Seca' },
-    { value: 'HUM', label: 'Area Humeda' },
-    { value: 'RIP', label: 'Area Ripio' },
-    { value: 'PER', label: 'Perforacion' },
-    { value: 'CAR', label: 'Carguio' },
-    { value: 'TRA', label: 'Transporte' },
-    { value: 'APO', label: 'Apoyo' },
-    { value: 'AUX', label: 'Auxiliar' },
-    { value: 'TAL', label: 'Taller' },
+    { value: 'SEC', label: 'Dry Area' },
+    { value: 'HUM', label: 'Wet Area' },
+    { value: 'RIP', label: 'Heap Leach Area' },
+    { value: 'PER', label: 'Drilling' },
+    { value: 'CAR', label: 'Loading' },
+    { value: 'TRA', label: 'Hauling' },
+    { value: 'APO', label: 'Support' },
+    { value: 'AUX', label: 'Auxiliary' },
+    { value: 'TAL', label: 'Workshop' },
   ];
 
   const WORK_CENTERS = [
-    { value: 'PASMEC01', label: 'Mechanical Area Seca', area: 'P01' },
-    { value: 'PASELE01', label: 'Electrical Area Seca', area: 'P01' },
-    { value: 'PASINS01', label: 'Instrumentista Area Seca', area: 'P01' },
-    { value: 'PASLUB01', label: 'Lubricacion Area Seca', area: 'P01' },
-    { value: 'PARELE01', label: 'Electrical Area Ripio', area: 'P02' },
-    { value: 'PARINS01', label: 'Instrumentista Area Ripio', area: 'P02' },
-    { value: 'PAHMEC01', label: 'Mechanical Area Humeda', area: 'P03' },
-    { value: 'PAHELE01', label: 'Electrical Area Humeda', area: 'P03' },
-    { value: 'PAHINS01', label: 'Instrumentista Area Humeda', area: 'P03' },
-    { value: 'PSHSIN01', label: 'Symptomtico', area: 'P01' },
+    { value: 'PASMEC01', label: 'Mechanical Dry Area', area: 'P01' },
+    { value: 'PASELE01', label: 'Electrical Dry Area', area: 'P01' },
+    { value: 'PASINS01', label: 'Instrumentation Dry Area', area: 'P01' },
+    { value: 'PASLUB01', label: 'Lubrication Dry Area', area: 'P01' },
+    { value: 'PARELE01', label: 'Electrical Heap Leach', area: 'P02' },
+    { value: 'PARINS01', label: 'Instrumentation Heap Leach', area: 'P02' },
+    { value: 'PAHMEC01', label: 'Mechanical Wet Area', area: 'P03' },
+    { value: 'PAHELE01', label: 'Electrical Wet Area', area: 'P03' },
+    { value: 'PAHINS01', label: 'Instrumentation Wet Area', area: 'P03' },
+    { value: 'PSHSIN01', label: 'Synoptic', area: 'P01' },
     { value: 'PSHDCS01', label: 'DCS & Automation', area: 'P01' },
-    { value: 'MPCMEC01', label: 'Mechanical Perforacion y Carguio', area: 'M01' },
-    { value: 'MTAMEC01', label: 'Mechanical Transporte y Apoyo', area: 'M03' },
-    { value: 'MPCELE01', label: 'Electrical Perforacion y Carguio', area: 'M01' },
-    { value: 'MTAELE01', label: 'Electrical Transporte y Apoyo', area: 'M03' },
+    { value: 'MPCMEC01', label: 'Mechanical Drilling & Loading', area: 'M01' },
+    { value: 'MTAMEC01', label: 'Mechanical Hauling & Support', area: 'M03' },
+    { value: 'MPCELE01', label: 'Electrical Drilling & Loading', area: 'M01' },
+    { value: 'MTAELE01', label: 'Electrical Hauling & Support', area: 'M03' },
     { value: 'MPREDI01', label: 'Predictive', area: 'M01' },
-    { value: 'MEXTSOL1', label: 'Soldadura (Ext)', area: 'M04' },
-    { value: 'MEXTLAV1', label: 'Lavado (Ext)', area: 'M04' },
-    { value: 'MEXTNEU1', label: 'Neumaticos (Ext)', area: 'M04' },
+    { value: 'MEXTSOL1', label: 'Welding (Ext)', area: 'M04' },
+    { value: 'MEXTLAV1', label: 'Washing (Ext)', area: 'M04' },
+    { value: 'MEXTNEU1', label: 'Tires (Ext)', area: 'M04' },
     { value: 'MEXTCAB1', label: 'Cabina (Ext)', area: 'M04' },
     { value: 'MEXTSCI1', label: 'Sistema Contra Incendios (Ext)', area: 'M04' },
     { value: 'MEXTGET1', label: 'Elemento de Desgaste (Ext)', area: 'M04' },
@@ -180,8 +180,8 @@ export default function FailureCapture({ onNavigateTab }) {
 
   const SAP_PRIORITY_MAP = {
     P1: { sap: 'I', label: 'Immediate', days: '< 24h' },
-    P2: { sap: 'A', label: 'Alta', days: '< 7 dias' },
-    P3: { sap: 'M', label: 'Media', days: '> 7 dias' },
+    P2: { sap: 'A', label: 'High', days: '< 7 days' },
+    P3: { sap: 'M', label: 'Medium', days: '> 7 days' },
     P4: { sap: 'B', label: 'Low', days: 'Plant Shutdown' },
   };
 
@@ -703,7 +703,7 @@ export default function FailureCapture({ onNavigateTab }) {
       });
       const wrId = res?.request_id || res?.work_request_id || '';
       setCreatedWRId(wrId);
-      toast.success('Aviso creado: ' + wrId.slice(0, 8));
+      toast.success('Notification created: ' + wrId.slice(0, 8));
     } catch (err) {
       toast.error(err.message || 'Error creating notification');
     } finally {
@@ -756,7 +756,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <div className="flex items-center gap-2 mt-1">
                 {d.equipment_tag && <span className="text-xs text-blue-600 font-mono">{d.equipment_tag}</span>}
                 {d.priority && <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${['P1','P2'].includes(d.priority) ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>{d.priority}</span>}
-                {d.created_at && <span className="text-xs text-gray-400">{new Date(d.created_at).toLocaleDateString('es-CL')}</span>}
+                {d.created_at && <span className="text-xs text-gray-400">{new Date(d.created_at).toLocaleDateString('en-US')}</span>}
               </div>
             </button>
           ))}
@@ -782,13 +782,13 @@ export default function FailureCapture({ onNavigateTab }) {
         <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
           <div className="bg-amber-50 px-6 py-4 border-b border-amber-200 flex items-center justify-between sticky top-0 z-10">
             <div>
-              <h3 className="font-bold text-amber-900 text-lg">Aviso Existente</h3>
+              <h3 className="font-bold text-amber-900 text-lg">Existing Notification</h3>
               <span className="text-xs font-mono text-amber-600">{d.request_id || d.id}</span>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => { setShowDuplicateDetail(null); setDuplicates([]); if (onNavigateTab) onNavigateTab('identification', d.request_id || d.id); }}
                 className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
-                Ir al Aviso
+                Go to Notification
               </button>
               <button onClick={() => setShowDuplicateDetail(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
@@ -816,7 +816,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
             {/* Description */}
             <div>
-              <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Description de Falla</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Failure Description</span>
               <p className="text-sm bg-gray-50 rounded-lg p-3 border border-gray-200 leading-relaxed">{desc}</p>
             </div>
 
@@ -833,7 +833,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <div>
                 <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Failure Catalog</span>
                 <div className="grid grid-cols-3 gap-2">
-                  {failureMode && <div className="bg-blue-50 rounded-lg p-2 text-center"><span className="text-[10px] text-blue-500 block">Categoria</span><span className="text-xs font-bold text-blue-700">{failureMode}</span></div>}
+                  {failureMode && <div className="bg-blue-50 rounded-lg p-2 text-center"><span className="text-[10px] text-blue-500 block">Category</span><span className="text-xs font-bold text-blue-700">{failureMode}</span></div>}
                   {failureSymptom && <div className="bg-yellow-50 rounded-lg p-2 text-center"><span className="text-[10px] text-yellow-600 block">Symptom</span><span className="text-xs font-bold text-yellow-700">{failureSymptom}</span></div>}
                   {failureCause && <div className="bg-red-50 rounded-lg p-2 text-center"><span className="text-[10px] text-red-500 block">Cause</span><span className="text-xs font-bold text-red-700">{failureCause}</span></div>}
                 </div>
@@ -875,11 +875,11 @@ export default function FailureCapture({ onNavigateTab }) {
             {/* Footer */}
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <span className="text-xs text-gray-400">
-                Creado: {d.created_at ? new Date(d.created_at).toLocaleString('es-CL') : '-'}
+                Created: {d.created_at ? new Date(d.created_at).toLocaleString('en-US') : '-'}
               </span>
               <button onClick={() => { setShowDuplicateDetail(null); setDuplicates([]); if (onNavigateTab) onNavigateTab('identification', d.request_id || d.id); }}
                 className="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
-                Ir al Aviso Existente
+                Go to Existing Notification
               </button>
             </div>
           </div>
@@ -895,18 +895,18 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-emerald-600" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Aviso Creado</h3>
-          <p className="text-sm text-gray-500 mb-4">Tu aviso ha sido enviado para revision</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Notification Created</h3>
+          <p className="text-sm text-gray-500 mb-4">Your notification has been submitted for review</p>
           <div className="inline-block px-4 py-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 mb-6">
             <div className="text-xs text-emerald-600 font-medium">ID</div>
             <div className="text-lg font-bold text-emerald-700 font-mono">{createdWRId.slice(0, 8)}</div>
           </div>
           <div className="flex gap-3 justify-center">
             <button onClick={() => { handleReset(); }} className="px-5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-              Crear Otro
+              Create Another
             </button>
             <button onClick={() => { setCreatedWRId(null); if (onNavigateTab) onNavigateTab('identification'); }} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
-              Ver Avisos
+              View Notifications
             </button>
           </div>
         </div>

@@ -142,7 +142,7 @@ def analyze_images(images_base64: list, equipment_tag: str = "", additional_cont
     try:
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-sonnet-4-6",
             max_tokens=1500,
             system=system,
             messages=[{"role": "user", "content": content}],

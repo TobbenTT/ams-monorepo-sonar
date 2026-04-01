@@ -477,6 +477,54 @@ ${materials.length ? `<div class="section">
         </div>
 
         {/* Photo Carousel */}
+        {/* Duplicate Carousel */}
+        {duplicates.length > 0 && (
+          <div className="px-6 py-4 border-b border-amber-200 bg-amber-50/50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                <span className="text-xs font-bold text-amber-800">{duplicates.length} Similar Request{duplicates.length > 1 ? 's' : ''} Found</span>
+              </div>
+              {duplicates.length > 1 && (
+                <div className="flex items-center gap-1 bg-white rounded-lg border border-amber-200 px-2 py-0.5">
+                  <button onClick={() => setDupIdx(Math.max(0, dupIdx - 1))} disabled={dupIdx === 0} className="text-amber-700 disabled:opacity-30"><ChevronLeft size={14} /></button>
+                  <span className="text-xs font-bold text-amber-700 min-w-[30px] text-center">{dupIdx + 1}/{duplicates.length}</span>
+                  <button onClick={() => setDupIdx(Math.min(duplicates.length - 1, dupIdx + 1))} disabled={dupIdx >= duplicates.length - 1} className="text-amber-700 disabled:opacity-30"><ChevronRight size={14} /></button>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-lg border-2 border-blue-200 p-3">
+                <div className="text-[10px] font-bold text-blue-600 uppercase mb-1.5">Current Request</div>
+                <div className="text-xs space-y-1">
+                  <div className="font-mono font-bold text-blue-700">{(item.id || '').slice(0,14)}</div>
+                  <div className="font-semibold">{item.equipment_tag}</div>
+                  <div className="text-gray-600 line-clamp-2">{item.failure_description || '—'}</div>
+                  <div><span className="text-gray-400">Priority:</span> <span className={"font-bold " + (item.priority === 'P1' ? 'text-red-600' : item.priority === 'P2' ? 'text-orange-600' : '')}>{item.priority}</span> <span className="text-gray-400 ml-2">Status:</span> {item.status}</div>
+                  <div className="text-gray-400">{item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</div>
+                </div>
+              </div>
+              <div className="bg-amber-50 rounded-lg border-2 border-amber-300 p-3">
+                <div className="text-[10px] font-bold text-amber-600 uppercase mb-1.5">Existing Duplicate</div>
+                {(() => { const d = duplicates[dupIdx]; return d ? (
+                  <div className="text-xs space-y-1">
+                    <div className="font-mono font-bold text-amber-700">{(d.id || '').slice(0,14)}</div>
+                    <div className="font-semibold">{d.equipment_tag}</div>
+                    <div className="text-gray-600 line-clamp-2">{d.failure_description || '—'}</div>
+                    <div><span className="text-gray-400">Priority:</span> <span className={"font-bold " + (d.priority === 'P1' ? 'text-red-600' : d.priority === 'P2' ? 'text-orange-600' : '')}>{d.priority}</span> <span className="text-gray-400 ml-2">Status:</span> {d.status}</div>
+                    <div className="text-gray-400">{d.created_at ? new Date(d.created_at).toLocaleDateString() : ''}</div>
+                    <button onClick={() => onOpenDuplicate && onOpenDuplicate(d)} className="mt-1 w-full text-[10px] py-1.5 bg-amber-200 text-amber-800 rounded-lg hover:bg-amber-300 font-semibold">View Full Duplicate</button>
+                  </div>
+                ) : null; })()}
+              </div>
+            </div>
+            {duplicates.length > 1 && (
+              <div className="flex justify-center gap-1 mt-2">
+                {duplicates.map((_, i) => <button key={i} onClick={() => setDupIdx(i)} className={"w-2 h-2 rounded-full transition-all " + (i === dupIdx ? "bg-amber-600 scale-125" : "bg-amber-200")} />)}
+              </div>
+            )}
+          </div>
+        )}
         <div className="px-6 py-4 border-b border-border">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t('workRequests.photos')}</p>
           <PhotoCarousel photos={item.photos} t={t} />

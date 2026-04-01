@@ -7,7 +7,7 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Settings as SettingsIcon, Bell, Shield, Database, Users, Palette, Loader2, AlertCircle, CheckCircle2, Globe } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Shield, Database, Users, Palette, Loader2, AlertCircle, CheckCircle2, Globe, Upload, FileText, Download } from 'lucide-react';
 import * as api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -76,6 +76,14 @@ export default function SettingsPage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordError, setPasswordError] = useState(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  // Import state
+  const [importFile, setImportFile] = useState(null);
+  const [importSource, setImportSource] = useState('EQUIPMENT_HIERARCHY');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [importError, setImportError] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   // Fetch profile on mount
   useEffect(() => {
@@ -309,9 +317,9 @@ export default function SettingsPage() {
                 <Input id="plannedWorkTarget" type="number" value={settings.plannedWorkTarget} onChange={(e) => updateSetting('plannedWorkTarget', Number(e.target.value))} className="mt-1" />
               </div>
               <div>
-                <Label htmlFor="laborRate">Tasa M.O. Interna (ZMANT001) $/h</Label>
+                <Label htmlFor="laborRate">Internal Labor Rate (ZMANT001) $/h</Label>
                 <Input id="laborRate" type="number" value={settings.laborRate} onChange={(e) => updateSetting('laborRate', Number(e.target.value))} className="mt-1" />
-                <p className="text-xs text-gray-500 mt-1">Costo fijo por hora de mano de obra interna. Se usa en Control de Costos SAP.</p>
+                <p className="text-xs text-gray-500 mt-1">Fixed hourly rate for internal labor. Used in SAP Cost Control.</p>
               </div>
             </div>
           </Card>
@@ -547,21 +555,86 @@ export default function SettingsPage() {
               <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-medium text-emerald-800">{t('settings.data.exportAll')}</p>
-                  <Button variant="outline" size="sm" onClick={async () => {
+                  <Button variant="outline" size="sm" disabled={exporting} onClick={async () => {
                     try {
-                      const data = await api.healthCheck();
+                      setExporting(true);
+                      const data = await api.exportAllData();
                       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = `ocp-export-${new Date().toISOString().slice(0, 10)}.json`;
+                      a.download = `ocp-backup-${new Date().toISOString().slice(0, 10)}.json`;
                       a.click();
                       URL.revokeObjectURL(url);
-                    } catch { /* ignore */ }
-                  }}>{t('common.export')}</Button>
+                    } catch (err) { alert('Export failed: ' + (err.message || 'Unknown error')); }
+                    finally { setExporting(false); }
+                  }}>{exporting ? <><Loader2 className="w-4 h-4 animate-spin mr-1" />Exporting...</> : <><Download className="w-4 h-4 mr-1" />{t('common.export')}</>}</Button>
                 </div>
                 <p className="text-sm text-emerald-700">{t('settings.data.exportAllDesc')}</p>
               </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Upload className="w-5 h-5 text-blue-600" />
+              Import Data
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">Upload Excel or CSV files to import equipment hierarchy, failure history, or maintenance plans into the database.</p>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Import Source</Label>
+                  <Select value={importSource} onValueChange={setImportSource}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EQUIPMENT_HIERARCHY">Equipment Hierarchy</SelectItem>
+                      <SelectItem value="FAILURE_HISTORY">Failure History</SelectItem>
+                      <SelectItem value="MAINTENANCE_PLAN">Maintenance Plan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>File (.xlsx or .csv)</Label>
+                  <Input type="file" accept=".xlsx,.csv" className="mt-1" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={!importFile || importing}
+                  onClick={async () => {
+                    try {
+                      setImporting(true);
+                      setImportError(null);
+                      setImportResult(null);
+                      const result = await api.importUpload(importFile, importSource, settings.defaultPlant || 'OCP-JFC1');
+                      setImportResult(result);
+                    } catch (err) {
+                      setImportError(err.message || 'Import failed');
+                    } finally {
+                      setImporting(false);
+                    }
+                  }}
+                >
+                  {importing ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Importing...</> : <><Upload className="w-4 h-4 mr-2" />Import</>}
+                </Button>
+                {importFile && <span className="text-sm text-gray-500 flex items-center gap-1"><FileText className="w-4 h-4" />{importFile.name}</span>}
+              </div>
+              {importResult && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
+                  <div className="flex items-center gap-2 text-emerald-700 font-semibold mb-1"><CheckCircle2 className="w-4 h-4" />Import Successful</div>
+                  <p className="text-emerald-600">
+                    {importResult.rows_imported != null ? `${importResult.rows_imported} rows imported` : 'Data imported successfully'}
+                    {importResult.errors_count > 0 && ` (${importResult.errors_count} warnings)`}
+                  </p>
+                </div>
+              )}
+              {importError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm">
+                  <div className="flex items-center gap-2 text-red-700"><AlertCircle className="w-4 h-4" />{importError}</div>
+                </div>
+              )}
             </div>
           </Card>
 

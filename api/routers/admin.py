@@ -4,6 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
+from fastapi.responses import StreamingResponse
+import json, io
+from datetime import datetime, date
 from api.database.models import AuditLogModel, UserFeedbackModel
 from api.schemas import FeedbackCreate
 from api.services import hierarchy_service, agent_service
@@ -76,6 +79,73 @@ def reset_database(db: Session = Depends(get_db)):
 def agent_status():
     return agent_service.get_status()
 
+
+
+
+@router.get("/export-data", dependencies=[Depends(require_role("admin", "manager"))])
+def export_all_data(db: Session = Depends(get_db)):
+    """Export all major tables as a JSON backup."""
+    from api.database.models import (
+        PlantModel, HierarchyNodeModel, WorkOrderModel, WorkRequestModel,
+        FieldCaptureModel, WorkforceModel, InventoryItemModel,
+        KPIMetricsModel, FailureModeModel, BacklogItemModel,
+        CriticalityAssessmentModel, UserModel,
+    )
+
+    def serialize(obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return str(obj)
+
+    def table_to_list(model):
+        rows = db.query(model).all()
+        result = []
+        for row in rows:
+            d = {}
+            for col in row.__table__.columns:
+                val = getattr(row, col.name)
+                if isinstance(val, (datetime, date)):
+                    d[col.name] = val.isoformat() if val else None
+                elif isinstance(val, dict) or isinstance(val, list):
+                    d[col.name] = val
+                else:
+                    d[col.name] = val
+            result.append(d)
+        return result
+
+    data = {
+        "exported_at": datetime.now().isoformat(),
+        "tables": {
+            "plants": table_to_list(PlantModel),
+            "hierarchy_nodes": table_to_list(HierarchyNodeModel),
+            "work_orders": table_to_list(WorkOrderModel),
+            "work_requests": table_to_list(WorkRequestModel),
+            "field_captures": table_to_list(FieldCaptureModel),
+            "workforce": table_to_list(WorkforceModel),
+            "inventory": table_to_list(InventoryItemModel),
+            "kpi_metrics": table_to_list(KPIMetricsModel),
+            "failure_modes": table_to_list(FailureModeModel),
+            "backlog": table_to_list(BacklogItemModel),
+            "criticality": table_to_list(CriticalityAssessmentModel),
+        }
+    }
+
+    content = json.dumps(data, default=serialize, indent=2, ensure_ascii=False)
+    buffer = io.BytesIO(content.encode("utf-8"))
+    filename = f"ocp-backup-{datetime.now().strftime('%Y-%m-%d')}.json"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@router.get("/import-sources")
+def list_import_sources():
+    """Return available import source types."""
+    from tools.models.schemas import ImportSource
+    return [{"value": s.value, "label": s.value.replace("_", " ").title()} for s in ImportSource]
 
 @router.post("/feedback", dependencies=[Depends(get_current_user)])
 def submit_feedback(data: FeedbackCreate, db: Session = Depends(get_db)):

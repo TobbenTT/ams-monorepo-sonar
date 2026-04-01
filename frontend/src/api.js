@@ -396,6 +396,24 @@ export const listImportHistory = (p) => get('/imports/history', p);
 // ── Health check ──
 export const healthCheck = () => fetch('/health').then(r => r.json());
 
+// ── Admin Export/Import ──
+export const exportAllData = () => get('/admin/export-data');
+export const getImportSources = () => get('/admin/import-sources');
+export const importUpload = async (file, source, plantId) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('source', source);
+  fd.append('plant_id', plantId);
+  const token = localStorage.getItem('token');
+  const res = await fetch((window.__API_BASE || '/api') + '/imports/upload', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+    body: fd,
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || res.statusText); }
+  return res.json();
+};
+
 // ── OR Projects (CORTEX OR System) ──
 export const createORProject = (d) => post('/or/projects', d);
 export const listORProjects = () => get('/or/projects');

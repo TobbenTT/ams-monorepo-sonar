@@ -269,7 +269,7 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRe
 }
 
 /* ─── Detail Modal (expanded + editable for supervisor) ─── */
-function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, userRole, t }) {
+function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, userRole, t }) {
   if (!item) return null;
   const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(item.status);
   const isValidated = ['VALIDATED', 'APROBADO'].includes(item.status);
@@ -282,6 +282,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
 
   // Editable state (supervisor can edit before approving)
   const [editing, setEditing] = useState(false);
+  const [dupIdx, setDupIdx] = useState(0);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const CHECKLIST_COUNT = 4;
   const allChecked = checkedItems.size >= CHECKLIST_COUNT;
@@ -1747,6 +1748,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       {selected && (
         <DetailModal
           item={selected}
+          duplicates={findDuplicates(selected, requests)}
+          onOpenDuplicate={(dup) => { fetchAndOpenDetail(dup); }}
           onClose={() => setSelected(null)}
           onValidate={handleValidate}
           onReject={handleReject}

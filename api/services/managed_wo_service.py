@@ -12,9 +12,9 @@ from api.services.audit_service import log_action
 TRANSITIONS = {
     "CREADO": ["PLANIFICADO", "PROGRAMADO", "CANCELADO"],
     "PLANIFICADO": ["PROGRAMADO", "CANCELADO"],
-    "PROGRAMADO": ["EN_EJECUCION", "REPROGRAMADO", "CANCELADO"],
+    "PROGRAMADO": ["PROGRAMADO", "EN_EJECUCION", "REPROGRAMADO", "CANCELADO"],
     "REPROGRAMADO": ["PROGRAMADO", "CANCELADO"],
-    "EN_EJECUCION": ["CERRADO", "REPROGRAMADO"],
+    "EN_EJECUCION": ["EN_EJECUCION", "CERRADO", "REPROGRAMADO"],
     "CERRADO": [],
     "CANCELADO": [],
     # Legacy compat: old statuses redirect to new equivalents

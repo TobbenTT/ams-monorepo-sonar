@@ -1134,6 +1134,7 @@ export default function Scheduling() {
       assigned_workers: [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }],
       planned_start: toDateStr(dayDate),
       planned_end: toDateStr(dayDate),
+      shift: shift,
     })
       .then(() => {
         toast.success(`${wo.wo_number} → ${tech.name}`);

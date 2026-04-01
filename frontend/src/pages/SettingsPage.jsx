@@ -87,6 +87,16 @@ export default function SettingsPage() {
 
   // Fetch profile on mount
   useEffect(() => {
+    // Load settings from backend
+    api.getSettings().then(remote => {
+      if (remote && Object.keys(remote).length > 0) {
+        setSettings(prev => ({ ...prev, ...remote }));
+        saveSettings({ ...settings, ...remote });
+      }
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     async function fetchProfile() {
       try {
@@ -117,8 +127,11 @@ export default function SettingsPage() {
     });
   };
 
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
     saveSettings(settings);
+    try {
+      await api.saveSettingsAPI(settings);
+    } catch { /* fallback: localStorage only */ }
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };

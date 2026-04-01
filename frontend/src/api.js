@@ -399,6 +399,8 @@ export const healthCheck = () => fetch('/health').then(r => r.json());
 // ── Admin Export/Import ──
 export const exportAllData = () => get('/admin/export-data');
 export const getImportSources = () => get('/admin/import-sources');
+export const getSettings = () => get('/admin/settings');
+export const saveSettingsAPI = (d) => put('/admin/settings', d);
 export const importUpload = async (file, source, plantId) => {
   const fd = new FormData();
   fd.append('file', file);

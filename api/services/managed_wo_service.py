@@ -10,7 +10,7 @@ from api.services.audit_service import log_action
 
 # Valid status transitions
 TRANSITIONS = {
-    "CREADO": ["PLANIFICADO", "CANCELADO"],
+    "CREADO": ["PLANIFICADO", "PROGRAMADO", "CANCELADO"],
     "PLANIFICADO": ["PROGRAMADO", "CANCELADO"],
     "PROGRAMADO": ["EN_EJECUCION", "REPROGRAMADO", "CANCELADO"],
     "REPROGRAMADO": ["PROGRAMADO", "CANCELADO"],

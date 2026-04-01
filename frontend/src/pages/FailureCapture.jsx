@@ -186,11 +186,11 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   const ORDER_TYPES = [
-    { value: 'PM01', label: 'PM01 - Orden Mant. de Breakdown' },
-    { value: 'PM02', label: 'PM02 - Orden Mant. Preventivo' },
-    { value: 'PM03', label: 'PM03 - Orden de Solicitud de Mant.' },
-    { value: 'PM06', label: 'PM06 - Orden de Inversion' },
-    { value: 'PM07', label: 'PM07 - Orden de Reparacion de Components' },
+    { value: 'PM01', label: 'PM01 - Breakdown Maintenance Order' },
+    { value: 'PM02', label: 'PM02 - Preventive Maintenance Order' },
+    { value: 'PM03', label: 'PM03 - Maintenance Service Order' },
+    { value: 'PM06', label: 'PM06 - Investment Order' },
+    { value: 'PM07', label: 'PM07 - Component Repair Order' },
   ];
 
   // ── Form State ──
@@ -534,10 +534,35 @@ export default function FailureCapture({ onNavigateTab }) {
     reader.onload = (ev) => setPhotos(prev => [...prev, ev.target.result]);
     reader.readAsDataURL(file);
     e.target.value = '';
+
+    // GPS auto-detect: check device location and suggest nearest equipment
+    if (navigator.geolocation && !form.technicalLocationCode) {
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+          const nearby = await api.getNearbyAssets(pos.coords.latitude, pos.coords.longitude, 500);
+          if (nearby && nearby.length > 0) {
+            const best = nearby[0];
+            if (best.tag && best.tag !== form.whereTag) {
+              const confirmed = window.confirm(
+                'GPS detected nearby equipment: ' + (best.name || best.tag) +
+                  ' (' + Math.round(best.distance_m) + 'm away). Use this location?'
+              );
+              if (confirmed) {
+                setF('whereTag', best.tag);
+                setF('technicalLocationCode', best.sap_func_loc || best.code || best.tag);
+                setF('technicalLocation', best.name || best.tag);
+                setSelectedEquip(best);
+                toast.success('Location updated: ' + (best.name || best.tag));
+              }
+            }
+          }
+        } catch { /* GPS lookup failed silently */ }
+      }, () => {}, { enableHighAccuracy: true, timeout: 5000 });
+    }
   };
 
   const handleVisionAnalysis = async () => {
-    if (photos.length === 0) { toast.error('Sube al menos una foto'); return; }
+    if (photos.length === 0) { toast.error('Upload at least one photo'); return; }
     setVisionLoading(true);
     try {
       const res = await aiAssistImage({
@@ -687,6 +712,7 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   const handleReset = () => {
+    setWizardStep(1);
     setForm({
       whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '',
       suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'M001',
@@ -712,11 +738,11 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600" />
-              <span className="text-sm font-bold text-amber-800">Posibles Duplicados</span>
+              <span className="text-sm font-bold text-amber-800">Possible Duplicates</span>
             </div>
             <button onClick={() => setDuplicates([])} className="text-amber-400 hover:text-amber-600 text-lg">&times;</button>
           </div>
-          <p className="text-xs text-amber-600 mt-1">{duplicates.length} aviso(s) similar(es) encontrado(s)</p>
+          <p className="text-xs text-amber-600 mt-1">{duplicates.length} similar notification(s) found</p>
         </div>
         <div className="divide-y divide-gray-100">
           {duplicates.map((d, i) => (

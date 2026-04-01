@@ -82,6 +82,22 @@ def agent_status():
 
 
 
+
+
+# ── Platform Settings (persisted) ──
+_platform_settings = {}  # In-memory fallback; for production use a DB table
+
+@router.get("/settings")
+def get_settings():
+    """Return platform settings."""
+    return _platform_settings
+
+@router.put("/settings")
+def save_settings(data: dict):
+    """Save platform settings."""
+    _platform_settings.update(data)
+    return {"status": "saved", "settings": _platform_settings}
+
 @router.get("/export-data", dependencies=[Depends(require_role("admin", "manager"))])
 def export_all_data(db: Session = Depends(get_db)):
     """Export all major tables as a JSON backup."""

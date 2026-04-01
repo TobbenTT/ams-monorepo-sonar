@@ -1232,7 +1232,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           );
         }
       })
-      .catch(() => toast.error(t('workRequests.errorValidate') || 'Error al validar'))
+      .catch(() => toast.error(t('workRequests.errorValidate') || 'Error validating'))
       .finally(() => { onRefreshCounts?.(); refreshList(); });
   }
 
@@ -1251,7 +1251,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
     api.cancelWorkRequest(id)
       .then(() => toast.success(t('workRequests.cancelled') || 'Notification cancelled'))
       .finally(() => onRefreshCounts?.())
-      .catch(() => toast.error(t('workRequests.errorCancel') || 'Error al cancelar'));
+      .catch(() => toast.error(t('workRequests.errorCancel') || 'Error cancelling'));
   }
 
   function handleSaveEdit(id, updates) {

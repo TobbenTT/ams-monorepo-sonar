@@ -126,7 +126,7 @@ export default function WorkOrderDetailDialog({
 
                 {raw.reported_by && (
                   <div className="pt-3 border-t">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Reportado por</p>
+                    <p className="text-sm font-medium text-gray-600 mb-1">Reported By</p>
                     <p className="text-sm text-gray-700">{raw.reported_by}</p>
                   </div>
                 )}
@@ -146,13 +146,13 @@ export default function WorkOrderDetailDialog({
                 )}
                 {raw.created_by && (
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Creado por</span>
+                    <span className="text-sm text-gray-600">Created By</span>
                     <span className="text-sm font-medium">{raw.created_by}</span>
                   </div>
                 )}
                 {workOrder.responsible && workOrder.responsible !== '—' && (
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600 flex items-center gap-1"><User className="w-3 h-3" /> Asignado a</span>
+                    <span className="text-sm text-gray-600 flex items-center gap-1"><User className="w-3 h-3" /> Assigned To</span>
                     <span className="text-sm font-medium">{workOrder.responsible}</span>
                   </div>
                 )}
@@ -167,7 +167,7 @@ export default function WorkOrderDetailDialog({
                   <div className="p-4 bg-blue-50 rounded-lg space-y-2 mb-4">
                     {aiClass.failure_type && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Tipo de Falla</span>
+                        <span className="text-gray-600">Failure Type</span>
                         <span className="font-medium">{aiClass.failure_type}</span>
                       </div>
                     )}
@@ -185,7 +185,7 @@ export default function WorkOrderDetailDialog({
                     )}
                     {aiClass.recommended_priority && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Priority Sugerida</span>
+                        <span className="text-gray-600">Suggested Priority</span>
                         <Badge className={PRIORITY_COLORS[aiClass.recommended_priority] || 'bg-gray-100'}>
                           {aiClass.recommended_priority}
                         </Badge>
@@ -193,7 +193,7 @@ export default function WorkOrderDetailDialog({
                     )}
                     {aiClass.confidence != null && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Confianza AI</span>
+                        <span className="text-gray-600">AI Confidence</span>
                         <span className="font-medium">{Math.round(aiClass.confidence * 100)}%</span>
                       </div>
                     )}

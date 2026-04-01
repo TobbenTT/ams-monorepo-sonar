@@ -334,7 +334,7 @@ export default function WorkOrdersPage() {
       wo.responsible,
       wo.status,
     ]);
-    downloadExport({ format: 'EXCEL', sheets: [{ name: 'Avisos', headers, rows }] }, `avisos-${plant || 'all'}-${new Date().toISOString().slice(0, 10)}`);
+    downloadExport({ format: 'EXCEL', sheets: [{ name: 'Notifications', headers, rows }] }, `avisos-${plant || 'all'}-${new Date().toISOString().slice(0, 10)}`);
   }, [workOrdersData, plant]);
 
   // ── Export OTs to Excel ──
@@ -569,13 +569,13 @@ export default function WorkOrdersPage() {
 
   // ── OT Status helpers ──
   const OT_STATUS_COLORS = {
-    CREADO: 'bg-yellow-100 text-yellow-700',
-    PLANIFICADO: 'bg-blue-100 text-blue-700',
-    PROGRAMADO: 'bg-indigo-100 text-indigo-700',
-    REPROGRAMADO: 'bg-orange-100 text-orange-700',
+    CREATED: 'bg-yellow-100 text-yellow-700',
+    PLANNED: 'bg-blue-100 text-blue-700',
+    SCHEDULED: 'bg-indigo-100 text-indigo-700',
+    RESCHEDULED: 'bg-orange-100 text-orange-700',
     EN_EJECUCION: 'bg-amber-100 text-amber-700',
-    CERRADO: 'bg-green-100 text-green-700',
-    CANCELADO: 'bg-gray-300 text-gray-600',
+    CLOSED: 'bg-green-100 text-green-700',
+    CANCELLED: 'bg-gray-300 text-gray-600',
     // Legacy compat
     PENDIENTE: 'bg-yellow-100 text-yellow-700',
     APROBADO: 'bg-blue-100 text-blue-700',
@@ -584,10 +584,10 @@ export default function WorkOrdersPage() {
   };
 
   const OT_NEXT_ACTION = {
-    CREADO: { label: 'Planificar', action: 'plan', icon: ArrowRight },
-    PLANIFICADO: { label: 'Programar', action: 'schedule', icon: ClipboardCheck },
-    PROGRAMADO: { label: 'Iniciar Ejecucion', action: 'start', icon: Play },
-    REPROGRAMADO: { label: 'Reprogramar', action: 'schedule', icon: ClipboardCheck },
+    CREATED: { label: 'Planificar', action: 'plan', icon: ArrowRight },
+    PLANNED: { label: 'Programar', action: 'schedule', icon: ClipboardCheck },
+    SCHEDULED: { label: 'Start Execution', action: 'start', icon: Play },
+    RESCHEDULED: { label: 'Reprogramar', action: 'schedule', icon: ClipboardCheck },
     EN_EJECUCION: { label: 'Close', action: 'complete', icon: CheckCircle },
     // Legacy compat
     PENDIENTE: { label: 'Planificar', action: 'plan', icon: ArrowRight },
@@ -676,8 +676,8 @@ export default function WorkOrdersPage() {
     setNewNote('');
   };
 
-  const isEditable = selectedOT && ['CREADO', 'PLANIFICADO', 'PROGRAMADO', 'PENDIENTE', 'APROBADO'].includes(selectedOT.status);
-  const isExecuting = selectedOT && ['EN_EJECUCION', 'CERRADO', 'EN_PROGRESO'].includes(selectedOT.status);
+  const isEditable = selectedOT && ['CREATED', 'PLANNED', 'SCHEDULED', 'PENDIENTE', 'APROBADO'].includes(selectedOT.status);
+  const isExecuting = selectedOT && ['EN_EJECUCION', 'CLOSED', 'EN_PROGRESO'].includes(selectedOT.status);
 
   // SLA targets by priority (hours)
   const SLA_HOURS = { P1: 24, P2: 72, P3: 168, P4: 720 };
@@ -980,7 +980,7 @@ export default function WorkOrdersPage() {
 
       {/* OT Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {['CREADO','PLANIFICADO','PROGRAMADO','REPROGRAMADO','EN_EJECUCION','CERRADO','CANCELADO'].map(st => (
+        {['CREATED','PLANNED','SCHEDULED','RESCHEDULED','EN_EJECUCION','CLOSED','CANCELLED'].map(st => (
           <Card key={st} className={`p-3 bg-white cursor-pointer border-2 transition-all ${woTab === 'ots' ? 'hover:border-emerald-300' : ''}`}
             onClick={() => setWoTab('ots')}>
             <div className="text-xs text-gray-500 truncate">{st.replace(/_/g, ' ')}</div>
@@ -997,7 +997,7 @@ export default function WorkOrdersPage() {
         </button>
         <button onClick={() => setWoTab('wrs')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${woTab === 'wrs' ? 'bg-white shadow text-emerald-700' : 'text-gray-600 hover:text-gray-900'}`}>
-          Avisos ({workOrdersData.length})
+          Notifications ({workOrdersData.length})
         </button>
       </div>
 
@@ -1013,7 +1013,7 @@ export default function WorkOrdersPage() {
                 <Download className="w-4 h-4" /> Excel
               </Button>
               <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateOTModal(true)}>
-                <Plus className="w-4 h-4" /> Crear WO from Notification
+                <Plus className="w-4 h-4" /> Create WO from Notification
               </Button>
             </div>
           </div>
@@ -1062,7 +1062,7 @@ export default function WorkOrdersPage() {
                             wo.wo_type === 'PM03' ? 'bg-purple-100 text-purple-700' :
                             wo.wo_type === 'PM05' ? 'bg-cyan-100 text-cyan-700' :
                             'bg-gray-100 text-gray-700'
-                          }`}>{{ PM01: 'PM01 - Correctivo', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Scheduled', PM05: 'PM05 - Calib./Reparación' }[wo.wo_type] || wo.wo_type}</Badge>
+                          }`}>{{ PM01: 'PM01 - Corrective', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Scheduled', PM05: 'PM05 - Calib./Reparación' }[wo.wo_type] || wo.wo_type}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getCriticalityColor(wo.priority_code === 'P1' || wo.priority_code === 'P2' ? 'High' : wo.priority_code === 'P3' ? 'Medium' : 'Low')}>
@@ -1110,12 +1110,12 @@ export default function WorkOrdersPage() {
         </Card>
       )}
 
-      {/* ── WRs Table (Avisos) ── */}
+      {/* ── WRs Table (Notifications) ── */}
       {woTab === 'wrs' && (
         <Card className="p-6 bg-white">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
-              Avisos ({workOrdersData.length})
+              Notifications ({workOrdersData.length})
             </h3>
             <Button variant="outline" className="flex items-center gap-2 border-gray-300" onClick={handleExportWRs} disabled={!workOrdersData.length}>
               <Download className="w-4 h-4" /> Excel
@@ -1335,7 +1335,7 @@ export default function WorkOrdersPage() {
                     </button>
                     {aiDuplicates.length > 0 && (
                       <div className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
-                        <p className="text-xs font-bold text-amber-800 mb-1">⚠ Avisos similares abiertos:</p>
+                        <p className="text-xs font-bold text-amber-800 mb-1">⚠ Notifications similares abiertos:</p>
                         {aiDuplicates.slice(0, 3).map(d => (
                           <div key={d.request_id} className="text-xs text-amber-700 flex items-center gap-2 py-0.5">
                             <span className="font-mono">{(d.request_id || '').slice(0, 8)}</span>
@@ -1744,7 +1744,7 @@ export default function WorkOrdersPage() {
                 <div className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 font-medium">
                   {user?.full_name || user?.username || 'Sistema'}
                 </div>
-                <div className="text-[10px] text-gray-400 mt-1">Asignado automáticamente — no editable</div>
+                <div className="text-[10px] text-gray-400 mt-1">Assigned Toutomáticamente — no editable</div>
               </div>
 
               {/* 12. Support Equipment */}
@@ -1829,7 +1829,7 @@ export default function WorkOrdersPage() {
       {/* ── Professional OT Detail Modal ── */}
       {selectedOT && (() => {
         const sla = getSlaDays(selectedOT);
-        const WO_TYPE_LABELS = { PM01: 'PM01 - Correctivo', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Scheduled', PM05: 'PM05 - Calib./Reparación' };
+        const WO_TYPE_LABELS = { PM01: 'PM01 - Corrective', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Scheduled', PM05: 'PM05 - Calib./Reparación' };
         const SPECIALTY_OPTIONS = ['Mecánico', 'Eléctrico', 'Instrumentación', 'Soldador', 'Lubricación', 'Andamios', 'Aislamiento', 'Operador', 'Supervisor', 'Otro'];
         const OP_TYPE_OPTIONS = [{ value: 'INT', label: 'INT' }, { value: 'EXT', label: 'EXT' }];
         const OT_TABS = [
@@ -1864,7 +1864,7 @@ export default function WorkOrdersPage() {
                   </div>
                 </div>
                 {/* SLA indicator */}
-                {sla && !['CERRADO', 'CANCELADO'].includes(selectedOT.status) && (
+                {sla && !['CLOSED', 'CANCELLED'].includes(selectedOT.status) && (
                   <div className={`text-center px-3 py-1.5 rounded-lg border text-xs ${sla.overdue ? 'bg-red-50 border-red-200 text-red-700' : sla.pct > 75 ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-green-50 border-green-200 text-green-700'}`}>
                     <div className="font-semibold">{sla.overdue ? 'SLA Vencido' : `${Math.round(sla.remaining)}h restantes`}</div>
                     <div className="w-20 bg-gray-200 rounded-full h-1.5 mt-1">
@@ -2405,8 +2405,8 @@ export default function WorkOrdersPage() {
 
                   {/* Status timeline */}
                   <div className="flex items-center gap-1 overflow-x-auto pb-2">
-                    {['CREADO', 'PLANIFICADO', 'PROGRAMADO', 'EN_EJECUCION', 'CERRADO'].map((st, idx) => {
-                      const states = ['CREADO', 'PLANIFICADO', 'PROGRAMADO', 'EN_EJECUCION', 'CERRADO'];
+                    {['CREATED', 'PLANNED', 'SCHEDULED', 'EN_EJECUCION', 'CLOSED'].map((st, idx) => {
+                      const states = ['CREATED', 'PLANNED', 'SCHEDULED', 'EN_EJECUCION', 'CLOSED'];
                       const currentIdx = states.indexOf(selectedOT.status);
                       const isPast = idx <= currentIdx;
                       const isCurrent = idx === currentIdx;
@@ -2451,7 +2451,7 @@ export default function WorkOrdersPage() {
                   </div>
 
                   {/* Add note */}
-                  {!['CERRADO', 'CANCELADO'].includes(selectedOT.status) && (
+                  {!['CLOSED', 'CANCELLED'].includes(selectedOT.status) && (
                     <div className="flex gap-2">
                       <input type="text" className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="Agregar nota de ejecución..."
                         value={newNote} onChange={(e) => setNewNote(e.target.value)}

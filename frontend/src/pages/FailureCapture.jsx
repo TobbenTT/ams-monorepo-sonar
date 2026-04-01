@@ -8,9 +8,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 
-const SpeechRecognition = typeof window !== 'undefined'
-  ? (window.SpeechRecognition || window.webkitSpeechRecognition)
-  : null;
+// Whisper backend transcription via MediaRecorder + /media/transcribe
+const SpeechRecognition = null; // Disabled browser speech — using Whisper backend
 
 export default function FailureCapture({ onNavigateTab }) {
   const { plant } = useOutletContext();
@@ -251,6 +250,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
   // Voice + Photo
   const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef(null);
   const [photos, setPhotos] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const recognitionRef = useRef(null);
@@ -467,53 +467,62 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   // ── Voice ──
-  const handleVoice = () => {
-    if (!SpeechRecognition) { toast.error('Navegador no soporta reconocimiento de voz'); return; }
-    if (isRecording) { recognitionRef.current?.stop(); return; }
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'es-ES';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognitionRef.current = recognition;
-    baseTextRef.current = form.whatHappens;
-    let finalTranscript = '';
-    recognition.onstart = () => setIsRecording(true);
-    recognition.onresult = (event) => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const tr = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalTranscript += tr + ' ';
-        else interim += tr;
+  const handleVoice = async () => {
+    if (isRecording) {
+      // Stop recording
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
       }
-      const base = baseTextRef.current;
-      const sep = base ? '\n' : '';
-      setF('whatHappens', (base + sep + finalTranscript + interim).trimEnd());
-    };
-    recognition.onerror = (e) => {
-      setIsRecording(false);
-      const msg = {
-        'not-allowed': 'Permiso de micrófono denegado. Permite el acceso en tu navegador.',
-        'no-speech': 'No se detectó voz. Intenta de nuevo.',
-        'network': 'Error de red. Verifica la conexión.',
-        'audio-capture': 'No se encontró micrófono.',
-      }[e.error] || `Error de voz: ${e.error}`;
-      toast.error(msg);
-    };
-    recognition.onend = () => {
-      setIsRecording(false);
-      if (finalTranscript.trim()) {
-        const base = baseTextRef.current;
-        const sep = base ? '\n' : '';
-        const fullText = (base + sep + finalTranscript).trimEnd();
-        setF('whatHappens', fullText);
-        // Auto-trigger AI assist with the transcribed text
-        toast.success('Voice transcribed. Analyzing with AI...');
-        setTimeout(() => {
-          handleAiSuggest(fullText);
-        }, 300);
-      }
-    };
-    recognition.start();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const chunks = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        setIsRecording(false);
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        if (blob.size < 1000) { toast.error('Recording too short'); return; }
+        toast.info('Transcribing with Whisper AI...');
+        try {
+          const formData = new FormData();
+          formData.append('file', blob, 'voice_capture.webm');
+          formData.append('language', 'en');
+          const token = localStorage.getItem('access_token');
+          const resp = await fetch('/api/v1/media/transcribe', {
+            method: 'POST',
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+            body: formData,
+          });
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || resp.statusText);
+          }
+          const result = await resp.json();
+          const text = result.text || result.transcript || '';
+          if (text) {
+            const base = form.whatHappens;
+            const fullText = (base ? base + ' ' : '') + text;
+            setF('whatHappens', fullText);
+            toast.success('Whisper transcribed (' + (result.language_detected || 'en') + ')');
+            setTimeout(() => handleAiSuggest(fullText), 500);
+          } else {
+            toast.error('No speech detected');
+          }
+        } catch (err) {
+          toast.error('Transcription: ' + (err.message || 'Failed'));
+        }
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
+      toast.info('Recording... Click again to stop (max 30s)');
+      setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 30000);
+    } catch (err) {
+      toast.error('Microphone denied: ' + (err.message || ''));
+    }
   };
 
   // ── Camera ──
@@ -950,7 +959,7 @@ export default function FailureCapture({ onNavigateTab }) {
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">What happened?</label>
               <div className="flex gap-2">
-                {SpeechRecognition ? (
+                {true ? (
                   <button type="button" onClick={handleVoice}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${isRecording ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
                     {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}

@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Minus, DollarSign, Users, Wrench, Shield, Loader2, Clock, Target } from 'lucide-react';
 import * as api from '../../api';
+import { downloadExport } from '../../utils/exportFile';
 import { filterByDateRange, getDateRange } from '../../utils/dateRange';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -403,42 +404,39 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                   onClick={() => {
                     const s = aiSummary.stats || {};
                     const preds = aiSummary.predictions || [];
-                    const lines = [
-                      'REPORTE OPERACIONAL SEMANAL — MANTENIMIENTO OCP',
-                      '='.repeat(55),
-                      'Periodo: Ultimos ' + (s.period_days || 7) + ' dias',
-                      'Generado: ' + new Date().toLocaleString('es-CL'),
-                      '',
-                      '1. RESUMEN ESTADISTICO',
-                      '-'.repeat(30),
-                      'Notifications created: ' + (s.total_wrs || 0),
-                      'Ordenes de trabajo: ' + (s.total_wos || 0),
-                      'Horas-hombre reales: ' + (s.total_actual_hours || 0) + 'h',
-                      '',
-                      'Por estado: ' + Object.entries(s.wr_by_status || {}).map(([k,v]) => k + ': ' + v).join(', '),
-                      'Por prioridad: ' + Object.entries(s.wr_by_priority || {}).map(([k,v]) => k + ': ' + v).join(', '),
-                      '',
-                      '2. EQUIPOS MAS PROBLEMATICOS',
-                      '-'.repeat(30),
-                      ...(s.top_equipment || []).map((e, i) => (i+1) + '. ' + e.tag + ' — ' + e.count + ' incidents'),
-                      '',
-                      '3. ANALISIS IA',
-                      '-'.repeat(30),
-                      aiSummary.summary || 'Not available',
-                      '',
-                      ...(preds.length ? [
-                        '4. PREDICCION DE FALLAS',
-                        '-'.repeat(30),
-                        ...preds.map(p => p.equipment_tag + ' (' + p.risk_level + ' ' + p.risk_score + '%) — ' + p.recommendation),
-                      ] : []),
+                    const sheets = [
+                      {
+                        name: 'Weekly Summary',
+                        headers: ['Metric', 'Value'],
+                        rows: [
+                          ['Report', 'OCP Maintenance — Weekly Operational Report'],
+                          ['Period', 'Last ' + (s.period_days || 7) + ' days'],
+                          ['Generated', new Date().toLocaleString('en-US')],
+                          ['', ''],
+                          ['Notifications Created', s.total_wrs || 0],
+                          ['Work Orders', s.total_wos || 0],
+                          ['Actual Man-Hours', (s.total_actual_hours || 0) + 'h'],
+                          ['', ''],
+                          ['By Status', Object.entries(s.wr_by_status || {}).map(([k,v]) => k + ': ' + v).join(', ')],
+                          ['By Priority', Object.entries(s.wr_by_priority || {}).map(([k,v]) => k + ': ' + v).join(', ')],
+                          ['', ''],
+                          ['AI Analysis', aiSummary.summary || 'Not available'],
+                        ]
+                      },
+                      {
+                        name: 'Top Equipment',
+                        headers: ['#', 'Equipment TAG', 'Incidents'],
+                        rows: (s.top_equipment || []).map((e, i) => [i + 1, e.tag, e.count])
+                      },
                     ];
-                    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'reporte-operacional-' + new Date().toISOString().slice(0, 10) + '.txt';
-                    a.click();
-                    URL.revokeObjectURL(url);
+                    if (preds.length > 0) {
+                      sheets.push({
+                        name: 'Failure Predictions',
+                        headers: ['Equipment', 'Risk Level', 'Risk Score %', 'Recommendation'],
+                        rows: preds.map(p => [p.equipment_tag, p.risk_level, p.risk_score, p.recommendation])
+                      });
+                    }
+                    downloadExport({ format: 'EXCEL', sheets }, 'operational-report-' + new Date().toISOString().slice(0, 10));
                   }}
                   className="border-violet-300 text-violet-700 hover:bg-violet-100 gap-1">
                   <TrendingUp className="w-3 h-3" /> Export

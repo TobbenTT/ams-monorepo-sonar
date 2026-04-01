@@ -450,7 +450,7 @@ ${resources.length ? `<div class="section">
 
 ${materials.length ? `<div class="section">
   <div class="section-title">SAP Materials</div>
-  <table><thead><tr><th>SAP ID</th><th>Description</th><th>Cant.</th><th>Unidad</th></tr></thead><tbody>
+  <table><thead><tr><th>SAP ID</th><th>Description</th><th>Qty</th><th>Unit</th></tr></thead><tbody>
   ${materials.map(m => typeof m === 'string' ? `<tr><td colspan="4">${m}</td></tr>` : `<tr><td style="font-family:monospace">${m.sapId||''}</td><td>${m.description||''}</td><td>${m.quantity||1}</td><td>${m.unit||'PZ'}</td></tr>`).join('')}
   </tbody></table>
 </div>` : ''}
@@ -584,7 +584,7 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Wrench} label="Activity Class" value={item.activity_class} />
           )}
           {item.plant_condition && (
-            <DetailCard icon={Zap} label="Plant Condition" value={item.plant_condition} />
+            <DetailCard icon={Zap} label="Equipment Condition" value={item.plant_condition} />
           )}
           {item.created_at && (
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
@@ -769,7 +769,7 @@ ${materials.length ? `<div class="section">
                         <option value="">Select...</option>
                         <option value="Mecanico">Mechanical</option>
                         <option value="Electrico">Electrical</option>
-                        <option value="Instrumentacion">Instrumentation</option>
+                        <option value="Instrumentacion">Instrument Tech</option>
                         <option value="Supervisor">Supervisor</option>
                         <option value="Soldador">Welder</option>
                         <option value="Rigger">Rigger</option>
@@ -1605,7 +1605,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               <tbody className="divide-y divide-border">
                 {paged.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                    <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground text-sm">
                       {t('common.noData')}
                     </td>
                   </tr>
@@ -1617,7 +1617,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                     req.failure_description.length > 60
                       ? req.failure_description.slice(0, 60) + '...'
                       : req.failure_description;
-                  const hasDuplicates = findDuplicates(req, requests).length > 0;
+                  const hasDuplicates = findDuplicates(req, requests.filter(r => !['CANCELLED', 'CANCELADO', 'CLOSED', 'CERRADO', 'REJECTED', 'RECHAZADO'].includes(r.status))).length > 0;
 
                   const isFastTrackWR = ['P1', 'P2'].includes(req.priority_requested);
 

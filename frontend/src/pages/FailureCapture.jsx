@@ -82,14 +82,14 @@ export default function FailureCapture({ onNavigateTab }) {
     'TIG Welder', 'Arc Welder', 'Portable Compressor', 'Electric Generator',
     'Bomba Sumergible', 'Hidrolavadora', 'Equipo Alineacion Laser',
     'Analizador de Vibraciones', 'Camara Termografica', 'Megohmetro',
-    'Multimetro Industrial', 'Torquimetro', 'Extractor Hidraulico',
-    'Gata Hidraulica', 'Tecle Cadena 5 Ton', 'Esmeril Angular',
-    'Taladro Magnetico', 'Equipo Ultrasonido', 'Detector de Gases',
+    'Industrial Multimeter', 'Torque Wrench', 'Hydraulic Puller',
+    'Hydraulic Jack', 'Chain Hoist 5 Ton', 'Angle Grinder',
+    'Magnetic Drill', 'Ultrasound Equipment', 'Gas Detector',
   ];
 
   const RESOURCE_TYPES = [
     'Mechanical', 'Electrical', 'Instrumentation', 'Lubrication', 'Soldador',
-    'Operador Grua', 'Andamiero', 'Calderero', 'Ayudante General', 'Supervisor',
+    'Crane Operator', 'Scaffolder', 'Boilermaker', 'General Helper', 'Rigger',
   ];
 
   const COMMON_MATERIALS = [
@@ -203,7 +203,7 @@ export default function FailureCapture({ onNavigateTab }) {
     estimatedDuration: '',
     priority: 'P3',
     activityClass: 'M001',
-    plantCondition: 'operating',
+    equipmentCondition: 'operating',
     failureCategory: 'MECHANICAL',
     failureSymptom: '',
     failureObjectPart: '',
@@ -325,9 +325,9 @@ export default function FailureCapture({ onNavigateTab }) {
         if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);
         if (s.priority) setF('priority', s.priority);
         if (s.estimatedDuration || s.estimated_duration) setF('estimatedDuration', String(s.estimatedDuration || s.estimated_duration));
-        if (s.plantCondition || s.plant_condition) {
-          const pc = (s.plantCondition || s.plant_condition).toLowerCase();
-          setF('plantCondition', pc === 'running' ? 'operating' : pc === 'stopped' ? 'stopped' : pc);
+        if (s.equipmentCondition || s.equipment_condition) {
+          const pc = (s.equipmentCondition || s.equipment_condition).toLowerCase();
+          setF('equipmentCondition', pc === 'running' ? 'operating' : pc === 'stopped' ? 'stopped' : pc);
         }
         if (s.resources?.length) setF('resources', s.resources);
         if (s.materials?.length) setF('materials', s.materials);
@@ -596,9 +596,9 @@ export default function FailureCapture({ onNavigateTab }) {
           if (catData.parts.includes(part)) setF('failureObjectPart', part);
         }
         if (s.estimatedDuration) setF('estimatedDuration', String(s.estimatedDuration));
-        if (s.plantCondition) {
-          const vpc = s.plantCondition.toLowerCase();
-          setF('plantCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
+        if (s.equipmentCondition) {
+          const vpc = s.equipmentCondition.toLowerCase();
+          setF('equipmentCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
         }
         if (s.resources?.length) setF('resources', s.resources);
         if (s.materials?.length) setF('materials', s.materials);
@@ -680,7 +680,7 @@ export default function FailureCapture({ onNavigateTab }) {
         failure_symptom: form.failureSymptom || '',
         failure_object_part: form.failureObjectPart || '',
         failure_cause: form.failureCause || '',
-        plant_condition: form.plantCondition || '',
+        equipment_condition: form.equipmentCondition || '',
         suggested_action: form.suggestedAction || '',
         estimated_duration: parseFloat(form.estimatedDuration) || 4,
         materials: (form.materials || []).filter(m => typeof m === 'object' ? (m.sapId || m.description) : m),
@@ -703,7 +703,7 @@ export default function FailureCapture({ onNavigateTab }) {
       });
       const wrId = res?.request_id || res?.work_request_id || '';
       setCreatedWRId(wrId);
-      toast.success('Notification created: ' + wrId.slice(0, 8));
+      toast.success('Notification created: ' + wrId);
     } catch (err) {
       toast.error(err.message || 'Error creating notification');
     } finally {
@@ -716,7 +716,7 @@ export default function FailureCapture({ onNavigateTab }) {
     setForm({
       whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '',
       suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'M001',
-      plantCondition: 'operating', failureCategory: 'MECHANICAL', failureSymptom: '',
+      equipmentCondition: 'operating', failureCategory: 'MECHANICAL', failureSymptom: '',
       failureObjectPart: '', failureCause: '', resources: [], materials: [],
       specialEquipment: '', circumstances: '', reportedBy: form.reportedBy, supportEquipment: [],
       notificationClass: 'A1', avisoCoding: 'M001', planningGroup: '', areaEmpresa: '', workCenter: '', workConditions: '',
@@ -898,8 +898,12 @@ export default function FailureCapture({ onNavigateTab }) {
           <h3 className="text-xl font-bold text-gray-900 mb-2">Notification Created</h3>
           <p className="text-sm text-gray-500 mb-4">Your notification has been submitted for review</p>
           <div className="inline-block px-4 py-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 mb-6">
-            <div className="text-xs text-emerald-600 font-medium">ID</div>
-            <div className="text-lg font-bold text-emerald-700 font-mono">{createdWRId.slice(0, 8)}</div>
+            <div className="text-xs text-emerald-600 font-medium">Notification ID</div>
+            <div className="text-lg font-bold text-emerald-700 font-mono">{createdWRId}</div>
+            <button onClick={() => { navigator.clipboard.writeText(createdWRId); }}
+              className="mt-1 text-xs text-emerald-500 hover:text-emerald-700 flex items-center gap-1 mx-auto">
+              <ClipboardCopy className="w-3 h-3" /> Copy
+            </button>
           </div>
           <div className="flex gap-3 justify-center">
             <button onClick={() => { handleReset(); }} className="px-5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">
@@ -1088,7 +1092,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
           {/* 2. Suggested Action */}
           <div className="border rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Action</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Actions</label>
             <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
               placeholder="What corrective action is recommended?"
               rows={4} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
@@ -1101,12 +1105,12 @@ export default function FailureCapture({ onNavigateTab }) {
               <div className="grid grid-cols-2 gap-2">
                 {PLANT_CONDITIONS.map(opt => (
                   <button key={opt.value}
-                    onClick={() => setF('plantCondition', opt.value)}
+                    onClick={() => setF('equipmentCondition', opt.value)}
                     className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
                     style={{
-                      borderColor: form.plantCondition === opt.value ? opt.color : '#e5e7eb',
-                      backgroundColor: form.plantCondition === opt.value ? opt.color + '15' : 'transparent',
-                      color: form.plantCondition === opt.value ? opt.color : '#64748B',
+                      borderColor: form.equipmentCondition === opt.value ? opt.color : '#e5e7eb',
+                      backgroundColor: form.equipmentCondition === opt.value ? opt.color + '15' : 'transparent',
+                      color: form.equipmentCondition === opt.value ? opt.color : '#64748B',
                     }}>
                     {opt.label}
                   </button>
@@ -1331,10 +1335,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <button onClick={addResource} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
                   + Add
                 </button>
-                <button onClick={() => { setExtResIdx(-1); setExtResForm({ specialty: '', vendor: '', vendor_other: '', contract_ref: '', rate_per_hour: '', estimated_hours: '', estimated_cost: '', notes: '' }); setShowExtResModal(true); }}
-                  className="text-xs font-semibold px-3 py-1 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors">
-                  + External
-                </button>
+                {/* EXT button moved to Planning OT */}
               </div>
             </div>
             {form.resources.length === 0 ? (

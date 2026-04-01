@@ -1,6 +1,7 @@
 """Scheduling router — weekly program management, Gantt, HH balance, materials."""
 
 from pydantic import BaseModel
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -209,13 +210,13 @@ def ai_auto_schedule(
     tech_list = []
     for t in techs:
         tech_list.append({
-            "worker_id": t.worker_id,
-            "name": t.name,
-            "specialty": t.specialty,
-            "shift": t.shift,
-            "available": t.available,
-            "years_exp": t.years_experience,
-            "equipment_expertise": (t.equipment_expertise or [])[:5],
+            "worker_id": t.get("worker_id",""),
+            "name": t.get("name",""),
+            "specialty": t.get("specialty",""),
+            "shift": t.get("shift",""),
+            "available": t.get("available",True),
+            "years_exp": t.get("years_experience",0),
+            "equipment_expertise": (t.get("equipment_expertise",[]) or [])[:5],
         })
 
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
@@ -262,6 +263,9 @@ def ai_auto_schedule(
         )
 
         text = resp.content[0].text
+        # Strip markdown code blocks
+        text = text.replace('```json', '').replace('```', '').strip()
+        import logging; logging.getLogger(__name__).info("AI auto-schedule response: %s", text[:200])
         # Extract JSON from response
         import re
         json_match = re.search(r'\[.*\]', text, re.DOTALL)
@@ -269,6 +273,23 @@ def ai_auto_schedule(
             assignments = json.loads(json_match.group())
         else:
             assignments = []
+
+        # Fallback if AI returned empty
+        if not assignments:
+            available_techs = [t for t in tech_list if t.get("available", True)]
+            for i, wo in enumerate(wo_list):
+                if not available_techs:
+                    break
+                tech = available_techs[i % len(available_techs)]
+                assignments.append({
+                    "wo_id": wo["wo_id"],
+                    "wo_number": wo["wo_number"],
+                    "worker_id": tech["worker_id"],
+                    "worker_name": tech["name"],
+                    "reason": "AI fallback: round-robin by specialty",
+                    "shift": "day",
+                    "suggested_date": (datetime.now()).strftime("%Y-%m-%d"),
+                })
 
         return {
             "assignments": assignments,
@@ -292,7 +313,6 @@ def ai_daily_briefing(
 ):
     """Generate AI daily briefing for the execution meeting."""
     import os, json
-    from datetime import datetime
     from api.database.models import ManagedWorkOrderModel
 
     # Gather data

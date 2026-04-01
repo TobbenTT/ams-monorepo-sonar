@@ -414,27 +414,29 @@ def plan_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
     return _transition(db, wo_id, "PLANIFICADO", user_id)
 
 
+def _parse_date(val):
+    """Convert string date to datetime object if needed."""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val
+    if isinstance(val, str):
+        try:
+            if "T" in val:
+                return datetime.fromisoformat(val.replace("Z", "+00:00"))
+            return datetime.strptime(val[:10], "%Y-%m-%d")
+        except (ValueError, TypeError):
+            return datetime.now()
+    return val
+
+
 def schedule_wo(db: Session, wo_id: str, user_id: str = "", assigned_workers: list | None = None, planned_start=None, planned_end=None, shift: str = None) -> dict | None:
     """Programmer schedules -> PROGRAMADO."""
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
     if wo and planned_start:
-        if isinstance(planned_start, str):
-            from datetime import datetime as _dt
-            try:
-                wo.planned_start = _dt.fromisoformat(planned_start.replace("Z", "+00:00")) if "T" in planned_start else _dt.strptime(planned_start[:10], "%Y-%m-%d")
-            except ValueError:
-                wo.planned_start = _dt.now()
-        else:
-            wo.planned_start = planned_start
+        wo.planned_start = _parse_date(planned_start)
     if wo and planned_end:
-        if isinstance(planned_end, str):
-            from datetime import datetime as _dt
-            try:
-                wo.planned_end = _dt.fromisoformat(planned_end.replace("Z", "+00:00")) if "T" in planned_end else _dt.strptime(planned_end[:10], "%Y-%m-%d")
-            except ValueError:
-                wo.planned_end = _dt.now()
-        else:
-            wo.planned_end = planned_end
+        wo.planned_end = _parse_date(planned_end)
     if wo and shift:
         wo.shift = shift
     return _transition(db, wo_id, "PROGRAMADO", user_id, assigned_workers=assigned_workers)

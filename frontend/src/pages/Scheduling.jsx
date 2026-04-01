@@ -1153,6 +1153,7 @@ export default function Scheduling() {
               assigned_workers: [{ worker_id: a.worker_id, name: a.worker_name, specialty: '' }],
               planned_start: a.suggested_date || new Date().toISOString().slice(0, 10),
               planned_end: a.suggested_date || new Date().toISOString().slice(0, 10),
+              shift: a.shift || "day",
             });
           } catch { /* skip failed */ }
         }

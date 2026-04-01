@@ -245,7 +245,7 @@ def ai_auto_schedule(
                 "worker_name": tech["name"],
                 "suggested_date": day.isoformat(),
                 "reason": "AI fallback: round-robin by specialty",
-                "shift": "day",
+                "shift": "day" if i % 3 != 2 else "night",
             })
         return {"assignments": assignments, "message": f"Assigned {len(assignments)} WOs to {len(set(a['worker_id'] for a in assignments))} technicians", "ai_used": False}
 

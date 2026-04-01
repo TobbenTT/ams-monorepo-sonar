@@ -1,7 +1,7 @@
 """Scheduling router — weekly program management, Gantt, HH balance, materials."""
 
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -226,7 +226,6 @@ def ai_auto_schedule(
         available_techs = [t for t in tech_list if t.get("available", True)]
         if not available_techs:
             available_techs = tech_list[:20]  # fallback: use first 20
-        from datetime import datetime, timedelta
         today = datetime.now().date()
         # Spread across current work week (Mon-Fri)
         weekday = today.weekday()

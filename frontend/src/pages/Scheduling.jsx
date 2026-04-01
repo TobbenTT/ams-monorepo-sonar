@@ -1066,14 +1066,16 @@ export default function Scheduling() {
   const loadCalendarData = () => {
     Promise.all([
       api.listTechnicians({ plant_id: plant }).catch(() => []),
-      api.listManagedWOs({ status: 'RELEASED', plant_id: plant }).catch(() => []),
+      api.listManagedWOs({ status: 'CREADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'PLANIFICADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
-    ]).then(([techs, released, planned, scheduled]) => {
+      api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
+    ]).then(([techs, created, planned, scheduled, executing]) => {
       setTechnicians(Array.isArray(techs) ? techs : techs?.technicians || []);
-      const toSchedule = [...(Array.isArray(released) ? released : []), ...(Array.isArray(planned) ? planned : [])];
+      const toSchedule = [...(Array.isArray(created) ? created : []), ...(Array.isArray(planned) ? planned : [])];
       setReleasedWOs(toSchedule);
-      setScheduledWOs(Array.isArray(scheduled) ? scheduled : []);
+      const allScheduled = [...(Array.isArray(scheduled) ? scheduled : []), ...(Array.isArray(executing) ? executing : [])];
+      setScheduledWOs(allScheduled);
     });
   };
 

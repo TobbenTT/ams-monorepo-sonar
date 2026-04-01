@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
@@ -176,39 +176,94 @@ function PhotoCarousel({ photos = [], t }) {
   );
 }
 
-/* ─── Duplicate Warning Banner ─── */
-function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t }) {
+/* ─── Duplicate Carousel with Side-by-Side Comparison ─── */
+function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRequest }) {
+  const [carouselIdx, setCarouselIdx] = React.useState(0);
   if (!duplicates || duplicates.length === 0) return null;
+  const dup = duplicates[carouselIdx] || duplicates[0];
+  const current = currentRequest || {};
   return (
-    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-2">
-      <div className="flex items-center gap-2">
-        <AlertTriangle className="w-5 h-5 text-amber-600" />
-        <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t('workRequests.duplicateWarning')}</span>
-      </div>
-      {duplicates.map((dup) => (
-        <div key={dup.id} className="flex items-center justify-between bg-white dark:bg-card rounded-lg p-3 border border-amber-100 dark:border-amber-800">
-          <div>
-            <div className="text-sm font-medium text-foreground">{dup.equipment_name}</div>
-            <div className="text-xs text-muted-foreground">
-              {t('workRequests.duplicateDetail', { id: dup.id })}
+    <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-amber-600" />
+          <span className="text-sm font-bold text-amber-800">
+            {duplicates.length} Similar Open Request{duplicates.length > 1 ? 's' : ''} Found
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {duplicates.length > 1 && (
+            <div className="flex items-center gap-1 bg-white rounded-lg border border-amber-200 px-2 py-1">
+              <button onClick={() => setCarouselIdx(Math.max(0, carouselIdx - 1))} disabled={carouselIdx === 0}
+                className="p-0.5 rounded hover:bg-amber-100 disabled:opacity-30 text-amber-700">
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-xs font-bold text-amber-800 min-w-[40px] text-center">{carouselIdx + 1} / {duplicates.length}</span>
+              <button onClick={() => setCarouselIdx(Math.min(duplicates.length - 1, carouselIdx + 1))} disabled={carouselIdx >= duplicates.length - 1}
+                className="p-0.5 rounded hover:bg-amber-100 disabled:opacity-30 text-amber-700">
+                <ChevronRight size={16} />
+              </button>
             </div>
+          )}
+          <button onClick={onDismiss} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 font-semibold">
+            Proceed Anyway
+          </button>
+        </div>
+      </div>
+
+      {/* Side-by-side comparison */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Current Request */}
+        <div className="bg-white rounded-lg border-2 border-blue-200 p-3">
+          <div className="text-xs font-bold text-blue-700 uppercase mb-2 flex items-center gap-1">
+            <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Current Request
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => onViewDuplicate(dup)}
-              className="text-xs px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70 font-medium transition-colors"
-            >
-              {t('workRequests.viewDuplicate')}
-            </button>
-            <button
-              onClick={onDismiss}
-              className="text-xs px-3 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 font-medium transition-colors"
-            >
-              {t('workRequests.proceedAnyway')}
-            </button>
+          <div className="space-y-1.5 text-xs">
+            <div><span className="text-gray-500">ID:</span> <span className="font-mono font-bold">{current.id?.slice(0, 12) || '—'}</span></div>
+            <div><span className="text-gray-500">Equipment:</span> <span className="font-semibold">{current.equipment_tag || '—'}</span></div>
+            <div><span className="text-gray-500">Priority:</span> <span className={"font-bold " + (current.priority === 'P1' ? 'text-red-600' : current.priority === 'P2' ? 'text-orange-600' : 'text-gray-700')}>{current.priority || '—'}</span></div>
+            <div><span className="text-gray-500">Status:</span> <span>{current.status || '—'}</span></div>
+            <div className="pt-1 border-t border-gray-100">
+              <span className="text-gray-500">Description:</span>
+              <p className="text-gray-800 mt-0.5 line-clamp-3">{current.failure_description || current.description || '—'}</p>
+            </div>
+            <div><span className="text-gray-500">Created:</span> {current.created_at ? new Date(current.created_at).toLocaleDateString() : '—'}</div>
           </div>
         </div>
-      ))}
+
+        {/* Duplicate */}
+        <div className="bg-amber-50 rounded-lg border-2 border-amber-300 p-3">
+          <div className="text-xs font-bold text-amber-700 uppercase mb-2 flex items-center gap-1">
+            <span className="w-2 h-2 bg-amber-500 rounded-full"></span> Existing Duplicate
+          </div>
+          <div className="space-y-1.5 text-xs">
+            <div><span className="text-gray-500">ID:</span> <span className="font-mono font-bold">{dup.id?.slice(0, 12) || '—'}</span></div>
+            <div><span className="text-gray-500">Equipment:</span> <span className="font-semibold">{dup.equipment_tag || dup.equipment_name || '—'}</span></div>
+            <div><span className="text-gray-500">Priority:</span> <span className={"font-bold " + (dup.priority === 'P1' ? 'text-red-600' : dup.priority === 'P2' ? 'text-orange-600' : 'text-gray-700')}>{dup.priority || '—'}</span></div>
+            <div><span className="text-gray-500">Status:</span> <span>{dup.status || '—'}</span></div>
+            <div className="pt-1 border-t border-amber-100">
+              <span className="text-gray-500">Description:</span>
+              <p className="text-gray-800 mt-0.5 line-clamp-3">{dup.failure_description || dup.description || '—'}</p>
+            </div>
+            <div><span className="text-gray-500">Created:</span> {dup.created_at ? new Date(dup.created_at).toLocaleDateString() : '—'}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 pt-1">
+        <button onClick={() => onViewDuplicate(dup)} className="flex-1 text-xs px-3 py-2 rounded-lg bg-amber-200 text-amber-800 hover:bg-amber-300 font-semibold text-center">
+          Open This Duplicate
+        </button>
+        {duplicates.length > 1 && (
+          <div className="flex gap-1">
+            {duplicates.map((_, i) => (
+              <button key={i} onClick={() => setCarouselIdx(i)}
+                className={"w-2 h-2 rounded-full transition-colors " + (i === carouselIdx ? "bg-amber-600" : "bg-amber-200 hover:bg-amber-300")} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1389,6 +1444,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           onViewDuplicate={handleViewDuplicate}
           onDismiss={handleDismissDuplicate}
           t={t}
+          currentRequest={duplicateTarget}
         />
       )}
 

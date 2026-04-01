@@ -644,7 +644,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                   {cellWOs.map(wo => {
                                     const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
                                     return (
-                                      <div key={wo.wo_id} className={`mb-1 p-1 rounded text-xs border cursor-default ${woType.bg}`}>
+                                      <div key={wo.wo_id}
+                                        draggable
+                                        onDragStart={e => { e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
+                                        className={`mb-1 p-1 rounded text-xs border cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400 ${woType.bg}`}>
                                         <div className="font-bold truncate text-[0.65rem]">{wo.wo_number}</div>
                                         <div className="truncate text-[0.6rem]">{wo.equipment_tag}</div>
                                         <div className="text-[0.55rem] mt-0.5">{wo.estimated_hours}h</div>

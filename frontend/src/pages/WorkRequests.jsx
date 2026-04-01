@@ -1580,7 +1580,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               <thead>
                 <tr className="bg-muted/50 border-b border-border">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('created_at')}>
-                    Fecha {sortField === 'created_at' ? (sortDir === 'asc' ? '\u2191' : '\u2193') : ''}
+                    DATE {sortField === 'created_at' ? (sortDir === 'asc' ? '\u2191' : '\u2193') : ''}
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('equipment_name')}>
                     {t('workRequests.requestId')} / {t('workRequests.equipmentName')} {sortField === 'equipment_name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}

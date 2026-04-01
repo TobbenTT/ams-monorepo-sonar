@@ -171,6 +171,16 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
     from api.database.models import UserModel
     all_users = {u.user_id: u.full_name or u.username for u in db.query(UserModel.user_id, UserModel.full_name, UserModel.username).all()}
 
+    # Resolve equipment names from hierarchy
+    from api.database.models import HierarchyNodeModel
+    equip_tags = list(set(wr.equipment_tag for wr in items if wr.equipment_tag))
+    equipment_names = {}
+    if equip_tags:
+        nodes = db.query(HierarchyNodeModel.tag, HierarchyNodeModel.name).filter(
+            HierarchyNodeModel.tag.in_(equip_tags), HierarchyNodeModel.node_type == "EQUIPMENT"
+        ).all()
+        equipment_names = {n[0]: n[1] for n in nodes}
+
     results = []
     for wr in items:
         ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
@@ -183,7 +193,7 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
             "request_id": wr.request_id,
             "status": wr.status,
             "equipment_tag": wr.equipment_tag,
-            "equipment_name": ai.get("equipment_name") or wr.equipment_tag,
+            "equipment_name": ai.get("equipment_name") or equipment_names.get(wr.equipment_tag, wr.equipment_tag),
             "equipment_confidence": wr.equipment_confidence,
             "plant_id": ai.get("plant_id", ""),
             "priority": wr.priority_code or ai.get("priority_suggested") or ai.get("priority", "P3"),

@@ -960,7 +960,7 @@ export default function FailureCapture({ onNavigateTab }) {
               { step: 3, label: 'Action', icon: '🔧', desc: 'What to do' },
             ].map((s, i) => (
               <div key={s.step} className="flex items-center flex-1">
-                <button onClick={() => setWizardStep(s.step)}
+                <button onClick={() => setWizardStep(s.step)} style={{minHeight: '60px'}}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all w-full ${
                     wizardStep === s.step
                       ? 'bg-emerald-600 text-white shadow-lg'

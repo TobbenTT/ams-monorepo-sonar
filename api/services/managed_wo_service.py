@@ -422,11 +422,14 @@ def _parse_date(val):
         return val
     if isinstance(val, str):
         try:
-            if "T" in val:
-                return datetime.fromisoformat(val.replace("Z", "+00:00"))
-            return datetime.strptime(val[:10], "%Y-%m-%d")
+            # Handle: "2026-04-01T12:00:00Z", "2026-04-01 12:00:00.123", "2026-04-01"
+            val = val.replace("Z", "+00:00").replace(" ", "T")
+            return datetime.fromisoformat(val)
         except (ValueError, TypeError):
-            return datetime.now()
+            try:
+                return datetime.strptime(val[:10], "%Y-%m-%d")
+            except (ValueError, TypeError):
+                return datetime.now()
     return val
 
 

@@ -25,8 +25,8 @@ def create_plant(data: PlantCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/nodes")
-def list_nodes(plant_id: str | None = None, node_type: str | None = None, parent_node_id: str | None = None, db: Session = Depends(get_db)):
-    nodes = hierarchy_service.list_nodes(db, plant_id=plant_id, node_type=node_type, parent_node_id=parent_node_id)
+def list_nodes(plant_id: str | None = None, node_type: str | None = None, parent_node_id: str | None = None, search: str | None = None, limit: int = 500, db: Session = Depends(get_db)):
+    nodes = hierarchy_service.list_nodes(db, plant_id=plant_id, node_type=node_type, parent_node_id=parent_node_id, search=search, limit=limit)
     return [_node_to_dict(n) for n in nodes]
 
 

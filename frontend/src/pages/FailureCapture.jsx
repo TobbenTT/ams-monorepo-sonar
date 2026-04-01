@@ -368,7 +368,7 @@ export default function FailureCapture({ onNavigateTab }) {
   }, []);
 
   useEffect(() => {
-    api.listNodes({}).then(res => {
+    api.listNodes({ limit: 200 }).then(res => {
       const nodes = Array.isArray(res) ? res : res?.items || [];
       setAllNodes(nodes);
       const nodeMap = {};
@@ -383,16 +383,26 @@ export default function FailureCapture({ onNavigateTab }) {
   // Filter equipment results
   useEffect(() => {
     if (equipSearch.length === 0) { setEquipResults(allEquipment.slice(0, 10)); return; }
-    if (equipSearch.length < 1) { setEquipResults([]); return; }
-    const q = equipSearch.toLowerCase();
-    setEquipResults(allEquipment.filter(n =>
-      (n.tag || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
-    ).slice(0, 8));
+    if (equipSearch.length < 2) { setEquipResults([]); return; }
+    // Server-side search for large datasets
+    const timer = setTimeout(() => {
+      api.listNodes({ search: equipSearch, node_type: 'EQUIPMENT', limit: 15 }).then(res => {
+        const nodes = Array.isArray(res) ? res : res?.items || [];
+        setEquipResults(nodes);
+      }).catch(() => {
+        // Fallback to client-side
+        const q = equipSearch.toLowerCase();
+        setEquipResults(allEquipment.filter(n =>
+          (n.tag || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
+        ).slice(0, 10));
+      });
+    }, 300);
+    return () => clearTimeout(timer);
   }, [equipSearch, allEquipment]);
 
   // Filter location results
   useEffect(() => {
-    if (!locSearch) { setLocResults(locationNodes.slice(0, 8)); return; }
+    if (!locSearch) { setLocResults(locationNodes.slice(0, 15)); return; }
     const q = locSearch.toLowerCase();
     setLocResults(locationNodes.filter(n =>
       (n._funcLoc || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)

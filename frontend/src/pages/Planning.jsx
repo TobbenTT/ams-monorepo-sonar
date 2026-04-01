@@ -580,7 +580,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           <span className={`text-xs ${pColor[wo.priority_code||wo.priority] || 'text-gray-500'}`}>{wo.priority_code||wo.priority||'—'}</span>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-500">
-                          {wo.planned_start ? new Date(wo.planned_start).toLocaleDateString('es', { day: '2-digit', month: 'short' }) : '—'}
+                          {wo.planned_start ? new Date(wo.planned_start).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }) : '—'}
                         </td>
                         <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
                           <button onClick={async () => {
@@ -946,14 +946,14 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           EN_PROGRESO:{label:'In Execution',color:'bg-amber-100 text-amber-700'},
         };
         const NEXT = {
-          CREADO:[['PLANIFICADO','Plan','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
+          CREADO:[['PLANIFICADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           PLANIFICADO:[['PROGRAMADO','Schedule','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           PROGRAMADO:[['EN_EJECUCION','Start Execution','bg-amber-500 text-white hover:bg-amber-600'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           REPROGRAMADO:[['PROGRAMADO','Reschedule','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           EN_EJECUCION:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600']],
           CERRADO:[],
           CANCELADO:[],
-          PENDIENTE:[['PLANIFICADO','Plan','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
+          PENDIENTE:[['PLANIFICADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           APROBADO:[['PROGRAMADO','Schedule','bg-indigo-600 text-white hover:bg-indigo-700'],['EN_EJECUCION','Start','bg-amber-500 text-white hover:bg-amber-600'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           EN_PROGRESO:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700']],
         };
@@ -982,7 +982,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
         return (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOT(null)}>
-            <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[92vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[95vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
               {/* HEADER */}
               <div className="border-b px-6 py-4 rounded-t-2xl">
@@ -1043,6 +1043,44 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         ))}
                       </div>
                     </div>
+
+                    {/* Technical Details - C21 */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Technical Location</div>
+                        <div className="text-sm font-mono font-semibold text-gray-800 mt-1">{wo.technical_location || wo.equipment_tag || '—'}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Planning Group</div>
+                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.planning_group || '—'}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Work Center</div>
+                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.work_center || '—'}</div>
+                      </div>
+                    </div>
+
+                    {/* C22: Dates - Start/End + Week number */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Start</div>
+                        <input type="date" value={editDates.start ? editDates.start.slice(0, 10) : ''}
+                          onChange={e => setEditDates(d => ({...d, start: e.target.value}))}
+                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                      </div>
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned End</div>
+                        <input type="date" value={editDates.end ? editDates.end.slice(0, 10) : ''}
+                          onChange={e => setEditDates(d => ({...d, end: e.target.value}))}
+                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                      </div>
+                      <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Week Number</div>
+                        <div className="text-lg font-bold text-indigo-800 mt-1">
+                          {editDates.start ? 'W' + String(Math.ceil(((new Date(editDates.start) - new Date(new Date(editDates.start).getFullYear(), 0, 1)) / 86400000 + new Date(new Date(editDates.start).getFullYear(), 0, 1).getDay() + 1) / 7)).padStart(2, '0') : '—'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1057,7 +1095,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     {editOps.length === 0 ? (
                       <div className="text-center py-6 text-gray-400">
                         <p className="text-sm">No operations</p>
-                        <p className="text-xs">Click "+ Add" para crear pasos de trabajo</p>
+                        <p className="text-xs">Click "+ Add" to create work steps</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -1079,7 +1117,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             <div className="flex items-center gap-3 ml-7">
                               <select value={op.specialty || 'Mechanical'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
                                 className="text-xs border rounded px-2 py-1">
-                                {['Mechanical','Electrical','Instrumentation','Welder','Lubrication','Crane Operator','Scaffolder','Supervisor','Other'].map(s => <option key={s} value={s}>{s}</option>)}
+                                {['Mechanical','Electrical','Instrument Tech','Welder','Lubrication','Crane Operator','Scaffolder','Boilermaker','Other'].map(s => <option key={s} value={s}>{s}</option>)}
                               </select>
                               <div className="flex items-center gap-1">
                                 <label className="text-[10px] text-gray-500">Qty:</label>
@@ -1090,6 +1128,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 <label className="text-[10px] text-gray-500">Hours:</label>
                                 <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
                                   className="w-14 text-xs border rounded px-1 py-1 text-center" />
+                              </div>
+                              <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs font-bold text-emerald-700 whitespace-nowrap">
+                                {((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH
                               </div>
                             </div>
                           </div>
@@ -1141,7 +1182,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>;
                     })()}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-2">Materials Utilizados</label>
+                      <label className="text-xs font-semibold text-gray-600 block mb-2">Materials Used</label>
                       {(wo.materials || []).length > 0 ? (
                         <div className="space-y-2">
                           {(wo.materials || []).map((mat, idx) => (
@@ -1279,6 +1320,22 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     <h3 className="text-sm font-semibold text-gray-800">Cost Control</h3>
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                       <div className="text-xs font-semibold text-emerald-700 mb-1">Auto-calculated from Operations + Materials</div>
+                      <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-200">
+                        <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                          <div className="text-[10px] text-blue-600 font-semibold uppercase">Total Planned</div>
+                          <div className="text-lg font-bold text-blue-800">{totalPlan.toFixed(0)}</div>
+                        </div>
+                        <div className="bg-amber-50 rounded-lg p-3 text-center border border-amber-200">
+                          <div className="text-[10px] text-amber-600 font-semibold uppercase">Total Actual</div>
+                          <div className="text-lg font-bold text-amber-800">{totalReal.toFixed(0)}</div>
+                        </div>
+                        <div className={(totalReal - totalPlan) > 0 ? "bg-red-50 rounded-lg p-3 text-center border border-red-200" : "bg-green-50 rounded-lg p-3 text-center border border-green-200"}>
+                          <div className="text-[10px] font-semibold uppercase" style={{color: (totalReal - totalPlan) > 0 ? '#991b1b' : '#166534'}}>Variance</div>
+                          <div className="text-lg font-bold" style={{color: (totalReal - totalPlan) > 0 ? '#991b1b' : '#166534'}}>
+                            {(totalReal - totalPlan) > 0 ? '+' : ''}{(totalReal - totalPlan).toFixed(0)}
+                          </div>
+                        </div>
+                      </div>
                       <div className="grid grid-cols-4 gap-2 text-xs">
                         <div><span className="text-gray-500">Labor:</span> <span className="font-bold">${calculatedCosts.laborCost.toFixed(0)}</span> <span className="text-gray-400">({calculatedCosts.laborHours}h x ${LABOR_RATE}/h)</span></div>
                         <div><span className="text-gray-500">Materials:</span> <span className="font-bold">${calculatedCosts.materialCost.toFixed(0)}</span></div>
@@ -1325,7 +1382,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <div className="text-right">
                           <div className="text-xs text-gray-500">Plan: ${totalPlan.toFixed(0)} | Real: ${totalReal.toFixed(0)}</div>
                           <div className={"text-sm font-bold "+(totalReal > totalPlan ? "text-red-600" : "text-green-600")}>
-                            {totalReal > totalPlan ? "+" : ""}${(totalReal - totalPlan).toFixed(0)}
+                            {totalReal > totalPlan ? "+" : ""}{(totalReal - totalPlan).toFixed(0)}
                           </div>
                         </div>
                       </div>
@@ -1350,7 +1407,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         {items.map((entry, idx) => (
                           <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] text-gray-400">{entry.timestamp ? new Date(entry.timestamp).toLocaleString('es', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</span>
+                              <span className="text-[10px] text-gray-400">{entry.timestamp ? new Date(entry.timestamp).toLocaleString('en-US', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</span>
                             </div>
                             <p className="text-xs text-gray-700">{entry.note || entry.message || JSON.stringify(entry)}</p>
                           </div>

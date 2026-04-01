@@ -586,7 +586,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
           <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden min-w-[100px]">
             <div className="h-full bg-[#1B5E20] rounded-full transition-all" style={{ width: `${Math.min(loadPct, 100)}%` }} />
           </div>
-          <span className="text-sm font-semibold text-foreground whitespace-nowrap">Load: {loadPct}%</span>
+          <span className={`text-sm font-semibold whitespace-nowrap ${loadPct > 100 ? 'text-red-600 animate-pulse' : loadPct > 80 ? 'text-amber-600' : 'text-foreground'}`}>Load: {loadPct}% {loadPct > 100 ? '⚠️ OVERLOADED' : ''}</span>
         </div>
 
         {/* Calendar grid */}
@@ -623,7 +623,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                           <div className="font-semibold text-sm text-foreground">{tech.name}</div>
                           <div className="flex items-center gap-1.5 mt-1">
                             <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded ${badge.bg}`}>{badge.label}</span>
-                            <span className="text-xs text-muted-foreground">{Math.round(hours)}h / {HOURS_PER_WEEK}h</span>
+                            <span className={`text-xs font-semibold ${hours > HOURS_PER_WEEK ? 'text-red-600' : hours > HOURS_PER_WEEK * 0.8 ? 'text-amber-600' : 'text-muted-foreground'}`}>{Math.round(hours)}h / {HOURS_PER_WEEK}h {hours > HOURS_PER_WEEK ? '⚠️' : ''}</span>
                           </div>
                         </td>
                         {days.map(d => {
@@ -640,7 +640,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                   style={{ minHeight: 60, minWidth: 90 }}
                                   onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
                                   onDragLeave={() => setDropTarget(null)}
-                                  onDrop={e => { e.preventDefault(); if (dragWO) onScheduleWO(dragWO, tech, d.date, shift.id); setDragWO(null); setDropTarget(null); }}>
+                                  onDrop={e => { e.preventDefault(); if (dragWO) { const techLoad = techHours[tech.worker_id] || 0; if (techLoad >= HOURS_PER_WEEK) { if (!window.confirm('⚠️ WARNING: ' + tech.name + ' is already at ' + Math.round(techLoad) + 'h/' + HOURS_PER_WEEK + 'h capacity. Schedule anyway?')) { setDragWO(null); setDropTarget(null); return; } } onScheduleWO(dragWO, tech, d.date, shift.id); } setDragWO(null); setDropTarget(null); }}>
                                   {cellWOs.map(wo => {
                                     const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
                                     return (

@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Eye, Clock, ChevronRight, ChevronLeft, Download, AlertCircle, Plus, XCircle, Ban,
-  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck
+  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search
 } from 'lucide-react';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';

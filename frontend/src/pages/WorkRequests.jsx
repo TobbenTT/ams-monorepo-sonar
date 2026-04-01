@@ -361,7 +361,7 @@ function DetailModal({ item, onClose, onValidate, onReject, onCancel, onStart, o
   <div class="card"><div class="label">Equipo / TAG</div><div class="value">${wr.equipment_tag || '-'}</div></div>
   <div class="card"><div class="label">Equipo Nombre</div><div class="value">${wr.equipment_name || '-'}</div></div>
   <div class="card"><div class="label">Duracion Estimada</div><div class="value">${wr.estimated_duration || ai.estimated_duration_hours || '-'}h</div></div>
-  <div class="card"><div class="label">Creado por</div><div class="value">${wr.created_by || '-'}</div></div>
+  <div class="card"><div class="label">Created By</div><div class="value">${wr.created_by || '-'}</div></div>
   <div class="card"><div class="label">Fecha Creacion</div><div class="value">${wr.created_at ? new Date(wr.created_at).toLocaleDateString('es-CL') : '-'}</div></div>
   <div class="card"><div class="label">Plant</div><div class="value">${ai.plant_id || 'OCP-JFC1'}</div></div>
 </div>
@@ -407,7 +407,7 @@ ${materials.length ? `<div class="section">
 </body></html>`);
               w.document.close();
             }} className="px-3 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 flex items-center gap-1">
-              <Download size={12} /> Reporte PDF
+              <Download size={12} /> PDF Report
             </button>
             {canEdit && !editing && (
             <button onClick={() => setEditing(true)} className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-300 font-semibold hover:bg-amber-100 transition-colors">
@@ -429,7 +429,8 @@ ${materials.length ? `<div class="section">
         {/* Detail Grid */}
         <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <DetailCard icon={MapPin} label={t('workRequests.plantArea')} value={`${item.plant} / ${item.area}`} />
-          <DetailCard icon={User} label="Creado por" value={item.created_by || '-'} />
+          <DetailCard icon={User} label="Created By" value={item.created_by || '-'} />
+            <DetailCard icon={CheckCircle} label="Approved By" value={item.approver_id || (["Approved","APROBADO","VALIDATED"].includes(item.status) ? "Supervisor" : "—")} />
           <DetailCard icon={Clock} label={t('workRequests.estimatedDuration')}>
             {editing ? (
               <input type="text" value={editData.estimated_duration} onChange={e => setEditData(d => ({ ...d, estimated_duration: e.target.value }))}
@@ -476,7 +477,7 @@ ${materials.length ? `<div class="section">
             <ConfidenceBar value={item.ai_confidence} />
           </DetailCard>
           {item.activity_class && (
-            <DetailCard icon={Wrench} label="Clase de Actividad" value={item.activity_class} />
+            <DetailCard icon={Wrench} label="Activity Class" value={item.activity_class} />
           )}
           {item.plant_condition && (
             <DetailCard icon={Zap} label="Condición de Planta" value={item.plant_condition} />
@@ -485,10 +486,10 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
           )}
           {item.notification_type && (
-            <DetailCard icon={FileText} label="Tipo Aviso (SAP)" value={item.notification_type} />
+            <DetailCard icon={FileText} label="Notification Type (SAP)" value={item.notification_type} />
           )}
           {item.work_class && (
-            <DetailCard icon={Tag} label="Clase de Trabajo" value={item.work_class} />
+            <DetailCard icon={Tag} label="Work Class" value={item.work_class} />
           )}
           {item.wo_number && (
             <DetailCard icon={Wrench} label="OT Vinculada" value={item.wo_number} />
@@ -497,7 +498,7 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Users} label="Asignado a" value={item.assigned_to_name} />
           )}
           {item.sla_deadline && (
-            <DetailCard icon={Clock} label="Plazo SLA" value={new Date(item.sla_deadline).toLocaleDateString()} />
+            <DetailCard icon={Clock} label="SLA Deadline" value={new Date(item.sla_deadline).toLocaleDateString()} />
           )}
         </div>
 
@@ -532,7 +533,7 @@ ${materials.length ? `<div class="section">
                     className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="Fuga, Vibración..." />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Causa:</span>
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Cause:</span>
                   <input type="text" value={editData.failure_cause} onChange={e => setEditData(d => ({ ...d, failure_cause: e.target.value }))}
                     className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="Desgaste, Corrosión..." />
                 </div>
@@ -553,7 +554,7 @@ ${materials.length ? `<div class="section">
                 )}
                 {item.failure_cause && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Causa:</span>
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Cause:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_cause}</span>
                   </div>
                 )}
@@ -808,7 +809,7 @@ ${materials.length ? `<div class="section">
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
               >
                 <Wrench size={16} />
-                Iniciar Trabajo
+                Start Work
               </button>
             )}
             {canComplete && (
@@ -1411,16 +1412,16 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             type="text"
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
-            placeholder="Filtrar por ubicacion tecnica o TAG..."
+            placeholder="Filter by location or TAG..."
             className="flex-1 min-w-[200px] text-sm px-3 py-2 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] placeholder:text-muted-foreground"
           />
           <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">Desde:</span>
+            <span className="text-xs text-muted-foreground">From:</span>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
               className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">Hasta:</span>
+            <span className="text-xs text-muted-foreground">To:</span>
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
               className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
           </div>

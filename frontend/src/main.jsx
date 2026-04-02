@@ -75,6 +75,7 @@ const ExecutionChecklists = lazyRetry(() => import('./pages/ExecutionChecklists'
 const FeedbackAdmin = lazyRetry(() => import('./pages/FeedbackAdmin'));
 const Execution = lazyRetry(() => import('./pages/Execution'));
 const PostMaintenance = lazyRetry(() => import('./pages/PostMaintenance'));
+const DataImport = lazyRetry(() => import('./pages/DataImport'));
 
 const ALL = ['admin', 'manager', 'planner', 'tecnico', 'engineer'];
 const MGMT = ['admin', 'manager'];
@@ -114,6 +115,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="feedback-admin" element={<S><FeedbackAdmin /></S>} />
                                     <Route path="execution" element={<S><Execution /></S>} />
                                     <Route path="post-maintenance" element={<S><PostMaintenance /></S>} />
+                                    <Route path="data-import" element={<P roles={MGMT}><S><DataImport /></S></P>} />
 
                                     {/* ── Mobile routes ── */}
                                     <Route path="m/tareas" element={<S><MobileWorkOrders /></S>} />

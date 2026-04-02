@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import {
     Home, Wrench, AlertTriangle, TrendingUp, BarChart3,
     FileText, Users, Settings, MessageSquare,
-    ChevronLeft, ChevronRight, User, LogOut, Search, Briefcase, Database } from 'lucide-react';
+    ChevronLeft, ChevronRight, User, LogOut, Search, Briefcase, Database, Upload } from 'lucide-react';
 import { cn } from './ui/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -21,6 +21,7 @@ const navItems = [
     { path: '/settings', icon: Settings, labelKey: 'nav.settings', module: 'settings' },
     { path: '/sap-pm', icon: Database, labelKey: 'SAP PM', module: 'sap-pm' },
     { path: '/feedback-admin', icon: MessageSquare, labelKey: 'nav.feedback', module: 'feedback' },
+    { path: '/data-import', icon: Upload, labelKey: 'Data Import', module: 'data-import' },
 ];
 
 export default function Sidebar({ mobileOpen, onClose }) {

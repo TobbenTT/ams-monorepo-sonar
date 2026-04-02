@@ -491,49 +491,81 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
       {activeTab === "ots" && (
         <div>
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Work Orders</h3>
-              <span className="text-sm text-gray-400">{filteredWOs.length} / {managedWOs.length} OTs</span>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative flex-1 min-w-[200px]">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 space-y-3">
+            {/* Search */}
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" value={woSearch} onChange={e => setWoSearch(e.target.value)}
-                  placeholder="Search WO number, equipment, description..."
-                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+                  placeholder="Search by TAG, WO number, equipment..."
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
               </div>
-              <select value={woStatusFilter} onChange={e => setWoStatusFilter(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
-                <option value="All">All Status</option>
-                <option value="CREADO">Created</option>
-                <option value="PLANIFICADO">Planned</option>
-                <option value="PROGRAMADO">Scheduled</option>
-                <option value="EN_EJECUCION">In Execution</option>
-                <option value="CERRADO">Closed</option>
-                <option value="CANCELADO">Cancelled</option>
-              </select>
-              <select value={woPriorityFilter} onChange={e => setWoPriorityFilter(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
-                <option value="All">All Priority</option>
-                <option value="P1">P1 - Immediate</option>
-                <option value="P2">P2 - High</option>
-                <option value="P3">P3 - Medium</option>
-                <option value="P4">P4 - Low</option>
-              </select>
-              <select value={woTypeFilter} onChange={e => setWoTypeFilter(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
-                <option value="All">All Types</option>
-                <option value="PM01">PM01 - Corrective</option>
-                <option value="PM02">PM02 - Preventive</option>
-                <option value="PM03">PM03 - Predictive</option>
-                <option value="PM05">PM05 - Improvement</option>
-                <option value="PM07">PM07</option>
-              </select>
-              {(woSearch || woStatusFilter !== "All" || woPriorityFilter !== "All" || woTypeFilter !== "All") && (
-                <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter("All"); setWoTypeFilter("All"); }}
-                  className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
-              )}
+            </div>
+
+            {/* Location / Equipment filter */}
+            <div className="flex items-center gap-3">
+              <input type="text" placeholder="Filter by location or TAG..."
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/30"
+                onChange={e => setWoSearch(e.target.value || woSearch)} />
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span>From:</span>
+                <input type="date" className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
+                <span>To:</span>
+                <input type="date" className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
+              </div>
+            </div>
+
+            {/* Status pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {[
+                { key: 'All', label: 'All', count: managedWOs.length },
+                { key: 'CREADO', label: 'Created', count: managedWOs.filter(w => w.status === 'CREADO').length },
+                { key: 'PLANIFICADO', label: 'Planned', count: managedWOs.filter(w => w.status === 'PLANIFICADO').length },
+                { key: 'PROGRAMADO', label: 'Scheduled', count: managedWOs.filter(w => w.status === 'PROGRAMADO').length },
+                { key: 'EN_EJECUCION', label: 'In Execution', count: managedWOs.filter(w => w.status === 'EN_EJECUCION').length },
+                { key: 'CERRADO', label: 'Closed', count: managedWOs.filter(w => w.status === 'CERRADO').length },
+                { key: 'CANCELADO', label: 'Cancelled', count: managedWOs.filter(w => w.status === 'CANCELADO').length },
+              ].map(s => (
+                <button key={s.key} onClick={() => setWoStatusFilter(s.key)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                    woStatusFilter === s.key
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                  }`}>
+                  {s.label} ({s.count})
+                </button>
+              ))}
+            </div>
+
+            {/* Priority + Type pills */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-500 font-medium">Priority:</span>
+                {['All', 'P1', 'P2', 'P3', 'P4'].map(p => (
+                  <button key={p} onClick={() => setWoPriorityFilter(p)}
+                    className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
+                      woPriorityFilter === p
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}>
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-500 font-medium">Type:</span>
+                {['All', 'PM01', 'PM02', 'PM03'].map(t => (
+                  <button key={t} onClick={() => setWoTypeFilter(t)}
+                    className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
+                      woTypeFilter === t
+                        ? 'bg-purple-600 text-white'
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <span className="ml-auto text-sm text-gray-400">{filteredWOs.length} / {managedWOs.length} OTs</span>
             </div>
           </div>
           {wosLoading ? (

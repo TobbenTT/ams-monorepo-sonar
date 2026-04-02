@@ -63,19 +63,18 @@ export default function DataImport() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [t, h, tp] = await Promise.all([
-        apiGet('/data-import/tables'),
-        apiGet('/data-import/history'),
-        apiGet('/data-import/templates'),
-      ]);
+      const t = await apiGet('/data-import/tables').catch(() => []);
       setTables(t || []);
+    } catch (e) { console.error('tables:', e); }
+    try {
+      const h = await apiGet('/data-import/history').catch(() => []);
       setHistory(h || []);
+    } catch (e) { console.error('history:', e); }
+    try {
+      const tp = await apiGet('/data-import/templates').catch(() => []);
       setTemplates(tp || []);
-    } catch (err) {
-      console.error('Load failed:', err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error('templates:', e); }
+    setLoading(false);
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -362,7 +361,7 @@ export default function DataImport() {
                   {aiLoading ? (
                     <><RefreshCw className="w-4 h-4 animate-spin" /> Analyzing...</>
                   ) : (
-                    <><span>&#x1f916;</span> Auto-Configure</>
+                    <>AI Auto-Configure</>
                   )}
                 </button>
               </div>

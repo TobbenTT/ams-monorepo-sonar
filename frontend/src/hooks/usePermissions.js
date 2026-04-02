@@ -18,7 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 /* ── Module → { view: roles[], edit: roles[] } ── */
 
-const ALL_ROLES = ['admin', 'manager', 'planner', 'engineer', 'tecnico'];
+const ALL_ROLES = ['admin', 'manager', 'planner', 'engineer', 'tecnico', 'supervisor'];
 const TACTICAL = ['admin', 'planner', 'engineer', 'tecnico'];
 
 const PERMISSIONS = {

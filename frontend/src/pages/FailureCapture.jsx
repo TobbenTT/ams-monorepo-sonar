@@ -368,21 +368,27 @@ export default function FailureCapture({ onNavigateTab }) {
   }, []);
 
   useEffect(() => {
-    api.listNodes({ limit: 200 }).then(res => {
-      const nodes = Array.isArray(res) ? res : res?.items || [];
-      setAllNodes(nodes);
+    // Load locations (PLANT + AREA + top SYSTEM) and equipment separately
+    Promise.all([
+      api.listNodes({ limit: 300 }).catch(() => []),
+      api.listNodes({ node_type: 'EQUIPMENT', limit: 100 }).catch(() => []),
+    ]).then(([locRes, eqRes]) => {
+      const locs = Array.isArray(locRes) ? locRes : locRes?.items || [];
+      const eqs = Array.isArray(eqRes) ? eqRes : eqRes?.items || [];
+      const allN = [...locs, ...eqs.filter(e => !locs.find(l => l.node_id === e.node_id))];
+      setAllNodes(allN);
       const nodeMap = {};
-      nodes.forEach(n => { nodeMap[n.node_id] = n; });
-      setAllEquipment(nodes.filter(n => n.node_type === 'EQUIPMENT'));
-      setLocationNodes(nodes.filter(n =>
+      allN.forEach(n => { nodeMap[n.node_id] = n; });
+      setAllEquipment(allN.filter(n => n.node_type === 'EQUIPMENT'));
+      setLocationNodes(allN.filter(n =>
         ['PLANT', 'AREA', 'SYSTEM'].includes(n.node_type)
       ).map(n => ({ ...n, _funcLoc: buildFuncLocPath(n, nodeMap) })));
-    }).catch(() => {});
+    });
   }, [buildFuncLocPath]);
 
   // Filter equipment results
   useEffect(() => {
-    if (equipSearch.length === 0) { setEquipResults(allEquipment.slice(0, 10)); return; }
+    if (equipSearch.length === 0) { setEquipResults(allEquipment.slice(0, 20)); return; }
     if (equipSearch.length < 2) { setEquipResults([]); return; }
     // Server-side search for large datasets
     const timer = setTimeout(() => {

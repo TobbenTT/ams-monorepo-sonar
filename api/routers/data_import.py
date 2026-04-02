@@ -335,15 +335,32 @@ def ai_analyze(req: AIAnalyzeRequest, user=Depends(get_current_user)):
     if not api_key:
         raise HTTPException(500, "ANTHROPIC_API_KEY not configured")
 
-    tbl_summary = []
+    # Pre-filter: score tables by filename keyword match + column overlap
+    fname_lower = req.filename.lower().replace(".xlsx","").replace(".csv","").replace("_"," ")
+    scored = []
     for t in req.tables:
         col_names = []
+        col_name_set = set()
         for c in (t.get("columns") or [])[:30]:
             if isinstance(c, dict):
-                col_names.append(c.get("name", "") + "(" + c.get("type", "") + ")")
+                cn = c.get("name", "")
+                ct = c.get("type", "")
+                col_names.append(cn + "(" + ct + ")")
+                col_name_set.add(cn.lower())
             else:
                 col_names.append(str(c))
-        tbl_summary.append(t["name"] + ": " + ", ".join(col_names))
+                col_name_set.add(str(c).lower())
+        score = 0
+        tname = t["name"].lower().replace("_", " ")
+        for word in fname_lower.split():
+            if len(word) > 2 and word in tname:
+                score += 10
+        for ec in req.columns:
+            if ec.lower() in col_name_set:
+                score += 2
+        scored.append((score, t["name"], ", ".join(col_names)))
+    scored.sort(key=lambda x: -x[0])
+    tbl_summary = [s[1] + ": " + s[2] for s in scored[:15]]
 
     sample_json = _json.dumps(req.sample_rows[:3], default=str, ensure_ascii=False)[:1500]
     nl = chr(10)

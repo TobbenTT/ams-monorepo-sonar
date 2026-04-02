@@ -592,7 +592,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         {/* Calendar grid */}
         {technicians.length > 0 ? (
           <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" style={{maxWidth: "100%"}}>
               <table className="w-full border-collapse" style={{ minWidth: days.length * (showShifts ? 200 : 140) + 180 }}>
                 <thead>
                   <tr className="bg-muted/50">
@@ -777,7 +777,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
         </div>
 
         <div className="overflow-x-auto">
-          <div style={{ minWidth: Math.max(800, weeksRange * 120) }}>
+          <div style={{ minWidth: 800, maxWidth: '100%' }}>
             {/* Week header */}
             <div className="flex border-b border-border bg-muted/50">
               <div className="w-64 min-w-[256px] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase border-r border-border">OT / Equipo</div>
@@ -795,8 +795,8 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
 
               const startOffset = Math.max(0, (woStart - now) / 86400000);
               const duration = Math.max(0.5, (woEnd - woStart) / 86400000);
-              const leftPct = (startOffset / totalDays) * 100;
-              const widthPct = Math.min((duration / totalDays) * 100, 100 - leftPct);
+              const leftPct = Math.max(0, Math.min((startOffset / totalDays) * 100, 95));
+              const widthPct = Math.max(2, Math.min((duration / totalDays) * 100, 100 - leftPct));
 
               const barColor = GANTT_COLORS[wo.wo_type] || GANTT_COLORS[wo.type] || '#6B7280';
               const statusMeta = STATUS_META[wo.status] || STATUS_META.PLANNED;
@@ -813,7 +813,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
                     <div className="flex items-center gap-1 mt-1">
                       <span className={`text-[0.6rem] font-bold px-1 py-0.5 rounded border ${PRIORITY_COLOR[wo.priority_code] || PRIORITY_COLOR.P3}`}>{wo.priority_code}</span>
                       <span className="text-[0.6rem] text-muted-foreground">{wo.estimated_hours}h</span>
-                      {!wo.materials_ready && <Package size={10} className="text-amber-500" title="Materiales pendientes" />}
+                      {!wo.materials_ready && <Package size={10} className="text-amber-500" title="Materials pending" />}
                     </div>
                   </div>
 
@@ -884,7 +884,7 @@ function HHBalanceTab({ programId, t }) {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard icon={Users} color="text-blue-500" label={t('scheduling.workers')} value={data.worker_count} sub={t('scheduling.available')} />
-        <KpiCard icon={Clock} color="text-purple-500" label={t('scheduling.capacity')} value={`${data.capacity}h`} sub="HH/semana" />
+        <KpiCard icon={Clock} color="text-purple-500" label={t('scheduling.capacity')} value={`${data.capacity}h`} sub="HH/week" />
         <KpiCard icon={Wrench} color="text-amber-500" label={t('scheduling.assigned')} value={`${data.assigned}h`} sub={`${data.available}h ${t('scheduling.available').toLowerCase()}`} />
         <KpiCard icon={BarChart3} color={utilizationColor.split(' ')[0].replace('text-', 'text-')} label={t('scheduling.utilization')} value={`${data.utilization_pct}%`} sub={utilizationLabel} highlight={data.utilization_pct > 100} />
       </div>

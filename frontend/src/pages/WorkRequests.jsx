@@ -1026,6 +1026,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const defaultQueue = user?.role === 'manager' ? 'supervisor' : user?.role === 'planner' ? 'planner' : 'all';
   const [priorityQueue, setPriorityQueue] = useState(defaultQueue); // 'all' | 'supervisor' (P1/P2) | 'planner' (P3/P4)
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState('');
   const [search, setSearch] = useState('');
 
   // Default filter: always show ALL
@@ -1138,9 +1139,10 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       const rDate = r.created_at ? r.created_at.slice(0, 10) : '';
       const matchesDateFrom = !dateFrom || rDate >= dateFrom;
       const matchesDateTo = !dateTo || rDate <= dateTo;
-      return matchesFilter && matchesSearch && matchesLocation && matchesDateFrom && matchesDateTo;
+      const matchesPriority = !priorityFilter || (r.priority_requested || r.priority_suggested || "") === priorityFilter;
+      return matchesFilter && matchesSearch && matchesLocation && matchesDateFrom && matchesDateTo && matchesPriority;
     });
-  }, [areaFiltered, statusFilter, search, locationFilter, dateFrom, dateTo]);
+  }, [areaFiltered, statusFilter, search, locationFilter, dateFrom, dateTo, priorityFilter]);
 
   /* ─── Sort + Paginate ─── */
   const sorted = useMemo(() => {

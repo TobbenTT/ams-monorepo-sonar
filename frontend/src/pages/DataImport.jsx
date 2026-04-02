@@ -37,7 +37,7 @@ const STATUS_STYLES = {
 };
 
 export default function DataImport() {
-  const toast = useToast();
+  const toast = useToast() || { success: () => {}, error: () => {}, warning: () => {}, info: () => {} };
   const [tables, setTables] = useState([]);
   const [history, setHistory] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -68,9 +68,9 @@ export default function DataImport() {
         apiGet('/data-import/history'),
         apiGet('/data-import/templates'),
       ]);
-      setTables(t);
-      setHistory(h);
-      setTemplates(tp);
+      setTables(t || []);
+      setHistory(h || []);
+      setTemplates(tp || []);
     } catch (err) {
       console.error('Load failed:', err);
     } finally {

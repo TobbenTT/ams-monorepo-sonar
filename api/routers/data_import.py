@@ -361,10 +361,13 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
 {{"suggested_table": "table_name", "confidence": 85, "alternatives": [{{"table": "other", "confidence": 30}}], "column_mapping": {{"excel_col": "db_col"}}, "warnings": ["warn1"], "create_table_sql": null}}
 
 Rules:
-- Map columns by meaning not just name (nombre->name, fecha->date, codigo_sap->sap_id)
-- If confidence < 60, provide CREATE TABLE SQL in create_table_sql
-- Warnings: unmapped excel cols, missing required DB cols, type mismatches
-- Only map columns that semantically match"""
+- ALWAYS suggest an existing table. NEVER suggest creating a new table unless absolutely no table matches at all.
+- Map columns by meaning not just name (nombre->name, fecha->date, codigo_sap->sap_id, employee_id->employee_id)
+- Be generous with matching: if 50%+ columns match a table, suggest it with high confidence
+- The workforce table stores employee/personnel data - match workforce-like Excel files to it
+- column_mapping must map Excel column names to EXISTING database column names in the suggested table
+- create_table_sql should almost always be null - only use as absolute last resort
+- Warnings: unmapped excel cols, type mismatches"""
 
     try:
         client = anthropic.Anthropic(api_key=api_key)

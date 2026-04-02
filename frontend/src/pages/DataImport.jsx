@@ -194,6 +194,7 @@ export default function DataImport() {
         columns: selectedSheet.columns,
         sample_rows: selectedSheet.preview_rows,
         tables: tables.map(t => ({ name: t.name, columns: t.columns })),
+        filename: file ? file.name : '',
       };
       const res = await fetch(BASE + '/data-import/ai-analyze', {
         method: 'POST',

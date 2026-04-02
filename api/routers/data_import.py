@@ -322,6 +322,7 @@ class AIAnalyzeRequest(BaseModel):
     columns: list[str]
     sample_rows: list[dict[str, Any]]
     tables: list[dict[str, Any]]
+    filename: str = ""
 
 @router.post("/ai-analyze")
 def ai_analyze(req: AIAnalyzeRequest, user=Depends(get_current_user)):
@@ -347,7 +348,9 @@ def ai_analyze(req: AIAnalyzeRequest, user=Depends(get_current_user)):
     sample_json = _json.dumps(req.sample_rows[:3], default=str, ensure_ascii=False)[:1500]
     nl = chr(10)
 
-    prompt = f"""You are a data import assistant. Analyze this Excel file and suggest the best database table to import into.
+    prompt = f"""You are a data import assistant. Your job is to match Excel files to EXISTING database tables.
+
+FILE: {req.filename} Analyze this Excel file and suggest the best database table to import into.
 
 EXCEL FILE:
 Columns: {req.columns}
@@ -360,14 +363,13 @@ DATABASE TABLES:
 Respond ONLY with valid JSON (no markdown, no code blocks):
 {{"suggested_table": "table_name", "confidence": 85, "alternatives": [{{"table": "other", "confidence": 30}}], "column_mapping": {{"excel_col": "db_col"}}, "warnings": ["warn1"], "create_table_sql": null}}
 
-Rules:
-- ALWAYS suggest an existing table. NEVER suggest creating a new table unless absolutely no table matches at all.
-- Map columns by meaning not just name (nombre->name, fecha->date, codigo_sap->sap_id, employee_id->employee_id)
-- Be generous with matching: if 50%+ columns match a table, suggest it with high confidence
-- The workforce table stores employee/personnel data - match workforce-like Excel files to it
-- column_mapping must map Excel column names to EXISTING database column names in the suggested table
-- create_table_sql should almost always be null - only use as absolute last resort
-- Warnings: unmapped excel cols, type mismatches"""
+CRITICAL RULES:
+- You MUST pick an existing table. Set create_table_sql to null ALWAYS.
+- Use the filename as a strong hint: "workforce" file -> workforce table, "hierarchy" -> hierarchy_nodes, etc.
+- Map columns by MEANING: employee_id->worker_id, shift_pattern->shift, certification->certifications, name->name
+- If a column has no match, skip it (dont include in column_mapping)
+- confidence should be 70+ if the file topic matches the table topic, even if column names differ
+- column_mapping keys = Excel column names, values = database column names that EXIST in the suggested table"""
 
     try:
         client = anthropic.Anthropic(api_key=api_key)

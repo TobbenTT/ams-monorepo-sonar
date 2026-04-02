@@ -362,6 +362,71 @@ def ai_analyze(req: AIAnalyzeRequest, user=Depends(get_current_user)):
     scored.sort(key=lambda x: -x[0])
     tbl_summary = [s[1] + ": " + s[2] for s in scored[:15]]
 
+    # Domain knowledge: seed file name -> most likely table
+    DOMAIN_HINTS = {
+        "equipment_hierarchy": "hierarchy_nodes",
+        "hierarchy": "hierarchy_nodes",
+        "criticality": "criticality_assessments",
+        "failure_modes": "failure_modes",
+        "measurement_points": "measuring_points",
+        "measurement_documents": "measuring_points",
+        "work_packages": "work_packages",
+        "work_order": "managed_work_orders",
+        "spare_parts": "sap_materials",
+        "inventory": "sap_materials",
+        "shutdown": "shutdown_events",
+        "workforce": "workforce",
+        "field_capture": "field_captures",
+        "work_centers": "work_centers",
+        "planning_kpi": "planning_kpi_snapshots",
+        "de_kpi": "de_kpi_snapshots",
+        "maintenance_strategy": "maintenance_plans",
+        "maintenance_plans": "maintenance_plans",
+        "catalog_profiles": "failure_modes",
+        "route_sheets": "maintenance_tasks",
+        "classification": "hierarchy_nodes",
+        "financial": "settlement_rules",
+        "notifications": "work_requests",
+        "active_backlog": "backlog_items",
+        "time_confirmations": "time_logs",
+        "material_movements": "material_reservations",
+        "equipment_bom": "bom_items",
+        "cost_history": "settlement_rules",
+        "reliability_data": "failure_modes",
+        "maintenance_schedule": "maintenance_schedule_3w",
+        "typical_operations": "typical_operations",
+        "shutdown_detail": "shutdown_details",
+        "permits_to_work": "work_permits",
+        "weekly_program": "weekly_programs_seed",
+        "resource_availability": "resource_availability",
+        "material_reservations": "material_reservations",
+        "kpi_snapshots": "kpi_snapshots_data",
+        "execution_checklists": "execution_checklists_data",
+        "daily_log": "daily_logs",
+        "annual_budget": "annual_budget_maintenance",
+        "org_structure": "work_centers",
+        "dms_maf": "hierarchy_nodes",
+        "data_dictionary": "hierarchy_nodes",
+        "configuration_points": "hierarchy_nodes",
+    }
+    
+    # Find best domain hint
+    domain_hint = ""
+    fname_clean = req.filename.lower().replace(".xlsx","").replace(".csv","")
+    # Remove leading numbers like "09_" or "24_"
+    import re as _re
+    fname_clean = _re.sub(r"^\d+_?", "", fname_clean)
+    for key, table in DOMAIN_HINTS.items():
+        if key in fname_clean:
+            domain_hint = f"STRONG HINT: Based on the filename, this file should go to table '{table}'. Prioritize this table."
+            # Also boost that table in scoring
+            for i, s in enumerate(scored):
+                if s[1] == table:
+                    scored[i] = (s[0] + 50, s[1], s[2])
+            scored.sort(key=lambda x: -x[0])
+            tbl_summary = [s[1] + ": " + s[2] for s in scored[:15]]
+            break
+
     sample_json = _json.dumps(req.sample_rows[:3], default=str, ensure_ascii=False)[:1500]
     nl = chr(10)
 
@@ -376,6 +441,8 @@ Sample rows (first 3):
 
 DATABASE TABLES:
 {nl.join(tbl_summary[:40])}
+
+{domain_hint}
 
 Respond ONLY with valid JSON (no markdown, no code blocks):
 {{"suggested_table": "table_name", "confidence": 85, "alternatives": [{{"table": "other", "confidence": 30}}], "column_mapping": {{"excel_col": "db_col"}}, "warnings": ["warn1"], "create_table_sql": null}}

@@ -789,6 +789,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
             </div>
 
             {/* Rows */}
+            <div style={{maxHeight: "60vh", overflowY: "auto"}}>
             {ganttData.map((wo) => {
               const woStart = wo.planned_start ? new Date(wo.planned_start) : now;
               const woEnd = wo.planned_end ? new Date(wo.planned_end) : new Date(woStart.getTime() + (wo.estimated_hours || 4) * 3600000);
@@ -837,6 +838,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
 

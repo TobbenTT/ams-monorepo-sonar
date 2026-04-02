@@ -55,6 +55,13 @@ const WORK_CENTERS = [
   { value: 'MEXTSOL1', label: 'Welding (External)', group: 'M04' },
   { value: 'MEXTLAV1', label: 'Washing (External)', group: 'M04' },
   { value: 'MEXTNEU1', label: 'Tires (External)', group: 'M04' },
+];
+const WAREHOUSES = [
+  { value: 'WH-001', label: 'WH-001 - Main Warehouse Plant' },
+  { value: 'WH-002', label: 'WH-002 - Wet Area Storage' },
+  { value: 'WH-003', label: 'WH-003 - Heavy Parts Yard' },
+  { value: 'WH-004', label: 'WH-004 - Mine Workshop Store' },
+  { value: 'WH-005', label: 'WH-005 - Emergency Spares' },
   { value: 'MAPELE01', label: 'Electrical Mine Support', group: 'M05' },
 ];
 const AREAS_EMPRESA = [
@@ -79,7 +86,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [managedWOs, setManagedWOs] = useState([]);
   const [wosLoading, setWosLoading] = useState(false);
   const [workRequests, setWorkRequests] = useState([]);
-  const [priorityFilter, setPriorityFilter] = useState('All');
+  const [priorityFilter, setPriorityFilter] = useState(['All']);
   const [actionLoading, setActionLoading] = useState(null);
   const [otActionLoading, setOtActionLoading] = useState(null);
   const [selectedWR, setSelectedWR] = useState(null); // inline detail modal
@@ -243,8 +250,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   // Only VALIDATED WRs
   const approvedWRs = useMemo(() => workRequests.filter(wr => ['VALIDATED', 'APROBADO', 'APPROVED'].includes(wr.status)), [workRequests]);
   const filteredWRs = useMemo(() => {
-    if (priorityFilter === 'All') return approvedWRs;
-    return approvedWRs.filter(wr => (wr.priority || wr.priority_code) === priorityFilter);
+    if (priorityFilter.includes('All') || priorityFilter.length === 0) return approvedWRs;
+    return approvedWRs.filter(wr => priorityFilter.includes(wr.priority || wr.priority_code));
   }, [approvedWRs, priorityFilter]);
 
   const kpis = useMemo(() => {
@@ -627,9 +634,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xs text-gray-500 font-medium">Priority:</span>
         {['All', 'P1', 'P2', 'P3', 'P4'].map(opt => (
-          <button key={opt} onClick={() => { setPriorityFilter(opt); setPage(0); }}
+          <button key={opt} onClick={() => { setPriorityFilter(prev => { if (opt === 'All') return ['All']; const next = prev.filter(x => x !== 'All'); return next.includes(opt) ? (next.filter(x => x !== opt).length === 0 ? ['All'] : next.filter(x => x !== opt)) : [...next, opt]; }); setPage(0); }}
             className={`text-sm font-medium px-2.5 py-1 rounded transition-colors ${
-              priorityFilter === opt ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
+              priorityFilter.includes(opt) ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
             {opt === 'All' ? 'All' : opt}
           </button>

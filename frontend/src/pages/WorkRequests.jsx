@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';
+// Reopen handler for admin
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
@@ -1244,6 +1245,12 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       .then(() => toast.success('Notification rejected. El creador será notificado.'))
       .catch(() => toast.error('Error al rechazar aviso'))
       .finally(() => { onRefreshCounts?.(); refreshList(); });
+  }
+
+  function handleReopen(id) {
+    api.reopenWorkRequest(id)
+      .then(() => { toast.success('Notification reopened'); fetchRequests(); })
+      .catch(() => toast.error('Error reopening'));
   }
 
   function handleCancel(id) {

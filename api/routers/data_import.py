@@ -320,3 +320,237 @@ def list_templates():
                 "size_kb": round(f.stat().st_size / 1024, 1),
             })
     return files
+
+
+# ── AI-Powered Analysis ──────────────────────────────────────────
+
+@router.post("/ai-analyze")
+def ai_analyze_import(
+    payload: dict,
+    db: Session = Depends(get_db),
+):
+    """Use Claude to suggest target table, column mapping, and data quality warnings."""
+    import json
+    import time
+
+    file_columns = payload.get("file_columns", [])
+    sample_rows = payload.get("sample_rows", [])
+    table_schemas = payload.get("table_schemas", [])
+
+    if not file_columns:
+        raise HTTPException(400, "file_columns is required")
+
+    # Build compact schema representation
+    schema_text = ""
+    for t in table_schemas:
+        cols = ", ".join([f"{c['name']} ({c['type']}{'*' if c.get('notnull') else ''})" for c in t.get("columns", [])])
+        schema_text += f"Table '{t['name']}' [{t.get('row_count', 0)} rows]: {cols}\n"
+
+    # Build sample data text
+    sample_text = json.dumps(sample_rows[:3], default=str, ensure_ascii=False)
+
+    prompt = f"""Analyze this file upload and suggest the best database target.
+
+FILE COLUMNS: {json.dumps(file_columns)}
+SAMPLE DATA (first 3 rows): {sample_text}
+
+DATABASE TABLES:
+{schema_text}
+
+Return JSON only, no explanation:
+{{
+  "suggested_table": "best_matching_table_name",
+  "confidence": 85,
+  "alternatives": [{{"table": "name", "confidence": 30}}],
+  "column_mapping": {{"file_col": "db_col", ...}},
+  "warnings": ["list of issues"],
+  "create_table_sql": null
+}}
+
+Rules:
+- Map columns even if names differ (e.g. "nombre"->"name", "fecha_contrato"->"hire_date")
+- If best match confidence < 60, provide CREATE TABLE SQL in create_table_sql
+- Warnings: flag unmapped file columns, missing required DB columns, type mismatches
+- Only include up to 2 alternatives with confidence > 15%
+- column_mapping maps FILE column names to DB column names for the suggested_table"""
+
+    try:
+        import anthropic
+
+        api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            raise HTTPException(500, "ANTHROPIC_API_KEY not configured")
+
+        start = time.time()
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
+        duration_ms = int((time.time() - start) * 1000)
+
+        # Parse JSON from response (handle markdown code blocks)
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+
+        result = json.loads(raw)
+        result["duration_ms"] = duration_ms
+        return result
+
+    except json.JSONDecodeError:
+        logger.error("AI returned non-JSON: %s", raw[:500])
+        raise HTTPException(500, "AI returned invalid JSON response")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("AI analysis failed")
+        raise HTTPException(500, "AI analysis failed: %s" % str(exc)[:200])
+
+
+# ── AI Auto-Configure ─────────────────────────────────────────────
+
+from pydantic import BaseModel
+from typing import Any
+
+class AIAnalyzeRequest(BaseModel):
+    columns: list[str]
+    sample_rows: list[dict[str, Any]]
+    tables: list[dict[str, Any]]  # [{name, columns: [{name, type}]}]
+
+@router.post("/ai-analyze")
+def ai_analyze(req: AIAnalyzeRequest, user=Depends(get_current_user)):
+    """AI suggests target table, column mapping, and data quality warnings."""
+    import anthropic
+    import json as _json
+    from api.config import settings
+
+    api_key = settings.ANTHROPIC_API_KEY
+    if not api_key:
+        raise HTTPException(500, "ANTHROPIC_API_KEY not configured")
+
+    # Build compact table list for prompt
+    tbl_summary = []
+    for t in req.tables:
+        cols = [f"{c['name']}({c.get('type','')})" for c in (t.get('columns') or [])[:30]]
+        tbl_summary.append(f"{t['name']}: {', '.join(cols)}")
+
+    prompt = f"""You are a data import assistant. Analyze this Excel file and suggest the best database table to import into.
+
+EXCEL FILE:
+Columns: {req.columns}
+Sample rows (first 3):
+{_json.dumps(req.sample_rows[:3], default=str, ensure_ascii=False)[:1500]}
+
+DATABASE TABLES:
+{chr(10).join(tbl_summary[:40])}
+
+Respond ONLY with valid JSON (no markdown, no explanation):
+{{
+  "suggested_table": "table_name",
+  "confidence": 85,
+  "alternatives": [{{"table": "other_table", "confidence": 30}}],
+  "column_mapping": {{"excel_col": "db_col", ...}},
+  "warnings": ["warning1", "warning2"],
+  "create_table_sql": null
+}}
+
+Rules:
+- Map columns by meaning, not just name (e.g. "nombre"->"name", "fecha"->"date", "codigo_sap"->"sap_id")
+- If confidence < 60, provide a CREATE TABLE SQL in create_table_sql
+- Warnings: unmapped excel cols, missing required DB cols, type mismatches
+- Only map columns that semantically match. Skip irrelevant ones."""
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = response.content[0].text.strip()
+        # Parse JSON from response
+        if text.startswith("")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        result = _json.loads(text)
+        return result
+    except _json.JSONDecodeError:
+        return {"suggested_table": "", "confidence": 0, "alternatives": [], "column_mapping": {}, "warnings": ["AI response was not valid JSON"], "create_table_sql": None}
+    except Exception as e:
+        raise HTTPException(500, f"AI analysis failed: {e}")
+
+
+# -- AI Auto-Configure --
+
+from pydantic import BaseModel
+from typing import Any
+
+class AIAnalyzeRequest(BaseModel):
+    columns: list[str]
+    sample_rows: list[dict[str, Any]]
+    tables: list[dict[str, Any]]
+
+@router.post("/ai-analyze")
+def ai_analyze(req: AIAnalyzeRequest, user=Depends(get_current_user)):
+    """AI suggests target table, column mapping, and data quality warnings."""
+    import anthropic
+    import json as _json
+    from api.config import settings
+
+    api_key = settings.ANTHROPIC_API_KEY
+    if not api_key:
+        raise HTTPException(500, "ANTHROPIC_API_KEY not configured")
+
+    tbl_summary = []
+    for t in req.tables:
+        col_names = []
+        for c in (t.get("columns") or [])[:30]:
+            if isinstance(c, dict):
+                col_names.append(c.get("name", "") + "(" + c.get("type", "") + ")")
+            else:
+                col_names.append(str(c))
+        tbl_summary.append(t["name"] + ": " + ", ".join(col_names))
+
+    sample_json = _json.dumps(req.sample_rows[:3], default=str, ensure_ascii=False)[:1500]
+    nl = chr(10)
+
+    prompt = f"""You are a data import assistant. Analyze this Excel file and suggest the best database table to import into.
+
+EXCEL FILE:
+Columns: {req.columns}
+Sample rows (first 3):
+{sample_json}
+
+DATABASE TABLES:
+{nl.join(tbl_summary[:40])}
+
+Respond ONLY with valid JSON (no markdown, no code blocks):
+{{"suggested_table": "table_name", "confidence": 85, "alternatives": [{{"table": "other", "confidence": 30}}], "column_mapping": {{"excel_col": "db_col"}}, "warnings": ["warn1"], "create_table_sql": null}}
+
+Rules:
+- Map columns by meaning not just name (nombre->name, fecha->date, codigo_sap->sap_id)
+- If confidence < 60, provide CREATE TABLE SQL in create_table_sql
+- Warnings: unmapped excel cols, missing required DB cols, type mismatches
+- Only map columns that semantically match"""
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = response.content[0].text.strip()
+        if "```" in text:
+            parts = text.split("```")
+            text = parts[1] if len(parts) > 1 else parts[0]
+            if text.startswith("json"):
+                text = text[4:]
+        result = _json.loads(text.strip())
+        return result
+    except _json.JSONDecodeError:
+        return {"suggested_table": "", "confidence": 0, "alternatives": [], "column_mapping": {}, "warnings": ["AI response was not valid JSON"], "create_table_sql": None}
+    except Exception as e:
+        raise HTTPException(500, f"AI analysis failed: {e}")

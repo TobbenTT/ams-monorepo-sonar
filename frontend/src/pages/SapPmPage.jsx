@@ -86,9 +86,9 @@ export default function SapPmPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Database className="w-6 h-6 text-emerald-600" /> SAP PM - Modulos Integrados
+            <Database className="w-6 h-6 text-emerald-600" /> SAP PM - Integrated Modules
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Planta OCP-JFC1 — Jorf Fertilizers Complex 1</p>
+          <p className="text-sm text-gray-500 mt-0.5">Plant OCP-JFC1 — Jorf Fertilizers Complex 1</p>
         </div>
         <span className="text-xs font-mono text-gray-400 bg-gray-100 px-3 py-1 rounded-full">SAP ECC 6.0 EHP8</span>
       </div>
@@ -113,10 +113,10 @@ export default function SapPmPage() {
         <div className="bg-white rounded-xl border overflow-hidden">
           <div className="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-gray-800">Planes de Mantenimiento Preventivo</h2>
-              <p className="text-[10px] text-gray-400">IP10 — Scheduling de planes | IP30 — Monitoreo de fechas</p>
+              <h2 className="text-sm font-bold text-gray-800">Preventive Maintenance Plans</h2>
+              <p className="text-[10px] text-gray-400">IP10 — Plan scheduling | IP30 — Date monitoring</p>
             </div>
-            <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">{(data.plans||[]).length} planes</span>
+            <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">{(data.plans||[]).length} plans</span>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
@@ -125,9 +125,9 @@ export default function SapPmPage() {
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Description</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Equipment</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Type</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Ciclo</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Estrategia</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Proxima Fecha</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Cycle</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Strategy</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Next Date</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
               </tr>
             </thead>
@@ -201,7 +201,7 @@ export default function SapPmPage() {
       {!loading && tab === 'measuring' && (
         <div className="bg-white rounded-xl border overflow-hidden">
           <div className="px-5 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-bold text-gray-800">Puntos de Medicion — Monitoreo de Condicion</h2>
+            <h2 className="text-sm font-bold text-gray-800">Measuring Points — Monitoreo de Condicion</h2>
             <p className="text-[10px] text-gray-400">IK01 — Crear punto de medida | IK11 — Registrar medicion</p>
           </div>
           <table className="w-full text-sm">
@@ -246,7 +246,7 @@ export default function SapPmPage() {
       {!loading && tab === 'permits' && (
         <div className="space-y-3">
           <div className="px-1">
-            <h2 className="text-sm font-bold text-gray-800">Permisos de Trabajo / LOTO</h2>
+            <h2 className="text-sm font-bold text-gray-800">Work Permits / LOTO</h2>
             <p className="text-[10px] text-gray-400">Control de trabajos peligrosos — Bloqueo y Etiquetado</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -316,7 +316,7 @@ export default function SapPmPage() {
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Material</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Description</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Cant.</th>
-                <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">Costo Est.</th>
+                <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">Cost Est.</th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Vendor</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Entrega</th>
                 <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
@@ -368,15 +368,15 @@ export default function SapPmPage() {
           {(data.settlements||[]).length > 0 && (
             <div className="bg-white rounded-xl border overflow-hidden">
               <div className="px-5 py-3 border-b bg-gray-50">
-                <h3 className="text-sm font-bold text-gray-800">Reglas de Liquidacion (KO88)</h3>
+                <h3 className="text-sm font-bold text-gray-800">Settlement Rules (KO88)</h3>
               </div>
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">OT</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Centro Costo</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">Centro Cost</th>
                     <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">%</th>
-                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">Monto</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">Amount</th>
                     <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Date</th>
                     <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500">Status</th>
                   </tr>

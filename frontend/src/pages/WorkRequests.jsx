@@ -1504,70 +1504,33 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         />
       )}
 
-      {/* Filter Bar */}
-      <div className="bg-card rounded-xl border border-border p-4 shadow-sm space-y-3">
-        {/* Search */}
-        <div className="flex items-center gap-2">
-          <Filter size={16} className="text-muted-foreground flex-shrink-0" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('workRequests.searchPlaceholder')}
-            className="flex-1 text-sm px-3 py-2 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] transition-colors placeholder:text-muted-foreground"
-          />
-        </div>
-
-        {/* Location + Date filters */}
+      {/* Filter Bar - Planning style */}
+      <div className="space-y-3 mb-4">
         <div className="flex items-center gap-2 flex-wrap">
-          <input
-            type="text"
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-            placeholder="Filter by location or TAG..."
-            className="flex-1 min-w-[200px] text-sm px-3 py-2 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] placeholder:text-muted-foreground"
-          />
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">From:</span>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('workRequests.searchPlaceholder')}
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">To:</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
-          </div>
-          {(locationFilter || dateFrom || dateTo) && (
-            <button onClick={() => { setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
-              className="text-xs px-2 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100">
-              Limpiar
-            </button>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
+            {STATUS_KEYS.map(key => (
+              <option key={key} value={key}>{statusLabels[key] ?? key}</option>
+            ))}
+          </select>
+          <select value={priorityFilter || 'ALL'} onChange={e => setPriorityFilter(e.target.value === 'ALL' ? '' : e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
+            <option value="ALL">All Priority</option>
+            <option value="P1">P1 - Immediate</option>
+            <option value="P2">P2 - High</option>
+            <option value="P3">P3 - Medium</option>
+            <option value="P4">P4 - Low</option>
+          </select>
+          {(search || statusFilter !== 'ALL' || priorityFilter) && (
+            <button onClick={() => { setSearch(''); setStatusFilter('ALL'); setPriorityFilter(''); setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
+              className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
           )}
-        </div>
-
-        {/* Status Buttons */}
-        <div className="flex flex-wrap gap-2">
-          {STATUS_KEYS.map((key) => {
-            const count = key === 'ALL'
-              ? queueFiltered.length
-              : queueFiltered.filter((r) => r.status === key).length;
-            return (
-              <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
-                  statusFilter === key
-                    ? 'bg-[#1B5E20] text-white border-[#1B5E20]'
-                    : 'bg-card text-muted-foreground border-border hover:bg-muted'
-                }`}
-              >
-                {statusLabels[key] ?? key}
-                <span className={`ml-1.5 text-xs ${statusFilter === key ? 'text-green-200' : 'text-muted-foreground'}`}>
-                  ({count})
-                </span>
-              </button>
-            );
-          })}
         </div>
       </div>
 

@@ -491,49 +491,53 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
       {activeTab === "ots" && (
         <div>
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Work Orders</h3>
-              <span className="text-sm text-gray-400">{filteredWOs.length} / {managedWOs.length} OTs</span>
+          <div className="bg-card rounded-xl border border-border p-4 shadow-sm space-y-3 mb-4">
+            {/* Search */}
+            <div className="flex items-center gap-2">
+              <Search size={16} className="text-muted-foreground flex-shrink-0" />
+              <input type="text" value={woSearch} onChange={e => setWoSearch(e.target.value)}
+                placeholder="Search by TAG, WO number, equipment..."
+                className="flex-1 text-sm px-3 py-2 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] transition-colors placeholder:text-muted-foreground" />
             </div>
+
+            {/* Location + Date filters */}
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type="text" value={woSearch} onChange={e => setWoSearch(e.target.value)}
-                  placeholder="Search WO number, equipment, description..."
-                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+              <input type="text" placeholder="Filter by location or TAG..."
+                onChange={e => { if (e.target.value) setWoSearch(e.target.value); }}
+                className="flex-1 min-w-[200px] text-sm px-3 py-2 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] placeholder:text-muted-foreground" />
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">From:</span>
+                <input type="date" className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
               </div>
-              <select value={woStatusFilter} onChange={e => setWoStatusFilter(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
-                <option value="All">All Status</option>
-                <option value="CREADO">Created</option>
-                <option value="PLANIFICADO">Planned</option>
-                <option value="PROGRAMADO">Scheduled</option>
-                <option value="EN_EJECUCION">In Execution</option>
-                <option value="CERRADO">Closed</option>
-                <option value="CANCELADO">Cancelled</option>
-              </select>
-              <select value={woPriorityFilter} onChange={e => setWoPriorityFilter(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
-                <option value="All">All Priority</option>
-                <option value="P1">P1 - Immediate</option>
-                <option value="P2">P2 - High</option>
-                <option value="P3">P3 - Medium</option>
-                <option value="P4">P4 - Low</option>
-              </select>
-              <select value={woTypeFilter} onChange={e => setWoTypeFilter(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
-                <option value="All">All Types</option>
-                <option value="PM01">PM01 - Corrective</option>
-                <option value="PM02">PM02 - Preventive</option>
-                <option value="PM03">PM03 - Predictive</option>
-                <option value="PM05">PM05 - Improvement</option>
-                <option value="PM07">PM07</option>
-              </select>
-              {(woSearch || woStatusFilter !== "All" || woPriorityFilter !== "All" || woTypeFilter !== "All") && (
-                <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter("All"); setWoTypeFilter("All"); }}
-                  className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
-              )}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">To:</span>
+                <input type="date" className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
+              </div>
+            </div>
+
+            {/* Status Pills */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: 'All', label: 'All', count: managedWOs.length },
+                { key: 'CREADO', label: 'Created', count: managedWOs.filter(w => w.status === 'CREADO').length },
+                { key: 'PLANIFICADO', label: 'Planned', count: managedWOs.filter(w => w.status === 'PLANIFICADO').length },
+                { key: 'PROGRAMADO', label: 'Scheduled', count: managedWOs.filter(w => w.status === 'PROGRAMADO').length },
+                { key: 'EN_EJECUCION', label: 'In Execution', count: managedWOs.filter(w => w.status === 'EN_EJECUCION').length },
+                { key: 'CERRADO', label: 'Closed', count: managedWOs.filter(w => w.status === 'CERRADO').length },
+                { key: 'CANCELADO', label: 'Cancelled', count: managedWOs.filter(w => w.status === 'CANCELADO').length },
+              ].map(s => (
+                <button key={s.key} onClick={() => setWoStatusFilter(s.key)}
+                  className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
+                    woStatusFilter === s.key
+                      ? 'bg-[#1B5E20] text-white border-[#1B5E20]'
+                      : 'bg-card text-muted-foreground border-border hover:bg-muted'
+                  }`}>
+                  {s.label}
+                  <span className={`ml-1.5 text-xs ${woStatusFilter === s.key ? 'text-green-200' : 'text-muted-foreground'}`}>
+                    ({s.count})
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
           {wosLoading ? (

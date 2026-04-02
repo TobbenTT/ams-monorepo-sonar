@@ -63,6 +63,7 @@ const Reliability = lazyRetry(() => import('./pages/Reliability'));
 const RCA = lazyRetry(() => import('./pages/RCA'));
 const DefectElimination = lazyRetry(() => import('./pages/DefectElimination'));
 const SAPReview = lazyRetry(() => import('./pages/SAPReview'));
+const SapPmPage = lazyRetry(() => import("./pages/SapPmPage"));
 const Admin = lazyRetry(() => import('./pages/Admin'));
 const AIAgents = lazyRetry(() => import('./pages/AIAgents'));
 const Profile = lazyRetry(() => import('./pages/Profile'));
@@ -139,6 +140,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="rca" element={<P roles={ENGR}><S><RCA /></S></P>} />
                                     <Route path="defect-elimination" element={<P roles={ENGR}><S><DefectElimination /></S></P>} />
                                     <Route path="sap-review" element={<P roles={MGMT}><S><SAPReview /></S></P>} />
+                                    <Route path="sap-pm" element={<S><SapPmPage /></S>} />
                                     <Route path="financial" element={<P roles={MGMT}><S><Financial /></S></P>} />
                                     <Route path="troubleshooting" element={<P roles={ALL}><S><Troubleshooting /></S></P>} />
                                     <Route path="equipment-chat" element={<P roles={ALL}><S><EquipmentChat /></S></P>} />

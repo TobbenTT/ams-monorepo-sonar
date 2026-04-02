@@ -55,6 +55,7 @@ const WORK_CENTERS = [
   { value: 'MEXTSOL1', label: 'Welding (External)', group: 'M04' },
   { value: 'MEXTLAV1', label: 'Washing (External)', group: 'M04' },
   { value: 'MEXTNEU1', label: 'Tires (External)', group: 'M04' },
+  { value: 'MAPELE01', label: 'Electrical Mine Support', group: 'M05' },
 ];
 const WAREHOUSES = [
   { value: 'WH-001', label: 'WH-001 - Main Warehouse Plant' },
@@ -62,7 +63,6 @@ const WAREHOUSES = [
   { value: 'WH-003', label: 'WH-003 - Heavy Parts Yard' },
   { value: 'WH-004', label: 'WH-004 - Mine Workshop Store' },
   { value: 'WH-005', label: 'WH-005 - Emergency Spares' },
-  { value: 'MAPELE01', label: 'Electrical Mine Support', group: 'M05' },
 ];
 const AREAS_EMPRESA = [
   { value: 'SEC', label: 'SEC - Dry Area' },
@@ -86,7 +86,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [managedWOs, setManagedWOs] = useState([]);
   const [wosLoading, setWosLoading] = useState(false);
   const [workRequests, setWorkRequests] = useState([]);
-  const [priorityFilter, setPriorityFilter] = useState(['All']);
+  const [priorityFilter, setPriorityFilter] = useState('All');
   const [actionLoading, setActionLoading] = useState(null);
   const [otActionLoading, setOtActionLoading] = useState(null);
   const [selectedWR, setSelectedWR] = useState(null); // inline detail modal
@@ -250,8 +250,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   // Only VALIDATED WRs
   const approvedWRs = useMemo(() => workRequests.filter(wr => ['VALIDATED', 'APROBADO', 'APPROVED'].includes(wr.status)), [workRequests]);
   const filteredWRs = useMemo(() => {
-    if (priorityFilter.includes('All') || priorityFilter.length === 0) return approvedWRs;
-    return approvedWRs.filter(wr => priorityFilter.includes(wr.priority || wr.priority_code));
+    if (priorityFilter === 'All') return approvedWRs;
+    return approvedWRs.filter(wr => (wr.priority || wr.priority_code) === priorityFilter);
   }, [approvedWRs, priorityFilter]);
 
   const kpis = useMemo(() => {
@@ -491,81 +491,49 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
       {activeTab === "ots" && (
         <div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 space-y-3">
-            {/* Search */}
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Work Orders</h3>
+              <span className="text-sm text-gray-400">{filteredWOs.length} / {managedWOs.length} OTs</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" value={woSearch} onChange={e => setWoSearch(e.target.value)}
-                  placeholder="Search by TAG, WO number, equipment..."
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+                  placeholder="Search WO number, equipment, description..."
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
               </div>
-            </div>
-
-            {/* Location / Equipment filter */}
-            <div className="flex items-center gap-3">
-              <input type="text" placeholder="Filter by location or TAG..."
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/30"
-                onChange={e => setWoSearch(e.target.value || woSearch)} />
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span>From:</span>
-                <input type="date" className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
-                <span>To:</span>
-                <input type="date" className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
-              </div>
-            </div>
-
-            {/* Status pills */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {[
-                { key: 'All', label: 'All', count: managedWOs.length },
-                { key: 'CREADO', label: 'Created', count: managedWOs.filter(w => w.status === 'CREADO').length },
-                { key: 'PLANIFICADO', label: 'Planned', count: managedWOs.filter(w => w.status === 'PLANIFICADO').length },
-                { key: 'PROGRAMADO', label: 'Scheduled', count: managedWOs.filter(w => w.status === 'PROGRAMADO').length },
-                { key: 'EN_EJECUCION', label: 'In Execution', count: managedWOs.filter(w => w.status === 'EN_EJECUCION').length },
-                { key: 'CERRADO', label: 'Closed', count: managedWOs.filter(w => w.status === 'CERRADO').length },
-                { key: 'CANCELADO', label: 'Cancelled', count: managedWOs.filter(w => w.status === 'CANCELADO').length },
-              ].map(s => (
-                <button key={s.key} onClick={() => setWoStatusFilter(s.key)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                    woStatusFilter === s.key
-                      ? 'bg-emerald-600 text-white border-emerald-600'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
-                  }`}>
-                  {s.label} ({s.count})
-                </button>
-              ))}
-            </div>
-
-            {/* Priority + Type pills */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-500 font-medium">Priority:</span>
-                {['All', 'P1', 'P2', 'P3', 'P4'].map(p => (
-                  <button key={p} onClick={() => setWoPriorityFilter(p)}
-                    className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
-                      woPriorityFilter === p
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-500 hover:bg-gray-100'
-                    }`}>
-                    {p}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-500 font-medium">Type:</span>
-                {['All', 'PM01', 'PM02', 'PM03'].map(t => (
-                  <button key={t} onClick={() => setWoTypeFilter(t)}
-                    className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
-                      woTypeFilter === t
-                        ? 'bg-purple-600 text-white'
-                        : 'text-gray-500 hover:bg-gray-100'
-                    }`}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <span className="ml-auto text-sm text-gray-400">{filteredWOs.length} / {managedWOs.length} OTs</span>
+              <select value={woStatusFilter} onChange={e => setWoStatusFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
+                <option value="All">All Status</option>
+                <option value="CREADO">Created</option>
+                <option value="PLANIFICADO">Planned</option>
+                <option value="PROGRAMADO">Scheduled</option>
+                <option value="EN_EJECUCION">In Execution</option>
+                <option value="CERRADO">Closed</option>
+                <option value="CANCELADO">Cancelled</option>
+              </select>
+              <select value={woPriorityFilter} onChange={e => setWoPriorityFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
+                <option value="All">All Priority</option>
+                <option value="P1">P1 - Immediate</option>
+                <option value="P2">P2 - High</option>
+                <option value="P3">P3 - Medium</option>
+                <option value="P4">P4 - Low</option>
+              </select>
+              <select value={woTypeFilter} onChange={e => setWoTypeFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
+                <option value="All">All Types</option>
+                <option value="PM01">PM01 - Corrective</option>
+                <option value="PM02">PM02 - Preventive</option>
+                <option value="PM03">PM03 - Predictive</option>
+                <option value="PM05">PM05 - Improvement</option>
+                <option value="PM07">PM07</option>
+              </select>
+              {(woSearch || woStatusFilter !== "All" || woPriorityFilter !== "All" || woTypeFilter !== "All") && (
+                <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter("All"); setWoTypeFilter("All"); }}
+                  className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
+              )}
             </div>
           </div>
           {wosLoading ? (
@@ -666,9 +634,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xs text-gray-500 font-medium">Priority:</span>
         {['All', 'P1', 'P2', 'P3', 'P4'].map(opt => (
-          <button key={opt} onClick={() => { setPriorityFilter(prev => { if (opt === 'All') return ['All']; const next = prev.filter(x => x !== 'All'); return next.includes(opt) ? (next.filter(x => x !== opt).length === 0 ? ['All'] : next.filter(x => x !== opt)) : [...next, opt]; }); setPage(0); }}
+          <button key={opt} onClick={() => { setPriorityFilter(opt); setPage(0); }}
             className={`text-sm font-medium px-2.5 py-1 rounded transition-colors ${
-              priorityFilter.includes(opt) ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
+              priorityFilter === opt ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
             {opt === 'All' ? 'All' : opt}
           </button>
@@ -1127,6 +1095,44 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         </div>
                       </div>
                     </div>
+
+                    {/* Technical Details - C21 */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Technical Location</div>
+                        <div className="text-sm font-mono font-semibold text-gray-800 mt-1">{wo.technical_location || wo.equipment_tag || '—'}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Planning Group</div>
+                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.planning_group || '—'}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Work Center</div>
+                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.work_center || '—'}</div>
+                      </div>
+                    </div>
+
+                    {/* C22: Dates - Start/End + Week number */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Start</div>
+                        <input type="date" value={editDates.start ? editDates.start.slice(0, 10) : ''}
+                          onChange={e => setEditDates(d => ({...d, start: e.target.value}))}
+                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                      </div>
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned End</div>
+                        <input type="date" value={editDates.end ? editDates.end.slice(0, 10) : ''}
+                          onChange={e => setEditDates(d => ({...d, end: e.target.value}))}
+                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                      </div>
+                      <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Week Number</div>
+                        <div className="text-lg font-bold text-indigo-800 mt-1">
+                          {editDates.start ? 'W' + String(Math.ceil(((new Date(editDates.start) - new Date(new Date(editDates.start).getFullYear(), 0, 1)) / 86400000 + new Date(new Date(editDates.start).getFullYear(), 0, 1).getDay() + 1) / 7)).padStart(2, '0') : '—'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1174,6 +1180,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 <label className="text-[10px] text-gray-500">Hours:</label>
                                 <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
                                   className="w-14 text-xs border rounded px-1 py-1 text-center" />
+                              </div>
+                              <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs font-bold text-emerald-700 whitespace-nowrap">
+                                {((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH
                               </div>
                               <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs font-bold text-emerald-700 whitespace-nowrap">
                                 {((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH
@@ -1366,6 +1375,22 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     <h3 className="text-sm font-semibold text-gray-800">Cost Control</h3>
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                       <div className="text-xs font-semibold text-emerald-700 mb-1">Auto-calculated from Operations + Materials</div>
+                      <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-200">
+                        <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                          <div className="text-[10px] text-blue-600 font-semibold uppercase">Total Planned</div>
+                          <div className="text-lg font-bold text-blue-800">{totalPlan.toFixed(0)}</div>
+                        </div>
+                        <div className="bg-amber-50 rounded-lg p-3 text-center border border-amber-200">
+                          <div className="text-[10px] text-amber-600 font-semibold uppercase">Total Actual</div>
+                          <div className="text-lg font-bold text-amber-800">{totalReal.toFixed(0)}</div>
+                        </div>
+                        <div className={(totalReal - totalPlan) > 0 ? "bg-red-50 rounded-lg p-3 text-center border border-red-200" : "bg-green-50 rounded-lg p-3 text-center border border-green-200"}>
+                          <div className="text-[10px] font-semibold uppercase" style={{color: (totalReal - totalPlan) > 0 ? '#991b1b' : '#166534'}}>Variance</div>
+                          <div className="text-lg font-bold" style={{color: (totalReal - totalPlan) > 0 ? '#991b1b' : '#166534'}}>
+                            {(totalReal - totalPlan) > 0 ? '+' : ''}{(totalReal - totalPlan).toFixed(0)}
+                          </div>
+                        </div>
+                      </div>
                       <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-200">
                         <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
                           <div className="text-[10px] text-blue-600 font-semibold uppercase">Total Planned</div>

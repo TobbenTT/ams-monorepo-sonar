@@ -74,9 +74,9 @@ def get_point_readings(point_id: str, db: Session = Depends(get_db), user=Depend
 @router.get("/permits")
 def list_permits(status: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     if status:
-        r = db.execute(text("SELECT * FROM work_permits WHERE status = :s ORDER BY created_at DESC"), {"s": status})
+        r = db.execute(text("SELECT permit_id, permit_id as permit_number, permit_type, description, equipment_tag, wo_reference as wo_number, status, issued_by as requested_by, valid_from, valid_until, "MEDIUM" as risk_level, 0 as loto_required, "[]" as loto_points, "[]" as safety_measures FROM work_permits WHERE status = :s ORDER BY valid_from DESC"), {"s": status})
     else:
-        r = db.execute(text("SELECT * FROM work_permits ORDER BY created_at DESC"))
+        r = db.execute(text("SELECT permit_id, permit_id as permit_number, permit_type, description, equipment_tag, wo_reference as wo_number, status, issued_by as requested_by, valid_from, valid_until, "MEDIUM" as risk_level, 0 as loto_required, "[]" as loto_points, "[]" as safety_measures FROM work_permits ORDER BY valid_from DESC"))
     rows = _rows_to_dicts(r)
     return _parse_json_fields(rows, ["loto_points", "safety_measures"])
 

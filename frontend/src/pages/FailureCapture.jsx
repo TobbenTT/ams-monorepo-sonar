@@ -1204,6 +1204,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <MapPin className="w-3.5 h-3.5" /> Technical Location *
             </label>
             {!selectedLoc ? (
+              <>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" value={locSearch}
@@ -1230,6 +1231,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 className="mt-2 w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-medium py-1.5 border border-dashed border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors">
                 Browse All Locations...
               </button>
+              </>
             ) : (
               <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50 border-2 border-blue-500">
                 <div className="flex-1 min-w-0">

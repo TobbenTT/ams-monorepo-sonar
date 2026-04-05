@@ -1204,7 +1204,6 @@ export default function FailureCapture({ onNavigateTab }) {
               <MapPin className="w-3.5 h-3.5" /> Technical Location *
             </label>
             {!selectedLoc ? (
-              <>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" value={locSearch}
@@ -1213,7 +1212,7 @@ export default function FailureCapture({ onNavigateTab }) {
                   placeholder="Search technical location..."
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
-                {showLocSearch && locResults.length > 0 && (
+                {showLocSearch && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
                     {locResults.map((node, i) => (
                       <button key={node.node_id || i} onClick={() => selectLocation(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
@@ -1224,14 +1223,13 @@ export default function FailureCapture({ onNavigateTab }) {
                         <div className="text-xs text-gray-500">{node.name}</div>
                       </button>
                     ))}
+                    <button type="button" onClick={openBrowseModal}
+                      className="w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-semibold py-2.5 hover:bg-emerald-50 transition-colors border-t border-dashed border-emerald-200">
+                      Browse All Locations...
+                    </button>
                   </div>
                 )}
               </div>
-              <button type="button" onClick={openBrowseModal}
-                className="mt-2 w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-medium py-1.5 border border-dashed border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors">
-                Browse All Locations...
-              </button>
-              </>
             ) : (
               <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50 border-2 border-blue-500">
                 <div className="flex-1 min-w-0">

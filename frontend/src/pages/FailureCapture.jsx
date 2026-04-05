@@ -2181,7 +2181,17 @@ export default function FailureCapture({ onNavigateTab }) {
               {browseLoading ? (
                 <div className="text-center py-8 text-gray-400">Loading...</div>
               ) : browseResults.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">No items at this level</div>
+                <div className="text-center py-8">
+                  <p className="text-gray-400 mb-3">No sub-items at this level</p>
+                  {browsePath.length > 0 && (
+                    <button onClick={() => {
+                      const last = browsePath[browsePath.length - 1];
+                      selectBrowseLocation({ node_id: last.node_id, name: last.name, node_type: last.node_type });
+                    }} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">
+                      Select: {browsePath[browsePath.length - 1]?.name}
+                    </button>
+                  )}
+                </div>
               ) : (
                 <div className="divide-y">
                   {browseResults.map((node, i) => {

@@ -430,7 +430,7 @@ export default function FailureCapture({ onNavigateTab }) {
   };
   const loadBrowseResults = (search, type) => {
     setBrowseLoading(true);
-    const params = { limit: 50 };
+    const params = { limit: 200 };
     if (search) params.search = search;
     if (type) params.node_type = type;
     api.listNodes(params).then(res => {
@@ -1208,7 +1208,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" value={locSearch}
                   onChange={e => { setLocSearch(e.target.value); setShowLocSearch(true); }}
-                  onFocus={() => setShowLocSearch(true)}
+                  onFocus={() => setShowLocSearch(true)} onBlur={() => setTimeout(() => setShowLocSearch(false), 200)}
                   placeholder="Search technical location..."
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
@@ -2194,7 +2194,7 @@ export default function FailureCapture({ onNavigateTab }) {
               )}
             </div>
             <div className="p-3 border-t text-xs text-gray-500 flex justify-between items-center">
-              <span>Showing {browseResults.length} results {browseResults.length >= 50 ? '(limit 50 — refine search)' : ''}</span>
+              <span>Showing {browseResults.length} results {browseResults.length >= 200 ? '(limit 200 — refine search)' : ''}</span>
               <button onClick={() => setShowBrowseModal(false)} className="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm">Close</button>
             </div>
           </div>

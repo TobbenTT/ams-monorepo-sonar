@@ -1225,11 +1225,11 @@ export default function FailureCapture({ onNavigateTab }) {
                     ))}
                   </div>
                 )}
-                <button type="button" onClick={openBrowseModal}
-                  className="mt-2 w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-medium py-1.5 border border-dashed border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors">
-                  Browse All Locations...
-                </button>
               </div>
+              <button type="button" onClick={openBrowseModal}
+                className="mt-2 w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-medium py-1.5 border border-dashed border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors">
+                Browse All Locations...
+              </button>
             ) : (
               <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50 border-2 border-blue-500">
                 <div className="flex-1 min-w-0">
@@ -1303,10 +1303,6 @@ export default function FailureCapture({ onNavigateTab }) {
                     ))}
                   </div>
                 )}
-                <button type="button" onClick={openBrowseModal}
-                  className="mt-2 w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-medium py-1.5 border border-dashed border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors">
-                  Browse All Locations...
-                </button>
               </div>
             ) : (
               <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border-2 border-emerald-500">

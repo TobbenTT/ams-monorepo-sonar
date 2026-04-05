@@ -1346,6 +1346,10 @@ export default function FailureCapture({ onNavigateTab }) {
                         <div className="text-xs text-gray-500">{node.name}</div>
                       </button>
                     ))}
+                    <button type="button" onClick={openBrowseModal}
+                      className="w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-semibold py-2.5 hover:bg-emerald-50 transition-colors border-t border-dashed border-emerald-200">
+                      Browse All Locations...
+                    </button>
                   </div>
                 )}
               </div>

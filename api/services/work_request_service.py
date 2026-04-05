@@ -33,7 +33,8 @@ def list_work_requests(
     db: Session, status: str | None = None, plant_id: str | None = None,
     limit: int = 200, offset: int = 0,
 ) -> list[WorkRequestModel]:
-    q = db.query(WorkRequestModel)
+    from sqlalchemy.orm import defer
+    q = db.query(WorkRequestModel).options(defer(WorkRequestModel.documents))
     if status:
         q = q.filter(WorkRequestModel.status == status)
     if plant_id:

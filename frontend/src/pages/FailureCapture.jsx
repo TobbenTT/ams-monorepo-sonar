@@ -519,10 +519,36 @@ export default function FailureCapture({ onNavigateTab }) {
   const selectLocation = (node) => {
     setSelectedLoc(node);
     setF('technicalLocation', node.name || '');
-    const funcLoc = node._funcLoc || node.code || '';
+    const funcLoc = node._funcLoc || node.sap_func_loc || node.code || '';
     setF('technicalLocationCode', funcLoc);
     setShowLocSearch(false);
     setLocSearch('');
+    // If selected an EQUIPMENT, auto-fill Equipo/TAG
+    if (node.node_type === 'EQUIPMENT') {
+      selectEquip(node);
+    } else {
+      // Load children equipment for this location
+      api.listNodes({ parent_node_id: node.node_id, limit: 500 }).then(res => {
+        const children = Array.isArray(res) ? res : res?.items || [];
+        // Get all equipment from children (direct + nested)
+        const equipList = children.filter(n => n.node_type === 'EQUIPMENT');
+        if (equipList.length > 0) {
+          setEquipResults(equipList);
+          setShowEquipSearch(true);
+        } else if (children.length > 0) {
+          // Children are systems/areas, go deeper to find equipment
+          const childIds = children.map(c => c.node_id);
+          Promise.all(childIds.slice(0, 10).map(id => api.listNodes({ parent_node_id: id, limit: 100 }).catch(() => []))).then(results => {
+            const allNodes = results.flatMap(r => Array.isArray(r) ? r : r?.items || []);
+            const equips = allNodes.filter(n => n.node_type === 'EQUIPMENT');
+            if (equips.length > 0) {
+              setEquipResults(equips);
+              setShowEquipSearch(true);
+            }
+          });
+        }
+      }).catch(() => {});
+    }
     const upper = funcLoc.toUpperCase();
     let matchedGroup = null;
     if (upper.includes('SECA') || upper.includes('-SEC')) matchedGroup = 'P01';

@@ -38,13 +38,7 @@ def list_work_requests(
     if status:
         q = q.filter(WorkRequestModel.status == status)
     if plant_id:
-        # plant_id lives inside ai_classification JSON — use JSON extraction
-        from sqlalchemy import cast, String, text
-        q = q.filter(
-            cast(WorkRequestModel.ai_classification["plant_id"], String).in_([
-                f'"{plant_id}"', plant_id,  # handles both quoted and unquoted JSON values
-            ])
-        )
+        q = q.filter(WorkRequestModel.ai_classification.like(f"%{plant_id}%"))
     return q.order_by(WorkRequestModel.created_at.desc()).offset(offset).limit(limit).all()
 
 

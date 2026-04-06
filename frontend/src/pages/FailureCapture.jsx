@@ -267,7 +267,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
   // Voice + Photo
   const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef(null);
+  
   const [photos, setPhotos] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const recognitionRef = useRef(null);
@@ -574,7 +574,6 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   // ── Voice ──
-  const recognitionRef = useRef(null);
   const handleVoice = async () => {
     if (isRecording) {
       // Stop recording

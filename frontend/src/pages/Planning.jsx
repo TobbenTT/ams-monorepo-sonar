@@ -1385,56 +1385,6 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           </tr>
                         </tbody>
                       </table>
-                      <div className="grid grid-cols-4 gap-2 text-xs">
-                        <div><span className="text-gray-500">Labor:</span> <span className="font-bold">${calculatedCosts.laborCost.toFixed(0)}</span> <span className="text-gray-400">({calculatedCosts.laborHours}h x ${LABOR_RATE}/h)</span></div>
-                        <div><span className="text-gray-500">Materials:</span> <span className="font-bold">${calculatedCosts.materialCost.toFixed(0)}</span></div>
-                        <div><span className="text-gray-500">External:</span> <span className="font-bold">${calculatedCosts.externalCost.toFixed(0)}</span></div>
-                        <div><span className="text-gray-500">Total:</span> <span className="font-bold text-emerald-800">${calculatedCosts.total.toFixed(0)}</span></div>
-                      </div>
-                    </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <label className="text-xs font-semibold text-blue-700 block mb-2">Planned Dates</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10px] text-gray-500">Start</label>
-                          <input type="date" value={editDates.start} onChange={e => setEditDates(p => ({...p, start: e.target.value}))}
-                            className="w-full text-xs border rounded px-2 py-1.5" />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-gray-500">End</label>
-                          <input type="date" value={editDates.end} onChange={e => setEditDates(p => ({...p, end: e.target.value}))}
-                            className="w-full text-xs border rounded px-2 py-1.5" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {costCats.map(cat => {
-                        const delta = cat.real - cat.plan;
-                        const over = delta > 0;
-                        return (
-                          <div key={cat.key} className="bg-gray-50 rounded-lg p-3 border">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium">{cat.label}</span>
-                              <span className={"text-xs font-bold "+(over ? "text-red-600" : delta < 0 ? "text-green-600" : "text-gray-500")}>
-                                {delta !== 0 ? (over ? "+" : "") + "$" + Math.abs(delta).toFixed(0) : "\—"}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-xs">
-                              <div><span className="text-gray-500">Plan:</span> <span className="font-medium">${cat.plan.toFixed(0)}</span></div>
-                              <div><span className="text-gray-500">Real:</span> <span className="font-medium">${cat.real.toFixed(0)}</span></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 flex justify-between items-center">
-                        <span className="text-sm font-bold text-blue-800">Total</span>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500">Plan: ${totalPlan.toFixed(0)} | Real: ${totalReal.toFixed(0)}</div>
-                          <div className={"text-sm font-bold "+(totalReal > totalPlan ? "text-red-600" : "text-green-600")}>
-                            {totalReal > totalPlan ? "+" : ""}{(totalReal - totalPlan).toFixed(0)}
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}

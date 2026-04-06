@@ -1516,7 +1516,7 @@ export default function FailureCapture({ onNavigateTab }) {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input type="text" value={equipSearch}
                     onChange={e => { setEquipSearch(e.target.value); setShowEquipSearch(true); }}
-                    onFocus={() => { setShowEquipSearch(true); if (equipSearch.length < 2) setEquipResults(allEquipment.slice(0, 10)); }}
+                    onFocus={() => { setShowEquipSearch(true); if (equipSearch.length < 2) setEquipResults(allEquipment.slice(0, 10)); }} onBlur={() => setTimeout(() => setShowEquipSearch(false), 200)}
                     placeholder="Search by TAG, code or equipment name..."
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />

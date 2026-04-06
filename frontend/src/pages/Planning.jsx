@@ -1096,7 +1096,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>
                     </div>
 
-)}
+                  </div>
+                )}
 
                 {/* OPERACIONES */}
                 {otModalTab === 'operaciones' && (

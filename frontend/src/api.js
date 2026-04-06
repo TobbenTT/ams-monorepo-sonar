@@ -1,6 +1,11 @@
 /* API Client — OCP Maintenance AI MVP */
 const BASE = '/api/v1';
 
+/** Get currently selected plant from localStorage */
+function getSelectedPlant() {
+  return localStorage.getItem('selected_plant') || 'OCP-JFC1';
+}
+
 function getToken() {
   return localStorage.getItem('access_token');
 }
@@ -46,6 +51,19 @@ async function tryRefresh() {
 
 async function request(method, path, data, params) {
   const url = new URL(`${BASE}${path}`, window.location.origin);
+  // Auto-inject plant_id for filtering (skip auth endpoints)
+  const skipPlantPaths = ['/auth/', '/feedback/'];
+  const shouldInjectPlant = !skipPlantPaths.some(sp => path.startsWith(sp));
+  if (shouldInjectPlant) {
+    const plantId = getSelectedPlant();
+    if (method === 'GET') {
+      if (params && !params.plant_id) params = { ...params, plant_id: plantId };
+      else if (!params) params = { plant_id: plantId };
+    }
+    if (method !== 'GET' && data && typeof data === 'object' && !Array.isArray(data) && !data.plant_id) {
+      data = { ...data, plant_id: plantId };
+    }
+  }
   if (params) Object.entries(params).forEach(([k, v]) => { if (v != null) url.searchParams.set(k, v); });
 
   const opts = { method, headers: authHeaders() };
@@ -284,6 +302,7 @@ export const getReport = (id) => get(`/reporting/reports/${id}`);
 export const listNotifications = (p) => get('/reporting/notifications', p);
 export const acknowledgeNotification = (id) => put(`/reporting/notifications/${id}/ack`);
 export const exportData = (d) => post('/reporting/export', d);
+export const generateReportFromDB = (p) => get("/reporting/generate-report", p);
 
 // ── Dashboard ──
 export const getExecutiveDashboard = (plantId, startDate, endDate) => {

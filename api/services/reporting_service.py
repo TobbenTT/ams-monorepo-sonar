@@ -298,3 +298,112 @@ def run_cross_module_analysis(db: Session, plant_id: str, data: dict) -> dict:
 
     summary = CrossModuleEngine.generate_cross_module_summary(plant_id, correlations, overlap)
     return summary.model_dump(mode="json")
+
+
+# ── SF-57: Generate report from DB data ─────────────────────────────
+
+def generate_report_from_db(db: Session, report_type: str = "operational") -> dict:
+    """Query WRs, WOs, backlog directly from DB and return structured report."""
+    from api.database.models import WorkRequestModel, ManagedWorkOrderModel, BacklogItemModel
+    from sqlalchemy import func
+
+    # Work Requests stats
+    wr_total = db.query(func.count(WorkRequestModel.request_id)).scalar() or 0
+    wr_by_status = dict(
+        db.query(WorkRequestModel.status, func.count(WorkRequestModel.request_id))
+        .group_by(WorkRequestModel.status).all()
+    )
+    wr_by_priority = dict(
+        db.query(WorkRequestModel.priority_code, func.count(WorkRequestModel.request_id))
+        .filter(WorkRequestModel.priority_code.isnot(None))
+        .group_by(WorkRequestModel.priority_code).all()
+    )
+
+    # Work Orders stats
+    wo_total = db.query(func.count(ManagedWorkOrderModel.wo_id)).scalar() or 0
+    wo_by_status = dict(
+        db.query(ManagedWorkOrderModel.status, func.count(ManagedWorkOrderModel.wo_id))
+        .group_by(ManagedWorkOrderModel.status).all()
+    )
+    wo_by_type = dict(
+        db.query(ManagedWorkOrderModel.wo_type, func.count(ManagedWorkOrderModel.wo_id))
+        .filter(ManagedWorkOrderModel.wo_type.isnot(None))
+        .group_by(ManagedWorkOrderModel.wo_type).all()
+    )
+
+    # Backlog stats
+    bl_total = db.query(func.count(BacklogItemModel.backlog_id)).scalar() or 0
+    bl_by_priority = dict(
+        db.query(BacklogItemModel.priority, func.count(BacklogItemModel.backlog_id))
+        .group_by(BacklogItemModel.priority).all()
+    )
+
+    # Recent work requests
+    recent_wrs = db.query(WorkRequestModel).order_by(
+        WorkRequestModel.created_at.desc()
+    ).limit(50).all()
+    wr_rows = []
+    for wr in recent_wrs:
+        desc = ""
+        if isinstance(wr.problem_description, dict):
+            desc = wr.problem_description.get("description", "") or wr.problem_description.get("text", "")
+        elif wr.problem_description:
+            desc = str(wr.problem_description)
+        wr_rows.append({
+            "request_id": wr.request_id,
+            "equipment_tag": wr.equipment_tag,
+            "status": wr.status,
+            "priority": wr.priority_code or "",
+            "failure_description": desc,
+            "created_at": wr.created_at.isoformat() if wr.created_at else "",
+        })
+
+    # Recent work orders
+    recent_wos = db.query(ManagedWorkOrderModel).order_by(
+        ManagedWorkOrderModel.created_at.desc()
+    ).limit(50).all()
+    wo_rows = []
+    for wo in recent_wos:
+        wo_rows.append({
+            "wo_id": wo.wo_id,
+            "wo_number": wo.wo_number,
+            "equipment_tag": wo.equipment_tag,
+            "status": wo.status,
+            "wo_type": wo.wo_type or "",
+            "planned_start": wo.planned_start.isoformat() if wo.planned_start else "",
+            "created_at": wo.created_at.isoformat() if wo.created_at else "",
+        })
+
+    # Compute KPIs
+    wo_completed = wo_by_status.get("COMPLETED", 0) + wo_by_status.get("CLOSED", 0) + wo_by_status.get("CERRADO", 0)
+    wo_open = wo_total - wo_completed
+    compliance = round((wo_completed / wo_total * 100) if wo_total > 0 else 0, 1)
+
+    return {
+        "report_type": report_type,
+        "generated_at": datetime.now().isoformat(),
+        "summary": {
+            "work_requests_total": wr_total,
+            "work_orders_total": wo_total,
+            "backlog_total": bl_total,
+            "wo_completed": wo_completed,
+            "wo_open": wo_open,
+            "schedule_compliance_pct": compliance,
+        },
+        "work_requests": {
+            "total": wr_total,
+            "by_status": wr_by_status,
+            "by_priority": wr_by_priority,
+        },
+        "work_orders": {
+            "total": wo_total,
+            "by_status": wo_by_status,
+            "by_type": wo_by_type,
+        },
+        "backlog": {
+            "total": bl_total,
+            "by_priority": bl_by_priority,
+        },
+        "detail_work_requests": wr_rows,
+        "detail_work_orders": wo_rows,
+    }

@@ -113,3 +113,20 @@ def run_cross_module_analysis(data: CrossModuleRequest, db: Session = Depends(ge
     d = data.model_dump()
     plant_id = d.pop("plant_id", None)
     return reporting_service.run_cross_module_analysis(db, plant_id, d)
+
+
+# ── SF-57: Generate Report from DB data ─────────────────────────────
+from fastapi.responses import StreamingResponse
+import io
+
+@router.get("/generate-report")
+def generate_report_from_db(
+    report_type: str = "operational",
+    format: str = "json",
+    db: Session = Depends(get_db),
+):
+    """Generate a report directly from DB data (SF-57).
+    report_type: weekly | monthly | operational
+    format: json (returns structured data for frontend XLSX generation)
+    """
+    return reporting_service.generate_report_from_db(db, report_type)

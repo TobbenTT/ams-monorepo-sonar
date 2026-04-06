@@ -144,8 +144,20 @@ export default function Reports() {
     const handleGenerate = async () => {
         setGenerating(true);
         try {
+            if (reportType === 'operational') {
+                const dbReport = await api.generateReportFromDB({ report_type: 'operational' });
+                setPreview(dbReport);
+                toast.success('Operational report generated from DB');
+                const updated = await api.listReports({ plant_id: plant });
+                setReports(Array.isArray(updated) ? updated : []);
+                setGenerating(false);
+                return;
+            }
             const gen = reportType === 'monthly' ? api.generateMonthlyReport : api.generateWeeklyReport;
-            const res = await gen({ plant_id: plant, month: new Date().getMonth() + 1, week: 1, year: new Date().getFullYear() });
+            const now2 = new Date();
+            const startOfYear = new Date(now2.getFullYear(), 0, 1);
+            const currentWeek = Math.ceil(((now2 - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+            const res = await gen({ plant_id: plant, month: now2.getMonth() + 1, week: currentWeek, week_number: currentWeek, year: now2.getFullYear() });
             setPreview(res);
             toast.success(`${reportType} report generated`);
             const updated = await api.listReports({ plant_id: plant });
@@ -159,6 +171,39 @@ export default function Reports() {
     const handleExport = async (format) => {
         const validFormat = (format || 'xlsx').toUpperCase() === 'CSV' ? 'CSV' : 'EXCEL';
         try {
+            // If preview is a DB-generated report, export its data directly
+            if (preview?.detail_work_requests || preview?.detail_work_orders) {
+                const sheets = [
+                    {
+                        name: 'Summary',
+                        headers: ['Metric', 'Value'],
+                        rows: preview.summary ? Object.entries(preview.summary).map(([k, v]) => [k.replace(/_/g, ' '), String(v)]) : [],
+                    },
+                    {
+                        name: 'Work Requests',
+                        headers: ['ID', 'Equipment', 'Status', 'Priority', 'Description', 'Created'],
+                        rows: (preview.detail_work_requests || []).map(wr => [wr.request_id, wr.equipment_tag, wr.status, wr.priority, wr.failure_description, wr.created_at]),
+                    },
+                    {
+                        name: 'Work Orders',
+                        headers: ['WO Number', 'Equipment', 'Status', 'Type', 'Planned Start', 'Created'],
+                        rows: (preview.detail_work_orders || []).map(wo => [wo.wo_number, wo.equipment_tag, wo.status, wo.wo_type, wo.planned_start, wo.created_at]),
+                    },
+                ];
+                if (preview.work_requests?.by_status) {
+                    sheets.push({ name: 'WR by Status', headers: ['Status', 'Count'], rows: Object.entries(preview.work_requests.by_status) });
+                }
+                if (preview.work_orders?.by_status) {
+                    sheets.push({ name: 'WO by Status', headers: ['Status', 'Count'], rows: Object.entries(preview.work_orders.by_status) });
+                }
+                if (preview.backlog?.by_priority) {
+                    sheets.push({ name: 'Backlog by Priority', headers: ['Priority', 'Count'], rows: Object.entries(preview.backlog.by_priority) });
+                }
+                const name = `report_${(preview.report_type || 'operational').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}`;
+                downloadExport({ format: validFormat, sheets }, name);
+                toast.success(t('reports.exportDownloaded', { format: validFormat }) || 'Export downloaded');
+                return;
+            }
             const week = scheduleWeeks[0] || { week: 'N/A', start: '', end: '', adherence: 0, planned_hours: 0, executed_hours: 0, work_orders: [] };
             const wos = week.work_orders || week.work_packages || [];
             const adh = week.adherence ?? week.adherence_pct ?? 0;
@@ -277,7 +322,7 @@ export default function Reports() {
                             </div>
                             <div className="text-[0.7rem] text-muted-foreground">{t('reports.lastGeneration')}: {tpl.lastGen}</div>
                             <div className="flex gap-1.5 mt-auto pt-1">
-                                <button className="flex-1 px-2 py-1 text-[0.68rem] font-medium rounded-md border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center gap-1" onClick={() => { setPreview({ report_type: t(tpl.titleKey), plant_id: plant, sections: { type: t(tpl.typeKey), frequency: t(tpl.frequencyKey), last_generation: tpl.lastGen } }); toast.info(`${t('reports.view')}: ${t(tpl.titleKey)}`); }}>
+                                <button className="flex-1 px-2 py-1 text-[0.68rem] font-medium rounded-md border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center gap-1" onClick={async () => { try { setGenerating(true); const res = await api.generateReportFromDB({ report_type: t(tpl.titleKey) }); setPreview(res); toast.success(t(tpl.titleKey)); } catch(e) { setPreview({ report_type: t(tpl.titleKey), plant_id: plant, sections: { type: t(tpl.typeKey), frequency: t(tpl.frequencyKey) } }); } finally { setGenerating(false); } }}>
                                     {"\u{1F441}"} {t('reports.view')}
                                 </button>
                                 <button className="flex-1 px-2 py-1 text-[0.68rem] font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center gap-1" onClick={() => handleExport('xlsx')}>
@@ -322,6 +367,7 @@ export default function Reports() {
                     <select className="px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-[200px]" value={reportType} onChange={e => setReportType(e.target.value)} aria-label="Report type">
                         <option value="weekly">{t('reports.weeklyKpiReport')}</option>
                         <option value="monthly">{t('reports.monthlyKpiReport')}</option>
+                        <option value="operational">{t('reports.operational') || 'Operational Report'}</option>
                     </select>
                     <span className="inline-flex items-center gap-1 bg-muted px-2.5 py-1 rounded-md text-xs font-mono text-muted-foreground">{t('reports.plant')}: {plant}</span>
                     <span className="inline-flex items-center gap-1 bg-muted px-2.5 py-1 rounded-md text-xs font-mono text-muted-foreground">{t('reports.period')}: {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
@@ -436,6 +482,82 @@ export default function Reports() {
                                     </div>
                                 )}
 
+                                {/* DB-generated summary (SF-57) */}
+                                {preview.summary && (
+                                    <div className="mb-4 p-3 bg-muted/40 rounded-lg border border-border">
+                                        <div className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Summary</div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                            {Object.entries(preview.summary).map(([k, v]) => (
+                                                <div key={k} className="bg-card rounded-md p-2 text-center border border-border">
+                                                    <div className="text-lg font-bold text-foreground">{String(v)}{k.includes('pct') ? '%' : ''}</div>
+                                                    <div className="text-[0.68rem] text-muted-foreground">{k.replace(/_/g, ' ')}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {preview.work_requests?.by_status && Object.keys(preview.work_requests.by_status).length > 0 && (
+                                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div className="text-xs font-bold text-blue-700 mb-2">Work Requests by Status</div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.entries(preview.work_requests.by_status).map(([k, v]) => (
+                                                <span key={k} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">{k}: {v}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {preview.work_orders?.by_status && Object.keys(preview.work_orders.by_status).length > 0 && (
+                                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                        <div className="text-xs font-bold text-green-700 mb-2">Work Orders by Status</div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.entries(preview.work_orders.by_status).map(([k, v]) => (
+                                                <span key={k} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">{k}: {v}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {preview.backlog?.by_priority && Object.keys(preview.backlog.by_priority).length > 0 && (
+                                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                        <div className="text-xs font-bold text-amber-700 mb-2">Backlog by Priority</div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.entries(preview.backlog.by_priority).map(([k, v]) => (
+                                                <span key={k} className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-medium">{k}: {v}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {preview.detail_work_requests?.length > 0 && (
+                                    <div className="mb-4">
+                                        <div className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Recent Work Requests ({preview.detail_work_requests.length})</div>
+                                        <div className="overflow-x-auto max-h-48 overflow-y-auto">
+                                            <table className="w-full text-sm border-collapse">
+                                                <thead><tr><th className="px-2 py-1 text-left text-xs font-semibold text-muted-foreground border-b border-border">ID</th><th className="px-2 py-1 text-left text-xs font-semibold text-muted-foreground border-b border-border">Equipment</th><th className="px-2 py-1 text-left text-xs font-semibold text-muted-foreground border-b border-border">Status</th><th className="px-2 py-1 text-left text-xs font-semibold text-muted-foreground border-b border-border">Priority</th></tr></thead>
+                                                <tbody>{preview.detail_work_requests.slice(0, 20).map((wr, i) => (
+                                                    <tr key={i}><td className="px-2 py-1 border-b border-border/50 font-mono text-xs">{(wr.request_id || '').slice(0, 8)}</td><td className="px-2 py-1 border-b border-border/50">{wr.equipment_tag}</td><td className="px-2 py-1 border-b border-border/50"><StatusBadge status={wr.status} /></td><td className="px-2 py-1 border-b border-border/50">{wr.priority}</td></tr>
+                                                ))}</tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {preview.detail_work_orders?.length > 0 && (
+                                    <div className="mb-4">
+                                        <div className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Recent Work Orders ({preview.detail_work_orders.length})</div>
+                                        <div className="overflow-x-auto max-h-48 overflow-y-auto">
+                                            <table className="w-full text-sm border-collapse">
+                                                <thead><tr><th className="px-2 py-1 text-left text-xs font-semibold text-muted-foreground border-b border-border">WO #</th><th className="px-2 py-1 text-left text-xs font-semibold text-muted-foreground border-b border-border">Equipment</th><th className="px-2 py-1 text-left text-xs font-semibold text-muted-foreground border-b border-border">Status</th><th className="px-2 py-1 text-left text-xs font-semibold text-muted-foreground border-b border-border">Type</th></tr></thead>
+                                                <tbody>{preview.detail_work_orders.slice(0, 20).map((wo, i) => (
+                                                    <tr key={i}><td className="px-2 py-1 border-b border-border/50 font-mono text-xs">{wo.wo_number}</td><td className="px-2 py-1 border-b border-border/50">{wo.equipment_tag}</td><td className="px-2 py-1 border-b border-border/50"><StatusBadge status={wo.status} /></td><td className="px-2 py-1 border-b border-border/50">{wo.wo_type}</td></tr>
+                                                ))}</tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Legacy kpis table */}
                                 {preview.kpis && (
                                     <div className="overflow-x-auto mb-4">
@@ -456,7 +578,7 @@ export default function Reports() {
                                 )}
 
                                 <div className="flex gap-2 mt-4 flex-wrap">
-                                    <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" onClick={() => handleExport('pdf')}>{t('reports.exportPDF')}</button>
+                                    <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" onClick={() => handleExport('xlsx')}>{t('reports.exportPDF') || 'Export XLSX'}</button>
                                     <button className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted transition-colors" onClick={() => handleExport('xlsx')}>{t('reports.exportExcel')}</button>
                                 </div>
                             </div>
@@ -470,7 +592,7 @@ export default function Reports() {
                     <div className="bg-card border border-border rounded-lg p-5 shadow-sm mb-4">
                         <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">{t('reports.recentReports')}</div>
                         {reports.length > 0 ? reports.slice(0, 8).map((r, i) => (
-                            <div key={i} onClick={() => setPreview(r)} className="py-2 border-b border-border/50 cursor-pointer flex justify-between items-center">
+                            <div key={i} onClick={async () => { try { const full = await api.getReport(r.report_id); setPreview(full && Object.keys(full).length > 0 ? full : r); } catch { setPreview(r); } }} className="py-2 border-b border-border/50 cursor-pointer flex justify-between items-center">
                                 <div><div className="font-medium text-sm">{r.report_type || t('reports.report')}</div><div className="text-[0.72rem] text-muted-foreground">{r.created_at || r.generated_at || ''}</div></div>
                                 <StatusBadge status={r.status || 'GENERATED'} />
                             </div>

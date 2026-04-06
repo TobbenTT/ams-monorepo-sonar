@@ -7,14 +7,16 @@ import MobileBottomNav from './components/MobileBottomNav';
 import ErrorBoundary from './components/ErrorBoundary';
 import UpdateBanner from './components/UpdateBanner';
 import FeedbackWidget from './components/FeedbackWidget';
+import ProjectSelector from './pages/ProjectSelector';
 import useIsMobile from './hooks/useIsMobile';
 import { useAuth } from './contexts/AuthContext';
 import { listPlants } from './api';
 
 export default function App() {
     const { user } = useAuth();
-    const [plant, setPlant] = useState('OCP-JFC1');
+    const [plant, setPlant] = useState(() => localStorage.getItem('selected_plant') || '');
     const [plants, setPlants] = useState([]);
+    const [plantsLoaded, setPlantsLoaded] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [mobileRole, setMobileRole] = useState(() => localStorage.getItem('mobileRole') || 'maintainer');
     const isMobile = useIsMobile();
@@ -28,8 +30,28 @@ export default function App() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    useEffect(() => { listPlants().then(setPlants).catch(() => { }); }, []);
+    useEffect(() => {
+        listPlants().then((data) => {
+            setPlants(data);
+            setPlantsLoaded(true);
+            // If only 1 plant, auto-select it
+            if (data.length === 1 && !plant) {
+                const id = data[0].plant_id;
+                setPlant(id);
+                localStorage.setItem('selected_plant', id);
+            }
+            // If plant was saved but doesn't exist anymore, clear
+            if (plant && data.length > 0 && !data.find(p => p.plant_id === plant)) {
+                setPlant('');
+                localStorage.removeItem('selected_plant');
+            }
+        }).catch(() => {
+            setPlantsLoaded(true);
+        });
+    }, []);
+
     useEffect(() => { localStorage.setItem('mobileRole', mobileRole); }, [mobileRole]);
+
     // Auto-set viewMode when user role changes (login)
     useEffect(() => {
         if (user?.role) {
@@ -43,6 +65,33 @@ export default function App() {
             navigate('/', { replace: true });
         }
     }, [isMobile, location.pathname]);
+
+    // Sync plant changes to localStorage
+    const handlePlantChange = (newPlant) => {
+        setPlant(newPlant);
+        localStorage.setItem('selected_plant', newPlant);
+    };
+
+    // Show project selector if no plant selected and multiple plants available
+    if (plantsLoaded && !plant && plants.length > 1) {
+        return (
+            <ProjectSelector
+                onSelect={(plantId) => {
+                    setPlant(plantId);
+                    localStorage.setItem('selected_plant', plantId);
+                }}
+            />
+        );
+    }
+
+    // Fallback: if plants not loaded yet and no saved plant, show loading
+    if (!plantsLoaded && !plant) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-50">
+                <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     // Mobile layout
     if (isMobile) {
@@ -68,7 +117,7 @@ export default function App() {
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Header
                     plant={plant}
-                    onPlantChange={setPlant}
+                    onPlantChange={handlePlantChange}
                     plants={plants}
                     onMenuToggle={() => setMobileMenuOpen(v => !v)}
                     viewMode={viewMode}

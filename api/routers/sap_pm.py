@@ -57,7 +57,7 @@ def get_equipment_bom(equipment_tag: str, db: Session = Depends(get_db), user=De
 
 # ── Measuring Points ──
 @router.get("/measuring-points")
-def list_measuring_points(equipment_tag: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def list_measuring_points(equipment_tag: str = None, plant_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     if equipment_tag:
         r = db.execute(text("SELECT * FROM measuring_points WHERE equipment_tag = :t ORDER BY point_name"), {"t": equipment_tag})
     else:
@@ -72,7 +72,7 @@ def get_point_readings(point_id: str, db: Session = Depends(get_db), user=Depend
 
 # ── Permits to Work ──
 @router.get("/permits")
-def list_permits(status: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def list_permits(status: str = None, plant_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     if status:
         r = db.execute(text("SELECT permit_id, permit_id as permit_number, permit_type, description, equipment_tag, wo_reference as wo_number, status, issued_by as requested_by, valid_from, valid_until, 'MEDIUM' as risk_level, 0 as loto_required, '[]' as loto_points, '[]' as safety_measures FROM work_permits WHERE status = :s ORDER BY valid_from DESC"), {"s": status})
     else:
@@ -84,7 +84,7 @@ def list_permits(status: str = None, db: Session = Depends(get_db), user=Depends
 # ── Purchase Requisitions ──
 @router.get("/purchase-reqs")
 @router.get("/purchase-requisitions")
-def list_purchase_reqs(status: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def list_purchase_reqs(status: str = None, plant_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     if status:
         r = db.execute(text("SELECT * FROM purchase_requisitions WHERE status = :s ORDER BY created_at DESC"), {"s": status})
     else:
@@ -94,7 +94,7 @@ def list_purchase_reqs(status: str = None, db: Session = Depends(get_db), user=D
 
 # ── Cost Centers ──
 @router.get("/cost-centers")
-def list_cost_centers(db: Session = Depends(get_db), user=Depends(get_current_user)):
+def list_cost_centers(plant_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     r = db.execute(text("SELECT * FROM cost_centers ORDER BY cc_code"))
     return _rows_to_dicts(r)
 
@@ -109,7 +109,7 @@ def list_settlement_rules(wo_number: str = None, db: Session = Depends(get_db), 
 
 # ── Inventory ──
 @router.get("/inventory")
-def list_inventory(warehouse_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def list_inventory(warehouse_id: str = None, plant_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     if warehouse_id:
         r = db.execute(text("SELECT sap_id as material_code, description, current_stock as in_stock, 0 as reserved, current_stock as available, min_stock, max_stock as reorder_point, CASE WHEN current_stock <= min_stock THEN 'LOW' ELSE 'OK' END as status FROM sap_materials WHERE current_stock > 0 ORDER BY sap_id LIMIT 100"))
     else:

@@ -1035,6 +1035,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState(null);
+  const [critScore, setCritScore] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1354,6 +1355,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
 
   function fetchAndOpenDetail(req) {
     setDetailLoading(true);
+    setCritScore(null);
+    getCriticalityScore(req.id || req.request_id).then(s => setCritScore(s)).catch(() => setCritScore(null));
     setSelected(req); // show immediately with list data
     api.getWorkRequest(req.id)
       .then((full) => setSelected(normalizeWR(full)))

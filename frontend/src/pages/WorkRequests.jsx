@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';
+import { getCriticalityScore } from '../api';
 // Reopen handler for admin
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -1660,6 +1661,52 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                         </span>
                       </td>
 
+                      {/* Criticality Score */}
+                      {critScore && (
+                        <div className={`p-3 rounded-xl border-2 ${
+                          critScore.color === 'red' ? 'border-red-300 bg-red-50' :
+                          critScore.color === 'orange' ? 'border-orange-300 bg-orange-50' :
+                          critScore.color === 'yellow' ? 'border-yellow-300 bg-yellow-50' :
+                          'border-green-300 bg-green-50'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-[10px] uppercase font-bold text-gray-500">Criticality Score</div>
+                              <div className={`text-2xl font-black ${
+                                critScore.color === 'red' ? 'text-red-600' :
+                                critScore.color === 'orange' ? 'text-orange-600' :
+                                critScore.color === 'yellow' ? 'text-yellow-600' :
+                                'text-green-600'
+                              }`}>{critScore.score}/5</div>
+                              <div className={`text-xs font-bold ${
+                                critScore.color === 'red' ? 'text-red-600' :
+                                critScore.color === 'orange' ? 'text-orange-600' :
+                                critScore.color === 'yellow' ? 'text-yellow-600' :
+                                'text-green-600'
+                              }`}>{critScore.level}</div>
+                            </div>
+                            <div className="flex gap-0.5">
+                              {[1,2,3,4,5].map(i => (
+                                <div key={i} className={`w-2 h-8 rounded-full ${
+                                  i <= critScore.score ? (
+                                    critScore.color === 'red' ? 'bg-red-500' :
+                                    critScore.color === 'orange' ? 'bg-orange-500' :
+                                    critScore.color === 'yellow' ? 'bg-yellow-500' :
+                                    'bg-green-500'
+                                  ) : 'bg-gray-200'
+                                }`} />
+                              ))}
+                            </div>
+                          </div>
+                          {critScore.factors && (
+                            <div className="mt-2 space-y-0.5">
+                              {critScore.factors.map((f, i) => (
+                                <div key={i} className="text-[10px] text-gray-600">{f}</div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {/* AI Confidence */}
                       <td className="px-4 py-3">
                         <ConfidenceBar value={req.ai_confidence} />

@@ -800,6 +800,87 @@ The enhanced_description and suggestedAction should match the user's language.""
     return {"suggestions": suggestions, "confidence": 0.85, "source": "claude_ai"}
 
 
+
+def _calculate_criticality_score(db, equipment_tag: str, priority: str, production_impact: str, failure_category: str) -> dict:
+    """Calculate criticality score 1-5 based on multiple factors.
+    Returns {score, level, factors, color}."""
+    from api.database.models import HierarchyNodeModel, WorkRequestModel
+    from sqlalchemy import func
+
+    score = 0
+    factors = []
+
+    # Factor 1: Equipment criticality (ABC) — max 2 points
+    equip_criticality = None
+    if equipment_tag:
+        node = db.query(HierarchyNodeModel).filter(
+            (HierarchyNodeModel.tag == equipment_tag) |
+            (HierarchyNodeModel.sap_equipment_nr == equipment_tag) |
+            (HierarchyNodeModel.code == equipment_tag)
+        ).first()
+        if node:
+            equip_criticality = (node.criticality or "").upper()
+
+    if equip_criticality == "A":
+        score += 2
+        factors.append("Equipment criticality: A (Critical)")
+    elif equip_criticality == "B":
+        score += 1
+        factors.append("Equipment criticality: B (Important)")
+    else:
+        factors.append("Equipment criticality: C/Unknown (Standard)")
+
+    # Factor 2: Priority — max 1.5 points
+    prio_map = {"P1": 1.5, "P2": 1.0, "P3": 0.5, "P4": 0}
+    p_score = prio_map.get(priority, 0.5)
+    score += p_score
+    factors.append(f"Priority: {priority} (+{p_score})")
+
+    # Factor 3: Production impact — max 1.5 points
+    impact_map = {"CRITICAL": 1.5, "HIGH": 1.0, "MEDIUM": 0.5, "LOW": 0}
+    i_score = impact_map.get((production_impact or "").upper(), 0.5)
+    score += i_score
+    factors.append(f"Production impact: {production_impact} (+{i_score})")
+
+    # Factor 4: Failure history (recurrence) — max 1 point
+    if equipment_tag:
+        recent_count = db.query(func.count(WorkRequestModel.request_id)).filter(
+            WorkRequestModel.equipment_tag == equipment_tag,
+        ).scalar() or 0
+        if recent_count >= 5:
+            score += 1.0
+            factors.append(f"Recurrence: {recent_count} prior WRs on this equipment (+1.0)")
+        elif recent_count >= 2:
+            score += 0.5
+            factors.append(f"Recurrence: {recent_count} prior WRs on this equipment (+0.5)")
+        else:
+            factors.append(f"Recurrence: {recent_count} prior WRs (no bonus)")
+
+    # Normalize to 1-5 scale (max raw = 6)
+    normalized = min(5, max(1, round(score * 5 / 6)))
+
+    # Level and color
+    if normalized >= 4:
+        level = "CRITICAL"
+        color = "red"
+    elif normalized >= 3:
+        level = "HIGH"
+        color = "orange"
+    elif normalized >= 2:
+        level = "MEDIUM"
+        color = "yellow"
+    else:
+        level = "LOW"
+        color = "green"
+
+    return {
+        "score": normalized,
+        "level": level,
+        "color": color,
+        "factors": factors,
+        "raw_score": round(score, 1),
+    }
+
 def _rule_based_assist(data, db):
     """Fallback rule-based AI assist (keyword matching)."""
     desc = (data.description or "").lower()
@@ -1599,6 +1680,23 @@ def create_wr_from_hierarchy(data: WRFromHierarchyRequest, db: Session = Depends
         "created_at": wr.created_at.isoformat() if wr.created_at else None,
     }
 
+
+
+
+@router.get("/{wr_id}/criticality-score")
+def get_criticality_score(wr_id: str, db: Session = Depends(get_db)):
+    """Calculate and return criticality score for a WR."""
+    wr = work_request_service.get_work_request(db, wr_id)
+    if not wr:
+        raise HTTPException(status_code=404, detail="WR not found")
+    ai = {}
+    if hasattr(wr, 'ai_classification') and wr.ai_classification:
+        ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+    equip_tag = getattr(wr, 'equipment_tag', '') or ''
+    priority = ai.get("priority", getattr(wr, 'priority_code', 'P3') or 'P3')
+    impact = ai.get("production_impact", "MEDIUM")
+    category = ai.get("failureCategory", "")
+    return _calculate_criticality_score(db, equip_tag, priority, impact, category)
 
 @router.post("/ocr-closure")
 def ocr_work_order_closure(data: OCRClosureRequest, db: Session = Depends(get_db)):

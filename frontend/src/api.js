@@ -196,6 +196,7 @@ export const closeWorkRequest = (id, d) => put(`/work-requests/${id}/close`, d);
 export const reopenWorkRequest = (id) => put(`/work-requests/${id}/reopen`);
 export const createWRManual = (d) => post('/work-requests/manual', d);
 export const aiAssistWR = (d) => post("/work-requests/ai-assist", d);
+export const getCriticalityScore = (wrId) => get(`/work-requests/${wrId}/criticality-score`);
 
 // ── Managed Work Orders (Jorge Phase 2 — OT lifecycle) ──
 export const listManagedWOs = (p) => get('/managed-work-orders/', p);

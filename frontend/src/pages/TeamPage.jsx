@@ -512,8 +512,13 @@ export default function TeamPage() {
                 className="w-full border rounded px-3 py-2 text-sm mt-1"
                 value={addForm.password}
                 onChange={e => setAddForm({ ...addForm, password: e.target.value })}
-                placeholder={t('team.addDialog.passwordPlaceholder')}
+                placeholder="Min 8 chars, 1 uppercase, 1 number"
               />
+              {addForm.password && <div className="flex gap-3 mt-1">
+                <span className={"text-[10px] " + (addForm.password.length >= 8 ? "text-emerald-600" : "text-red-500")}>{addForm.password.length >= 8 ? "✓" : "✗"} 8+ chars</span>
+                <span className={"text-[10px] " + (/[A-Z]/.test(addForm.password) ? "text-emerald-600" : "text-red-500")}>{/[A-Z]/.test(addForm.password) ? "✓" : "✗"} Uppercase</span>
+                <span className={"text-[10px] " + (/[0-9]/.test(addForm.password) ? "text-emerald-600" : "text-red-500")}>{/[0-9]/.test(addForm.password) ? "✓" : "✗"} Number</span>
+              </div>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

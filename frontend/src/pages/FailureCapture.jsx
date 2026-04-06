@@ -8,8 +8,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 
-// Whisper backend transcription via MediaRecorder + /media/transcribe
-const SpeechRecognition = null; // Disabled browser speech — using Whisper backend
+// Browser Speech Recognition (no API key needed)
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 export default function FailureCapture({ onNavigateTab }) {
   const { plant } = useOutletContext();
@@ -574,65 +574,74 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   // ── Voice ──
+  const recognitionRef = useRef(null);
   const handleVoice = async () => {
     if (isRecording) {
       // Stop recording
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
       }
+      setIsRecording(false);
       return;
     }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      const chunks = [];
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-      recorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        setIsRecording(false);
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        if (blob.size < 1000) { toast.error('Recording too short'); return; }
-        toast.info('Transcribing with Whisper AI...');
-        try {
-          const formData = new FormData();
-          formData.append('file', blob, 'voice_capture.webm');
-          formData.append('language', 'en');
-          const token = localStorage.getItem('access_token');
-          const resp = await fetch('/api/v1/media/transcribe', {
-            method: 'POST',
-            headers: token ? { 'Authorization': 'Bearer ' + token } : {},
-            body: formData,
-          });
-          if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            throw new Error(err.detail || resp.statusText);
-          }
-          const result = await resp.json();
-          const text = result.text || result.transcript || '';
-          if (text) {
-            const base = form.whatHappens;
-            const fullText = (base ? base + ' ' : '') + text;
-            setF('whatHappens', fullText);
-            toast.success('Whisper transcribed (' + (result.language_detected || 'en') + ')');
-            setTimeout(() => handleAiSuggest(fullText), 500);
-          } else {
-            toast.error('No speech detected');
-          }
-        } catch (err) {
-          toast.error('Transcription: ' + (err.message || 'Failed'));
-        }
-      };
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setIsRecording(true);
-      toast.info('Recording... Click again to stop (max 30s)');
-      setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 30000);
-    } catch (err) {
-      toast.error('Microphone denied: ' + (err.message || ''));
+
+    if (!SpeechRecognition) {
+      toast.error('Speech recognition not supported in this browser');
+      return;
     }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      // Show interim in the textarea
+      const current = form.whatHappens || '';
+      const base = current.replace(/\[listening\.\.\.].*$/, '').trim();
+      if (interim) {
+        setF('whatHappens', (base ? base + ' ' : '') + finalTranscript + '[listening...] ' + interim);
+      } else if (finalTranscript) {
+        setF('whatHappens', (base ? base + ' ' : '') + finalTranscript.trim());
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech error:', event.error);
+      if (event.error !== 'no-speech') {
+        toast.error('Speech error: ' + event.error);
+      }
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      if (finalTranscript.trim()) {
+        // Clean up the textarea
+        const current = form.whatHappens || '';
+        const cleaned = current.replace(/\[listening\.\.\.].*$/, '').trim();
+        setF('whatHappens', cleaned);
+        toast.success('Voice captured: ' + finalTranscript.trim().slice(0, 50) + '...');
+      }
+    };
+
+    setIsRecording(true);
+    recognition.start();
+    toast.info('Listening... speak now');
   };
 
-  // ── Camera ──
+
   const handleCameraClick = () => cameraRef.current?.click();
   const handleCameraChange = (e) => {
     const file = e.target.files?.[0];

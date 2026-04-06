@@ -1,0 +1,152 @@
+# AMS Deliverable Registry Configuration
+# Maps deliverable IDs to milestones, agents, output slugs, and formats.
+# Used by ams_deliverable_registry.py for path resolution and validation.
+
+agents:
+  AG-001:
+    name: Orchestrator
+    folder: orchestrator
+  AG-002:
+    name: Reliability Engineer
+    folder: reliability
+  AG-003:
+    name: Planning Specialist
+    folder: planning
+  AG-004:
+    name: Spare Parts Specialist
+    folder: spare-parts
+
+milestones:
+  M1:
+    name: "Hierarchy + Criticality"
+    description: "Build 6-level equipment hierarchy and assess criticality"
+  M2:
+    name: "FMECA + RCM"
+    description: "Failure mode analysis and RCM decision tree"
+  M3:
+    name: "Tasks + Work Packages + Materials"
+    description: "Generate maintenance tasks, work packages, and material assignments"
+  M4:
+    name: "SAP Export"
+    description: "Generate SAP upload package with validation"
+
+deliverables:
+  AMS-001:
+    name: "Equipment Hierarchy Tree"
+    slug: "hierarchy-tree"
+    milestone: M1
+    agent: AG-002
+    format: xlsx
+    description: "6-level equipment decomposition from plant to component"
+    skill: "build-equipment-hierarchy"
+    mandatory: true
+
+  AMS-002:
+    name: "Criticality Assessment Matrix"
+    slug: "criticality-matrix"
+    milestone: M1
+    agent: AG-002
+    format: xlsx
+    description: "11-criteria criticality scoring for all equipment"
+    skill: "assess-criticality"
+    mandatory: true
+
+  AMS-003:
+    name: "FMECA Table"
+    slug: "fmeca-table"
+    milestone: M2
+    agent: AG-002
+    format: xlsx
+    description: "Failure Mode Effects and Criticality Analysis"
+    skill: "perform-fmeca"
+    mandatory: true
+
+  AMS-004:
+    name: "RCM Decision Sheets"
+    slug: "rcm-decision-sheets"
+    milestone: M2
+    agent: AG-002
+    format: xlsx
+    description: "RCM decision tree results per failure mode"
+    skill: "run-rcm-decision-tree"
+    mandatory: true
+
+  AMS-005:
+    name: "Maintenance Task List"
+    slug: "maintenance-task-list"
+    milestone: M3
+    agent: AG-003
+    format: xlsx
+    description: "Complete list of maintenance tasks with frequencies and resources"
+    skill: "assemble-work-packages"
+    mandatory: true
+
+  AMS-006:
+    name: "Work Packages"
+    slug: "work-packages"
+    milestone: M3
+    agent: AG-003
+    format: xlsx
+    description: "Grouped maintenance tasks into executable work packages"
+    skill: "assemble-work-packages"
+    mandatory: true
+
+  AMS-007:
+    name: "Work Instructions"
+    slug: "work-instructions"
+    milestone: M3
+    agent: AG-003
+    format: docx
+    description: "Step-by-step work instructions for each task"
+    skill: "generate-work-instructions"
+    mandatory: true
+
+  AMS-008:
+    name: "Material Assignments"
+    slug: "material-assignments"
+    milestone: M3
+    agent: AG-004
+    format: xlsx
+    description: "Spare parts and materials assigned to replacement tasks"
+    skill: "suggest-materials"
+    mandatory: true
+
+  AMS-009:
+    name: "SAP Upload Package"
+    slug: "sap-upload-package"
+    milestone: M4
+    agent: AG-003
+    format: xlsx
+    description: "SAP PM-ready upload package (DRAFT status only)"
+    skill: "export-to-sap"
+    mandatory: true
+
+  AMS-010:
+    name: "Validation Report"
+    slug: "validation-report"
+    milestone: M4
+    agent: AG-003
+    format: md
+    description: "Cross-validation report for SAP export completeness and consistency"
+    skill: "validate-quality"
+    mandatory: true
+
+  AMS-011:
+    name: "Quality Report"
+    slug: "quality-report"
+    milestone: M4
+    agent: AG-001
+    format: md
+    description: "Overall quality assessment across all milestones"
+    skill: "validate-quality"
+    mandatory: false
+
+  AMS-012:
+    name: "Maintenance Strategy Summary"
+    slug: "strategy-summary"
+    milestone: M4
+    agent: AG-001
+    format: xlsx
+    description: "Executive summary of the complete maintenance strategy"
+    skill: "generate-reports"
+    mandatory: false

@@ -224,6 +224,44 @@ class Agent:
                     continue
                 raise
 
+    def post_deliverable(
+        self,
+        client_slug: str,
+        project_slug: str,
+        deliverable_id: str,
+        content: Any,
+        fmt: str,
+        milestone: str,
+        trace_ctx: Any | None = None,
+        quality_scores: dict | None = None,
+    ) -> dict:
+        """Write a deliverable to the client folder with all companion files.
+
+        Delegates to tools.engines.deliverable_writer.write_deliverable().
+        Returns dict with paths to main file + spec + trace + feedback.
+        """
+        from tools.engines.deliverable_writer import write_deliverable
+
+        agent_id_map = {
+            "orchestrator": "AG-001",
+            "reliability": "AG-002",
+            "planning": "AG-003",
+            "spare-parts": "AG-004",
+        }
+        agent_id = agent_id_map.get(self.config.agent_type, "AG-001")
+
+        return write_deliverable(
+            client_slug=client_slug,
+            project_slug=project_slug,
+            deliverable_id=deliverable_id,
+            content=content,
+            format=fmt,
+            agent_id=agent_id,
+            milestone=milestone,
+            trace_ctx=trace_ctx,
+            quality_scores=quality_scores,
+        )
+
     def reset(self) -> None:
         """Clear conversation history for a fresh run."""
         self.history.clear()

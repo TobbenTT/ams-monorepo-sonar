@@ -354,7 +354,7 @@ def verify_close_with_ai(
                 "Materials planned: " + str(len(mats)) + " items\n"
                 "Observations: " + str(obs_text) + "\n"
                 "Materials used: " + str(len(data.materials_used)) + " items reported\n\n"
-                "Evaluate if this WO is ready to close. Be concise (2-3 sentences). Flag any concerns. Respond in English."
+                "Evaluate if this WO is ready to close. Be concise (2-3 sentences). Flag any concerns. Respond in the same language as the observations."
             )
             resp = client.messages.create(
                 model="claude-haiku-4-5-20251001",

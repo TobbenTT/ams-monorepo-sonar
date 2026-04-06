@@ -16,7 +16,7 @@ IMPORTANT: Respond ONLY with valid JSON, no markdown or explanations.
   "equipment_identified": "What specific industrial equipment is visible (e.g. Centrifugal Pump, Belt Conveyor, Electric Motor, Crusher, Cyclone, etc.)",
   "failure_type": "MECHANICAL | ELECTRICAL | INSTRUMENTATION | HYDRAULIC | STRUCTURAL",
   "severity": "low | medium | high | critical",
-  "whatHappens": "Concise description of the visible problem (2-3 detailed sentences in English)",
+  "whatHappens": "Concise description of the visible problem (2-3 detailed sentences. Match the language of any user-provided context - if Spanish, respond in Spanish; if English, respond in English)",
   "failureCategory": "MECHANICAL | ELECTRICAL | INSTRUMENTATION | HYDRAULIC | STRUCTURAL",
   "priority": "P1 | P2 | P3 | P4",
   "activityClass": "M001 | M002 | M003",

@@ -378,7 +378,7 @@ def ai_daily_briefing(
             "4. Today's workload summary\n"
             "5. Key risks or recommendations\n\n"
             "Data:\n" + json.dumps(summary_data, indent=2) + "\n\n"
-            "Format with markdown headers. Be direct and actionable. Respond in English."
+            "Format with markdown headers. Be direct and actionable. Respond in the same language as the input data."
         )
 
         resp = client.messages.create(

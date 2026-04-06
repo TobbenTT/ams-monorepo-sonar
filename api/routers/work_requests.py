@@ -669,6 +669,7 @@ def _claude_ai_assist(data, db, api_key):
     system_prompt = """You are an industrial maintenance expert for OCP plants (phosphates, Morocco).
 Analyze the description and return complete JSON for a SAP PM notification.
 IMPORTANT: Respond ONLY with valid JSON, no markdown.
+IMPORTANT: Detect the language of the user description. If the description is in Spanish, write ALL text fields (enhanced_description, suggestedAction, workConditions, etc.) in Spanish. If in English, respond in English. Match the user language.
 
 {
   "equipment_tag": "Equipment TAG identified from the description (e.g. PP-CR-001). null if not identifiable",
@@ -753,8 +754,8 @@ The enhanced_description and suggestedAction should match the user's language.""
     if examples_str:
         system_prompt += "\n\n" + examples_str
 
-    # Always respond in English for demo
-    lang_instruction = "RESPOND IN ENGLISH. Write ALL text fields (enhanced_description, suggestedAction, workConditions) in English. Do NOT translate to French or Spanish."
+    # Match user language
+    lang_instruction = "IMPORTANT: Detect the language of the user description. Respond in the SAME language. If Spanish, respond in Spanish. If English, respond in English."
 
     user_msg = f"{lang_instruction}\n\nProblem description: \"{desc}\""
     if equipment_tag:

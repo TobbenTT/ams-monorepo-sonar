@@ -413,7 +413,7 @@ export default function FailureCapture({ onNavigateTab }) {
     if (equipSearch.length < 2) { setEquipResults([]); return; }
     // Server-side search for large datasets
     const timer = setTimeout(() => {
-      api.listNodes({ search: equipSearch, node_type: 'EQUIPMENT', limit: 15 }).then(res => {
+      api.listNodes({ search: equipSearch, node_type: 'EQUIPMENT', limit: 15, plant_id: plant }).then(res => {
         const nodes = Array.isArray(res) ? res : res?.items || [];
         setEquipResults(nodes);
       }).catch(() => {
@@ -450,7 +450,7 @@ export default function FailureCapture({ onNavigateTab }) {
     if (parentId) params.parent_node_id = parentId;
     else params.node_type = 'PLANT';
     if (search) params.search = search;
-    api.listNodes(params).then(res => {
+    params.plant_id = plant; api.listNodes(params).then(res => {
       const nodes = Array.isArray(res) ? res : res?.items || [];
       setBrowseResults(nodes);
       setBrowseLoading(false);
@@ -544,7 +544,7 @@ export default function FailureCapture({ onNavigateTab }) {
       selectEquip(node);
     } else {
       // Load children equipment for this location
-      api.listNodes({ parent_node_id: node.node_id, limit: 500 }).then(res => {
+      api.listNodes({ parent_node_id: node.node_id, limit: 500, plant_id: plant }).then(res => {
         const children = Array.isArray(res) ? res : res?.items || [];
         // Get all equipment from children (direct + nested)
         const equipList = children.filter(n => n.node_type === 'EQUIPMENT');
@@ -554,7 +554,7 @@ export default function FailureCapture({ onNavigateTab }) {
         } else if (children.length > 0) {
           // Children are systems/areas, go deeper to find equipment
           const childIds = children.map(c => c.node_id);
-          Promise.all(childIds.slice(0, 10).map(id => api.listNodes({ parent_node_id: id, limit: 100 }).catch(() => []))).then(results => {
+          Promise.all(childIds.slice(0, 10).map(id => api.listNodes({ parent_node_id: id, limit: 100, plant_id: plant }).catch(() => []))).then(results => {
             const allNodes = results.flatMap(r => Array.isArray(r) ? r : r?.items || []);
             const equips = allNodes.filter(n => n.node_type === 'EQUIPMENT');
             if (equips.length > 0) {

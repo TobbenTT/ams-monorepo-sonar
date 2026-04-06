@@ -1096,45 +1096,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>
                     </div>
 
-                    {/* Technical Details - C21 */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="bg-gray-50 rounded-lg p-3 border">
-                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Technical Location</div>
-                        <div className="text-sm font-mono font-semibold text-gray-800 mt-1">{wo.technical_location || wo.equipment_tag || '—'}</div>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3 border">
-                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Planning Group</div>
-                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.planning_group || '—'}</div>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3 border">
-                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Work Center</div>
-                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.work_center || '—'}</div>
-                      </div>
-                    </div>
-
-                    {/* C22: Dates - Start/End + Week number */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Start</div>
-                        <input type="date" value={editDates.start ? editDates.start.slice(0, 10) : ''}
-                          onChange={e => setEditDates(d => ({...d, start: e.target.value}))}
-                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
-                      </div>
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned End</div>
-                        <input type="date" value={editDates.end ? editDates.end.slice(0, 10) : ''}
-                          onChange={e => setEditDates(d => ({...d, end: e.target.value}))}
-                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
-                      </div>
-                      <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
-                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Week Number</div>
-                        <div className="text-lg font-bold text-indigo-800 mt-1">
-                          {editDates.start ? 'W' + String(Math.ceil(((new Date(editDates.start) - new Date(new Date(editDates.start).getFullYear(), 0, 1)) / 86400000 + new Date(new Date(editDates.start).getFullYear(), 0, 1).getDay() + 1) / 7)).padStart(2, '0') : '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+)}
 
                 {/* OPERACIONES */}
                 {otModalTab === 'operaciones' && (
@@ -1399,7 +1361,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           </tr>
                         </thead>
                         <tbody>
-                          {costItems.map(ci => {
+                          {costCats.map(ci => {
                             const delta = ci.real - ci.plan;
                             return (
                               <tr key={ci.key} className="border-b">

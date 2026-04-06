@@ -291,6 +291,24 @@ def get_client_memory_dir(client_slug: str) -> Path:
     return get_client_context_dir(client_slug) / "memory"
 
 
+def get_milestone_output_dir(
+    client_slug: str, project_slug: str, milestone: str
+) -> Path:
+    """Return the output directory for a specific milestone.
+
+    -> .../1-output/{milestone}/
+
+    Args:
+        milestone: One of 'M1', 'M2', 'M3', 'M4'.
+
+    Raises ValueError if milestone is not valid.
+    """
+    valid = {"M1", "M2", "M3", "M4"}
+    if milestone not in valid:
+        raise ValueError(f"milestone must be one of {valid}: {milestone!r}")
+    return get_output_dir(client_slug, project_slug) / milestone
+
+
 def get_meetings_dir(client_slug: str, project_slug: str) -> Path:
     """Return the meetings directory within 3-memory/.
 

@@ -629,7 +629,7 @@ ${materials.length ? `<div class="section">
             {editing ? (
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Parte Objeto:</span>
                   <input type="text" value={editData.failure_category} onChange={e => setEditData(d => ({ ...d, failure_category: e.target.value }))}
                     className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="MECANICO, ELECTRICO..." />
                 </div>
@@ -648,7 +648,7 @@ ${materials.length ? `<div class="section">
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
                 {item.failure_category && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Parte Objeto:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
                   </div>
                 )}
@@ -772,7 +772,6 @@ ${materials.length ? `<div class="section">
                         <option value="Mecanico">Mechanical</option>
                         <option value="Electrico">Electrical</option>
                         <option value="Instrumentacion">Instrument Tech</option>
-                        <option value="Supervisor">Supervisor</option>
                         <option value="Soldador">Welder</option>
                         <option value="Rigger">Rigger</option>
                       </select>

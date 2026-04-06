@@ -5,7 +5,7 @@ import { KPICard, PriorityBadge, StatusBadge, LoadingSpinner } from '../componen
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
-  Eye, Clock, ChevronRight, ChevronLeft, Download, AlertCircle, Plus, XCircle, Ban,
+  Eye, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Download, AlertCircle, Plus, XCircle, Ban,
   X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search
 } from 'lucide-react';
 import * as api from '../api';
@@ -97,6 +97,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [editBudget, setEditBudget] = useState({ labor: '', material: '', external: '' });
   const [editDates, setEditDates] = useState({ start: '', end: '' });
   const [savingOT, setSavingOT] = useState(false);
+  const [expandedOps, setExpandedOps] = useState({});
   const [woSearch, setWoSearch] = useState("");
   const [woStatusFilter, setWoStatusFilter] = useState("All");
   const [woPriorityFilter, setWoPriorityFilter] = useState("All");
@@ -507,7 +508,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
                 <option value="All">All Status</option>
                 <option value="CREADO">Created</option>
-                <option value="PLANIFICADO">Planned</option>
+                <option value="PLANIFICADO">Released</option>
+                <option value="LIBERADO">Released</option>
                 <option value="PROGRAMADO">Scheduled</option>
                 <option value="EN_EJECUCION">In Execution</option>
                 <option value="CERRADO">Closed</option>
@@ -564,14 +566,14 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   {filteredWOs.map((wo, i) => {
                     const SAP_STATUS = {
                       CREADO: { label: 'Created', color: 'bg-yellow-100 text-yellow-700' },
-                      PLANIFICADO: { label: 'Planned', color: 'bg-blue-100 text-blue-700' },
+                      PLANIFICADO: { label: 'Released', color: 'bg-emerald-100 text-emerald-700' },
                       PROGRAMADO: { label: 'Scheduled', color: 'bg-indigo-100 text-indigo-700' },
                       REPROGRAMADO: { label: 'Rescheduled', color: 'bg-orange-100 text-orange-700' },
                       EN_EJECUCION: { label: 'In Execution', color: 'bg-amber-100 text-amber-700' },
                       CERRADO: { label: 'Closed', color: 'bg-green-100 text-green-700' },
                       CANCELADO: { label: 'Cancelled', color: 'bg-gray-300 text-gray-600' },
                       PENDIENTE: { label: 'Created', color: 'bg-yellow-100 text-yellow-700' },
-                      APROBADO: { label: 'Planned', color: 'bg-blue-100 text-blue-700' },
+                      APROBADO: { label: 'Released', color: 'bg-emerald-100 text-emerald-700' },
                       EN_PROGRESO: { label: 'In Execution', color: 'bg-amber-100 text-amber-700' },
                     };
                     const TYPE_LABEL = {
@@ -949,14 +951,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         const wo = selectedOT;
         const SAP = {
           CREADO:{label:'Created',color:'bg-yellow-100 text-yellow-700'},
-          PLANIFICADO:{label:'Planned',color:'bg-blue-100 text-blue-700'},
+          PLANIFICADO:{label:'Released',color:'bg-emerald-100 text-emerald-700'},
+          LIBERADO:{label:'Released',color:'bg-emerald-100 text-emerald-700'},
           PROGRAMADO:{label:'Scheduled',color:'bg-indigo-100 text-indigo-700'},
           REPROGRAMADO:{label:'Rescheduled',color:'bg-orange-100 text-orange-700'},
           EN_EJECUCION:{label:'In Execution',color:'bg-amber-100 text-amber-700'},
           CERRADO:{label:'Closed',color:'bg-green-100 text-green-700'},
           CANCELADO:{label:'Cancelled',color:'bg-gray-300 text-gray-600'},
           PENDIENTE:{label:'Created',color:'bg-yellow-100 text-yellow-700'},
-          APROBADO:{label:'Planned',color:'bg-blue-100 text-blue-700'},
+          APROBADO:{label:'Released',color:'bg-emerald-100 text-emerald-700'},
           EN_PROGRESO:{label:'In Execution',color:'bg-amber-100 text-amber-700'},
         };
         const NEXT = {
@@ -996,7 +999,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
         return (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOT(null)}>
-            <div className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[95vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl shadow-xl w-[95vw] h-[92vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
               {/* HEADER */}
               <div className="border-b px-6 py-4 rounded-t-2xl">
@@ -1040,6 +1043,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       <label className="text-xs font-semibold text-gray-500 uppercase">Description</label>
                       <p className="text-sm text-gray-800 mt-1 bg-gray-50 rounded-lg p-3">{wo.description||wo.failure_description||"No description"}</p>
                     </div>
+                    {ops.length > 0 && (
+                      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                        <div className="text-[10px] font-bold text-indigo-500 uppercase mb-1">First Operation</div>
+                        <p className="text-sm font-semibold text-indigo-800">{ops[0].description || "—"}</p>
+                        {ops.length > 1 && <p className="text-xs text-indigo-500 mt-1">+{ops.length - 1} more operation{ops.length > 2 ? 's' : ''}</p>}
+                      </div>
+                    )}
                     <div className="grid grid-cols-4 gap-3">
                       <div className="bg-blue-50 rounded-lg p-3 text-center"><div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Hrs</div><div className="text-lg font-bold text-blue-700">{wo.estimated_hours||"0"}h</div></div>
                       <div className="bg-green-50 rounded-lg p-3 text-center"><div className="text-[10px] text-green-600 font-semibold uppercase">Actual Hrs</div><div className="text-lg font-bold text-green-700">{wo.actual_hours||execData.actual_hours||"0"}h</div></div>
@@ -1114,42 +1124,52 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {editOps.map((op, idx) => (
-                          <div key={idx} className={"rounded-lg border p-3 "+(op.type === 'EXT' ? "border-purple-200 bg-purple-50/30" : "border-gray-200")}>
-                            <div className="flex items-center gap-2 mb-2">
+                        {editOps.map((op, idx) => {
+                          const isExpanded = !!expandedOps[idx];
+                          return (
+                          <div key={idx} className={"rounded-lg border "+(op.type === 'EXT' ? "border-purple-200 bg-purple-50/30" : "border-gray-200")}>
+                            <div className="flex items-center gap-2 p-3 cursor-pointer" onClick={() => setExpandedOps(prev => ({...prev, [idx]: !prev[idx]}))}>
                               <span className="text-xs font-bold text-gray-400 w-5">#{idx+1}</span>
-                              <select value={op.type || 'INT'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], type: e.target.value}; setEditOps(n); }}
-                                className="text-xs border rounded px-2 py-1 w-16 font-bold">
-                                <option value="INT">INT</option><option value="EXT">EXT</option>
-                              </select>
-                              <input value={op.description || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], description: e.target.value}; setEditOps(n); }}
-                                className="flex-1 text-sm border rounded px-2 py-1" placeholder="Describe the action/task (e.g., Replace bearing, Inspect valve)" />
-                              <button type="button" onClick={() => setEditOps(prev => prev.filter((_,i) => i !== idx))}
-                                className="text-red-400 hover:text-red-600 p-1">
-                                <X size={14} />
-                              </button>
+                              <span className={"text-xs font-bold px-1.5 py-0.5 rounded "+(op.type === 'EXT' ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600")}>{op.type || 'INT'}</span>
+                              <span className="flex-1 text-sm font-medium text-gray-800 truncate">{op.description || <span className="text-gray-400 italic">No description</span>}</span>
+                              <span className="text-xs text-gray-500">{op.specialty || 'Mechanical'} · {((op.quantity || 1) * (op.hours || 0)).toFixed(1)}HH</span>
+                              <button type="button" onClick={e => { e.stopPropagation(); setEditOps(prev => prev.filter((_,i) => i !== idx)); }} className="text-red-400 hover:text-red-600 p-1 ml-1"><X size={12} /></button>
+                              {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
                             </div>
-                            <div className="flex items-center gap-3 ml-7">
-                              <select value={op.specialty || 'Mechanical'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
-                                className="text-xs border rounded px-2 py-1">
-                                {['Mechanical','Electrical','Instrument Tech','Welder','Lubrication','Crane Operator','Scaffolder','Boilermaker','Other'].map(s => <option key={s} value={s}>{s}</option>)}
-                              </select>
-                              <div className="flex items-center gap-1">
-                                <label className="text-[10px] text-gray-500">Qty:</label>
-                                <input type="number" min="1" value={op.quantity || 1} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], quantity: parseInt(e.target.value)||1}; setEditOps(n); }}
-                                  className="w-12 text-xs border rounded px-1 py-1 text-center" />
+                            {isExpanded && (
+                              <div className="px-3 pb-3 border-t border-gray-100">
+                                <div className="flex items-center gap-2 mt-2 mb-2">
+                                  <select value={op.type || 'INT'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], type: e.target.value}; setEditOps(n); }}
+                                    className="text-xs border rounded px-2 py-1 w-16 font-bold">
+                                    <option value="INT">INT</option><option value="EXT">EXT</option>
+                                  </select>
+                                  <input value={op.description || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], description: e.target.value}; setEditOps(n); }}
+                                    className="flex-1 text-sm border rounded px-2 py-1" placeholder="Describe the action/task" />
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <select value={op.specialty || 'Mechanical'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
+                                    className="text-xs border rounded px-2 py-1">
+                                    {['Mechanical','Electrical','Instrument Tech','Welder','Lubrication','Crane Operator','Scaffolder','Boilermaker','Other'].map(s => <option key={s} value={s}>{s}</option>)}
+                                  </select>
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-[10px] text-gray-500">Qty:</label>
+                                    <input type="number" min="1" value={op.quantity || 1} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], quantity: parseInt(e.target.value)||1}; setEditOps(n); }}
+                                      className="w-12 text-xs border rounded px-1 py-1 text-center" />
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-[10px] text-gray-500">Hours:</label>
+                                    <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
+                                      className="w-14 text-xs border rounded px-1 py-1 text-center" />
+                                  </div>
+                                  <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs font-bold text-emerald-700 whitespace-nowrap">
+                                    {((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <label className="text-[10px] text-gray-500">Hours:</label>
-                                <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
-                                  className="w-14 text-xs border rounded px-1 py-1 text-center" />
-                              </div>
-                              <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs font-bold text-emerald-700 whitespace-nowrap">
-                                {((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH
-                              </div>
-                            </div>
+                            )}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                     <button type="button" onClick={saveOTChanges} disabled={savingOT}

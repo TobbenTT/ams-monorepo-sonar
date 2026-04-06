@@ -10,6 +10,7 @@ from api.services import managed_wo_service
 
 
 class WOCreateRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     equipment_tag: str
     description: str = ""
     wo_type: str = "PM01"
@@ -23,10 +24,12 @@ class WOCreateRequest(BaseModel):
 
 
 class WOFromWRRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     work_request_id: str
 
 
 class WOUpdateRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     description: str | None = None
     wo_type: str | None = None
     priority_code: str | None = None
@@ -50,6 +53,7 @@ class WOUpdateRequest(BaseModel):
 
 
 class WOScheduleRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     assigned_workers: list | None = None
     planned_start: str | None = None
     planned_end: str | None = None
@@ -57,14 +61,17 @@ class WOScheduleRequest(BaseModel):
 
 
 class WOCompleteRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     actual_hours: float = 0
 
 
 class WONoteRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     note: str = Field(min_length=1)
 
 
 class WOProgressRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     completion_pct: float = Field(ge=0, le=100)
 
 
@@ -292,6 +299,7 @@ def delete_work_order(wo_id: str, db: Session = Depends(get_db)):
 
 
 class WOCloseVerifyRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     actual_hours: float = 0
     observations: str = ""
     materials_used: list = []

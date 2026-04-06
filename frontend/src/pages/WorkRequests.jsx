@@ -1282,7 +1282,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             <span>
               OT {wo.wo_number || ''} creada desde aviso
               {onNavigateTab && (
-                <button onClick={() => onNavigateTab('work-orders')} className="ml-2 underline font-semibold">
+                <button onClick={() => onNavigateTab('planning', null, wo.wo_number || wo.wo_id)} className="ml-2 underline font-semibold">
                   → Ir a Work Orders
                 </button>
               )}

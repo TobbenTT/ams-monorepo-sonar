@@ -39,6 +39,7 @@ from api.routers import (
     catalogs,
     sap_pm,
     data_import,
+    agentic,
 )
 
 
@@ -219,6 +220,8 @@ def create_app() -> FastAPI:
 
     # Data Import page
     app.include_router(data_import.router, prefix=prefix)
+    # Agentic Solutions
+    app.include_router(agentic.router, prefix=prefix)
 
     # GAP-W03 — Serve Field PWA at /field/
     field_dist = Path("field_app/dist")

@@ -1467,3 +1467,49 @@ class AIFeedbackModel(Base):
         Index("ix_ai_feedback_field", "field_name"),
     )
 
+
+class AgenticExecutionModel(Base):
+    """Tracks every agentic solution execution for audit, performance, and analytics."""
+    __tablename__ = "agentic_executions"
+
+    execution_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    solution_type: Mapped[str] = mapped_column(String(30), default="")  # VOICE_CAPTURE, AUTO_SCHEDULER, EQUIPMENT_DOCTOR, etc.
+    triggered_by: Mapped[str] = mapped_column(String(50), default="")  # user_id who triggered it
+    plant_id: Mapped[str] = mapped_column(String(50), default="")
+    status: Mapped[str] = mapped_column(String(20), default="RUNNING")  # RUNNING, COMPLETED, FAILED
+    input_params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    output_result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_agentic_exec_solution_type", "solution_type"),
+        Index("ix_agentic_exec_status", "status"),
+        Index("ix_agentic_exec_plant_id", "plant_id"),
+        Index("ix_agentic_exec_triggered_by", "triggered_by"),
+        Index("ix_agentic_exec_created_at", "created_at"),
+    )
+
+
+# ── Equipment 3D Models (Blender/Digital Twin) ─────────────────────────
+
+class Equipment3DModelModel(Base):
+    """Links equipment types to 3D Blender models for visual inspection and digital twin."""
+    __tablename__ = "equipment_3d_models"
+
+    model_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    equipment_type: Mapped[str] = mapped_column(String(100), index=True)  # e.g. "centrifugal_pump", "sag_mill"
+    name: Mapped[str] = mapped_column(String(200), default="")
+    blender_file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    sketchfab_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    reference_renders: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {"front": "path", "side": "path", ...}
+    render_angles: Mapped[list | None] = mapped_column(JSON, nullable=True)  # ["front", "side", "top", "isometric"]
+    model_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # vertices, materials, dimensions
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_3d_model_equipment_type", "equipment_type"),
+    )

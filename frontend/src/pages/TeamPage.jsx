@@ -41,7 +41,7 @@ export default function TeamPage() {
   const { t, lang } = useLanguage();
   const toast = useToast();
 
-  const { plant } = useOutletContext();
+  const { plant, plants } = useOutletContext();
     const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -154,7 +154,7 @@ export default function TeamPage() {
       setAddLoading(true);
       await api.authRegister(addForm);
       setShowAddDialog(false);
-      setAddForm({ username: '', email: '', full_name: '', password: '', role: 'tecnico', plant_id: '' });
+      setAddForm({ username: '', email: '', full_name: '', password: '', role: 'tecnico', plant_id: plant || '' });
       await fetchTeam();
     } catch (err) {
       setAddError(err.message || t('team.addDialog.registrationFailed'));
@@ -528,12 +528,16 @@ export default function TeamPage() {
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600">{t('team.addDialog.plantId')}</label>
-                <input
+                <select
                   className="w-full border rounded px-3 py-2 text-sm mt-1"
                   value={addForm.plant_id}
                   onChange={e => setAddForm({ ...addForm, plant_id: e.target.value })}
-                  placeholder={t('team.addDialog.plantIdPlaceholder')}
-                />
+                >
+                  <option value="">Select plant...</option>
+                  {(plants || []).map(p => (
+                    <option key={p.plant_id} value={p.plant_id}>{p.plant_id} — {p.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

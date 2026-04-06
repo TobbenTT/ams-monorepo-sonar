@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { suggestFailureFields, aiAssistImage } from '../api';
 import { useOutletContext } from 'react-router-dom';
-import { Upload, Loader2, ArrowRight, X, Mic, MicOff, Camera, AlertTriangle, Search, ChevronDown, ChevronRight, Clock, Package, Wrench, Users, MapPin, CheckCircle, FileText } from 'lucide-react';
+import { Upload, Loader2, ArrowRight, X, Mic, MicOff, Camera, AlertTriangle, Search, ChevronDown, ChevronRight, Clock, Package, Wrench, Users, MapPin, CheckCircle, FileText, ClipboardCopy } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import EquipmentChat from '../components/EquipmentChat';
 import { useAuth } from '../contexts/AuthContext';

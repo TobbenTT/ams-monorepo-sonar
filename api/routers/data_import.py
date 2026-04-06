@@ -106,14 +106,18 @@ def _cell_val(v):
 @router.get("/tables")
 def list_tables(db: Session = Depends(get_db)):
     """List all tables with row counts."""
-    tables_raw = db.execute(text(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
-    )).fetchall()
+    from sqlalchemy import inspect as sa_inspect
+    insp = sa_inspect(db.bind)
     result = []
-    for (tname,) in tables_raw:
-        count = db.execute(text("SELECT COUNT(*) FROM \"%s\"" % tname)).scalar()
-        cols_raw = db.execute(text("PRAGMA table_info(\"%s\")" % tname)).fetchall()
-        columns = [{"name": r[1], "type": r[2], "notnull": bool(r[3]), "pk": bool(r[5])} for r in cols_raw]
+    for tname in sorted(insp.get_table_names()):
+        try:
+            count = db.execute(text('SELECT COUNT(*) FROM "%s"' % tname)).scalar()
+        except Exception:
+            count = 0
+        cols = insp.get_columns(tname)
+        pk = insp.get_pk_constraint(tname)
+        pk_cols = set(pk.get("constrained_columns", []))
+        columns = [{"name": col["name"], "type": str(col["type"]), "notnull": not col.get("nullable", True), "pk": col["name"] in pk_cols} for col in cols]
         result.append({"name": tname, "row_count": count, "columns": columns})
     return result
 
@@ -219,10 +223,9 @@ async def execute_import(
                 raise HTTPException(400, "Source column '%s' not found in file" % src_col)
 
         # Validate target table
-        tbl_check = db.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=:t"
-        ), {"t": table_name}).fetchone()
-        if not tbl_check:
+        from sqlalchemy import inspect as sa_inspect
+        insp = sa_inspect(db.bind)
+        if table_name not in insp.get_table_names():
             raise HTTPException(400, "Table '%s' does not exist" % table_name)
 
         if mode == "replace":
@@ -232,6 +235,20 @@ async def execute_import(
         col_names = ", ".join(['"%s"' % c for c in db_cols])
         insert_sql = 'INSERT INTO "%s" (%s) VALUES (%s)' % (table_name, col_names, placeholders)
 
+        # Check if table has plant_id column
+        _has_plant_id = "plant_id" in [col for col in db_cols]
+        if not _has_plant_id:
+            try:
+                _tbl_cols = [col["name"] for col in sa_inspect(db.bind).get_columns(table_name)]
+                _has_plant_id = "plant_id" in _tbl_cols and "plant_id" not in db_cols
+                if _has_plant_id:
+                    db_cols.append("plant_id")
+                    placeholders = ", ".join([":%s" % c for c in db_cols])
+                    col_names = ", ".join(['"%s"' % c for c in db_cols])
+                    insert_sql = 'INSERT INTO "%s" (%s) VALUES (%s)' % (table_name, col_names, placeholders)
+            except Exception:
+                pass
+
         inserted = 0
         errors = []
         for i, row in enumerate(data_rows):
@@ -240,6 +257,9 @@ async def execute_import(
                 for j, db_col in enumerate(db_cols):
                     v = row[src_indices[j]] if src_indices[j] < len(row) else None
                     vals[db_col] = _cell_val(v)
+                if _has_plant_id and "plant_id" not in vals:
+                    # Get plant_id from localStorage via header or use default
+                    vals["plant_id"] = "GOLDFIELDS-SN"  # TODO: get from request
                 db.execute(text(insert_sql), vals)
                 inserted += 1
             except Exception as e:

@@ -66,6 +66,20 @@ def register(data: UserRegister, db: Session = Depends(get_db), user: UserModel 
             db, data.email, data.username, data.password,
             data.full_name, data.role, data.plant_id,
         )
+        # Also create workforce entry so user appears in Scheduling
+        from api.database.models import WorkforceModel
+        existing_wf = db.query(WorkforceModel).filter(WorkforceModel.worker_id == new_user.user_id).first()
+        if not existing_wf:
+            role_specialty = {"tecnico": "Mechanical", "planner": "Planning", "manager": "Supervision", "admin": "Administration"}
+            db.add(WorkforceModel(
+                worker_id=new_user.user_id,
+                name=new_user.full_name or new_user.username,
+                specialty=role_specialty.get(new_user.role, "General"),
+                shift="MORNING",
+                plant_id=new_user.plant_id or "",
+                available=True,
+            ))
+            db.commit()
         return _user_to_dict(new_user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

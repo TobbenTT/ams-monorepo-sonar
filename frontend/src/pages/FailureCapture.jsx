@@ -282,6 +282,7 @@ export default function FailureCapture({ onNavigateTab }) {
   const [wizardStep, setWizardStep] = useState(1); // 1=Ubicacion, 2=Falla, 3=Accion
   const [chatOpen, setChatOpen] = useState(false);
   const [detectedEquipment, setDetectedEquipment] = useState(null);
+  const [visionResult, setVisionResult] = useState(null);
   const [duplicates, setDuplicates] = useState([]);
   const [showDuplicateDetail, setShowDuplicateDetail] = useState(null);
   const dupeCheckTimer = useRef(null);
@@ -351,6 +352,21 @@ export default function FailureCapture({ onNavigateTab }) {
         if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
         if (s.support_equipment?.length) setF('supportEquipment', s.support_equipment);
         if (s.workConditions || s.work_conditions) setF('workConditions', s.workConditions || s.work_conditions);
+        // SF-41: If AI identified equipment_tag and none selected yet, auto-select it
+        if (s.equipment_tag && !selectedEquip) {
+          const matched = allEquipment.find(n => {
+            const tag = (n.tag || n.code || '').toUpperCase();
+            return tag === s.equipment_tag.toUpperCase();
+          });
+          if (matched) selectEquip(matched);
+          else if (s.equipment_tag !== 'null') {
+            setF('whereTag', s.equipment_tag);
+            setEquipSearch(s.equipment_tag);
+          }
+        }
+        // Count pre-filled fields for user feedback
+        const filled = [s.enhanced_description, s.failureCategory, s.priority, s.failureSymptom, s.failureCause, s.failureObjectPart, s.suggestedAction, s.equipment_tag].filter(Boolean).length;
+        if (filled > 0) toast.success(`AI pre-filled ${filled} fields from your description`);
         setAiSuggested(true);
       }
     } catch (e) {
@@ -631,7 +647,9 @@ export default function FailureCapture({ onNavigateTab }) {
         const current = form.whatHappens || '';
         const cleaned = current.replace(/\[listening\.\.\.].*$/, '').trim();
         setF('whatHappens', cleaned);
-        toast.success('Voice captured: ' + finalTranscript.trim().slice(0, 50) + '...');
+        toast.success('Voice captured — AI analyzing your description...');
+        // SF-41/214: Auto-trigger AI to extract structured fields from voice
+        handleAiSuggest(cleaned);
       }
     };
 
@@ -646,7 +664,15 @@ export default function FailureCapture({ onNavigateTab }) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setPhotos(prev => [...prev, ev.target.result]);
+    reader.onload = (ev) => {
+      const newPhoto = ev.target.result;
+      setPhotos(prev => {
+        const updated = [...prev, newPhoto];
+        // SF-215: Auto-trigger vision analysis after photo capture
+        setTimeout(() => autoAnalyzePhoto(updated), 300);
+        return updated;
+      });
+    };
     reader.readAsDataURL(file);
     e.target.value = '';
 
@@ -675,6 +701,93 @@ export default function FailureCapture({ onNavigateTab }) {
       }, () => {}, { enableHighAccuracy: true, timeout: 5000 });
     }
   };
+
+  // SF-215: Auto-analyze photo with Vision AI
+  const autoAnalyzePhoto = async (photoList) => {
+    if (!photoList || photoList.length === 0) return;
+    setVisionLoading(true);
+    setVisionResult(null);
+    toast.info('AI analyzing image...');
+    try {
+      const res = await aiAssistImage({
+        images: photoList,
+        equipment_tag: form.whereTag || form.equipmentTag || '',
+        additional_context: form.whatHappens || '',
+      });
+      if (res?.suggestions) {
+        const s = res.suggestions;
+        setVisionResult({
+          equipment_identified: s.equipment_identified || s.equipmentType || 'Unknown equipment',
+          failure_type: s.failure_type || s.failureCategory || '',
+          severity: s.severity || 'medium',
+          description: s.whatHappens || '',
+          suggested_action: s.suggestedAction || '',
+          confidence: res.confidence || 0.85,
+          raw: s,
+        });
+        toast.success('AI identified: ' + (s.equipment_identified || s.equipmentType || 'equipment'));
+      }
+    } catch (e) {
+      console.error('Auto vision analysis error:', e);
+      toast.error('AI photo analysis failed');
+    } finally {
+      setVisionLoading(false);
+    }
+  };
+
+  // SF-215: Accept AI vision suggestions and pre-fill form
+  const acceptVisionSuggestions = () => {
+    if (!visionResult?.raw) return;
+    const s = visionResult.raw;
+    if (s.whatHappens) setF('whatHappens', s.whatHappens);
+    if (s.failureCategory) {
+      const cat = s.failureCategory.toUpperCase().trim();
+      if (['MECHANICAL','ELECTRICAL','INSTRUMENTATION','HYDRAULIC','STRUCTURAL'].includes(cat)) setF('failureCategory', cat);
+    }
+    if (s.priority) setF('priority', s.priority);
+    if (s.activityClass) setF('activityClass', s.activityClass);
+    if (s.suggestedAction) setF('suggestedAction', s.suggestedAction);
+    const aiCat = (s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase();
+    const catData = FAILURE_CATALOG[aiCat] || FAILURE_CATALOG.MECHANICAL;
+    if (catData) {
+      if (s.failureSymptom) {
+        const sym = s.failureSymptom.toUpperCase().trim();
+        if (catData.symptoms?.includes(sym)) setF('failureSymptom', sym);
+      }
+      if (s.failureCause) {
+        const cau = s.failureCause.toUpperCase().trim();
+        if (catData.causes?.includes(cau)) setF('failureCause', cau);
+      }
+      if (s.failureObjectPart) {
+        const part = s.failureObjectPart.toUpperCase().trim();
+        if (catData.parts?.includes(part)) setF('failureObjectPart', part);
+      }
+    }
+    if (s.estimatedDuration) setF('estimatedDuration', String(s.estimatedDuration));
+    if (s.equipmentCondition) {
+      const vpc = s.equipmentCondition.toLowerCase();
+      setF('equipmentCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
+    }
+    if (s.resources?.length) setF('resources', s.resources);
+    if (s.materials?.length) setF('materials', s.materials);
+    if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
+    if (s.workConditions) setF('workConditions', s.workConditions);
+    // Try to match equipment_identified with known equipment list
+    if (s.equipment_identified && allEquipment.length > 0 && !form.whereTag) {
+      const eqName = (s.equipment_identified || '').toLowerCase();
+      const match = allEquipment.find(eq => {
+        const name = (eq.name || '').toLowerCase();
+        const tag = (eq.tag || '').toLowerCase();
+        return name.includes(eqName) || eqName.includes(name) || eqName.includes(tag);
+      });
+      if (match) setDetectedEquipment(match);
+    }
+    setAiSuggested(true);
+    setVisionResult(null);
+    toast.success('AI suggestions applied to form');
+  };
+
+  const dismissVisionResult = () => setVisionResult(null);
 
   const handleVisionAnalysis = async () => {
     if (photos.length === 0) { toast.error('Upload at least one photo'); return; }
@@ -1176,7 +1289,7 @@ export default function FailureCapture({ onNavigateTab }) {
               )}
               {aiSuggested && (
                 <span className="text-xs text-violet-600 font-medium">
-                  ✓ Fields auto-filled by AIáticamente
+                  ✓ Fields auto-filled by AI
                 </span>
               )}
             </div>
@@ -1200,7 +1313,75 @@ export default function FailureCapture({ onNavigateTab }) {
             {visionLoading && (
               <div className="flex items-center gap-2 mt-2 px-3 py-2 bg-violet-50 border border-violet-200 rounded-xl animate-pulse">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-violet-600"></div>
-                <span className="text-xs font-semibold text-violet-700">Analizando foto con IA...</span>
+                <span className="text-xs font-semibold text-violet-700">AI analyzing image...</span>
+              </div>
+            )}
+            {/* SF-215: AI Vision Analysis Confirmation Card */}
+            {visionResult && !visionLoading && (
+              <div className="mt-3 border-2 border-violet-300 bg-gradient-to-br from-violet-50 to-blue-50 rounded-xl p-4 shadow-sm">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-violet-800">AI Vision Analysis</span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-violet-200 text-violet-700 rounded-full font-semibold">
+                      {Math.round((visionResult.confidence || 0.85) * 100)}% confidence
+                    </span>
+                  </div>
+                  <button onClick={dismissVisionResult} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="mb-3 p-2.5 bg-white rounded-lg border border-violet-200">
+                  <div className="text-xs text-gray-500 font-semibold mb-1">Equipment Identified</div>
+                  <div className="text-sm font-bold text-gray-800">{visionResult.equipment_identified}</div>
+                  <div className="text-xs text-gray-500 mt-0.5 italic">Is this correct? Accept or modify below.</div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="p-2 bg-white rounded-lg border border-violet-200">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase">Failure Type</div>
+                    <div className="text-xs font-bold" style={{color:
+                      visionResult.failure_type === 'MECHANICAL' ? '#6366F1' :
+                      visionResult.failure_type === 'ELECTRICAL' ? '#F59E0B' :
+                      visionResult.failure_type === 'HYDRAULIC' ? '#EF4444' :
+                      visionResult.failure_type === 'STRUCTURAL' ? '#8B5CF6' : '#06B6D4'
+                    }}>{visionResult.failure_type || 'N/A'}</div>
+                  </div>
+                  <div className="p-2 bg-white rounded-lg border border-violet-200">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase">Severity</div>
+                    <div className={`text-xs font-bold ${
+                      visionResult.severity === 'critical' ? 'text-red-600' :
+                      visionResult.severity === 'high' ? 'text-orange-600' :
+                      visionResult.severity === 'medium' ? 'text-yellow-600' : 'text-blue-600'
+                    }`}>
+                      {(visionResult.severity || 'medium').toUpperCase()}
+                      {visionResult.severity === 'critical' ? ' (P1)' :
+                       visionResult.severity === 'high' ? ' (P2)' :
+                       visionResult.severity === 'medium' ? ' (P3)' : ' (P4)'}
+                    </div>
+                  </div>
+                </div>
+                {visionResult.description && (
+                  <div className="mb-3 p-2 bg-white rounded-lg border border-violet-200">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">AI Description</div>
+                    <div className="text-xs text-gray-700">{visionResult.description}</div>
+                  </div>
+                )}
+                {visionResult.suggested_action && (
+                  <div className="mb-3 p-2 bg-white rounded-lg border border-violet-200">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Suggested Action</div>
+                    <div className="text-xs text-gray-700">{visionResult.suggested_action}</div>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={acceptVisionSuggestions}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Accept & Pre-fill Form
+                  </button>
+                  <button onClick={dismissVisionResult}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold rounded-lg transition-all border border-gray-300">
+                    Dismiss
+                  </button>
+                </div>
               </div>
             )}
           </div>

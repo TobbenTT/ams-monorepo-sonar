@@ -651,6 +651,7 @@ Analyze the description and return complete JSON for a SAP PM notification.
 IMPORTANT: Respond ONLY with valid JSON, no markdown.
 
 {
+  "equipment_tag": "Equipment TAG identified from the description (e.g. PP-CR-001). null if not identifiable",
   "enhanced_description": "Improved technical description of the problem (SAP PM style, 2-3 sentences, include equipment/TAG, location, symptom, impact)",
   "failureCategory": "MECHANICAL | ELECTRICAL | INSTRUMENTATION | HYDRAULIC | STRUCTURAL",
   "priority": "P1 | P2 | P3 | P4",
@@ -714,6 +715,18 @@ IMPORTANT: Detect the language of the user input and respond in the SAME languag
 If user writes in Spanish, respond in Spanish. If in English, respond in English. If in French, respond in French.
 Catalog codes (BEARINGS, HIGH VIBRATION, etc.) always stay as-is regardless of language.
 The enhanced_description and suggestedAction should match the user's language."""
+
+    # When no equipment_tag provided, give list of known equipment for matching
+    if not equipment_tag:
+        from api.database.models import HierarchyNodeModel
+        equip_nodes = db.query(HierarchyNodeModel).filter(
+            HierarchyNodeModel.node_type == "EQUIPMENT"
+        ).limit(200).all()
+        if equip_nodes:
+            equip_list = ", ".join(
+                f"{n.tag or n.code} ({n.name})" for n in equip_nodes if (n.tag or n.code)
+            )
+            system_prompt += "\n\nKNOWN EQUIPMENT TAGS (match from description if possible):\n" + equip_list
 
     if context_str:
         system_prompt += "\n\n" + context_str

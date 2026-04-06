@@ -175,6 +175,7 @@ export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);
 export const startWorkRequest = (id) => put(`/work-requests/${id}/start`);
 export const completeWorkRequest = (id, d) => put(`/work-requests/${id}/complete`, d);
 export const closeWorkRequest = (id, d) => put(`/work-requests/${id}/close`, d);
+export const reopenWorkRequest = (id) => put(`/work-requests/${id}/reopen`);
 export const createWRManual = (d) => post('/work-requests/manual', d);
 export const aiAssistWR = (d) => post("/work-requests/ai-assist", d);
 

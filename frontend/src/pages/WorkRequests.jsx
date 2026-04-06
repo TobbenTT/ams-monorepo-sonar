@@ -1251,7 +1251,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
 
   function handleReopen(id) {
     api.reopenWorkRequest(id)
-      .then(() => { toast.success('Notification reopened'); fetchRequests(); })
+      .then(() => { toast.success('Aviso reabierto'); onRefreshCounts?.(); refreshList(); })
       .catch(() => toast.error('Error reopening'));
   }
 
@@ -1515,12 +1515,21 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               placeholder={t('workRequests.searchPlaceholder')}
               className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
           </div>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
-            {STATUS_KEYS.map(key => (
-              <option key={key} value={key}>{statusLabels[key] ?? key}</option>
-            ))}
-          </select>
+          <div className="flex gap-1">
+            {STATUS_KEYS.map(key => {
+              const colors = { ALL: 'bg-gray-600', PENDIENTE: 'bg-gray-500', APROBADO: 'bg-green-600', RECHAZADO: 'bg-red-600', CANCELADO: 'bg-red-500', CERRADO: 'bg-emerald-700' };
+              const cnt = key === 'ALL' ? areaFiltered.length : areaFiltered.filter(r => {
+                const sm = { PENDING_VALIDATION: 'PENDIENTE', VALIDATED: 'APROBADO', REJECTED: 'RECHAZADO', CANCELLED: 'CANCELADO', CLOSED: 'CERRADO', DRAFT: 'PENDIENTE', ASSIGNED: 'APROBADO', IN_PROGRESS: 'APROBADO', COMPLETED: 'CERRADO' };
+                return (sm[r.status] || r.status) === key || r.status === key;
+              }).length;
+              return (
+                <button key={key} onClick={() => setStatusFilter(key)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${statusFilter === key ? (colors[key] || 'bg-gray-600') + ' text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                  {statusLabels[key] ?? key} <span className="ml-1 opacity-75">{cnt}</span>
+                </button>
+              );
+            })}
+          </div>
           <select value={priorityFilter || 'ALL'} onChange={e => setPriorityFilter(e.target.value === 'ALL' ? '' : e.target.value)}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
             <option value="ALL">All Priority</option>
@@ -1656,9 +1665,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                         <ConfidenceBar value={req.ai_confidence} />
                       </td>
 
-                      {/* Actions */}
+                                            {/* Actions -- SF-108 contextual status buttons */}
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                           <button
                             onClick={() => handleOpenDetail(req)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -1666,58 +1675,94 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           >
                             <Eye size={16} />
                           </button>
+                          {/* PENDIENTE: Validate + Reject */}
                           {isPending && (
-                            <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded">
-                              Abrir detalle para validar
-                            </span>
+                            <>
+                              <button
+                                onClick={() => handleOpenDetail(req)}
+                                className="text-[10px] px-2 py-1 rounded bg-[#1B5E20] text-white hover:bg-[#2E7D32] font-medium transition-colors"
+                                title="Validar aviso"
+                              >
+                                Validate
+                              </button>
+                              <button
+                                onClick={() => handleReject(req.id)}
+                                className="text-[10px] px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 font-medium transition-colors border border-red-200"
+                                title="Rechazar aviso"
+                              >
+                                Reject
+                              </button>
+                            </>
                           )}
+                          {/* VALIDATED/APROBADO: Create WO + Cancel */}
                           {['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(req.status) && !wrsWithOT.has(req.id) && (
                             <>
-                            <button
-                              onClick={async () => {
-                                try {
-                                  const wo = await api.createWOFromWR({ work_request_id: req.id });
-                                  setWrsWithOT(prev => new Set([...prev, req.id]));
-                                  onRefreshCounts?.();
-                                  toast.success('OT ' + (wo.wo_number || '') + ' creada — abriendo en Planning...');
-                                  if (onNavigateTab) onNavigateTab('planning', null, wo.wo_id || wo.wo_number);
-                                } catch (e) { toast.error('Error creando OT: ' + (e.message || '')); }
-                              }}
-                              className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
-                              title="Create WO"
-                            >
-                              Create WO
-                            </button>
-                            <button
-                              onClick={() => handleStart(req.id)}
-                              className="text-[10px] px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors"
-                              title="Iniciar trabajo"
-                            >
-                              Iniciar
-                            </button>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const wo = await api.createWOFromWR({ work_request_id: req.id });
+                                    setWrsWithOT(prev => new Set([...prev, req.id]));
+                                    onRefreshCounts?.();
+                                    toast.success('OT ' + (wo.wo_number || '') + ' creada');
+                                    if (onNavigateTab) onNavigateTab('planning', null, wo.wo_id || wo.wo_number);
+                                  } catch (e) { toast.error('Error creando OT: ' + (e.message || '')); }
+                                }}
+                                className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
+                                title="Create Work Order"
+                              >
+                                Create WO
+                              </button>
+                              <button
+                                onClick={() => handleCancel(req.id)}
+                                className="text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors border border-gray-300"
+                                title="Cancelar aviso"
+                              >
+                                Cancel
+                              </button>
                             </>
                           )}
                           {['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(req.status) && wrsWithOT.has(req.id) && (
                             <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">
-                              OT Creada ✓
+                              OT Created
                             </span>
                           )}
+                          {/* IN_PROGRESS: Complete + Cancel */}
                           {req.status === 'IN_PROGRESS' && (
-                            <button
-                              onClick={() => handleComplete(req.id)}
-                              className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
-                              title="Complete trabajo"
-                            >
-                              Complete
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleComplete(req.id)}
+                                className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
+                                title="Completar trabajo"
+                              >
+                                Complete
+                              </button>
+                              <button
+                                onClick={() => handleCancel(req.id)}
+                                className="text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors border border-gray-300"
+                                title="Cancelar"
+                              >
+                                Cancel
+                              </button>
+                            </>
                           )}
+                          {/* COMPLETED: Close */}
                           {req.status === 'COMPLETED' && (
                             <button
                               onClick={() => handleClose(req.id)}
                               className="text-[10px] px-2 py-1 rounded bg-gray-600 text-white hover:bg-gray-700 font-medium transition-colors"
-                              title="Cierre técnico"
+                              title="Cierre tecnico"
                             >
-                              Cerrar
+                              Close
+                            </button>
+                          )}
+                          {/* CANCELLED/REJECTED/CLOSED: Reopen (admin/manager only) */}
+                          {['CANCELLED', 'CANCELADO', 'REJECTED', 'RECHAZADO', 'CERRADO', 'CLOSED'].includes(req.status) && ['admin', 'manager'].includes(user?.role) && (
+                            <button
+                              onClick={() => handleReopen(req.id)}
+                              className="text-[10px] px-2 py-1 rounded bg-amber-100 text-amber-800 hover:bg-amber-200 font-medium transition-colors border border-amber-300"
+                              title="Reabrir aviso"
+                            >
+                              Reopen
                             </button>
                           )}
                           <button

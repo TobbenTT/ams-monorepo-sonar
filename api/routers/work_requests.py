@@ -443,6 +443,26 @@ def close_work_request(request_id: str, data: WRCloseRequest, user=Depends(get_c
     return result
 
 
+
+@router.put("/{request_id}/reopen")
+def reopen_work_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_role("admin", "manager")),
+):
+    """Reopen a cancelled/rejected/closed WR back to PENDING_VALIDATION."""
+    from api.database.models import WorkRequestModel
+    from datetime import datetime
+    wr_model = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not wr_model:
+        raise HTTPException(status_code=404, detail="Work request not found")
+    if wr_model.status not in ("CANCELADO", "CANCELLED", "REJECTED", "RECHAZADO", "CERRADO", "CLOSED", "COMPLETED"):
+        raise HTTPException(status_code=400, detail=f"Cannot reopen WR in status {wr_model.status}")
+    wr_model.status = "PENDING_VALIDATION"
+    wr_model.updated_at = datetime.now()
+    db.commit()
+    return {"status": "PENDING_VALIDATION", "request_id": request_id}
+
 class WRUpdateRequest(BaseModel):
     """Generic update for WR fields (supervisor)."""
     priority: str | None = None

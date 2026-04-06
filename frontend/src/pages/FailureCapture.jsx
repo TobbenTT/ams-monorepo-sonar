@@ -1718,10 +1718,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <button onClick={addMaterial} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
                   + Add
                 </button>
-                <button onClick={() => { setExtMatIdx(-1); setExtMatForm({ description: '', vendor: '', vendor_other: '', part_number: '', estimated_cost: '', lead_time_days: '', notes: '' }); setShowExtMatModal(true); }}
-                  className="text-xs font-semibold px-3 py-1 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors">
-                  + Direct Purchase
-                </button>
+
               </div>
             </div>
             {form.materials.length === 0 ? (

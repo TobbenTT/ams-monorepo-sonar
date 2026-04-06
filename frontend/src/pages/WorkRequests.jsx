@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';
+// Reopen handler for admin
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
@@ -443,14 +444,14 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
 
 ${resources.length ? `<div class="section">
   <div class="section-title">Required Resources</div>
-  <table><thead><tr><th>Especialidad</th><th>Quantity</th><th>Horas</th></tr></thead><tbody>
+  <table><thead><tr><th>Specialty</th><th>Quantity</th><th>Hours</th></tr></thead><tbody>
   ${resources.map(r => typeof r === 'string' ? `<tr><td colspan="3">${r}</td></tr>` : `<tr><td>${r.type||''}</td><td>${r.quantity||1}</td><td>${r.hours||0}h</td></tr>`).join('')}
   </tbody></table>
 </div>` : ''}
 
 ${materials.length ? `<div class="section">
   <div class="section-title">SAP Materials</div>
-  <table><thead><tr><th>SAP ID</th><th>Description</th><th>Cant.</th><th>Unidad</th></tr></thead><tbody>
+  <table><thead><tr><th>SAP ID</th><th>Description</th><th>Qty</th><th>Unit</th></tr></thead><tbody>
   ${materials.map(m => typeof m === 'string' ? `<tr><td colspan="4">${m}</td></tr>` : `<tr><td style="font-family:monospace">${m.sapId||''}</td><td>${m.description||''}</td><td>${m.quantity||1}</td><td>${m.unit||'PZ'}</td></tr>`).join('')}
   </tbody></table>
 </div>` : ''}
@@ -584,7 +585,7 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Wrench} label="Activity Class" value={item.activity_class} />
           )}
           {item.plant_condition && (
-            <DetailCard icon={Zap} label="Condición de Planta" value={item.plant_condition} />
+            <DetailCard icon={Zap} label="Equipment Condition" value={item.plant_condition} />
           )}
           {item.created_at && (
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
@@ -729,7 +730,7 @@ ${materials.length ? `<div class="section">
                           </span>
                         ))}
                       </div>
-                      <input type="text" placeholder="Agregar equipo + Enter" className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none w-full"
+                      <input type="text" placeholder="Add equipment + Enter" className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none w-full"
                         onKeyDown={(e) => { if (e.key === 'Enter' && e.target.value.trim()) { setEditData(d => ({ ...d, support_equipment: [...(d.support_equipment || []), e.target.value.trim()] })); e.target.value = ''; } }} />
                     </div>
                   ) : (
@@ -755,7 +756,7 @@ ${materials.length ? `<div class="section">
               {editing ? (
                 <div className="space-y-2">
                   <div className="grid grid-cols-[1fr_80px_80px_30px] gap-2 text-xs text-muted-foreground font-semibold">
-                    <span>Especialidad</span><span>Personas</span><span>Horas</span><span></span>
+                    <span>Specialty</span><span>People</span><span>Hours</span><span></span>
                   </div>
                   {(editData.resources || []).map((r, i) => {
                     const res = typeof r === 'object' ? r : { type: r, quantity: 1, hours: 4 };
@@ -767,11 +768,11 @@ ${materials.length ? `<div class="section">
                         setEditData(d => ({ ...d, resources: arr }));
                       }} className="text-sm px-2 py-1.5 border border-border rounded bg-background">
                         <option value="">Select...</option>
-                        <option value="Mecanico">Mecanico</option>
-                        <option value="Electrico">Electrico</option>
-                        <option value="Instrumentacion">Instrumentacion</option>
+                        <option value="Mecanico">Mechanical</option>
+                        <option value="Electrico">Electrical</option>
+                        <option value="Instrumentacion">Instrument Tech</option>
                         <option value="Supervisor">Supervisor</option>
-                        <option value="Soldador">Soldador</option>
+                        <option value="Soldador">Welder</option>
                         <option value="Rigger">Rigger</option>
                       </select>
                       <input type="number" min="1" value={res.quantity || 1} onChange={e => {
@@ -788,7 +789,7 @@ ${materials.length ? `<div class="section">
                     </div>
                     );
                   })}
-                  <button onClick={() => setEditData(d => ({ ...d, resources: [...(d.resources || []), { type: 'Mecanico', quantity: 1, hours: 4 }] }))}
+                  <button onClick={() => setEditData(d => ({ ...d, resources: [...(d.resources || []), { type: 'Mechanical', quantity: 1, hours: 4 }] }))}
                     className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Add recurso</button>
                 </div>
               ) : (
@@ -879,7 +880,7 @@ ${materials.length ? `<div class="section">
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${allChecked ? 'bg-[#1B5E20] text-white hover:bg-[#2E7D32]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                 >
                   <CheckCircle size={16} />
-                  {editing ? 'Save y Approve' : t('workRequests.validateRequest')}
+                  {editing ? 'Save & Approve' : t('workRequests.validateRequest')}
                 </button>
                 <button
                   onClick={() => { onReject(item.id); onClose(); }}
@@ -1025,6 +1026,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const defaultQueue = user?.role === 'manager' ? 'supervisor' : user?.role === 'planner' ? 'planner' : 'all';
   const [priorityQueue, setPriorityQueue] = useState(defaultQueue); // 'all' | 'supervisor' (P1/P2) | 'planner' (P3/P4)
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState('');
   const [search, setSearch] = useState('');
 
   // Default filter: always show ALL
@@ -1137,9 +1139,10 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       const rDate = r.created_at ? r.created_at.slice(0, 10) : '';
       const matchesDateFrom = !dateFrom || rDate >= dateFrom;
       const matchesDateTo = !dateTo || rDate <= dateTo;
-      return matchesFilter && matchesSearch && matchesLocation && matchesDateFrom && matchesDateTo;
+      const matchesPriority = !priorityFilter || (r.priority_requested || r.priority_suggested || "") === priorityFilter;
+      return matchesFilter && matchesSearch && matchesLocation && matchesDateFrom && matchesDateTo && matchesPriority;
     });
-  }, [areaFiltered, statusFilter, search, locationFilter, dateFrom, dateTo]);
+  }, [areaFiltered, statusFilter, search, locationFilter, dateFrom, dateTo, priorityFilter]);
 
   /* ─── Sort + Paginate ─── */
   const sorted = useMemo(() => {
@@ -1232,7 +1235,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           );
         }
       })
-      .catch(() => toast.error(t('workRequests.errorValidate') || 'Error al validar'))
+      .catch(() => toast.error(t('workRequests.errorValidate') || 'Error validating'))
       .finally(() => { onRefreshCounts?.(); refreshList(); });
   }
 
@@ -1246,12 +1249,18 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       .finally(() => { onRefreshCounts?.(); refreshList(); });
   }
 
+  function handleReopen(id) {
+    api.reopenWorkRequest(id)
+      .then(() => { toast.success('Aviso reabierto'); onRefreshCounts?.(); refreshList(); })
+      .catch(() => toast.error('Error reopening'));
+  }
+
   function handleCancel(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CANCELADO' } : r)));
     api.cancelWorkRequest(id)
       .then(() => toast.success(t('workRequests.cancelled') || 'Notification cancelled'))
       .finally(() => onRefreshCounts?.())
-      .catch(() => toast.error(t('workRequests.errorCancel') || 'Error al cancelar'));
+      .catch(() => toast.error(t('workRequests.errorCancel') || 'Error cancelling'));
   }
 
   function handleSaveEdit(id, updates) {
@@ -1497,70 +1506,42 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         />
       )}
 
-      {/* Filter Bar */}
-      <div className="bg-card rounded-xl border border-border p-4 shadow-sm space-y-3">
-        {/* Search */}
-        <div className="flex items-center gap-2">
-          <Filter size={16} className="text-muted-foreground flex-shrink-0" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('workRequests.searchPlaceholder')}
-            className="flex-1 text-sm px-3 py-2 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] transition-colors placeholder:text-muted-foreground"
-          />
-        </div>
-
-        {/* Location + Date filters */}
+      {/* Filter Bar - Planning style */}
+      <div className="space-y-3 mb-4">
         <div className="flex items-center gap-2 flex-wrap">
-          <input
-            type="text"
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-            placeholder="Filter by location or TAG..."
-            className="flex-1 min-w-[200px] text-sm px-3 py-2 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30 focus:border-[#1B5E20] placeholder:text-muted-foreground"
-          />
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">From:</span>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('workRequests.searchPlaceholder')}
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">To:</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="text-sm px-2 py-1.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
+          <div className="flex gap-1">
+            {STATUS_KEYS.map(key => {
+              const colors = { ALL: 'bg-gray-600', PENDIENTE: 'bg-gray-500', APROBADO: 'bg-green-600', RECHAZADO: 'bg-red-600', CANCELADO: 'bg-red-500', CERRADO: 'bg-emerald-700' };
+              const cnt = key === 'ALL' ? areaFiltered.length : areaFiltered.filter(r => {
+                const sm = { PENDING_VALIDATION: 'PENDIENTE', VALIDATED: 'APROBADO', REJECTED: 'RECHAZADO', CANCELLED: 'CANCELADO', CLOSED: 'CERRADO', DRAFT: 'PENDIENTE', ASSIGNED: 'APROBADO', IN_PROGRESS: 'APROBADO', COMPLETED: 'CERRADO' };
+                return (sm[r.status] || r.status) === key || r.status === key;
+              }).length;
+              return (
+                <button key={key} onClick={() => setStatusFilter(key)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${statusFilter === key ? (colors[key] || 'bg-gray-600') + ' text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                  {statusLabels[key] ?? key} <span className="ml-1 opacity-75">{cnt}</span>
+                </button>
+              );
+            })}
           </div>
-          {(locationFilter || dateFrom || dateTo) && (
-            <button onClick={() => { setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
-              className="text-xs px-2 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100">
-              Limpiar
-            </button>
+          <select value={priorityFilter || 'ALL'} onChange={e => setPriorityFilter(e.target.value === 'ALL' ? '' : e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
+            <option value="ALL">All Priority</option>
+            <option value="P1">P1 - Immediate</option>
+            <option value="P2">P2 - High</option>
+            <option value="P3">P3 - Medium</option>
+            <option value="P4">P4 - Low</option>
+          </select>
+          {(search || statusFilter !== 'ALL' || priorityFilter) && (
+            <button onClick={() => { setSearch(''); setStatusFilter('ALL'); setPriorityFilter(''); setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
+              className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
           )}
-        </div>
-
-        {/* Status Buttons */}
-        <div className="flex flex-wrap gap-2">
-          {STATUS_KEYS.map((key) => {
-            const count = key === 'ALL'
-              ? queueFiltered.length
-              : queueFiltered.filter((r) => r.status === key).length;
-            return (
-              <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
-                  statusFilter === key
-                    ? 'bg-[#1B5E20] text-white border-[#1B5E20]'
-                    : 'bg-card text-muted-foreground border-border hover:bg-muted'
-                }`}
-              >
-                {statusLabels[key] ?? key}
-                <span className={`ml-1.5 text-xs ${statusFilter === key ? 'text-green-200' : 'text-muted-foreground'}`}>
-                  ({count})
-                </span>
-              </button>
-            );
-          })}
         </div>
       </div>
 
@@ -1580,7 +1561,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               <thead>
                 <tr className="bg-muted/50 border-b border-border">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('created_at')}>
-                    Fecha {sortField === 'created_at' ? (sortDir === 'asc' ? '\u2191' : '\u2193') : ''}
+                    DATE {sortField === 'created_at' ? (sortDir === 'asc' ? '\u2191' : '\u2193') : ''}
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('equipment_name')}>
                     {t('workRequests.requestId')} / {t('workRequests.equipmentName')} {sortField === 'equipment_name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
@@ -1605,7 +1586,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               <tbody className="divide-y divide-border">
                 {paged.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                    <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground text-sm">
                       {t('common.noData')}
                     </td>
                   </tr>
@@ -1617,7 +1598,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                     req.failure_description.length > 60
                       ? req.failure_description.slice(0, 60) + '...'
                       : req.failure_description;
-                  const hasDuplicates = findDuplicates(req, requests).length > 0;
+                  const hasDuplicates = findDuplicates(req, requests.filter(r => !['CANCELLED', 'CANCELADO', 'CLOSED', 'CERRADO', 'REJECTED', 'RECHAZADO'].includes(r.status))).length > 0;
 
                   const isFastTrackWR = ['P1', 'P2'].includes(req.priority_requested);
 
@@ -1684,9 +1665,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                         <ConfidenceBar value={req.ai_confidence} />
                       </td>
 
-                      {/* Actions */}
+                                            {/* Actions -- SF-108 contextual status buttons */}
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                           <button
                             onClick={() => handleOpenDetail(req)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -1694,58 +1675,94 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           >
                             <Eye size={16} />
                           </button>
+                          {/* PENDIENTE: Validate + Reject */}
                           {isPending && (
-                            <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded">
-                              Abrir detalle para validar
-                            </span>
+                            <>
+                              <button
+                                onClick={() => handleOpenDetail(req)}
+                                className="text-[10px] px-2 py-1 rounded bg-[#1B5E20] text-white hover:bg-[#2E7D32] font-medium transition-colors"
+                                title="Validar aviso"
+                              >
+                                Validate
+                              </button>
+                              <button
+                                onClick={() => handleReject(req.id)}
+                                className="text-[10px] px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 font-medium transition-colors border border-red-200"
+                                title="Rechazar aviso"
+                              >
+                                Reject
+                              </button>
+                            </>
                           )}
+                          {/* VALIDATED/APROBADO: Create WO + Cancel */}
                           {['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(req.status) && !wrsWithOT.has(req.id) && (
                             <>
-                            <button
-                              onClick={async () => {
-                                try {
-                                  const wo = await api.createWOFromWR({ work_request_id: req.id });
-                                  setWrsWithOT(prev => new Set([...prev, req.id]));
-                                  onRefreshCounts?.();
-                                  toast.success('OT ' + (wo.wo_number || '') + ' creada — abriendo en Planning...');
-                                  if (onNavigateTab) onNavigateTab('planning', null, wo.wo_id || wo.wo_number);
-                                } catch (e) { toast.error('Error creando OT: ' + (e.message || '')); }
-                              }}
-                              className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
-                              title="Create WO"
-                            >
-                              Create WO
-                            </button>
-                            <button
-                              onClick={() => handleStart(req.id)}
-                              className="text-[10px] px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors"
-                              title="Iniciar trabajo"
-                            >
-                              Iniciar
-                            </button>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const wo = await api.createWOFromWR({ work_request_id: req.id });
+                                    setWrsWithOT(prev => new Set([...prev, req.id]));
+                                    onRefreshCounts?.();
+                                    toast.success('OT ' + (wo.wo_number || '') + ' creada');
+                                    if (onNavigateTab) onNavigateTab('planning', null, wo.wo_id || wo.wo_number);
+                                  } catch (e) { toast.error('Error creando OT: ' + (e.message || '')); }
+                                }}
+                                className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
+                                title="Create Work Order"
+                              >
+                                Create WO
+                              </button>
+                              <button
+                                onClick={() => handleCancel(req.id)}
+                                className="text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors border border-gray-300"
+                                title="Cancelar aviso"
+                              >
+                                Cancel
+                              </button>
                             </>
                           )}
                           {['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(req.status) && wrsWithOT.has(req.id) && (
                             <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">
-                              OT Creada ✓
+                              OT Created
                             </span>
                           )}
+                          {/* IN_PROGRESS: Complete + Cancel */}
                           {req.status === 'IN_PROGRESS' && (
-                            <button
-                              onClick={() => handleComplete(req.id)}
-                              className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
-                              title="Complete trabajo"
-                            >
-                              Complete
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleComplete(req.id)}
+                                className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
+                                title="Completar trabajo"
+                              >
+                                Complete
+                              </button>
+                              <button
+                                onClick={() => handleCancel(req.id)}
+                                className="text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors border border-gray-300"
+                                title="Cancelar"
+                              >
+                                Cancel
+                              </button>
+                            </>
                           )}
+                          {/* COMPLETED: Close */}
                           {req.status === 'COMPLETED' && (
                             <button
                               onClick={() => handleClose(req.id)}
                               className="text-[10px] px-2 py-1 rounded bg-gray-600 text-white hover:bg-gray-700 font-medium transition-colors"
-                              title="Cierre técnico"
+                              title="Cierre tecnico"
                             >
-                              Cerrar
+                              Close
+                            </button>
+                          )}
+                          {/* CANCELLED/REJECTED/CLOSED: Reopen (admin/manager only) */}
+                          {['CANCELLED', 'CANCELADO', 'REJECTED', 'RECHAZADO', 'CERRADO', 'CLOSED'].includes(req.status) && ['admin', 'manager'].includes(user?.role) && (
+                            <button
+                              onClick={() => handleReopen(req.id)}
+                              className="text-[10px] px-2 py-1 rounded bg-amber-100 text-amber-800 hover:bg-amber-200 font-medium transition-colors border border-amber-300"
+                              title="Reabrir aviso"
+                            >
+                              Reopen
                             </button>
                           )}
                           <button

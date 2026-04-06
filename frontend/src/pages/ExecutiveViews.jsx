@@ -157,13 +157,13 @@ export function ExecPlantReliability() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-card border border-border rounded-lg p-5">
-                    <SectionTitle>Trend MTBF (Horas)</SectionTitle>
+                    <SectionTitle>Trend MTBF (Hours)</SectionTitle>
                     <ResponsiveContainer width="100%" height={280}>
                         <LineChart data={mtbfTrend}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="month" tick={axisTick} stroke="var(--border)" /><YAxis tick={axisTick} stroke="var(--border)" /><Tooltip contentStyle={chartTooltip} /><Line type="monotone" dataKey="mtbf" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} name="MTBF" /></LineChart>
                     </ResponsiveContainer>
                 </div>
                 <div className="bg-card border border-border rounded-lg p-5">
-                    <SectionTitle>Trend MTTR (Horas)</SectionTitle>
+                    <SectionTitle>Trend MTTR (Hours)</SectionTitle>
                     <ResponsiveContainer width="100%" height={280}>
                         <LineChart data={mttrTrend}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="month" tick={axisTick} stroke="var(--border)" /><YAxis tick={axisTick} stroke="var(--border)" /><Tooltip contentStyle={chartTooltip} /><Line type="monotone" dataKey="mttr" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} name="MTTR" /></LineChart>
                     </ResponsiveContainer>
@@ -180,7 +180,7 @@ export function ExecPlantReliability() {
             <div>
                 <SectionTitle>Análisis Pareto de Tiempo Fuera de Servicio</SectionTitle>
                 <div className="bg-card border border-border rounded-lg overflow-hidden">
-                    <table className="w-full"><thead className="bg-muted border-b border-border"><tr>{['Causa de Falla', 'Horas (YTD)', '% del Total', 'Distribución'].map(h => <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
+                    <table className="w-full"><thead className="bg-muted border-b border-border"><tr>{['Failure Cause', 'Hours (YTD)', '% of Total', 'Distribution'].map(h => <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
                         <tbody className="divide-y divide-border">{pareto.map((p, i) => (
                             <tr key={i} className="hover:bg-muted"><td className="px-6 py-4 text-sm font-semibold text-foreground">{p.cause}</td><td className="px-6 py-4 text-sm font-bold text-foreground">{p.hours}h</td><td className="px-6 py-4 text-sm font-semibold text-orange-600">{p.pct}%</td><td className="px-6 py-4"><div className="flex-1 bg-muted rounded-full h-3 overflow-hidden max-w-md"><div className="h-full bg-orange-500 rounded-full" style={{ width: `${p.pct * 3}%` }} /></div></td></tr>
                         ))}</tbody>
@@ -225,7 +225,7 @@ export function ExecMaintPerformance() {
             <div>
                 <SectionTitle>Exposición de Riesgo del Backlog</SectionTitle>
                 <div className="bg-card border border-border rounded-lg overflow-hidden">
-                    <table className="w-full"><thead className="bg-muted border-b border-border"><tr>{['Priority', 'Órdenes', 'Horas Totales', 'Nivel de Riesgo'].map(h => <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
+                    <table className="w-full"><thead className="bg-muted border-b border-border"><tr>{['Priority', 'Orders', 'Total Hours', 'Risk Level'].map(h => <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
                         <tbody className="divide-y divide-border">{backlogRisk.map((r, i) => (
                             <tr key={i} className="hover:bg-muted"><td className="px-6 py-4"><span className={`px-3 py-1 rounded-full text-xs font-medium ${r.category === 'Crítico' ? 'bg-red-100 text-red-700' : r.category === 'Alto' ? 'bg-orange-100 text-orange-700' : r.category === 'Medio' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>{r.category}</span></td><td className="px-6 py-4 text-lg font-bold text-foreground">{r.count}</td><td className="px-6 py-4 text-lg font-bold text-foreground">{r.hours}h</td><td className="px-6 py-4">{r.category === 'Crítico' || r.category === 'Alto' ? <span className="flex items-center gap-2 text-red-600"><AlertCircle className="w-4 h-4" /><span className="text-xs font-semibold">Alto Riesgo</span></span> : <span className="text-xs font-semibold text-blue-600">Manejable</span>}</td></tr>
                         ))}</tbody>
@@ -293,7 +293,7 @@ export function ExecSafetyCompliance() {
     const { plant } = useOutletContext();
     const trirTrend = [{ month: 'Ene', trir: 0.65 }, { month: 'Feb', trir: 0.58 }, { month: 'Mar', trir: 0.52 }, { month: 'Abr', trir: 0.48 }, { month: 'May', trir: 0.45 }, { month: 'Jun', trir: 0.42 }];
     const nearMiss = [{ area: 'Molienda', count: 12 }, { area: 'Trituración', count: 8 }, { area: 'Flotación', count: 5 }, { area: 'Espesamiento', count: 4 }, { area: 'Relaves', count: 3 }];
-    const metrics = [{ metric: 'Reportes de Cuasi-Accidentes', value: 32, trend: '↑', change: 15, status: 'positive' }, { metric: 'Observations de Seguridad', value: 128, trend: '↑', change: 22, status: 'positive' }, { metric: 'Horas de Capacitación', value: 456, trend: '↑', change: 12, status: 'positive' }, { metric: 'Auditorías Completadas', value: 18, trend: '→', change: 0, status: 'neutral' }];
+    const metrics = [{ metric: 'Near-Miss Reports', value: 32, trend: '↑', change: 15, status: 'positive' }, { metric: 'Safety Observations', value: 128, trend: '↑', change: 22, status: 'positive' }, { metric: 'Training Hours', value: 456, trend: '↑', change: 12, status: 'positive' }, { metric: 'Audits Completed', value: 18, trend: '→', change: 0, status: 'neutral' }];
 
     return (
         <div className="space-y-6">

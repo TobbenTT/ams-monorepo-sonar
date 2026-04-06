@@ -286,7 +286,7 @@ export default function Troubleshooting() {
                                     <input className="flex-1 border rounded px-2 py-1 text-sm" placeholder="Describir síntoma..."
                                         value={symptomText} onChange={e => setSymptomText(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && handleAddSymptom()} />
-                                    <button onClick={handleAddSymptom} className="px-3 py-1 bg-primary text-white rounded text-sm">Agregar</button>
+                                    <button onClick={handleAddSymptom} className="px-3 py-1 bg-primary text-white rounded text-sm">Add</button>
                                 </div>
                             )}
 

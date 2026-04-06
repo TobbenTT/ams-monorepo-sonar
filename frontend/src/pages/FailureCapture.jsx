@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { suggestFailureFields, aiAssistImage } from '../api';
 import { useOutletContext } from 'react-router-dom';
-import { Upload, Loader2, ArrowRight, X, Mic, MicOff, Camera, AlertTriangle, Search, ChevronDown, Clock, Package, Wrench, Users, MapPin, CheckCircle, FileText } from 'lucide-react';
+import { Upload, Loader2, ArrowRight, X, Mic, MicOff, Camera, AlertTriangle, Search, ChevronDown, ChevronRight, Clock, Package, Wrench, Users, MapPin, CheckCircle, FileText } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import EquipmentChat from '../components/EquipmentChat';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 
-// Whisper backend transcription via MediaRecorder + /media/transcribe
-const SpeechRecognition = null; // Disabled browser speech — using Whisper backend
+// Browser Speech Recognition (no API key needed)
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 export default function FailureCapture({ onNavigateTab }) {
   const { plant } = useOutletContext();
@@ -46,21 +46,33 @@ export default function FailureCapture({ onNavigateTab }) {
   const FAILURE_CATALOG = {
     MECHANICAL: {
       label: 'Mechanical', color: '#6366F1',
-      symptoms: ['HIGH VIBRATION', 'HIGH TEMPERATURE', 'ABNORMAL NOISE', 'SEIZED', 'NO FLOW', 'LEAKAGE', 'VISIBLE WEAR', 'OIL LEAK', 'BLOCKAGE'],
-      parts: ['BEARINGS', 'MECHANICAL SEALS', 'COUPLINGS', 'SHAFTS', 'GEARS', 'BELTS', 'PUMPS', 'VALVES', 'FILTERS'],
-      causes: ['WEAR', 'LACK OF LUBRICATION', 'CORROSION', 'MISALIGNMENT', 'BLOCKED', 'OVERLOAD', 'FATIGUE', 'INCORRECT ASSEMBLY'],
+      symptoms: ['HIGH VIBRATION', 'HIGH TEMPERATURE', 'ABNORMAL NOISE', 'SEIZED', 'NO FLOW', 'LEAKAGE', 'VISIBLE WEAR', 'OIL LEAK', 'BLOCKAGE', 'CAVITATION', 'LOW PRESSURE', 'EXCESSIVE PLAY', 'MISALIGNMENT DETECTED', 'ABNORMAL OIL ANALYSIS', 'REDUCED OUTPUT'],
+      parts: ['BEARINGS', 'MECHANICAL SEALS', 'COUPLINGS', 'SHAFTS', 'GEARS', 'BELTS', 'PUMPS', 'VALVES', 'FILTERS', 'IMPELLER', 'REDUCER/GEARBOX', 'PISTON/CYLINDER', 'LINER/WEAR PLATE', 'CRUSHER JAW', 'CONVEYOR IDLER', 'SCREEN PANEL', 'CYCLONE', 'AGITATOR', 'COMPRESSOR', 'HEAT EXCHANGER', 'TANK/VESSEL', 'PIPING', 'HYDRAULIC CYLINDER', 'PNEUMATIC ACTUATOR'],
+      causes: ['WEAR', 'LACK OF LUBRICATION', 'CORROSION', 'MISALIGNMENT', 'BLOCKED', 'OVERLOAD', 'FATIGUE', 'INCORRECT ASSEMBLY', 'CAVITATION', 'CONTAMINATION', 'THERMAL STRESS', 'ABRASION', 'EROSION', 'IMPACT', 'VIBRATION DAMAGE', 'SEAL FAILURE', 'BEARING FAILURE'],
     },
     ELECTRICAL: {
       label: 'Electrical', color: '#F59E0B',
-      symptoms: ['WONT START', 'OVERHEATING', 'SHORT CIRCUIT', 'PROTECTION TRIP', 'LOW INSULATION', 'INTERMITTENT OPERATION', 'EXCESSIVE CONSUMPTION'],
-      parts: ['ELECTRIC MOTOR', 'CABLES / CONDUCTORS', 'PROTECTIONS', 'ELECTRICAL PANEL', 'VARIABLE FREQUENCY DRIVE', 'CONTACTOR'],
-      causes: ['INSULATION LOSS', 'WEAR', 'LOOSE', 'ELECTRICAL OVERLOAD', 'MOISTURE', 'EXCESSIVE HEATING'],
+      symptoms: ['WONT START', 'OVERHEATING', 'SHORT CIRCUIT', 'PROTECTION TRIP', 'LOW INSULATION', 'INTERMITTENT OPERATION', 'EXCESSIVE CONSUMPTION', 'ARC FLASH', 'VOLTAGE DROP', 'GROUND FAULT', 'PHASE IMBALANCE', 'HARMONIC DISTORTION'],
+      parts: ['ELECTRIC MOTOR', 'CABLES / CONDUCTORS', 'PROTECTIONS', 'ELECTRICAL PANEL', 'VARIABLE FREQUENCY DRIVE', 'CONTACTOR', 'TRANSFORMER', 'SWITCHGEAR', 'CIRCUIT BREAKER', 'RELAY', 'BUSBAR', 'CAPACITOR BANK', 'UPS', 'GENERATOR', 'SOFT STARTER', 'POWER SUPPLY'],
+      causes: ['INSULATION LOSS', 'WEAR', 'LOOSE CONNECTION', 'ELECTRICAL OVERLOAD', 'MOISTURE', 'EXCESSIVE HEATING', 'ELECTRICAL SURGE', 'SHORT CIRCUIT', 'AGING', 'CONTAMINATION', 'INCORRECT WIRING', 'HARMONIC DAMAGE'],
     },
     INSTRUMENTATION: {
       label: 'Instrumentation', color: '#06B6D4',
-      symptoms: ['ERRONEOUS READING', 'NO SIGNAL', 'UNSTABLE SIGNAL', 'NOT RESPONDING', 'FALSE ALARM', 'LOST COMMUNICATION'],
-      parts: ['SENSOR / TRANSDUCER', 'TRANSMITTER', 'CONTROL VALVE', 'PLC / DCS', 'ACTUATOR', 'POSITIONER'],
-      causes: ['OUT OF CALIBRATION', 'CONTAMINATED', 'PARAMETER LOSS', 'COMMUNICATION LOSS', 'OBSTRUCTION'],
+      symptoms: ['ERRONEOUS READING', 'NO SIGNAL', 'UNSTABLE SIGNAL', 'NOT RESPONDING', 'FALSE ALARM', 'LOST COMMUNICATION', 'DRIFT', 'STUCK VALUE', 'INTERMITTENT SIGNAL', 'DELAYED RESPONSE'],
+      parts: ['SENSOR / TRANSDUCER', 'TRANSMITTER', 'CONTROL VALVE', 'PLC / DCS', 'ACTUATOR', 'POSITIONER', 'FLOW METER', 'LEVEL SENSOR', 'PRESSURE GAUGE', 'TEMPERATURE PROBE', 'ANALYZER', 'SOLENOID VALVE', 'I/P CONVERTER', 'SAFETY RELAY', 'PROXIMITY SWITCH', 'ENCODER'],
+      causes: ['OUT OF CALIBRATION', 'CONTAMINATED', 'PARAMETER LOSS', 'COMMUNICATION LOSS', 'OBSTRUCTION', 'CORROSION', 'VIBRATION DAMAGE', 'ELECTRICAL INTERFERENCE', 'MEMBRANE DAMAGE', 'BLOCKED IMPULSE LINE'],
+    },
+    HYDRAULIC: {
+      label: 'Hydraulic', color: '#EF4444',
+      symptoms: ['LOW PRESSURE', 'OVERHEATING', 'LEAKAGE', 'SLOW RESPONSE', 'CAVITATION NOISE', 'FOAMING', 'CONTAMINATED OIL', 'CYLINDER DRIFT'],
+      parts: ['HYDRAULIC PUMP', 'HYDRAULIC CYLINDER', 'DIRECTIONAL VALVE', 'PRESSURE RELIEF VALVE', 'ACCUMULATOR', 'HYDRAULIC MOTOR', 'FILTER', 'RESERVOIR', 'HOSE / FITTING', 'MANIFOLD'],
+      causes: ['CONTAMINATION', 'SEAL WEAR', 'CAVITATION', 'OVERHEATING', 'AIR IN SYSTEM', 'INCORRECT FLUID', 'EXCESSIVE PRESSURE', 'INTERNAL LEAKAGE'],
+    },
+    STRUCTURAL: {
+      label: 'Structural', color: '#8B5CF6',
+      symptoms: ['CRACK DETECTED', 'DEFORMATION', 'CORROSION VISIBLE', 'BOLT LOOSENING', 'FOUNDATION SETTLEMENT', 'EXCESSIVE DEFLECTION'],
+      parts: ['STEEL STRUCTURE', 'FOUNDATION', 'SUPPORT BEAM', 'PLATFORM / WALKWAY', 'HANDRAIL / GUARD', 'HOPPER / CHUTE', 'DUCT / ENCLOSURE', 'ANCHOR BOLT'],
+      causes: ['FATIGUE', 'CORROSION', 'OVERLOAD', 'IMPACT', 'VIBRATION', 'POOR WELDING', 'SETTLEMENT', 'THERMAL EXPANSION'],
     },
   };
 
@@ -78,43 +90,43 @@ export default function FailureCapture({ onNavigateTab }) {
 
   const SPECIAL_EQUIPMENT = [
     'Grua 20 Ton', 'Grua 50 Ton', 'Grua Horquilla', 'Andamio Multidireccional',
-    'Andamio Tubular', 'Camion Pluma', 'Plataforma Elevadora', 'Soldadora MIG/MAG',
-    'Soldadora TIG', 'Soldadora Arco', 'Compresor Portatil', 'Generador Electrical',
+    'Tubular Scaffold', 'Crane Truck', 'Lift Platform', 'MIG/MAG Welder',
+    'TIG Welder', 'Arc Welder', 'Portable Compressor', 'Electric Generator',
     'Bomba Sumergible', 'Hidrolavadora', 'Equipo Alineacion Laser',
     'Analizador de Vibraciones', 'Camara Termografica', 'Megohmetro',
-    'Multimetro Industrial', 'Torquimetro', 'Extractor Hidraulico',
-    'Gata Hidraulica', 'Tecle Cadena 5 Ton', 'Esmeril Angular',
-    'Taladro Magnetico', 'Equipo Ultrasonido', 'Detector de Gases',
+    'Industrial Multimeter', 'Torque Wrench', 'Hydraulic Puller',
+    'Hydraulic Jack', 'Chain Hoist 5 Ton', 'Angle Grinder',
+    'Magnetic Drill', 'Ultrasound Equipment', 'Gas Detector',
   ];
 
   const RESOURCE_TYPES = [
-    'Mechanical', 'Electrical', 'Instrumentista', 'Lubricador', 'Soldador',
-    'Operador Grua', 'Andamiero', 'Calderero', 'Ayudante General', 'Supervisor',
+    'Mechanical', 'Electrical', 'Instrumentation', 'Lubrication', 'Soldador',
+    'Crane Operator', 'Scaffolder', 'Boilermaker', 'General Helper', 'Rigger',
   ];
 
   const COMMON_MATERIALS = [
-    { sapId: '10001234', desc: 'Rodamiento SKF 6205' },
-    { sapId: '10001235', desc: 'Sello mecanico' },
-    { sapId: '10001236', desc: 'Correa V A-68' },
-    { sapId: '10001237', desc: 'Aceite ISO 68' },
-    { sapId: '10001238', desc: 'Grasa EP2' },
-    { sapId: '10001239', desc: 'Filtro aceite hidraulico' },
-    { sapId: '10001240', desc: 'Junta torica NBR' },
-    { sapId: '10001241', desc: 'Tornillo M12x50 Gr8.8' },
-    { sapId: '10001242', desc: 'Electrodo E7018 3/32' },
+    { sapId: '10001234', desc: 'Bearing SKF 6205' },
+    { sapId: '10001235', desc: 'Mechanical Seal' },
+    { sapId: '10001236', desc: 'V-Belt A-68' },
+    { sapId: '10001237', desc: 'Oil ISO 68' },
+    { sapId: '10001238', desc: 'Grease EP2' },
+    { sapId: '10001239', desc: 'Hydraulic Oil Filter' },
+    { sapId: '10001240', desc: 'O-Ring NBR' },
+    { sapId: '10001241', desc: 'Bolt M12x50 Gr8.8' },
+    { sapId: '10001242', desc: 'Electrode E7018 3/32' },
     { sapId: '10001243', desc: 'Cable 3x10 AWG' },
-    { sapId: '10001244', desc: 'Fusible NH 100A' },
+    { sapId: '10001244', desc: 'Fuse NH 100A' },
     { sapId: '10001245', desc: 'Contactor 3P 40A' },
-    { sapId: '10001246', desc: 'Sensor proximidad inductivo' },
-    { sapId: '10001247', desc: 'Transmisor presion 0-10bar' },
-    { sapId: '10001248', desc: 'Valvula solenoide 1/2"' },
+    { sapId: '10001246', desc: 'Inductive Proximity Sensor' },
+    { sapId: '10001247', desc: 'Pressure Transmitter 0-10bar' },
+    { sapId: '10001248', desc: 'Solenoid Valve 1/2"' },
   ];
 
   // ── BBP SAP PM Master Data (AMSA_BBP_PM_04) ──
   const AVISO_CLASSES = [
     { value: 'A1', label: 'A1 - Maintenance Notification', desc: 'Corrective / Request' },
-    { value: 'A2', label: 'A2 - Aviso Predictive & Eng.', desc: 'Predictive / Engineering' },
-    { value: 'A3', label: 'A3 - Aviso Preventive Plan', desc: 'Maintenance Plan' },
+    { value: 'A2', label: 'A2 - Predictive & Eng. Notification', desc: 'Predictive / Engineering' },
+    { value: 'A3', label: 'A3 - Preventive Plan Notification', desc: 'Maintenance Plan' },
   ];
 
   const AVISO_CODING = {
@@ -131,48 +143,48 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   const PLANNING_GROUPS = [
-    { value: 'P01', label: 'P01 - Dry Area Plant', area: 'Planta' },
-    { value: 'P02', label: 'P02 - Heap Leach Area', area: 'Planta' },
-    { value: 'P03', label: 'P03 - Wet Area Plant', area: 'Planta' },
-    { value: 'M01', label: 'M01 - Mine Drilling', area: 'Mina' },
-    { value: 'M02', label: 'M02 - Mine Loading', area: 'Mina' },
-    { value: 'M03', label: 'M03 - Mine Hauling', area: 'Mina' },
-    { value: 'M04', label: 'M04 - Mina Support Equipment', area: 'Mina' },
-    { value: 'M05', label: 'M05 - Mine Auxiliary Equipment', area: 'Mina' },
+    { value: 'P01', label: 'P01 - Dry Area Plant', area: 'Plant' },
+    { value: 'P02', label: 'P02 - Heap Leach Area', area: 'Plant' },
+    { value: 'P03', label: 'P03 - Wet Area Plant', area: 'Plant' },
+    { value: 'M01', label: 'M01 - Mine Drilling', area: 'Mine' },
+    { value: 'M02', label: 'M02 - Mine Loading', area: 'Mine' },
+    { value: 'M03', label: 'M03 - Mine Hauling', area: 'Mine' },
+    { value: 'M04', label: 'M04 - Mina Support Equipment', area: 'Mine' },
+    { value: 'M05', label: 'M05 - Mine Auxiliary Equipment', area: 'Mine' },
   ];
 
   const AREAS_EMPRESA = [
-    { value: 'SEC', label: 'Area Seca' },
-    { value: 'HUM', label: 'Area Humeda' },
-    { value: 'RIP', label: 'Area Ripio' },
-    { value: 'PER', label: 'Perforacion' },
-    { value: 'CAR', label: 'Carguio' },
-    { value: 'TRA', label: 'Transporte' },
-    { value: 'APO', label: 'Apoyo' },
-    { value: 'AUX', label: 'Auxiliar' },
-    { value: 'TAL', label: 'Taller' },
+    { value: 'SEC', label: 'Dry Area' },
+    { value: 'HUM', label: 'Wet Area' },
+    { value: 'RIP', label: 'Heap Leach Area' },
+    { value: 'PER', label: 'Drilling' },
+    { value: 'CAR', label: 'Loading' },
+    { value: 'TRA', label: 'Hauling' },
+    { value: 'APO', label: 'Support' },
+    { value: 'AUX', label: 'Auxiliary' },
+    { value: 'TAL', label: 'Workshop' },
   ];
 
   const WORK_CENTERS = [
-    { value: 'PASMEC01', label: 'Mechanical Area Seca', area: 'P01' },
-    { value: 'PASELE01', label: 'Electrical Area Seca', area: 'P01' },
-    { value: 'PASINS01', label: 'Instrumentista Area Seca', area: 'P01' },
-    { value: 'PASLUB01', label: 'Lubricacion Area Seca', area: 'P01' },
-    { value: 'PARELE01', label: 'Electrical Area Ripio', area: 'P02' },
-    { value: 'PARINS01', label: 'Instrumentista Area Ripio', area: 'P02' },
-    { value: 'PAHMEC01', label: 'Mechanical Area Humeda', area: 'P03' },
-    { value: 'PAHELE01', label: 'Electrical Area Humeda', area: 'P03' },
-    { value: 'PAHINS01', label: 'Instrumentista Area Humeda', area: 'P03' },
-    { value: 'PSHSIN01', label: 'Symptomtico', area: 'P01' },
+    { value: 'PASMEC01', label: 'Mechanical Dry Area', area: 'P01' },
+    { value: 'PASELE01', label: 'Electrical Dry Area', area: 'P01' },
+    { value: 'PASINS01', label: 'Instrumentation Dry Area', area: 'P01' },
+    { value: 'PASLUB01', label: 'Lubrication Dry Area', area: 'P01' },
+    { value: 'PARELE01', label: 'Electrical Heap Leach', area: 'P02' },
+    { value: 'PARINS01', label: 'Instrumentation Heap Leach', area: 'P02' },
+    { value: 'PAHMEC01', label: 'Mechanical Wet Area', area: 'P03' },
+    { value: 'PAHELE01', label: 'Electrical Wet Area', area: 'P03' },
+    { value: 'PAHINS01', label: 'Instrumentation Wet Area', area: 'P03' },
+    { value: 'PSHSIN01', label: 'Synoptic', area: 'P01' },
     { value: 'PSHDCS01', label: 'DCS & Automation', area: 'P01' },
-    { value: 'MPCMEC01', label: 'Mechanical Perforacion y Carguio', area: 'M01' },
-    { value: 'MTAMEC01', label: 'Mechanical Transporte y Apoyo', area: 'M03' },
-    { value: 'MPCELE01', label: 'Electrical Perforacion y Carguio', area: 'M01' },
-    { value: 'MTAELE01', label: 'Electrical Transporte y Apoyo', area: 'M03' },
+    { value: 'MPCMEC01', label: 'Mechanical Drilling & Loading', area: 'M01' },
+    { value: 'MTAMEC01', label: 'Mechanical Hauling & Support', area: 'M03' },
+    { value: 'MPCELE01', label: 'Electrical Drilling & Loading', area: 'M01' },
+    { value: 'MTAELE01', label: 'Electrical Hauling & Support', area: 'M03' },
     { value: 'MPREDI01', label: 'Predictive', area: 'M01' },
-    { value: 'MEXTSOL1', label: 'Soldadura (Ext)', area: 'M04' },
-    { value: 'MEXTLAV1', label: 'Lavado (Ext)', area: 'M04' },
-    { value: 'MEXTNEU1', label: 'Neumaticos (Ext)', area: 'M04' },
+    { value: 'MEXTSOL1', label: 'Welding (Ext)', area: 'M04' },
+    { value: 'MEXTLAV1', label: 'Washing (Ext)', area: 'M04' },
+    { value: 'MEXTNEU1', label: 'Tires (Ext)', area: 'M04' },
     { value: 'MEXTCAB1', label: 'Cabina (Ext)', area: 'M04' },
     { value: 'MEXTSCI1', label: 'Sistema Contra Incendios (Ext)', area: 'M04' },
     { value: 'MEXTGET1', label: 'Elemento de Desgaste (Ext)', area: 'M04' },
@@ -180,17 +192,17 @@ export default function FailureCapture({ onNavigateTab }) {
 
   const SAP_PRIORITY_MAP = {
     P1: { sap: 'I', label: 'Immediate', days: '< 24h' },
-    P2: { sap: 'A', label: 'Alta', days: '< 7 dias' },
-    P3: { sap: 'M', label: 'Media', days: '> 7 dias' },
+    P2: { sap: 'A', label: 'High', days: '< 7 days' },
+    P3: { sap: 'M', label: 'Medium', days: '> 7 days' },
     P4: { sap: 'B', label: 'Low', days: 'Plant Shutdown' },
   };
 
   const ORDER_TYPES = [
-    { value: 'PM01', label: 'PM01 - Orden Mant. de Breakdown' },
-    { value: 'PM02', label: 'PM02 - Orden Mant. Preventivo' },
-    { value: 'PM03', label: 'PM03 - Orden de Solicitud de Mant.' },
-    { value: 'PM06', label: 'PM06 - Orden de Inversion' },
-    { value: 'PM07', label: 'PM07 - Orden de Reparacion de Components' },
+    { value: 'PM01', label: 'PM01 - Breakdown Maintenance Order' },
+    { value: 'PM02', label: 'PM02 - Preventive Maintenance Order' },
+    { value: 'PM03', label: 'PM03 - Maintenance Service Order' },
+    { value: 'PM06', label: 'PM06 - Investment Order' },
+    { value: 'PM07', label: 'PM07 - Component Repair Order' },
   ];
 
   // ── Form State ──
@@ -203,7 +215,7 @@ export default function FailureCapture({ onNavigateTab }) {
     estimatedDuration: '',
     priority: 'P3',
     activityClass: 'M001',
-    plantCondition: 'operating',
+    equipmentCondition: 'operating',
     failureCategory: 'MECHANICAL',
     failureSymptom: '',
     failureObjectPart: '',
@@ -237,6 +249,11 @@ export default function FailureCapture({ onNavigateTab }) {
   const [locResults, setLocResults] = useState([]);
   const [showLocSearch, setShowLocSearch] = useState(false);
   const [selectedLoc, setSelectedLoc] = useState(null);
+  const [showBrowseModal, setShowBrowseModal] = useState(false);
+  const [browseSearch, setBrowseSearch] = useState("");
+  const [browseResults, setBrowseResults] = useState([]);
+  const [browseLoading, setBrowseLoading] = useState(false);
+  const [browsePath, setBrowsePath] = useState([]);  // [{node_id, name, node_type}]
 
   // Failure catalog dropdowns
   const [showSymptoms, setShowSymptoms] = useState(false);
@@ -250,7 +267,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
   // Voice + Photo
   const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef(null);
+  
   const [photos, setPhotos] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const recognitionRef = useRef(null);
@@ -265,6 +282,7 @@ export default function FailureCapture({ onNavigateTab }) {
   const [wizardStep, setWizardStep] = useState(1); // 1=Ubicacion, 2=Falla, 3=Accion
   const [chatOpen, setChatOpen] = useState(false);
   const [detectedEquipment, setDetectedEquipment] = useState(null);
+  const [visionResult, setVisionResult] = useState(null);
   const [duplicates, setDuplicates] = useState([]);
   const [showDuplicateDetail, setShowDuplicateDetail] = useState(null);
   const dupeCheckTimer = useRef(null);
@@ -325,15 +343,30 @@ export default function FailureCapture({ onNavigateTab }) {
         if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);
         if (s.priority) setF('priority', s.priority);
         if (s.estimatedDuration || s.estimated_duration) setF('estimatedDuration', String(s.estimatedDuration || s.estimated_duration));
-        if (s.plantCondition || s.plant_condition) {
-          const pc = (s.plantCondition || s.plant_condition).toLowerCase();
-          setF('plantCondition', pc === 'running' ? 'operating' : pc === 'stopped' ? 'stopped' : pc);
+        if (s.equipmentCondition || s.equipment_condition) {
+          const pc = (s.equipmentCondition || s.equipment_condition).toLowerCase();
+          setF('equipmentCondition', pc === 'running' ? 'operating' : pc === 'stopped' ? 'stopped' : pc);
         }
         if (s.resources?.length) setF('resources', s.resources);
         if (s.materials?.length) setF('materials', s.materials);
         if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
         if (s.support_equipment?.length) setF('supportEquipment', s.support_equipment);
         if (s.workConditions || s.work_conditions) setF('workConditions', s.workConditions || s.work_conditions);
+        // SF-41: If AI identified equipment_tag and none selected yet, auto-select it
+        if (s.equipment_tag && !selectedEquip) {
+          const matched = allEquipment.find(n => {
+            const tag = (n.tag || n.code || '').toUpperCase();
+            return tag === s.equipment_tag.toUpperCase();
+          });
+          if (matched) selectEquip(matched);
+          else if (s.equipment_tag !== 'null') {
+            setF('whereTag', s.equipment_tag);
+            setEquipSearch(s.equipment_tag);
+          }
+        }
+        // Count pre-filled fields for user feedback
+        const filled = [s.enhanced_description, s.failureCategory, s.priority, s.failureSymptom, s.failureCause, s.failureObjectPart, s.suggestedAction, s.equipment_tag].filter(Boolean).length;
+        if (filled > 0) toast.success(`AI pre-filled ${filled} fields from your description`);
         setAiSuggested(true);
       }
     } catch (e) {
@@ -356,36 +389,100 @@ export default function FailureCapture({ onNavigateTab }) {
   }, []);
 
   useEffect(() => {
-    api.listNodes({}).then(res => {
-      const nodes = Array.isArray(res) ? res : res?.items || [];
-      setAllNodes(nodes);
+    // Load locations (PLANT + AREA + top SYSTEM) and equipment separately
+    Promise.all([
+      api.listNodes({ limit: 300 }).catch(() => []),
+      api.listNodes({ node_type: 'EQUIPMENT', limit: 100 }).catch(() => []),
+    ]).then(([locRes, eqRes]) => {
+      const locs = Array.isArray(locRes) ? locRes : locRes?.items || [];
+      const eqs = Array.isArray(eqRes) ? eqRes : eqRes?.items || [];
+      const allN = [...locs, ...eqs.filter(e => !locs.find(l => l.node_id === e.node_id))];
+      setAllNodes(allN);
       const nodeMap = {};
-      nodes.forEach(n => { nodeMap[n.node_id] = n; });
-      setAllEquipment(nodes.filter(n => n.node_type === 'EQUIPMENT'));
-      setLocationNodes(nodes.filter(n =>
+      allN.forEach(n => { nodeMap[n.node_id] = n; });
+      setAllEquipment(allN.filter(n => n.node_type === 'EQUIPMENT'));
+      setLocationNodes(allN.filter(n =>
         ['PLANT', 'AREA', 'SYSTEM'].includes(n.node_type)
       ).map(n => ({ ...n, _funcLoc: buildFuncLocPath(n, nodeMap) })));
-    }).catch(() => {});
+    });
   }, [buildFuncLocPath]);
 
   // Filter equipment results
   useEffect(() => {
-    if (equipSearch.length === 0) { setEquipResults(allEquipment.slice(0, 10)); return; }
-    if (equipSearch.length < 1) { setEquipResults([]); return; }
-    const q = equipSearch.toLowerCase();
-    setEquipResults(allEquipment.filter(n =>
-      (n.tag || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
-    ).slice(0, 8));
+    if (equipSearch.length === 0) { setEquipResults(allEquipment.slice(0, 20)); return; }
+    if (equipSearch.length < 2) { setEquipResults([]); return; }
+    // Server-side search for large datasets
+    const timer = setTimeout(() => {
+      api.listNodes({ search: equipSearch, node_type: 'EQUIPMENT', limit: 15 }).then(res => {
+        const nodes = Array.isArray(res) ? res : res?.items || [];
+        setEquipResults(nodes);
+      }).catch(() => {
+        // Fallback to client-side
+        const q = equipSearch.toLowerCase();
+        setEquipResults(allEquipment.filter(n =>
+          (n.tag || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
+        ).slice(0, 10));
+      });
+    }, 300);
+    return () => clearTimeout(timer);
   }, [equipSearch, allEquipment]);
 
   // Filter location results
   useEffect(() => {
-    if (!locSearch) { setLocResults(locationNodes.slice(0, 8)); return; }
+    if (!locSearch) { setLocResults(locationNodes.slice(0, 15)); return; }
     const q = locSearch.toLowerCase();
     setLocResults(locationNodes.filter(n =>
       (n._funcLoc || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
     ).slice(0, 8));
   }, [locSearch, locationNodes]);
+
+
+  // Browse all locations - drill-down navigation
+  const openBrowseModal = () => {
+    setShowBrowseModal(true);
+    setBrowseSearch('');
+    setBrowsePath([]);
+    loadBrowseChildren(null, '');
+  };
+  const loadBrowseChildren = (parentId, search) => {
+    setBrowseLoading(true);
+    const params = { limit: 500 };
+    if (parentId) params.parent_node_id = parentId;
+    else params.node_type = 'PLANT';
+    if (search) params.search = search;
+    api.listNodes(params).then(res => {
+      const nodes = Array.isArray(res) ? res : res?.items || [];
+      setBrowseResults(nodes);
+      setBrowseLoading(false);
+    }).catch(() => { setBrowseResults([]); setBrowseLoading(false); });
+  };
+  const drillDown = (node) => {
+    setBrowsePath(prev => [...prev, { node_id: node.node_id, name: node.name, node_type: node.node_type }]);
+    setBrowseSearch('');
+    loadBrowseChildren(node.node_id, '');
+  };
+  const drillUp = (index) => {
+    if (index < 0) {
+      setBrowsePath([]);
+      loadBrowseChildren(null, '');
+    } else {
+      const newPath = browsePath.slice(0, index + 1);
+      setBrowsePath(newPath);
+      loadBrowseChildren(newPath[newPath.length - 1].node_id, '');
+    }
+  };
+  useEffect(() => {
+    if (!showBrowseModal) return;
+    const timer = setTimeout(() => {
+      const parentId = browsePath.length > 0 ? browsePath[browsePath.length - 1].node_id : null;
+      loadBrowseChildren(parentId, browseSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [browseSearch]);
+  const selectBrowseLocation = (node) => {
+    selectLocation(node);
+    setShowBrowseModal(false);
+  };
 
   // Auto-detect equipment tag from description
   useEffect(() => {
@@ -438,10 +535,36 @@ export default function FailureCapture({ onNavigateTab }) {
   const selectLocation = (node) => {
     setSelectedLoc(node);
     setF('technicalLocation', node.name || '');
-    const funcLoc = node._funcLoc || node.code || '';
+    const funcLoc = node._funcLoc || node.sap_func_loc || node.code || '';
     setF('technicalLocationCode', funcLoc);
     setShowLocSearch(false);
     setLocSearch('');
+    // If selected an EQUIPMENT, auto-fill Equipo/TAG
+    if (node.node_type === 'EQUIPMENT') {
+      selectEquip(node);
+    } else {
+      // Load children equipment for this location
+      api.listNodes({ parent_node_id: node.node_id, limit: 500 }).then(res => {
+        const children = Array.isArray(res) ? res : res?.items || [];
+        // Get all equipment from children (direct + nested)
+        const equipList = children.filter(n => n.node_type === 'EQUIPMENT');
+        if (equipList.length > 0) {
+          setEquipResults(equipList);
+          setShowEquipSearch(true);
+        } else if (children.length > 0) {
+          // Children are systems/areas, go deeper to find equipment
+          const childIds = children.map(c => c.node_id);
+          Promise.all(childIds.slice(0, 10).map(id => api.listNodes({ parent_node_id: id, limit: 100 }).catch(() => []))).then(results => {
+            const allNodes = results.flatMap(r => Array.isArray(r) ? r : r?.items || []);
+            const equips = allNodes.filter(n => n.node_type === 'EQUIPMENT');
+            if (equips.length > 0) {
+              setEquipResults(equips);
+              setShowEquipSearch(true);
+            }
+          });
+        }
+      }).catch(() => {});
+    }
     const upper = funcLoc.toUpperCase();
     let matchedGroup = null;
     if (upper.includes('SECA') || upper.includes('-SEC')) matchedGroup = 'P01';
@@ -470,74 +593,204 @@ export default function FailureCapture({ onNavigateTab }) {
   const handleVoice = async () => {
     if (isRecording) {
       // Stop recording
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
       }
+      setIsRecording(false);
       return;
     }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      const chunks = [];
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-      recorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        setIsRecording(false);
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        if (blob.size < 1000) { toast.error('Recording too short'); return; }
-        toast.info('Transcribing with Whisper AI...');
-        try {
-          const formData = new FormData();
-          formData.append('file', blob, 'voice_capture.webm');
-          formData.append('language', 'en');
-          const token = localStorage.getItem('access_token');
-          const resp = await fetch('/api/v1/media/transcribe', {
-            method: 'POST',
-            headers: token ? { 'Authorization': 'Bearer ' + token } : {},
-            body: formData,
-          });
-          if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            throw new Error(err.detail || resp.statusText);
-          }
-          const result = await resp.json();
-          const text = result.text || result.transcript || '';
-          if (text) {
-            const base = form.whatHappens;
-            const fullText = (base ? base + ' ' : '') + text;
-            setF('whatHappens', fullText);
-            toast.success('Whisper transcribed (' + (result.language_detected || 'en') + ')');
-            setTimeout(() => handleAiSuggest(fullText), 500);
-          } else {
-            toast.error('No speech detected');
-          }
-        } catch (err) {
-          toast.error('Transcription: ' + (err.message || 'Failed'));
-        }
-      };
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setIsRecording(true);
-      toast.info('Recording... Click again to stop (max 30s)');
-      setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 30000);
-    } catch (err) {
-      toast.error('Microphone denied: ' + (err.message || ''));
+
+    if (!SpeechRecognition) {
+      toast.error('Speech recognition not supported in this browser');
+      return;
     }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      // Show interim in the textarea
+      const current = form.whatHappens || '';
+      const base = current.replace(/\[listening\.\.\.].*$/, '').trim();
+      if (interim) {
+        setF('whatHappens', (base ? base + ' ' : '') + finalTranscript + '[listening...] ' + interim);
+      } else if (finalTranscript) {
+        setF('whatHappens', (base ? base + ' ' : '') + finalTranscript.trim());
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech error:', event.error);
+      if (event.error !== 'no-speech') {
+        toast.error('Speech error: ' + event.error);
+      }
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      if (finalTranscript.trim()) {
+        // Clean up the textarea
+        const current = form.whatHappens || '';
+        const cleaned = current.replace(/\[listening\.\.\.].*$/, '').trim();
+        setF('whatHappens', cleaned);
+        toast.success('Voice captured — AI analyzing your description...');
+        // SF-41/214: Auto-trigger AI to extract structured fields from voice
+        handleAiSuggest(cleaned);
+      }
+    };
+
+    setIsRecording(true);
+    recognition.start();
+    toast.info('Listening... speak now');
   };
 
-  // ── Camera ──
+
   const handleCameraClick = () => cameraRef.current?.click();
   const handleCameraChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setPhotos(prev => [...prev, ev.target.result]);
+    reader.onload = (ev) => {
+      const newPhoto = ev.target.result;
+      setPhotos(prev => {
+        const updated = [...prev, newPhoto];
+        // SF-215: Auto-trigger vision analysis after photo capture
+        setTimeout(() => autoAnalyzePhoto(updated), 300);
+        return updated;
+      });
+    };
     reader.readAsDataURL(file);
     e.target.value = '';
+
+    // GPS auto-detect: check device location and suggest nearest equipment
+    if (navigator.geolocation && !form.technicalLocationCode) {
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+          const nearby = await api.getNearbyAssets(pos.coords.latitude, pos.coords.longitude, 500);
+          if (nearby && nearby.length > 0) {
+            const best = nearby[0];
+            if (best.tag && best.tag !== form.whereTag) {
+              const confirmed = window.confirm(
+                'GPS detected nearby equipment: ' + (best.name || best.tag) +
+                  ' (' + Math.round(best.distance_m) + 'm away). Use this location?'
+              );
+              if (confirmed) {
+                setF('whereTag', best.tag);
+                setF('technicalLocationCode', best.sap_func_loc || best.code || best.tag);
+                setF('technicalLocation', best.name || best.tag);
+                setSelectedEquip(best);
+                toast.success('Location updated: ' + (best.name || best.tag));
+              }
+            }
+          }
+        } catch { /* GPS lookup failed silently */ }
+      }, () => {}, { enableHighAccuracy: true, timeout: 5000 });
+    }
   };
 
+  // SF-215: Auto-analyze photo with Vision AI
+  const autoAnalyzePhoto = async (photoList) => {
+    if (!photoList || photoList.length === 0) return;
+    setVisionLoading(true);
+    setVisionResult(null);
+    toast.info('AI analyzing image...');
+    try {
+      const res = await aiAssistImage({
+        images: photoList,
+        equipment_tag: form.whereTag || form.equipmentTag || '',
+        additional_context: form.whatHappens || '',
+      });
+      if (res?.suggestions) {
+        const s = res.suggestions;
+        setVisionResult({
+          equipment_identified: s.equipment_identified || s.equipmentType || 'Unknown equipment',
+          failure_type: s.failure_type || s.failureCategory || '',
+          severity: s.severity || 'medium',
+          description: s.whatHappens || '',
+          suggested_action: s.suggestedAction || '',
+          confidence: res.confidence || 0.85,
+          raw: s,
+        });
+        toast.success('AI identified: ' + (s.equipment_identified || s.equipmentType || 'equipment'));
+      }
+    } catch (e) {
+      console.error('Auto vision analysis error:', e);
+      toast.error('AI photo analysis failed');
+    } finally {
+      setVisionLoading(false);
+    }
+  };
+
+  // SF-215: Accept AI vision suggestions and pre-fill form
+  const acceptVisionSuggestions = () => {
+    if (!visionResult?.raw) return;
+    const s = visionResult.raw;
+    if (s.whatHappens) setF('whatHappens', s.whatHappens);
+    if (s.failureCategory) {
+      const cat = s.failureCategory.toUpperCase().trim();
+      if (['MECHANICAL','ELECTRICAL','INSTRUMENTATION','HYDRAULIC','STRUCTURAL'].includes(cat)) setF('failureCategory', cat);
+    }
+    if (s.priority) setF('priority', s.priority);
+    if (s.activityClass) setF('activityClass', s.activityClass);
+    if (s.suggestedAction) setF('suggestedAction', s.suggestedAction);
+    const aiCat = (s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase();
+    const catData = FAILURE_CATALOG[aiCat] || FAILURE_CATALOG.MECHANICAL;
+    if (catData) {
+      if (s.failureSymptom) {
+        const sym = s.failureSymptom.toUpperCase().trim();
+        if (catData.symptoms?.includes(sym)) setF('failureSymptom', sym);
+      }
+      if (s.failureCause) {
+        const cau = s.failureCause.toUpperCase().trim();
+        if (catData.causes?.includes(cau)) setF('failureCause', cau);
+      }
+      if (s.failureObjectPart) {
+        const part = s.failureObjectPart.toUpperCase().trim();
+        if (catData.parts?.includes(part)) setF('failureObjectPart', part);
+      }
+    }
+    if (s.estimatedDuration) setF('estimatedDuration', String(s.estimatedDuration));
+    if (s.equipmentCondition) {
+      const vpc = s.equipmentCondition.toLowerCase();
+      setF('equipmentCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
+    }
+    if (s.resources?.length) setF('resources', s.resources);
+    if (s.materials?.length) setF('materials', s.materials);
+    if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
+    if (s.workConditions) setF('workConditions', s.workConditions);
+    // Try to match equipment_identified with known equipment list
+    if (s.equipment_identified && allEquipment.length > 0 && !form.whereTag) {
+      const eqName = (s.equipment_identified || '').toLowerCase();
+      const match = allEquipment.find(eq => {
+        const name = (eq.name || '').toLowerCase();
+        const tag = (eq.tag || '').toLowerCase();
+        return name.includes(eqName) || eqName.includes(name) || eqName.includes(tag);
+      });
+      if (match) setDetectedEquipment(match);
+    }
+    setAiSuggested(true);
+    setVisionResult(null);
+    toast.success('AI suggestions applied to form');
+  };
+
+  const dismissVisionResult = () => setVisionResult(null);
+
   const handleVisionAnalysis = async () => {
-    if (photos.length === 0) { toast.error('Sube al menos una foto'); return; }
+    if (photos.length === 0) { toast.error('Upload at least one photo'); return; }
     setVisionLoading(true);
     try {
       const res = await aiAssistImage({
@@ -571,9 +824,9 @@ export default function FailureCapture({ onNavigateTab }) {
           if (catData.parts.includes(part)) setF('failureObjectPart', part);
         }
         if (s.estimatedDuration) setF('estimatedDuration', String(s.estimatedDuration));
-        if (s.plantCondition) {
-          const vpc = s.plantCondition.toLowerCase();
-          setF('plantCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
+        if (s.equipmentCondition) {
+          const vpc = s.equipmentCondition.toLowerCase();
+          setF('equipmentCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
         }
         if (s.resources?.length) setF('resources', s.resources);
         if (s.materials?.length) setF('materials', s.materials);
@@ -655,7 +908,7 @@ export default function FailureCapture({ onNavigateTab }) {
         failure_symptom: form.failureSymptom || '',
         failure_object_part: form.failureObjectPart || '',
         failure_cause: form.failureCause || '',
-        plant_condition: form.plantCondition || '',
+        equipment_condition: form.equipmentCondition || '',
         suggested_action: form.suggestedAction || '',
         estimated_duration: parseFloat(form.estimatedDuration) || 4,
         materials: (form.materials || []).filter(m => typeof m === 'object' ? (m.sapId || m.description) : m),
@@ -678,7 +931,7 @@ export default function FailureCapture({ onNavigateTab }) {
       });
       const wrId = res?.request_id || res?.work_request_id || '';
       setCreatedWRId(wrId);
-      toast.success('Aviso creado: ' + wrId.slice(0, 8));
+      toast.success('Notification created: ' + wrId);
     } catch (err) {
       toast.error(err.message || 'Error creating notification');
     } finally {
@@ -687,10 +940,11 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   const handleReset = () => {
+    setWizardStep(1);
     setForm({
       whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '',
       suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'M001',
-      plantCondition: 'operating', failureCategory: 'MECHANICAL', failureSymptom: '',
+      equipmentCondition: 'operating', failureCategory: 'MECHANICAL', failureSymptom: '',
       failureObjectPart: '', failureCause: '', resources: [], materials: [],
       specialEquipment: '', circumstances: '', reportedBy: form.reportedBy, supportEquipment: [],
       notificationClass: 'A1', avisoCoding: 'M001', planningGroup: '', areaEmpresa: '', workCenter: '', workConditions: '',
@@ -712,11 +966,11 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600" />
-              <span className="text-sm font-bold text-amber-800">Posibles Duplicados</span>
+              <span className="text-sm font-bold text-amber-800">Possible Duplicates</span>
             </div>
             <button onClick={() => setDuplicates([])} className="text-amber-400 hover:text-amber-600 text-lg">&times;</button>
           </div>
-          <p className="text-xs text-amber-600 mt-1">{duplicates.length} aviso(s) similar(es) encontrado(s)</p>
+          <p className="text-xs text-amber-600 mt-1">{duplicates.length} similar notification(s) found</p>
         </div>
         <div className="divide-y divide-gray-100">
           {duplicates.map((d, i) => (
@@ -730,7 +984,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <div className="flex items-center gap-2 mt-1">
                 {d.equipment_tag && <span className="text-xs text-blue-600 font-mono">{d.equipment_tag}</span>}
                 {d.priority && <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${['P1','P2'].includes(d.priority) ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>{d.priority}</span>}
-                {d.created_at && <span className="text-xs text-gray-400">{new Date(d.created_at).toLocaleDateString('es-CL')}</span>}
+                {d.created_at && <span className="text-xs text-gray-400">{new Date(d.created_at).toLocaleDateString('en-US')}</span>}
               </div>
             </button>
           ))}
@@ -756,13 +1010,13 @@ export default function FailureCapture({ onNavigateTab }) {
         <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
           <div className="bg-amber-50 px-6 py-4 border-b border-amber-200 flex items-center justify-between sticky top-0 z-10">
             <div>
-              <h3 className="font-bold text-amber-900 text-lg">Aviso Existente</h3>
+              <h3 className="font-bold text-amber-900 text-lg">Existing Notification</h3>
               <span className="text-xs font-mono text-amber-600">{d.request_id || d.id}</span>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => { setShowDuplicateDetail(null); setDuplicates([]); if (onNavigateTab) onNavigateTab('identification', d.request_id || d.id); }}
                 className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
-                Ir al Aviso
+                Go to Notification
               </button>
               <button onClick={() => setShowDuplicateDetail(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
@@ -790,7 +1044,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
             {/* Description */}
             <div>
-              <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Description de Falla</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Failure Description</span>
               <p className="text-sm bg-gray-50 rounded-lg p-3 border border-gray-200 leading-relaxed">{desc}</p>
             </div>
 
@@ -807,7 +1061,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <div>
                 <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Failure Catalog</span>
                 <div className="grid grid-cols-3 gap-2">
-                  {failureMode && <div className="bg-blue-50 rounded-lg p-2 text-center"><span className="text-[10px] text-blue-500 block">Categoria</span><span className="text-xs font-bold text-blue-700">{failureMode}</span></div>}
+                  {failureMode && <div className="bg-blue-50 rounded-lg p-2 text-center"><span className="text-[10px] text-blue-500 block">Category</span><span className="text-xs font-bold text-blue-700">{failureMode}</span></div>}
                   {failureSymptom && <div className="bg-yellow-50 rounded-lg p-2 text-center"><span className="text-[10px] text-yellow-600 block">Symptom</span><span className="text-xs font-bold text-yellow-700">{failureSymptom}</span></div>}
                   {failureCause && <div className="bg-red-50 rounded-lg p-2 text-center"><span className="text-[10px] text-red-500 block">Cause</span><span className="text-xs font-bold text-red-700">{failureCause}</span></div>}
                 </div>
@@ -849,11 +1103,11 @@ export default function FailureCapture({ onNavigateTab }) {
             {/* Footer */}
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <span className="text-xs text-gray-400">
-                Creado: {d.created_at ? new Date(d.created_at).toLocaleString('es-CL') : '-'}
+                Created: {d.created_at ? new Date(d.created_at).toLocaleString('en-US') : '-'}
               </span>
               <button onClick={() => { setShowDuplicateDetail(null); setDuplicates([]); if (onNavigateTab) onNavigateTab('identification', d.request_id || d.id); }}
                 className="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
-                Ir al Aviso Existente
+                Go to Existing Notification
               </button>
             </div>
           </div>
@@ -869,18 +1123,22 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-emerald-600" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Aviso Creado</h3>
-          <p className="text-sm text-gray-500 mb-4">Tu aviso ha sido enviado para revision</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Notification Created</h3>
+          <p className="text-sm text-gray-500 mb-4">Your notification has been submitted for review</p>
           <div className="inline-block px-4 py-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 mb-6">
-            <div className="text-xs text-emerald-600 font-medium">ID</div>
-            <div className="text-lg font-bold text-emerald-700 font-mono">{createdWRId.slice(0, 8)}</div>
+            <div className="text-xs text-emerald-600 font-medium">Notification ID</div>
+            <div className="text-lg font-bold text-emerald-700 font-mono">{createdWRId}</div>
+            <button onClick={() => { navigator.clipboard.writeText(createdWRId); }}
+              className="mt-1 text-xs text-emerald-500 hover:text-emerald-700 flex items-center gap-1 mx-auto">
+              <ClipboardCopy className="w-3 h-3" /> Copy
+            </button>
           </div>
           <div className="flex gap-3 justify-center">
             <button onClick={() => { handleReset(); }} className="px-5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-              Crear Otro
+              Create Another
             </button>
             <button onClick={() => { setCreatedWRId(null); if (onNavigateTab) onNavigateTab('identification'); }} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
-              Ver Avisos
+              View Notifications
             </button>
           </div>
         </div>
@@ -930,7 +1188,7 @@ export default function FailureCapture({ onNavigateTab }) {
               { step: 3, label: 'Action', icon: '🔧', desc: 'What to do' },
             ].map((s, i) => (
               <div key={s.step} className="flex items-center flex-1">
-                <button onClick={() => setWizardStep(s.step)}
+                <button onClick={() => setWizardStep(s.step)} style={{minHeight: '60px'}}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all w-full ${
                     wizardStep === s.step
                       ? 'bg-emerald-600 text-white shadow-lg'
@@ -1031,7 +1289,7 @@ export default function FailureCapture({ onNavigateTab }) {
               )}
               {aiSuggested && (
                 <span className="text-xs text-violet-600 font-medium">
-                  ✓ Fields auto-filled by AIáticamente
+                  ✓ Fields auto-filled by AI
                 </span>
               )}
             </div>
@@ -1055,14 +1313,82 @@ export default function FailureCapture({ onNavigateTab }) {
             {visionLoading && (
               <div className="flex items-center gap-2 mt-2 px-3 py-2 bg-violet-50 border border-violet-200 rounded-xl animate-pulse">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-violet-600"></div>
-                <span className="text-xs font-semibold text-violet-700">Analizando foto con IA...</span>
+                <span className="text-xs font-semibold text-violet-700">AI analyzing image...</span>
+              </div>
+            )}
+            {/* SF-215: AI Vision Analysis Confirmation Card */}
+            {visionResult && !visionLoading && (
+              <div className="mt-3 border-2 border-violet-300 bg-gradient-to-br from-violet-50 to-blue-50 rounded-xl p-4 shadow-sm">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-violet-800">AI Vision Analysis</span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-violet-200 text-violet-700 rounded-full font-semibold">
+                      {Math.round((visionResult.confidence || 0.85) * 100)}% confidence
+                    </span>
+                  </div>
+                  <button onClick={dismissVisionResult} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="mb-3 p-2.5 bg-white rounded-lg border border-violet-200">
+                  <div className="text-xs text-gray-500 font-semibold mb-1">Equipment Identified</div>
+                  <div className="text-sm font-bold text-gray-800">{visionResult.equipment_identified}</div>
+                  <div className="text-xs text-gray-500 mt-0.5 italic">Is this correct? Accept or modify below.</div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="p-2 bg-white rounded-lg border border-violet-200">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase">Failure Type</div>
+                    <div className="text-xs font-bold" style={{color:
+                      visionResult.failure_type === 'MECHANICAL' ? '#6366F1' :
+                      visionResult.failure_type === 'ELECTRICAL' ? '#F59E0B' :
+                      visionResult.failure_type === 'HYDRAULIC' ? '#EF4444' :
+                      visionResult.failure_type === 'STRUCTURAL' ? '#8B5CF6' : '#06B6D4'
+                    }}>{visionResult.failure_type || 'N/A'}</div>
+                  </div>
+                  <div className="p-2 bg-white rounded-lg border border-violet-200">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase">Severity</div>
+                    <div className={`text-xs font-bold ${
+                      visionResult.severity === 'critical' ? 'text-red-600' :
+                      visionResult.severity === 'high' ? 'text-orange-600' :
+                      visionResult.severity === 'medium' ? 'text-yellow-600' : 'text-blue-600'
+                    }`}>
+                      {(visionResult.severity || 'medium').toUpperCase()}
+                      {visionResult.severity === 'critical' ? ' (P1)' :
+                       visionResult.severity === 'high' ? ' (P2)' :
+                       visionResult.severity === 'medium' ? ' (P3)' : ' (P4)'}
+                    </div>
+                  </div>
+                </div>
+                {visionResult.description && (
+                  <div className="mb-3 p-2 bg-white rounded-lg border border-violet-200">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">AI Description</div>
+                    <div className="text-xs text-gray-700">{visionResult.description}</div>
+                  </div>
+                )}
+                {visionResult.suggested_action && (
+                  <div className="mb-3 p-2 bg-white rounded-lg border border-violet-200">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Suggested Action</div>
+                    <div className="text-xs text-gray-700">{visionResult.suggested_action}</div>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={acceptVisionSuggestions}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Accept & Pre-fill Form
+                  </button>
+                  <button onClick={dismissVisionResult}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold rounded-lg transition-all border border-gray-300">
+                    Dismiss
+                  </button>
+                </div>
               </div>
             )}
           </div>
 
           {/* 2. Suggested Action */}
           <div className="border rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Action</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Actions</label>
             <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
               placeholder="What corrective action is recommended?"
               rows={4} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
@@ -1075,12 +1401,12 @@ export default function FailureCapture({ onNavigateTab }) {
               <div className="grid grid-cols-2 gap-2">
                 {PLANT_CONDITIONS.map(opt => (
                   <button key={opt.value}
-                    onClick={() => setF('plantCondition', opt.value)}
+                    onClick={() => setF('equipmentCondition', opt.value)}
                     className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
                     style={{
-                      borderColor: form.plantCondition === opt.value ? opt.color : '#e5e7eb',
-                      backgroundColor: form.plantCondition === opt.value ? opt.color + '15' : 'transparent',
-                      color: form.plantCondition === opt.value ? opt.color : '#64748B',
+                      borderColor: form.equipmentCondition === opt.value ? opt.color : '#e5e7eb',
+                      backgroundColor: form.equipmentCondition === opt.value ? opt.color + '15' : 'transparent',
+                      color: form.equipmentCondition === opt.value ? opt.color : '#64748B',
                     }}>
                     {opt.label}
                   </button>
@@ -1116,11 +1442,11 @@ export default function FailureCapture({ onNavigateTab }) {
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" value={locSearch}
                   onChange={e => { setLocSearch(e.target.value); setShowLocSearch(true); }}
-                  onFocus={() => setShowLocSearch(true)}
+                  onFocus={() => setShowLocSearch(true)} onBlur={() => setTimeout(() => setShowLocSearch(false), 200)}
                   placeholder="Search technical location..."
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
-                {showLocSearch && locResults.length > 0 && (
+                {showLocSearch && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
                     {locResults.map((node, i) => (
                       <button key={node.node_id || i} onClick={() => selectLocation(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
@@ -1131,6 +1457,10 @@ export default function FailureCapture({ onNavigateTab }) {
                         <div className="text-xs text-gray-500">{node.name}</div>
                       </button>
                     ))}
+                    <button type="button" onClick={openBrowseModal}
+                      className="w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-semibold py-2.5 hover:bg-emerald-50 transition-colors border-t border-dashed border-emerald-200">
+                      Browse All Locations...
+                    </button>
                   </div>
                 )}
               </div>
@@ -1205,6 +1535,10 @@ export default function FailureCapture({ onNavigateTab }) {
                         <div className="text-xs text-gray-500">{node.name}</div>
                       </button>
                     ))}
+                    <button type="button" onClick={openBrowseModal}
+                      className="w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-semibold py-2.5 hover:bg-emerald-50 transition-colors border-t border-dashed border-emerald-200">
+                      Browse All Locations...
+                    </button>
                   </div>
                 )}
               </div>
@@ -1305,10 +1639,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 <button onClick={addResource} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
                   + Add
                 </button>
-                <button onClick={() => { setExtResIdx(-1); setExtResForm({ specialty: '', vendor: '', vendor_other: '', contract_ref: '', rate_per_hour: '', estimated_hours: '', estimated_cost: '', notes: '' }); setShowExtResModal(true); }}
-                  className="text-xs font-semibold px-3 py-1 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors">
-                  + External
-                </button>
+                {/* EXT button moved to Planning OT */}
               </div>
             </div>
             {form.resources.length === 0 ? (
@@ -2030,6 +2361,108 @@ export default function FailureCapture({ onNavigateTab }) {
           </div>
         </div>
       </div>
+
+      {/* Browse All Locations Modal - Drill Down */}
+      {showBrowseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowBrowseModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-[90vw] max-w-4xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-bold text-gray-900">Browse Locations</h3>
+              <button onClick={() => setShowBrowseModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {/* Breadcrumb */}
+            <div className="px-4 py-2 border-b bg-gray-50 flex items-center gap-1 text-sm flex-wrap">
+              <button onClick={() => drillUp(-1)} className={"font-medium hover:underline " + (browsePath.length === 0 ? "text-emerald-700" : "text-blue-600")}>
+                All Plants
+              </button>
+              {browsePath.map((p, i) => (
+                <span key={p.node_id} className="flex items-center gap-1">
+                  <span className="text-gray-400">/</span>
+                  <button onClick={() => drillUp(i)} className={"font-medium hover:underline " + (i === browsePath.length - 1 ? "text-emerald-700" : "text-blue-600")}>
+                    {p.name}
+                  </button>
+                </span>
+              ))}
+            </div>
+            {/* Search */}
+            <div className="p-3 border-b">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input type="text" value={browseSearch} onChange={e => setBrowseSearch(e.target.value)}
+                  placeholder="Filter..."
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
+              </div>
+            </div>
+            {/* Results */}
+            <div className="flex-1 overflow-y-auto">
+              {browseLoading ? (
+                <div className="text-center py-8 text-gray-400">Loading...</div>
+              ) : browseResults.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-400 mb-3">No sub-items at this level</p>
+                  {browsePath.length > 0 && (
+                    <button onClick={() => {
+                      const last = browsePath[browsePath.length - 1];
+                      selectBrowseLocation({ node_id: last.node_id, name: last.name, node_type: last.node_type });
+                    }} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">
+                      Select: {browsePath[browsePath.length - 1]?.name}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {browseResults.map((node, i) => {
+                    const hasChildren = ['PLANT','AREA','SYSTEM','EQUIPMENT'].includes(node.node_type);
+                    const typeColors = {
+                      PLANT: 'bg-purple-100 text-purple-700',
+                      AREA: 'bg-blue-100 text-blue-700',
+                      SYSTEM: 'bg-cyan-100 text-cyan-700',
+                      EQUIPMENT: 'bg-amber-100 text-amber-700',
+                      SUB_ASSEMBLY: 'bg-orange-100 text-orange-700',
+                      MAINTAINABLE_ITEM: 'bg-gray-100 text-gray-600',
+                    };
+                    return (
+                      <div key={node.node_id || i} className="flex items-center px-4 py-3 hover:bg-gray-50 group">
+                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => hasChildren ? drillDown(node) : selectBrowseLocation(node)}>
+                          <div className="flex items-center gap-2">
+                            <span className={"text-xs font-mono px-1.5 py-0.5 rounded " + (typeColors[node.node_type] || 'bg-gray-100 text-gray-600')}>
+                              {node.node_type}
+                            </span>
+                            <span className="text-sm font-bold text-gray-900 truncate">{node.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-0.5">
+                            <span className="text-xs font-mono text-gray-500">{node.sap_func_loc || node.code || ''}</span>
+                            {node.tag && <span className="text-xs text-gray-400">TAG: {node.tag}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          <button onClick={() => selectBrowseLocation(node)}
+                            className="text-xs px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                            Select
+                          </button>
+                          {hasChildren && (
+                            <button onClick={() => drillDown(node)}
+                              className="text-gray-400 hover:text-gray-600">
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="p-3 border-t text-xs text-gray-500 flex justify-between items-center">
+              <span>{browseResults.length} items</span>
+              <button onClick={() => setShowBrowseModal(false)} className="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

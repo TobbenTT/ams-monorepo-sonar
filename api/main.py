@@ -38,6 +38,7 @@ from api.routers import (
     execution, post_maintenance,
     catalogs,
     sap_pm,
+    data_import,
 )
 
 
@@ -215,6 +216,9 @@ def create_app() -> FastAPI:
     app.include_router(post_maintenance.router, prefix=prefix)
     # SAP PM Reference Data (Planillas de Carga)
     app.include_router(catalogs.router, prefix=prefix)
+
+    # Data Import page
+    app.include_router(data_import.router, prefix=prefix)
 
     # GAP-W03 — Serve Field PWA at /field/
     field_dist = Path("field_app/dist")

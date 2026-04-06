@@ -10,11 +10,11 @@ from api.services.audit_service import log_action
 
 # Valid status transitions
 TRANSITIONS = {
-    "CREADO": ["PLANIFICADO", "CANCELADO"],
+    "CREADO": ["PLANIFICADO", "PROGRAMADO", "CANCELADO"],
     "PLANIFICADO": ["PROGRAMADO", "CANCELADO"],
-    "PROGRAMADO": ["EN_EJECUCION", "REPROGRAMADO", "CANCELADO"],
+    "PROGRAMADO": ["PROGRAMADO", "EN_EJECUCION", "REPROGRAMADO", "CANCELADO"],
     "REPROGRAMADO": ["PROGRAMADO", "CANCELADO"],
-    "EN_EJECUCION": ["CERRADO", "REPROGRAMADO"],
+    "EN_EJECUCION": ["EN_EJECUCION", "CERRADO", "REPROGRAMADO"],
     "CERRADO": [],
     "CANCELADO": [],
     # Legacy compat: old statuses redirect to new equivalents
@@ -414,13 +414,32 @@ def plan_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
     return _transition(db, wo_id, "PLANIFICADO", user_id)
 
 
+def _parse_date(val):
+    """Convert string date to datetime object if needed."""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val
+    if isinstance(val, str):
+        try:
+            # Handle: "2026-04-01T12:00:00Z", "2026-04-01 12:00:00.123", "2026-04-01"
+            val = val.replace("Z", "+00:00").replace(" ", "T")
+            return datetime.fromisoformat(val)
+        except (ValueError, TypeError):
+            try:
+                return datetime.strptime(val[:10], "%Y-%m-%d")
+            except (ValueError, TypeError):
+                return datetime.now()
+    return val
+
+
 def schedule_wo(db: Session, wo_id: str, user_id: str = "", assigned_workers: list | None = None, planned_start=None, planned_end=None, shift: str = None) -> dict | None:
     """Programmer schedules -> PROGRAMADO."""
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
     if wo and planned_start:
-        wo.planned_start = planned_start
+        wo.planned_start = _parse_date(planned_start)
     if wo and planned_end:
-        wo.planned_end = planned_end
+        wo.planned_end = _parse_date(planned_end)
     if wo and shift:
         wo.shift = shift
     return _transition(db, wo_id, "PROGRAMADO", user_id, assigned_workers=assigned_workers)

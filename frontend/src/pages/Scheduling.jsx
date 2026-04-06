@@ -586,13 +586,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
           <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden min-w-[100px]">
             <div className="h-full bg-[#1B5E20] rounded-full transition-all" style={{ width: `${Math.min(loadPct, 100)}%` }} />
           </div>
-          <span className="text-sm font-semibold text-foreground whitespace-nowrap">Load: {loadPct}%</span>
+          <span className={`text-sm font-semibold whitespace-nowrap ${loadPct > 100 ? 'text-red-600 animate-pulse' : loadPct > 80 ? 'text-amber-600' : 'text-foreground'}`}>Load: {loadPct}% {loadPct > 100 ? '⚠️ OVERLOADED' : ''}</span>
         </div>
 
         {/* Calendar grid */}
         {technicians.length > 0 ? (
           <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" style={{maxWidth: "100%"}}>
               <table className="w-full border-collapse" style={{ minWidth: days.length * (showShifts ? 200 : 140) + 180 }}>
                 <thead>
                   <tr className="bg-muted/50">
@@ -623,7 +623,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                           <div className="font-semibold text-sm text-foreground">{tech.name}</div>
                           <div className="flex items-center gap-1.5 mt-1">
                             <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded ${badge.bg}`}>{badge.label}</span>
-                            <span className="text-xs text-muted-foreground">{Math.round(hours)}h / {HOURS_PER_WEEK}h</span>
+                            <span className={`text-xs font-semibold ${hours > HOURS_PER_WEEK ? 'text-red-600' : hours > HOURS_PER_WEEK * 0.8 ? 'text-amber-600' : 'text-muted-foreground'}`}>{Math.round(hours)}h / {HOURS_PER_WEEK}h {hours > HOURS_PER_WEEK ? '⚠️' : ''}</span>
                           </div>
                         </td>
                         {days.map(d => {
@@ -640,11 +640,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                   style={{ minHeight: 60, minWidth: 90 }}
                                   onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
                                   onDragLeave={() => setDropTarget(null)}
-                                  onDrop={e => { e.preventDefault(); if (dragWO) onScheduleWO(dragWO, tech, d.date, shift.id); setDragWO(null); setDropTarget(null); }}>
+                                  onDrop={e => { e.preventDefault(); if (dragWO) { const techLoad = techHours[tech.worker_id] || 0; if (techLoad >= HOURS_PER_WEEK) { if (!window.confirm('⚠️ WARNING: ' + tech.name + ' is already at ' + Math.round(techLoad) + 'h/' + HOURS_PER_WEEK + 'h capacity. Schedule anyway?')) { setDragWO(null); setDropTarget(null); return; } } onScheduleWO(dragWO, tech, d.date, shift.id); } setDragWO(null); setDropTarget(null); }}>
                                   {cellWOs.map(wo => {
                                     const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
                                     return (
-                                      <div key={wo.wo_id} className={`mb-1 p-1 rounded text-xs border cursor-default ${woType.bg}`}>
+                                      <div key={wo.wo_id}
+                                        draggable
+                                        onDragStart={e => { e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
+                                        className={`mb-1 p-1 rounded text-xs border cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400 ${woType.bg}`}>
                                         <div className="font-bold truncate text-[0.65rem]">{wo.wo_number}</div>
                                         <div className="truncate text-[0.6rem]">{wo.equipment_tag}</div>
                                         <div className="text-[0.55rem] mt-0.5">{wo.estimated_hours}h</div>
@@ -774,7 +777,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
         </div>
 
         <div className="overflow-x-auto">
-          <div style={{ minWidth: Math.max(800, weeksRange * 120) }}>
+          <div style={{ minWidth: 800, maxWidth: '100%' }}>
             {/* Week header */}
             <div className="flex border-b border-border bg-muted/50">
               <div className="w-64 min-w-[256px] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase border-r border-border">OT / Equipo</div>
@@ -786,14 +789,15 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
             </div>
 
             {/* Rows */}
+            <div style={{maxHeight: "60vh", overflowY: "auto"}}>
             {ganttData.map((wo) => {
               const woStart = wo.planned_start ? new Date(wo.planned_start) : now;
               const woEnd = wo.planned_end ? new Date(wo.planned_end) : new Date(woStart.getTime() + (wo.estimated_hours || 4) * 3600000);
 
               const startOffset = Math.max(0, (woStart - now) / 86400000);
               const duration = Math.max(0.5, (woEnd - woStart) / 86400000);
-              const leftPct = (startOffset / totalDays) * 100;
-              const widthPct = Math.min((duration / totalDays) * 100, 100 - leftPct);
+              const leftPct = Math.max(0, Math.min((startOffset / totalDays) * 100, 95));
+              const widthPct = Math.max(2, Math.min((duration / totalDays) * 100, 100 - leftPct));
 
               const barColor = GANTT_COLORS[wo.wo_type] || GANTT_COLORS[wo.type] || '#6B7280';
               const statusMeta = STATUS_META[wo.status] || STATUS_META.PLANNED;
@@ -810,7 +814,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
                     <div className="flex items-center gap-1 mt-1">
                       <span className={`text-[0.6rem] font-bold px-1 py-0.5 rounded border ${PRIORITY_COLOR[wo.priority_code] || PRIORITY_COLOR.P3}`}>{wo.priority_code}</span>
                       <span className="text-[0.6rem] text-muted-foreground">{wo.estimated_hours}h</span>
-                      {!wo.materials_ready && <Package size={10} className="text-amber-500" title="Materiales pendientes" />}
+                      {!wo.materials_ready && <Package size={10} className="text-amber-500" title="Materials pending" />}
                     </div>
                   </div>
 
@@ -834,6 +838,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
 
@@ -881,7 +886,7 @@ function HHBalanceTab({ programId, t }) {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard icon={Users} color="text-blue-500" label={t('scheduling.workers')} value={data.worker_count} sub={t('scheduling.available')} />
-        <KpiCard icon={Clock} color="text-purple-500" label={t('scheduling.capacity')} value={`${data.capacity}h`} sub="HH/semana" />
+        <KpiCard icon={Clock} color="text-purple-500" label={t('scheduling.capacity')} value={`${data.capacity}h`} sub="HH/week" />
         <KpiCard icon={Wrench} color="text-amber-500" label={t('scheduling.assigned')} value={`${data.assigned}h`} sub={`${data.available}h ${t('scheduling.available').toLowerCase()}`} />
         <KpiCard icon={BarChart3} color={utilizationColor.split(' ')[0].replace('text-', 'text-')} label={t('scheduling.utilization')} value={`${data.utilization_pct}%`} sub={utilizationLabel} highlight={data.utilization_pct > 100} />
       </div>
@@ -1066,14 +1071,16 @@ export default function Scheduling() {
   const loadCalendarData = () => {
     Promise.all([
       api.listTechnicians({ plant_id: plant }).catch(() => []),
-      api.listManagedWOs({ status: 'RELEASED', plant_id: plant }).catch(() => []),
+      api.listManagedWOs({ status: 'CREADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'PLANIFICADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
-    ]).then(([techs, released, planned, scheduled]) => {
+      api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
+    ]).then(([techs, created, planned, scheduled, executing]) => {
       setTechnicians(Array.isArray(techs) ? techs : techs?.technicians || []);
-      const toSchedule = [...(Array.isArray(released) ? released : []), ...(Array.isArray(planned) ? planned : [])];
+      const toSchedule = [...(Array.isArray(created) ? created : []), ...(Array.isArray(planned) ? planned : [])];
       setReleasedWOs(toSchedule);
-      setScheduledWOs(Array.isArray(scheduled) ? scheduled : []);
+      const allScheduled = [...(Array.isArray(scheduled) ? scheduled : []), ...(Array.isArray(executing) ? executing : [])];
+      setScheduledWOs(allScheduled);
     });
   };
 
@@ -1129,6 +1136,7 @@ export default function Scheduling() {
       assigned_workers: [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }],
       planned_start: toDateStr(dayDate),
       planned_end: toDateStr(dayDate),
+      shift: shift,
     })
       .then(() => {
         toast.success(`${wo.wo_number} → ${tech.name}`);
@@ -1151,6 +1159,7 @@ export default function Scheduling() {
               assigned_workers: [{ worker_id: a.worker_id, name: a.worker_name, specialty: '' }],
               planned_start: a.suggested_date || new Date().toISOString().slice(0, 10),
               planned_end: a.suggested_date || new Date().toISOString().slice(0, 10),
+              shift: a.shift || "day",
             });
           } catch { /* skip failed */ }
         }

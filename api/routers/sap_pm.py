@@ -40,7 +40,18 @@ def get_maintenance_plan(plan_id: str, db: Session = Depends(get_db), user=Depen
 # ── BOM ──
 @router.get("/bom/{equipment_tag}")
 def get_equipment_bom(equipment_tag: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    r = db.execute(text("SELECT * FROM bom_items WHERE equipment_tag = :t ORDER BY item_number"), {"t": equipment_tag})
+    # Try bom_items first, fallback to hierarchy children
+    try:
+        r = db.execute(text("SELECT * FROM bom_items WHERE equipment_tag = :t ORDER BY item_number"), {"t": equipment_tag})
+        rows = _rows_to_dicts(r)
+        if rows:
+            return rows
+    except:
+        pass
+    # Fallback: get child nodes from hierarchy as BOM
+    r = db.execute(text("SELECT node_id, name, code, tag, node_type, level FROM hierarchy_nodes WHERE parent_node_id = (SELECT node_id FROM hierarchy_nodes WHERE tag = :t LIMIT 1)"), {"t": equipment_tag})
+    rows = _rows_to_dicts(r)
+    return [{"item_number": i+1, "component": row.get("name",""), "sap_code": row.get("code",""), "quantity": 1, "unit": "UN", "critical": row.get("node_type") == "EQUIPMENT"} for i, row in enumerate(rows)]
     return _rows_to_dicts(r)
 
 
@@ -63,14 +74,15 @@ def get_point_readings(point_id: str, db: Session = Depends(get_db), user=Depend
 @router.get("/permits")
 def list_permits(status: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     if status:
-        r = db.execute(text("SELECT * FROM permits_to_work WHERE status = :s ORDER BY created_at DESC"), {"s": status})
+        r = db.execute(text("SELECT permit_id, permit_id as permit_number, permit_type, description, equipment_tag, wo_reference as wo_number, status, issued_by as requested_by, valid_from, valid_until, 'MEDIUM' as risk_level, 0 as loto_required, '[]' as loto_points, '[]' as safety_measures FROM work_permits WHERE status = :s ORDER BY valid_from DESC"), {"s": status})
     else:
-        r = db.execute(text("SELECT * FROM permits_to_work ORDER BY created_at DESC"))
+        r = db.execute(text("SELECT permit_id, permit_id as permit_number, permit_type, description, equipment_tag, wo_reference as wo_number, status, issued_by as requested_by, valid_from, valid_until, 'MEDIUM' as risk_level, 0 as loto_required, '[]' as loto_points, '[]' as safety_measures FROM work_permits ORDER BY valid_from DESC"))
     rows = _rows_to_dicts(r)
     return _parse_json_fields(rows, ["loto_points", "safety_measures"])
 
 
 # ── Purchase Requisitions ──
+@router.get("/purchase-reqs")
 @router.get("/purchase-requisitions")
 def list_purchase_reqs(status: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     if status:
@@ -99,7 +111,7 @@ def list_settlement_rules(wo_number: str = None, db: Session = Depends(get_db), 
 @router.get("/inventory")
 def list_inventory(warehouse_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     if warehouse_id:
-        r = db.execute(text("SELECT * FROM inventory_items WHERE warehouse_id = :w ORDER BY material_code"), {"w": warehouse_id})
+        r = db.execute(text("SELECT sap_id as material_code, description, current_stock as in_stock, 0 as reserved, current_stock as available, min_stock, max_stock as reorder_point, CASE WHEN current_stock <= min_stock THEN 'LOW' ELSE 'OK' END as status FROM sap_materials WHERE current_stock > 0 ORDER BY sap_id LIMIT 100"))
     else:
-        r = db.execute(text("SELECT * FROM inventory_items ORDER BY material_code"))
+        r = db.execute(text("SELECT sap_id as material_code, description, current_stock as in_stock, 0 as reserved, current_stock as available, min_stock, max_stock as reorder_point, CASE WHEN current_stock <= min_stock THEN 'LOW' ELSE 'OK' END as status FROM sap_materials WHERE current_stock > 0 ORDER BY sap_id LIMIT 100"))
     return _rows_to_dicts(r)

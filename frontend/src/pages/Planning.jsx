@@ -26,29 +26,43 @@ function PriorityLabel({ priority }) {
 
 /* ── BBP Constants ── */
 const PLANNING_GROUPS = [
-  { value: 'P01', label: 'P01 - Dry Area Plant' },
-  { value: 'P02', label: 'P02 - Heap Leach Area' },
-  { value: 'P03', label: 'P03 - Wet Area Plant' },
-  { value: 'M01', label: 'M01 - Mine Drilling' },
-  { value: 'M02', label: 'M02 - Mine Blasting' },
-  { value: 'M03', label: 'M03 - Mine Loading' },
-  { value: 'M04', label: 'M04 - Mine Hauling' },
-  { value: 'M05', label: 'M05 - Mine Support' },
+  { value: 'P01', label: 'P01 - Plant GP Dry Area' },
+  { value: 'P02', label: 'P02 - Plant GP Heap Leach' },
+  { value: 'P03', label: 'P03 - Plant GP Wet Area' },
+  { value: 'M01', label: 'M01 - Mine GP Drilling' },
+  { value: 'M02', label: 'M02 - Mine GP Loading' },
+  { value: 'M03', label: 'M03 - Mine GP Hauling' },
+  { value: 'M04', label: 'M04 - Mine GP Support Equipment' },
+  { value: 'M05', label: 'M05 - Mine GP Auxiliary Equipment' },
 ];
 const WORK_CENTERS = [
   { value: 'PASMEC01', label: 'Mechanical Dry Area', group: 'P01' },
   { value: 'PASELE01', label: 'Electrical Dry Area', group: 'P01' },
-  { value: 'PHUMEC01', label: 'Mechanical Wet Area', group: 'P03' },
-  { value: 'PHUELE01', label: 'Electrical Wet Area', group: 'P03' },
-  { value: 'PRIPMEC1', label: 'Mechanical Heap Leach', group: 'P02' },
-  { value: 'PRIPELE1', label: 'Electrical Heap Leach', group: 'P02' },
-  { value: 'MPCMEC01', label: 'Mechanical Drilling', group: 'M01' },
-  { value: 'MPCELE01', label: 'Electrical Drilling', group: 'M01' },
-  { value: 'MTRMEC01', label: 'Mechanical Blasting', group: 'M02' },
-  { value: 'MCTMEC01', label: 'Mechanical Loading/Hauling', group: 'M03' },
-  { value: 'MCTELE01', label: 'Electrical Loading/Hauling', group: 'M03' },
-  { value: 'MAPMEC01', label: 'Mechanical Mine Support', group: 'M05' },
+  { value: 'PASINS01', label: 'Instrumentation Dry Area', group: 'P01' },
+  { value: 'PASLUB01', label: 'Lubrication Dry Area', group: 'P01' },
+  { value: 'PARELE01', label: 'Electrical Heap Leach', group: 'P02' },
+  { value: 'PARINS01', label: 'Instrumentation Heap Leach', group: 'P02' },
+  { value: 'PAHMEC01', label: 'Mechanical Wet Area', group: 'P03' },
+  { value: 'PAHELE01', label: 'Electrical Wet Area', group: 'P03' },
+  { value: 'PAHINS01', label: 'Instrumentation Wet Area', group: 'P03' },
+  { value: 'PSHSIN01', label: 'Synoptic', group: 'P01' },
+  { value: 'PSHDCS01', label: 'DCS & Automation', group: 'P01' },
+  { value: 'MPCMEC01', label: 'Mechanical Drilling & Loading', group: 'M01' },
+  { value: 'MTAMEC01', label: 'Mechanical Hauling & Support', group: 'M03' },
+  { value: 'MPCELE01', label: 'Electrical Drilling & Loading', group: 'M01' },
+  { value: 'MTAELE01', label: 'Electrical Hauling & Support', group: 'M03' },
+  { value: 'MPREDI01', label: 'Predictive Mine', group: 'M01' },
+  { value: 'MEXTSOL1', label: 'Welding (External)', group: 'M04' },
+  { value: 'MEXTLAV1', label: 'Washing (External)', group: 'M04' },
+  { value: 'MEXTNEU1', label: 'Tires (External)', group: 'M04' },
   { value: 'MAPELE01', label: 'Electrical Mine Support', group: 'M05' },
+];
+const WAREHOUSES = [
+  { value: 'WH-001', label: 'WH-001 - Main Warehouse Plant' },
+  { value: 'WH-002', label: 'WH-002 - Wet Area Storage' },
+  { value: 'WH-003', label: 'WH-003 - Heavy Parts Yard' },
+  { value: 'WH-004', label: 'WH-004 - Mine Workshop Store' },
+  { value: 'WH-005', label: 'WH-005 - Emergency Spares' },
 ];
 const AREAS_EMPRESA = [
   { value: 'SEC', label: 'SEC - Dry Area' },
@@ -580,7 +594,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           <span className={`text-xs ${pColor[wo.priority_code||wo.priority] || 'text-gray-500'}`}>{wo.priority_code||wo.priority||'—'}</span>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-500">
-                          {wo.planned_start ? new Date(wo.planned_start).toLocaleDateString('es', { day: '2-digit', month: 'short' }) : '—'}
+                          {wo.planned_start ? new Date(wo.planned_start).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }) : '—'}
                         </td>
                         <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
                           <button onClick={async () => {
@@ -946,14 +960,14 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           EN_PROGRESO:{label:'In Execution',color:'bg-amber-100 text-amber-700'},
         };
         const NEXT = {
-          CREADO:[['PLANIFICADO','Plan','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
+          CREADO:[['PLANIFICADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           PLANIFICADO:[['PROGRAMADO','Schedule','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           PROGRAMADO:[['EN_EJECUCION','Start Execution','bg-amber-500 text-white hover:bg-amber-600'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           REPROGRAMADO:[['PROGRAMADO','Reschedule','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           EN_EJECUCION:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600']],
           CERRADO:[],
           CANCELADO:[],
-          PENDIENTE:[['PLANIFICADO','Plan','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
+          PENDIENTE:[['PLANIFICADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           APROBADO:[['PROGRAMADO','Schedule','bg-indigo-600 text-white hover:bg-indigo-700'],['EN_EJECUCION','Start','bg-amber-500 text-white hover:bg-amber-600'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
           EN_PROGRESO:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700']],
         };
@@ -982,7 +996,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
         return (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOT(null)}>
-            <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[92vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[95vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
               {/* HEADER */}
               <div className="border-b px-6 py-4 rounded-t-2xl">
@@ -1043,6 +1057,45 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         ))}
                       </div>
                     </div>
+
+                    {/* Technical Details - C21 */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Technical Location</div>
+                        <div className="text-sm font-mono font-semibold text-gray-800 mt-1">{wo.technical_location || wo.equipment_tag || '—'}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Planning Group</div>
+                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.planning_group || '—'}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Work Center</div>
+                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.work_center || '—'}</div>
+                      </div>
+                    </div>
+
+                    {/* C22: Dates - Start/End + Week number */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Start</div>
+                        <input type="date" value={editDates.start ? editDates.start.slice(0, 10) : ''}
+                          onChange={e => setEditDates(d => ({...d, start: e.target.value}))}
+                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                      </div>
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned End</div>
+                        <input type="date" value={editDates.end ? editDates.end.slice(0, 10) : ''}
+                          onChange={e => setEditDates(d => ({...d, end: e.target.value}))}
+                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                      </div>
+                      <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Week Number</div>
+                        <div className="text-lg font-bold text-indigo-800 mt-1">
+                          {editDates.start ? 'W' + String(Math.ceil(((new Date(editDates.start) - new Date(new Date(editDates.start).getFullYear(), 0, 1)) / 86400000 + new Date(new Date(editDates.start).getFullYear(), 0, 1).getDay() + 1) / 7)).padStart(2, '0') : '—'}
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 )}
 
@@ -1057,7 +1110,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     {editOps.length === 0 ? (
                       <div className="text-center py-6 text-gray-400">
                         <p className="text-sm">No operations</p>
-                        <p className="text-xs">Click "+ Add" para crear pasos de trabajo</p>
+                        <p className="text-xs">Click "+ Add" to create work steps</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -1070,7 +1123,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 <option value="INT">INT</option><option value="EXT">EXT</option>
                               </select>
                               <input value={op.description || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], description: e.target.value}; setEditOps(n); }}
-                                className="flex-1 text-sm border rounded px-2 py-1" placeholder="Operation description" />
+                                className="flex-1 text-sm border rounded px-2 py-1" placeholder="Describe the action/task (e.g., Replace bearing, Inspect valve)" />
                               <button type="button" onClick={() => setEditOps(prev => prev.filter((_,i) => i !== idx))}
                                 className="text-red-400 hover:text-red-600 p-1">
                                 <X size={14} />
@@ -1079,7 +1132,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             <div className="flex items-center gap-3 ml-7">
                               <select value={op.specialty || 'Mechanical'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
                                 className="text-xs border rounded px-2 py-1">
-                                {['Mechanical','Electrical','Instrumentation','Welder','Lubrication','Crane Operator','Scaffolder','Supervisor','Other'].map(s => <option key={s} value={s}>{s}</option>)}
+                                {['Mechanical','Electrical','Instrument Tech','Welder','Lubrication','Crane Operator','Scaffolder','Boilermaker','Other'].map(s => <option key={s} value={s}>{s}</option>)}
                               </select>
                               <div className="flex items-center gap-1">
                                 <label className="text-[10px] text-gray-500">Qty:</label>
@@ -1090,6 +1143,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 <label className="text-[10px] text-gray-500">Hours:</label>
                                 <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
                                   className="w-14 text-xs border rounded px-1 py-1 text-center" />
+                              </div>
+                              <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs font-bold text-emerald-700 whitespace-nowrap">
+                                {((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH
                               </div>
                             </div>
                           </div>
@@ -1141,7 +1197,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>;
                     })()}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-2">Materials Utilizados</label>
+                      <label className="text-xs font-semibold text-gray-600 block mb-2">Materials Used</label>
                       {(wo.materials || []).length > 0 ? (
                         <div className="space-y-2">
                           {(wo.materials || []).map((mat, idx) => (
@@ -1279,56 +1335,56 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     <h3 className="text-sm font-semibold text-gray-800">Cost Control</h3>
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                       <div className="text-xs font-semibold text-emerald-700 mb-1">Auto-calculated from Operations + Materials</div>
-                      <div className="grid grid-cols-4 gap-2 text-xs">
-                        <div><span className="text-gray-500">Labor:</span> <span className="font-bold">${calculatedCosts.laborCost.toFixed(0)}</span> <span className="text-gray-400">({calculatedCosts.laborHours}h x ${LABOR_RATE}/h)</span></div>
-                        <div><span className="text-gray-500">Materials:</span> <span className="font-bold">${calculatedCosts.materialCost.toFixed(0)}</span></div>
-                        <div><span className="text-gray-500">External:</span> <span className="font-bold">${calculatedCosts.externalCost.toFixed(0)}</span></div>
-                        <div><span className="text-gray-500">Total:</span> <span className="font-bold text-emerald-800">${calculatedCosts.total.toFixed(0)}</span></div>
-                      </div>
-                    </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <label className="text-xs font-semibold text-blue-700 block mb-2">Planned Dates</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10px] text-gray-500">Start</label>
-                          <input type="date" value={editDates.start} onChange={e => setEditDates(p => ({...p, start: e.target.value}))}
-                            className="w-full text-xs border rounded px-2 py-1.5" />
+                      <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-200">
+                        <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                          <div className="text-[10px] text-blue-600 font-semibold uppercase">Plan</div>
+                          <div className="text-lg font-bold text-blue-800">${totalPlan.toFixed(0)}</div>
                         </div>
-                        <div>
-                          <label className="text-[10px] text-gray-500">End</label>
-                          <input type="date" value={editDates.end} onChange={e => setEditDates(p => ({...p, end: e.target.value}))}
-                            className="w-full text-xs border rounded px-2 py-1.5" />
+                        <div className="bg-amber-50 rounded-lg p-3 text-center border border-amber-200">
+                          <div className="text-[10px] text-amber-600 font-semibold uppercase">Real</div>
+                          <div className="text-lg font-bold text-amber-800">${totalReal.toFixed(0)}</div>
                         </div>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {costCats.map(cat => {
-                        const delta = cat.real - cat.plan;
-                        const over = delta > 0;
-                        return (
-                          <div key={cat.key} className="bg-gray-50 rounded-lg p-3 border">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium">{cat.label}</span>
-                              <span className={"text-xs font-bold "+(over ? "text-red-600" : delta < 0 ? "text-green-600" : "text-gray-500")}>
-                                {delta !== 0 ? (over ? "+" : "") + "$" + Math.abs(delta).toFixed(0) : "\—"}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-xs">
-                              <div><span className="text-gray-500">Plan:</span> <span className="font-medium">${cat.plan.toFixed(0)}</span></div>
-                              <div><span className="text-gray-500">Real:</span> <span className="font-medium">${cat.real.toFixed(0)}</span></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 flex justify-between items-center">
-                        <span className="text-sm font-bold text-blue-800">Total</span>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500">Plan: ${totalPlan.toFixed(0)} | Real: ${totalReal.toFixed(0)}</div>
-                          <div className={"text-sm font-bold "+(totalReal > totalPlan ? "text-red-600" : "text-green-600")}>
-                            {totalReal > totalPlan ? "+" : ""}${(totalReal - totalPlan).toFixed(0)}
+                        <div className={(totalReal - totalPlan) > 0 ? "bg-red-50 rounded-lg p-3 text-center border border-red-200" : "bg-green-50 rounded-lg p-3 text-center border border-green-200"}>
+                          <div className="text-[10px] font-semibold uppercase" style={{color: (totalReal - totalPlan) > 0 ? '#991b1b' : '#166534'}}>Delta</div>
+                          <div className="text-lg font-bold" style={{color: (totalReal - totalPlan) > 0 ? '#991b1b' : '#166534'}}>
+                            {(totalReal - totalPlan) > 0 ? '+' : ''}{(totalReal - totalPlan).toFixed(0)}
                           </div>
                         </div>
                       </div>
+                      {/* Plan vs Real detail table */}
+                      <table className="w-full text-xs mt-3 border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="text-left px-2 py-1.5 font-semibold">Category</th>
+                            <th className="text-right px-2 py-1.5 font-semibold text-blue-700">Plan</th>
+                            <th className="text-right px-2 py-1.5 font-semibold text-amber-700">Real</th>
+                            <th className="text-right px-2 py-1.5 font-semibold">Delta</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {costCats.map(ci => {
+                            const delta = ci.real - ci.plan;
+                            return (
+                              <tr key={ci.key} className="border-b">
+                                <td className="px-2 py-1.5 font-medium">{ci.label}</td>
+                                <td className="px-2 py-1.5 text-right text-blue-700">${ci.plan.toFixed(0)}</td>
+                                <td className="px-2 py-1.5 text-right text-amber-700">${ci.real.toFixed(0)}</td>
+                                <td className={"px-2 py-1.5 text-right font-bold " + (delta > 0 ? "text-red-600" : "text-green-600")}>
+                                  {delta > 0 ? '+' : ''}{delta.toFixed(0)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          <tr className="border-t-2 border-gray-300 font-bold">
+                            <td className="px-2 py-1.5">Total</td>
+                            <td className="px-2 py-1.5 text-right text-blue-800">${totalPlan.toFixed(0)}</td>
+                            <td className="px-2 py-1.5 text-right text-amber-800">${totalReal.toFixed(0)}</td>
+                            <td className={"px-2 py-1.5 text-right " + ((totalReal-totalPlan) > 0 ? "text-red-600" : "text-green-600")}>
+                              {(totalReal-totalPlan) > 0 ? '+' : ''}{(totalReal-totalPlan).toFixed(0)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}
@@ -1350,7 +1406,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         {items.map((entry, idx) => (
                           <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] text-gray-400">{entry.timestamp ? new Date(entry.timestamp).toLocaleString('es', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</span>
+                              <span className="text-[10px] text-gray-400">{entry.timestamp ? new Date(entry.timestamp).toLocaleString('en-US', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</span>
                             </div>
                             <p className="text-xs text-gray-700">{entry.note || entry.message || JSON.stringify(entry)}</p>
                           </div>

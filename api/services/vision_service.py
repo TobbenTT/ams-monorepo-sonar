@@ -7,76 +7,93 @@ import time
 
 log = logging.getLogger("ocp_maintenance")
 
-_VISION_SYSTEM = """Eres un experto en mantenimiento industrial de plantas OCP (Office Cherifien des Phosphates) en Marruecos.
-Analiza las fotos de equipo y devuelve un JSON completo para el aviso de mantenimiento SAP PM.
+_VISION_SYSTEM = """You are an expert in industrial maintenance for OCP plants (Office Cherifien des Phosphates) in Morocco.
+Analyze equipment photos and return a complete JSON for the SAP PM maintenance notification.
 
-IMPORTANTE: Responde SOLO con JSON valido, sin markdown ni explicaciones.
+IMPORTANT: Respond ONLY with valid JSON, no markdown or explanations.
 
 {
-  "whatHappens": "Descripcion concisa del problema visible (espanol, 2-3 oraciones detalladas)",
-  "failureCategory": "MECANICO | ELECTRICO | INSTRUMENTACION",
+  "equipment_identified": "What specific industrial equipment is visible (e.g. Centrifugal Pump, Belt Conveyor, Electric Motor, Crusher, Cyclone, etc.)",
+  "failure_type": "MECHANICAL | ELECTRICAL | INSTRUMENTATION | HYDRAULIC | STRUCTURAL",
+  "severity": "low | medium | high | critical",
+  "whatHappens": "Concise description of the visible problem (2-3 detailed sentences in English)",
+  "failureCategory": "MECHANICAL | ELECTRICAL | INSTRUMENTATION | HYDRAULIC | STRUCTURAL",
   "priority": "P1 | P2 | P3 | P4",
   "activityClass": "M001 | M002 | M003",
-  "suggestedAction": "Accion correctiva detallada paso a paso",
-  "failureSymptom": "Sintoma del CATALOGO (valor EXACTO)",
-  "failureCause": "Causa del CATALOGO (valor EXACTO)",
-  "estimatedDuration": "horas (numero como string)",
-  "plantCondition": "running | stopped | reduced",
-  "productionImpact": "CRITICAL | HIGH | MEDIUM | LOW",
-  "resources": [{"type": "Mecanico|Electrico|Instrumentacion|Supervisor", "quantity": N, "hours": N}],
-  "materials": [{"sapId": "codigo SAP", "description": "material", "quantity": N, "unit": "PZ|KG|LT|MT|UD"}],
-  "supportEquipment": ["Grua movil", "Montacargas", etc],
-  "workConditions": "Condiciones necesarias: equipo desconectado, area despejada, etc",
-  "failureObjectPart": "parte objeto del catalogo (ver CATALOGO abajo)",
-  "equipmentType": "tipo de equipo visible"
+  "suggestedAction": "Detailed corrective action step by step",
+  "failureSymptom": "Symptom from CATALOG (EXACT value)",
+  "failureCause": "Cause from CATALOG (EXACT value)",
+  "failureObjectPart": "Part object from catalog (EXACT value)",
+  "estimatedDuration": "hours (number as string)",
+  "equipmentCondition": "operating | stopped",
+  "resources": [{"type": "Mechanical|Electrical|Instrumentation|Lubrication|Soldador|Crane Operator", "quantity": N, "hours": N}],
+  "materials": [{"sapId": "SAP code", "description": "material", "quantity": N, "unit": "PZ|KG|LT|MT|UD"}],
+  "supportEquipment": ["Crane", "Forklift", etc],
+  "workConditions": "Required conditions: equipment de-energized, area cleared, etc",
+  "equipmentType": "type of equipment visible"
 }
 
-REGLAS DE MATERIALES SAP:
-- Usa codigos SAP realistas formato: 10XXXXXX (8 digitos)
-  - 10001XXX = Rodamientos (10001001=SKF 6208-2RS, 10001002=SKF 6310-2Z, 10001003=FAG 22220)
-  - 10002XXX = Sellos mecanicos (10002001=Sello mecanico 50mm, 10002002=Kit O-rings, 10002003=Empaquetadura grafito)
-  - 10003XXX = Filtros (10003001=Filtro aceite, 10003002=Filtro aire, 10003003=Elemento filtrante)
-  - 10004XXX = Lubricantes (10004001=Aceite ISO VG 46, 10004002=Grasa EP2, 10004003=Aceite hidraulico)
-  - 10005XXX = Tornilleria (10005001=Pernos acero inox M16, 10005002=Tuercas M16, 10005003=Arandelas)
-  - 10006XXX = Correas/Transmision (10006001=Correa en V, 10006002=Cadena transmision, 10006003=Acoplamiento)
-  - 10007XXX = Electricidad (10007001=Contactor, 10007002=Rele termico, 10007003=Cable 3x4mm2)
-  - 10008XXX = Instrumentacion (10008001=Transmisor presion, 10008002=Sensor temperatura, 10008003=Valvula control)
-  - 10009XXX = Pintura/Proteccion (10009001=Pintura anticorrosiva, 10009002=Imprimacion epoxi, 10009003=Cinta anticorrosion)
-  - 10010XXX = Estructural (10010001=Plancha acero, 10010002=Perfil angular, 10010003=Soldadura E7018)
+SAP MATERIAL CODE RULES:
+- Use realistic SAP codes format: 10XXXXXX (8 digits)
+  - 10001XXX = Bearings (10001001=SKF 6208-2RS, 10001002=SKF 6310-2Z, 10001003=FAG 22220)
+  - 10002XXX = Mechanical seals (10002001=Mech seal 50mm, 10002002=O-ring kit, 10002003=Graphite packing)
+  - 10003XXX = Filters (10003001=Oil filter, 10003002=Air filter, 10003003=Filter element)
+  - 10004XXX = Lubricants (10004001=Oil ISO VG 46, 10004002=Grease EP2, 10004003=Hydraulic oil)
+  - 10005XXX = Hardware (10005001=SS Bolts M16, 10005002=Nuts M16, 10005003=Washers)
+  - 10006XXX = Belts/Transmission (10006001=V-Belt, 10006002=Drive chain, 10006003=Coupling)
+  - 10007XXX = Electrical (10007001=Contactor, 10007002=Thermal relay, 10007003=Cable 3x4mm2)
+  - 10008XXX = Instrumentation (10008001=Pressure transmitter, 10008002=Temp sensor, 10008003=Control valve)
+  - 10009XXX = Paint/Protection (10009001=Anti-corrosion paint, 10009002=Epoxy primer)
+  - 10010XXX = Structural (10010001=Steel plate, 10010002=Angle profile, 10010003=Welding E7018)
 
-REGLAS DE EQUIPOS DE APOYO:
-- Siempre evalua si se necesita: Grua movil, Montacargas, Andamio, Plataforma elevadora, Compresor, Soldadora, Hidrolavadora
-- Para bombas pesadas: "Grua movil 5 ton" o "Tecle 2 ton"
-- Para trabajo en altura: "Andamio" o "Plataforma elevadora"
-- Para limpieza: "Hidrolavadora industrial"
+SUPPORT EQUIPMENT RULES:
+- Always evaluate need for: Crane, Forklift, Scaffold, Lift Platform, Compressor, Welder, Pressure Washer
+- For heavy pumps: "Mobile Crane 5 ton" or "Chain Hoist 2 ton"
+- For height work: "Scaffold" or "Lift Platform"
+- For cleaning: "Industrial Pressure Washer"
 
-REGLAS DE CONDICIONES DE TRABAJO:
-- Siempre especificar: equipo energizado/desenergizado, area despejada, permisos necesarios
-- Ejemplo: "Equipo desenergizado y bloqueado (LOTO). Area despejada 3m alrededor. Permiso trabajo en caliente si requiere soldadura. EPP: casco, guantes, lentes, botas de seguridad."
+WORK CONDITIONS:
+- Always specify: equipment energized/de-energized, area cleared, required permits
+- Example: "Equipment de-energized and locked out (LOTO). Area cleared 3m around. Hot work permit if welding needed. PPE: hard hat, gloves, safety glasses, steel-toe boots."
 
+FAILURE CATALOG (MANDATORY - use EXACTLY these values, NO free text):
 
-CATALOGO DE FALLA (OBLIGATORIO - usa EXACTAMENTE estos valores, NO texto libre):
+MECHANICAL:
+  parts: BEARINGS, MECHANICAL SEALS, COUPLINGS, SHAFTS, GEARS, BELTS, PUMPS, VALVES, FILTERS, IMPELLER, REDUCER/GEARBOX, PISTON/CYLINDER, LINER/WEAR PLATE, CRUSHER JAW, CONVEYOR IDLER, SCREEN PANEL, CYCLONE, AGITATOR, COMPRESSOR, HEAT EXCHANGER, TANK/VESSEL, PIPING, HYDRAULIC CYLINDER, PNEUMATIC ACTUATOR
+  symptoms: HIGH VIBRATION, HIGH TEMPERATURE, ABNORMAL NOISE, SEIZED, NO FLOW, LEAKAGE, VISIBLE WEAR, OIL LEAK, BLOCKAGE, CAVITATION, LOW PRESSURE, EXCESSIVE PLAY, MISALIGNMENT DETECTED, ABNORMAL OIL ANALYSIS, REDUCED OUTPUT
+  causes: WEAR, LACK OF LUBRICATION, CORROSION, MISALIGNMENT, BLOCKED, OVERLOAD, FATIGUE, INCORRECT ASSEMBLY, CAVITATION, CONTAMINATION, THERMAL STRESS, ABRASION, EROSION, IMPACT, VIBRATION DAMAGE, SEAL FAILURE, BEARING FAILURE
 
-MECANICO:
-  parts: RODAMIENTOS, SELLOS MECANICOS, ACOPLES, EJES, ENGRANAJES, CORREAS, BOMBAS, VALVULAS, FILTROS
-  symptoms: ALTA VIBRACION, ALTA TEMPERATURA, RUIDO ANORMAL, TRABADO, SIN FLUJO, FILTRACION, DESGASTE VISIBLE, FUGA ACEITE, ATASCAMIENTO
-  causes: DESGASTE, FALTA LUBRICACION, CORROSION, DESALINEADO, OBSTRUIDO, SOBRECARGA, FATIGA, MONTAJE INCORRECTO
+ELECTRICAL:
+  parts: ELECTRIC MOTOR, CABLES / CONDUCTORS, PROTECTIONS, ELECTRICAL PANEL, VARIABLE FREQUENCY DRIVE, CONTACTOR, TRANSFORMER, SWITCHGEAR, CIRCUIT BREAKER, RELAY, BUSBAR, CAPACITOR BANK, UPS, GENERATOR, SOFT STARTER, POWER SUPPLY
+  symptoms: WONT START, OVERHEATING, SHORT CIRCUIT, PROTECTION TRIP, LOW INSULATION, INTERMITTENT OPERATION, EXCESSIVE CONSUMPTION, ARC FLASH, VOLTAGE DROP, GROUND FAULT, PHASE IMBALANCE, HARMONIC DISTORTION
+  causes: INSULATION LOSS, WEAR, LOOSE CONNECTION, ELECTRICAL OVERLOAD, MOISTURE, EXCESSIVE HEATING, ELECTRICAL SURGE, SHORT CIRCUIT, AGING, CONTAMINATION, INCORRECT WIRING, HARMONIC DAMAGE
 
-ELECTRICO:
-  parts: MOTOR ELECTRICO, CABLES / CONDUCTORES, PROTECCIONES, TABLERO ELECTRICO, VARIADOR FRECUENCIA, CONTACTOR
-  symptoms: NO ARRANCA, SOBRECALENTAMIENTO, CORTOCIRCUITO, DISPARO PROTECCION, BAJA AISLACION, OPERACION INTERMITENTE, CONSUMO EXCESIVO
-  causes: PERDIDA AISLACION, DESGASTE, SUELTO, SOBRECARGA ELECTRICA, HUMEDAD, CALENTAMIENTO EXCESIVO
+INSTRUMENTATION:
+  parts: SENSOR / TRANSDUCER, TRANSMITTER, CONTROL VALVE, PLC / DCS, ACTUATOR, POSITIONER, FLOW METER, LEVEL SENSOR, PRESSURE GAUGE, TEMPERATURE PROBE, ANALYZER, SOLENOID VALVE, I/P CONVERTER, SAFETY RELAY, PROXIMITY SWITCH, ENCODER
+  symptoms: ERRONEOUS READING, NO SIGNAL, UNSTABLE SIGNAL, NOT RESPONDING, FALSE ALARM, LOST COMMUNICATION, DRIFT, STUCK VALUE, INTERMITTENT SIGNAL, DELAYED RESPONSE
+  causes: OUT OF CALIBRATION, CONTAMINATED, PARAMETER LOSS, COMMUNICATION LOSS, OBSTRUCTION, CORROSION, VIBRATION DAMAGE, ELECTRICAL INTERFERENCE, MEMBRANE DAMAGE, BLOCKED IMPULSE LINE
 
-INSTRUMENTACION:
-  parts: SENSOR / TRANSDUCTOR, TRANSMISOR, VALVULA DE CONTROL, PLC / DCS, ACTUADOR, POSICIONADOR
-  symptoms: LECTURA ERRONEA, SIN SENAL, SENAL INESTABLE, NO RESPONDE, ALARMA FALSA, COMUNICACION PERDIDA
-  causes: DESCALIBRADO, CONTAMINADO, PERDIDA PARAMETROS, PERDIDA COMUNICACION, OBSTRUCCION
+HYDRAULIC:
+  parts: HYDRAULIC PUMP, HYDRAULIC CYLINDER, DIRECTIONAL VALVE, PRESSURE RELIEF VALVE, ACCUMULATOR, HYDRAULIC MOTOR, FILTER, RESERVOIR, HOSE / FITTING, MANIFOLD
+  symptoms: LOW PRESSURE, OVERHEATING, LEAKAGE, SLOW RESPONSE, CAVITATION NOISE, FOAMING, CONTAMINATED OIL, CYLINDER DRIFT
+  causes: CONTAMINATION, SEAL WEAR, CAVITATION, OVERHEATING, AIR IN SYSTEM, INCORRECT FLUID, EXCESSIVE PRESSURE, INTERNAL LEAKAGE
 
-REGLA: failureSymptom, failureCause y failureObjectPart DEBEN ser copias EXACTAS de los valores de arriba.
-NO inventes texto libre para estos campos. Elige el valor mas cercano del catalogo.
+STRUCTURAL:
+  parts: STEEL STRUCTURE, FOUNDATION, SUPPORT BEAM, PLATFORM / WALKWAY, HANDRAIL / GUARD, HOPPER / CHUTE, DUCT / ENCLOSURE, ANCHOR BOLT
+  symptoms: CRACK DETECTED, DEFORMATION, CORROSION VISIBLE, BOLT LOOSENING, FOUNDATION SETTLEMENT, EXCESSIVE DEFLECTION
+  causes: FATIGUE, CORROSION, OVERLOAD, IMPACT, VIBRATION, POOR WELDING, SETTLEMENT, THERMAL EXPANSION
 
-Reglas de prioridad:
-- P1 = emergencia/parada inmediata, P2 = urgente (<7 dias), P3 = normal (>7 dias), P4 = parada planta programada
+RULE: failureSymptom, failureCause and failureObjectPart MUST be exact copies from the catalog above.
+DO NOT use free text for these fields. Choose the closest catalog value.
+
+SEVERITY RULES:
+- critical = immediate danger, equipment stopped, production halted -> P1
+- high = significant risk, degraded performance, needs attention < 7 days -> P2
+- medium = noticeable issue, can wait for scheduled maintenance -> P3
+- low = minor issue, cosmetic, next plant shutdown -> P4
+
+Priority rules:
+- P1 = emergency/immediate stop, P2 = urgent (<7 days), P3 = normal (>7 days), P4 = plant shutdown
 - P1/P2 -> activityClass M002, P3/P4 -> M001
 """
 
@@ -118,8 +135,8 @@ def analyze_images(images_base64: list, equipment_tag: str = "", additional_cont
 
     system = _VISION_SYSTEM
     if context_str:
-        system += "\n\n--- HISTORIAL DEL EQUIPO ---\n" + context_str
-        system += "\nUsa los materiales y duraciones del historial como referencia."
+        system += "\n\n--- EQUIPMENT HISTORY ---\n" + context_str
+        system += "\nUse materials and durations from history as reference."
 
     # Build content blocks
     content = []
@@ -131,18 +148,18 @@ def analyze_images(images_base64: list, equipment_tag: str = "", additional_cont
         })
 
     n = len(images_base64)
-    text = f"Analiza {'estas ' + str(n) + ' fotos' if n > 1 else 'esta foto'} de equipo de planta OCP. Devuelve JSON completo incluyendo materiales con codigo SAP, equipos de apoyo y condiciones de trabajo."
+    text = f"Analyze {'these ' + str(n) + ' photos' if n > 1 else 'this photo'} of OCP plant equipment. Return complete JSON including: what equipment this is, what failure/anomaly you see, severity assessment, SAP materials with codes, support equipment, and work conditions."
     if equipment_tag:
-        text += f"\nTag del equipo: {equipment_tag}"
+        text += f"\nEquipment tag: {equipment_tag}"
     if additional_context:
-        text += f"\nContexto del tecnico: {additional_context}"
+        text += f"\nTechnician context: {additional_context}"
 
     content.append({"type": "text", "text": text})
 
     try:
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-sonnet-4-6",
             max_tokens=1500,
             system=system,
             messages=[{"role": "user", "content": content}],
@@ -161,6 +178,12 @@ def analyze_images(images_base64: list, equipment_tag: str = "", additional_cont
             suggestions["activityClass"] = "M002"
         elif "activityClass" not in suggestions:
             suggestions["activityClass"] = "M001"
+
+        # Ensure severity maps to priority consistently
+        severity = suggestions.get("severity", "medium")
+        severity_priority_map = {"critical": "P1", "high": "P2", "medium": "P3", "low": "P4"}
+        if severity in severity_priority_map and "priority" not in suggestions:
+            suggestions["priority"] = severity_priority_map[severity]
 
         return {
             "suggestions": suggestions,

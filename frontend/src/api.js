@@ -175,6 +175,7 @@ export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);
 export const startWorkRequest = (id) => put(`/work-requests/${id}/start`);
 export const completeWorkRequest = (id, d) => put(`/work-requests/${id}/complete`, d);
 export const closeWorkRequest = (id, d) => put(`/work-requests/${id}/close`, d);
+export const reopenWorkRequest = (id) => put(`/work-requests/${id}/reopen`);
 export const createWRManual = (d) => post('/work-requests/manual', d);
 export const aiAssistWR = (d) => post("/work-requests/ai-assist", d);
 
@@ -347,6 +348,12 @@ export const calculateRoi = (d) => post('/financial/roi', d);
 export const compareRoiScenarios = (d) => post('/financial/roi/compare', d);
 export const getFinancialSummary = (p) => get('/financial/summary', p);
 export const getBudgetStatus = (p) => get('/financial/budget', p);
+export const getMonthlyTrend = () => get("/financial/monthly-trend");
+export const getCostByArea = () => get("/financial/cost-by-area");
+export const getMaintenanceCosts = () => get("/financial/maintenance-costs");
+export const getCapexProjects = () => get("/financial/capex-projects");
+export const getFinancialKpis = () => get("/financial/kpis");
+export const getEquipmentCosts = (p) => get("/financial/equipment-costs", p);
 
 // ── Troubleshooting (GAP-W02) ──
 export const createTroubleshootingSession = (d) => post('/troubleshooting/sessions', d);
@@ -395,6 +402,26 @@ export const listImportHistory = (p) => get('/imports/history', p);
 
 // ── Health check ──
 export const healthCheck = () => fetch('/health').then(r => r.json());
+
+// ── Admin Export/Import ──
+export const exportAllData = () => get('/admin/export-data');
+export const getImportSources = () => get('/admin/import-sources');
+export const getSettings = () => get('/admin/settings');
+export const saveSettingsAPI = (d) => put('/admin/settings', d);
+export const importUpload = async (file, source, plantId) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('source', source);
+  fd.append('plant_id', plantId);
+  const token = localStorage.getItem('token');
+  const res = await fetch((window.__API_BASE || '/api') + '/imports/upload', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+    body: fd,
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || res.statusText); }
+  return res.json();
+};
 
 // ── OR Projects (CORTEX OR System) ──
 export const createORProject = (d) => post('/or/projects', d);

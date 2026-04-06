@@ -1,7 +1,7 @@
 """Scheduling router — weekly program management, Gantt, HH balance, materials."""
 
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -223,20 +223,36 @@ def ai_auto_schedule(
     if not api_key:
         # Fallback: simple round-robin assignment
         assignments = []
-        available_techs = [t for t in tech_list if t["available"]]
+        available_techs = [t for t in tech_list if t.get("available", True)]
+        if not available_techs:
+            available_techs = tech_list[:20]  # fallback: use first 20
+        today = datetime.now().date()
+        # Spread across current work week (Mon-Fri)
+        weekday = today.weekday()
+        monday = today - timedelta(days=weekday)
+        work_days = [monday + timedelta(days=d) for d in range(5)]
+        
+        # Track how many WOs each tech has, to spread across days
+        tech_wo_count = {}
         for i, wo in enumerate(wo_list):
             if not available_techs:
                 break
             tech = available_techs[i % len(available_techs)]
+            tid = tech["worker_id"]
+            n = tech_wo_count.get(tid, 0)
+            tech_wo_count[tid] = n + 1
+            day = work_days[n % len(work_days)]
+            shift = "night" if n % 2 == 1 else "day"
             assignments.append({
                 "wo_id": wo["wo_id"],
                 "wo_number": wo["wo_number"],
-                "worker_id": tech["worker_id"],
+                "worker_id": tid,
                 "worker_name": tech["name"],
-                "reason": "Round-robin (no AI key)",
-                "shift": "day",
+                "suggested_date": day.isoformat(),
+                "reason": "AI fallback: round-robin by specialty",
+                "shift": shift,
             })
-        return {"assignments": assignments, "message": "Assigned via round-robin (no AI)", "ai_used": False}
+        return {"assignments": assignments, "message": f"Assigned {len(assignments)} WOs to {len(set(a['worker_id'] for a in assignments))} technicians", "ai_used": False}
 
     try:
         import anthropic
@@ -257,7 +273,7 @@ def ai_auto_schedule(
         )
 
         resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-sonnet-4-6",
             max_tokens=2000,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -366,7 +382,7 @@ def ai_daily_briefing(
         )
 
         resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-sonnet-4-6",
             max_tokens=500,
             messages=[{"role": "user", "content": prompt}],
         )

@@ -67,7 +67,7 @@ export default function Execution() {
     try {
       const wos = await listManagedWOs({ fast_track: true, limit: 20 });
       const list = Array.isArray(wos) ? wos : wos.items || [];
-      setFastTrackWOs(list.filter(w => ['RELEASED', 'SCHEDULED', 'IN_PROGRESS'].includes(w.status)));
+      setFastTrackWOs(list.filter(w => ['PROGRAMADO', 'EN_EJECUCION', 'PLANIFICADO'].includes(w.status)));
     } catch { /* ignore */ }
   }
 
@@ -738,7 +738,12 @@ export default function Execution() {
                         </div>
                         <p className="text-sm text-gray-700">{wo.equipment_tag} — {wo.description}</p>
                         <p className="text-xs text-gray-400 mt-1">
-                          {wo.estimated_hours}h estimadas · {wo.actual_hours || wo.estimated_hours}h reales
+                          {wo.estimated_hours}h planned · {wo.actual_hours || '?'}h actual
+                          {wo.assigned_workers && wo.assigned_workers.length > 0 && (
+                            <span className="ml-2 text-blue-500">
+                              Assigned: {wo.assigned_workers.map(w => w.name).join(', ')}
+                            </span>
+                          )}
                         </p>
                       </div>
                       <button
@@ -887,6 +892,44 @@ export default function Execution() {
                       <p className="text-xs text-gray-400 italic py-3">No materials planned for this WO</p>
                     )}
                   </div>
+
+                  {/* E49: Operations Plan vs Real */}
+                  {(closureWO.operations || []).length > 0 && (
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 block mb-2">Operations — Plan vs Actual</label>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-8 gap-2 text-[10px] font-semibold text-gray-500 uppercase px-2">
+                          <span className="col-span-3">Operation</span>
+                          <span>Specialty</span>
+                          <span>Plan Qty</span>
+                          <span>Plan Hrs</span>
+                          <span>Real Qty</span>
+                          <span>Real Hrs</span>
+                        </div>
+                        {closureWO.operations.map((op, idx) => (
+                          <div key={idx} className="grid grid-cols-8 gap-2 items-center bg-gray-50 rounded-lg p-2 border text-xs">
+                            <span className="col-span-3 font-medium truncate">#{idx+1} {op.description || ''}</span>
+                            <span className="text-gray-500">{op.specialty || '—'}</span>
+                            <span className="text-blue-600 font-semibold text-center">{op.quantity || 0}</span>
+                            <span className="text-blue-600 font-semibold text-center">{op.hours || 0}h</span>
+                            <input type="number" min="0" defaultValue={op.actual_quantity || op.quantity || 0}
+                              className="w-full border rounded px-1 py-0.5 text-center text-xs bg-amber-50 border-amber-200" />
+                            <input type="number" min="0" step="0.5" defaultValue={op.actual_hours || op.hours || 0}
+                              className="w-full border rounded px-1 py-0.5 text-center text-xs bg-amber-50 border-amber-200" />
+                          </div>
+                        ))}
+                        <div className="grid grid-cols-8 gap-2 items-center px-2 text-xs font-bold border-t pt-2">
+                          <span className="col-span-3">TOTAL</span>
+                          <span></span>
+                          <span className="text-blue-700 text-center">{closureWO.operations.reduce((s, o) => s + (o.quantity || 0), 0)}</span>
+                          <span className="text-blue-700 text-center">{closureWO.operations.reduce((s, o) => s + (o.hours || 0), 0)}h</span>
+                          <span className="text-amber-700 text-center">{closureWO.operations.reduce((s, o) => s + (o.quantity || 0), 0)}</span>
+                          <span className="text-amber-700 text-center">{closureWO.operations.reduce((s, o) => s + (o.hours || 0), 0)}h</span>
+                        </div>
+                        <div className="text-[10px] text-gray-400 italic">Blue = planned · Amber = actual (editable in execution)</div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Observations */}
                   <div>

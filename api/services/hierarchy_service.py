@@ -36,7 +36,7 @@ def get_node(db: Session, node_id: str) -> HierarchyNodeModel | None:
     return db.query(HierarchyNodeModel).filter(HierarchyNodeModel.node_id == node_id).first()
 
 
-def list_nodes(db: Session, plant_id: str | None = None, node_type: str | None = None, parent_node_id: str | None = None) -> list[HierarchyNodeModel]:
+def list_nodes(db: Session, plant_id: str | None = None, node_type: str | None = None, parent_node_id: str | None = None, search: str | None = None, limit: int = 500) -> list[HierarchyNodeModel]:
     q = db.query(HierarchyNodeModel)
     if plant_id:
         q = q.filter(HierarchyNodeModel.plant_id == plant_id)
@@ -44,7 +44,15 @@ def list_nodes(db: Session, plant_id: str | None = None, node_type: str | None =
         q = q.filter(HierarchyNodeModel.node_type == node_type)
     if parent_node_id:
         q = q.filter(HierarchyNodeModel.parent_node_id == parent_node_id)
-    return q.order_by(HierarchyNodeModel.level, HierarchyNodeModel.order).all()
+    if search:
+        term = f"%{search}%"
+        q = q.filter(
+            (HierarchyNodeModel.name.ilike(term)) |
+            (HierarchyNodeModel.tag.ilike(term)) |
+            (HierarchyNodeModel.code.ilike(term)) |
+            (HierarchyNodeModel.sap_func_loc.ilike(term))
+        )
+    return q.order_by(HierarchyNodeModel.level, HierarchyNodeModel.order).limit(limit).all()
 
 
 def get_subtree(db: Session, node_id: str) -> list[HierarchyNodeModel]:

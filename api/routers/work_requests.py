@@ -171,6 +171,16 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
     from api.database.models import UserModel
     all_users = {u.user_id: u.full_name or u.username for u in db.query(UserModel.user_id, UserModel.full_name, UserModel.username).all()}
 
+    # Resolve equipment names from hierarchy
+    from api.database.models import HierarchyNodeModel
+    equip_tags = list(set(wr.equipment_tag for wr in items if wr.equipment_tag))
+    equipment_names = {}
+    if equip_tags:
+        nodes = db.query(HierarchyNodeModel.tag, HierarchyNodeModel.name).filter(
+            HierarchyNodeModel.tag.in_(equip_tags), HierarchyNodeModel.node_type == "EQUIPMENT"
+        ).all()
+        equipment_names = {n[0]: n[1] for n in nodes}
+
     results = []
     for wr in items:
         ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
@@ -183,7 +193,7 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
             "request_id": wr.request_id,
             "status": wr.status,
             "equipment_tag": wr.equipment_tag,
-            "equipment_name": ai.get("equipment_name") or wr.equipment_tag,
+            "equipment_name": ai.get("equipment_name") or equipment_names.get(wr.equipment_tag, wr.equipment_tag),
             "equipment_confidence": wr.equipment_confidence,
             "plant_id": ai.get("plant_id", ""),
             "priority": wr.priority_code or ai.get("priority_suggested") or ai.get("priority", "P3"),
@@ -433,6 +443,26 @@ def close_work_request(request_id: str, data: WRCloseRequest, user=Depends(get_c
     return result
 
 
+
+@router.put("/{request_id}/reopen")
+def reopen_work_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_role("admin", "manager")),
+):
+    """Reopen a cancelled/rejected/closed WR back to PENDING_VALIDATION."""
+    from api.database.models import WorkRequestModel
+    from datetime import datetime
+    wr_model = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not wr_model:
+        raise HTTPException(status_code=404, detail="Work request not found")
+    if wr_model.status not in ("CANCELADO", "CANCELLED", "REJECTED", "RECHAZADO", "CERRADO", "CLOSED", "COMPLETED"):
+        raise HTTPException(status_code=400, detail=f"Cannot reopen WR in status {wr_model.status}")
+    wr_model.status = "PENDING_VALIDATION"
+    wr_model.updated_at = datetime.now()
+    db.commit()
+    return {"status": "PENDING_VALIDATION", "request_id": request_id}
+
 class WRUpdateRequest(BaseModel):
     """Generic update for WR fields (supervisor)."""
     priority: str | None = None
@@ -641,8 +671,9 @@ Analyze the description and return complete JSON for a SAP PM notification.
 IMPORTANT: Respond ONLY with valid JSON, no markdown.
 
 {
+  "equipment_tag": "Equipment TAG identified from the description (e.g. PP-CR-001). null if not identifiable",
   "enhanced_description": "Improved technical description of the problem (SAP PM style, 2-3 sentences, include equipment/TAG, location, symptom, impact)",
-  "failureCategory": "MECHANICAL | ELECTRICAL | INSTRUMENTATION",
+  "failureCategory": "MECHANICAL | ELECTRICAL | INSTRUMENTATION | HYDRAULIC | STRUCTURAL",
   "priority": "P1 | P2 | P3 | P4",
   "activityClass": "M001 | M002 | M003",
   "suggestedAction": "Detailed corrective action step by step",
@@ -666,19 +697,29 @@ CONDITIONS: LOTO, clear area, permits, PPE
 FAILURE CATALOG (MANDATORY - use EXACTLY these values, NO free text):
 
 MECHANICAL:
-  parts: BEARINGS, MECHANICAL SEALS, COUPLINGS, SHAFTS, GEARS, BELTS, PUMPS, VALVES, FILTERS
-  symptoms: HIGH VIBRATION, HIGH TEMPERATURE, ABNORMAL NOISE, SEIZED, NO FLOW, LEAKAGE, VISIBLE WEAR, OIL LEAK, BLOCKAGE
-  causes: WEAR, LACK OF LUBRICATION, CORROSION, MISALIGNMENT, BLOCKED, OVERLOAD, FATIGUE, INCORRECT ASSEMBLY
+  parts: BEARINGS, MECHANICAL SEALS, COUPLINGS, SHAFTS, GEARS, BELTS, PUMPS, VALVES, FILTERS, IMPELLER, REDUCER/GEARBOX, PISTON/CYLINDER, LINER/WEAR PLATE, CRUSHER JAW, CONVEYOR IDLER, SCREEN PANEL, CYCLONE, COMPRESSOR, HEAT EXCHANGER
+  symptoms: HIGH VIBRATION, HIGH TEMPERATURE, ABNORMAL NOISE, SEIZED, NO FLOW, LEAKAGE, VISIBLE WEAR, OIL LEAK, BLOCKAGE, CAVITATION, LOW PRESSURE, EXCESSIVE PLAY, MISALIGNMENT DETECTED, ABNORMAL OIL ANALYSIS
+  causes: WEAR, LACK OF LUBRICATION, CORROSION, MISALIGNMENT, BLOCKED, OVERLOAD, FATIGUE, INCORRECT ASSEMBLY, CAVITATION, CONTAMINATION, THERMAL STRESS, ABRASION, EROSION
 
 ELECTRICAL:
-  parts: ELECTRIC MOTOR, CABLES / CONDUCTORS, PROTECTIONS, ELECTRICAL PANEL, VARIABLE FREQUENCY DRIVE, CONTACTOR
-  symptoms: WONT START, OVERHEATING, SHORT CIRCUIT, PROTECTION TRIP, LOW INSULATION, INTERMITTENT OPERATION, EXCESSIVE CONSUMPTION
-  causes: INSULATION LOSS, WEAR, LOOSE, OVERLOAD ELECTRICA, MOISTURE, EXCESSIVE HEATING
+  parts: ELECTRIC MOTOR, CABLES / CONDUCTORS, PROTECTIONS, ELECTRICAL PANEL, VARIABLE FREQUENCY DRIVE, CONTACTOR, TRANSFORMER, SWITCHGEAR, CIRCUIT BREAKER, RELAY, GENERATOR, SOFT STARTER
+  symptoms: WONT START, OVERHEATING, SHORT CIRCUIT, PROTECTION TRIP, LOW INSULATION, INTERMITTENT OPERATION, EXCESSIVE CONSUMPTION, ARC FLASH, VOLTAGE DROP, GROUND FAULT
+  causes: INSULATION LOSS, WEAR, LOOSE CONNECTION, ELECTRICAL OVERLOAD, MOISTURE, EXCESSIVE HEATING, ELECTRICAL SURGE, AGING
 
 INSTRUMENTATION:
-  parts: SENSOR / TRANSDUCER, TRANSMITTER, CONTROL VALVE, PLC / DCS, ACTUATOR, POSITIONER
-  symptoms: ERRONEOUS READING, NO SIGNAL, UNSTABLE SIGNAL, NOT RESPONDING, FALSE ALARM, LOST COMMUNICATION
-  causes: OUT OF CALIBRATION, CONTAMINATED, PARAMETER LOSS, COMMUNICATION LOSS, OBSTRUCTION
+  parts: SENSOR / TRANSDUCER, TRANSMITTER, CONTROL VALVE, PLC / DCS, ACTUATOR, POSITIONER, FLOW METER, LEVEL SENSOR, PRESSURE GAUGE, TEMPERATURE PROBE, ANALYZER, SOLENOID VALVE
+  symptoms: ERRONEOUS READING, NO SIGNAL, UNSTABLE SIGNAL, NOT RESPONDING, FALSE ALARM, LOST COMMUNICATION, DRIFT, STUCK VALUE
+  causes: OUT OF CALIBRATION, CONTAMINATED, PARAMETER LOSS, COMMUNICATION LOSS, OBSTRUCTION, VIBRATION DAMAGE, MEMBRANE DAMAGE
+
+HYDRAULIC:
+  parts: HYDRAULIC PUMP, HYDRAULIC CYLINDER, DIRECTIONAL VALVE, PRESSURE RELIEF VALVE, ACCUMULATOR, HYDRAULIC MOTOR, FILTER, HOSE / FITTING
+  symptoms: LOW PRESSURE, OVERHEATING, LEAKAGE, SLOW RESPONSE, CAVITATION NOISE, FOAMING, CONTAMINATED OIL
+  causes: CONTAMINATION, SEAL WEAR, CAVITATION, OVERHEATING, AIR IN SYSTEM, INCORRECT FLUID, INTERNAL LEAKAGE
+
+STRUCTURAL:
+  parts: STEEL STRUCTURE, FOUNDATION, SUPPORT BEAM, PLATFORM / WALKWAY, HOPPER / CHUTE, DUCT / ENCLOSURE, ANCHOR BOLT
+  symptoms: CRACK DETECTED, DEFORMATION, CORROSION VISIBLE, BOLT LOOSENING, FOUNDATION SETTLEMENT
+  causes: FATIGUE, CORROSION, OVERLOAD, IMPACT, VIBRATION, POOR WELDING
 
 RULE: failureSymptom, failureCause and failureObjectPart MUST be EXACT copies of the values above.
 DO NOT invent free text for these fields. Choose the closest catalog value.
@@ -695,6 +736,18 @@ If user writes in Spanish, respond in Spanish. If in English, respond in English
 Catalog codes (BEARINGS, HIGH VIBRATION, etc.) always stay as-is regardless of language.
 The enhanced_description and suggestedAction should match the user's language."""
 
+    # When no equipment_tag provided, give list of known equipment for matching
+    if not equipment_tag:
+        from api.database.models import HierarchyNodeModel
+        equip_nodes = db.query(HierarchyNodeModel).filter(
+            HierarchyNodeModel.node_type == "EQUIPMENT"
+        ).limit(200).all()
+        if equip_nodes:
+            equip_list = ", ".join(
+                f"{n.tag or n.code} ({n.name})" for n in equip_nodes if (n.tag or n.code)
+            )
+            system_prompt += "\n\nKNOWN EQUIPMENT TAGS (match from description if possible):\n" + equip_list
+
     if context_str:
         system_prompt += "\n\n" + context_str
     if examples_str:
@@ -705,9 +758,20 @@ The enhanced_description and suggestedAction should match the user's language.""
 
     user_msg = f"{lang_instruction}\n\nProblem description: \"{desc}\""
     if equipment_tag:
-        user_msg += f"\nEquipment: {equipment_tag}"
+        user_msg += f"\nEquipment TAG: {equipment_tag}"
+        # Lookup functional location and catalog profile
+        from api.database.models import HierarchyNodeModel
+        node = db.query(HierarchyNodeModel).filter(
+            (HierarchyNodeModel.tag == equipment_tag) | (HierarchyNodeModel.code == equipment_tag)
+        ).first()
+        if node:
+            user_msg += f"\nFunctional Location: {node.sap_func_loc or node.code}"
+            user_msg += f"\nEquipment Name: {node.name}"
+            if node.metadata_json and isinstance(node.metadata_json, dict):
+                pg = node.metadata_json.get("planning_group", "")
+                if pg: user_msg += f"\nPlanning Group: {pg}"
     if data.plant_condition:
-        user_msg += f"\nPlant condition: {data.plant_condition}"
+        user_msg += f"\nEquipment condition: {data.plant_condition}"
 
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(

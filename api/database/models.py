@@ -558,6 +558,7 @@ class ManagedWorkOrderModel(Base):
     planned_material_cost: Mapped[float | None] = mapped_column(Float, nullable=True)    # Costo materiales plan
     planned_external_cost: Mapped[float | None] = mapped_column(Float, nullable=True)    # Costo servicios externos plan
     actual_total_cost: Mapped[float | None] = mapped_column(Float, nullable=True)  # Costo total real
+    shift: Mapped[str | None] = mapped_column(String(10), nullable=True, default="day")  # day, night
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)

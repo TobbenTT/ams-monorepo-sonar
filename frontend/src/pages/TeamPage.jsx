@@ -1,3 +1,4 @@
+import { useOutletContext } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -40,7 +41,8 @@ export default function TeamPage() {
   const { t, lang } = useLanguage();
   const toast = useToast();
 
-  const [team, setTeam] = useState([]);
+  const { plant } = useOutletContext();
+    const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -77,7 +79,7 @@ export default function TeamPage() {
     try {
       setLoading(true);
       setError(null);
-      const users = await api.authListUsers();
+      const users = await api.authListUsers(plant ? { plant_id: plant } : {});
       setTeam(Array.isArray(users) ? users : []);
     } catch (err) {
       setError(err.message || t('team.failedToLoad'));

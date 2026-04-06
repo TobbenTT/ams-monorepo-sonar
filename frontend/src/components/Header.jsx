@@ -21,12 +21,7 @@ const TIME_RANGE_OPTIONS = [
     { value: 'Last Year',    i18nKey: 'header.timeRangeLastYear' },
 ];
 
-const AREA_OPTIONS = [
-    { value: 'All Areas',  label: 'All Areas' },
-    { value: 'Granulation Unit', label: 'Granulacion' },
-    { value: 'Phosphoric Acid Unit', label: 'Acido Fosforico' },
-    { value: 'Utilities & Steam', label: 'Utilities & Vapor' },
-];
+// Areas are now fetched dynamically per plant (see useEffect below)
 
 export default function Header({
     plant, onPlantChange, plants, onMenuToggle,
@@ -75,6 +70,19 @@ export default function Header({
         }).catch(() => setNotifCount(0));
     }, [plant]);
 
+    // Dynamic areas per plant
+    const [dynamicAreas, setDynamicAreas] = useState([{ value: 'All Areas', label: 'All Areas' }]);
+    useEffect(() => {
+        if (!plant) return;
+        api.listNodes({ node_type: 'AREA', plant_id: plant, limit: 50 }).then(res => {
+            const nodes = Array.isArray(res) ? res : (res?.items || []);
+            const areas = [{ value: 'All Areas', label: 'All Areas' }];
+            nodes.forEach(n => areas.push({ value: n.name || n.node_id, label: n.name || n.node_id }));
+            setDynamicAreas(areas.length > 1 ? areas : [{ value: 'All Areas', label: 'All Areas' }]);
+            if (onAreaChange) onAreaChange('All Areas');
+        }).catch(() => {});
+    }, [plant]);
+
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (searchRef.current && !searchRef.current.contains(e.target)) setShowResults(false);
@@ -106,7 +114,7 @@ export default function Header({
     const currentLang = LANG_OPTIONS.find(l => l.code === lang) || LANG_OPTIONS[0];
 
     // Show plant/time/area filters on these pages
-    const showFilters = loc.pathname === '/' || loc.pathname === '/work-orders' || loc.pathname === '/analytics' || loc.pathname === '/failures-events';
+    const showFilters = true;
     // View mode toggle on all pages that have filters
     const showViewToggle = showFilters;
 
@@ -253,7 +261,7 @@ export default function Header({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {AREA_OPTIONS.map(opt => (
+                                {dynamicAreas.map(opt => (
                                     <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                                 ))}
                             </SelectContent>

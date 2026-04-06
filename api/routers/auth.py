@@ -94,8 +94,13 @@ def change_password(data: PasswordChange, user: UserModel = Depends(get_current_
 
 
 @router.get("/users")
-def list_users(role: str | None = None, db: Session = Depends(get_db), user: UserModel = Depends(require_role("admin"))):
-    users = auth_service.list_users(db, role=role)
+def list_users(role: str | None = None, plant_id: str | None = None, db: Session = Depends(get_db), user: UserModel = Depends(require_role("admin"))):
+    q = db.query(UserModel).filter(UserModel.is_active == True)
+    if role:
+        q = q.filter(UserModel.role == role)
+    if plant_id:
+        q = q.filter(UserModel.plant_id == plant_id)
+    users = q.all()
     return [_user_to_dict(u) for u in users]
 
 

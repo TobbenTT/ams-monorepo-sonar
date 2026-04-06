@@ -391,8 +391,8 @@ export default function FailureCapture({ onNavigateTab }) {
   useEffect(() => {
     // Load locations (PLANT + AREA + top SYSTEM) and equipment separately
     Promise.all([
-      api.listNodes({ limit: 300 }).catch(() => []),
-      api.listNodes({ node_type: 'EQUIPMENT', limit: 100 }).catch(() => []),
+      api.listNodes({ limit: 300, plant_id: plant }).catch(() => []),
+      api.listNodes({ node_type: 'EQUIPMENT', limit: 100, plant_id: plant }).catch(() => []),
     ]).then(([locRes, eqRes]) => {
       const locs = Array.isArray(locRes) ? locRes : locRes?.items || [];
       const eqs = Array.isArray(eqRes) ? eqRes : eqRes?.items || [];
@@ -405,7 +405,7 @@ export default function FailureCapture({ onNavigateTab }) {
         ['PLANT', 'AREA', 'SYSTEM'].includes(n.node_type)
       ).map(n => ({ ...n, _funcLoc: buildFuncLocPath(n, nodeMap) })));
     });
-  }, [buildFuncLocPath]);
+  }, [buildFuncLocPath, plant]);
 
   // Filter equipment results
   useEffect(() => {

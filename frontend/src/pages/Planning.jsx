@@ -1192,8 +1192,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         })}
                       </div>
                     )}
-                    {/* External Vendor Modal */}
-                    {extModal.open && (
+                    {/* External Vendor Modal rendered outside tabs */}
+                    {false && (
                       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setExtModal({ open: false, opIdx: -1 })}>
                         <div className="bg-white rounded-xl shadow-xl w-[520px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                           <div className="p-4 border-b bg-purple-50">
@@ -1759,6 +1759,75 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   </div>
                 )}
               </div>
+
+              {/* External Vendor Modal — global, works for operations & materials */}
+              {extModal.open && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" onClick={() => setExtModal({ open: false, opIdx: -1, context: 'operation' })}>
+                  <div className="bg-white rounded-xl shadow-xl w-[520px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                    <div className="p-4 border-b bg-purple-50">
+                      <h3 className="font-bold text-purple-800 text-sm">{extModal.context === 'material' ? 'Material Externo — Proveedor' : 'Servicio Externo — SAP PM'}</h3>
+                      <p className="text-[10px] text-purple-600">Datos del proveedor / contratista</p>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-500 uppercase">Vendor / Contractor *</label>
+                        <select value={extForm.vendor} onChange={e => setExtForm(p => ({...p, vendor: e.target.value}))} className="w-full text-sm border rounded-lg px-3 py-2 mt-1">
+                          <option value="">Seleccionar...</option>
+                          <option value="MANTTO_EXTERNO">Mantenimiento Externo S.A.</option>
+                          <option value="INDUST_SERVICE">Industrial Service SpA</option>
+                          <option value="MECANICA_TOTAL">Mecánica Total Ltda</option>
+                          <option value="ELECTRO_SERV">Electro Servicios</option>
+                          <option value="HIDRAULICA_IND">Hidráulica Industrial</option>
+                          <option value="SOLDADURA_ESP">Soldadura Especializada</option>
+                          <option value="OTHER">Otro (especificar)</option>
+                        </select>
+                        {extForm.vendor === 'OTHER' && <input value={extForm.vendor_other || ''} onChange={e => setExtForm(p => ({...p, vendor_other: e.target.value}))} placeholder="Nombre del proveedor" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" />}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Contract / PO</label><input value={extForm.contract_ref || ''} onChange={e => setExtForm(p => ({...p, contract_ref: e.target.value}))} placeholder="PO-2026-001234" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" /></div>
+                        <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Purchasing Group</label>
+                          <select value={extForm.purchasing_group || ''} onChange={e => setExtForm(p => ({...p, purchasing_group: e.target.value}))} className="w-full text-sm border rounded-lg px-3 py-2 mt-1">
+                            <option value="">Select...</option><option value="001">001 - Mechanical</option><option value="002">002 - Electrical</option><option value="003">003 - Civil</option><option value="004">004 - Instrumentation</option><option value="005">005 - Specialized</option>
+                          </select></div>
+                      </div>
+                      {extModal.context !== 'material' && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Service Type</label>
+                            <select value={extForm.service_type || ''} onChange={e => setExtForm(p => ({...p, service_type: e.target.value}))} className="w-full text-sm border rounded-lg px-3 py-2 mt-1">
+                              <option value="">Select...</option><option value="CORRECTIVE">Correctivo</option><option value="PREVENTIVE">Preventivo</option><option value="OVERHAUL">Overhaul</option><option value="INSPECTION">Inspección</option><option value="EMERGENCY">Emergencia</option><option value="SHUTDOWN">Parada</option>
+                            </select></div>
+                          <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Specialty</label>
+                            <select value={extForm.specialty || ''} onChange={e => setExtForm(p => ({...p, specialty: e.target.value}))} className="w-full text-sm border rounded-lg px-3 py-2 mt-1">
+                              <option value="">Select...</option><option value="Mechanical">Mecánico</option><option value="Electrical">Eléctrico</option><option value="Welding">Soldadura</option><option value="Hydraulic">Hidráulica</option><option value="NDT">NDT</option><option value="Crane">Grúa/Izaje</option><option value="Other">Otro</option>
+                            </select></div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div><label className="text-[10px] font-semibold text-gray-500 uppercase">{extModal.context === 'material' ? 'Cantidad' : 'Personnel'}</label><input type="number" min="1" value={extForm.personnel_count || ''} onChange={e => setExtForm(p => ({...p, personnel_count: e.target.value}))} placeholder="1" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" /></div>
+                        <div><label className="text-[10px] font-semibold text-gray-500 uppercase">{extModal.context === 'material' ? 'Precio Unit.' : 'Rate/Hr'}</label><input type="number" min="0" value={extForm.rate_per_hour || ''} onChange={e => setExtForm(p => ({...p, rate_per_hour: e.target.value}))} placeholder="0.00" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" /></div>
+                        <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Lead Time (días)</label><input type="number" min="0" value={extForm.lead_time_days || ''} onChange={e => setExtForm(p => ({...p, lead_time_days: e.target.value}))} placeholder="0" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Contacto</label><input value={extForm.contact_name || ''} onChange={e => setExtForm(p => ({...p, contact_name: e.target.value}))} placeholder="Responsable" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" /></div>
+                        <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Teléfono</label><input value={extForm.contact_phone || ''} onChange={e => setExtForm(p => ({...p, contact_phone: e.target.value}))} placeholder="+56 9 XXXX" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" /></div>
+                      </div>
+                      <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Notas / Alcance</label><textarea value={extForm.notes || ''} onChange={e => setExtForm(p => ({...p, notes: e.target.value}))} rows={2} placeholder="Detalles adicionales..." className="w-full text-sm border rounded-lg px-3 py-2 mt-1" /></div>
+                    </div>
+                    <div className="p-4 border-t flex gap-2 justify-end">
+                      <button type="button" onClick={() => setExtModal({ open: false, opIdx: -1, context: 'operation' })} className="px-4 py-2 text-xs border rounded-lg hover:bg-gray-50">Cancelar</button>
+                      <button type="button" onClick={() => {
+                        const vendorName = extForm.vendor === 'OTHER' ? extForm.vendor_other : extForm.vendor;
+                        if (extModal.context === 'material') {
+                          const n = [...editMats]; n[extModal.opIdx] = { ...n[extModal.opIdx], vendor: vendorName, contract_ref: extForm.contract_ref, lead_time_days: extForm.lead_time_days, notes: extForm.notes, contact_name: extForm.contact_name }; setEditMats(n);
+                        } else {
+                          const n = [...editOps]; n[extModal.opIdx] = { ...n[extModal.opIdx], ...extForm, vendor: vendorName }; setEditOps(n);
+                        }
+                        setExtModal({ open: false, opIdx: -1, context: 'operation' });
+                      }} className="px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold">Guardar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* FOOTER */}
               <div className="border-t px-6 py-3 rounded-b-2xl bg-gray-50 flex items-center justify-between">

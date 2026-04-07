@@ -900,13 +900,29 @@ ${materials.length ? `<div class="section">
             )}
             {/* Planner: Create WO from approved WR */}
             {isValidated && (
-              <button
-                onClick={() => { onPlannerCreateOT(item.id); onClose(); }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
-              >
-                <FileText size={16} />
-                Create WO
-              </button>
+              <>
+                <button
+                  onClick={() => { onPlannerCreateOT(item.id); onClose(); }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+                >
+                  <FileText size={16} />
+                  Create WO
+                </button>
+                <button
+                  onClick={() => { onReject(item.id); onClose(); }}
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-red-50 text-red-700 border border-red-200 text-sm font-semibold hover:bg-red-100 transition-colors"
+                >
+                  <XCircle size={16} />
+                  Reject
+                </button>
+                <button
+                  onClick={() => { onCancel(item.id); onClose(); }}
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gray-100 text-gray-700 border border-gray-300 text-sm font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  <XCircle size={16} />
+                  Cancel
+                </button>
+              </>
             )}
             {canStart && (
               <button

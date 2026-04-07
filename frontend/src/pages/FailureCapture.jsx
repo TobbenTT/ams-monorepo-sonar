@@ -340,12 +340,22 @@ export default function FailureCapture({ onNavigateTab }) {
         // Apply ALL fields from Claude (camelCase + snake_case)
         if (s.enhanced_description) setF('whatHappens', s.enhanced_description);
         if (s.suggestedAction || s.suggested_action) setF('suggestedAction', s.suggestedAction || s.suggested_action);
-        // Auto-generate WO title from AI
-        if (s.enhanced_description) {
-          const desc = s.enhanced_description;
-          // Short WO title: first sentence, max 60 chars, cut at last word
-          let title = desc.split('.')[0];
-          if (title.length > 60) title = title.substring(0, 60).replace(/\s+\S*$/, '');
+        // Auto-generate WO title: Equipment + failure keyword (SAP style, max 50 chars)
+        {
+          const equip = form.equipmentSearch || form.selectedEquipment?.description || '';
+          const symptom = s.failureSymptom || s.failure_symptom || '';
+          const desc = s.enhanced_description || '';
+          // Build: "EQUIP - symptom" or extract key phrase from description
+          let title = '';
+          if (equip && symptom) {
+            title = `${equip.substring(0, 25).trim()} - ${symptom.substring(0, 25).trim()}`;
+          } else if (equip) {
+            const keyword = desc.split(/[.,;]/)[0].replace(/^.*?(vibración|falla|fuga|rotura|desgaste|ruido|sobrecalentamiento|daño|corrosión|fractura)/i, '$1').substring(0, 25).trim();
+            title = `${equip.substring(0, 25).trim()} - ${keyword || 'Falla reportada'}`;
+          } else {
+            title = desc.split('.')[0].substring(0, 50).trim();
+          }
+          if (title.length > 50) title = title.substring(0, 50).replace(/\s+\S*$/, '');
           setF('woTitle', title);
         }
         if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);

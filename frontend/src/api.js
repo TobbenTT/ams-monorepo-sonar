@@ -509,4 +509,12 @@ export const agenticAutoSchedule = (d) => post('/agentic/auto-schedule', d);
 export const agenticSmartBacklog = (d) => post('/agentic/smart-backlog', d);
 export const agenticKpiWatchdog = (d) => post('/agentic/kpi-watchdog', d);
 export const agenticStatus = () => get('/agentic/status');
+export const equipmentDoctor = (d) => post('/agentic/equipment-doctor', d);
+export const generateSafetyChecklist = (d) => post('/agentic/safety-checklist', d);
+export const generateExecutiveReport = (d) => post('/agentic/executive-report', d);
+export const generateShiftHandover = (d) => post('/agentic/shift-handover', d);
+export const adviseRCMStrategy = (d) => post('/agentic/rcm-advisor', d);
+export const voiceCapture = (d) => post('/agentic/voice-capture', d);
+export const smartBacklog = (d) => post('/agentic/smart-backlog', d || {});
+export const kpiWatchdog = (d) => post('/agentic/kpi-watchdog', d || {});
 

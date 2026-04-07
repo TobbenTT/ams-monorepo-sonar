@@ -139,7 +139,101 @@ class ShutdownOptimizerRequest(BaseModel):
     plant_id: str = Field(default="OCP-JFC1", max_length=50)
     shutdown_id: str | None = Field(default=None, max_length=50, description="Specific shutdown (omit for next upcoming)")
 
-# ── All 26 solution identifiers by tier ──────────────────────────────────
+
+# ── Extended Gemma 4 Vision Use Cases ─────────────────────────────────────
+
+class PPEDetectionRequest(BaseModel):
+    """CU-EXT-1: PPE compliance detection from photo."""
+    image_base64: str = Field(..., description="Base64 photo of technician")
+    checklist_id: str | None = Field(None, max_length=50, description="Execution checklist ID for gate enforcement")
+    equipment_tag: str | None = Field(None, max_length=50)
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    technician_id: str = Field(default="", max_length=50)
+    provider: str = Field(default="auto", description="AI provider: claude | ollama | auto")
+
+
+class SparePartIdRequest(BaseModel):
+    """CU-EXT-2: Spare part identification from photo."""
+    image_base64: str = Field(..., description="Base64 photo of damaged/worn part")
+    additional_context: str = Field(default="", max_length=2000, description="Technician notes about the part")
+    equipment_tag: str | None = Field(None, max_length=50)
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    provider: str = Field(default="auto")
+
+
+class NameplateOCRRequest(BaseModel):
+    """CU-EXT-3: Equipment nameplate OCR."""
+    image_base64: str = Field(..., description="Base64 photo of equipment nameplate")
+    equipment_tag: str | None = Field(None, max_length=50)
+    node_id: str | None = Field(None, max_length=50)
+    auto_update_hierarchy: bool = Field(default=False, description="Auto-update HierarchyNode metadata with plate data")
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    provider: str = Field(default="auto")
+
+
+class PIDDigitizeRequest(BaseModel):
+    """CU-EXT-3b: P&ID diagram digitization."""
+    image_base64: str = Field(..., description="Base64 photo/scan of P&ID diagram")
+    provider: str = Field(default="auto")
+
+
+class AudioFaultRequest(BaseModel):
+    """CU-EXT-4: Audio-based equipment fault detection."""
+    equipment_tag: str = Field(..., max_length=50, description="SAP equipment tag")
+    audio_base64: str = Field(..., description="Base64 WAV/WebM audio recording")
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    recording_duration_seconds: float = Field(default=0, ge=0, le=300)
+    equipment_rpm: float | None = Field(default=None, description="Rotation speed for bearing analysis")
+    provider: str = Field(default="auto", max_length=10)
+
+
+class TrainingScenarioRequest(BaseModel):
+    """CU-EXT-8: Training scenario generation from 3D models."""
+    equipment_type: str = Field(..., max_length=100, description="Equipment type (e.g. centrifugal_pump)")
+    scenario_type: str = Field(default="DISASSEMBLY", description="DISASSEMBLY|ASSEMBLY|INSPECTION|REPLACEMENT")
+    instruction_id: str | None = Field(default=None, max_length=50, description="Existing WorkInstruction ID")
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    provider: str = Field(default="auto", max_length=10)
+
+
+class EdgeSyncRegisterRequest(BaseModel):
+    """CU-EXT-9: Register a new edge AI device."""
+    device_name: str = Field(..., max_length=200)
+    plant_id: str = Field(..., max_length=50)
+    hardware_type: str = Field(default="JETSON_ORIN", max_length=50)
+    ollama_model: str = Field(default="gemma4", max_length=50)
+
+
+class EdgeSyncPushRequest(BaseModel):
+    """CU-EXT-9: Push sync data from edge device."""
+    device_id: str = Field(..., max_length=50)
+    items: list[dict] = Field(default_factory=list, description="Sync items [{entity_type, entity_id, data}]")
+
+
+class DroneInspectionRequest(BaseModel):
+    """CU-EXT-6: Drone aerial inspection with batch image processing."""
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    mission_name: str = Field(..., max_length=200)
+    flight_date: str = Field(..., description="ISO date (YYYY-MM-DD)")
+    images_base64: list[str] = Field(..., description="List of base64 drone images", max_length=200)
+    gps_metadata: list[dict] | None = Field(default=None, description="Per-image GPS data [{lat, lon, altitude_m}]")
+    auto_generate_wr: bool = Field(default=True, description="Auto-create Work Requests for severe findings")
+    severity_threshold: str = Field(default="HIGH", description="Min severity for WR generation")
+    provider: str = Field(default="auto", max_length=10)
+
+
+class LOTOVerificationRequest(BaseModel):
+    """CU-EXT-5: LOTO visual verification (safety-critical, fail-closed)."""
+    image_base64: str = Field(..., description="Base64 photo showing LOTO state")
+    checklist_id: str = Field(..., max_length=50, description="Execution checklist ID (gate enforcement)")
+    equipment_tag: str | None = Field(None, max_length=50)
+    expected_lock_count: int | None = Field(None, ge=1, le=20, description="Expected number of locks")
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    technician_id: str = Field(default="", max_length=50)
+    provider: str = Field(default="auto")
+
+
+# ── All 26+5 solution identifiers by tier ─────────────────────────────────
 
 T1_SOLUTIONS = [
     "voice-capture",
@@ -176,7 +270,20 @@ T3_SOLUTIONS = [
     "auto-rca",
 ]
 
-ALL_SOLUTIONS = T1_SOLUTIONS + T2_SOLUTIONS + T3_SOLUTIONS
+# Extended Gemma 4 vision use cases
+VISION_EXT_SOLUTIONS = [
+    "ppe-detection",
+    "spare-part-id",
+    "nameplate-ocr",
+    "pid-digitize",
+    "loto-verification",
+    "audio-fault-detection",
+    "drone-inspection",
+    "training-scenario",
+    "edge-sync",
+]
+
+ALL_SOLUTIONS = T1_SOLUTIONS + T2_SOLUTIONS + T3_SOLUTIONS + VISION_EXT_SOLUTIONS
 
 
 # ── Health-check ─────────────────────────────────────────────────────────
@@ -774,12 +881,14 @@ def visual_troubleshooting(
     and suggests corrective actions. Works with Claude (cloud) or
     Gemma 4 via Ollama (local/offline).
     """
-    def _run():
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
         from api.services.vision_service import analyze_image
         return analyze_image(
             image_base64=data.image_base64,
             equipment_tag=data.equipment_tag or "",
-            db=db,
+            db=_db,
             provider=data.provider,
         )
 
@@ -806,7 +915,9 @@ def wo_visual_verify(
     Uses AI vision to check if maintenance was performed correctly,
     component installed properly, area cleaned, etc.
     """
-    def _run():
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
         from api.services.visual_comparison_service import verify_work_order_completion
         return verify_work_order_completion(
             before_image_b64=data.before_image_b64,
@@ -839,7 +950,9 @@ def three_d_comparison(
     Loads the reference render for the equipment type and angle,
     then compares against the field photo to identify deviations.
     """
-    def _run():
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
         from api.services.blender_render_service import get_blender_render_service
         from api.services.visual_comparison_service import compare_reference_vs_field
 
@@ -868,6 +981,344 @@ def three_d_comparison(
         input_params={"equipment_type": data.equipment_type, "angle": data.angle, "provider": data.provider},
         fn=_run,
     )
+
+
+# =========================================================================
+# Extended Gemma 4 Use Cases (CU-EXT-1, 2, 3, 4, 5, 6)
+# =========================================================================
+
+# ── PPE Detection (CU-EXT-1) ─────────────────────────────────────────────
+
+@router.post("/ppe-detection")
+def ppe_detection(
+    data: PPEDetectionRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-1: Detect PPE compliance from a photo.
+
+    Checks for helmet, vest, gloves, glasses, boots, and ear protection.
+    Optionally enforces as a safety gate on an execution checklist.
+    """
+    from api.services.agentic_ppe_detection_service import detect_ppe
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
+        return detect_ppe(
+            db=_db,
+            image_base64=data.image_base64,
+            checklist_id=data.checklist_id,
+            equipment_tag=data.equipment_tag or "",
+            plant_id=data.plant_id,
+            technician_id=data.technician_id,
+            provider=data.provider,
+        )
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db,
+        solution_type="PPE_DETECTION",
+        triggered_by=uid,
+        plant_id=data.plant_id,
+        input_params=data.model_dump(),
+        fn=_run,
+    )
+
+
+# ── Spare Part Identification (CU-EXT-2) ─────────────────────────────────
+
+@router.post("/spare-part-id")
+def spare_part_identification(
+    data: SparePartIdRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-2: Identify a spare part from a photo and find SAP matches."""
+    from api.services.agentic_spare_parts_id_service import identify_spare_part
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
+        return identify_spare_part(
+            db=_db,
+            image_base64=data.image_base64,
+            additional_context=data.additional_context,
+            equipment_tag=data.equipment_tag or "",
+            plant_id=data.plant_id,
+            provider=data.provider,
+        )
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db,
+        solution_type="SPARE_PART_ID",
+        triggered_by=uid,
+        plant_id=data.plant_id,
+        input_params=data.model_dump(),
+        fn=_run,
+    )
+
+
+# ── Nameplate OCR (CU-EXT-3) ─────────────────────────────────────────────
+
+@router.post("/nameplate-ocr")
+def nameplate_ocr(
+    data: NameplateOCRRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-3: Read equipment nameplate from photo. Optionally auto-update hierarchy."""
+    from api.services.agentic_nameplate_ocr_service import ocr_nameplate
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
+        return ocr_nameplate(
+            db=_db,
+            image_base64=data.image_base64,
+            equipment_tag=data.equipment_tag,
+            node_id=data.node_id,
+            auto_update_hierarchy=data.auto_update_hierarchy,
+            plant_id=data.plant_id,
+            provider=data.provider,
+        )
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db,
+        solution_type="NAMEPLATE_OCR",
+        triggered_by=uid,
+        plant_id=data.plant_id,
+        input_params=data.model_dump(),
+        fn=_run,
+    )
+
+
+# ── P&ID Digitization (CU-EXT-3b) ───────────────────────────────────────
+
+@router.post("/pid-digitize")
+def pid_digitize(
+    data: PIDDigitizeRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-3b: Digitize a P&ID diagram from photo or scan."""
+    from api.services.agentic_nameplate_ocr_service import ocr_pid_diagram
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
+        return ocr_pid_diagram(
+            image_base64=data.image_base64,
+            provider=data.provider,
+        )
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db,
+        solution_type="PID_DIGITIZE",
+        triggered_by=uid,
+        plant_id="",
+        input_params=data.model_dump(),
+        fn=_run,
+    )
+
+
+# ── LOTO Verification (CU-EXT-5) ────────────────────────────────────────
+
+@router.post("/loto-verification")
+def loto_verification(
+    data: LOTOVerificationRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-5: Verify LOTO compliance from a photo. FAIL-CLOSED design.
+
+    If the AI provider is unavailable, the gate does NOT pass.
+    """
+    from api.services.agentic_loto_vision_service import verify_loto_by_vision
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
+        return verify_loto_by_vision(
+            db=_db,
+            image_base64=data.image_base64,
+            checklist_id=data.checklist_id,
+            equipment_tag=data.equipment_tag or "",
+            expected_lock_count=data.expected_lock_count,
+            plant_id=data.plant_id,
+            technician_id=data.technician_id,
+            provider=data.provider,
+        )
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db,
+        solution_type="LOTO_VERIFICATION",
+        triggered_by=uid,
+        plant_id=data.plant_id,
+        input_params=data.model_dump(),
+        fn=_run,
+    )
+
+
+# ── Audio Fault Detection (CU-EXT-4) ─────────────────────────────────
+
+@router.post("/audio-fault-detection")
+def audio_fault_detection(
+    data: AudioFaultRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-4: Analyze equipment audio for fault patterns.
+
+    Uses spectral analysis + Gemma 4 to detect bearing defects,
+    cavitation, rubbing, and abnormal vibration.
+    """
+    from api.services.agentic_audio_fault_service import analyze_audio_fault
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
+        return analyze_audio_fault(
+            db=_db,
+            equipment_tag=data.equipment_tag,
+            audio_base64=data.audio_base64,
+            plant_id=data.plant_id,
+            recording_duration_seconds=data.recording_duration_seconds,
+            equipment_rpm=data.equipment_rpm,
+            provider=data.provider,
+        )
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db,
+        solution_type="AUDIO_FAULT_DETECTION",
+        triggered_by=uid,
+        plant_id=data.plant_id,
+        input_params={"equipment_tag": data.equipment_tag, "provider": data.provider},
+        fn=_run,
+    )
+
+
+# ── Drone Inspection (CU-EXT-6) ─────────────────────────────────────
+
+@router.post("/drone-inspection")
+def drone_inspection(
+    data: DroneInspectionRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-6: Process batch drone images for structural defect detection.
+
+    Georeferencing, corrosion/crack detection, and auto-WR generation.
+    """
+    from api.services.agentic_drone_inspection_service import create_drone_inspection
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
+        return create_drone_inspection(
+            db=_db,
+            plant_id=data.plant_id,
+            mission_name=data.mission_name,
+            flight_date=data.flight_date,
+            images_base64=data.images_base64,
+            gps_metadata=data.gps_metadata,
+            auto_generate_wr=data.auto_generate_wr,
+            severity_threshold=data.severity_threshold,
+            provider=data.provider,
+        )
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db,
+        solution_type="DRONE_INSPECTION",
+        triggered_by=uid,
+        plant_id=data.plant_id,
+        input_params={"mission_name": data.mission_name, "total_images": len(data.images_base64)},
+        fn=_run,
+    )
+
+
+# ── Training Scenario (CU-EXT-8) ─────────────────────────────────────
+
+@router.post("/training-scenario")
+def training_scenario(
+    data: TrainingScenarioRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-8: Generate a 3D training scenario for technicians."""
+    from api.services.agentic_training_scenario_service import generate_training_scenario
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _params):
+        return generate_training_scenario(
+            db=_db,
+            equipment_type=data.equipment_type,
+            scenario_type=data.scenario_type,
+            instruction_id=data.instruction_id,
+            plant_id=data.plant_id,
+            provider=data.provider,
+        )
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db,
+        solution_type="TRAINING_SCENARIO",
+        triggered_by=uid,
+        plant_id=data.plant_id,
+        input_params=data.model_dump(),
+        fn=_run,
+    )
+
+
+# ── Edge AI Sync (CU-EXT-9) ─────────────────────────────────────────
+
+@router.post("/edge-sync/register")
+def edge_sync_register(
+    data: EdgeSyncRegisterRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-9: Register a new edge AI device."""
+    from api.services.agentic_edge_sync_service import register_edge_device
+    return register_edge_device(
+        db=db,
+        device_name=data.device_name,
+        plant_id=data.plant_id,
+        hardware_type=data.hardware_type,
+        ollama_model=data.ollama_model,
+    )
+
+
+@router.post("/edge-sync/push")
+def edge_sync_push(
+    data: EdgeSyncPushRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-9: Receive sync data pushed from an edge device."""
+    from api.services.agentic_edge_sync_service import process_edge_sync_push
+    return process_edge_sync_push(db=db, device_id=data.device_id, items=data.items)
+
+
+@router.get("/edge-sync/status/{device_id}")
+def edge_sync_status(
+    device_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-9: Get edge device sync status."""
+    from api.services.agentic_edge_sync_service import get_edge_device_status
+    return get_edge_device_status(db=db, device_id=device_id)
+
+
+@router.get("/edge-devices")
+def list_edge_devices_endpoint(
+    plant_id: str | None = None,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """CU-EXT-9: List all registered edge devices."""
+    from api.services.agentic_edge_sync_service import list_edge_devices
+    return list_edge_devices(db=db, plant_id=plant_id)
 
 
 # ── Ollama Health & Models ────────────────────────────────────────────────

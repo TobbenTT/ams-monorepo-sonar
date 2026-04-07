@@ -296,7 +296,7 @@ def close_work_request(
     return _to_dict(wr)
 
 
-def delete_work_request(db: Session, request_id: str, user_id: str = "") -> bool:
+def delete_work_request(db: Session, request_id: str, user_id: str = "", reason: str = "") -> bool:
     """Soft-delete a work request (mark as deleted, don't remove from DB)."""
     wr = get_work_request(db, request_id)
     if not wr:
@@ -305,6 +305,8 @@ def delete_work_request(db: Session, request_id: str, user_id: str = "") -> bool
     wr.deleted_at = datetime.now()
     wr.deleted_by = user_id or "system"
     wr.status = "ELIMINADO"
+    # Store reason in rejection_reason field
+    wr.rejection_reason = reason or None
     log_action(db, "work_request", request_id, "SOFT_DELETE")
     db.commit()
     return True

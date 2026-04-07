@@ -1065,8 +1065,10 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedWRs, setDeletedWRs] = useState([]);
+  const [viewDeletedWR, setViewDeletedWR] = useState(null);
   const [critScore, setCritScore] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [requests, setRequests] = useState([]);
@@ -1361,12 +1363,15 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
 
   function handleDelete(id) {
     setDeleteConfirm(id);
+    setDeleteReason('');
   }
   function confirmDelete() {
     const id = deleteConfirm;
+    const reason = deleteReason.trim();
     setDeleteConfirm(null);
+    setDeleteReason('');
     setRequests((prev) => prev.filter((r) => r.id !== id));
-    api.deleteWorkRequest(id).catch(() => {
+    api.deleteWorkRequest(id, { reason }).catch(() => {
       api.listWorkRequests().then((data) => {
         const arr = Array.isArray(data) ? data : [];
         setRequests(arr.map(normalizeWR));
@@ -1891,6 +1896,11 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                       </div>
                     </div>
                   </div>
+                  {wr.delete_reason && (
+                    <div className="px-4 py-2 bg-amber-50 border-t border-amber-100">
+                      <p className="text-[10px] text-amber-800"><span className="font-semibold">Motivo:</span> {wr.delete_reason}</p>
+                    </div>
+                  )}
                   <div className="px-4 py-2 bg-red-50 border-t border-red-100 flex items-center justify-between">
                     <div className="flex items-center gap-3 text-[10px] text-red-600">
                       <span>Eliminado: {wr.deleted_at ? new Date(wr.deleted_at).toLocaleString('es', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
@@ -1915,14 +1925,20 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">Eliminar Aviso</h3>
             <p className="text-sm text-gray-500 mb-1">¿Estás seguro de eliminar este aviso de trabajo?</p>
-            <p className="text-xs font-mono text-gray-400 mb-6">{deleteConfirm}</p>
+            <p className="text-xs font-mono text-gray-400 mb-3">{deleteConfirm}</p>
+            <div className="text-left mb-4">
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Motivo de eliminación *</label>
+              <textarea value={deleteReason} onChange={e => setDeleteReason(e.target.value)}
+                rows={2} placeholder="Ej: Duplicado, Error de captura, Prueba..."
+                className="w-full text-sm border border-gray-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-red-500/30 focus:border-red-500 resize-none" />
+            </div>
             <div className="flex gap-3">
               <button onClick={() => setDeleteConfirm(null)}
                 className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">
                 Cancelar
               </button>
-              <button onClick={confirmDelete}
-                className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors">
+              <button onClick={confirmDelete} disabled={!deleteReason.trim()}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                 Sí, eliminar
               </button>
             </div>

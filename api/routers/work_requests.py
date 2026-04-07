@@ -260,6 +260,7 @@ def list_deleted_before_catch_all(plant_id: str = None, db: Session = Depends(ge
             "failure_description": pd.get("original_text", "")[:120] if isinstance(pd, dict) else "",
             "created_by": wr.created_by or "", "plant_id": ai.get("plant_id", ""),
             "failure_category": pd.get("failure_mode_detected", ""), "failure_symptom": pd.get("failure_symptom", ""),
+            "delete_reason": wr.rejection_reason or "",
         })
     return results
 
@@ -579,9 +580,13 @@ def update_work_request(request_id: str, data: WRUpdateRequest, db: Session = De
     return work_request_service._to_dict(wr)
 
 
+class DeleteWRRequest(BaseModel):
+    reason: str = ""
+
 @router.delete("/{request_id}")
-def delete_work_request(request_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    deleted = work_request_service.delete_work_request(db, request_id, user_id=getattr(user, 'username', ''))
+def delete_work_request(request_id: str, data: DeleteWRRequest = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    reason = (data.reason if data else "") or ""
+    deleted = work_request_service.delete_work_request(db, request_id, user_id=getattr(user, 'username', ''), reason=reason)
     if not deleted:
         raise HTTPException(status_code=404, detail="Work request not found")
     return {"ok": True, "request_id": request_id}

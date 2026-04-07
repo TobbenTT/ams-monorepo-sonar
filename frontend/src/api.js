@@ -94,7 +94,7 @@ async function get(path, params) { return request('GET', path, undefined, params
 async function post(path, data) { return request('POST', path, data || {}); }
 async function put(path, data) { return request('PUT', path, data || {}); }
 async function patch(path, data) { return request('PATCH', path, data || {}); }
-async function del(path) { return request('DELETE', path); }
+async function del(path, data) { return request('DELETE', path, data); }
 
 // ── Hierarchy ──
 export const listPlants = () => get('/hierarchy/plants');
@@ -188,7 +188,7 @@ export const checkDuplicates = (d) => post('/work-requests/check-duplicates', d)
 export const createWRFromHierarchy = (d) => post('/work-requests/from-hierarchy', d);
 export const cancelWorkRequest = (id, d) => put(`/work-requests/${id}/cancel`, d || {});
 export const updateWorkRequest = (id, d) => put(`/work-requests/${id}`, d);
-export const deleteWorkRequest = (id) => del(`/work-requests/${id}`);
+export const deleteWorkRequest = (id, data) => del(`/work-requests/${id}`, data);
 export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);
 export const startWorkRequest = (id) => put(`/work-requests/${id}/start`);
 export const completeWorkRequest = (id, d) => put(`/work-requests/${id}/complete`, d);

@@ -1376,9 +1376,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               className="px-4 py-2 text-xs border rounded-lg hover:bg-gray-50">Cancel</button>
                             <button type="button" onClick={() => {
                               const vendorName = extForm.vendor === 'OTHER' ? extForm.vendor_other : extForm.vendor;
-                              const n = [...editOps];
-                              n[extModal.opIdx] = { ...n[extModal.opIdx], ...extForm, vendor: vendorName };
-                              setEditOps(n);
+                              if (extModal.context === 'material') {
+                                const n = [...editMats];
+                                n[extModal.opIdx] = { ...n[extModal.opIdx], vendor: vendorName, vendor_other: extForm.vendor_other, contract_ref: extForm.contract_ref, lead_time_days: extForm.lead_time_days, notes: extForm.notes };
+                                setEditMats(n);
+                              } else {
+                                const n = [...editOps];
+                                n[extModal.opIdx] = { ...n[extModal.opIdx], ...extForm, vendor: vendorName };
+                                setEditOps(n);
+                              }
                               setExtModal({ open: false, opIdx: -1 });
                             }} className="px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold">Save External Service</button>
                           </div>
@@ -1606,7 +1612,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           <div key={idx} className="rounded-lg border border-gray-200 p-3">
                             <div className="flex items-center gap-2 mb-2">
                               <div className="relative">
-                                <input value={activeMatIdx === idx ? matSearchQuery : (mat.sapId || '')}
+                                <input value={mat.sapId || ''}
                                   onFocus={() => { setActiveMatIdx(idx); setMatSearchQuery(mat.sapId || ''); }}
                                   onChange={e => { setActiveMatIdx(idx); setMatSearchQuery(e.target.value); const n = [...editMats]; n[idx].sapId = e.target.value; setEditMats(n); }}
                                   className="w-28 text-xs border rounded px-2 py-1 font-mono" placeholder="SAP Code" />
@@ -1630,10 +1636,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 className="text-red-400 hover:text-red-600 text-xs px-1">x</button>
                             </div>
                             <div className="flex items-center gap-3">
-                              <select value={mat.type || 'INT'} onChange={e => { const n = [...editMats]; n[idx].type = e.target.value; setEditMats(n); }}
+                              <select value={mat.type || 'INT'} onChange={e => { const n = [...editMats]; n[idx].type = e.target.value; setEditMats(n); if (e.target.value === 'EXT') { setExtModal({ open: true, opIdx: idx, context: 'material' }); setExtForm({ vendor: '', vendor_other: '', contract_ref: '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: '', currency: 'USD', start_date: '', end_date: '', lead_time_days: '', contact_name: '', contact_phone: '', safety_requirements: '', notes: '' }); } }}
                                 className="text-xs border rounded px-2 py-1 w-16 font-bold">
                                 <option value="INT">INT</option><option value="EXT">EXT</option>
                               </select>
+                              {mat.type === 'EXT' && mat.vendor && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">{mat.vendor}</span>}
+                              {mat.type === 'EXT' && <button type="button" onClick={() => { setExtModal({ open: true, opIdx: idx, context: 'material' }); setExtForm({ vendor: mat.vendor || '', vendor_other: mat.vendor_other || '', contract_ref: mat.contract_ref || '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: mat.unit_price ? String((mat.unit_price||0)*(mat.quantity||1)) : '', currency: 'USD', start_date: '', end_date: '', lead_time_days: mat.lead_time_days || '', contact_name: '', contact_phone: '', safety_requirements: '', notes: mat.notes || '' }); }} className="text-[10px] text-purple-600 underline">Vendor</button>}
                               <div className="flex items-center gap-1">
                                 <label className="text-[10px] text-gray-500">Qty:</label>
                                 <input type="number" min="1" value={mat.quantity || 1} onChange={e => { const n = [...editMats]; n[idx].quantity = parseInt(e.target.value)||1; setEditMats(n); }}

@@ -99,7 +99,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [editDates, setEditDates] = useState({ start: '', end: '' });
   const [savingOT, setSavingOT] = useState(false);
   const [expandedOps, setExpandedOps] = useState({});
-  const [extModal, setExtModal] = useState({ open: false, opIdx: -1 });
+  const [extModal, setExtModal] = useState({ open: false, opIdx: -1, context: 'operation' });
   const [extForm, setExtForm] = useState({ vendor: '', vendor_other: '', contract_ref: '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: '', currency: 'USD', start_date: '', end_date: '', lead_time_days: '', contact_name: '', contact_phone: '', safety_requirements: '', notes: '' });
   const [woSearch, setWoSearch] = useState("");
   const [woStatusFilter, setWoStatusFilter] = useState("All");
@@ -1150,7 +1150,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             {isExpanded && (
                               <div className="px-3 pb-3 border-t border-gray-100">
                                 <div className="flex items-center gap-2 mt-2 mb-2">
-                                  <select value={op.type || 'INT'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], type: e.target.value}; setEditOps(n); if (e.target.value === 'EXT') { setExtModal({ open: true, opIdx: idx }); setExtForm({ vendor: '', vendor_other: '', contract_ref: '', rate_per_hour: '', notes: '' }); } }}
+                                  <select value={op.type || 'INT'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], type: e.target.value}; setEditOps(n); if (e.target.value === 'EXT') { setExtModal({ open: true, opIdx: idx, context: 'operation' }); setExtForm({ vendor: '', vendor_other: '', contract_ref: '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: '', currency: 'USD', start_date: '', end_date: '', lead_time_days: '', contact_name: '', contact_phone: '', safety_requirements: '', notes: '' }); } }}
                                     className="text-xs border rounded px-2 py-1 w-16 font-bold">
                                     <option value="INT">INT</option><option value="EXT">EXT</option>
                                   </select>
@@ -1612,9 +1612,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           <div key={idx} className="rounded-lg border border-gray-200 p-3">
                             <div className="flex items-center gap-2 mb-2">
                               <div className="relative">
-                                <input value={mat.sapId || ''}
-                                  onFocus={() => { setActiveMatIdx(idx); setMatSearchQuery(mat.sapId || ''); }}
-                                  onChange={e => { setActiveMatIdx(idx); setMatSearchQuery(e.target.value); const n = [...editMats]; n[idx].sapId = e.target.value; setEditMats(n); }}
+                                <input value={mat.code || mat.sapId || mat.sap_id || ''}
+                                  onFocus={() => { setActiveMatIdx(idx); setMatSearchQuery(mat.code || mat.sapId || ''); }}
+                                  onChange={e => { setActiveMatIdx(idx); setMatSearchQuery(e.target.value); const n = [...editMats]; n[idx].code = e.target.value; n[idx].sapId = e.target.value; setEditMats(n); }}
                                   className="w-28 text-xs border rounded px-2 py-1 font-mono" placeholder="SAP Code" />
                                 {activeMatIdx === idx && matSearchResults.length > 0 && (
                                   <div className="absolute z-50 top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">

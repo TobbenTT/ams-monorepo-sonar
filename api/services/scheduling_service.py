@@ -39,12 +39,12 @@ def create_program(
     groups = BacklogGrouper.find_all_groups(entries)
 
     from datetime import date, timedelta
-    # Find the Monday of the target week
-    today = date.today()
-    days_to_monday = (7 - today.weekday()) % 7  # next Monday
-    if days_to_monday == 0 and today.weekday() != 0:
-        days_to_monday = 7
-    week_start = today + timedelta(days=days_to_monday) if today.weekday() != 0 else today
+    # Calculate Monday of the requested week number
+    jan1 = date(year, 1, 1)
+    # ISO week: find the Monday of week 1, then add (week_number - 1) weeks
+    jan1_weekday = jan1.weekday()  # 0=Mon
+    monday_week1 = jan1 - timedelta(days=jan1_weekday) if jan1_weekday <= 3 else jan1 + timedelta(days=7 - jan1_weekday)
+    week_start = monday_week1 + timedelta(weeks=week_number - 1)
     work_days = [week_start + timedelta(days=d) for d in range(5)]  # Mon-Fri
 
     # Collect all items to schedule (grouped + ungrouped)

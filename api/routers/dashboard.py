@@ -84,8 +84,8 @@ def get_executive_dashboard(
     db: Session = Depends(get_db),
 ):
     """Get consolidated executive dashboard data for a plant."""
-    sd = datetime.fromisoformat(start_date) if start_date else None
-    ed = datetime.fromisoformat(end_date) if end_date else None
+    sd = __import__('dateutil.parser', fromlist=['parse']).parse(start_date) if start_date else None
+    ed = __import__('dateutil.parser', fromlist=['parse']).parse(end_date) if end_date else None
     reports = reporting_service.list_reports(db, plant_id)
     notifications = reporting_service.list_notifications(db, plant_id)
     critical_alerts = [n for n in notifications if n.get("level") == "CRITICAL"]
@@ -136,8 +136,8 @@ def get_work_management_kpis(
 ):
     """Compute KPIs from managed_work_orders + workforce for Phase 6."""
     now = datetime.now()
-    period_start = datetime.fromisoformat(start_date) if start_date else now - timedelta(days=30)
-    period_end = datetime.fromisoformat(end_date) if end_date else now
+    period_start = __import__('dateutil.parser', fromlist=['parse']).parse(start_date) if start_date else now - timedelta(days=30)
+    period_end = __import__('dateutil.parser', fromlist=['parse']).parse(end_date) if end_date else now
 
     # All MWOs for this plant
     all_wos = db.query(ManagedWorkOrderModel).filter(

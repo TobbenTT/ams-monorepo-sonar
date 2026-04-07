@@ -164,8 +164,9 @@ def get_analytics_page_data(
         HierarchyNodeModel.plant_id == plant_id,
     ).all()
 
-    sd = datetime.fromisoformat(start_date) if start_date else None
-    ed = datetime.fromisoformat(end_date) if end_date else None
+    from dateutil.parser import parse as _dp
+    sd = _dp(start_date) if start_date else None
+    ed = _dp(end_date) if end_date else None
 
     equipment_kpis = []
     total_mtbf = total_mttr = total_avail = total_oee = 0.0
@@ -309,6 +310,19 @@ def get_analytics_page_data(
         {"area": area[:20], "labor": round(v["labor"]), "material": round(v["material"])}
         for area, v in sorted(area_costs.items(), key=lambda x: x[1]["labor"], reverse=True)
     ]
+
+    # Fallback: if no equipment-level KPIs, use plant-level aggregate
+    if not counted:
+        from sqlalchemy import func as _fn
+        plant_kpi = db.query(
+            _fn.avg(KPIMetricsModel.availability_pct),
+            _fn.avg(KPIMetricsModel.mtbf_days),
+            _fn.avg(KPIMetricsModel.mttr_hours),
+            _fn.avg(KPIMetricsModel.oee_pct),
+        ).filter(KPIMetricsModel.plant_id == plant_id).first()
+        if plant_kpi and plant_kpi[0] is not None:
+            avg_avail, avg_mtbf, avg_mttr, avg_oee = [round(v or 0, 1) for v in plant_kpi]
+            counted = 1
 
     return {
         "kpis": {

@@ -21,7 +21,9 @@ def add_to_backlog(db: Session, work_request_id: str) -> dict | None:
     if not wr:
         return None
 
-    ai = wr.ai_classification or {}
+    import json as _json
+    _raw_ai = wr.ai_classification or {}
+    ai = _json.loads(_raw_ai) if isinstance(_raw_ai, str) else _raw_ai
     priority = ai.get("priority_suggested", "3_NORMAL")
     wo_type = _map_wo_type(ai.get("work_order_type", "PM01_INSPECTION"))
 

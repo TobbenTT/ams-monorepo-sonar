@@ -75,6 +75,7 @@ export default function WorkOrdersPage() {
   const [otMats, setOtMats] = useState([]); // editable materials
   const [otCosts, setOtCosts] = useState({ labor_cost: 0, material_cost: 0, external_cost: 0 , planned_labor: 0, planned_material: 0, planned_external: 0 });
   const [otSaving, setOtSaving] = useState(false);
+  const [aiPanel, setAiPanel] = useState(null);
   const [newNote, setNewNote] = useState('');
   const [wrSortBy, setWrSortBy] = useState('date_desc'); // 'date_desc' | 'date_asc'
 
@@ -1840,7 +1841,7 @@ export default function WorkOrdersPage() {
           { id: 'historial', label: 'History', icon: MessageSquare },
         ];
         return (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedOT(null)}>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => { setSelectedOT(null); setAiPanel(null); }}>
           <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[92vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
             {/* ═══ HEADER ═══ */}
@@ -1872,7 +1873,7 @@ export default function WorkOrdersPage() {
                     </div>
                   </div>
                 )}
-                <button onClick={() => setSelectedOT(null)} className="p-2 hover:bg-gray-100 rounded-lg ml-3"><X className="w-5 h-5" /></button>
+                <button onClick={() => { setSelectedOT(null); setAiPanel(null); }} className="p-2 hover:bg-gray-100 rounded-lg ml-3"><X className="w-5 h-5" /></button>
               </div>
 
               {/* Tabs */}
@@ -2471,6 +2472,76 @@ export default function WorkOrdersPage() {
               )}
             </div>
 
+            {/* ═══ AI RESULTS PANEL ═══ */}
+            {aiPanel && (
+              <div className="mx-6 mb-3 rounded-xl border-2 overflow-hidden">
+                {aiPanel.loading ? (
+                  <div className="p-6 text-center bg-gray-50">
+                    <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-gray-600 font-medium">Analizando con IA...</p>
+                  </div>
+                ) : aiPanel.type === 'schedule' ? (
+                  <div className="bg-blue-50 border-blue-300">
+                    <div className="px-4 py-3 bg-blue-100 border-b border-blue-200 flex items-center justify-between">
+                      <span className="text-sm font-bold text-blue-800 flex items-center gap-2"><Clock size={16} /> Fechas Sugeridas por IA</span>
+                      <button onClick={() => setAiPanel(null)} className="text-blue-400 hover:text-blue-600 text-xs">Cerrar</button>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      {(aiPanel.data?.suggested_dates || []).slice(0, 3).map((d, i) => (
+                        <div key={i} className={`flex items-center gap-3 p-3 rounded-lg border ${i === 0 ? 'bg-white border-blue-300 ring-2 ring-blue-200' : 'bg-blue-50/50 border-blue-100'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i === 0 ? 'bg-blue-600 text-white' : 'bg-blue-200 text-blue-700'}`}>{i + 1}</div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-800">{d.date}</p>
+                            <p className="text-xs text-gray-500">{d.day_name} — {d.available_hours}h disponibles</p>
+                          </div>
+                          {i === 0 && <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">Recomendada</span>}
+                        </div>
+                      ))}
+                      {aiPanel.data?.ai_recommendation && (
+                        <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                          <p className="text-xs text-gray-700 leading-relaxed">{aiPanel.data.ai_recommendation}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : aiPanel.type === 'verify' ? (
+                  <div className={aiPanel.data?.can_close ? 'bg-green-50 border-green-300' : 'bg-amber-50 border-amber-300'}>
+                    <div className={`px-4 py-3 border-b flex items-center justify-between ${aiPanel.data?.can_close ? 'bg-green-100 border-green-200' : 'bg-amber-100 border-amber-200'}`}>
+                      <span className={`text-sm font-bold flex items-center gap-2 ${aiPanel.data?.can_close ? 'text-green-800' : 'text-amber-800'}`}>
+                        {aiPanel.data?.can_close ? <><CheckCircle size={16} /> Lista para Cerrar</> : <><AlertTriangle size={16} /> Requiere Atención</>}
+                      </span>
+                      <button onClick={() => setAiPanel(null)} className="text-gray-400 hover:text-gray-600 text-xs">Cerrar</button>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      {(aiPanel.data?.issues || []).map((issue, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <span className="text-red-500 mt-0.5">&#x2716;</span>
+                          <span className="text-gray-700">{issue}</span>
+                        </div>
+                      ))}
+                      {(aiPanel.data?.warnings || []).map((warn, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <span className="text-amber-500 mt-0.5">&#x26A0;</span>
+                          <span className="text-gray-700">{warn}</span>
+                        </div>
+                      ))}
+                      {aiPanel.data?.checks_passed && (aiPanel.data?.issues || []).length === 0 && (
+                        <div className="flex items-center gap-2 text-sm text-green-700">
+                          <span>&#x2714;</span> Todas las verificaciones pasaron correctamente
+                        </div>
+                      )}
+                      {aiPanel.data?.ai_recommendation && (
+                        <div className="mt-3 p-3 bg-white rounded-lg border">
+                          <p className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Recomendación IA</p>
+                          <p className="text-xs text-gray-700 leading-relaxed">{aiPanel.data.ai_recommendation}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
             {/* ═══ FOOTER ═══ */}
             <div className="border-t px-6 py-3 rounded-b-2xl flex justify-between items-center bg-gray-50">
               <span className="text-xs text-gray-400">Creado: {selectedOT.created_at ? new Date(selectedOT.created_at).toLocaleString() : '—'}</span>
@@ -2481,7 +2552,7 @@ export default function WorkOrdersPage() {
                   const NxtIcon = nxt.icon;
                   return (
                     <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                      onClick={async () => { await handleOTTransition(selectedOT, nxt.action); setSelectedOT(null); }}>
+                      onClick={async () => { await handleOTTransition(selectedOT, nxt.action); setSelectedOT(null); setAiPanel(null); }}>
                       {NxtIcon && <NxtIcon className="w-3 h-3 mr-1" />}
                       {nxt.label}
                     </Button>
@@ -2490,10 +2561,10 @@ export default function WorkOrdersPage() {
                 <Button variant="outline" size="sm"
                   onClick={async () => {
                     try {
+                      setAiPanel({ loading: true, type: 'schedule' });
                       const res = await api.aiSuggestSchedule(selectedOT.wo_id);
-                      const dates = (res.suggested_dates || []).slice(0, 3).map(d => d.date + ' (' + d.day_name + ', ' + d.available_hours + 'h libres)').join('\n');
-                      toast.success('Fechas sugeridas por IA:\n' + dates + '\n\n' + (res.ai_recommendation || ''), 12000);
-                    } catch { toast.error('Error sugiriendo fechas'); }
+                      setAiPanel({ loading: false, type: 'schedule', data: res });
+                    } catch { toast.error('Error sugiriendo fechas'); setAiPanel(null); }
                   }}
                   className="gap-1 text-blue-600 border-blue-300 hover:bg-blue-50">
                   <Clock size={14} /> Sugerir Fecha IA
@@ -2501,22 +2572,15 @@ export default function WorkOrdersPage() {
                 <Button variant="outline" size="sm"
                   onClick={async () => {
                     try {
+                      setAiPanel({ loading: true, type: 'verify' });
                       const res = await api.aiVerifyClose(selectedOT.wo_id);
-                      if (res.can_close && res.checks_passed) {
-                        toast.success('Verificacion IA: Todo OK para cerrar');
-                      } else {
-                        const parts = [];
-                        if (res.issues?.length) parts.push('Problemas:\n' + res.issues.join('\n'));
-                        if (res.warnings?.length) parts.push('Advertencias:\n' + res.warnings.join('\n'));
-                        if (res.ai_recommendation) parts.push('IA: ' + res.ai_recommendation);
-                        toast[res.can_close ? 'success' : 'error'](parts.join('\n\n'), 12000);
-                      }
-                    } catch (e) { toast.error('Error al verificar con IA'); }
+                      setAiPanel({ loading: false, type: 'verify', data: res });
+                    } catch (e) { toast.error('Error al verificar'); setAiPanel(null); }
                   }}
                   className="gap-1 text-violet-600 border-violet-300 hover:bg-violet-50">
                   <Zap size={14} /> Verificar IA
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setSelectedOT(null)}>Close</Button>
+                <Button variant="outline" size="sm" onClick={() => { setSelectedOT(null); setAiPanel(null); }}>Close</Button>
               </div>
             </div>
           </div>

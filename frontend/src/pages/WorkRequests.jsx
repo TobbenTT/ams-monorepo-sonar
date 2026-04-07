@@ -972,12 +972,12 @@ function DetailCard({ icon: Icon, label, value, children }) {
 
 /* ─── Normalize API data ─── */
 function normalizeWR(wr) {
-  const cls = wr.ai_classification || {};
-  const desc = wr.problem_description || {};
+  const cls = typeof wr.ai_classification === 'string' ? (() => { try { return JSON.parse(wr.ai_classification); } catch { return {}; } })() : (wr.ai_classification || {});
+  const desc = typeof wr.problem_description === 'string' ? (() => { try { return JSON.parse(wr.problem_description); } catch { return {}; } })() : (wr.problem_description || {});
   return {
     id: wr.request_id || wr.id,
     equipment_tag: wr.equipment_tag || '',
-    equipment_name: wr.equipment_name || wr.equipment_tag || '',
+    equipment_name: cls.wo_title || wr.equipment_name || wr.equipment_tag || '',
     plant: wr.plant_id || 'OCP-JFC1',
     area: wr.area || '',
     technician: wr.technician_name || wr.technician || cls.required_specialties?.[0] || '',

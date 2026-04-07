@@ -2087,6 +2087,10 @@ export default function WorkOrdersPage() {
                                 {isEditable ? (
                                   <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-sm focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Título de la operación..."
                                     value={op.description} onChange={(e) => setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, description: e.target.value } : o))} />
+                                ) : op.description && /\d+\.\s/.test(op.description) ? (
+                                  <div className="space-y-1">
+                                    {(() => { const steps = []; const raw = op.description; for (let n = 1; n <= 20; n++) { const s = raw.indexOf(`${n}. `); if (s === -1) break; const nx = raw.indexOf(`${n+1}. `, s+1); steps.push({ num: n, text: raw.substring(s, nx > -1 ? nx : undefined).replace(/^\d+\.\s*/, '').trim() }); } return steps.map((s, i) => (<div key={i} className="flex gap-1.5 text-sm"><span className="font-bold text-emerald-600 min-w-[18px]">{s.num}.</span><span>{s.text}</span></div>)); })()}
+                                  </div>
                                 ) : <span>{op.description || '—'}</span>}
                               </td>
                               <td className="px-3 py-2 text-center">

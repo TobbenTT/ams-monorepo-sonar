@@ -1397,16 +1397,43 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 {otModalTab === 'ejecucion' && (
                   <div className="space-y-4">
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                      <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2"><ClipboardCheck size={16} /> Execution Record</h3>
-                      <p className="text-xs text-blue-600 mt-1">Complete actual data. Required to close the WO.</p>
+                      <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2"><ClipboardCheck size={16} /> Registro de Ejecución</h3>
+                      <p className="text-xs text-blue-600 mt-1">Complete datos reales. Requerido para cerrar la OT.</p>
                     </div>
+
+                    {/* ── Operations Checklist ── */}
+                    {(wo.operations || editOps || []).length > 0 && (
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-2">Checklist de Operaciones</label>
+                        <div className="space-y-1.5">
+                          {(wo.operations || editOps || []).map((op, idx) => (
+                            <div key={idx} className="flex items-center gap-2 bg-gray-50 rounded-lg p-2.5 border">
+                              <input type="checkbox" checked={execData[`op_${idx}_done`] || false}
+                                onChange={e => setExecData(prev => ({...prev, [`op_${idx}_done`]: e.target.checked}))}
+                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className={"text-xs font-bold px-1.5 py-0.5 rounded "+(op.type === 'EXT' ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600")}>{op.type || 'INT'}</span>
+                              <span className={"flex-1 text-sm "+(execData[`op_${idx}_done`] ? "line-through text-gray-400" : "text-gray-800")}>{op.description ? (op.description.length > 60 ? op.description.substring(0,60)+'...' : op.description) : `Operación #${idx+1}`}</span>
+                              <input type="number" min="0" step="0.5" placeholder="Hrs" value={execData[`op_${idx}_hours`] || ''}
+                                onChange={e => setExecData(prev => ({...prev, [`op_${idx}_hours`]: e.target.value}))}
+                                className="w-16 border rounded px-2 py-1 text-xs text-center" />
+                            </div>
+                          ))}
+                          <div className="flex justify-between text-xs text-gray-500 px-2 mt-1">
+                            <span>{Object.keys(execData).filter(k => k.match(/^op_\d+_done$/) && execData[k]).length}/{(wo.operations || editOps || []).length} completadas</span>
+                            <span>Total hrs: {Object.keys(execData).filter(k => k.match(/^op_\d+_hours$/)).reduce((s,k) => s + (parseFloat(execData[k]) || 0), 0).toFixed(1)}h</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Hours: Plan vs Real ── */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">Planned Hours</label>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Horas Planificadas</label>
                         <div className="bg-gray-100 rounded-lg px-3 py-2 text-sm font-medium text-gray-700">{wo.estimated_hours || '0'}h</div>
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">Actual Hrses Trabajadas *</label>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Horas Reales Trabajadas *</label>
                         <input type="number" step="0.5" min="0" value={execData.actual_hours}
                           onChange={e => setExecData(prev => ({...prev, actual_hours: e.target.value}))}
                           className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1421,16 +1448,59 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       const over = delta > 0;
                       return <div className={"rounded-lg p-3 border "+(over ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200")}>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium">{pct}% of estimate</span>
-                          <span className={"text-sm font-bold "+(over ? "text-red-600" : "text-green-600")}>{over ? "+" : ""}{delta.toFixed(1)}h {over ? "over" : "under"} estimado</span>
+                          <span className="text-xs font-medium">{pct}% del estimado</span>
+                          <span className={"text-sm font-bold "+(over ? "text-red-600" : "text-green-600")}>{over ? "+" : ""}{delta.toFixed(1)}h {over ? "sobre" : "bajo"} estimado</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                           <div className={"h-2 rounded-full "+(over ? "bg-red-500" : "bg-green-500")} style={{width: Math.min(pct, 150)+"%"}} />
                         </div>
                       </div>;
                     })()}
+
+                    {/* ── Time Registration ── */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Inicio Real</label>
+                        <input type="datetime-local" value={execData.start_time || ''}
+                          onChange={e => setExecData(prev => ({...prev, start_time: e.target.value}))}
+                          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Fin Real</label>
+                        <input type="datetime-local" value={execData.end_time || ''}
+                          onChange={e => setExecData(prev => ({...prev, end_time: e.target.value}))}
+                          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                    </div>
+
+                    {/* ── Downtime ── */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Tiempo de Parada Equipo (hrs)</label>
+                        <input type="number" step="0.5" min="0" value={execData.downtime_hours || ''}
+                          onChange={e => setExecData(prev => ({...prev, downtime_hours: e.target.value}))}
+                          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" placeholder="0" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Causa de Retraso</label>
+                        <select value={execData.delay_cause || ''} onChange={e => setExecData(prev => ({...prev, delay_cause: e.target.value}))}
+                          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                          <option value="">Sin retraso</option>
+                          <option value="SPARE_PARTS">Espera de repuestos</option>
+                          <option value="EQUIPMENT">Equipo/herramienta no disponible</option>
+                          <option value="PERSONNEL">Personal no disponible</option>
+                          <option value="ACCESS">Acceso / permisos</option>
+                          <option value="WEATHER">Condiciones climáticas</option>
+                          <option value="SAFETY">Detención por seguridad</option>
+                          <option value="SCOPE_CHANGE">Cambio de alcance</option>
+                          <option value="OTHER">Otro</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* ── Materials Used ── */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-2">Materials Used</label>
+                      <label className="text-xs font-semibold text-gray-600 block mb-2">Materiales Utilizados</label>
                       {(wo.materials || []).length > 0 ? (
                         <div className="space-y-2">
                           {(wo.materials || []).map((mat, idx) => (
@@ -1452,12 +1522,39 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <p className="text-xs text-gray-400 italic py-3">No materials planificados para esta OT</p>
                       )}
                     </div>
+
+                    {/* ── Problems / Findings ── */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Execution Observations</label>
-                      <textarea rows={3} value={execData.observations}
-                        onChange={e => setExecData(prev => ({...prev, observations: e.target.value}))}
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 resize-none"
-                        placeholder="Findings, problems encountered, additional work..." />
+                      <label className="text-xs font-semibold text-gray-600 block mb-1">Hallazgos / Problemas Encontrados</label>
+                      <div className="space-y-2">
+                        <select value={execData.finding_type || ''} onChange={e => setExecData(prev => ({...prev, finding_type: e.target.value}))}
+                          className="w-full border rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500">
+                          <option value="">Sin hallazgos adicionales</option>
+                          <option value="ADDITIONAL_DAMAGE">Daño adicional encontrado</option>
+                          <option value="SCOPE_INCREASE">Alcance mayor al planificado</option>
+                          <option value="ROOT_CAUSE">Causa raíz identificada</option>
+                          <option value="SAFETY_ISSUE">Problema de seguridad detectado</option>
+                          <option value="RECOMMENDATION">Recomendación para futura intervención</option>
+                          <option value="FOLLOWUP_REQUIRED">Requiere seguimiento / nueva OT</option>
+                        </select>
+                        <textarea rows={3} value={execData.observations}
+                          onChange={e => setExecData(prev => ({...prev, observations: e.target.value}))}
+                          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 resize-none"
+                          placeholder="Describa hallazgos, problemas encontrados, trabajo adicional realizado..." />
+                      </div>
+                    </div>
+
+                    {/* ── Work Quality ── */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 block mb-1">Resultado del Trabajo</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[{v:'COMPLETED',l:'Completado',c:'bg-green-100 border-green-300 text-green-800'},{v:'PARTIAL',l:'Parcial',c:'bg-amber-100 border-amber-300 text-amber-800'},{v:'REQUIRES_FOLLOWUP',l:'Requiere Seguimiento',c:'bg-red-100 border-red-300 text-red-800'}].map(opt => (
+                          <button key={opt.v} type="button" onClick={() => setExecData(prev => ({...prev, work_result: opt.v}))}
+                            className={"py-2 px-3 rounded-lg border text-xs font-semibold transition-all "+(execData.work_result === opt.v ? opt.c + " ring-2 ring-offset-1" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50")}>
+                            {opt.l}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <div className="flex gap-3">
                       <button onClick={() => verifyAndClose(wo)} disabled={closingWithAI || !execData.actual_hours}

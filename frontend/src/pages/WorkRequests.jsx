@@ -1557,7 +1557,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                   const dels = await api.listDeletedWRs({ plant_id: plant });
                   setDeletedWRs(dels || []);
                   setShowDeleted(true);
-                } catch { toast.error('Error cargando eliminados'); }
+                } catch(err) { console.error('Eliminados error:', err); toast.error('Error: ' + (err?.message || '')); }
               }} className="text-xs px-3 py-1.5 rounded-full font-medium bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 flex items-center gap-1">
                 <Trash2 size={12} /> Eliminados
               </button>

@@ -4,7 +4,7 @@ import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
   Wrench, Tag, MapPin, Gauge, Package, Calendar, FileText, Trash2, Zap,
-  Save, Download
+  Save, Download, X
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';

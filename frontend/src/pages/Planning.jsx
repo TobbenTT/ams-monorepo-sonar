@@ -99,6 +99,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [editDates, setEditDates] = useState({ start: '', end: '' });
   const [savingOT, setSavingOT] = useState(false);
   const [expandedOps, setExpandedOps] = useState({});
+  const [extModal, setExtModal] = useState({ open: false, opIdx: -1 });
+  const [extForm, setExtForm] = useState({ vendor: '', vendor_other: '', contract_ref: '', rate_per_hour: '', notes: '' });
   const [woSearch, setWoSearch] = useState("");
   const [woStatusFilter, setWoStatusFilter] = useState("All");
   const [woPriorityFilter, setWoPriorityFilter] = useState("All");
@@ -1148,10 +1150,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             {isExpanded && (
                               <div className="px-3 pb-3 border-t border-gray-100">
                                 <div className="flex items-center gap-2 mt-2 mb-2">
-                                  <select value={op.type || 'INT'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], type: e.target.value}; setEditOps(n); }}
+                                  <select value={op.type || 'INT'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], type: e.target.value}; setEditOps(n); if (e.target.value === 'EXT') { setExtModal({ open: true, opIdx: idx }); setExtForm({ vendor: '', vendor_other: '', contract_ref: '', rate_per_hour: '', notes: '' }); } }}
                                     className="text-xs border rounded px-2 py-1 w-16 font-bold">
                                     <option value="INT">INT</option><option value="EXT">EXT</option>
                                   </select>
+                                  {op.type === 'EXT' && op.vendor && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">{op.vendor}</span>}
+                                  {op.type === 'EXT' && <button type="button" onClick={() => { setExtModal({ open: true, opIdx: idx }); setExtForm({ vendor: op.vendor || '', vendor_other: op.vendor_other || '', contract_ref: op.contract_ref || '', rate_per_hour: op.rate_per_hour || '', notes: op.notes || '' }); }} className="text-[10px] text-purple-600 underline">Edit vendor</button>}
                                   <textarea value={op.description || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], description: e.target.value}; setEditOps(n); }}
                                     className="flex-1 text-sm border rounded px-2 py-1 min-h-[60px]" placeholder="Describe the action/task" rows={3} />
                                 </div>
@@ -1186,6 +1190,61 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           </div>
                           );
                         })}
+                      </div>
+                    )}
+                    {/* External Vendor Modal */}
+                    {extModal.open && (
+                      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setExtModal({ open: false, opIdx: -1 })}>
+                        <div className="bg-white rounded-xl shadow-xl w-[420px] max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                          <div className="p-4 border-b bg-purple-50">
+                            <h3 className="font-bold text-purple-800 text-sm">External Resource / Contractor</h3>
+                            <p className="text-[10px] text-purple-600">SAP Service Entry Sheet (SES) details</p>
+                          </div>
+                          <div className="p-4 space-y-3">
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Vendor / Contractor</label>
+                              <select value={extForm.vendor} onChange={e => setExtForm(p => ({...p, vendor: e.target.value}))}
+                                className="w-full text-sm border rounded-lg px-3 py-2 mt-1">
+                                <option value="">Select vendor...</option>
+                                <option value="MANTTO_EXTERNO">Mantenimiento Externo S.A.</option>
+                                <option value="INDUST_SERVICE">Industrial Service SpA</option>
+                                <option value="MECANICA_TOTAL">Mecánica Total Ltda</option>
+                                <option value="ELECTRO_SERV">Electro Servicios</option>
+                                <option value="OTHER">Otro (especificar)</option>
+                              </select>
+                              {extForm.vendor === 'OTHER' && (
+                                <input value={extForm.vendor_other} onChange={e => setExtForm(p => ({...p, vendor_other: e.target.value}))}
+                                  placeholder="Nombre del proveedor" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" />
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Contract / PO Reference</label>
+                              <input value={extForm.contract_ref} onChange={e => setExtForm(p => ({...p, contract_ref: e.target.value}))}
+                                placeholder="e.g. PO-2026-001234" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Rate per Hour (USD)</label>
+                              <input type="number" value={extForm.rate_per_hour} onChange={e => setExtForm(p => ({...p, rate_per_hour: e.target.value}))}
+                                placeholder="0.00" className="w-full text-sm border rounded-lg px-3 py-2 mt-1" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Notes</label>
+                              <textarea value={extForm.notes} onChange={e => setExtForm(p => ({...p, notes: e.target.value}))}
+                                rows={2} placeholder="Additional details..." className="w-full text-sm border rounded-lg px-3 py-2 mt-1" />
+                            </div>
+                          </div>
+                          <div className="p-4 border-t flex gap-2 justify-end">
+                            <button type="button" onClick={() => setExtModal({ open: false, opIdx: -1 })}
+                              className="px-4 py-2 text-xs border rounded-lg hover:bg-gray-50">Cancel</button>
+                            <button type="button" onClick={() => {
+                              const vendorName = extForm.vendor === 'OTHER' ? extForm.vendor_other : extForm.vendor;
+                              const n = [...editOps];
+                              n[extModal.opIdx] = { ...n[extModal.opIdx], vendor: vendorName, vendor_other: extForm.vendor_other, contract_ref: extForm.contract_ref, rate_per_hour: extForm.rate_per_hour, notes: extForm.notes };
+                              setEditOps(n);
+                              setExtModal({ open: false, opIdx: -1 });
+                            }} className="px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold">Save Vendor</button>
+                          </div>
+                        </div>
                       </div>
                     )}
                     <button type="button" onClick={saveOTChanges} disabled={savingOT}

@@ -359,7 +359,7 @@ export default function FailureCapture({ onNavigateTab }) {
         }
         // P1 = emergency → equipment must be stopped
         if (s.priority === 'P1') setF('equipmentCondition', 'stopped');
-        if (s.resources?.length) setF('resources', s.resources);
+        if (s.resources?.length) setF('resources', s.resources.filter(r => !/supervisor/i.test(r.type || r)));
         if (s.materials?.length) setF('materials', s.materials);
         if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
         if (s.support_equipment?.length) setF('supportEquipment', s.support_equipment);
@@ -780,7 +780,7 @@ export default function FailureCapture({ onNavigateTab }) {
       const vpc = s.equipmentCondition.toLowerCase();
       setF('equipmentCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
     }
-    if (s.resources?.length) setF('resources', s.resources);
+    if (s.resources?.length) setF('resources', s.resources.filter(r => !/supervisor/i.test(r.type || r)));
     if (s.materials?.length) setF('materials', s.materials);
     if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
     if (s.workConditions) setF('workConditions', s.workConditions);
@@ -840,7 +840,7 @@ export default function FailureCapture({ onNavigateTab }) {
           const vpc = s.equipmentCondition.toLowerCase();
           setF('equipmentCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
         }
-        if (s.resources?.length) setF('resources', s.resources);
+        if (s.resources?.length) setF('resources', s.resources.filter(r => !/supervisor/i.test(r.type || r)));
         if (s.materials?.length) setF('materials', s.materials);
         if (s.supportEquipment?.length) setF("supportEquipment", s.supportEquipment);
         if (s.workConditions) setF("workConditions", s.workConditions);

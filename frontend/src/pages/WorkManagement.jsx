@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { LoadingSpinner } from '../components/Shared';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -23,11 +23,19 @@ const TABS = [
 export default function WorkManagement() {
   const { t } = useLanguage();
   const outletContext = useOutletContext();
-  const [activeTab, setActiveTab] = useState('identification');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'identification');
   const [viewMode, setViewMode] = useState('planner'); // planner | supervisor
 
-  // When viewMode changes, switch to appropriate default tab
+  // Read tab from URL on mount/change
   useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab) { setActiveTab(urlTab); setSearchParams({}, { replace: true }); }
+  }, [searchParams]);
+
+  // When viewMode changes, switch to appropriate default tab (only if no URL override)
+  useEffect(() => {
+    if (searchParams.get('tab')) return; // URL tab takes priority
     if (viewMode === 'planner') setActiveTab('failure-capture');
     else if (viewMode === 'supervisor') setActiveTab('identification');
   }, [viewMode]);

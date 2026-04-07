@@ -1554,7 +1554,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             {['admin', 'ceo', 'manager'].includes(user?.role) && (
               <button onClick={async () => {
                 try {
-                  const dels = await api.listDeletedWRs({ plant_id: plant });
+                  const dels = await api.listDeletedWRs({ plant_id: plantId });
                   setDeletedWRs(dels || []);
                   setShowDeleted(true);
                 } catch(err) { console.error('Eliminados error:', err); toast.error('Error: ' + (err?.message || '')); }
@@ -1875,7 +1875,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                       await api.restoreWR(wr.request_id);
                       setDeletedWRs(prev => prev.filter(d => d.request_id !== wr.request_id));
                       toast.success('Aviso restaurado: ' + wr.request_id);
-                      api.listWorkRequests({ plant_id: plant }).then(data => setRequests((Array.isArray(data) ? data : []).map(normalizeWR))).catch(() => {});
+                      api.listWorkRequests({ plant_id: plantId }).then(data => setRequests((Array.isArray(data) ? data : []).map(normalizeWR))).catch(() => {});
                     } catch { toast.error('Error restaurando'); }
                   }} className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
                     Restaurar

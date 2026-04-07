@@ -302,6 +302,8 @@ export const listReports = (p) => get('/reporting/reports', p);
 export const getReport = (id) => get(`/reporting/reports/${id}`);
 export const listNotifications = (p) => get('/reporting/notifications', p);
 export const acknowledgeNotification = (id) => put(`/reporting/notifications/${id}/ack`);
+export const markNotificationRead = (id) => put(`/notifications/${id}/read`);
+export const markAllNotificationsRead = () => put('/notifications/read-all');
 export const exportData = (d) => post('/reporting/export', d);
 export const generateReportFromDB = (p) => get("/reporting/generate-report", p);
 

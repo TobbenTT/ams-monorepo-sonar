@@ -34,6 +34,9 @@ export default function Header({
     const { t, lang, setLang } = useLanguage();
     const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
     const [notifCount, setNotifCount] = useState(0);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const notifRef = useRef(null);
     const [query, setQuery] = useState('');
     const [showResults, setShowResults] = useState(false);
     const [showLangMenu, setShowLangMenu] = useState(false);
@@ -66,9 +69,17 @@ export default function Header({
     useEffect(() => {
         api.listNotifications({ limit: 50 }).then(n => {
             const list = Array.isArray(n) ? n : [];
+            setNotifications(list);
             setNotifCount(list.filter(x => !x.is_read).length);
-        }).catch(() => setNotifCount(0));
+        }).catch(() => { setNotifCount(0); setNotifications([]); });
     }, [plant]);
+
+    // Close notification panel on outside click
+    useEffect(() => {
+        const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
 
     // Dynamic areas per plant
     const [dynamicAreas, setDynamicAreas] = useState([{ value: 'All Areas', label: 'All Areas' }]);
@@ -203,17 +214,57 @@ export default function Header({
                     </button>
 
                     {/* Notifications */}
-                    <button
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative text-gray-500 hover:text-gray-700"
-                        title={t('header.notifications', { count: notifCount })}
-                    >
-                        <Bell size={18} />
-                        {notifCount > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[0.6rem] rounded-full flex items-center justify-center font-bold">
-                                {notifCount > 9 ? '9+' : notifCount}
-                            </span>
+                    <div className="relative" ref={notifRef}>
+                        <button
+                            onClick={() => setNotifOpen(!notifOpen)}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative text-gray-500 hover:text-gray-700"
+                            title={t('header.notifications', { count: notifCount })}
+                        >
+                            <Bell size={18} />
+                            {notifCount > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[0.6rem] rounded-full flex items-center justify-center font-bold">
+                                    {notifCount > 9 ? '9+' : notifCount}
+                                </span>
+                            )}
+                        </button>
+                        {notifOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                                <div className="px-4 py-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200">Notificaciones</span>
+                                    {notifCount > 0 && (
+                                        <button onClick={() => { api.markAllNotificationsRead().catch(() => {}); setNotifications(prev => prev.map(n => ({...n, is_read: true}))); setNotifCount(0); }}
+                                            className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold">Marcar todo leído</button>
+                                    )}
+                                </div>
+                                <div className="max-h-80 overflow-y-auto">
+                                    {notifications.length === 0 ? (
+                                        <div className="py-8 text-center text-gray-400 text-sm">Sin notificaciones</div>
+                                    ) : notifications.slice(0, 20).map((n, i) => (
+                                        <div key={n.notification_id || i}
+                                            className={`px-4 py-3 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors ${!n.is_read ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''}`}
+                                            onClick={() => {
+                                                if (!n.is_read) {
+                                                    api.markNotificationRead(n.notification_id).catch(() => {});
+                                                    setNotifications(prev => prev.map(x => x.notification_id === n.notification_id ? {...x, is_read: true} : x));
+                                                    setNotifCount(prev => Math.max(0, prev - 1));
+                                                }
+                                            }}>
+                                            <div className="flex items-start gap-2">
+                                                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${!n.is_read ? 'bg-blue-500' : 'bg-transparent'}`} />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{n.title || 'Notificación'}</p>
+                                                    <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5">{n.message || ''}</p>
+                                                    <p className="text-[10px] text-gray-400 mt-1">{n.created_at ? new Date(n.created_at).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</p>
+                                                </div>
+                                                {n.level === 'CRITICAL' && <span className="text-[9px] bg-red-500 text-white px-1.5 py-0.5 rounded font-bold shrink-0">CRÍTICO</span>}
+                                                {n.level === 'WARN' && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded font-bold shrink-0">ALERTA</span>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         )}
-                    </button>
+                    </div>
                 </div>
             </div>
 

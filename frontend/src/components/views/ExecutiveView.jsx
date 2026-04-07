@@ -477,8 +477,44 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                     <span className="text-xs text-gray-500 block">Top Equipment</span>
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-violet-100 text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none prose-headings:text-gray-800 prose-strong:text-gray-800 prose-table:text-xs"
-                  dangerouslySetInnerHTML={{ __html: (aiSummary.summary || '').replace(/^### (.*$)/gm, '<h3 class="text-sm font-bold mt-3 mb-1">$1</h3>').replace(/^## (.*$)/gm, '<h2 class="text-base font-bold mt-4 mb-2">$1</h2>').replace(/^# (.*$)/gm, '<h1 class="text-lg font-bold mt-4 mb-2">$1</h1>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^- (.*$)/gm, '<li class="ml-4">$1</li>').replace(/(<li.*<\/li>\n?)+/g, m => '<ul class="list-disc my-1">' + m + '</ul>').replace(/^---$/gm, '<hr class="my-3 border-gray-200"/>').replace(/\|(.+)\|/g, (m, content) => { const cells = content.split('|').map(c => c.trim()); if (cells.every(c => /^-+$/.test(c))) return ''; return '<tr>' + cells.map(c => '<td class="border px-2 py-1">' + c + '</td>').join('') + '</tr>'; }).replace(/(<tr>.*<\/tr>\n?)+/g, m => '<table class="w-full border-collapse border text-xs my-2">' + m + '</table>').replace(/🔴|🟡|🟢|📊|⚠️/g, m => '<span>' + m + '</span>').replace(/\n/g, '<br/>') }} />
+                <div className="bg-white rounded-lg p-4 border border-violet-100 text-sm text-gray-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: (() => {
+                    let md = aiSummary.summary || '';
+                    // Clean stray ** that aren't paired
+                    md = md.replace(/\*\*([^*]+)$/gm, '<strong>$1</strong>');
+                    // Headers
+                    md = md.replace(/^### (.*$)/gm, '<h3 class="text-sm font-bold text-gray-800 mt-3 mb-1">$1</h3>');
+                    md = md.replace(/^## (.*$)/gm, '<h2 class="text-base font-bold text-gray-800 mt-4 mb-2">$1</h2>');
+                    md = md.replace(/^# (.*$)/gm, '<h1 class="text-lg font-bold text-gray-800 mt-4 mb-2">$1</h1>');
+                    // Bold
+                    md = md.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    // Tables: process lines with |
+                    const lines = md.split('\n');
+                    const out = [];
+                    let inTable = false;
+                    for (const line of lines) {
+                      if (/^\|(.+)\|$/.test(line.trim())) {
+                        const cells = line.trim().slice(1, -1).split('|').map(c => c.trim());
+                        if (cells.every(c => /^[-:]+$/.test(c))) continue; // separator row
+                        if (!inTable) { out.push('<table class="w-full border-collapse text-xs my-2">'); inTable = true; }
+                        out.push('<tr>' + cells.map(c => '<td class="border border-gray-200 px-2 py-1">' + c + '</td>').join('') + '</tr>');
+                      } else {
+                        if (inTable) { out.push('</table>'); inTable = false; }
+                        out.push(line);
+                      }
+                    }
+                    if (inTable) out.push('</table>');
+                    md = out.join('\n');
+                    // Lists
+                    md = md.replace(/^- (.*$)/gm, '<li class="ml-4 list-disc">$1</li>');
+                    // HR
+                    md = md.replace(/^---$/gm, '<hr class="my-3 border-gray-200"/>');
+                    // Newlines
+                    md = md.replace(/\n/g, '<br/>');
+                    // Clean double br after block elements
+                    md = md.replace(/<\/(h[123]|table|hr)><br\/>/g, '</$1>');
+                    return md;
+                  })() }} />
               </div>
             ) : (
               <p className="text-sm text-violet-600">Click "Generate" to get an AI summary of maintenance activity for the last 7 days.</p>

@@ -2233,64 +2233,66 @@ export default function WorkOrdersPage() {
                       {isEditable && <p className="text-xs mt-1">Agrega repuestos y materiales necesarios</p>}
                     </div>
                   ) : (
-                    <div className="border rounded-lg overflow-hidden">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">Código SAP</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Type</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Descripción</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Cant.</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-16">Unidad</th>
-                            {isEditable && <th className="px-3 py-2 w-10"></th>}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {otMats.map((mat) => (
-                            <tr key={mat._id} className="hover:bg-gray-50">
-                              <td className="px-3 py-2">
-                                {isEditable ? (
-                                  <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-xs font-mono focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="10034567"
-                                    value={mat.code || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, code: e.target.value } : m))} />
-                                ) : <span className="font-mono text-xs">{mat.code || '(Sin codigo)'}</span>}
-                              </td>
-                              <td className="px-3 py-2 text-center">
-                                {isEditable ? (
-                                  <select className={`w-full border-0 border-b-2 p-0 text-xs text-center font-bold focus:ring-0 rounded ${(mat.mat_type || 'INT') === 'EXT' ? 'border-purple-400 text-purple-700 bg-purple-50' : 'border-blue-400 text-blue-700 bg-blue-50'}`}
-                                    value={mat.mat_type || 'INT'} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, mat_type: e.target.value } : m))}>
-                                    <option value="INT">INT</option><option value="EXT">EXT</option>
-                                  </select>
-                                ) : <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${(mat.mat_type || 'INT') === 'EXT' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{mat.mat_type || 'INT'}</span>}
-                              </td>
-                              <td className="px-3 py-2">
-                                {isEditable ? (
-                                  <input type="text" className="w-full border-0 border-b border-gray-200 p-0 text-sm focus:border-emerald-400 focus:ring-0 bg-transparent" placeholder="Descripción del material..."
-                                    value={mat.description || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, description: e.target.value } : m))} />
-                                ) : <span>{mat.description || '—'}</span>}
-                              </td>
-                              <td className="px-3 py-2 text-center">
-                                {isEditable ? (
-                                  <input type="number" className="w-14 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
+                    <div className="space-y-3">
+                      {/* Summary bar */}
+                      <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <Package size={14} className="text-emerald-600" />
+                          <span className="font-semibold">{otMats.length} material{otMats.length > 1 ? 'es' : ''}</span>
+                        </div>
+                        <div className="h-4 w-px bg-gray-300" />
+                        <span className="text-xs text-gray-500">{otMats.filter(m => (m.mat_type || 'INT') === 'INT').length} internos</span>
+                        {otMats.some(m => m.mat_type === 'EXT') && <span className="text-xs text-purple-600 font-semibold">{otMats.filter(m => m.mat_type === 'EXT').length} externos</span>}
+                        <div className="h-4 w-px bg-gray-300" />
+                        <span className="text-xs text-gray-500">{otMats.reduce((s, m) => s + (m.quantity || 0), 0)} items total</span>
+                      </div>
+                      {/* Material cards */}
+                      {otMats.map((mat, idx) => (
+                        <div key={mat._id} className={`rounded-xl border-2 p-4 transition-all ${(mat.mat_type || 'INT') === 'EXT' ? 'border-purple-200 bg-purple-50/30' : 'border-gray-200 bg-white hover:border-emerald-200'}`}>
+                          {isEditable ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <input type="text" className="w-28 text-xs font-mono border rounded-lg px-2 py-1.5 bg-gray-50" placeholder="SAP Code"
+                                  value={mat.code || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, code: e.target.value } : m))} />
+                                <input type="text" className="flex-1 text-sm border rounded-lg px-3 py-1.5" placeholder="Descripción del material..."
+                                  value={mat.description || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, description: e.target.value } : m))} />
+                                <button onClick={() => setOtMats(prev => prev.filter(m => m._id !== mat._id))} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={14} /></button>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <select className={`text-xs border rounded-lg px-2 py-1.5 font-bold ${(mat.mat_type || 'INT') === 'EXT' ? 'border-purple-300 text-purple-700 bg-purple-50' : 'border-blue-300 text-blue-700 bg-blue-50'}`}
+                                  value={mat.mat_type || 'INT'} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, mat_type: e.target.value } : m))}>
+                                  <option value="INT">INT</option><option value="EXT">EXT</option>
+                                </select>
+                                <div className="flex items-center gap-1"><label className="text-[10px] text-gray-500">Cant:</label>
+                                  <input type="number" className="w-16 text-sm border rounded-lg px-2 py-1.5 text-center"
                                     value={mat.quantity || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, quantity: parseInt(e.target.value) || 0 } : m))} />
-                                ) : <span>{mat.quantity || 0}</span>}
-                              </td>
-                              <td className="px-3 py-2 text-center">
-                                {isEditable ? (
-                                  <select className="w-14 border-0 border-b border-gray-200 p-0 text-xs text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
-                                    value={mat.unit || 'PZ'} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, unit: e.target.value } : m))}>
-                                    <option value="PZ">PZ</option><option value="KG">KG</option><option value="LT">LT</option><option value="MT">MT</option><option value="UN">UN</option>
-                                  </select>
-                                ) : <span className="text-xs">{mat.unit || 'PZ'}</span>}
-                              </td>
-                              {isEditable && (
-                                <td className="px-3 py-2">
-                                  <button onClick={() => setOtMats(prev => prev.filter(m => m._id !== mat._id))} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                                </td>
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                                </div>
+                                <select className="text-xs border rounded-lg px-2 py-1.5"
+                                  value={mat.unit || 'PZ'} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, unit: e.target.value } : m))}>
+                                  <option value="PZ">PZ</option><option value="KG">KG</option><option value="LT">LT</option><option value="MT">MT</option><option value="UN">UN</option><option value="GL">GL</option>
+                                </select>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                                <Package size={18} className="text-emerald-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-800 truncate">{mat.description || '—'}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-xs font-mono text-gray-400">{mat.code || '—'}</span>
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${(mat.mat_type || 'INT') === 'EXT' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{mat.mat_type || 'INT'}</span>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-lg font-bold text-gray-800">{mat.quantity || 0}</p>
+                                <p className="text-[10px] text-gray-400 uppercase">{mat.unit || 'PZ'}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

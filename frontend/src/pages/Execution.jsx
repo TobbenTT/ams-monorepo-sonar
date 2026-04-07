@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import {
   Wrench, ClipboardCheck, ArrowRightLeft, Plus, CheckCircle2,
   Clock, AlertTriangle, User, Send, RefreshCw, ChevronDown, ChevronUp, Zap,
-  Calendar, Shield, Loader2
+  Calendar, Shield, Loader2, DollarSign, BarChart2, X, PackagePlus
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import {
@@ -12,8 +12,10 @@ import {
   confirmTaskUnderstood, createHandover, listHandovers,
   listManagedWOs, authListUsers, completeManagedWO,
   updateManagedWO, verifyCloseManagedWO, closeManagedWO,
-  aiDailyBriefing, aiEstimateDuration,
+  aiDailyBriefing, aiEstimateDuration, updateManagedWOProgress,
 } from '../api';
+
+const LABOR_RATE = 50; // USD per hour
 
 const STATUS_COLORS = {
   ASSIGNED: 'bg-blue-100 text-blue-700',
@@ -50,7 +52,7 @@ export default function Execution() {
   const [completedWOs, setCompletedWOs] = useState([]);
   const [signingOff, setSigningOff] = useState(null);
   const [closureWO, setClosureWO] = useState(null);
-  const [closureForm, setClosureForm] = useState({ actual_hours: '', observations: '', materials_returned: [] });
+  const [closureForm, setClosureForm] = useState({ actual_hours: '', observations: '', materials_returned: [], external_services: [] });
   const [aiResult, setAiResult] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -60,6 +62,9 @@ export default function Execution() {
   const [briefingLoading, setBriefingLoading] = useState(false);
   const [estimateResult, setEstimateResult] = useState(null);
   const [estimating, setEstimating] = useState(false);
+
+  // WO Execution detail state
+  const [selectedExecWO, setSelectedExecWO] = useState(null);
 
   useEffect(() => { refresh(); loadFastTrack(); loadWOsForTabs(); }, [tab]);
 
@@ -109,9 +114,15 @@ export default function Execution() {
 
   async function saveExecutionData(wo) {
     try {
+      const laborCost = (parseFloat(closureForm.actual_hours) || 0) * LABOR_RATE;
+      const matCost = (closureForm.materials_returned || []).reduce((s, m) => s + ((m.unit_price || 0) * (m.quantity_used || 0)), 0);
+      const extCost = (closureForm.external_services || []).reduce((s, e) => s + (parseFloat(e.cost) || 0), 0);
       await updateManagedWO(wo.wo_id, {
         actual_hours: parseFloat(closureForm.actual_hours) || 0,
-        labor_cost: (parseFloat(closureForm.actual_hours) || 0) * 50,
+        labor_cost: laborCost,
+        material_cost: matCost,
+        external_cost: extCost,
+        actual_total_cost: laborCost + matCost + extCost,
       });
       toast.success('Execution data saved for ' + wo.wo_number);
       loadWOsForTabs();
@@ -135,14 +146,22 @@ export default function Execution() {
   async function handleCloseWO(wo) {
     setClosing(true);
     try {
+      const laborCost = (parseFloat(closureForm.actual_hours) || 0) * LABOR_RATE;
+      const matCost = (closureForm.materials_returned || []).reduce((s, m) => s + ((m.unit_price || 0) * (m.quantity_used || 0)), 0);
+      const extCost = (closureForm.external_services || []).reduce((s, e) => s + (parseFloat(e.cost) || 0), 0);
+      const totalActual = laborCost + matCost + extCost;
       await updateManagedWO(wo.wo_id, {
         actual_hours: parseFloat(closureForm.actual_hours) || 0,
-        labor_cost: (parseFloat(closureForm.actual_hours) || 0) * 50,
+        labor_cost: laborCost,
+        material_cost: matCost,
+        external_cost: extCost,
+        actual_total_cost: totalActual,
+        completion_pct: 100,
       });
-      await completeManagedWO(wo.wo_id, { actual_hours: parseFloat(closureForm.actual_hours) || 0 });
+      await closeManagedWO(wo.wo_id);
       toast.success(wo.wo_number + ' closed successfully');
       setClosureWO(null);
-      setClosureForm({ actual_hours: '', observations: '', materials_returned: [] });
+      setClosureForm({ actual_hours: '', observations: '', materials_returned: [], external_services: [] });
       setAiResult(null);
       loadWOsForTabs();
     } catch (e) { toast.error('Close error: ' + e.message); }
@@ -206,6 +225,254 @@ export default function Execution() {
       await confirmTaskUnderstood(taskId);
       refresh();
     } catch (e) { console.error(e); }
+  }
+
+  // ── Cost calculation helper ──
+  function calcCosts(form, wo) {
+    const laborCost = (parseFloat(form.actual_hours) || 0) * LABOR_RATE;
+    const matCost = (form.materials_returned || []).reduce((s, m) => s + ((m.unit_price || 0) * (m.quantity_used || 0)), 0);
+    const extCost = (form.external_services || []).reduce((s, e) => s + (parseFloat(e.cost) || 0), 0);
+    const totalActual = laborCost + matCost + extCost;
+    const plannedLabor = parseFloat(wo?.estimated_hours || 0) * LABOR_RATE;
+    const plannedMat = parseFloat(wo?.material_cost_planned || wo?.planned_material_cost || 0);
+    const plannedExt = parseFloat(wo?.external_cost_planned || wo?.planned_external_cost || 0);
+    return { laborCost, matCost, extCost, totalActual, plannedLabor, plannedMat, plannedExt };
+  }
+
+  // ── WO Execution Detail Modal ──
+  function WOExecutionDetail({ wo, onClose }) {
+    const [localForm, setLocalForm] = useState({
+      completion_pct: wo.completion_pct || 0,
+      actual_hours: wo.actual_hours || '',
+      execution_notes: wo.execution_notes || '',
+      materials_used: (() => { try { return wo.materials_used ? (typeof wo.materials_used === 'string' ? JSON.parse(wo.materials_used) : wo.materials_used) : []; } catch { return []; } })(),
+      external_services: (() => { try { return wo.external_services ? (typeof wo.external_services === 'string' ? JSON.parse(wo.external_services) : wo.external_services) : []; } catch { return []; } })(),
+    });
+    const [saving, setSaving] = useState(false);
+    const [completing, setCompleting] = useState(false);
+    const [newMat, setNewMat] = useState({ description: '', quantity_used: 1, unit: 'PZ', unit_price: 0 });
+    const [newExt, setNewExt] = useState({ description: '', cost: 0 });
+
+    async function save() {
+      setSaving(true);
+      try {
+        await updateManagedWO(wo.wo_id, {
+          completion_pct: localForm.completion_pct,
+          actual_hours: parseFloat(localForm.actual_hours) || null,
+          execution_notes: localForm.execution_notes,
+          materials_used: localForm.materials_used,
+          external_services: localForm.external_services,
+        });
+        try { await updateManagedWOProgress(wo.wo_id, { completion_pct: localForm.completion_pct }); } catch {}
+        toast.success('Progress saved for ' + wo.wo_number);
+        loadWOsForTabs();
+      } catch (e) { toast.error('Error: ' + e.message); }
+      finally { setSaving(false); }
+    }
+
+    async function complete() {
+      setCompleting(true);
+      try {
+        await updateManagedWO(wo.wo_id, {
+          completion_pct: 100,
+          actual_hours: parseFloat(localForm.actual_hours) || null,
+          execution_notes: localForm.execution_notes,
+          materials_used: localForm.materials_used,
+          external_services: localForm.external_services,
+        });
+        await completeManagedWO(wo.wo_id, { actual_hours: parseFloat(localForm.actual_hours) || 0 });
+        toast.success(wo.wo_number + ' marked complete');
+        onClose();
+        loadWOsForTabs();
+      } catch (e) { toast.error('Error: ' + e.message); }
+      finally { setCompleting(false); }
+    }
+
+    function addMaterial() {
+      if (!newMat.description) return;
+      setLocalForm(p => ({ ...p, materials_used: [...p.materials_used, { ...newMat }] }));
+      setNewMat({ description: '', quantity_used: 1, unit: 'PZ', unit_price: 0 });
+    }
+    function removeMaterial(idx) {
+      setLocalForm(p => ({ ...p, materials_used: p.materials_used.filter((_, i) => i !== idx) }));
+    }
+    function addExternal() {
+      if (!newExt.description) return;
+      setLocalForm(p => ({ ...p, external_services: [...p.external_services, { ...newExt }] }));
+      setNewExt({ description: '', cost: 0 });
+    }
+    function removeExternal(idx) {
+      setLocalForm(p => ({ ...p, external_services: p.external_services.filter((_, i) => i !== idx) }));
+    }
+
+    const laborCost = (parseFloat(localForm.actual_hours) || 0) * LABOR_RATE;
+    const matCost = localForm.materials_used.reduce((s, m) => s + ((m.unit_price || 0) * (m.quantity_used || 0)), 0);
+    const extCost = localForm.external_services.reduce((s, e) => s + (parseFloat(e.cost) || 0), 0);
+    const totalCost = laborCost + matCost + extCost;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-5 border-b bg-gradient-to-r from-emerald-50 to-blue-50 rounded-t-2xl">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg font-bold text-gray-900">{wo.wo_number}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">{wo.status}</span>
+                {wo.priority_code && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${wo.priority_code === 'P1' ? 'bg-red-100 text-red-700' : wo.priority_code === 'P2' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {wo.priority_code}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 mt-0.5">{wo.equipment_tag} — {wo.description}</p>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          </div>
+
+          <div className="p-5 space-y-5">
+            {/* Progress */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold text-gray-700">Completion Progress</label>
+                <span className="text-lg font-bold text-emerald-700">{localForm.completion_pct}%</span>
+              </div>
+              <input type="range" min="0" max="100" step="5" value={localForm.completion_pct}
+                onChange={e => setLocalForm(p => ({ ...p, completion_pct: Number(e.target.value) }))}
+                className="w-full accent-emerald-600 h-3" />
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                <div className={`h-2.5 rounded-full transition-all ${localForm.completion_pct >= 100 ? 'bg-green-500' : localForm.completion_pct >= 50 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                  style={{ width: `${localForm.completion_pct}%` }} />
+              </div>
+            </div>
+
+            {/* Hours */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Planned Hours</label>
+                <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-sm font-medium text-blue-700">{wo.estimated_hours || 0} hrs</div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Actual Hours Worked</label>
+                <input type="number" step="0.5" min="0" value={localForm.actual_hours}
+                  onChange={e => setLocalForm(p => ({ ...p, actual_hours: e.target.value }))}
+                  placeholder="e.g. 6.5" className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400" />
+              </div>
+            </div>
+
+            {/* Materials Used */}
+            <div>
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                <PackagePlus size={15} className="text-emerald-600" /> Materials Actually Used
+              </label>
+              {localForm.materials_used.length > 0 && (
+                <div className="space-y-1.5 mb-3">
+                  {localForm.materials_used.map((mat, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border text-sm">
+                      <span className="flex-1 truncate">{mat.description}</span>
+                      <span className="text-gray-500 text-xs">{mat.quantity_used} {mat.unit}</span>
+                      {mat.unit_price > 0 && <span className="text-emerald-600 text-xs font-medium">${(mat.unit_price * mat.quantity_used).toFixed(2)}</span>}
+                      <button onClick={() => removeMaterial(idx)} className="text-red-400 hover:text-red-600 p-0.5"><X size={14} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="grid grid-cols-5 gap-1.5 bg-green-50 rounded-lg p-2 border border-green-100">
+                <input className="col-span-2 border rounded px-2 py-1 text-xs" placeholder="Description" value={newMat.description}
+                  onChange={e => setNewMat(p => ({ ...p, description: e.target.value }))} />
+                <input className="border rounded px-2 py-1 text-xs" type="number" min="0" placeholder="Qty" value={newMat.quantity_used}
+                  onChange={e => setNewMat(p => ({ ...p, quantity_used: Number(e.target.value) }))} />
+                <input className="border rounded px-2 py-1 text-xs" placeholder="Unit $" type="number" min="0" value={newMat.unit_price}
+                  onChange={e => setNewMat(p => ({ ...p, unit_price: Number(e.target.value) }))} />
+                <button onClick={addMaterial} className="bg-emerald-600 text-white rounded px-2 py-1 text-xs hover:bg-emerald-700 flex items-center justify-center gap-1">
+                  <Plus size={12} /> Add
+                </button>
+              </div>
+            </div>
+
+            {/* External Services */}
+            <div>
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                <DollarSign size={15} className="text-blue-600" /> External Services Consumed
+              </label>
+              {localForm.external_services.length > 0 && (
+                <div className="space-y-1.5 mb-3">
+                  {localForm.external_services.map((svc, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border text-sm">
+                      <span className="flex-1 truncate">{svc.description}</span>
+                      <span className="text-blue-600 text-xs font-medium">${parseFloat(svc.cost || 0).toFixed(2)}</span>
+                      <button onClick={() => removeExternal(idx)} className="text-red-400 hover:text-red-600 p-0.5"><X size={14} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="grid grid-cols-4 gap-1.5 bg-blue-50 rounded-lg p-2 border border-blue-100">
+                <input className="col-span-2 border rounded px-2 py-1 text-xs" placeholder="Service description" value={newExt.description}
+                  onChange={e => setNewExt(p => ({ ...p, description: e.target.value }))} />
+                <input className="border rounded px-2 py-1 text-xs" type="number" min="0" placeholder="Cost ($)" value={newExt.cost}
+                  onChange={e => setNewExt(p => ({ ...p, cost: Number(e.target.value) }))} />
+                <button onClick={addExternal} className="bg-blue-600 text-white rounded px-2 py-1 text-xs hover:bg-blue-700 flex items-center justify-center gap-1">
+                  <Plus size={12} /> Add
+                </button>
+              </div>
+            </div>
+
+            {/* Live Cost Summary */}
+            {(localForm.actual_hours || localForm.materials_used.length > 0 || localForm.external_services.length > 0) && (
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart2 size={15} className="text-slate-600" />
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Live Cost Estimate</span>
+                </div>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Labor ({localForm.actual_hours || 0}h x ${LABOR_RATE}/hr)</span>
+                    <span className="font-medium">${laborCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Materials</span>
+                    <span className="font-medium">${matCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">External Services</span>
+                    <span className="font-medium">${extCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1.5 font-bold">
+                    <span>Total Actual Cost</span>
+                    <span className="text-emerald-700">${totalCost.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            <div>
+              <label className="text-sm font-semibold text-gray-700 block mb-1">Execution Notes / Observations</label>
+              <textarea rows={3} value={localForm.execution_notes}
+                onChange={e => setLocalForm(p => ({ ...p, execution_notes: e.target.value }))}
+                placeholder="Findings, issues encountered, additional notes..."
+                className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-emerald-400" />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-1">
+              <button onClick={save} disabled={saving}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                {saving ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+                Save Progress
+              </button>
+              <button onClick={complete} disabled={completing || !localForm.actual_hours}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50">
+                {completing ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                Mark Complete
+              </button>
+            </div>
+            {!localForm.actual_hours && (
+              <p className="text-xs text-amber-600 text-center -mt-2">Enter actual hours to enable Mark Complete</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // ── Task Card Component ──
@@ -552,8 +819,43 @@ export default function Execution() {
       ) : (
         <>
           {(tab === 'my' || tab === 'all') && (
-            <div className="space-y-3">
-              {tasks.length === 0 ? (
+            <div className="space-y-4">
+              {/* EN_EJECUCION WOs — click to open progress detail */}
+              {enExecutionWOs.length > 0 && (
+                <div>
+                  <h2 className="text-sm font-bold text-amber-800 mb-2 flex items-center gap-2">
+                    <Wrench size={15} className="text-amber-600" /> WOs In Execution ({enExecutionWOs.length})
+                    <span className="text-xs font-normal text-gray-500">— Click to update progress</span>
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {enExecutionWOs.map(wo => (
+                      <div key={wo.wo_id}
+                        className="bg-white rounded-xl border border-amber-200 p-4 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all group"
+                        onClick={() => setSelectedExecWO(wo)}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm font-bold text-gray-900">{wo.wo_number}</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              wo.priority_code === 'P1' ? 'bg-red-100 text-red-700' :
+                              wo.priority_code === 'P2' ? 'bg-orange-100 text-orange-700' :
+                              'bg-blue-100 text-blue-700'}`}>{wo.priority_code}</span>
+                          </div>
+                          <span className="text-xs text-amber-600 font-medium group-hover:text-emerald-700">{wo.completion_pct || 0}% complete</span>
+                        </div>
+                        <p className="text-xs text-gray-500 truncate mb-2">{wo.equipment_tag} — {wo.description}</p>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-amber-500 h-2 rounded-full transition-all group-hover:bg-emerald-500" style={{ width: `${wo.completion_pct || 0}%` }} />
+                        </div>
+                        <div className="flex justify-between mt-2 text-[10px] text-gray-400">
+                          <span>{wo.estimated_hours || 0}h planned</span>
+                          <span>{wo.actual_hours ? `${wo.actual_hours}h worked` : 'No hours recorded'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {tasks.length === 0 && enExecutionWOs.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
                   <ClipboardCheck size={48} className="mx-auto mb-3 opacity-40" />
                   <p className="text-lg font-medium">No tasks</p>
@@ -858,6 +1160,36 @@ export default function Execution() {
                     </div>;
                   })()}
 
+                  {/* External services */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-2">External Services</label>
+                    {(closureForm.external_services || []).length > 0 && (
+                      <div className="space-y-1.5 mb-2">
+                        {closureForm.external_services.map((svc, idx) => (
+                          <div key={idx} className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-1.5 border border-blue-100 text-sm">
+                            <span className="flex-1">{svc.description}</span>
+                            <span className="text-blue-600 font-medium text-xs">${parseFloat(svc.cost || 0).toFixed(2)}</span>
+                            <button onClick={() => setClosureForm(p => ({...p, external_services: p.external_services.filter((_, i) => i !== idx)}))}
+                              className="text-red-400 hover:text-red-600"><X size={13} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <input className="flex-1 border rounded-lg px-2 py-1.5 text-xs" placeholder="External service description" id="closure-ext-desc" />
+                      <input className="w-24 border rounded-lg px-2 py-1.5 text-xs" type="number" placeholder="Cost ($)" id="closure-ext-cost" min="0" />
+                      <button onClick={() => {
+                          const desc = document.getElementById('closure-ext-desc').value;
+                          const cost = parseFloat(document.getElementById('closure-ext-cost').value) || 0;
+                          if (!desc) return;
+                          setClosureForm(p => ({...p, external_services: [...(p.external_services || []), { description: desc, cost }]}));
+                          document.getElementById('closure-ext-desc').value = '';
+                          document.getElementById('closure-ext-cost').value = '';
+                        }}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">+ Add</button>
+                    </div>
+                  </div>
+
                   {/* Materials used/returned */}
                   <div>
                     <label className="text-xs font-semibold text-gray-600 block mb-2">Materials — Planned vs Used</label>
@@ -881,9 +1213,15 @@ export default function Execution() {
                                 className="w-16 border rounded px-2 py-1 text-xs text-center" />
                             </div>
                             <div className="flex items-center gap-1">
-                              <label className="text-[10px] text-gray-400">Return:</label>
-                              <input type="number" min="0" defaultValue={0}
-                                className="w-16 border rounded px-2 py-1 text-xs text-center" />
+                              <label className="text-[10px] text-gray-400">Unit $:</label>
+                              <input type="number" min="0" step="0.01" defaultValue={mat.unit_price || 0}
+                                onChange={e => {
+                                  const mats = [...(closureForm.materials_returned || [])];
+                                  if (!mats[idx]) mats[idx] = { ...mat };
+                                  mats[idx] = { ...mats[idx], unit_price: parseFloat(e.target.value) || 0 };
+                                  setClosureForm(p => ({...p, materials_returned: mats}));
+                                }}
+                                className="w-20 border rounded px-2 py-1 text-xs text-center" />
                             </div>
                           </div>
                         ))}
@@ -892,6 +1230,70 @@ export default function Execution() {
                       <p className="text-xs text-gray-400 italic py-3">No materials planned for this WO</p>
                     )}
                   </div>
+
+                  {/* Cost Summary Table */}
+                  {closureForm.actual_hours && (() => {
+                    const { laborCost, matCost, extCost, totalActual, plannedLabor, plannedMat, plannedExt } = calcCosts(closureForm, closureWO);
+                    const plannedTotal = plannedLabor + plannedMat + plannedExt || parseFloat(closureWO.estimated_cost || closureWO.planned_total_cost || 0);
+                    const deltaLabor = laborCost - plannedLabor;
+                    const deltaMat = matCost - plannedMat;
+                    const deltaExt = extCost - plannedExt;
+                    const deltaTotal = totalActual - (plannedTotal || 0);
+                    return (
+                      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 text-white">
+                        <div className="flex items-center gap-2 mb-4">
+                          <DollarSign size={16} className="text-emerald-400" />
+                          <span className="text-sm font-bold text-white uppercase tracking-wide">Cost Summary — Planned vs Actual</span>
+                        </div>
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-slate-400 text-xs uppercase border-b border-slate-700">
+                              <th className="text-left py-2 font-medium">Category</th>
+                              <th className="text-right py-2 font-medium">Planned</th>
+                              <th className="text-right py-2 font-medium">Actual</th>
+                              <th className="text-right py-2 font-medium">Delta</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-700/50">
+                            <tr>
+                              <td className="py-2.5 text-slate-300">Labor ({closureForm.actual_hours}h x ${LABOR_RATE}/hr)</td>
+                              <td className="text-right text-slate-300">${plannedLabor.toFixed(2)}</td>
+                              <td className="text-right font-medium text-white">${laborCost.toFixed(2)}</td>
+                              <td className={`text-right font-bold ${deltaLabor > 0 ? 'text-red-400' : deltaLabor < 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                {deltaLabor > 0 ? '+' : ''}{deltaLabor.toFixed(2)}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2.5 text-slate-300">Materials</td>
+                              <td className="text-right text-slate-300">${plannedMat.toFixed(2)}</td>
+                              <td className="text-right font-medium text-white">${matCost.toFixed(2)}</td>
+                              <td className={`text-right font-bold ${deltaMat > 0 ? 'text-red-400' : deltaMat < 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                {deltaMat > 0 ? '+' : ''}{deltaMat.toFixed(2)}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2.5 text-slate-300">External Services</td>
+                              <td className="text-right text-slate-300">${plannedExt.toFixed(2)}</td>
+                              <td className="text-right font-medium text-white">${extCost.toFixed(2)}</td>
+                              <td className={`text-right font-bold ${deltaExt > 0 ? 'text-red-400' : deltaExt < 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                {deltaExt > 0 ? '+' : ''}{deltaExt.toFixed(2)}
+                              </td>
+                            </tr>
+                            <tr className="border-t-2 border-slate-500">
+                              <td className="py-3 font-bold text-white">TOTAL</td>
+                              <td className="text-right font-bold text-slate-200">${(plannedTotal || 0).toFixed(2)}</td>
+                              <td className="text-right font-bold text-emerald-400 text-base">${totalActual.toFixed(2)}</td>
+                              <td className={`text-right font-bold text-base ${deltaTotal > 0 ? 'text-red-400' : deltaTotal < 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                {deltaTotal > 0 ? '+' : ''}{deltaTotal.toFixed(2)}
+                                {plannedTotal > 0 && <span className="text-xs font-normal ml-1 text-slate-400">({Math.round((totalActual / plannedTotal) * 100)}%)</span>}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <p className="text-[10px] text-slate-500 mt-3">Labor rate: ${LABOR_RATE}/hr · Saved to WO on close, reflected in Planning Costs tab</p>
+                      </div>
+                    );
+                  })()}
 
                   {/* E49: Operations Plan vs Real */}
                   {(closureWO.operations || []).length > 0 && (
@@ -982,7 +1384,7 @@ export default function Execution() {
                   <h3 className="text-sm font-semibold text-gray-700">WOs In Execution — Select to Close</h3>
                   {[...enExecutionWOs, ...inProgressWOs].length > 0 ? [...enExecutionWOs, ...inProgressWOs].map(wo => (
                     <div key={wo.wo_id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:border-green-300 cursor-pointer transition-colors"
-                      onClick={() => { setClosureWO(wo); setClosureForm({ actual_hours: wo.actual_hours || '', observations: '', materials_returned: [] }); setAiResult(null); }}>
+                      onClick={() => { setClosureWO(wo); setClosureForm({ actual_hours: wo.actual_hours || '', observations: '', materials_returned: [], external_services: [] }); setAiResult(null); setEstimateResult(null); }}>
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
@@ -1022,6 +1424,11 @@ export default function Execution() {
               )}
             </div>
           )}
+
+      {/* WO Execution Detail Modal */}
+      {selectedExecWO && (
+        <WOExecutionDetail wo={selectedExecWO} onClose={() => setSelectedExecWO(null)} />
+      )}
 
       {/* Modals */}
       {showAssignModal && <AssignModal />}

@@ -219,7 +219,7 @@ export const getManagedWOStats = (p) => get('/managed-work-orders/stats', p);
 
 
 // ── AI Automation ──
-export const aiAutoSchedule = (d) => post('/scheduling/ai-auto-schedule', d || {});
+export const aiAutoSchedule = (d) => post('/agentic/auto-schedule', d || {}).catch(() => post('/scheduling/ai-auto-schedule', d || {}));
 export const aiDailyBriefing = (plantId) => post('/scheduling/ai-daily-briefing', {}, { plant_id: plantId });
 export const aiEstimateDuration = (woId) => post(`/managed-work-orders/${woId}/ai-estimate`);
 // ── Detailed Feedback ──
@@ -503,3 +503,10 @@ export const aiSuggestSchedule = (woId) => post(`/work-requests/ai-suggest-sched
 // -- Work Centers & Capacity --
 export const listWorkCenters = (params) => get('/work-requests/work-centers', params || {});
 export const getCapacityEvaluation = (weekOffset, wc) => get('/work-requests/capacity-evaluation', { week_offset: weekOffset || 0, work_center: wc || '' });
+
+// ── Agentic Solutions ──
+export const agenticAutoSchedule = (d) => post('/agentic/auto-schedule', d);
+export const agenticSmartBacklog = (d) => post('/agentic/smart-backlog', d);
+export const agenticKpiWatchdog = (d) => post('/agentic/kpi-watchdog', d);
+export const agenticStatus = () => get('/agentic/status');
+

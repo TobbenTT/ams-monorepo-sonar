@@ -1140,7 +1140,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             <div className="flex items-center gap-2 p-3 cursor-pointer" onClick={() => setExpandedOps(prev => ({...prev, [idx]: !prev[idx]}))}>
                               <span className="text-xs font-bold text-gray-400 w-5">#{idx+1}</span>
                               <span className={"text-xs font-bold px-1.5 py-0.5 rounded "+(op.type === 'EXT' ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600")}>{op.type || 'INT'}</span>
-                              <span className="flex-1 text-sm font-medium text-gray-800 truncate">{op.description ? op.description.substring(0, 80) + (op.description.length > 80 ? '...' : '') : <span className="text-gray-400 italic">No description</span>}</span>
+                              <span className="flex-1 text-sm font-medium text-gray-800 truncate">{op.description ? (/^\d+\.\s/.test(op.description) ? op.description.replace(/^\d+\.\s*/, '').split(/\s*\d+\.\s/)[0].trim() + ' ...' : op.description.substring(0, 80) + (op.description.length > 80 ? '...' : '')) : <span className="text-gray-400 italic">No description</span>}</span>
                               <span className="text-xs text-gray-500">{op.specialty || 'Mechanical'} · {((op.quantity || 1) * (op.hours || 0)).toFixed(1)}HH</span>
                               <button type="button" onClick={e => { e.stopPropagation(); setEditOps(prev => prev.filter((_,i) => i !== idx)); }} className="text-red-400 hover:text-red-600 p-1 ml-1"><X size={12} /></button>
                               {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
@@ -1155,14 +1155,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                   <textarea value={op.description || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], description: e.target.value}; setEditOps(n); }}
                                     className="flex-1 text-sm border rounded px-2 py-1 min-h-[60px]" placeholder="Describe the action/task" rows={3} />
                                 </div>
-                                {op.description && /\d+[\.\)]/.test(op.description) && (
+                                {op.description && /\d+\.\s/.test(op.description) && (
                                   <div className="mt-2 space-y-1 bg-gray-50 rounded-lg p-2">
-                                    {op.description.split(/(?:^|\s)(?=\d{1,2}[\.\)])/g).filter(s => s.trim()).map((step, si) => (
-                                      <div key={si} className="flex gap-2 text-xs text-gray-700">
-                                        <span className="font-bold text-emerald-600 min-w-[18px]">{si+1}.</span>
-                                        <span>{step.replace(/^\d+[\.\)]\s*/, '').trim()}</span>
-                                      </div>
-                                    ))}
+                                    {(() => { const steps = []; const raw = op.description; for (let n = 1; n <= 20; n++) { const s = raw.indexOf(`${n}. `); if (s === -1) break; const nx = raw.indexOf(`${n+1}. `, s+1); steps.push({ num: n, text: raw.substring(s, nx > -1 ? nx : undefined).replace(/^\d+\.\s*/, '').trim() }); } return steps.map((s, i) => (<div key={i} className="flex gap-2 text-xs text-gray-700"><span className="font-bold text-emerald-600 min-w-[18px]">{s.num}.</span><span>{s.text}</span></div>)); })()}
                                   </div>
                                 )}
                                 <div className="hidden">

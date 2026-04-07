@@ -350,9 +350,10 @@ def _apply_modifications(wr: WorkRequestModel, modifications: dict):
         wr.equipment_tag = modifications["equipment_tag"]
 
 
-def _to_dict(wr: WorkRequestModel) -> dict:
+def _to_dict(wr: WorkRequestModel, wo_number: str = None) -> dict:
     return {
         "request_id": wr.request_id,
+        "wo_number": wo_number or "",
         "source_capture_id": wr.source_capture_id,
         "status": wr.status,
         "equipment_id": wr.equipment_id,

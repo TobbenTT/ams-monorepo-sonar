@@ -183,9 +183,20 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
         ).all()
         equipment_names = {n[0]: n[1] for n in nodes}
 
+    # Batch-load WO numbers for WRs that have linked WOs
+    from api.database.models import ManagedWorkOrderModel
+    wr_ids = [wr.request_id for wr in items]
+    wo_map = {}
+    if wr_ids:
+        wos = db.query(ManagedWorkOrderModel.work_request_id, ManagedWorkOrderModel.wo_number).filter(
+            ManagedWorkOrderModel.work_request_id.in_(wr_ids)
+        ).all()
+        wo_map = {w[0]: w[1] for w in wos if w[0]}
+
+    import json as _json
     results = []
     for wr in items:
-        ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+        ai = _json.loads(wr.ai_classification) if isinstance(wr.ai_classification, str) else (wr.ai_classification or {})
         photos = captures_map.get(wr.source_capture_id, [])
         # Fallback: extract photos from documents if no capture photos
         if not photos and wr.documents:
@@ -193,9 +204,10 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
             photos = [d.get("data", "") for d in docs if isinstance(d, dict) and d.get("type") == "photo" and d.get("data")]
         results.append({
             "request_id": wr.request_id,
+            "wo_number": wo_map.get(wr.request_id, ""),
             "status": wr.status,
             "equipment_tag": wr.equipment_tag,
-            "equipment_name": ai.get("equipment_name") or equipment_names.get(wr.equipment_tag, wr.equipment_tag),
+            "equipment_name": ai.get("wo_title") or ai.get("equipment_name") or equipment_names.get(wr.equipment_tag, wr.equipment_tag),
             "equipment_confidence": wr.equipment_confidence,
             "plant_id": ai.get("plant_id", ""),
             "priority": wr.priority_code or ai.get("priority_suggested") or ai.get("priority", "P3"),

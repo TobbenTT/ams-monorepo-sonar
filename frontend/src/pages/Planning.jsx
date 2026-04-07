@@ -1149,7 +1149,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 </div>
                                 {op.description && /\d+[\.\)]/.test(op.description) && (
                                   <div className="mt-2 space-y-1 bg-gray-50 rounded-lg p-2">
-                                    {op.description.split(/(?=\d+[\.\)])/).filter(s => s.trim()).map((step, si) => (
+                                    {op.description.split(/(?:^|\s)(?=\d{1,2}[\.\)])/g).filter(s => s.trim()).map((step, si) => (
                                       <div key={si} className="flex gap-2 text-xs text-gray-700">
                                         <span className="font-bold text-emerald-600 min-w-[18px]">{si+1}.</span>
                                         <span>{step.replace(/^\d+[\.\)]\s*/, '').trim()}</span>

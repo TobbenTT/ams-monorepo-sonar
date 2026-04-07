@@ -1410,9 +1410,9 @@ export default function FailureCapture({ onNavigateTab }) {
           {/* 2. Suggested Action */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Actions</label>
-            {form.suggestedAction && /\d+[\.\)]/.test(form.suggestedAction) ? (
+            {form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? (
               <div className="space-y-1.5 mb-2">
-                {form.suggestedAction.split(/(?=\d+[\.\)])/).filter(s => s.trim()).map((step, i) => (
+                {form.suggestedAction.split(/(?:^|\s)(?=\d{1,2}[\.\)])/g).filter(s => s.trim()).map((step, i) => (
                   <div key={i} className="flex gap-2 p-2 bg-gray-50 rounded-lg border text-xs">
                     <span className="font-bold text-emerald-600 min-w-[20px]">{i+1}.</span>
                     <span>{step.replace(/^\d+[\.\)]\s*/, '').trim()}</span>
@@ -1422,7 +1422,7 @@ export default function FailureCapture({ onNavigateTab }) {
             ) : null}
             <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
               placeholder="What corrective action is recommended?"
-              rows={form.suggestedAction && /\d+[\.\)]/.test(form.suggestedAction) ? 2 : 4}
+              rows={form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? 2 : 4}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
           </div>
 

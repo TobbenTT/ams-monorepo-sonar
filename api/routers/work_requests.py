@@ -253,14 +253,16 @@ def get_work_request(request_id: str, db: Session = Depends(get_db)):
     if not photos and wr.documents:
         docs = wr.documents if isinstance(wr.documents, list) else []
         photos = [d.get("data", "") for d in docs if isinstance(d, dict) and d.get("type") == "photo" and d.get("data")]
-    ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
-    pd = wr.problem_description if isinstance(wr.problem_description, dict) else {}
+    import json as _json
+    ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else (_json.loads(wr.ai_classification) if isinstance(wr.ai_classification, str) else {})
+    pd = wr.problem_description if isinstance(wr.problem_description, dict) else (_json.loads(wr.problem_description) if isinstance(wr.problem_description, str) else {})
     return {
         "request_id": wr.request_id,
         "source_capture_id": wr.source_capture_id,
         "status": wr.status,
         "equipment_id": wr.equipment_id,
         "equipment_tag": wr.equipment_tag,
+        "equipment_name": ai.get("wo_title") or ai.get("equipment_name") or wr.equipment_tag or "",
         "equipment_confidence": wr.equipment_confidence,
         "plant_id": ai.get("plant_id", ""),
         "priority": ai.get("priority_suggested") or ai.get("priority", "P3"),

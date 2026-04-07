@@ -1861,15 +1861,44 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                   <p className="text-sm">No hay avisos eliminados</p>
                 </div>
               ) : deletedWRs.map((wr) => (
-                <div key={wr.request_id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-white transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-gray-500">{wr.request_id}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${wr.priority_code === 'P1' ? 'bg-red-100 text-red-700' : wr.priority_code === 'P2' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>{wr.priority_code}</span>
+                <div key={wr.request_id} className="rounded-xl border border-gray-200 bg-gray-50 hover:bg-white transition-colors overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-mono font-bold text-gray-600">{wr.request_id}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${wr.priority_code === 'P1' ? 'bg-red-100 text-red-700' : wr.priority_code === 'P2' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>{wr.priority_code}</span>
+                          {wr.work_class && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">{wr.work_class}</span>}
+                        </div>
+                        <p className="text-sm font-bold text-gray-800">{wr.equipment_name || wr.equipment_tag}</p>
+                        <p className="text-xs font-mono text-gray-400 mt-0.5">{wr.equipment_tag}</p>
+                        {wr.failure_description && <p className="text-xs text-gray-600 mt-1.5 line-clamp-2">{wr.failure_description}</p>}
+                        {(wr.failure_category || wr.failure_symptom) && (
+                          <div className="flex gap-2 mt-1.5">
+                            {wr.failure_category && <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">{wr.failure_category}</span>}
+                            {wr.failure_symptom && <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{wr.failure_symptom}</span>}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button onClick={async () => {
+                          try { await api.restoreWR(wr.request_id); setDeletedWRs(prev => prev.filter(d => d.request_id !== wr.request_id)); toast.success('Restaurado: ' + wr.request_id); api.listWorkRequests({ plant_id: plantId }).then(data => setRequests((Array.isArray(data) ? data : []).map(normalizeWR))).catch(() => {}); } catch { toast.error('Error restaurando'); }
+                        }} className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Restaurar</button>
+                        {['admin', 'ceo'].includes(user?.role) && (
+                          <button onClick={async () => { if (!window.confirm('¿Eliminar PERMANENTEMENTE?')) return; try { await api.permanentDeleteWR(wr.request_id); setDeletedWRs(prev => prev.filter(d => d.request_id !== wr.request_id)); toast.success('Eliminado permanente'); } catch { toast.error('Error'); } }}
+                            className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700">Eliminar</button>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm font-semibold text-gray-800 truncate">{wr.equipment_name || wr.equipment_tag}</p>
-                    <p className="text-[10px] text-gray-400">Eliminado: {wr.deleted_at ? new Date(wr.deleted_at).toLocaleString('es') : '—'} por {wr.deleted_by || '—'}</p>
                   </div>
+                  <div className="px-4 py-2 bg-red-50 border-t border-red-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-[10px] text-red-600">
+                      <span>Eliminado: {wr.deleted_at ? new Date(wr.deleted_at).toLocaleString('es', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+                      <span>Por: {wr.deleted_by || '—'}</span>
+                    </div>
+                    <span className="text-[10px] text-gray-400">Creado: {wr.created_at ? new Date(wr.created_at).toLocaleDateString('es') : '—'} {wr.created_by ? 'por ' + wr.created_by : ''}</span>
+                  </div>
+                </div>
                   <button onClick={async () => {
                     try {
                       await api.restoreWR(wr.request_id);

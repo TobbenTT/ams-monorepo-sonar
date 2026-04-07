@@ -247,11 +247,21 @@ def list_deleted_before_catch_all(plant_id: str = None, db: Session = Depends(ge
     """List soft-deleted work requests."""
     items = work_request_service.list_deleted_work_requests(db, plant_id)
     import json as _j
-    return [{"request_id": wr.request_id, "equipment_tag": wr.equipment_tag, "status": wr.status,
-             "deleted_at": wr.deleted_at.isoformat() if wr.deleted_at else None,
-             "deleted_by": wr.deleted_by, "created_at": wr.created_at.isoformat() if wr.created_at else None,
-             "priority_code": wr.priority_code,
-             "equipment_name": (_j.loads(wr.ai_classification) if isinstance(wr.ai_classification, str) else (wr.ai_classification or {})).get('wo_title') or wr.equipment_tag} for wr in items]
+    results = []
+    for wr in items:
+        ai = _j.loads(wr.ai_classification) if isinstance(wr.ai_classification, str) else (wr.ai_classification or {})
+        pd = _j.loads(wr.problem_description) if isinstance(wr.problem_description, str) else (wr.problem_description or {})
+        results.append({
+            "request_id": wr.request_id, "equipment_tag": wr.equipment_tag, "status": wr.status,
+            "deleted_at": wr.deleted_at.isoformat() if wr.deleted_at else None,
+            "deleted_by": wr.deleted_by, "created_at": wr.created_at.isoformat() if wr.created_at else None,
+            "priority_code": wr.priority_code, "work_class": wr.work_class or "",
+            "equipment_name": ai.get("wo_title") or ai.get("equipment_name") or wr.equipment_tag,
+            "failure_description": pd.get("original_text", "")[:120] if isinstance(pd, dict) else "",
+            "created_by": wr.created_by or "", "plant_id": ai.get("plant_id", ""),
+            "failure_category": pd.get("failure_mode_detected", ""), "failure_symptom": pd.get("failure_symptom", ""),
+        })
+    return results
 
 
 @router.get("/tools/ai-summary")

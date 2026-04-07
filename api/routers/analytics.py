@@ -4,6 +4,21 @@ from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+import time
+
+# Simple in-memory cache for expensive endpoints
+_cache = {}
+_CACHE_TTL = 120  # 2 minutes
+
+def _cached(key, ttl=_CACHE_TTL):
+    """Check cache, return (hit, data)."""
+    entry = _cache.get(key)
+    if entry and time.time() - entry[0] < ttl:
+        return True, entry[1]
+    return False, None
+
+def _set_cache(key, data):
+    _cache[key] = (time.time(), data)
 
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user
@@ -153,6 +168,11 @@ def get_analytics_page_data(
     db: Session = Depends(get_db),
 ):
     """All-in-one endpoint for Analytics page: KPIs, charts, reliability table."""
+    cache_key = f"analytics_{plant_id}_{start_date}_{end_date}"
+    hit, cached = _cached(cache_key)
+    if hit:
+        return cached
+
     from api.database.models import (
         HierarchyNodeModel, FMECAWorksheetModel, WorkPackageModel,
         WorkRequestModel, KPIMetricsModel, HealthScoreModel,
@@ -324,7 +344,7 @@ def get_analytics_page_data(
             avg_avail, avg_mtbf, avg_mttr, avg_oee = [round(v or 0, 1) for v in plant_kpi]
             counted = 1
 
-    return {
+    result = {
         "kpis": {
             "mtbf": f"{avg_mtbf}h" if counted else "—",
             "mttr": f"{avg_mttr}h" if counted else "—",
@@ -337,6 +357,8 @@ def get_analytics_page_data(
         "cost_by_area": cost_by_area,
         "reliability_kpis": equipment_kpis,
     }
+    _set_cache(cache_key, result)
+    return result
 
 
 @router.post("/recalculate")

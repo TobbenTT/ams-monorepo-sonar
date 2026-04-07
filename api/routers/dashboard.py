@@ -18,6 +18,7 @@ from api.database.models import (
 )
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"], dependencies=[Depends(get_current_user)])
+_dashboard_cache = {}
 
 
 def _compute_kpis(db: Session, plant_id: str, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> dict:
@@ -84,6 +85,11 @@ def get_executive_dashboard(
     db: Session = Depends(get_db),
 ):
     """Get consolidated executive dashboard data for a plant."""
+    import time as _t
+    _ck = f"exec_{plant_id}_{start_date}_{end_date}"
+    _ce = _dashboard_cache.get(_ck)
+    if _ce and _t.time() - _ce[0] < 120:
+        return _ce[1]
     sd = __import__('dateutil.parser', fromlist=['parse']).parse(start_date) if start_date else None
     ed = __import__('dateutil.parser', fromlist=['parse']).parse(end_date) if end_date else None
     reports = reporting_service.list_reports(db, plant_id)
@@ -91,7 +97,7 @@ def get_executive_dashboard(
     critical_alerts = [n for n in notifications if n.get("level") == "CRITICAL"]
     kpis = _compute_kpis(db, plant_id, sd, ed)
     completions = _compute_completions(db, plant_id)
-    return {
+    _result = {
         "plant_id": plant_id,
         "total_reports": len(reports),
         "recent_reports": reports[:5],
@@ -101,6 +107,9 @@ def get_executive_dashboard(
         **kpis,
         **completions,
     }
+    import time as _t
+    _dashboard_cache[_ck] = (_t.time(), _result)
+    return _result
 
 
 @router.get("/kpi-summary/{plant_id}")

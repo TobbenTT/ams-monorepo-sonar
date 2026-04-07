@@ -92,6 +92,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [selectedWR, setSelectedWR] = useState(null); // inline detail modal
   const [selectedOT, setSelectedOT] = useState(null);
   const [otModalTab, setOtModalTab] = useState('resumen');
+  const [modalFullscreen, setModalFullscreen] = useState(false);
   const [editOps, setEditOps] = useState([]);
   const [editMats, setEditMats] = useState([]);
   const [editBudget, setEditBudget] = useState({ labor: '', material: '', external: '' });

@@ -1064,6 +1064,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [critScore, setCritScore] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [requests, setRequests] = useState([]);
@@ -1357,11 +1358,13 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   }
 
   function handleDelete(id) {
-    const msg = t('workRequests.confirmDelete');
-    if (!window.confirm(msg !== 'workRequests.confirmDelete' ? msg : '¿Delete este aviso de trabajo?')) return;
+    setDeleteConfirm(id);
+  }
+  function confirmDelete() {
+    const id = deleteConfirm;
+    setDeleteConfirm(null);
     setRequests((prev) => prev.filter((r) => r.id !== id));
     api.deleteWorkRequest(id).catch(() => {
-      // Re-fetch on error to restore state
       api.listWorkRequests().then((data) => {
         const arr = Array.isArray(data) ? data : [];
         setRequests(arr.map(normalizeWR));
@@ -1821,6 +1824,31 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                 <Clock size={12} />
                 <span>{t('workRequests.updatedAt', { time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) })}</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setDeleteConfirm(null)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={24} className="text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Eliminar Aviso</h3>
+            <p className="text-sm text-gray-500 mb-1">¿Estás seguro de eliminar este aviso de trabajo?</p>
+            <p className="text-xs font-mono text-gray-400 mb-6">{deleteConfirm}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={confirmDelete}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors">
+                Sí, eliminar
+              </button>
             </div>
           </div>
         </div>

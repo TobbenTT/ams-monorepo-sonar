@@ -253,7 +253,7 @@ export default function Header({
                                                 <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${!n.is_read ? 'bg-blue-500' : 'bg-transparent'}`} />
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{n.title || 'Notificación'}</p>
-                                                    <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5">{n.message || ''}</p>
+                                                    <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5">{(() => { try { const m = typeof n.message === 'string' && n.message.startsWith('{') ? JSON.parse(n.message) : null; if (m) { const parts = []; if (m.damage_code) parts.push(m.damage_code); if (m.cause_code) parts.push('Causa: ' + m.cause_code); if (m.reported_by) parts.push('Por: ' + m.reported_by); if (m.order_number) parts.push('OT: ' + m.order_number); return parts.join(' · ') || n.notification_type || ''; } return n.message || ''; } catch { return n.message || ''; } })()}</p>
                                                     <p className="text-[10px] text-gray-400 mt-1">{n.created_at ? new Date(n.created_at).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</p>
                                                 </div>
                                                 {n.level === 'CRITICAL' && <span className="text-[9px] bg-red-500 text-white px-1.5 py-0.5 rounded font-bold shrink-0">CRÍTICO</span>}

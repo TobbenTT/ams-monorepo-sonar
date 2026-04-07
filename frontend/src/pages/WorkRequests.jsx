@@ -344,7 +344,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
 
   const modalContent = (
       <div
-        className={`relative bg-card rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto border ${_isDuplicate ? 'border-amber-300' : 'border-border'}`}
+        className={`relative bg-card rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto ${_isDuplicate ? 'border-2 border-red-400 ring-2 ring-red-200' : 'border border-border'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -1834,20 +1834,31 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <div className="relative z-10 flex items-center gap-4 max-w-full" onClick={e => e.stopPropagation()}>
+            <div className="relative z-10 flex items-center gap-6 max-w-full" onClick={e => e.stopPropagation()}>
               {/* Left arrow */}
               {hasDups && (
-                <button onClick={() => { const el = document.getElementById('wr-carousel'); el.scrollBy({ left: -el.offsetWidth * 0.85, behavior: 'smooth' }); }}
-                  className="shrink-0 w-10 h-10 bg-white rounded-full shadow-lg border flex items-center justify-center hover:bg-gray-50 z-20">
-                  <ChevronLeft size={20} />
+                <button onClick={() => { const el = document.getElementById('wr-carousel'); el.scrollBy({ left: -(el.firstChild?.offsetWidth || 600), behavior: 'smooth' }); }}
+                  className="shrink-0 w-12 h-12 bg-white/90 rounded-full shadow-xl border-2 border-gray-200 flex items-center justify-center hover:bg-white hover:scale-110 transition-all z-20">
+                  <ChevronLeft size={24} className="text-gray-700" />
                 </button>
               )}
               {/* Carousel container */}
               <div id="wr-carousel"
-                className={`flex gap-4 overflow-x-auto snap-x snap-mandatory ${hasDups ? 'max-w-[85vw]' : 'max-w-3xl'}`}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', scrollSnapType: 'x mandatory' }}>
+                className={`flex gap-5 overflow-x-auto snap-x snap-mandatory ${hasDups ? 'max-w-[88vw]' : 'max-w-3xl'}`}
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {allItems.map((wrItem, idx) => (
-                  <div key={wrItem.id || idx} className="snap-center shrink-0" style={{ width: hasDups ? 'min(600px, 75vw)' : '100%' }}>
+                  <div key={wrItem.id || idx} className="snap-center shrink-0 relative" style={{ width: hasDups ? 'min(580px, 44vw)' : '100%' }}>
+                    {/* DUPLICATE badge */}
+                    {idx > 0 && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 bg-red-500 text-white text-[11px] font-bold px-4 py-1 rounded-full shadow-lg tracking-wider">
+                        DUPLICADO #{idx}
+                      </div>
+                    )}
+                    {idx === 0 && hasDups && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 bg-blue-600 text-white text-[11px] font-bold px-4 py-1 rounded-full shadow-lg tracking-wider">
+                        ACTUAL
+                      </div>
+                    )}
                     <DetailModal
                       item={wrItem}
                       critScore={idx === 0 ? critScore : null}
@@ -1872,9 +1883,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               </div>
               {/* Right arrow */}
               {hasDups && (
-                <button onClick={() => { const el = document.getElementById('wr-carousel'); el.scrollBy({ left: el.offsetWidth * 0.85, behavior: 'smooth' }); }}
-                  className="shrink-0 w-10 h-10 bg-white rounded-full shadow-lg border flex items-center justify-center hover:bg-gray-50 z-20">
-                  <ChevronRight size={20} />
+                <button onClick={() => { const el = document.getElementById('wr-carousel'); el.scrollBy({ left: el.firstChild?.offsetWidth || 600, behavior: 'smooth' }); }}
+                  className="shrink-0 w-12 h-12 bg-white/90 rounded-full shadow-xl border-2 border-gray-200 flex items-center justify-center hover:bg-white hover:scale-110 transition-all z-20">
+                  <ChevronRight size={24} className="text-gray-700" />
                 </button>
               )}
             </div>

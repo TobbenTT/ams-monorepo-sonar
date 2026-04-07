@@ -340,9 +340,9 @@ export default function FailureCapture({ onNavigateTab }) {
         // Apply ALL fields from Claude (camelCase + snake_case)
         if (s.enhanced_description) setF('whatHappens', s.enhanced_description);
         if (s.suggestedAction || s.suggested_action) setF('suggestedAction', s.suggestedAction || s.suggested_action);
-        // Auto-generate WO title: short SAP-style (max 40 chars)
+        // Auto-generate WO title: TAG - symptom (max 40 chars)
         if (s.enhanced_description || s.failureSymptom || s.failure_symptom) {
-          const tag = form.selectedEquipment?.equipment_tag || form.equipmentCode || '';
+          const tag = form.whereTag || s.equipment_tag || '';
           const sym = (s.failureSymptom || s.failure_symptom || '').substring(0, 20).trim();
           let title = tag && sym ? `${tag} - ${sym}` : tag ? `${tag} - Falla` : (s.enhanced_description || '').split('.')[0].substring(0, 40).trim();
           if (title.length > 40) title = title.substring(0, 40).replace(/\s+\S*$/, '');
@@ -355,6 +355,8 @@ export default function FailureCapture({ onNavigateTab }) {
           const pc = (s.equipmentCondition || s.equipment_condition).toLowerCase();
           setF('equipmentCondition', pc === 'running' ? 'operating' : pc === 'stopped' ? 'stopped' : pc);
         }
+        // P1 = emergency → equipment must be stopped
+        if (s.priority === 'P1') setF('equipmentCondition', 'stopped');
         if (s.resources?.length) setF('resources', s.resources);
         if (s.materials?.length) setF('materials', s.materials);
         if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
@@ -1414,12 +1416,24 @@ export default function FailureCapture({ onNavigateTab }) {
             {form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? (
               <>
                 <div className="space-y-1.5 mb-2">
-                  {form.suggestedAction.split(/(?=\d{1,2}[\.\)]\s)/).filter(s => s.trim() && /^\d/.test(s.trim())).map((step, i) => (
-                    <div key={i} className="flex gap-2 p-2 bg-gray-50 rounded-lg border text-xs">
-                      <span className="font-bold text-emerald-600 min-w-[20px]">{step.match(/^\d+/)?.[0] || i+1}.</span>
-                      <span>{step.replace(/^\d+[\.\)]\s*/, '').trim()}</span>
-                    </div>
-                  ))}
+                  {(() => {
+                    // Split on "N. " pattern only when N is sequential (1. 2. 3. etc)
+                    const steps = [];
+                    const raw = form.suggestedAction;
+                    for (let n = 1; n <= 20; n++) {
+                      const start = raw.indexOf(`${n}. `);
+                      if (start === -1) break;
+                      const nextStart = raw.indexOf(`${n+1}. `, start + 1);
+                      const text = raw.substring(start, nextStart > -1 ? nextStart : undefined).replace(/^\d+\.\s*/, '').trim();
+                      if (text) steps.push({ num: n, text });
+                    }
+                    return steps.map((s, i) => (
+                      <div key={i} className="flex gap-2 p-2 bg-gray-50 rounded-lg border text-xs">
+                        <span className="font-bold text-emerald-600 min-w-[20px]">{s.num}.</span>
+                        <span>{s.text}</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
                 <button type="button" onClick={() => { const el = document.getElementById('sa-raw'); el.style.display = el.style.display === 'none' ? '' : 'none'; }}
                   className="text-[10px] text-blue-500 underline mb-1">Edit raw text</button>

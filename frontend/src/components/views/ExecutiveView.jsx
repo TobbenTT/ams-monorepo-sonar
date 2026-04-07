@@ -261,7 +261,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
             {alerts.slice(0, 3).map((alert, idx) => (
               <div key={idx} className="p-3 bg-white rounded-lg border border-blue-200">
                 <p className="text-sm font-medium text-blue-900">{alert.title || alert.type || t('executive.alert')}</p>
-                <p className="text-xs text-blue-700 mt-1">{alert.description || alert.message || '—'}</p>
+                <p className="text-xs text-blue-700 mt-1">{(() => { const msg = alert.description || alert.message || ''; try { if (typeof msg === 'string' && msg.startsWith('{')) { const m = JSON.parse(msg); const parts = []; if (m.priority) parts.push(m.priority); if (m.status) parts.push(m.status); if (m.equipment) parts.push(m.equipment); if (m.wr_id) parts.push(m.wr_id); return parts.join(' · ') || '—'; } return msg; } catch { return msg; } })()}</p>
                 <Badge className={`mt-2 text-xs ${
                   alert.severity === 'critical' ? 'bg-red-100 text-red-800' :
                   alert.severity === 'warning' ? 'bg-yellow-100 text-yellow-800' :

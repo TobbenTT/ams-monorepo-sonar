@@ -1152,15 +1152,19 @@ export default function Scheduling() {
       const result = await api.aiAutoSchedule({ plant_id: plant });
       setAiResult(result);
       if (result.assignments && result.assignments.length > 0) {
-        // Apply assignments
+        // Apply assignments — only assign workers, don't override existing dates
         for (const a of result.assignments) {
           try {
-            await api.scheduleManagedWO(a.wo_id, {
-              assigned_workers: [{ worker_id: a.worker_id, name: a.worker_name, specialty: '' }],
-              planned_start: a.suggested_date || new Date().toISOString().slice(0, 10),
-              planned_end: a.suggested_date || new Date().toISOString().slice(0, 10),
-              shift: a.shift || "day",
-            });
+            const updateData = {
+              assigned_workers: [{ worker_id: a.worker_id, name: a.worker_name, specialty: a.specialty || '' }],
+            };
+            // Only set dates if the AI suggests one AND the WO doesn't have dates yet
+            if (a.suggested_date) {
+              updateData.planned_start = a.suggested_date;
+              updateData.planned_end = a.suggested_date;
+            }
+            if (a.shift) updateData.shift = a.shift;
+            await api.scheduleManagedWO(a.wo_id, updateData);
           } catch { /* skip failed */ }
         }
         toast.success(result.message || 'AI scheduled ' + result.assignments.length + ' WOs');

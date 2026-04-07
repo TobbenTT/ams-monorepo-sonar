@@ -39,35 +39,58 @@ def create_program(
     groups = BacklogGrouper.find_all_groups(entries)
 
     from datetime import date, timedelta
-    period_start = date.today()
-    work_packages = []
-    for i, group in enumerate(groups):
-        pkg_date = period_start + timedelta(days=1 + i)
-        work_packages.append(BacklogWorkPackage(
-            package_id=group.group_id,
-            name=group.name,
-            grouped_items=[e.backlog_id for e in group.items],
-            reason_for_grouping=group.reason,
-            scheduled_date=pkg_date,
-            scheduled_shift=ShiftType.MORNING if i % 2 == 0 else ShiftType.AFTERNOON,
-            total_duration_hours=group.total_hours,
-            assigned_team=list(group.specialties),
-            materials_status=MaterialsReadyStatus.READY,
-        ))
+    # Find the Monday of the target week
+    today = date.today()
+    days_to_monday = (7 - today.weekday()) % 7  # next Monday
+    if days_to_monday == 0 and today.weekday() != 0:
+        days_to_monday = 7
+    week_start = today + timedelta(days=days_to_monday) if today.weekday() != 0 else today
+    work_days = [week_start + timedelta(days=d) for d in range(5)]  # Mon-Fri
 
-    # Add ungrouped items
+    # Collect all items to schedule (grouped + ungrouped)
+    all_packages = []
+    for group in groups:
+        all_packages.append({
+            "id": group.group_id, "name": group.name,
+            "items": [e.backlog_id for e in group.items], "reason": group.reason,
+            "hours": group.total_hours, "team": list(group.specialties),
+        })
     grouped_ids = {e.backlog_id for g in groups for e in g.items}
     ungrouped = [i for i in schedulable if i.backlog_id not in grouped_ids]
-    for i, item in enumerate(ungrouped):
+    for item in ungrouped:
+        all_packages.append({
+            "id": f"WP-IND-{item.backlog_id[:8]}", "name": f"Individual: {item.equipment_tag}",
+            "items": [item.backlog_id], "reason": "Individual item",
+            "hours": item.estimated_duration_hours, "team": item.required_specialties,
+        })
+
+    # Sort by priority (P1 first) and hours (longer first)
+    priority_order = {"1_EMERGENCY": 0, "2_URGENT": 1, "3_NORMAL": 2, "4_ROUTINE": 3}
+    item_lookup_tmp = {i.backlog_id: i for i in schedulable}
+    def pkg_priority(pkg):
+        for bid in pkg["items"]:
+            it = item_lookup_tmp.get(bid)
+            if it:
+                return priority_order.get(it.priority.value if hasattr(it.priority, 'value') else str(it.priority), 3)
+        return 3
+    all_packages.sort(key=lambda p: (pkg_priority(p), -p["hours"]))
+
+    # Distribute evenly across 5 days by hours capacity
+    day_hours = {d: 0.0 for d in range(5)}
+    max_hours_per_day = 80.0  # ~10 technicians × 8h
+    work_packages = []
+    for pkg in all_packages:
+        # Find the day with least hours assigned
+        best_day = min(range(5), key=lambda d: day_hours[d])
+        if day_hours[best_day] >= max_hours_per_day:
+            best_day = min(range(5), key=lambda d: day_hours[d])  # overflow to least loaded
+        day_hours[best_day] += pkg["hours"]
+        shift = ShiftType.MORNING if day_hours[best_day] <= max_hours_per_day / 2 else ShiftType.AFTERNOON
         work_packages.append(BacklogWorkPackage(
-            package_id=f"WP-IND-{item.backlog_id[:8]}",
-            name=f"Individual: {item.equipment_tag}",
-            grouped_items=[item.backlog_id],
-            reason_for_grouping="Individual item",
-            scheduled_date=period_start + timedelta(days=1 + len(groups) + i // 2),
-            scheduled_shift=ShiftType.MORNING,
-            total_duration_hours=item.estimated_duration_hours,
-            assigned_team=item.required_specialties,
+            package_id=pkg["id"], name=pkg["name"],
+            grouped_items=pkg["items"], reason_for_grouping=pkg["reason"],
+            scheduled_date=work_days[best_day], scheduled_shift=shift,
+            total_duration_hours=pkg["hours"], assigned_team=pkg["team"],
             materials_status=MaterialsReadyStatus.READY,
         ))
 

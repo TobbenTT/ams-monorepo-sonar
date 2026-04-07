@@ -1050,7 +1050,7 @@ def submit_ai_feedback(request_id: str, data: AIFeedbackCreate, user=Depends(get
     return {"status": "ok", "feedback_id": fb.feedback_id}
 
 
-@router.get("/ai-feedback/stats")
+@router.get("/tools/ai-feedback-stats")
 def get_feedback_stats(equipment_tag: str = "", db: Session = Depends(get_db)):
     """Get aggregated accuracy stats for AI predictions."""
     from api.database.models import AIFeedbackModel
@@ -1097,7 +1097,7 @@ def _generate_wr_id(db):
     return f"{prefix}{num:05d}"
 
 
-@router.get("/ai-summary")
+@router.get("/tools/ai-summary")
 def ai_weekly_summary(days: int = 7, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Generate AI-powered weekly summary of maintenance activity."""
     import os, json
@@ -1250,7 +1250,7 @@ def ai_verify_close(wo_id: str, db: Session = Depends(get_db), user=Depends(get_
     }
 
 
-@router.get("/ai-predict-failures")
+@router.get("/tools/ai-predict-failures")
 def ai_predict_failures(equipment_tag: str = "", db: Session = Depends(get_db), user=Depends(get_current_user)):
     """AI failure prediction based on equipment history — probability of failure in next 30/60/90 days."""
     import os, json
@@ -1479,7 +1479,7 @@ def ai_suggest_schedule(wo_id: str, db: Session = Depends(get_db), user=Depends(
     }
 
 
-@router.get("/work-centers")
+@router.get("/tools/work-centers")
 def list_work_centers(plant_type: str = "", specialty: str = "", db: Session = Depends(get_db)):
     """List work centers, optionally filtered by plant type or specialty."""
     from sqlalchemy import text
@@ -1501,7 +1501,7 @@ def list_work_centers(plant_type: str = "", specialty: str = "", db: Session = D
              } for r in rows]
 
 
-@router.get("/capacity-evaluation")
+@router.get("/tools/capacity-evaluation")
 def capacity_evaluation(week_offset: int = 0, work_center: str = "", db: Session = Depends(get_db)):
     """Evaluate capacity: HH supply vs demand per work center for a given week."""
     from datetime import datetime, timedelta

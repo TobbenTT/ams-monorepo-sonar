@@ -493,11 +493,11 @@ export const getAIFeedbackStats = (tag) => get("/work-requests/ai-feedback/stats
 export const searchMaterials = (q) => get("/work-requests/search-materials", { q });
 
 // -- AI Summary & Verify Close --
-export const getAISummary = (days) => get('/work-requests/ai-summary', { days: days || 7 });
+export const getAISummary = (days) => get('/work-requests/tools/ai-summary', { days: days || 7 });
 export const aiVerifyClose = (woId) => post(`/work-requests/ai-verify-close/${woId}`, {});
 
 // -- AI Predictions & Scheduling --
-export const aiPredictFailures = (tag) => get('/work-requests/ai-predict-failures', tag ? { equipment_tag: tag } : {});
+export const aiPredictFailures = (tag) => get('/work-requests/tools/ai-predict-failures', tag ? { equipment_tag: tag } : {});
 export const aiSuggestSchedule = (woId) => post(`/work-requests/ai-suggest-schedule?wo_id=${woId}`, {});
 
 // -- Work Centers & Capacity --

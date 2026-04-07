@@ -527,6 +527,32 @@ ${materials.length ? `<div class="section">
             )}
           </div>
         )}
+        {/* Duplicate Carousel */}
+        {duplicates.length > 0 && (
+          <div className="px-6 py-3 border-b border-amber-200 bg-amber-50">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-amber-800">{duplicates.length} aviso{duplicates.length > 1 ? 's' : ''} similar{duplicates.length > 1 ? 'es' : ''} encontrado{duplicates.length > 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory" style={{ scrollbarWidth: 'thin' }}>
+              {duplicates.map((dup, i) => (
+                <div key={dup.id || i} onClick={() => onOpenDuplicate?.(dup)}
+                  className="snap-start shrink-0 w-[220px] bg-white rounded-xl border-2 border-amber-300 p-3 cursor-pointer hover:border-amber-500 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className="text-[10px] font-mono font-bold text-amber-700">{dup.id}</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${dup.status === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' : dup.status === 'APROBADO' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{dup.status}</span>
+                  </div>
+                  <p className="text-xs font-semibold text-gray-800 mb-1 truncate">{dup.equipment_name || dup.equipment_tag}</p>
+                  <p className="text-[10px] text-gray-500 line-clamp-2">{dup.failure_description?.substring(0, 80) || '—'}</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${dup.priority_requested === 'P1' ? 'bg-red-100 text-red-700' : dup.priority_requested === 'P2' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>{dup.priority_requested}</span>
+                    <span className="text-[10px] text-gray-400">{dup.created_at ? new Date(dup.created_at).toLocaleDateString('es') : ''}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="px-6 py-4 border-b border-border">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t('workRequests.photos')}</p>
           <PhotoCarousel photos={item.photos} t={t} />
@@ -1384,16 +1410,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   }
 
   function handleOpenDetail(req) {
-    // Check for duplicates before opening
-    const dups = findDuplicates(req, requests);
-    if (dups.length > 0 && !duplicateTarget) {
-      setDuplicateTarget(req);
-      setShowDuplicates(dups);
-    } else {
-      fetchAndOpenDetail(req);
-      setDuplicateTarget(null);
-      setShowDuplicates([]);
-    }
+    fetchAndOpenDetail(req);
+    setDuplicateTarget(null);
+    setShowDuplicates([]);
   }
 
   function handleViewDuplicate(dup) {
@@ -1518,16 +1537,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         </div>
       )}
 
-      {/* Duplicate Warning */}
-      {showDuplicates.length > 0 && (
-        <DuplicateWarning
-          duplicates={showDuplicates}
-          onViewDuplicate={handleViewDuplicate}
-          onDismiss={handleDismissDuplicate}
-          t={t}
-          currentRequest={duplicateTarget}
-        />
-      )}
+      {/* Duplicates now shown inside DetailModal as carousel */}
 
       {/* Filter Bar - Planning style */}
       <div className="space-y-3 mb-4">

@@ -340,22 +340,12 @@ export default function FailureCapture({ onNavigateTab }) {
         // Apply ALL fields from Claude (camelCase + snake_case)
         if (s.enhanced_description) setF('whatHappens', s.enhanced_description);
         if (s.suggestedAction || s.suggested_action) setF('suggestedAction', s.suggestedAction || s.suggested_action);
-        // Auto-generate WO title: Equipment + failure keyword (SAP style, max 50 chars)
-        {
-          const equip = form.equipmentSearch || form.selectedEquipment?.description || '';
-          const symptom = s.failureSymptom || s.failure_symptom || '';
-          const desc = s.enhanced_description || '';
-          // Build: "EQUIP - symptom" or extract key phrase from description
-          let title = '';
-          if (equip && symptom) {
-            title = `${equip.substring(0, 25).trim()} - ${symptom.substring(0, 25).trim()}`;
-          } else if (equip) {
-            const keyword = desc.split(/[.,;]/)[0].replace(/^.*?(vibración|falla|fuga|rotura|desgaste|ruido|sobrecalentamiento|daño|corrosión|fractura)/i, '$1').substring(0, 25).trim();
-            title = `${equip.substring(0, 25).trim()} - ${keyword || 'Falla reportada'}`;
-          } else {
-            title = desc.split('.')[0].substring(0, 50).trim();
-          }
-          if (title.length > 50) title = title.substring(0, 50).replace(/\s+\S*$/, '');
+        // Auto-generate WO title: short SAP-style (max 40 chars)
+        if (s.enhanced_description || s.failureSymptom || s.failure_symptom) {
+          const tag = form.selectedEquipment?.equipment_tag || form.equipmentCode || '';
+          const sym = (s.failureSymptom || s.failure_symptom || '').substring(0, 20).trim();
+          let title = tag && sym ? `${tag} - ${sym}` : tag ? `${tag} - Falla` : (s.enhanced_description || '').split('.')[0].substring(0, 40).trim();
+          if (title.length > 40) title = title.substring(0, 40).replace(/\s+\S*$/, '');
           setF('woTitle', title);
         }
         if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);
@@ -1424,9 +1414,9 @@ export default function FailureCapture({ onNavigateTab }) {
             {form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? (
               <>
                 <div className="space-y-1.5 mb-2">
-                  {form.suggestedAction.match(/\d{1,2}[\.\)]\s[^\n]*/g)?.filter(s => s.replace(/^\d+[\.\)]\s*/, '').trim()).map((step, i) => (
+                  {form.suggestedAction.split(/(?=\d{1,2}[\.\)]\s)/).filter(s => s.trim() && /^\d/.test(s.trim())).map((step, i) => (
                     <div key={i} className="flex gap-2 p-2 bg-gray-50 rounded-lg border text-xs">
-                      <span className="font-bold text-emerald-600 min-w-[20px]">{step.match(/^\d+/)[0]}.</span>
+                      <span className="font-bold text-emerald-600 min-w-[20px]">{step.match(/^\d+/)?.[0] || i+1}.</span>
                       <span>{step.replace(/^\d+[\.\)]\s*/, '').trim()}</span>
                     </div>
                   ))}

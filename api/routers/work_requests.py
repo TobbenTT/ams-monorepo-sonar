@@ -242,6 +242,30 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
     return results
 
 
+@router.get("/tools/deleted")
+def list_deleted_before_catch_all(plant_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """List soft-deleted work requests (placed before /{request_id} catch-all)."""
+    if getattr(user, 'role', '') not in ('admin', 'manager', 'ceo'):
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    items = work_request_service.list_deleted_work_requests(db, plant_id)
+    import json as _j
+    return [{"request_id": wr.request_id, "equipment_tag": wr.equipment_tag, "status": wr.status,
+             "deleted_at": wr.deleted_at.isoformat() if wr.deleted_at else None,
+             "deleted_by": wr.deleted_by, "created_at": wr.created_at.isoformat() if wr.created_at else None,
+             "priority_code": wr.priority_code,
+             "equipment_name": (_j.loads(wr.ai_classification) if isinstance(wr.ai_classification, str) else (wr.ai_classification or {})).get('wo_title') or wr.equipment_tag} for wr in items]
+
+
+@router.get("/tools/ai-summary")
+def ai_summary_before_catch_all(days: int = 7, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    return ai_weekly_summary(days=days, db=db, user=user)
+
+
+@router.get("/tools/ai-predict-failures")
+def ai_predict_before_catch_all(equipment_tag: str = "", db: Session = Depends(get_db), user=Depends(get_current_user)):
+    return ai_predict_failures(equipment_tag=equipment_tag, db=db, user=user)
+
+
 @router.get("/{request_id}")
 def get_work_request(request_id: str, db: Session = Depends(get_db)):
     from api.database.models import FieldCaptureModel

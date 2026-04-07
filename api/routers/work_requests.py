@@ -548,10 +548,45 @@ def update_work_request(request_id: str, data: WRUpdateRequest, db: Session = De
 
 
 @router.delete("/{request_id}")
-def delete_work_request(request_id: str, db: Session = Depends(get_db)):
-    deleted = work_request_service.delete_work_request(db, request_id)
+def delete_work_request(request_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    deleted = work_request_service.delete_work_request(db, request_id, user_id=getattr(user, 'username', ''))
     if not deleted:
         raise HTTPException(status_code=404, detail="Work request not found")
+    return {"ok": True, "request_id": request_id}
+
+
+@router.get("/tools/deleted")
+def list_deleted(plant_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """List soft-deleted work requests (admin only)."""
+    if getattr(user, 'role', '') not in ('admin', 'manager', 'ceo'):
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    items = work_request_service.list_deleted_work_requests(db, plant_id)
+    return [{"request_id": wr.request_id, "equipment_tag": wr.equipment_tag, "status": wr.status,
+             "deleted_at": wr.deleted_at.isoformat() if wr.deleted_at else None,
+             "deleted_by": wr.deleted_by, "created_at": wr.created_at.isoformat() if wr.created_at else None,
+             "priority_code": wr.priority_code,
+             "equipment_name": ((__import__('json').loads(wr.ai_classification) if isinstance(wr.ai_classification, str) else (wr.ai_classification or {})).get('wo_title') or wr.equipment_tag)} for wr in items]
+
+
+@router.post("/tools/restore/{request_id}")
+def restore_work_request(request_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Restore a soft-deleted work request (admin only)."""
+    if getattr(user, 'role', '') not in ('admin', 'manager', 'ceo'):
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    ok = work_request_service.restore_work_request(db, request_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Not found or not deleted")
+    return {"ok": True, "request_id": request_id}
+
+
+@router.delete("/tools/permanent/{request_id}")
+def permanent_delete(request_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Permanently delete a work request (admin only, no recovery)."""
+    if getattr(user, 'role', '') not in ('admin', 'ceo'):
+        raise HTTPException(status_code=403, detail="Solo admin/ceo")
+    ok = work_request_service.permanently_delete_work_request(db, request_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Not found")
     return {"ok": True, "request_id": request_id}
 
 

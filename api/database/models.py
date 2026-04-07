@@ -487,6 +487,8 @@ class WorkRequestModel(Base):
     failure_object_part: Mapped[str | None] = mapped_column(String(100), nullable=True)  # Parte Objeto (Cat B)
     technical_location: Mapped[str | None] = mapped_column(String(100), nullable=True)  # Ubicacion tecnica SAP
     aviso_number: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Numero correlativo secuencial
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # Soft delete
+    deleted_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     __table_args__ = (
         Index("ix_work_requests_status", "status"),

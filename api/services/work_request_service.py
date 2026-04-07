@@ -35,6 +35,7 @@ def list_work_requests(
 ) -> list[WorkRequestModel]:
     from sqlalchemy.orm import defer
     q = db.query(WorkRequestModel).options(defer(WorkRequestModel.documents))
+    q = q.filter((WorkRequestModel.deleted_at == None) | (WorkRequestModel.deleted_at.is_(None)))
     if status:
         q = q.filter(WorkRequestModel.status == status)
     if plant_id:
@@ -295,33 +296,57 @@ def close_work_request(
     return _to_dict(wr)
 
 
-def delete_work_request(db: Session, request_id: str) -> bool:
-    """Delete a work request and all linked records permanently."""
-    from api.database.models import (
-        FieldCaptureModel, BacklogItemModel, PlannerRecommendationModel,
-    )
+def delete_work_request(db: Session, request_id: str, user_id: str = "") -> bool:
+    """Soft-delete a work request (mark as deleted, don't remove from DB)."""
     wr = get_work_request(db, request_id)
     if not wr:
         return False
-    log_action(db, "work_request", request_id, "DELETE")
-    # Delete child records that have FK to work_requests
-    db.query(BacklogItemModel).filter(
-        BacklogItemModel.work_request_id == request_id
-    ).delete()
-    db.query(PlannerRecommendationModel).filter(
-        PlannerRecommendationModel.work_request_id == request_id
-    ).delete()
-    # Save capture id before clearing the FK (to avoid constraint conflict)
+    from datetime import datetime
+    wr.deleted_at = datetime.now()
+    wr.deleted_by = user_id or "system"
+    wr.status = "ELIMINADO"
+    log_action(db, "work_request", request_id, "SOFT_DELETE")
+    db.commit()
+    return True
+
+
+def restore_work_request(db: Session, request_id: str) -> bool:
+    """Restore a soft-deleted work request."""
+    wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not wr or not wr.deleted_at:
+        return False
+    wr.deleted_at = None
+    wr.deleted_by = None
+    wr.status = "PENDIENTE"
+    log_action(db, "work_request", request_id, "RESTORE")
+    db.commit()
+    return True
+
+
+def list_deleted_work_requests(db: Session, plant_id: str = None) -> list:
+    """List all soft-deleted work requests."""
+    q = db.query(WorkRequestModel).filter(WorkRequestModel.deleted_at != None)
+    if plant_id:
+        q = q.filter(WorkRequestModel.ai_classification.like(f"%{plant_id}%"))
+    return q.order_by(WorkRequestModel.deleted_at.desc()).all()
+
+
+def permanently_delete_work_request(db: Session, request_id: str) -> bool:
+    """Permanently delete a soft-deleted work request."""
+    from api.database.models import BacklogItemModel, PlannerRecommendationModel, FieldCaptureModel
+    wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not wr:
+        return False
+    db.query(BacklogItemModel).filter(BacklogItemModel.work_request_id == request_id).delete()
+    db.query(PlannerRecommendationModel).filter(PlannerRecommendationModel.work_request_id == request_id).delete()
     capture_id = wr.source_capture_id
     if capture_id:
         wr.source_capture_id = None
         db.flush()
     db.delete(wr)
-    # Now safe to delete the orphaned capture
     if capture_id:
-        db.query(FieldCaptureModel).filter(
-            FieldCaptureModel.capture_id == capture_id
-        ).delete()
+        db.query(FieldCaptureModel).filter(FieldCaptureModel.capture_id == capture_id).delete()
+    log_action(db, "work_request", request_id, "PERMANENT_DELETE")
     db.commit()
     return True
 

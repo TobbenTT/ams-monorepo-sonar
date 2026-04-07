@@ -1065,6 +1065,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [deletedWRs, setDeletedWRs] = useState([]);
   const [critScore, setCritScore] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [requests, setRequests] = useState([]);
@@ -1521,6 +1523,17 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               </button>
             );
           })}
+          {['admin', 'ceo', 'manager'].includes(user?.role) && (
+            <button onClick={async () => {
+              try {
+                const dels = await api.listDeletedWRs({ plant_id: plant });
+                setDeletedWRs(dels || []);
+                setShowDeleted(true);
+              } catch { toast.error('Error cargando eliminados'); }
+            }} className="ml-auto flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 border">
+              <Trash2 size={14} /> Eliminados
+            </button>
+          )}
         </div>
       )}
 
@@ -1824,6 +1837,63 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                 <Clock size={12} />
                 <span>{t('workRequests.updatedAt', { time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) })}</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deleted WRs Panel */}
+      {showDeleted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowDeleted(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">Avisos Eliminados</h2>
+                <p className="text-xs text-gray-500">{deletedWRs.length} aviso{deletedWRs.length !== 1 ? 's' : ''} en papelera</p>
+              </div>
+              <button onClick={() => setShowDeleted(false)} className="p-2 hover:bg-gray-200 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="overflow-y-auto max-h-[60vh] p-4 space-y-2">
+              {deletedWRs.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <Trash2 size={32} className="mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">No hay avisos eliminados</p>
+                </div>
+              ) : deletedWRs.map((wr) => (
+                <div key={wr.request_id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-white transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-gray-500">{wr.request_id}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${wr.priority_code === 'P1' ? 'bg-red-100 text-red-700' : wr.priority_code === 'P2' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>{wr.priority_code}</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-800 truncate">{wr.equipment_name || wr.equipment_tag}</p>
+                    <p className="text-[10px] text-gray-400">Eliminado: {wr.deleted_at ? new Date(wr.deleted_at).toLocaleString('es') : '—'} por {wr.deleted_by || '—'}</p>
+                  </div>
+                  <button onClick={async () => {
+                    try {
+                      await api.restoreWR(wr.request_id);
+                      setDeletedWRs(prev => prev.filter(d => d.request_id !== wr.request_id));
+                      toast.success('Aviso restaurado: ' + wr.request_id);
+                      api.listWorkRequests({ plant_id: plant }).then(data => setRequests((Array.isArray(data) ? data : []).map(normalizeWR))).catch(() => {});
+                    } catch { toast.error('Error restaurando'); }
+                  }} className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                    Restaurar
+                  </button>
+                  {['admin', 'ceo'].includes(user?.role) && (
+                    <button onClick={async () => {
+                      if (!window.confirm('¿Eliminar PERMANENTEMENTE? No se puede recuperar.')) return;
+                      try {
+                        await api.permanentDeleteWR(wr.request_id);
+                        setDeletedWRs(prev => prev.filter(d => d.request_id !== wr.request_id));
+                        toast.success('Eliminado permanentemente');
+                      } catch { toast.error('Error eliminando'); }
+                    }} className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700">
+                      Eliminar
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>

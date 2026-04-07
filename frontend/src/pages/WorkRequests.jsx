@@ -1899,29 +1899,6 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                     <span className="text-[10px] text-gray-400">Creado: {wr.created_at ? new Date(wr.created_at).toLocaleDateString('es') : '—'} {wr.created_by ? 'por ' + wr.created_by : ''}</span>
                   </div>
                 </div>
-                  <button onClick={async () => {
-                    try {
-                      await api.restoreWR(wr.request_id);
-                      setDeletedWRs(prev => prev.filter(d => d.request_id !== wr.request_id));
-                      toast.success('Aviso restaurado: ' + wr.request_id);
-                      api.listWorkRequests({ plant_id: plantId }).then(data => setRequests((Array.isArray(data) ? data : []).map(normalizeWR))).catch(() => {});
-                    } catch { toast.error('Error restaurando'); }
-                  }} className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                    Restaurar
-                  </button>
-                  {['admin', 'ceo'].includes(user?.role) && (
-                    <button onClick={async () => {
-                      if (!window.confirm('¿Eliminar PERMANENTEMENTE? No se puede recuperar.')) return;
-                      try {
-                        await api.permanentDeleteWR(wr.request_id);
-                        setDeletedWRs(prev => prev.filter(d => d.request_id !== wr.request_id));
-                        toast.success('Eliminado permanentemente');
-                      } catch { toast.error('Error eliminando'); }
-                    }} className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700">
-                      Eliminar
-                    </button>
-                  )}
-                </div>
               ))}
             </div>
           </div>

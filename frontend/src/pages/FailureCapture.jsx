@@ -340,12 +340,16 @@ export default function FailureCapture({ onNavigateTab }) {
         // Apply ALL fields from Claude (camelCase + snake_case)
         if (s.enhanced_description) setF('whatHappens', s.enhanced_description);
         if (s.suggestedAction || s.suggested_action) setF('suggestedAction', s.suggestedAction || s.suggested_action);
-        // Auto-generate WO title: TAG - symptom (max 40 chars)
+        // Auto-generate WO title: short equipment name + fault keyword
         if (s.enhanced_description || s.failureSymptom || s.failure_symptom) {
-          const tag = form.whereTag || s.equipment_tag || '';
-          const sym = (s.failureSymptom || s.failure_symptom || '').substring(0, 20).trim();
-          let title = tag && sym ? `${tag} - ${sym}` : tag ? `${tag} - Falla` : (s.enhanced_description || '').split('.')[0].substring(0, 40).trim();
-          if (title.length > 40) title = title.substring(0, 40).replace(/\s+\S*$/, '');
+          const desc = s.enhanced_description || '';
+          // Get short equipment name from search or description
+          const equipName = (form.equipmentSearch || '').replace(/ubicad[ao]\s+en\s+.*/i, '').trim();
+          // Extract fault keyword from description
+          const faultMatch = desc.match(/(vibración|fuga|rotura|desgaste|ruido|sobrecalentamiento|daño|corrosión|fractura|falla|rodamiento|acople|sello|bomba|motor)/i);
+          const fault = faultMatch ? faultMatch[0] : '';
+          let title = equipName ? `${equipName.substring(0, 30).trim()}${fault ? ' - ' + fault : ''}` : desc.split('.')[0].substring(0, 45).trim();
+          if (title.length > 45) title = title.substring(0, 45).replace(/\s+\S*$/, '');
           setF('woTitle', title);
         }
         if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);

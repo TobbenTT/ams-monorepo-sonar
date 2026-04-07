@@ -677,6 +677,10 @@ ${materials.length ? `<div class="section">
               <textarea value={editData.suggested_action || ''} onChange={e => setEditData(d => ({ ...d, suggested_action: e.target.value }))}
                 rows={5} placeholder="¿Qué se debe hacer?"
                 className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-y" />
+            ) : /\d{1,2}\.\s/.test(item.suggested_action) ? (
+              <div className="space-y-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
+                {(() => { const steps = []; const raw = item.suggested_action; for (let n = 1; n <= 20; n++) { const s = raw.indexOf(`${n}. `); if (s === -1) break; const nx = raw.indexOf(`${n+1}. `, s+1); steps.push({ num: n, text: raw.substring(s, nx > -1 ? nx : undefined).replace(/^\d+\.\s*/, '').trim() }); } return steps.map((s, i) => (<div key={i} className="flex gap-2 text-sm"><span className="font-bold text-emerald-600 min-w-[20px]">{s.num}.</span><span>{s.text}</span></div>)); })()}
+              </div>
             ) : (
               <p className="text-sm text-foreground leading-relaxed bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
                 {item.suggested_action}

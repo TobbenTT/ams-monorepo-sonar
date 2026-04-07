@@ -84,6 +84,8 @@ class WRManualCreateRequest(BaseModel):
     failure_cause: str = ""
     plant_condition: str = ""
     suggested_action: str = ""
+    wo_title: str = ""
+    equipment_condition: str = ""
     estimated_duration: float = 4
     materials: list = []  # list of str or dict
     resources: list = []  # list of str or dict
@@ -1628,6 +1630,7 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
             "estimated_duration_hours": data.estimated_duration,
             "safety_flags": ["BREAKDOWN"] if data.plant_condition == "stopped" else [],
             "source": "manual_form",
+            "wo_title": getattr(data, 'wo_title', '') or '',
             "aviso_coding": data.aviso_coding,
             "technical_location": data.technical_location,
         },

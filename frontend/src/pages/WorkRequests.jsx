@@ -365,7 +365,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
                 </span>
               )}
             </div>
-            <h2 className="text-lg font-bold text-foreground">{item.equipment_name}</h2>
+            <h2 className="text-lg font-bold text-foreground">{(typeof item.ai_classification === 'object' && item.ai_classification?.wo_title) || item.equipment_name}</h2>
             <p className="text-xs font-mono text-muted-foreground">{item.equipment_tag}</p>
           </div>
           <div className="flex items-center gap-2">

@@ -271,7 +271,7 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRe
 }
 
 /* ─── Detail Modal (expanded + editable for supervisor) ─── */
-function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, userRole, t }) {
+function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, userRole, t, _isInCarousel, _isDuplicate }) {
   if (!item) return null;
   const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(item.status);
   const isValidated = ['VALIDATED', 'APROBADO'].includes(item.status);
@@ -342,11 +342,9 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+  const modalContent = (
       <div
-        className="relative bg-card rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto z-10 border border-border"
+        className={`relative bg-card rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto border ${_isDuplicate ? 'border-amber-300' : 'border-border'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -527,22 +525,7 @@ ${materials.length ? `<div class="section">
             )}
           </div>
         )}
-        {/* Duplicate navigation bar */}
-        {duplicates.length > 0 && (
-          <div className="px-6 py-2 border-b border-amber-200 bg-amber-50 flex items-center justify-between">
-            <button onClick={() => onOpenDuplicate?.(duplicates[(dupIdx) % duplicates.length])}
-              className="flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-all">
-              <ChevronLeft size={14} /> Anterior
-            </button>
-            <span className="text-xs text-amber-800 font-semibold">
-              {duplicates.length} similar{duplicates.length > 1 ? 'es' : ''} — desliza para comparar
-            </span>
-            <button onClick={() => onOpenDuplicate?.(duplicates[(dupIdx) % duplicates.length])}
-              className="flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-all">
-              Siguiente <ChevronRight size={14} />
-            </button>
-          </div>
-        )}
+        {/* Duplicates indicator - panels shown beside this modal */}
 
         <div className="px-6 py-4 border-b border-border">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t('workRequests.photos')}</p>
@@ -974,6 +957,16 @@ ${materials.length ? `<div class="section">
             )}
           </div>
         )}
+      </div>
+  );
+
+  if (_isInCarousel) return modalContent;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="relative z-10 w-full max-w-3xl" onClick={e => e.stopPropagation()}>
+        {modalContent}
       </div>
     </div>
   );
@@ -1833,26 +1826,61 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         </div>
       )}
 
-      {/* Detail Modal */}
-      {selected && (
-        <DetailModal
-          item={selected}
-          critScore={critScore}
-          duplicates={findDuplicates(selected, requests)}
-          onOpenDuplicate={(dup) => { fetchAndOpenDetail(dup); }}
-          onClose={() => setSelected(null)}
-          onValidate={handleValidate}
-          onReject={handleReject}
-          onCancel={handleCancel}
-          onStart={handleStart}
-          onComplete={handleComplete}
-          onCloseWR={handleClose}
-          onSaveEdit={handleSaveEdit}
-          onPlannerCreateOT={handlePlannerCreateOT}
-          userRole={user?.role}
-          t={t}
-        />
-      )}
+      {/* Detail Modal — carousel of current + duplicates */}
+      {selected && (() => {
+        const dups = findDuplicates(selected, requests);
+        const allItems = [selected, ...dups];
+        const hasDups = dups.length > 0;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div className="relative z-10 flex items-center gap-4 max-w-full" onClick={e => e.stopPropagation()}>
+              {/* Left arrow */}
+              {hasDups && (
+                <button onClick={() => { const el = document.getElementById('wr-carousel'); el.scrollBy({ left: -el.offsetWidth * 0.85, behavior: 'smooth' }); }}
+                  className="shrink-0 w-10 h-10 bg-white rounded-full shadow-lg border flex items-center justify-center hover:bg-gray-50 z-20">
+                  <ChevronLeft size={20} />
+                </button>
+              )}
+              {/* Carousel container */}
+              <div id="wr-carousel"
+                className={`flex gap-4 overflow-x-auto snap-x snap-mandatory ${hasDups ? 'max-w-[85vw]' : 'max-w-3xl'}`}
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', scrollSnapType: 'x mandatory' }}>
+                {allItems.map((wrItem, idx) => (
+                  <div key={wrItem.id || idx} className="snap-center shrink-0" style={{ width: hasDups ? 'min(600px, 75vw)' : '100%' }}>
+                    <DetailModal
+                      item={wrItem}
+                      critScore={idx === 0 ? critScore : null}
+                      duplicates={[]}
+                      onOpenDuplicate={() => {}}
+                      onClose={() => setSelected(null)}
+                      onValidate={handleValidate}
+                      onReject={handleReject}
+                      onCancel={handleCancel}
+                      onStart={handleStart}
+                      onComplete={handleComplete}
+                      onCloseWR={handleClose}
+                      onSaveEdit={handleSaveEdit}
+                      onPlannerCreateOT={handlePlannerCreateOT}
+                      userRole={user?.role}
+                      t={t}
+                      _isInCarousel={true}
+                      _isDuplicate={idx > 0}
+                    />
+                  </div>
+                ))}
+              </div>
+              {/* Right arrow */}
+              {hasDups && (
+                <button onClick={() => { const el = document.getElementById('wr-carousel'); el.scrollBy({ left: el.offsetWidth * 0.85, behavior: 'smooth' }); }}
+                  className="shrink-0 w-10 h-10 bg-white rounded-full shadow-lg border flex items-center justify-center hover:bg-gray-50 z-20">
+                  <ChevronRight size={20} />
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

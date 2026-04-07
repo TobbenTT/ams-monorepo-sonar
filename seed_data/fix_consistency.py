@@ -52,8 +52,9 @@ print(f"  23: {len(df23)} rows, 27: {len(df27)} rows, 29: {len(df29)} rows")
 print("\nPaso 1: Redefiniendo status en 06_work_order_history...")
 
 # Current: CRTD(2851), REL(2750), TECO(2814), CLSD(2793) = 11208
-# Target: CREADA(300), LIBERADA(600), PLANIFICADA(416), EN_PROGRAMACION(100),
+# Target: CREADA(300), PLANIFICADA(600), LIBERADA(416), EN_PROGRAMACION(100),
 #         PROGRAMADA(192), INICIADA(150), CERRADA(9450)
+# Lifecycle: CREADA → PLANIFICADA → LIBERADA → EN_PROGRAMACION → PROGRAMADA → INICIADA → CERRADA
 
 # Convert date columns to datetime
 for col in ["plan_start", "plan_end", "actual_start", "actual_end"]:
@@ -76,8 +77,8 @@ status_assignments = (
     ["INICIADA"] * 150 +
     ["PROGRAMADA"] * 192 +
     ["EN_PROGRAMACION"] * 100 +
-    ["PLANIFICADA"] * 416 +
-    ["LIBERADA"] * 600 +
+    ["LIBERADA"] * 416 +
+    ["PLANIFICADA"] * 600 +
     ["CREADA"] * 300
 )
 
@@ -98,15 +99,15 @@ for idx, row in df06.iterrows():
         df06.at[idx, "total_cost_usd"] = np.nan
         df06.at[idx, "completed_by"] = ""
 
-    elif st == "LIBERADA":
-        # Resources identified but not confirmed, no execution dates
+    elif st == "PLANIFICADA":
+        # Recursos identificados pero NO confirmados disponibles (backlog con restricción)
         df06.at[idx, "actual_start"] = pd.NaT
         df06.at[idx, "actual_end"] = pd.NaT
         df06.at[idx, "completed_by"] = ""
         # Keep plan_start/end as rough estimates, keep total_hours as estimate
 
-    elif st == "PLANIFICADA":
-        # Resources confirmed, no execution dates
+    elif st == "LIBERADA":
+        # Recursos confirmados, liberada para programación (backlog lista)
         df06.at[idx, "actual_start"] = pd.NaT
         df06.at[idx, "actual_end"] = pd.NaT
         df06.at[idx, "completed_by"] = ""
@@ -171,7 +172,7 @@ df06.drop(columns=["new_status"], inplace=True)
 
 status_counts = df06["status"].value_counts()
 print("  Distribución de status:")
-for st in ["CREADA", "LIBERADA", "PLANIFICADA", "EN_PROGRAMACION", "PROGRAMADA", "INICIADA", "CERRADA"]:
+for st in ["CREADA", "PLANIFICADA", "LIBERADA", "EN_PROGRAMACION", "PROGRAMADA", "INICIADA", "CERRADA"]:
     print(f"    {st}: {status_counts.get(st, 0)}")
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -359,12 +360,13 @@ df26 = df26_new
 # ═══════════════════════════════════════════════════════════════════════════
 print("\nPaso 4: Enriqueciendo backlog...")
 
-# Redefine status
-status_map_backlog = {"CRTD": "LIBERADA", "PREL": "LIBERADA", "REL": "PLANIFICADA"}
+# Redefine status — CRTD/PREL aún no liberadas = PLANIFICADA, REL = LIBERADA
+status_map_backlog = {"CRTD": "PLANIFICADA", "PREL": "PLANIFICADA", "REL": "LIBERADA"}
 df23["status"] = df23["status"].map(lambda x: status_map_backlog.get(x, x))
 
 # Add waiting_reason based on status
-WAITING_LIBERADA = [
+# PLANIFICADA = recursos identificados pero NO confirmados → tiene restricciones
+WAITING_PLANIFICADA = [
     ("ESPERA_REPUESTOS", 0.35, [
         "Rodamiento principal en tránsito, ETA 2 semanas",
         "Sello mecánico agotado en bodega, en proceso de compra",
@@ -405,7 +407,8 @@ WAITING_LIBERADA = [
     ]),
 ]
 
-CONSTRAINT_PLANIFICADA = [
+# LIBERADA = recursos confirmados, liberada para programación → sin restricción
+CONSTRAINT_LIBERADA = [
     "Lista para programar — todos los recursos confirmados",
     "Materiales en bodega, cuadrilla disponible — esperando turno",
     "Recursos OK — priorizar según backlog ranking",
@@ -418,13 +421,13 @@ materials_statuses = []
 special_equip_statuses = []
 
 for _, row in df23.iterrows():
-    if row["status"] == "LIBERADA":
-        # Pick a random waiting reason
+    if row["status"] == "PLANIFICADA":
+        # PLANIFICADA tiene restricciones — recursos aún no confirmados
         r = np.random.random()
         cumprob = 0
         chosen_reason = "ESPERA_REPUESTOS"
         chosen_detail = ""
-        for reason, prob, details in WAITING_LIBERADA:
+        for reason, prob, details in WAITING_PLANIFICADA:
             cumprob += prob
             if r <= cumprob:
                 chosen_reason = reason
@@ -444,9 +447,9 @@ for _, row in df23.iterrows():
         else:
             special_equip_statuses.append(np.random.choice(["CONFIRMADO", "NO_REQUIERE", "PENDIENTE"], p=[0.3, 0.5, 0.2]))
 
-    else:  # PLANIFICADA
+    else:  # LIBERADA — recursos confirmados, sin restricción
         waiting_reasons.append("SIN_RESTRICCION")
-        constraint_details.append(np.random.choice(CONSTRAINT_PLANIFICADA))
+        constraint_details.append(np.random.choice(CONSTRAINT_LIBERADA))
         materials_statuses.append("CONFIRMADO")
         special_equip_statuses.append(np.random.choice(["CONFIRMADO", "NO_REQUIERE"], p=[0.4, 0.6]))
 
@@ -571,7 +574,7 @@ print(f"4. Cost records huérfanos: {len(orphan_29)} (debe ser 0)")
 
 # Check 5: OTs in every status
 print(f"\n5. Distribución de status en 06:")
-for st in ["CREADA", "LIBERADA", "PLANIFICADA", "EN_PROGRAMACION", "PROGRAMADA", "INICIADA", "CERRADA"]:
+for st in ["CREADA", "PLANIFICADA", "LIBERADA", "EN_PROGRAMACION", "PROGRAMADA", "INICIADA", "CERRADA"]:
     count = len(df06[df06["status"] == st])
     print(f"   {st}: {count}")
 

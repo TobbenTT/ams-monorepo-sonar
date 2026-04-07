@@ -59,8 +59,8 @@ if len(cerrada_no_end) > 0:
 if len(cerrada_no_completed) > 0:
     errors.append(f"06: {len(cerrada_no_completed)} CERRADA sin completed_by")
 
-# ─── 3. CREADA/LIBERADA/PLANIFICADA must NOT have actual_start/end ──────
-for st in ["CREADA", "LIBERADA", "PLANIFICADA"]:
+# ─── 3. CREADA/PLANIFICADA/LIBERADA must NOT have actual_start/end ──────
+for st in ["CREADA", "PLANIFICADA", "LIBERADA"]:
     subset = df06[df06["status"] == st]
     has_actual_start = subset[subset["actual_start"].notna()]
     has_actual_end = subset[subset["actual_end"].notna()]
@@ -189,25 +189,25 @@ else:
 if "special_equipment_status" not in df23.columns:
     errors.append("23: Falta columna special_equipment_status")
 
-# PLANIFICADA should have SIN_RESTRICCION and materials_status=CONFIRMADO
-if "waiting_reason" in df23.columns:
-    planif = df23[df23["status"] == "PLANIFICADA"]
-    planif_bad_wr = planif[planif["waiting_reason"] != "SIN_RESTRICCION"]
-    if len(planif_bad_wr) > 0:
-        errors.append(f"23: {len(planif_bad_wr)} PLANIFICADA con waiting_reason != SIN_RESTRICCION")
-        print(f"  ERROR: {len(planif_bad_wr)} PLANIFICADA con restriccion (deberian ser SIN_RESTRICCION)")
-
-    planif_bad_mat = planif[planif["materials_status"] != "CONFIRMADO"] if "materials_status" in df23.columns else pd.DataFrame()
-    if len(planif_bad_mat) > 0:
-        errors.append(f"23: {len(planif_bad_mat)} PLANIFICADA con materials_status != CONFIRMADO")
-
-# LIBERADA should NOT have SIN_RESTRICCION
+# LIBERADA should have SIN_RESTRICCION and materials_status=CONFIRMADO (recursos confirmados, lista para programar)
 if "waiting_reason" in df23.columns:
     liber = df23[df23["status"] == "LIBERADA"]
-    liber_no_reason = liber[liber["waiting_reason"] == "SIN_RESTRICCION"]
-    if len(liber_no_reason) > 0:
-        errors.append(f"23: {len(liber_no_reason)} LIBERADA con SIN_RESTRICCION (deberian tener restriccion)")
-        print(f"  ERROR: {len(liber_no_reason)} LIBERADA sin restriccion")
+    liber_bad_wr = liber[liber["waiting_reason"] != "SIN_RESTRICCION"]
+    if len(liber_bad_wr) > 0:
+        errors.append(f"23: {len(liber_bad_wr)} LIBERADA con waiting_reason != SIN_RESTRICCION")
+        print(f"  ERROR: {len(liber_bad_wr)} LIBERADA con restriccion (deberian ser SIN_RESTRICCION)")
+
+    liber_bad_mat = liber[liber["materials_status"] != "CONFIRMADO"] if "materials_status" in df23.columns else pd.DataFrame()
+    if len(liber_bad_mat) > 0:
+        errors.append(f"23: {len(liber_bad_mat)} LIBERADA con materials_status != CONFIRMADO")
+
+# PLANIFICADA should NOT have SIN_RESTRICCION (recursos aún no confirmados, tiene restricciones)
+if "waiting_reason" in df23.columns:
+    planif = df23[df23["status"] == "PLANIFICADA"]
+    planif_no_reason = planif[planif["waiting_reason"] == "SIN_RESTRICCION"]
+    if len(planif_no_reason) > 0:
+        errors.append(f"23: {len(planif_no_reason)} PLANIFICADA con SIN_RESTRICCION (deberian tener restriccion)")
+        print(f"  ERROR: {len(planif_no_reason)} PLANIFICADA sin restriccion")
 
 # Backlog should NOT have actual dates
 backlog_statuses = {"LIBERADA", "PLANIFICADA"}

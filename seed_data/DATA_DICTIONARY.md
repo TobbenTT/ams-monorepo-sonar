@@ -752,15 +752,15 @@ Los 8 grupos de planificación del Blueprint (5 Mina + 3 Planta).
 ### Flujo de status
 
 ```
-NOTI → CREADA → LIBERADA → PLANIFICADA → EN_PROGRAMACION → PROGRAMADA → INICIADA → CERRADA
+NOTI → CREADA → PLANIFICADA → LIBERADA → EN_PROGRAMACION → PROGRAMADA → INICIADA → CERRADA
 ```
 
 | Status | Quién actúa | Tiene fecha ejecución | Descripción |
 |--------|-------------|----------------------|-------------|
 | NOTI | Operador/Inspector | No | Solo aviso (notificación sin OT). Existe solo en `24_notifications.xlsx` sin order_number |
 | CREADA | Sistema/Planificador | No | OT generada con descripción y prioridad. Sin recursos definidos |
-| LIBERADA | Planificador | No | Recursos **identificados** (materiales, HH, herramientas, EPPs) pero NO confirmados disponibles. **BACKLOG con restricción** |
-| PLANIFICADA | Planificador + Bodega + Supervisor | No | Recursos **confirmados** (bodega OK, herramientas OK). **BACKLOG lista para programar** |
+| PLANIFICADA | Planificador | No | Recursos **identificados** (materiales, HH, herramientas, EPPs) pero NO confirmados disponibles. **BACKLOG con restricción** |
+| LIBERADA | Planificador + Bodega + Supervisor | No | Recursos **confirmados** (bodega OK, herramientas OK). Planificador libera la OT. **BACKLOG lista para programar** |
 | EN_PROGRAMACION | Programador | Sí (tentativa) | Programador tomó la OT del backlog, asignando fechas según disponibilidad |
 | PROGRAMADA | Programador | Sí (firme) | Fecha aprobada en programa semanal. Permisos gestionados, materiales reservados |
 | INICIADA | Ejecutor | Sí | En ejecución en campo. actual_start poblado |
@@ -772,8 +772,8 @@ NOTI → CREADA → LIBERADA → PLANIFICADA → EN_PROGRAMACION → PROGRAMADA 
 |--------|----|-------------|------------|-----------|----------|-----------|---------------|
 | NOTI | - | - | X | - | - | - | - |
 | CREADA | X | - | X (si PM01) | - | - | - | - |
-| LIBERADA | X | X | X (si PM01) | - | - | - | - |
 | PLANIFICADA | X | X | X (si PM01) | - | - | - | - |
+| LIBERADA | X | X | X (si PM01) | - | - | - | - |
 | EN_PROGRAMACION | X | - | X (si PM01) | - | - | - | X |
 | PROGRAMADA | X | - | X (si PM01) | - | - | - | X |
 | INICIADA | X | - | X (si PM01) | X (parcial) | - | - | X |

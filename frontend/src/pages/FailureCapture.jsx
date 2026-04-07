@@ -343,8 +343,9 @@ export default function FailureCapture({ onNavigateTab }) {
         // Auto-generate WO title from AI
         if (s.enhanced_description) {
           const desc = s.enhanced_description;
-          // Extract first sentence or create short title
-          const title = desc.split('.')[0].substring(0, 100);
+          // Short WO title: first sentence, max 60 chars, cut at last word
+          let title = desc.split('.')[0];
+          if (title.length > 60) title = title.substring(0, 60).replace(/\s+\S*$/, '');
           setF('woTitle', title);
         }
         if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);
@@ -1411,19 +1412,26 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Actions</label>
             {form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? (
-              <div className="space-y-1.5 mb-2">
-                {form.suggestedAction.split(/(?:^|\s)(?=\d{1,2}[\.\)])/g).filter(s => s.trim()).map((step, i) => (
-                  <div key={i} className="flex gap-2 p-2 bg-gray-50 rounded-lg border text-xs">
-                    <span className="font-bold text-emerald-600 min-w-[20px]">{i+1}.</span>
-                    <span>{step.replace(/^\d+[\.\)]\s*/, '').trim()}</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
-              placeholder="What corrective action is recommended?"
-              rows={form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? 2 : 4}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
+              <>
+                <div className="space-y-1.5 mb-2">
+                  {form.suggestedAction.match(/\d{1,2}[\.\)]\s[^\n]*/g)?.filter(s => s.replace(/^\d+[\.\)]\s*/, '').trim()).map((step, i) => (
+                    <div key={i} className="flex gap-2 p-2 bg-gray-50 rounded-lg border text-xs">
+                      <span className="font-bold text-emerald-600 min-w-[20px]">{step.match(/^\d+/)[0]}.</span>
+                      <span>{step.replace(/^\d+[\.\)]\s*/, '').trim()}</span>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={() => { const el = document.getElementById('sa-raw'); el.style.display = el.style.display === 'none' ? '' : 'none'; }}
+                  className="text-[10px] text-blue-500 underline mb-1">Edit raw text</button>
+                <textarea id="sa-raw" style={{ display: 'none' }} value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
+                  rows={3} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
+              </>
+            ) : (
+              <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
+                placeholder="What corrective action is recommended?"
+                rows={4}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
+            )}
           </div>
 
           {/* 3. Equipment Condition + Priority */}

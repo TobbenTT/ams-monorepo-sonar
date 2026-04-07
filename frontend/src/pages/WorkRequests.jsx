@@ -1850,12 +1850,12 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                   <div key={wrItem.id || idx} className="snap-center shrink-0 relative" style={{ width: hasDups ? 'min(580px, 44vw)' : '100%' }}>
                     {/* DUPLICATE badge */}
                     {idx > 0 && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 bg-red-500 text-white text-[11px] font-bold px-4 py-1 rounded-full shadow-lg tracking-wider">
+                      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-red-500 text-white text-[11px] font-bold px-4 py-1 rounded-full shadow-lg tracking-wider">
                         DUPLICADO #{idx}
                       </div>
                     )}
                     {idx === 0 && hasDups && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 bg-blue-600 text-white text-[11px] font-bold px-4 py-1 rounded-full shadow-lg tracking-wider">
+                      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-blue-600 text-white text-[11px] font-bold px-4 py-1 rounded-full shadow-lg tracking-wider">
                         ACTUAL
                       </div>
                     )}

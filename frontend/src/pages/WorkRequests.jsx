@@ -527,29 +527,20 @@ ${materials.length ? `<div class="section">
             )}
           </div>
         )}
-        {/* Duplicate Carousel */}
+        {/* Duplicate navigation bar */}
         {duplicates.length > 0 && (
-          <div className="px-6 py-3 border-b border-amber-200 bg-amber-50">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-amber-800">{duplicates.length} aviso{duplicates.length > 1 ? 's' : ''} similar{duplicates.length > 1 ? 'es' : ''} encontrado{duplicates.length > 1 ? 's' : ''}</span>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory" style={{ scrollbarWidth: 'thin' }}>
-              {duplicates.map((dup, i) => (
-                <div key={dup.id || i} onClick={() => onOpenDuplicate?.(dup)}
-                  className="snap-start shrink-0 w-[220px] bg-white rounded-xl border-2 border-amber-300 p-3 cursor-pointer hover:border-amber-500 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="text-[10px] font-mono font-bold text-amber-700">{dup.id}</span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${dup.status === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' : dup.status === 'APROBADO' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{dup.status}</span>
-                  </div>
-                  <p className="text-xs font-semibold text-gray-800 mb-1 truncate">{dup.equipment_name || dup.equipment_tag}</p>
-                  <p className="text-[10px] text-gray-500 line-clamp-2">{dup.failure_description?.substring(0, 80) || '—'}</p>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${dup.priority_requested === 'P1' ? 'bg-red-100 text-red-700' : dup.priority_requested === 'P2' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>{dup.priority_requested}</span>
-                    <span className="text-[10px] text-gray-400">{dup.created_at ? new Date(dup.created_at).toLocaleDateString('es') : ''}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="px-6 py-2 border-b border-amber-200 bg-amber-50 flex items-center justify-between">
+            <button onClick={() => onOpenDuplicate?.(duplicates[(dupIdx) % duplicates.length])}
+              className="flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-all">
+              <ChevronLeft size={14} /> Anterior
+            </button>
+            <span className="text-xs text-amber-800 font-semibold">
+              {duplicates.length} similar{duplicates.length > 1 ? 'es' : ''} — desliza para comparar
+            </span>
+            <button onClick={() => onOpenDuplicate?.(duplicates[(dupIdx) % duplicates.length])}
+              className="flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-all">
+              Siguiente <ChevronRight size={14} />
+            </button>
           </div>
         )}
 

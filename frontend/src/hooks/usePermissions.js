@@ -63,6 +63,7 @@ const PERMISSIONS = {
     'settings':           { view: ALL_ROLES, edit: ALL_ROLES },
     'feedback':           { view: ALL_ROLES, edit: ALL_ROLES },
     'data-import':        { view: ['admin', 'manager'], edit: ['admin'] },
+    'sap-pm':             { view: ['admin', 'manager', 'planner'], edit: ['admin', 'planner'] },
     'profile':            { view: ALL_ROLES, edit: ALL_ROLES },
 };
 

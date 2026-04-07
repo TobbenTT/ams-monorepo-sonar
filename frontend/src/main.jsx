@@ -108,13 +108,13 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="work-orders" element={<S><WorkOrdersPage /></S>} />
                                     <Route path="failures-events" element={<S><FailuresEvents /></S>} />
                                     <Route path="improvement-actions" element={<S><ImprovementActionsPage /></S>} />
-                                    <Route path="analytics" element={<S><AnalyticsPage /></S>} />
+                                    <Route path="analytics" element={<P roles={MGMT}><S><AnalyticsPage /></S></P>} />
                                     <Route path="reports" element={<S><ReportsPage /></S>} />
-                                    <Route path="team" element={<S><TeamPage /></S>} />
+                                    <Route path="team" element={<P roles={['admin', 'manager', 'planner']}><S><TeamPage /></S></P>} />
                                     <Route path="settings" element={<S><SettingsPage /></S>} />
                                     <Route path="feedback-admin" element={<S><FeedbackAdmin /></S>} />
-                                    <Route path="execution" element={<S><Execution /></S>} />
-                                    <Route path="post-maintenance" element={<S><PostMaintenance /></S>} />
+                                    <Route path="execution" element={<P roles={['admin', 'planner', 'tecnico']}><S><Execution /></S></P>} />
+                                    <Route path="post-maintenance" element={<P roles={PLAN}><S><PostMaintenance /></S></P>} />
                                     <Route path="data-import" element={<P roles={MGMT}><S><DataImport /></S></P>} />
 
                                     {/* ── Mobile routes ── */}
@@ -142,7 +142,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="rca" element={<P roles={ENGR}><S><RCA /></S></P>} />
                                     <Route path="defect-elimination" element={<P roles={ENGR}><S><DefectElimination /></S></P>} />
                                     <Route path="sap-review" element={<P roles={MGMT}><S><SAPReview /></S></P>} />
-                                    <Route path="sap-pm" element={<S><SapPmPage /></S>} />
+                                    <Route path="sap-pm" element={<P roles={['admin', 'manager', 'planner']}><S><SapPmPage /></S></P>} />
                                     <Route path="financial" element={<P roles={MGMT}><S><Financial /></S></P>} />
                                     <Route path="troubleshooting" element={<P roles={ALL}><S><Troubleshooting /></S></P>} />
                                     <Route path="equipment-chat" element={<P roles={ALL}><S><EquipmentChat /></S></P>} />

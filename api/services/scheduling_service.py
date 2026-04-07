@@ -270,8 +270,8 @@ def _to_schema_item(item: BacklogItemModel) -> BacklogItem:
         age_days=item.age_days,
         status=BacklogStatus(item.status) if item.status in [e.value for e in BacklogStatus] else BacklogStatus.AWAITING_APPROVAL,
         blocking_reason=item.blocking_reason,
-        estimated_duration_hours=item.estimated_hours,
-        required_specialties=item.specialties or ["MECANICO"],
+        estimated_duration_hours=max(item.estimated_hours or 1, 0.1),
+        required_specialties=item.specialties if isinstance(item.specialties, list) else [item.specialties or "MECANICO"],
         materials_ready=item.materials_ready,
         shutdown_required=item.shutdown_required,
     )

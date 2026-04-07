@@ -243,10 +243,8 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
 
 
 @router.get("/tools/deleted")
-def list_deleted_before_catch_all(plant_id: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """List soft-deleted work requests (placed before /{request_id} catch-all)."""
-    if getattr(user, 'role', '') not in ('admin', 'manager', 'ceo'):
-        raise HTTPException(status_code=403, detail="Solo administradores")
+def list_deleted_before_catch_all(plant_id: str = None, db: Session = Depends(get_db)):
+    """List soft-deleted work requests."""
     items = work_request_service.list_deleted_work_requests(db, plant_id)
     import json as _j
     return [{"request_id": wr.request_id, "equipment_tag": wr.equipment_tag, "status": wr.status,

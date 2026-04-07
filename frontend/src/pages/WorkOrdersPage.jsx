@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
-import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image, Trash2, Save, DollarSign, List, MessageSquare, Info, Users, MapPin } from 'lucide-react';
+import { Wrench, Download, Plus, ArrowUp, X, Search, AlertTriangle, ChevronDown, Clock, Package, Play, CheckCircle, Lock, FileText, ArrowRight, ClipboardCheck, Zap, Mic, MicOff, Camera, Image, Trash2, Save, DollarSign, List, MessageSquare, Info, Users, MapPin, BarChart3 } from 'lucide-react';
 import WorkOrderDetailDialog from '../components/tactical/WorkOrderDetailDialog';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -2480,62 +2480,82 @@ export default function WorkOrdersPage() {
                     <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                     <p className="text-sm text-gray-600 font-medium">Analizando con IA...</p>
                   </div>
-                ) : aiPanel.type === 'schedule' ? (
+                ) : aiPanel.type === 'compare' ? (
                   <div className="bg-blue-50 border-blue-300">
                     <div className="px-4 py-3 bg-blue-100 border-b border-blue-200 flex items-center justify-between">
-                      <span className="text-sm font-bold text-blue-800 flex items-center gap-2"><Clock size={16} /> Fechas Sugeridas por IA</span>
-                      <button onClick={() => setAiPanel(null)} className="text-blue-400 hover:text-blue-600 text-xs">Cerrar</button>
+                      <span className="text-sm font-bold text-blue-800 flex items-center gap-2"><BarChart3 size={16} /> Comparación con OTs del mismo equipo</span>
+                      <button onClick={() => setAiPanel(null)} className="text-blue-400 hover:text-blue-600 text-xs font-semibold">Cerrar</button>
                     </div>
-                    <div className="p-4 space-y-2">
-                      {(aiPanel.data?.suggested_dates || []).slice(0, 3).map((d, i) => (
-                        <div key={i} className={`flex items-center gap-3 p-3 rounded-lg border ${i === 0 ? 'bg-white border-blue-300 ring-2 ring-blue-200' : 'bg-blue-50/50 border-blue-100'}`}>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i === 0 ? 'bg-blue-600 text-white' : 'bg-blue-200 text-blue-700'}`}>{i + 1}</div>
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-gray-800">{d.date}</p>
-                            <p className="text-xs text-gray-500">{d.day_name} — {d.available_hours}h disponibles</p>
-                          </div>
-                          {i === 0 && <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">Recomendada</span>}
+                    <div className="p-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white rounded-lg p-3 border text-center">
+                          <p className="text-[10px] text-gray-500 uppercase font-semibold">Esta OT</p>
+                          <p className="text-lg font-bold text-blue-700">{aiPanel.data.this_hours}h</p>
+                          <p className="text-xs text-gray-500">${aiPanel.data.this_cost.toFixed(0)}</p>
                         </div>
-                      ))}
-                      {aiPanel.data?.ai_recommendation && (
-                        <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
-                          <p className="text-xs text-gray-700 leading-relaxed">{aiPanel.data.ai_recommendation}</p>
+                        <div className="bg-white rounded-lg p-3 border text-center">
+                          <p className="text-[10px] text-gray-500 uppercase font-semibold">Promedio ({aiPanel.data.completed} OTs)</p>
+                          <p className="text-lg font-bold text-gray-700">{aiPanel.data.avg_hours.toFixed(1)}h</p>
+                          <p className="text-xs text-gray-500">${aiPanel.data.avg_cost.toFixed(0)}</p>
+                        </div>
+                      </div>
+                      {aiPanel.data.this_hours > 0 && aiPanel.data.avg_hours > 0 && (
+                        <div className={`rounded-lg p-3 border text-sm font-medium ${aiPanel.data.this_hours > aiPanel.data.avg_hours * 1.3 ? 'bg-red-50 border-red-200 text-red-700' : aiPanel.data.this_hours < aiPanel.data.avg_hours * 0.7 ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-700'}`}>
+                          {aiPanel.data.this_hours > aiPanel.data.avg_hours * 1.3 ? `Esta OT tardó ${((aiPanel.data.this_hours/aiPanel.data.avg_hours-1)*100).toFixed(0)}% más que el promedio` : aiPanel.data.this_hours < aiPanel.data.avg_hours * 0.7 ? `Esta OT fue ${((1-aiPanel.data.this_hours/aiPanel.data.avg_hours)*100).toFixed(0)}% más rápida que el promedio` : 'Tiempos dentro del rango normal'}
                         </div>
                       )}
+                      {aiPanel.data.recent.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-semibold mb-1">OTs recientes del mismo equipo</p>
+                          {aiPanel.data.recent.map((r, i) => (
+                            <div key={i} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-100">
+                              <span className="font-mono text-gray-600">{r.id}</span>
+                              <span>{r.hrs}h</span>
+                              <span>${r.cost}</span>
+                              <span className="text-gray-400">{r.date ? new Date(r.date).toLocaleDateString('es') : ''}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {aiPanel.data.completed === 0 && <p className="text-xs text-gray-500 italic text-center py-2">Sin OTs cerradas previas para comparar</p>}
                     </div>
                   </div>
-                ) : aiPanel.type === 'verify' ? (
-                  <div className={aiPanel.data?.can_close ? 'bg-green-50 border-green-300' : 'bg-amber-50 border-amber-300'}>
-                    <div className={`px-4 py-3 border-b flex items-center justify-between ${aiPanel.data?.can_close ? 'bg-green-100 border-green-200' : 'bg-amber-100 border-amber-200'}`}>
-                      <span className={`text-sm font-bold flex items-center gap-2 ${aiPanel.data?.can_close ? 'text-green-800' : 'text-amber-800'}`}>
-                        {aiPanel.data?.can_close ? <><CheckCircle size={16} /> Lista para Cerrar</> : <><AlertTriangle size={16} /> Requiere Atención</>}
+                ) : aiPanel.type === 'cost_alert' ? (
+                  <div className={`${aiPanel.data.alerts.some(a => a.type === 'error') ? 'bg-red-50 border-red-300' : aiPanel.data.alerts.some(a => a.type === 'warn') ? 'bg-amber-50 border-amber-300' : 'bg-green-50 border-green-300'}`}>
+                    <div className={`px-4 py-3 border-b flex items-center justify-between ${aiPanel.data.alerts.some(a => a.type === 'error') ? 'bg-red-100 border-red-200' : aiPanel.data.alerts.some(a => a.type === 'warn') ? 'bg-amber-100 border-amber-200' : 'bg-green-100 border-green-200'}`}>
+                      <span className="text-sm font-bold flex items-center gap-2">
+                        <AlertTriangle size={16} /> Análisis de Costos
                       </span>
-                      <button onClick={() => setAiPanel(null)} className="text-gray-400 hover:text-gray-600 text-xs">Cerrar</button>
+                      <button onClick={() => setAiPanel(null)} className="text-gray-400 hover:text-gray-600 text-xs font-semibold">Cerrar</button>
                     </div>
                     <div className="p-4 space-y-2">
-                      {(aiPanel.data?.issues || []).map((issue, i) => (
-                        <div key={i} className="flex items-start gap-2 text-sm">
-                          <span className="text-red-500 mt-0.5">&#x2716;</span>
-                          <span className="text-gray-700">{issue}</span>
+                      {aiPanel.data.alerts.map((a, i) => (
+                        <div key={i} className={`flex items-start gap-2 text-sm p-2 rounded-lg ${a.type === 'error' ? 'bg-red-100' : a.type === 'warn' ? 'bg-amber-100' : 'bg-green-100'}`}>
+                          <span className="mt-0.5">{a.type === 'error' ? '\u2716' : a.type === 'warn' ? '\u26A0' : '\u2714'}</span>
+                          <span>{a.msg}</span>
                         </div>
                       ))}
-                      {(aiPanel.data?.warnings || []).map((warn, i) => (
-                        <div key={i} className="flex items-start gap-2 text-sm">
-                          <span className="text-amber-500 mt-0.5">&#x26A0;</span>
-                          <span className="text-gray-700">{warn}</span>
-                        </div>
-                      ))}
-                      {aiPanel.data?.checks_passed && (aiPanel.data?.issues || []).length === 0 && (
-                        <div className="flex items-center gap-2 text-sm text-green-700">
-                          <span>&#x2714;</span> Todas las verificaciones pasaron correctamente
-                        </div>
-                      )}
-                      {aiPanel.data?.ai_recommendation && (
-                        <div className="mt-3 p-3 bg-white rounded-lg border">
-                          <p className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Recomendación IA</p>
-                          <p className="text-xs text-gray-700 leading-relaxed">{aiPanel.data.ai_recommendation}</p>
-                        </div>
-                      )}
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div className="text-center p-2 bg-white rounded-lg border"><p className="text-[10px] text-gray-500">Real</p><p className="font-bold text-sm">${aiPanel.data.real.toFixed(0)}</p></div>
+                        <div className="text-center p-2 bg-white rounded-lg border"><p className="text-[10px] text-gray-500">Presupuesto</p><p className="font-bold text-sm">${aiPanel.data.plan.toFixed(0)}</p></div>
+                        <div className="text-center p-2 bg-white rounded-lg border"><p className="text-[10px] text-gray-500">Prom. Histórico ({aiPanel.data.history_count})</p><p className="font-bold text-sm">${aiPanel.data.avg.toFixed(0)}</p></div>
+                      </div>
+                    </div>
+                  </div>
+                ) : aiPanel.type === 'strategy' ? (
+                  <div className={`${aiPanel.data.suggestion.type === 'warn' ? 'bg-amber-50 border-amber-300' : aiPanel.data.suggestion.type === 'ok' ? 'bg-green-50 border-green-300' : 'bg-blue-50 border-blue-300'}`}>
+                    <div className={`px-4 py-3 border-b flex items-center justify-between ${aiPanel.data.suggestion.type === 'warn' ? 'bg-amber-100 border-amber-200' : aiPanel.data.suggestion.type === 'ok' ? 'bg-green-100 border-green-200' : 'bg-blue-100 border-blue-200'}`}>
+                      <span className="text-sm font-bold flex items-center gap-2"><Zap size={16} /> {aiPanel.data.suggestion.title}</span>
+                      <button onClick={() => setAiPanel(null)} className="text-gray-400 hover:text-gray-600 text-xs font-semibold">Cerrar</button>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <p className="text-sm text-gray-700 leading-relaxed">{aiPanel.data.suggestion.msg}</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="text-center p-2 bg-white rounded-lg border"><p className="text-[10px] text-gray-500">Total OTs</p><p className="font-bold">{aiPanel.data.total}</p></div>
+                        <div className="text-center p-2 bg-white rounded-lg border"><p className="text-[10px] text-gray-500">Correctivas</p><p className="font-bold text-red-600">{aiPanel.data.corrective}</p></div>
+                        <div className="text-center p-2 bg-white rounded-lg border"><p className="text-[10px] text-gray-500">Preventivas</p><p className="font-bold text-green-600">{aiPanel.data.preventive}</p></div>
+                        <div className="text-center p-2 bg-white rounded-lg border"><p className="text-[10px] text-gray-500">Últ. 6 meses</p><p className="font-bold text-blue-600">{aiPanel.data.freq_6m}</p></div>
+                      </div>
                     </div>
                   </div>
                 ) : null}
@@ -2561,24 +2581,56 @@ export default function WorkOrdersPage() {
                 <Button variant="outline" size="sm"
                   onClick={async () => {
                     try {
-                      setAiPanel({ loading: true, type: 'schedule' });
-                      const res = await api.aiSuggestSchedule(selectedOT.wo_id);
-                      setAiPanel({ loading: false, type: 'schedule', data: res });
-                    } catch { toast.error('Error sugiriendo fechas'); setAiPanel(null); }
+                      setAiPanel({ loading: true, type: 'compare' });
+                      const tag = selectedOT.equipment_tag || selectedOT.equipment_id;
+                      const allWOs = managedWOs.filter(w => (w.equipment_tag || w.equipment_id) === tag && w.wo_id !== selectedOT.wo_id);
+                      const completed = allWOs.filter(w => ['CERRADO','CLOSED','COMPLETED'].includes(w.status));
+                      const avgHrs = completed.length > 0 ? completed.reduce((s,w) => s + (parseFloat(w.actual_hours || w.estimated_hours) || 0), 0) / completed.length : 0;
+                      const avgCost = completed.length > 0 ? completed.reduce((s,w) => s + (parseFloat(w.total_cost || w.labor_cost || 0) + parseFloat(w.material_cost || 0)), 0) / completed.length : 0;
+                      const thisHrs = parseFloat(selectedOT.actual_hours || selectedOT.estimated_hours) || 0;
+                      const thisCost = (parseFloat(selectedOT.labor_cost || 0)) + (parseFloat(selectedOT.material_cost || 0)) + (parseFloat(selectedOT.external_cost || 0));
+                      setAiPanel({ loading: false, type: 'compare', data: { total_similar: allWOs.length, completed: completed.length, avg_hours: avgHrs, avg_cost: avgCost, this_hours: thisHrs, this_cost: thisCost, equipment: tag, recent: completed.slice(0, 3).map(w => ({ id: w.wo_number, hrs: w.actual_hours || w.estimated_hours, cost: (parseFloat(w.labor_cost||0) + parseFloat(w.material_cost||0)).toFixed(0), status: w.status, date: w.created_at })) } });
+                    } catch { toast.error('Error comparando'); setAiPanel(null); }
                   }}
                   className="gap-1 text-blue-600 border-blue-300 hover:bg-blue-50">
-                  <Clock size={14} /> Sugerir Fecha IA
+                  <BarChart3 size={14} /> Comparar OTs
                 </Button>
                 <Button variant="outline" size="sm"
-                  onClick={async () => {
-                    try {
-                      setAiPanel({ loading: true, type: 'verify' });
-                      const res = await api.aiVerifyClose(selectedOT.wo_id);
-                      setAiPanel({ loading: false, type: 'verify', data: res });
-                    } catch (e) { toast.error('Error al verificar'); setAiPanel(null); }
+                  onClick={() => {
+                    const plan = parseFloat(selectedOT.budget_amount || selectedOT.estimated_hours * 50) || 0;
+                    const real = (parseFloat(selectedOT.labor_cost || 0)) + (parseFloat(selectedOT.material_cost || 0)) + (parseFloat(selectedOT.external_cost || 0));
+                    const tag = selectedOT.equipment_tag || selectedOT.equipment_id;
+                    const sameEquip = managedWOs.filter(w => (w.equipment_tag || w.equipment_id) === tag && ['CERRADO','CLOSED','COMPLETED'].includes(w.status));
+                    const avgCost = sameEquip.length > 0 ? sameEquip.reduce((s,w) => s + (parseFloat(w.labor_cost||0) + parseFloat(w.material_cost||0) + parseFloat(w.external_cost||0)), 0) / sameEquip.length : 0;
+                    const overBudget = plan > 0 && real > plan * 1.1;
+                    const overAvg = avgCost > 0 && real > avgCost * 1.3;
+                    const alerts = [];
+                    if (overBudget) alerts.push({ type: 'error', msg: `Costo real ($${real.toFixed(0)}) supera el presupuesto ($${plan.toFixed(0)}) en ${((real/plan-1)*100).toFixed(0)}%` });
+                    if (overAvg) alerts.push({ type: 'error', msg: `Costo real ($${real.toFixed(0)}) supera el promedio histórico ($${avgCost.toFixed(0)}) en ${((real/avgCost-1)*100).toFixed(0)}%` });
+                    if (!overBudget && !overAvg) alerts.push({ type: 'ok', msg: `Costos dentro de parámetros normales. Real: $${real.toFixed(0)}${avgCost > 0 ? `, Promedio: $${avgCost.toFixed(0)}` : ''}` });
+                    if (parseFloat(selectedOT.actual_hours || 0) > (parseFloat(selectedOT.estimated_hours || 0) * 1.5)) alerts.push({ type: 'warn', msg: `Horas reales (${selectedOT.actual_hours}h) superan 150% del estimado (${selectedOT.estimated_hours}h)` });
+                    setAiPanel({ loading: false, type: 'cost_alert', data: { alerts, real, plan, avg: avgCost, history_count: sameEquip.length } });
                   }}
-                  className="gap-1 text-violet-600 border-violet-300 hover:bg-violet-50">
-                  <Zap size={14} /> Verificar IA
+                  className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50">
+                  <AlertTriangle size={14} /> Alerta Costos
+                </Button>
+                <Button variant="outline" size="sm"
+                  onClick={() => {
+                    const tag = selectedOT.equipment_tag || selectedOT.equipment_id;
+                    const sameEquip = managedWOs.filter(w => (w.equipment_tag || w.equipment_id) === tag);
+                    const corrective = sameEquip.filter(w => (w.wo_type || '').includes('PM01') || (w.description || '').toLowerCase().includes('correct'));
+                    const preventive = sameEquip.filter(w => (w.wo_type || '').includes('PM02') || (w.wo_type || '').includes('PM03'));
+                    const last6m = sameEquip.filter(w => { const d = new Date(w.created_at); return d > new Date(Date.now() - 180*24*60*60*1000); });
+                    const freq = last6m.length;
+                    const suggestion = corrective.length >= 3 && preventive.length < corrective.length
+                      ? { type: 'warn', title: 'Considerar plan preventivo', msg: `Este equipo tiene ${corrective.length} OTs correctivas vs ${preventive.length} preventivas. La frecuencia de fallas (${freq} en 6 meses) sugiere implementar un plan de mantenimiento preventivo para reducir paradas no programadas.` }
+                      : preventive.length > corrective.length
+                      ? { type: 'ok', title: 'Estrategia adecuada', msg: `El equipo tiene ${preventive.length} preventivas vs ${corrective.length} correctivas. La estrategia de mantenimiento es adecuada.` }
+                      : { type: 'info', title: 'Datos insuficientes', msg: `Solo ${sameEquip.length} OTs registradas para este equipo. Se necesitan más datos para recomendar una estrategia.` };
+                    setAiPanel({ loading: false, type: 'strategy', data: { suggestion, total: sameEquip.length, corrective: corrective.length, preventive: preventive.length, freq_6m: freq, equipment: tag } });
+                  }}
+                  className="gap-1 text-emerald-600 border-emerald-300 hover:bg-emerald-50">
+                  <Zap size={14} /> Estrategia Mtto
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => { setSelectedOT(null); setAiPanel(null); }}>Close</Button>
               </div>

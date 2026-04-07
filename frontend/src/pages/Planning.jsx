@@ -430,11 +430,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         <span className="text-xs text-gray-400">
           {isPlanner ? 'Assign group, work center and create WOs' : 'Review backlog and priorities — read only'}
         </span>
-        {isPlanner && (
+        {isPlanner && (<>
           <button onClick={async () => {
             try {
               const wo = await api.createManagedWO({
-                plant_id: 'OCP-JFC1',
+                plant_id: plant || 'OCP-JFC1',
                 wo_type: 'PM02',
                 priority_code: 'P3',
                 description: 'New Preventive WO',
@@ -449,12 +449,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           <button onClick={() => {
             toast.success('AI analyzing backlog...');
             api.agenticSmartBacklog({ plant_id: plant, strategy: 'risk_weighted' })
-              .then(r => { toast.success('Backlog prioritized'); fetchData(); })
+              .then(() => { toast.success('Backlog prioritized'); fetchData(); })
               .catch(e => toast.error('Error: ' + (e.message || '')));
           }} className="ml-2 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1">
             AI Prioritize
           </button>
-        )}
+        </>)}
       </div>
 
       {/* KPI Cards */}

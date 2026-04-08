@@ -10,7 +10,7 @@ import {
   Calendar, Clock, Users, CheckCircle, Circle, Play, Loader2,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Inbox, Camera, Sparkles, Send, X,
   FileText, Wrench, AlertTriangle, Filter, Eye, BarChart3,
-  Package, Upload, Lock, ArrowRight, Search, GripVertical
+  Package, Upload, Lock, ArrowRight, Search, GripVertical, Trash2
 } from 'lucide-react';
 
 const TYPE_META = {
@@ -1273,6 +1273,27 @@ export default function Scheduling() {
             >
               {generating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
               {generating ? t('scheduling.generating') : t('scheduling.generateProgram')}
+            </button>
+            <button
+              onClick={async () => {
+                if (!window.confirm('¿Eliminar TODAS las asignaciones del programa semanal?\n\nEsto quitará técnicos asignados y fechas programadas de todas las OTs.\n\nNo se pueden recuperar.')) return;
+                try {
+                  const wos = calendarData?.rows?.flatMap(r => (r.tasks || []).map(t => t.wo_id || t.id)).filter(Boolean) || [];
+                  let cleared = 0;
+                  for (const woId of wos) {
+                    try {
+                      await api.updateManagedWO(woId, { assigned_workers: [], planned_start: null, planned_end: null, status: 'PLANIFICADO' });
+                      cleared++;
+                    } catch {}
+                  }
+                  toast.success(`${cleared} asignaciones eliminadas`);
+                  loadCalendarData();
+                  loadPrograms();
+                } catch { toast.error('Error limpiando asignaciones'); }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            >
+              <Trash2 size={16} /> Limpiar Asignaciones
             </button>
           </div>
         )}

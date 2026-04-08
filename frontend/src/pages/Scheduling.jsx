@@ -1232,6 +1232,11 @@ export default function Scheduling() {
         } catch {}
       }
 
+      // Also create a weekly program for HH Balance
+      const weekNum = getISOWeek(viewedMonday);
+      const year = viewedMonday.getFullYear();
+      try { await api.createProgram({ plant_id: plant, week_number: weekNum, year }); } catch {}
+
       const weekLabel = `${weekDays[0]} to ${weekDays[4]}`;
       toast.success(`${scheduled} WOs scheduled for ${weekLabel} with ${techs.length} technicians`);
       setAiResult({ assignments: [], message: `✓ ${scheduled} WOs scheduled for ${weekLabel}` });

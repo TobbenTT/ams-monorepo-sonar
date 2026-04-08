@@ -1051,9 +1051,9 @@ function MaterialsTab({ programId, t, plantId }) {
         <div className="divide-y divide-border" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
           {(data.packages || data.details || []).filter(pkg => (pkg.materials || pkg.items || []).length > 0).map((pkg, idx) => (
             <div key={idx} className="px-5 py-3">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded-lg transition-colors" onClick={() => { window.location.href = '/work-orders'; }}>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-foreground">{pkg.wo_number || pkg.name || pkg.wp_id}</span>
+                  <span className="text-xs font-mono font-bold text-blue-600 hover:underline">{pkg.wo_number || pkg.name || pkg.wp_id}</span>
                   <span className="text-xs text-muted-foreground">{pkg.equipment_tag}</span>
                   <span className="text-[10px] text-gray-400 truncate max-w-[200px]">{pkg.description}</span>
                 </div>

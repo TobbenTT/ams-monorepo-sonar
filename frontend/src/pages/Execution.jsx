@@ -498,7 +498,7 @@ export default function Execution() {
               </div>
               <h3 className="font-semibold text-gray-900 truncate">{task.task_description || 'No description'}</h3>
               <p className="text-sm text-gray-500 mt-1">
-                Assigned to: <span className="font-medium">{task.assigned_to}</span>
+                Assigned to: <span className="font-medium">{task.assigned_to_name || task.assigned_to}</span>
                 {task.scheduled_date && <> · {task.scheduled_date}</>}
                 {task.estimated_hours > 0 && <> · {task.estimated_hours}h</>}
               </p>

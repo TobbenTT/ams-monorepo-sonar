@@ -144,7 +144,7 @@ def assign_task(
     db.add(assignment)
     db.commit()
     db.refresh(assignment)
-    return _task_to_dict(assignment)
+    return _task_to_dict(assignment, db)
 
 
 # ── My tasks (for current technician) ───────────────────────────────
@@ -163,7 +163,7 @@ def my_tasks(
         WorkAssignmentModel.assigned_to.in_(search_vals),
         WorkAssignmentModel.status.notin_(["COMPLETED", "CANCELLED"]),
     ).order_by(WorkAssignmentModel.scheduled_date.asc().nullslast())
-    return [_task_to_dict(t) for t in q.all()]
+    return [_task_to_dict(t, db) for t in q.all()]
 
 
 # ── List all tasks (for supervisors) ────────────────────────────────
@@ -188,7 +188,7 @@ def list_tasks(
         q = q.filter(WorkAssignmentModel.status == status)
     if assigned_to:
         q = q.filter(WorkAssignmentModel.assigned_to == assigned_to)
-    return [_task_to_dict(t) for t in q.limit(limit).all()]
+    return [_task_to_dict(t, db) for t in q.limit(limit).all()]
 
 
 # ── Get single task ─────────────────────────────────────────────────
@@ -202,7 +202,7 @@ def get_task(
     task = db.get(WorkAssignmentModel, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    return _task_to_dict(task)
+    return _task_to_dict(task, db)
 
 
 # ── Update progress ─────────────────────────────────────────────────
@@ -235,7 +235,7 @@ def update_progress(
     # Also update the parent WO completion
     _sync_wo_progress(db, task)
     db.commit()
-    return _task_to_dict(task)
+    return _task_to_dict(task, db)
 
 
 # ── Partial notification (shift change) ─────────────────────────────
@@ -264,7 +264,7 @@ def partial_notification(
         task.shift_handover_notes = body.shift_handover_notes
 
     db.commit()
-    return _task_to_dict(task)
+    return _task_to_dict(task, db)
 
 
 # ── Complete task ───────────────────────────────────────────────────
@@ -286,7 +286,7 @@ def complete_task(
 
     _sync_wo_progress(db, task)
     db.commit()
-    return _task_to_dict(task)
+    return _task_to_dict(task, db)
 
 
 # ── Confirm task understood ─────────────────────────────────────────
@@ -303,7 +303,7 @@ def confirm_understood(
         raise HTTPException(status_code=404, detail="Task not found")
     task.task_understood = True
     db.commit()
-    return _task_to_dict(task)
+    return _task_to_dict(task, db)
 
 
 # ── Equipment Handovers ─────────────────────────────────────────────
@@ -370,13 +370,37 @@ def _sync_wo_progress(db: Session, task: WorkAssignmentModel):
             wo.actual_end = datetime.now()
 
 
-def _task_to_dict(t: WorkAssignmentModel) -> dict:
+_worker_name_cache = {}
+
+def _resolve_worker_name(db, worker_id):
+    if not worker_id:
+        return ""
+    if worker_id in _worker_name_cache:
+        return _worker_name_cache[worker_id]
+    from api.database.models import WorkforceModel, UserModel
+    # Try workforce first
+    w = db.query(WorkforceModel).filter(WorkforceModel.worker_id == worker_id).first()
+    if w:
+        _worker_name_cache[worker_id] = w.name or worker_id
+        return w.name or worker_id
+    # Try users
+    u = db.query(UserModel).filter((UserModel.user_id == worker_id) | (UserModel.username == worker_id)).first()
+    if u:
+        _worker_name_cache[worker_id] = u.full_name or u.username
+        return u.full_name or u.username
+    _worker_name_cache[worker_id] = worker_id
+    return worker_id
+
+
+def _task_to_dict(t: WorkAssignmentModel, db=None) -> dict:
+    assigned_name = _resolve_worker_name(db, t.assigned_to) if db else t.assigned_to
     return {
         "assignment_id": t.assignment_id,
         "work_package_id": t.work_package_id,
         "wo_id": getattr(t, "wo_id", None),
         "plant_id": t.plant_id,
         "assigned_to": t.assigned_to,
+        "assigned_to_name": assigned_name,
         "task_description": getattr(t, "task_description", ""),
         "required_competencies": t.required_competencies,
         "matched_competencies": t.matched_competencies,

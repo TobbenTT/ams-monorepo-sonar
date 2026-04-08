@@ -369,8 +369,7 @@ export default function FailureCapture({ onNavigateTab }) {
         }
         // P1 = emergency → equipment must be stopped
         if (s.priority === 'P1') setF('equipmentCondition', 'stopped');
-        if (s.resources?.length) setF('resources', s.resources.filter(r => !/supervisor/i.test(r.type || r)));
-        if (s.materials?.length) setF('materials', s.materials);
+        ensureRealisticResources(s.resources, s.materials, s.failureCategory, s.estimatedDuration || s.estimated_duration, s.enhanced_description);
         if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
         if (s.support_equipment?.length) setF('supportEquipment', s.support_equipment);
         if (s.workConditions || s.work_conditions) setF('workConditions', s.workConditions || s.work_conditions);
@@ -790,8 +789,7 @@ export default function FailureCapture({ onNavigateTab }) {
       const vpc = s.equipmentCondition.toLowerCase();
       setF('equipmentCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
     }
-    if (s.resources?.length) setF('resources', s.resources.filter(r => !/supervisor/i.test(r.type || r)));
-    if (s.materials?.length) setF('materials', s.materials);
+    ensureRealisticResources(s.resources, s.materials, s.failureCategory, s.estimatedDuration || s.estimated_duration, s.enhanced_description);
     if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
     if (s.workConditions) setF('workConditions', s.workConditions);
     // Try to match equipment_identified with known equipment list
@@ -850,8 +848,7 @@ export default function FailureCapture({ onNavigateTab }) {
           const vpc = s.equipmentCondition.toLowerCase();
           setF('equipmentCondition', vpc === 'running' ? 'operating' : vpc === 'stopped' ? 'stopped' : vpc);
         }
-        if (s.resources?.length) setF('resources', s.resources.filter(r => !/supervisor/i.test(r.type || r)));
-        if (s.materials?.length) setF('materials', s.materials);
+        ensureRealisticResources(s.resources, s.materials, s.failureCategory, s.estimatedDuration || s.estimated_duration, s.enhanced_description);
         if (s.supportEquipment?.length) setF("supportEquipment", s.supportEquipment);
         if (s.workConditions) setF("workConditions", s.workConditions);
         setAiSuggested(true);
@@ -883,6 +880,43 @@ export default function FailureCapture({ onNavigateTab }) {
       reader.onload = () => setAttachments(prev => [...prev, { name: file.name, data: reader.result }]);
       reader.readAsDataURL(file);
     });
+  };
+
+  // ── Ensure realistic resource allocation from AI suggestions ──
+  const ensureRealisticResources = (aiResources, aiMaterials, category, duration, descText) => {
+    let res = (aiResources || []).filter(r => !/supervisor/i.test(r.type || r));
+    const hasType = (t) => res.some(r => (r.type || '').toLowerCase().includes(t.toLowerCase()));
+    const cat = (category || '').toUpperCase();
+    const dur = parseFloat(duration || 4);
+    // Mechanical/hydraulic: ensure mechanical resources
+    if ((cat === 'MECHANICAL' || cat === 'HYDRAULIC' || !cat) && !hasType('Mechanical')) {
+      res.unshift({ type: 'Mechanical', quantity: 2, hours: Math.max(dur, 6) });
+    }
+    // Boost mechanical hours if too low
+    res = res.map(r => ((r.type || '').toLowerCase() === 'mechanical' && (r.hours || 0) < 4) ? { ...r, hours: Math.max(dur, 6), quantity: Math.max(r.quantity || 1, 2) } : r);
+    // Add Electrical if missing
+    if (!hasType('Electrical')) res.push({ type: 'Electrical', quantity: 1, hours: 2 });
+    // Add Helper
+    if (!hasType('Helper') && !hasType('Rigger')) res.push({ type: 'Helper', quantity: 1, hours: Math.max(dur, 4) });
+    // Add Rigger for heavy equipment
+    if (!hasType('Rigger') && /compresor|pump|bomba|motor|crusher|chancador|molino|mill/i.test(descText || '')) {
+      res.push({ type: 'Rigger', quantity: 1, hours: 3 });
+    }
+    setF('resources', res);
+    // Fix duration
+    const maxHrs = Math.max(...res.map(r => r.hours || 0), dur);
+    if (maxHrs > dur) setF('estimatedDuration', String(maxHrs));
+    // Ensure minimum materials
+    let mats = [...(aiMaterials || [])];
+    const hasMat = (kw) => mats.some(m => (m.description || '').toLowerCase().includes(kw));
+    if (cat === 'MECHANICAL' || cat === 'HYDRAULIC' || !cat) {
+      if (!hasMat('sello') && !hasMat('seal')) mats.push({ sapId: '10002001', description: 'Kit sellos mecanicos', quantity: 1, unit: 'UD' });
+      if (!hasMat('empaquetadura') && !hasMat('gasket') && !hasMat('junta')) mats.push({ sapId: '10002050', description: 'Empaquetadura / junta', quantity: 2, unit: 'UD' });
+      if (!hasMat('perno') && !hasMat('bolt')) mats.push({ sapId: '10005015', description: 'Pernos fijacion M12x40', quantity: 8, unit: 'UD' });
+      if (!hasMat('grasa') && !hasMat('lubricant') && !hasMat('aceite') && !hasMat('grease')) mats.push({ sapId: '10004010', description: 'Grasa lubricante NLGI 2', quantity: 2, unit: 'KG' });
+      if (!hasMat('filtro') && !hasMat('filter')) mats.push({ sapId: '10003001', description: 'Filtro aceite/aire', quantity: 1, unit: 'UD' });
+    }
+    setF('materials', mats);
   };
 
   // ── Resources CRUD ──

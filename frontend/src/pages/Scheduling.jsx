@@ -1392,7 +1392,7 @@ export default function Scheduling() {
               <Trash2 size={24} className="text-red-600" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">Limpiar Asignaciones</h3>
-            <p className="text-sm text-gray-500 mb-1">¿Eliminar <span className="font-bold text-red-600">{(scheduledWOs || []).length}</span> asignaciones?</p>
+            <p className="text-sm text-gray-500 mb-1">¿Eliminar <span className="font-bold text-red-600">todas</span> las asignaciones programadas?</p>
             <p className="text-xs text-gray-400 mb-6">Las OTs perderán técnicos y fechas asignadas.<br/>Volverán a estado PLANIFICADO.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowClearConfirm(false)} disabled={clearing}
@@ -1402,10 +1402,16 @@ export default function Scheduling() {
               <button disabled={clearing} onClick={async () => {
                 setClearing(true);
                 try {
+                  // Fetch ALL scheduled WOs fresh from API
+                  const [prog, exec] = await Promise.all([
+                    api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
+                    api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
+                  ]);
+                  const allWOs = [...(Array.isArray(prog) ? prog : []), ...(Array.isArray(exec) ? exec : [])];
                   let cleared = 0;
-                  for (const wo of (scheduledWOs || [])) {
+                  for (const wo of allWOs) {
                     try {
-                      await api.updateManagedWO(wo.wo_id, { assigned_workers: [], planned_start: null, planned_end: null, status: 'PLANIFICADO' });
+                      await api.updateManagedWO(wo.wo_id, { assigned_workers: [], planned_start: '', planned_end: '', status: 'PLANIFICADO' });
                       cleared++;
                     } catch {}
                   }

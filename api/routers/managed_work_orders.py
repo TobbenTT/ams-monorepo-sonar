@@ -155,6 +155,11 @@ def update_work_order(
     db: Session = Depends(get_db),
 ):
     update_data = data.model_dump(exclude_none=True)
+    # Handle empty strings as "clear field" for dates and workers
+    raw = data.model_dump()
+    for field in ['planned_start', 'planned_end', 'assigned_workers']:
+        if raw.get(field) == '' or raw.get(field) == []:
+            update_data[field] = None
     result = managed_wo_service.update_work_order(db, wo_id, update_data)
     if not result:
         raise HTTPException(status_code=400, detail="WO not found or not editable (must be PENDIENTE/APROBADO)")

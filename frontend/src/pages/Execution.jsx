@@ -1116,54 +1116,74 @@ export default function Execution() {
             </div>
           )}
 
-          {tab === 'signoff' && (
+          {tab === 'signoff' && (() => {
+            // Show recently closed WOs + completed for sign-off
+            const signoffWOs = [...completedWOs, ...cerradoWOs].slice(0, 20);
+            return (
             <div className="space-y-4">
-              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-                <h2 className="text-sm font-bold text-purple-800 flex items-center gap-2 mb-2">
-                  <Shield size={16} /> Supervisor Sign-off — Formal Handover
+              <div className="bg-gradient-to-r from-purple-600 to-violet-600 rounded-2xl p-6 text-white">
+                <h2 className="text-lg font-bold flex items-center gap-2 mb-1">
+                  <Shield size={20} /> Supervisor Sign-off
                 </h2>
-                <p className="text-xs text-purple-600">
-                  Completed WOs requiring supervisor sign-off before technical closure.
-                </p>
+                <p className="text-purple-100 text-sm">Review and approve completed work orders before technical closure</p>
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{signoffWOs.length}</p>
+                    <p className="text-[10px] text-purple-100 uppercase font-semibold">Pending Review</p>
+                  </div>
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{signoffWOs.filter(w => w.actual_hours).length}</p>
+                    <p className="text-[10px] text-purple-100 uppercase font-semibold">Hours Reported</p>
+                  </div>
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{signoffWOs.reduce((s, w) => s + (parseFloat(w.actual_hours) || 0), 0).toFixed(0)}h</p>
+                    <p className="text-[10px] text-purple-100 uppercase font-semibold">Total Actual HH</p>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-3">
-                {completedWOs.length > 0 ? completedWOs.map(wo => (
-                  <div key={wo.wo_id || wo.work_order_id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-sm font-bold text-gray-900">{wo.wo_number}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">COMPLETED</span>
-                          {wo.is_fast_track && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Fast-Track</span>
+                {signoffWOs.length > 0 ? signoffWOs.map(wo => {
+                  const planned = parseFloat(wo.estimated_hours) || 0;
+                  const actual = parseFloat(wo.actual_hours) || 0;
+                  const delta = actual - planned;
+                  const workers = (wo.assigned_workers || []).map(w => typeof w === 'string' ? w : (w.name || w.full_name || '')).filter(Boolean);
+                  return (
+                  <div key={wo.wo_id || wo.work_order_id} className="bg-white rounded-2xl border-2 border-gray-200 hover:border-purple-300 transition-all overflow-hidden">
+                    <div className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-mono text-sm font-bold text-gray-900">{wo.wo_number}</span>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded text-white ${
+                              wo.priority_code === 'P1' ? 'bg-red-500' : wo.priority_code === 'P2' ? 'bg-orange-500' : 'bg-blue-500'
+                            }`}>{wo.priority_code}</span>
+                            <span className="text-[9px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold">{wo.status}</span>
+                          </div>
+                          <p className="text-sm text-gray-700 truncate">{wo.equipment_tag} — {wo.description}</p>
+                          {workers.length > 0 && (
+                            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><User size={10} /> {workers.join(', ')}</p>
                           )}
                         </div>
-                        <p className="text-sm text-gray-700">{wo.equipment_tag} — {wo.description}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {wo.estimated_hours}h planned · {wo.actual_hours || '?'}h actual
-                          {wo.assigned_workers && wo.assigned_workers.length > 0 && (
-                            <span className="ml-2 text-blue-500">
-                              Assigned: {wo.assigned_workers.map(w => w.name).join(', ')}
-                            </span>
-                          )}
-                        </p>
+                        <button onClick={() => handleSupervisorSignOff(wo.wo_id || wo.work_order_id)}
+                          disabled={signingOff === (wo.wo_id || wo.work_order_id)}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 disabled:opacity-50 shrink-0 ml-4">
+                          {signingOff === (wo.wo_id || wo.work_order_id) ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
+                          Sign Off
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleSupervisorSignOff(wo.wo_id || wo.work_order_id)}
-                        disabled={signingOff === (wo.wo_id || wo.work_order_id)}
-                        className="flex items-center gap-1 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
-                      >
-                        {signingOff === (wo.wo_id || wo.work_order_id) ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <Shield size={14} />
-                        )}
-                        Sign Off
-                      </button>
+                    </div>
+                    <div className="px-4 py-2 bg-gray-50 border-t flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-xs">
+                        <span className="text-gray-500">Plan: <span className="font-bold">{planned}h</span></span>
+                        <span className="text-gray-500">Actual: <span className="font-bold">{actual}h</span></span>
+                        {delta !== 0 && <span className={`font-bold ${delta > 0 ? 'text-red-600' : 'text-green-600'}`}>{delta > 0 ? '+' : ''}{delta.toFixed(1)}h</span>}
+                      </div>
+                      <span className="text-[10px] text-gray-400">{wo.wo_type}</span>
                     </div>
                   </div>
-                )) : (
+                  );
+                }) : (
                   <div className="text-center py-16 text-gray-400">
                     <Shield size={48} className="mx-auto mb-3 opacity-40" />
                     <p className="text-lg font-medium">No WOs pending sign-off</p>
@@ -1171,7 +1191,8 @@ export default function Execution() {
                 )}
               </div>
             </div>
-          )}
+            );
+          })()}
         </>
       )}
 

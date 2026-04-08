@@ -7,7 +7,7 @@ import MobileBottomNav from './components/MobileBottomNav';
 import ErrorBoundary from './components/ErrorBoundary';
 import UpdateBanner from './components/UpdateBanner';
 import FeedbackWidget from './components/FeedbackWidget';
-import GuidedTour from './components/GuidedTour';
+// import GuidedTour from './components/GuidedTour';
 import ProjectSelector from './pages/ProjectSelector';
 import useIsMobile from './hooks/useIsMobile';
 import { useAuth } from './contexts/AuthContext';
@@ -135,7 +135,7 @@ export default function App() {
                 </main>
             </div>
             <FeedbackWidget />
-            <GuidedTour />
+            {/* <GuidedTour /> */}
         </div>
     );
 }

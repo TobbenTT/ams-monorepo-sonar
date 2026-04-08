@@ -176,11 +176,11 @@ export default function Execution() {
   async function handleSupervisorSignOff(woId) {
     setSigningOff(woId);
     try {
-      await completeManagedWO(woId, { supervisor_approved: true });
-      toast.success('Supervisor sign-off recorded — WO ready for closure');
+      await updateManagedWO(woId, { supervisor_approved: true, status: 'CERRADO' });
+      toast.success('Supervisor sign-off recorded');
       loadWOsForTabs();
     } catch (e) {
-      toast.error('Error: ' + e.message);
+      toast.error('Error: ' + (e?.message || ''));
     }
     setSigningOff(null);
   }

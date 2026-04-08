@@ -340,14 +340,24 @@ export default function FailureCapture({ onNavigateTab }) {
         // Apply ALL fields from Claude (camelCase + snake_case)
         if (s.enhanced_description) setF('whatHappens', s.enhanced_description);
         if (s.suggestedAction || s.suggested_action) setF('suggestedAction', s.suggestedAction || s.suggested_action);
-        // Auto-generate WO title from AI description (first clause, max 45 chars)
+        // Auto-generate WO title from AI description (first clause, max 60 chars)
         if (s.enhanced_description) {
-          const desc = s.enhanced_description;
+          let desc = s.enhanced_description;
+          // Replace numeric TAG (000000000003) with equipment name if available
+          const equipName = selectedEquip?.name || allEquipment.find(e => e.tag === form.equipmentTag)?.name;
+          if (equipName) {
+            // Remove TAG patterns like "000000000003" or "FL: XX-XX-XX"
+            desc = desc.replace(/\b\d{10,}\b/g, '').replace(/\(FL:\s*[\w-]+\)/g, '').trim();
+            // If equipment name not already in description, prepend it
+            if (!desc.toLowerCase().includes(equipName.toLowerCase().substring(0, 10))) {
+              desc = equipName + ' - ' + desc;
+            }
+          }
           // Remove "ubicada en XX-XX-XX" technical location
-          let title = desc.replace(/\s*ubicad[ao]\s+en\s+[\w-]+/i, '').split(/[.,]/)[0].trim();
+          let title = desc.replace(/\s*ubicad[ao]\s+en\s+[\w-]+/gi, '').replace(/\s+/g, ' ').split(/[.,]/)[0].trim();
           // Remove "presenta" and after if title is still too long
-          if (title.length > 45) title = title.replace(/\s+presenta\s+.*/, '').trim();
-          if (title.length > 45) title = title.substring(0, 45).replace(/\s+\S*$/, '');
+          if (title.length > 60) title = title.replace(/\s+presenta\s+.*/, '').trim();
+          if (title.length > 60) title = title.substring(0, 60).replace(/\s+\S*$/, '');
           setF('woTitle', title);
         }
         if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);

@@ -772,24 +772,30 @@ IMPORTANT: Detect the language of the user description. If the description is in
   "estimatedDuration": "hours (numeric string)",
   "plantCondition": "running | stopped | reduced",
   "productionImpact": "CRITICAL | HIGH | MEDIUM | LOW",
-  "resources": [{"type": "Mechanical|Electrical|Instrumentation|Rigger|Helper", "quantity": N, "hours": N}],
-  "materials": [{"sapId": "8 digits", "description": "material", "quantity": N, "unit": "PZ|KG|LT|UD"}],
-  "supportEquipment": ["support equipment"],
-  "workConditions": "working conditions"
+  "resources": [
+    {"type": "Mechanical", "quantity": 2, "hours": 6},
+    {"type": "Electrical", "quantity": 1, "hours": 2},
+    {"type": "Rigger", "quantity": 1, "hours": 3},
+    {"type": "Helper", "quantity": 1, "hours": 6}
+  ],
+  "materials": [
+    {"sapId": "10001001", "description": "Rodamiento principal", "quantity": 2, "unit": "UD"},
+    {"sapId": "10002001", "description": "Kit sellos mecanicos", "quantity": 1, "unit": "UD"},
+    {"sapId": "10004010", "description": "Aceite lubricante ISO VG 46", "quantity": 5, "unit": "LT"},
+    {"sapId": "10005015", "description": "Pernos fijacion M12x40", "quantity": 12, "unit": "UD"},
+    {"sapId": "10002050", "description": "Empaquetadura/junta", "quantity": 2, "unit": "UD"}
+  ],
+  "supportEquipment": ["Mobile crane", "Hoist", "Scaffolding"],
+  "workConditions": "LOTO, clear area, permits, PPE"
 }
 
-RESOURCE ESTIMATION RULES (BE REALISTIC — industrial maintenance, not household repair):
-- ALWAYS include at least 2-3 resource types for any job
-- Mechanical work: minimum 2 mechanics, 4-8 hours for bearing/pump/compressor jobs
-- If heavy equipment involved: add Rigger (1 person, 2-4 hrs) for lifting/rigging
-- If electrical disconnection needed: add Electrical (1 person, 1-2 hrs)
-- If instruments/sensors involved: add Instrumentation (1 person, 1-3 hrs)
-- Add Helper (1-2 people, same hours as main trade) for large equipment
-- estimatedDuration should be the LONGEST resource hours (critical path)
-- P1 jobs: 4-12 hours, P2: 6-16 hours, P3: 4-8 hours, P4: 2-4 hours
-- NEVER put Supervisor as a resource — supervisors oversee, they don't execute
-- Include minimum 3-5 materials for any mechanical job (bearings + seals + lubricant + fasteners + gaskets)
-- Include minimum 2-3 materials for electrical jobs (cables + contactors + fuses)
+CRITICAL RESOURCE RULES (YOU MUST FOLLOW THESE — the example above is the MINIMUM):
+- resources array MUST have 3-4 entries ALWAYS. One resource type is NEVER enough.
+- For ANY mechanical job: Mechanical (2 people, 6-8h) + Electrical (1 person, 2h) + Helper (1-2 people, 4-6h)
+- For heavy equipment (pumps, compressors, crushers): ADD Rigger (1 person, 2-4h)
+- materials array MUST have 5+ entries for mechanical, 3+ for electrical
+- estimatedDuration = hours of the longest resource (critical path), minimum 6h for P1/P2
+- NEVER include Supervisor as resource
 
 SAP CODES: 10001XXX=Bearings, 10002XXX=Seals, 10003XXX=Filters, 10004XXX=Lubricants,
 10005XXX=Fasteners, 10006XXX=Transmission, 10007XXX=Electrical, 10008XXX=Instrumentation

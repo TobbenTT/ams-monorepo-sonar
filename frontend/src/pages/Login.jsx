@@ -26,7 +26,7 @@ export default function Login() {
         setLoading(true);
         try {
             await login(username, password);
-            navigate('/', { replace: true });
+            navigate('/dashboard', { replace: true });
         } catch (err) {
             setError(err.message || t('auth.authError'));
         } finally {

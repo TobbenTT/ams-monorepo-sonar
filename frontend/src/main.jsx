@@ -101,12 +101,13 @@ createRoot(document.getElementById('root')).render(
                     <ConfirmProvider>
                         <BrowserRouter>
                             <Routes>
+                                <Route index element={<S><LandingPage /></S>} />
                                 <Route path="landing" element={<S><LandingPage /></S>} />
                                 <Route path="login" element={<S><Login /></S>} />
 
                                 <Route element={<P roles={ALL}><App /></P>}>
                                     {/* ── New Design Routes (primary navigation) ── */}
-                                    <Route index element={<S><HomeRouter /></S>} />
+                                    <Route path="dashboard" element={<S><HomeRouter /></S>} />
                                     <Route path="work-management" element={<S><WorkManagement /></S>} />
                                     <Route path="work-orders" element={<S><WorkOrdersPage /></S>} />
                                     <Route path="failures-events" element={<S><FailuresEvents /></S>} />

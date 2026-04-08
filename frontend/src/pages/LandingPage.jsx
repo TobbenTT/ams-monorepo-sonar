@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import {
     Shield, Zap, BarChart3, Wrench, Users, Globe, Brain, CheckCircle2,
     ArrowRight, Play, Clock, Target, Gauge, TrendingUp, Layers, Bot,
@@ -32,6 +33,10 @@ const BENEFITS = [
 
 export default function LandingPage() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+
+    // If already logged in, go to dashboard
+    if (user) return <Navigate to="/dashboard" replace />;
 
     return (
         <div className="min-h-screen bg-white">

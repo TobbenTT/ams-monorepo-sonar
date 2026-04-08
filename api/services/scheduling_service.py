@@ -525,6 +525,26 @@ def _compute_hh_balance(db: Session, model: WeeklyProgramModel) -> dict:
 
     total_capacity = sum(capacity_by_specialty.values())
 
+    # Normalize specialty names
+    SPEC_MAP = {
+        "mecanico": "Mecánico", "mechanical": "Mecánico", "mecanica": "Mecánico", "mec": "Mecánico",
+        "electrico": "Eléctrico", "electrical": "Eléctrico", "elec": "Eléctrico",
+        "instrumentista": "Instrumentación", "instrumentation": "Instrumentación", "instrument tech": "Instrumentación",
+        "lubricador": "Lubricación", "lubrication": "Lubricación",
+        "soldador": "Soldadura", "welder": "Soldadura", "welding": "Soldadura",
+        "predictivo": "Predictivo", "dcs": "DCS", "general": "General",
+    }
+    def _norm_spec(s):
+        if not isinstance(s, str): return "General"
+        return SPEC_MAP.get(s.lower().strip(), s.strip() or "General")
+
+    # Normalize capacity keys
+    norm_capacity = {}
+    for spec, cap in capacity_by_specialty.items():
+        ns = _norm_spec(spec)
+        norm_capacity[ns] = norm_capacity.get(ns, 0) + cap
+    capacity_by_specialty = norm_capacity
+
     # Assigned hours from work packages
     assigned_by_specialty = {}
     total_assigned = 0.0
@@ -534,11 +554,12 @@ def _compute_hh_balance(db: Session, model: WeeklyProgramModel) -> dict:
             continue
         hours = wp.get("total_duration_hours", 0) or wp.get("estimated_hours", 0) or 0
         total_assigned += hours
-        specs = wp.get("assigned_team") or wp.get("specialties", ["GENERAL"])
+        specs = wp.get("assigned_team") or wp.get("specialties", ["General"])
         if isinstance(specs, list) and specs:
             per_spec = hours / len(specs)
             for s in specs:
-                assigned_by_specialty[s] = assigned_by_specialty.get(s, 0) + per_spec
+                ns = _norm_spec(s)
+                assigned_by_specialty[ns] = assigned_by_specialty.get(ns, 0) + per_spec
 
     # Build per-specialty breakdown
     all_specs = sorted(set(list(capacity_by_specialty.keys()) + list(assigned_by_specialty.keys())))

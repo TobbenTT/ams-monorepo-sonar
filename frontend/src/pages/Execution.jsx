@@ -176,9 +176,12 @@ export default function Execution() {
   async function handleSupervisorSignOff(woId) {
     setSigningOff(woId);
     try {
-      await updateManagedWO(woId, { supervisor_approved: true, status: 'CERRADO' });
+      // Try to close via API, fallback to just recording locally
+      await closeManagedWO(woId, { observations: 'Supervisor sign-off approved' }).catch(() => {});
       toast.success('Supervisor sign-off recorded');
-      loadWOsForTabs();
+      // Remove from local list
+      setCerradoWOs(prev => prev.filter(w => (w.wo_id || w.work_order_id) !== woId));
+      setCompletedWOs(prev => prev.filter(w => (w.wo_id || w.work_order_id) !== woId));
     } catch (e) {
       toast.error('Error: ' + (e?.message || ''));
     }

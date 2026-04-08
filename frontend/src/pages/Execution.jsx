@@ -962,18 +962,18 @@ export default function Execution() {
                       {wo.assigned_workers?.length > 0 && (
                         <div className="flex items-center gap-1 mt-1">
                           <User size={10} className="text-gray-400" />
-                          <span className="text-xs text-gray-500">{wo.assigned_workers.join(', ')}</span>
+                          <span className="text-xs text-gray-500">
+                            {wo.assigned_workers.map(w => typeof w === 'string' ? w : (w.name || w.full_name || w.worker_id || '')).filter(Boolean).join(', ') || '—'}
+                          </span>
                         </div>
                       )}
-                      {wo.completion_pct > 0 && (
-                        <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${wo.completion_pct}%` }} />
-                        </div>
-                      )}
+                      <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                        <div className={`h-1.5 rounded-full ${(wo.completion_pct || 0) >= 100 ? 'bg-emerald-500' : (wo.completion_pct || 0) > 0 ? 'bg-blue-500' : 'bg-gray-300'}`} style={{ width: `${Math.max(wo.completion_pct || 0, 2)}%` }} />
+                      </div>
                     </div>
                   )) : (
                     <div className="text-center py-10 text-gray-400">
-                      <p>No WOs in progress</p>
+                      <p>No active WOs</p>
                     </div>
                   )}
                 </div>

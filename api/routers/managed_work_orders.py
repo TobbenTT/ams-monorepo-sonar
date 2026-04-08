@@ -50,6 +50,8 @@ class WOUpdateRequest(BaseModel):
     actual_total_cost: float | None = None
     actual_hours: float | None = None
     shift: str | None = None
+    status: str | None = None
+    assigned_workers: list | None = None
 
 
 class WOScheduleRequest(BaseModel):

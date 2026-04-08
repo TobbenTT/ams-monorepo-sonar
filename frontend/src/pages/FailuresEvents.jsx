@@ -122,10 +122,12 @@ export default function FailuresEvents() {
   const masterDataStats = useMemo(() => {
     if (!filteredWRs.length) return { eqPct: 0, failurePct: 0, planningPct: 0, sparePct: 0 };
     const n = filteredWRs.length;
+    const parseAi = (w) => { try { return typeof w.ai_classification === 'string' ? JSON.parse(w.ai_classification) : (w.ai_classification || {}); } catch { return {}; } };
+    const parsePd = (w) => { try { return typeof w.problem_description === 'string' ? JSON.parse(w.problem_description) : (w.problem_description || {}); } catch { return {}; } };
     const withEq = filteredWRs.filter(w => w.equipment_tag && w.equipment_tag !== 'Unknown').length;
-    const withFailure = filteredWRs.filter(w => w.ai_classification?.failure_catalog || w.ai_classification?.failure_description).length;
-    const withDuration = filteredWRs.filter(w => w.estimated_duration || w.ai_classification?.estimated_duration_hours).length;
-    const withParts = filteredWRs.filter(w => (w.spare_parts?.length || 0) > 0 || (w.problem_description?.materials?.length || 0) > 0).length;
+    const withFailure = filteredWRs.filter(w => { const ai = parseAi(w); const pd = parsePd(w); return ai.failure_type || ai.failure_category || pd.failure_mode_detected || pd.failure_symptom; }).length;
+    const withDuration = filteredWRs.filter(w => { const ai = parseAi(w); return w.estimated_duration || ai.estimated_duration_hours; }).length;
+    const withParts = filteredWRs.filter(w => { const pd = parsePd(w); return (w.spare_parts?.length || 0) > 0 || (pd.materials?.length || 0) > 0; }).length;
     return {
       eqPct: Math.round((withEq / n) * 100),
       failurePct: Math.round((withFailure / n) * 100),
@@ -136,10 +138,11 @@ export default function FailuresEvents() {
 
   const planningStats = useMemo(() => {
     if (!filteredWRs.length) return { laborVar: 0, costVar: 0 };
-    const withDuration = filteredWRs.filter(w => w.estimated_duration || w.ai_classification?.estimated_duration_hours);
-    const estimated = withDuration.reduce((s, w) => s + (w.estimated_duration || w.ai_classification?.estimated_duration_hours || 0), 0);
-    const completed = filteredWRs.filter(w => ['COMPLETED', 'CLOSED'].includes(w.status || ''));
-    const actualHours = completed.reduce((s, w) => s + (w.actual_duration || w.ai_classification?.actual_duration_hours || w.estimated_duration || 0), 0);
+    const parseAi = (w) => { try { return typeof w.ai_classification === 'string' ? JSON.parse(w.ai_classification) : (w.ai_classification || {}); } catch { return {}; } };
+    const withDuration = filteredWRs.filter(w => w.estimated_duration || parseAi(w).estimated_duration_hours);
+    const estimated = withDuration.reduce((s, w) => s + (w.estimated_duration || parseAi(w).estimated_duration_hours || 4), 0);
+    const completed = filteredWRs.filter(w => ['COMPLETED', 'CLOSED', 'CERRADO', 'APROBADO'].includes(w.status || ''));
+    const actualHours = completed.reduce((s, w) => s + (w.actual_duration || parseAi(w).actual_duration_hours || w.estimated_duration || 4), 0);
     const laborVar = estimated > 0 ? Math.round(((actualHours - estimated) / estimated) * 100 * 10) / 10 : 0;
     const completionRate = filteredWRs.length > 0 ? Math.round((completed.length / filteredWRs.length) * 100 * 10) / 10 : 0;
     return { laborVar, costVar: completionRate };
@@ -767,10 +770,12 @@ export default function FailuresEvents() {
               </TableHeader>
               <TableBody>
                 {criticalWorkOrders.map((wo, idx) => (
-                  <TableRow key={wo.id + '-' + idx} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedWR(wo._raw)}>
-                    <TableCell className="font-medium">{wo.id}</TableCell>
-                    <TableCell className="font-medium">{wo.equipment}</TableCell>
-                    <TableCell className="max-w-xs truncate">{wo.description || t('failuresEvents.noDescription')}</TableCell>
+                  <TableRow key={wo.id + '-' + idx}
+                    className={`cursor-pointer transition-colors ${wo.priority <= 2 ? 'hover:bg-red-50 bg-red-50/30' : wo.priority === 3 ? 'hover:bg-blue-50' : 'hover:bg-gray-50'}`}
+                    onClick={() => setSelectedWR(wo._raw)}>
+                    <TableCell className="font-mono text-xs font-bold">{wo.id}</TableCell>
+                    <TableCell className="font-semibold text-xs">{wo.equipment}</TableCell>
+                    <TableCell className="max-w-xs truncate text-xs">{wo.description || t('failuresEvents.noDescription')}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${
@@ -789,7 +794,7 @@ export default function FailuresEvents() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">P{wo.priority}</span>
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded text-white ${wo.priority <= 1 ? 'bg-red-600' : wo.priority <= 2 ? 'bg-orange-500' : wo.priority <= 3 ? 'bg-blue-500' : 'bg-gray-500'}`}>P{wo.priority}</span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -803,15 +808,14 @@ export default function FailuresEvents() {
                     </TableCell>
                     <TableCell>
                       <Button
-                        variant="outline"
                         size="sm"
-                        className="text-xs"
+                        className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold px-3"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate('/rca');
                         }}
                       >
-                        {t('rca.newRCA')}
+                        RCA
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -1384,8 +1388,11 @@ export default function FailuresEvents() {
             </Card>
           </div>
           <div className="col-span-4 flex flex-col gap-3 justify-center">
-            <Button variant="outline" className="w-full" onClick={() => navigate('/improvement-actions')}>
+            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold" onClick={() => navigate('/improvement-actions')}>
               {t('failuresEvents.scheduleReviewMeeting') || 'Schedule Review Meeting'}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/work-management?tab=identification')}>
+              View Work Requests
             </Button>
           </div>
         </div>
@@ -1396,10 +1403,10 @@ export default function FailuresEvents() {
         <h3 className="text-lg font-bold text-gray-900 mb-4">{t('failuresEvents.aiRecommendedActions') || 'AI Recommended Actions'}</h3>
         <div className="space-y-3">
           {[
-            { key: 'optimizeStrategy', label: t('failuresEvents.action.optimizeStrategy.label') || 'Optimize Maintenance Strategy', desc: t('failuresEvents.action.optimizeStrategy.desc') || 'AI session for strategy optimization', handler: handleOptimizeStrategy, icon: '\u2699\uFE0F' },
-            { key: 'adjustPlanning', label: t('failuresEvents.action.adjustPlanning.label') || 'Adjust Planning Standards', desc: `Labor var: ${planningStats.laborVar}%, Cost var: ${planningStats.costVar}%`, handler: handleAdjustPlanning, icon: '\uD83D\uDCCB' },
-            { key: 'requestSpareParts', label: t('failuresEvents.action.requestSpareParts.label') || 'Request Spare Parts Review', desc: `Data integrity: ${masterDataStats.sparePct}%`, handler: handleRequestSpareParts, icon: '\uD83D\uDD27' },
-            { key: 'escalate', label: t('failuresEvents.action.escalate.label') || 'Escalate to Technical Support', desc: `${filteredWRs.filter(w => ['P1','P2'].includes(w.priority_code)).length} critical P1/P2 WRs`, handler: handleEscalate, icon: '\uD83D\uDEA8' },
+            { key: 'optimizeStrategy', label: 'Optimize Maintenance Strategy', desc: `${filteredWRs.length} WRs analyzed · ${criticalWorkOrders.length} active failures`, handler: handleOptimizeStrategy, icon: '\u2699\uFE0F' },
+            { key: 'adjustPlanning', label: 'Adjust Planning Standards', desc: `Labor variance: ${planningStats.laborVar}% · Completion rate: ${planningStats.costVar}%`, handler: handleAdjustPlanning, icon: '\uD83D\uDCCB' },
+            { key: 'requestSpareParts', label: 'Request Spare Parts Review', desc: `Parts data: ${masterDataStats.sparePct}% · Failure catalog: ${masterDataStats.failurePct}%`, handler: handleRequestSpareParts, icon: '\uD83D\uDD27' },
+            { key: 'escalate', label: 'Escalate to Technical Support', desc: `${filteredWRs.filter(w => ['P1','P2'].includes(w.priority_code)).length} P1/P2 WRs · ${filteredWRs.filter(w => w.status === 'PENDIENTE').length} pending validation`, handler: handleEscalate, icon: '\uD83D\uDEA8' },
           ].map(action => (
             <div
               key={action.key}

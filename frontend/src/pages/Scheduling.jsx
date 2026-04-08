@@ -1151,30 +1151,66 @@ export default function Scheduling() {
     setAiScheduling(true);
     setAiResult(null);
     try {
-      const result = await api.aiAutoSchedule({ plant_id: plant });
-      setAiResult(result);
-      if (result.assignments && result.assignments.length > 0) {
-        // Apply assignments — only assign workers, don't override existing dates
-        for (const a of result.assignments) {
-          try {
-            const updateData = {
-              assigned_workers: [{ worker_id: a.worker_id, name: a.worker_name, specialty: a.specialty || '' }],
-            };
-            // Only set dates if the AI suggests one AND the WO doesn't have dates yet
-            if (a.suggested_date) {
-              updateData.planned_start = a.suggested_date;
-              updateData.planned_end = a.suggested_date;
-            }
-            if (a.shift) updateData.shift = a.shift;
-            await api.scheduleManagedWO(a.wo_id, updateData);
-          } catch { /* skip failed */ }
-        }
-        toast.success(result.message || 'AI scheduled ' + result.assignments.length + ' WOs');
-        loadCalendarData();
-        loadGantt();
-      } else {
-        toast.info(result.message || 'No assignments generated');
+      // Step 1: Get all unscheduled WOs (PLANIFICADO without dates)
+      const toSchedule = [...(releasedWOs || [])];
+      const techs = technicians || [];
+
+      if (toSchedule.length === 0) {
+        toast.info('No hay OTs para programar');
+        setAiScheduling(false);
+        return;
       }
+
+      // Step 2: Calculate week dates (Mon-Fri)
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      const weekDays = [];
+      for (let d = 0; d < 5; d++) {
+        const day = new Date(monday);
+        day.setDate(monday.getDate() + d);
+        weekDays.push(day.toISOString().slice(0, 10));
+      }
+
+      // Step 3: Sort by priority (P1 first)
+      const prioOrder = { P1: 0, P2: 1, P3: 2, P4: 3 };
+      toSchedule.sort((a, b) => (prioOrder[a.priority_code] || 3) - (prioOrder[b.priority_code] || 3));
+
+      // Step 4: Distribute evenly across 5 days + assign technicians round-robin
+      const dayLoad = [0, 0, 0, 0, 0];
+      let techIdx = 0;
+      let scheduled = 0;
+
+      for (const wo of toSchedule) {
+        // Find least loaded day
+        const bestDay = dayLoad.indexOf(Math.min(...dayLoad));
+        const hours = parseFloat(wo.estimated_hours) || 4;
+        dayLoad[bestDay] += hours;
+
+        // Assign technician round-robin
+        const tech = techs.length > 0 ? techs[techIdx % techs.length] : null;
+        techIdx++;
+
+        try {
+          const updateData = {
+            planned_start: weekDays[bestDay],
+            planned_end: weekDays[bestDay],
+            status: 'PROGRAMADO',
+          };
+          if (tech) {
+            updateData.assigned_workers = [{ worker_id: tech.worker_id || tech.user_id, name: tech.name || tech.full_name, specialty: tech.specialty || '' }];
+          }
+          await api.scheduleManagedWO(wo.wo_id, updateData);
+          scheduled++;
+        } catch {}
+      }
+
+      toast.success(`${scheduled} OTs programadas en 5 días con ${techs.length} técnicos`);
+      setAiResult({ assignments: toSchedule.map(w => ({ wo_id: w.wo_id })), message: `${scheduled} OTs distribuidas Lun-Vie` });
+      loadCalendarData();
+      loadPrograms();
+      loadGantt();
     } catch (e) {
       toast.error('AI Schedule error: ' + (e.message || ''));
     } finally {

@@ -1,10 +1,68 @@
+import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Shield, Zap, BarChart3, Wrench, Users, Globe, Brain, CheckCircle2,
     ArrowRight, Play, Clock, Target, Gauge, TrendingUp, Layers, Bot,
-    FileText, Calendar, AlertTriangle, Smartphone
+    FileText, Calendar, AlertTriangle, Smartphone, Languages
 } from 'lucide-react';
+
+const T = {
+  en: {
+    badge: 'AI-Powered Maintenance Management',
+    heroTitle1: 'Transform Your',
+    heroTitle2: 'Maintenance Operations',
+    heroDesc: 'Enterprise-grade asset management platform with 33 AI agents, predictive analytics, and end-to-end maintenance workflows — from work request to closure.',
+    startDemo: 'Start Demo',
+    seeFeatures: 'See Features',
+    apiEndpoints: 'API Endpoints', modules: 'Modules', aiAgents: 'AI Agents', userRoles: 'User Roles', languages: 'Languages', dataModels: 'Data Models',
+    everythingTitle: 'Everything You Need',
+    everythingDesc: 'A complete maintenance management ecosystem — from AI-powered diagnostics to SAP integration.',
+    f1t: 'Work Management', f1d: 'Full lifecycle: Work Requests → Planning → Scheduling → Execution → Closure with SAP integration.',
+    f2t: 'AI Agents (CORTEX)', f2d: '33 specialized agents: Equipment Doctor, Predictive Health, Smart Backlog, RCM Advisor, Safety Checklists, and more.',
+    f3t: 'Analytics & KPIs', f3d: 'Real-time MTBF, MTTR, OEE, Availability. Executive and tactical dashboards with trend analysis and alerts.',
+    f4t: 'FMEA / RCM', f4d: 'Failure Mode Analysis, RCM decision logic, criticality assessment, FMECA worksheets — ISO 14224 aligned.',
+    f5t: 'Smart Scheduling', f5d: 'AI priority-based distribution. Gantt visualization, HH balance by specialty, material tracking.',
+    f6t: 'Mobile PWA', f6d: 'Field technician app: create WRs, execute tasks, capture photos. Works offline with automatic sync.',
+    impactTitle: 'Proven Impact', impactDesc: 'Typical results from implementing AMS in industrial maintenance operations.',
+    b1: 'Reduction in Unplanned Downtime', b2: 'Improvement in Schedule Adherence', b3: 'Faster Work Order Processing', b4: 'Faster Root Cause Analysis',
+    platformTitle: 'Enterprise-Ready Platform', platformDesc: 'Built for scale, security, and reliability.',
+    secTitle: 'Security', secItems: ['JWT + RBAC auth', 'Rate limiting', 'CSP + HSTS headers', 'Encrypted passwords'],
+    mpTitle: 'Multi-Plant', mpItems: ['Unlimited plants', 'Per-plant data isolation', 'Cross-plant analytics', 'Plant-level roles'],
+    perfTitle: 'Performance', perfItems: ['Gzip compression', 'Asset caching (1yr)', 'Lazy-loaded modules', 'Sub-second API'],
+    scaleTitle: 'Scalable', scaleItems: ['Docker Compose', 'PostgreSQL ready', 'Redis-compatible', 'Horizontal scaling'],
+    ctaTitle: 'Ready to Transform Your Operations?', ctaDesc: 'Start with a free demo. No credit card required.',
+    ctaBtn: 'Access Platform',
+    signIn: 'Sign In', features: 'Features', benefits: 'Benefits', platform: 'Platform',
+  },
+  es: {
+    badge: 'Gestion de Mantenimiento con IA',
+    heroTitle1: 'Transforma tus',
+    heroTitle2: 'Operaciones de Mantenimiento',
+    heroDesc: 'Plataforma empresarial de gestion de activos con 33 agentes de IA, analitica predictiva y flujos de trabajo completos — desde la solicitud hasta el cierre.',
+    startDemo: 'Ver Demo',
+    seeFeatures: 'Ver Funciones',
+    apiEndpoints: 'Endpoints API', modules: 'Modulos', aiAgents: 'Agentes IA', userRoles: 'Roles', languages: 'Idiomas', dataModels: 'Modelos de Datos',
+    everythingTitle: 'Todo lo que Necesitas',
+    everythingDesc: 'Un ecosistema completo de gestion de mantenimiento — desde diagnosticos con IA hasta integracion SAP.',
+    f1t: 'Gestion de Trabajo', f1d: 'Ciclo completo: Avisos → Planificacion → Programacion → Ejecucion → Cierre con integracion SAP.',
+    f2t: 'Agentes IA (CORTEX)', f2d: '33 agentes especializados: Doctor de Equipos, Salud Predictiva, Backlog Inteligente, Asesor RCM, Checklists de Seguridad.',
+    f3t: 'Analitica y KPIs', f3d: 'MTBF, MTTR, OEE, Disponibilidad en tiempo real. Dashboards ejecutivos y tacticos con analisis de tendencias.',
+    f4t: 'FMEA / RCM', f4d: 'Analisis de Modos de Falla, logica RCM, evaluacion de criticidad, hojas FMECA — alineado con ISO 14224.',
+    f5t: 'Programacion Inteligente', f5d: 'Distribucion por prioridad con IA. Gantt visual, balance HH por especialidad, seguimiento de materiales.',
+    f6t: 'App Movil PWA', f6d: 'App para tecnicos en campo: crear avisos, ejecutar tareas, capturar fotos. Funciona offline con sincronizacion automatica.',
+    impactTitle: 'Impacto Comprobado', impactDesc: 'Resultados tipicos al implementar AMS en operaciones de mantenimiento industrial.',
+    b1: 'Reduccion de Paradas No Planificadas', b2: 'Mejora en Adherencia al Programa', b3: 'Procesamiento de OT mas Rapido', b4: 'Analisis de Causa Raiz mas Rapido',
+    platformTitle: 'Plataforma Empresarial', platformDesc: 'Construida para escala, seguridad y confiabilidad.',
+    secTitle: 'Seguridad', secItems: ['Autenticacion JWT + RBAC', 'Limitacion de tasa', 'Headers CSP + HSTS', 'Contrasenas encriptadas'],
+    mpTitle: 'Multi-Planta', mpItems: ['Plantas ilimitadas', 'Datos aislados por planta', 'Analitica cross-planta', 'Roles por planta'],
+    perfTitle: 'Rendimiento', perfItems: ['Compresion Gzip', 'Cache de assets (1 ano)', 'Modulos lazy-load', 'API sub-segundo'],
+    scaleTitle: 'Escalable', scaleItems: ['Docker Compose', 'PostgreSQL ready', 'Compatible con Redis', 'Escalamiento horizontal'],
+    ctaTitle: '¿Listo para Transformar tus Operaciones?', ctaDesc: 'Comienza con una demo gratuita. Sin tarjeta de credito.',
+    ctaBtn: 'Acceder a la Plataforma',
+    signIn: 'Iniciar Sesion', features: 'Funciones', benefits: 'Beneficios', platform: 'Plataforma',
+  },
+};
 
 const FEATURES = [
     { icon: Wrench, title: 'Work Management', desc: 'Full lifecycle: Work Requests → Planning → Scheduling → Execution → Closure. SAP-integrated workflows.', color: 'from-emerald-500 to-teal-500' },
@@ -34,8 +92,9 @@ const BENEFITS = [
 export default function LandingPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const [lang, setLang] = useState('en');
+    const t = T[lang];
 
-    // If already logged in, go to dashboard
     if (user) return <Navigate to="/dashboard" replace />;
 
     return (
@@ -49,14 +108,22 @@ export default function LandingPage() {
                         <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Enterprise</span>
                     </div>
                     <div className="flex items-center gap-4">
-                        <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">Features</a>
-                        <a href="#benefits" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">Benefits</a>
-                        <a href="#platform" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">Platform</a>
+                        <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.features}</a>
+                        <a href="#benefits" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.benefits}</a>
+                        <a href="#platform" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.platform}</a>
+                        {/* Language toggle */}
+                        <button
+                            onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                            <Languages className="w-3.5 h-3.5" />
+                            {lang === 'en' ? 'ES' : 'EN'}
+                        </button>
                         <button
                             onClick={() => navigate('/login')}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md"
                         >
-                            Sign In
+                            {t.signIn}
                         </button>
                     </div>
                 </div>
@@ -68,35 +135,41 @@ export default function LandingPage() {
                     <div className="max-w-4xl mx-auto text-center">
                         <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-full px-4 py-1.5 text-sm text-emerald-700 font-medium mb-8">
                             <Zap className="w-4 h-4" />
-                            AI-Powered Maintenance Management
+                            {t.badge}
                         </div>
                         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                            Transform Your
-                            <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent"> Maintenance Operations</span>
+                            {t.heroTitle1}
+                            <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent"> {t.heroTitle2}</span>
                         </h1>
                         <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-                            Enterprise-grade asset management platform with 33 AI agents, predictive analytics,
-                            and end-to-end maintenance workflows — from work request to closure.
+                            {t.heroDesc}
                         </p>
                         <div className="flex items-center justify-center gap-4">
                             <button
                                 onClick={() => navigate('/login')}
                                 className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white px-8 py-3.5 rounded-xl text-base font-semibold transition-all shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 flex items-center gap-2"
                             >
-                                Start Demo <ArrowRight className="w-5 h-5" />
+                                {t.startDemo} <ArrowRight className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
                                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3.5 rounded-xl text-base font-medium transition-all flex items-center gap-2"
                             >
-                                <Play className="w-5 h-5" /> See Features
+                                <Play className="w-5 h-5" /> {t.seeFeatures}
                             </button>
                         </div>
                     </div>
 
                     {/* Stats strip */}
                     <div className="mt-20 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {STATS.map(s => (
+                        {[
+                            { value: '404', label: t.apiEndpoints, icon: Layers },
+                            { value: '49+', label: t.modules, icon: Target },
+                            { value: '33', label: t.aiAgents, icon: Bot },
+                            { value: '6', label: t.userRoles, icon: Users },
+                            { value: '3', label: t.languages, icon: Globe },
+                            { value: '60+', label: t.dataModels, icon: FileText },
+                        ].map(s => (
                             <div key={s.label} className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
                                 <s.icon className="w-5 h-5 text-emerald-600 mx-auto mb-2" />
                                 <div className="text-2xl font-bold text-gray-900">{s.value}</div>
@@ -111,11 +184,18 @@ export default function LandingPage() {
             <section id="features" className="py-20 px-6 bg-gray-50">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything You Need</h2>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">A complete maintenance management ecosystem — from AI-powered diagnostics to SAP integration.</p>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-4">{t.everythingTitle}</h2>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">{t.everythingDesc}</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {FEATURES.map(f => (
+                        {[
+                            { icon: Wrench, title: t.f1t, desc: t.f1d, color: 'from-emerald-500 to-teal-500' },
+                            { icon: Brain, title: t.f2t, desc: t.f2d, color: 'from-purple-500 to-indigo-500' },
+                            { icon: BarChart3, title: t.f3t, desc: t.f3d, color: 'from-blue-500 to-cyan-500' },
+                            { icon: Shield, title: t.f4t, desc: t.f4d, color: 'from-red-500 to-orange-500' },
+                            { icon: Calendar, title: t.f5t, desc: t.f5d, color: 'from-amber-500 to-yellow-500' },
+                            { icon: Smartphone, title: t.f6t, desc: t.f6d, color: 'from-pink-500 to-rose-500' },
+                        ].map(f => (
                             <div key={f.title} className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:border-gray-200 transition-all group">
                                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
                                     <f.icon className="w-6 h-6 text-white" />
@@ -132,11 +212,16 @@ export default function LandingPage() {
             <section id="benefits" className="py-20 px-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-4">Proven Impact</h2>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">Typical results from implementing AMS in industrial maintenance operations.</p>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-4">{t.impactTitle}</h2>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">{t.impactDesc}</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {BENEFITS.map(b => (
+                        {[
+                            { metric: '40%', label: t.b1, icon: AlertTriangle },
+                            { metric: '25%', label: t.b2, icon: Clock },
+                            { metric: '60%', label: t.b3, icon: Zap },
+                            { metric: '3x', label: t.b4, icon: Target },
+                        ].map(b => (
                             <div key={b.label} className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 text-center">
                                 <b.icon className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
                                 <div className="text-4xl font-bold text-emerald-700 mb-2">{b.metric}</div>
@@ -151,15 +236,15 @@ export default function LandingPage() {
             <section id="platform" className="py-20 px-6 bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-white">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold mb-4">Enterprise-Ready Platform</h2>
-                        <p className="text-lg text-gray-300 max-w-2xl mx-auto">Built for scale, security, and reliability.</p>
+                        <h2 className="text-3xl font-bold mb-4">{t.platformTitle}</h2>
+                        <p className="text-lg text-gray-300 max-w-2xl mx-auto">{t.platformDesc}</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                            { icon: Shield, title: 'Security', items: ['JWT + RBAC auth', 'Rate limiting', 'CSP + HSTS headers', 'Encrypted passwords'] },
-                            { icon: Globe, title: 'Multi-Plant', items: ['Unlimited plants', 'Per-plant data isolation', 'Cross-plant analytics', 'Plant-level roles'] },
-                            { icon: Gauge, title: 'Performance', items: ['Gzip compression', 'Asset caching (1yr)', 'Lazy-loaded modules', 'Sub-second API'] },
-                            { icon: TrendingUp, title: 'Scalable', items: ['Docker Compose', 'PostgreSQL ready', 'Redis-compatible', 'Horizontal scaling'] },
+                            { icon: Shield, title: t.secTitle, items: t.secItems },
+                            { icon: Globe, title: t.mpTitle, items: t.mpItems },
+                            { icon: Gauge, title: t.perfTitle, items: t.perfItems },
+                            { icon: TrendingUp, title: t.scaleTitle, items: t.scaleItems },
                         ].map(p => (
                             <div key={p.title} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
                                 <p.icon className="w-8 h-8 text-emerald-400 mb-4" />
@@ -181,13 +266,13 @@ export default function LandingPage() {
             {/* CTA */}
             <section className="py-20 px-6">
                 <div className="max-w-3xl mx-auto text-center">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Ready to Transform Your Operations?</h2>
-                    <p className="text-lg text-gray-600 mb-8">Start with a free demo. No credit card required.</p>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-4">{t.ctaTitle}</h2>
+                    <p className="text-lg text-gray-600 mb-8">{t.ctaDesc}</p>
                     <button
                         onClick={() => navigate('/login')}
                         className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white px-10 py-4 rounded-xl text-lg font-semibold transition-all shadow-lg shadow-emerald-500/25 hover:shadow-xl flex items-center gap-3 mx-auto"
                     >
-                        Access Platform <ArrowRight className="w-5 h-5" />
+                        {t.ctaBtn} <ArrowRight className="w-5 h-5" />
                     </button>
                     <p className="text-sm text-gray-400 mt-6">
                         AMS Platform v2.0 — Value Strategy Consulting

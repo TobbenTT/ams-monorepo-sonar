@@ -906,9 +906,9 @@ export default function Execution() {
                     </h2>
                     <p className="text-blue-100 text-sm mt-1">{new Date().toLocaleDateString('en', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </div>
-                  <button onClick={generateBriefing} disabled={loadingBriefing}
+                  <button onClick={generateBriefing} disabled={briefingLoading}
                     className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors">
-                    {loadingBriefing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                    {briefingLoading ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
                     AI Briefing
                   </button>
                 </div>

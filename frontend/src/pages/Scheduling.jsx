@@ -400,7 +400,7 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
 }
 
 /* ───── Weekly Calendar View (drag-and-drop scheduling grid) ───── */
-function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onPublish, publishing, canPublish, onOpenDetail }) {
+function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange }) {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewRange, setViewRange] = useState(1);
   const [search, setSearch] = useState('');
@@ -545,11 +545,11 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         {/* Week navigator + controls */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <button onClick={() => setWeekStart(addDays(weekStart, -7))} className="p-1.5 rounded-lg border border-border hover:bg-muted transition-colors">
+            <button onClick={() => { const nw = addDays(weekStart, -7); setWeekStart(nw); onWeekChange?.(nw); }} className="p-1.5 rounded-lg border border-border hover:bg-muted transition-colors">
               <ChevronLeft size={16} className="text-muted-foreground" />
             </button>
             <span className="text-sm font-semibold text-foreground min-w-[250px] text-center">{weekLabel}</span>
-            <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="p-1.5 rounded-lg border border-border hover:bg-muted transition-colors">
+            <button onClick={() => { const nw = addDays(weekStart, 7); setWeekStart(nw); onWeekChange?.(nw); }} className="p-1.5 rounded-lg border border-border hover:bg-muted transition-colors">
               <ChevronRight size={16} className="text-muted-foreground" />
             </button>
           </div>
@@ -1057,6 +1057,7 @@ export default function Scheduling() {
   const [clearing, setClearing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [aiScheduling, setAiScheduling] = useState(false);
+  const [viewedWeekStart, setViewedWeekStart] = useState(() => getMonday(new Date()));
   const [aiResult, setAiResult] = useState(null);
 
   // Calendar view state
@@ -1162,7 +1163,7 @@ export default function Scheduling() {
       }
 
       // Step 2: Use the week being VIEWED in the calendar
-      const viewedMonday = weekStart || new Date();
+      const viewedMonday = viewedWeekStart || getMonday(new Date());
       const weekDays = [];
       for (let d = 0; d < 5; d++) {
         const day = new Date(viewedMonday);
@@ -1378,6 +1379,7 @@ export default function Scheduling() {
           onPublish={handlePublish}
           publishing={publishing}
           canPublish={canPublish}
+          onWeekChange={setViewedWeekStart}
         />
       )}
       {tab === 'gantt' && (

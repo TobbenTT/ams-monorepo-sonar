@@ -864,27 +864,27 @@ ${materials.length ? `<div class="section">
         {/* Action Buttons */}
         {(isPending || isValidated || canStart || canComplete || canClose || editing) && (
           <div className="px-6 py-4 border-t border-border flex flex-wrap gap-3 sticky bottom-0 bg-card rounded-b-2xl">
-            {/* Save button (standalone, any status while editing) */}
-            {editing && !isPending && (
+            {/* Save button (standalone — save without approving) */}
+            {editing && (
               <button
                 onClick={() => { onSaveEdit(item.id, editData); setEditing(false); }}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
               >
                 <Save size={16} />
-                Save Cambios
+                Save
               </button>
             )}
-            {/* Supervisor: Approve + Reject + Cancel */}
+            {/* Supervisor: Approve + Reject + Cancel WR */}
             {isPending && (
               <>
                 <button
                   onClick={handleSaveAndApprove}
                   disabled={!allChecked}
                   title={!allChecked ? 'Complete la lista de verificacion' : ''}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${allChecked ? 'bg-[#1B5E20] text-white hover:bg-[#2E7D32]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                  className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${allChecked ? 'bg-[#1B5E20] text-white hover:bg-[#2E7D32]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                 >
                   <CheckCircle size={16} />
-                  {editing ? 'Save & Approve' : t('workRequests.validateRequest')}
+                  {t('workRequests.validateRequest')}
                 </button>
                 <button
                   onClick={() => { onReject(item.id); onClose(); }}

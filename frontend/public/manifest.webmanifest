@@ -1,20 +1,22 @@
 {
-  "name": "OCP Maintenance AI",
-  "short_name": "OCP AMS",
-  "description": "Industrial asset management and predictive maintenance",
+  "name": "AMS Platform — Asset Management",
+  "short_name": "AMS",
+  "description": "Enterprise AI-driven asset management and predictive maintenance",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#1B5E20",
+  "theme_color": "#064e3b",
+  "orientation": "any",
+  "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "/OCP_LOGO.png",
+      "src": "/AMS_LOGO.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/OCP_LOGO.png",
+      "src": "/AMS_LOGO.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

@@ -32,7 +32,7 @@ def _compute_weekly_stats(db: Session, plant_id: str) -> dict:
     open_wrs = db.query(func.count(WorkRequestModel.request_id)).filter(
         WorkRequestModel.status.in_(["DRAFT", "PENDING_VALIDATION", "VALIDATED", "ASSIGNED", "SCHEDULED", "IN_PROGRESS"])
     ).scalar() or 0
-    backlog = db.query(func.count(BacklogItemModel.backlog_item_id)).scalar() or 0
+    backlog = db.query(func.count(BacklogItemModel.backlog_id)).scalar() or 0
 
     compliance = round((completed / total * 100) if total > 0 else 0, 1)
 

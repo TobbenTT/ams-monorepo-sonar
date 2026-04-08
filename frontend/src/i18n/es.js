@@ -112,7 +112,7 @@ export default {
         execution: 'Ejecucion',
         postMaintenance: 'Post Mantenimiento',
         profile: 'Perfil',
-        brandTitle: 'Mantenimiento OCP',
+        brandTitle: 'AMS Platform',
         brandSubtitle: 'Plataforma de Confiabilidad',
     },
 
@@ -144,19 +144,19 @@ export default {
 
     // ─── Login ─────────────────────────────────────────────
     login: {
-        title: 'OCP Maintenance',
+        title: 'AMS Platform',
         subtitle: 'Plataforma con IA',
         headline: 'Gestión Inteligente\nde Mantenimiento Industrial',
         description: 'Plataforma integral para la gestión de activos, planificación de mantenimiento y análisis de confiabilidad con inteligencia artificial.',
         reliabilityCard: 'Confiabilidad',
         planningCard: 'Planificación',
         analyticsCard: 'Analítica',
-        copyright: '© {year} OCP Group — Jorf Lasfar Complex',
+        copyright: '© {year} AMS Industrial — Industrial Complex',
     },
 
     // ─── Dashboard ─────────────────────────────────────────
     dashboard: {
-        title: 'OCP Maintenance AI',
+        title: 'AMS Platform',
         subtitle: 'Plataforma Inteligente de Gestión de Mantenimiento',
         adherence: 'Adherencia al Programa',
         misclassification: 'Misclasificación P1',
@@ -722,12 +722,12 @@ export default {
         riskFactors: 'Factores de riesgo',
         wrNotFound: 'No se encontró el aviso',
         checkId: 'Verifica el ID e intenta de nuevo.',
-        welcomeMessage: '¡Hola! Soy el Asistente de Planificación IA de OCP. Puedo ayudarte a priorizar el backlog, optimizar el programa semanal, identificar oportunidades de agrupación y analizar tendencias de fallas. ¿Cómo puedo ayudarte?',
+        welcomeMessage: '¡Hola! Soy el Asistente de Planificación IA de AMS. Puedo ayudarte a priorizar el backlog, optimizar el programa semanal, identificar oportunidades de agrupación y analizar tendencias de fallas. ¿Cómo puedo ayudarte?',
         responses: {
             default: `**Análisis de Prioridades — Semana W09-2026**\n\nBasándome en el backlog actual y los datos de criticidad, mis recomendaciones son:\n\n**1. Trabajos Críticos P1 — Acción Inmediata**\n- **BL-005** (JFC1-CO-001): Compresor de Aire en espera de aprobación. Riesgo térmico activo (95°C vs límite 80°C). Prioridad máxima.\n\n**2. Agrupación Recomendada — Área Molienda**\n- Grupo GRP-GRIND-01 incluye BL-001 (SAG Mill) y BL-003 (Ball Mill #2).\n- Agrupar en parada coordinada ahorra ~12 horas de preparación logística.\n\n**3. Trabajos en Espera de Materiales**\n- BL-002 (Rotary Dryer) y BL-007 (Slurry Pump): Confirmar disponibilidad de repuestos antes de programar.\n\n**Recomendación de Carga W09-2026:**\n- Lunes-Martes: Reparación compresor (6h) + Inspección SAG Mill (8h)\n- Miércoles: Grupo flotación GRP-FLOAT-01 (24h combinadas)\n- Jueves-Viernes: Mantenimiento preventivo restante\n\n¿Desea que genere el programa detallado con asignación de técnicos?`,
             grinding: `**Agrupación Óptima — Área de Molienda JFC-1**\n\nHe identificado las siguientes oportunidades de agrupación:\n\n**Grupo GRP-GRIND-01 (Recomendado)**\n- BL-001: SAG Mill #1 — Inspección de rodamiento (8h) | Prioridad P2\n- BL-003: Ball Mill #2 — Reemplazo de liner (36h) | Prioridad P2\n\n**Ventajas de ejecución conjunta:**\n- Reducción de tiempo de parada total: de 44h a ~38h (ahorro 6h)\n- Recursos compartidos: equipo pesado disponible para ambos equipos\n- Coordinación de turno nocturno optimizada\n\n**Condición requerida:** Parada coordinada área Molienda — solicitar ventana a Producción.\n\n¿Desea que programe esta agrupación para W09-2026?`,
             sag: `**Análisis de Tendencia de Fallas — SAG Mill #1 (JFC1-ML-001)**\n\n**Historial de Fallas (últimos 8 meses):**\n- 3 fallas de rodamiento principal (frecuencia: cada 240h operativas)\n- MTBF actual: 720h — por debajo del objetivo de 1000h\n- Tendencia: STABLE (sin deterioro adicional pero sin mejora)\n\n**Causa Raíz Identificada (DE-001):**\n- Causa física: Fatiga de pista interior del rodamiento\n- Causa humana: Lubricación no sigue procedimiento estándar\n- Causa latente: Falta de procedimiento estandarizado de lubricación\n\n**Acciones en Curso:**\n- Implementar procedimiento lubricación con control de cantidad → Fecha: 2026-03-15\n- Instalar sistema de lubricación por niebla de aceite → Fecha: 2026-04-30\n- Monitoreo de vibración semanal → En Progreso\n\n**Recomendación IA:** El WO-4525 programado para W09-2026 es prioritario para validar estado actual del rodamiento.`,
-            summary: `**Resumen Ejecutivo Semanal — OCP JFC-1**\n\n**Estado del Backlog:**\n- Total backlog: 10 ítems | 10 registrados en sistema\n- Críticos P1: 1 ítem (BL-005 — Compresor)\n- Pendientes de validación: 2 avisos de trabajo\n\n**Programa W09-2026:**\n- Horas planificadas: 280h\n- Órdenes de trabajo: 4\n- Adherencia W08-2026: 93.1% (objetivo: ≥90%) ✓\n\n**Alertas Activas:**\n- JFC1-CO-001: Temperatura alta — intervención urgente requerida\n- JFC1-ML-001: 3ra falla de rodamiento — seguimiento RCA en curso\n\n**KPI Destacado:**\nLa adherencia al programa ha mejorado de 78% (Sep-25) a 93.1% (Feb-26), reflejando la implementación exitosa del sistema de planificación asistida por IA.`,
+            summary: `**Resumen Ejecutivo Semanal — AMS Industrial**\n\n**Estado del Backlog:**\n- Total backlog: 10 ítems | 10 registrados en sistema\n- Críticos P1: 1 ítem (BL-005 — Compresor)\n- Pendientes de validación: 2 avisos de trabajo\n\n**Programa W09-2026:**\n- Horas planificadas: 280h\n- Órdenes de trabajo: 4\n- Adherencia W08-2026: 93.1% (objetivo: ≥90%) ✓\n\n**Alertas Activas:**\n- JFC1-CO-001: Temperatura alta — intervención urgente requerida\n- JFC1-ML-001: 3ra falla de rodamiento — seguimiento RCA en curso\n\n**KPI Destacado:**\nLa adherencia al programa ha mejorado de 78% (Sep-25) a 93.1% (Feb-26), reflejando la implementación exitosa del sistema de planificación asistida por IA.`,
         },
     },
 
@@ -776,7 +776,7 @@ export default {
     // ─── Defect Elimination ────────────────────────────────
     defectElimination: {
         title: 'Eliminación de Defectos',
-        subtitle: 'Análisis de Causa Raíz (RCA) — OCP Jorf Lasfar',
+        subtitle: 'Análisis de Causa Raíz (RCA) — AMS Industrial Site',
         activeCases: 'Casos Activos',
         completedCases: 'Completados',
         totalRecurrence: 'Recurrencia Total',
@@ -858,7 +858,7 @@ export default {
 
     // ─── Executive Dashboard ───────────────────────────────
     executive: {
-        title: 'Dashboard Ejecutivo — OCP Jorf Lasfar',
+        title: 'Dashboard Ejecutivo — AMS Industrial Site',
         subtitle: 'Febrero 2026 — Resumen de Desempeño de Mantenimiento',
         period: 'Febrero 2026',
         objectives: 'OBJETIVOS',
@@ -1146,7 +1146,7 @@ export default {
     // ─── SAP Integration ───────────────────────────────────
     sap: {
         title: 'Revisión SAP PM',
-        subtitle: 'Integración de Órdenes de Trabajo — OCP Jorf Lasfar',
+        subtitle: 'Integración de Órdenes de Trabajo — AMS Industrial Site',
         connected: 'Conectado',
         disconnected: 'Desconectado',
         reviewedOrders: 'Órdenes Revisadas',
@@ -1647,7 +1647,7 @@ export default {
         appearance: {
             title: 'Configuración de Apariencia',
             theme: 'Tema',
-            themeDefault: 'OCP Esmeralda (Por defecto)',
+            themeDefault: 'AMS Esmeralda (Por defecto)',
             themeBlue: 'Azul',
             themePurple: 'Púrpura',
             themeGray: 'Gris',
@@ -2218,7 +2218,7 @@ export default {
         },
 
         // Advanced Tactical Drill-Down
-        advancedTacticalDrillDown: 'OCP Mantenimiento - Drill-Down Táctico Avanzado',
+        advancedTacticalDrillDown: 'AMS Platform - Drill-Down Táctico Avanzado',
 
         // AI Overview
         aiOverview: 'Resumen de IA',

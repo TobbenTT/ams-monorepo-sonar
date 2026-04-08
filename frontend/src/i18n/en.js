@@ -112,7 +112,7 @@ export default {
         execution: 'Execution',
         postMaintenance: 'Post Maintenance',
         profile: 'Profile',
-        brandTitle: 'Maintenance OCP',
+        brandTitle: 'AMS Platform',
         brandSubtitle: 'Reliability Platform',
     },
 
@@ -144,19 +144,19 @@ export default {
 
     // ─── Login ─────────────────────────────────────────────
     login: {
-        title: 'OCP Maintenance',
+        title: 'AMS Platform',
         subtitle: 'AI-Powered Platform',
         headline: 'Intelligent Industrial\nMaintenance Management',
         description: 'Comprehensive platform for asset management, maintenance planning and reliability analysis powered by artificial intelligence.',
         reliabilityCard: 'Reliability',
         planningCard: 'Planning',
         analyticsCard: 'Analytics',
-        copyright: '© {year} OCP Group — Jorf Lasfar Complex',
+        copyright: '© {year} AMS Industrial — Industrial Complex',
     },
 
     // ─── Dashboard ─────────────────────────────────────────
     dashboard: {
-        title: 'OCP Maintenance AI',
+        title: 'AMS Platform',
         subtitle: 'Intelligent Maintenance Management Platform',
         adherence: 'Schedule Adherence',
         misclassification: 'P1 Misclassification',
@@ -725,7 +725,7 @@ export default {
         riskFactors: 'Risk factors',
         wrNotFound: 'Work notice not found',
         checkId: 'Check the ID and try again.',
-        welcomeMessage: 'Hello! I am the OCP AI Planning Assistant. I can help you prioritize the backlog, optimize the weekly program, identify grouping opportunities, and analyze failure trends. How can I help you?',
+        welcomeMessage: 'Hello! I am the AMS AI Planning Assistant. I can help you prioritize the backlog, optimize the weekly program, identify grouping opportunities, and analyze failure trends. How can I help you?',
         responses: {
             default: `**Priority Analysis — Week W09-2026**
 
@@ -784,7 +784,7 @@ Would you like me to schedule this grouping for W09-2026?`,
 
 **AI Recommendation:** WO-4525 scheduled for W09-2026 is a priority to validate current bearing condition.`,
 
-            summary: `**Weekly Executive Summary — OCP JFC-1**
+            summary: `**Weekly Executive Summary — AMS Industrial**
 
 **Backlog Status:**
 - Total backlog: 10 items | 10 registered in system
@@ -850,7 +850,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
     // ─── Defect Elimination ────────────────────────────────
     defectElimination: {
         title: 'Defect Elimination',
-        subtitle: 'Root Cause Analysis (RCA) — OCP Jorf Lasfar',
+        subtitle: 'Root Cause Analysis (RCA) — AMS Industrial Site',
         activeCases: 'Active Cases',
         completedCases: 'Completed',
         totalRecurrence: 'Total Recurrence',
@@ -932,7 +932,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
 
     // ─── Executive Dashboard ───────────────────────────────
     executive: {
-        title: 'Executive Dashboard — OCP Jorf Lasfar',
+        title: 'Executive Dashboard — AMS Industrial Site',
         subtitle: 'February 2026 — Maintenance Performance Summary',
         period: 'February 2026',
         objectives: 'OBJECTIVES',
@@ -1221,7 +1221,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
     // ─── SAP Integration ───────────────────────────────────
     sap: {
         title: 'SAP PM Review',
-        subtitle: 'Work Order Integration — OCP Jorf Lasfar',
+        subtitle: 'Work Order Integration — AMS Industrial Site',
         connected: 'Connected',
         disconnected: 'Disconnected',
         reviewedOrders: 'Reviewed Orders',
@@ -1722,7 +1722,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         appearance: {
             title: 'Appearance Settings',
             theme: 'Theme',
-            themeDefault: 'OCP Emerald (Default)',
+            themeDefault: 'AMS Emerald (Default)',
             themeBlue: 'Blue',
             themePurple: 'Purple',
             themeGray: 'Gray',
@@ -2292,7 +2292,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         },
 
         // Advanced Tactical Drill-Down
-        advancedTacticalDrillDown: 'OCP Maintenance - Advanced Tactical Drill-Down',
+        advancedTacticalDrillDown: 'AMS Platform - Advanced Tactical Drill-Down',
 
         // AI Overview
         aiOverview: 'AI Overview',

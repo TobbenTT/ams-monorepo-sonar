@@ -1,4 +1,4 @@
-/* API Client — OCP Maintenance AI MVP */
+/* API Client — AMS Platform MVP */
 const BASE = '/api/v1';
 
 /** Get currently selected plant from localStorage */

@@ -47,7 +47,7 @@ export default function Login() {
                 <div className="relative z-10">
                     <div className="flex items-center gap-4 mb-2">
                         <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center overflow-hidden">
-                            <img src="/OCP_LOGO.png" alt="OCP" className="w-18 h-18 object-contain" />
+                            <img src="/OCP_LOGO.png" alt="AMS" className="w-18 h-18 object-contain" />
                         </div>
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">{t('login.title')}</h1>
@@ -116,10 +116,10 @@ export default function Login() {
                     {/* Mobile logo */}
                     <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
                         <div className="w-16 h-16 bg-[#047857] rounded-xl flex items-center justify-center overflow-hidden">
-                            <img src="/OCP_LOGO.png" alt="OCP" className="w-14 h-14 object-contain" />
+                            <img src="/OCP_LOGO.png" alt="AMS" className="w-14 h-14 object-contain" />
                         </div>
                         <div>
-                            <div className="text-xl font-bold text-foreground">OCP Maintenance AI</div>
+                            <div className="text-xl font-bold text-foreground">AMS Platform</div>
                             <div className="text-xs text-muted-foreground">Industrial Platform</div>
                         </div>
                     </div>

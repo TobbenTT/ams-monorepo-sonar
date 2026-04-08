@@ -234,7 +234,7 @@ function ORProjectsTab() {
                                 type="text"
                                 value={form.client_name}
                                 onChange={e => setForm(f => ({ ...f, client_name: e.target.value }))}
-                                placeholder="ej: OCP Group"
+                                placeholder="ej: AMS Industrial"
                                 className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
                             />
                         </div>

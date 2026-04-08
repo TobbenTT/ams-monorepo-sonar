@@ -290,7 +290,7 @@ export default function Header({
                                     <SelectItem key={p.plant_id} value={p.plant_id}>{p.plant_id} — {p.name}</SelectItem>
                                 ))}
                                 {(!plants || plants.length === 0) && (
-                                    <SelectItem value="OCP-JFC1">OCP-JFC1 — Jorf Lasfar</SelectItem>
+                                    <SelectItem value="OCP-JFC1">PLANT-01 — Main Site</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>

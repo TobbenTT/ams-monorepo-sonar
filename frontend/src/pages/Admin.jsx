@@ -25,7 +25,7 @@ export default function Admin() {
     const [seeding, setSeeding] = useState(false);
     const [tab, setTab] = useState('users');
     const [health, setHealth] = useState(null);
-    const [plantName, setPlantName] = useState('Jorf Lasfar — Complexe Chimique');
+    const [plantName, setPlantName] = useState('Industrial Site — Industrial Complex');
     const [plantLocation, setPlantLocation] = useState('El Jadida, Morocco');
 
     // Users state

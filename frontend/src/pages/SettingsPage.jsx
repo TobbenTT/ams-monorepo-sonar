@@ -32,7 +32,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState(() => ({
     companyName: 'OCP Manufacturing',
     timezone: 'gmt+1',
-    defaultPlant: 'OCP-JFC1',
+    defaultPlant: 'PLANT-01',
     currency: 'mad',
     autoSaveWO: true,
     enableAI: true,
@@ -271,8 +271,8 @@ export default function SettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="OCP-JFC1">OCP Jorf Lasfar C1</SelectItem>
-                      <SelectItem value="OCP-JFC2">OCP Jorf Lasfar C2</SelectItem>
+                      <SelectItem value="PLANT-01">OCP Industrial Site C1</SelectItem>
+                      <SelectItem value="PLANT-02">OCP Industrial Site C2</SelectItem>
                       <SelectItem value="OCP-SAFI">OCP Safi</SelectItem>
                     </SelectContent>
                   </Select>
@@ -621,7 +621,7 @@ export default function SettingsPage() {
                       setImporting(true);
                       setImportError(null);
                       setImportResult(null);
-                      const result = await api.importUpload(importFile, importSource, settings.defaultPlant || 'OCP-JFC1');
+                      const result = await api.importUpload(importFile, importSource, settings.defaultPlant || 'PLANT-01');
                       setImportResult(result);
                     } catch (err) {
                       setImportError(err.message || 'Import failed');

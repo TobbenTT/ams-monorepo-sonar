@@ -167,6 +167,54 @@ def create_program(
     )
     db.add(model)
     log_action(db, "weekly_program", model.program_id, "CREATE")
+
+    # Update actual managed_work_orders with scheduled dates from work packages
+    backlog_to_wr = {i.backlog_id: i.work_request_id for i in schedulable}
+    wr_to_wo = {}
+    wr_ids = list(backlog_to_wr.values())
+    if wr_ids:
+        wos = db.query(ManagedWorkOrderModel).filter(
+            ManagedWorkOrderModel.work_request_id.in_(wr_ids)
+        ).all()
+        wr_to_wo = {wo.work_request_id: wo for wo in wos}
+
+    # Also match by equipment_tag for WOs without WR link
+    all_plant_wos = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == plant_id,
+        ManagedWorkOrderModel.status.in_(["CREADO", "PLANIFICADO", "PROGRAMADO"])
+    ).all()
+    tag_to_wos = {}
+    for wo in all_plant_wos:
+        tag = wo.equipment_tag or wo.equipment_id
+        if tag not in tag_to_wos:
+            tag_to_wos[tag] = []
+        tag_to_wos[tag].append(wo)
+
+    updated_wo_ids = set()
+    for wp in enriched_wps:
+        sched_date = wp.get("scheduled_date")
+        if not sched_date:
+            continue
+        grouped = wp.get("grouped_items", [])
+        for bl_id in grouped:
+            # Try via WR link
+            wr_id = backlog_to_wr.get(bl_id)
+            wo = wr_to_wo.get(wr_id) if wr_id else None
+            # Fallback: match by equipment_tag
+            if not wo:
+                eq_tag = wp.get("equipment_tag", "")
+                candidates = tag_to_wos.get(eq_tag, [])
+                for c in candidates:
+                    if c.wo_id not in updated_wo_ids:
+                        wo = c
+                        break
+            if wo and wo.wo_id not in updated_wo_ids:
+                wo.planned_start = datetime.strptime(str(sched_date), "%Y-%m-%d") if isinstance(sched_date, str) else sched_date
+                wo.planned_end = wo.planned_start
+                if wo.status in ("CREADO", "PLANIFICADO"):
+                    wo.status = "PROGRAMADO"
+                updated_wo_ids.add(wo.wo_id)
+
     db.commit()
     db.refresh(model)
 

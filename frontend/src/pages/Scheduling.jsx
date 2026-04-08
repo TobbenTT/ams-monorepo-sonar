@@ -1161,31 +1161,45 @@ export default function Scheduling() {
         return;
       }
 
-      // Step 2: Calculate week dates (Mon-Fri)
-      const now = new Date();
-      const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      // Step 2: Use the week being VIEWED in the calendar
+      const viewedMonday = weekStart || new Date();
       const weekDays = [];
       for (let d = 0; d < 5; d++) {
-        const day = new Date(monday);
-        day.setDate(monday.getDate() + d);
+        const day = new Date(viewedMonday);
+        day.setDate(viewedMonday.getDate() + d);
         weekDays.push(day.toISOString().slice(0, 10));
       }
+      const today = new Date().toISOString().slice(0, 10);
 
       // Step 3: Sort by priority (P1 first)
       const prioOrder = { P1: 0, P2: 1, P3: 2, P4: 3 };
       toSchedule.sort((a, b) => (prioOrder[a.priority_code] || 3) - (prioOrder[b.priority_code] || 3));
 
-      // Step 4: Distribute evenly across 5 days + assign technicians round-robin
+      // Step 4: Distribute respecting priority deadlines
+      // P1 (<24h) → today/Monday, P2 (<7 days) → this week spread, P3 (>7 days) → spread evenly, P4 → last day
       const dayLoad = [0, 0, 0, 0, 0];
       let techIdx = 0;
       let scheduled = 0;
 
       for (const wo of toSchedule) {
-        // Find least loaded day
-        const bestDay = dayLoad.indexOf(Math.min(...dayLoad));
+        const prio = wo.priority_code || 'P3';
         const hours = parseFloat(wo.estimated_hours) || 4;
+        let bestDay;
+
+        if (prio === 'P1') {
+          // Emergency: first available day (Monday or today)
+          bestDay = 0;
+        } else if (prio === 'P2') {
+          // Urgent: spread across Mon-Wed (first half of week)
+          bestDay = [0, 1, 2].reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b);
+        } else if (prio === 'P4') {
+          // Shutdown: prefer Friday
+          bestDay = 4;
+        } else {
+          // P3 Normal: distribute evenly across all 5 days
+          bestDay = dayLoad.indexOf(Math.min(...dayLoad));
+        }
+
         dayLoad[bestDay] += hours;
 
         // Assign technician round-robin
@@ -1206,7 +1220,8 @@ export default function Scheduling() {
         } catch {}
       }
 
-      toast.success(`${scheduled} WOs scheduled across 5 days with ${techs.length} technicians`);
+      const weekLabel = `${weekDays[0]} to ${weekDays[4]}`;
+      toast.success(`${scheduled} WOs scheduled for ${weekLabel} with ${techs.length} technicians`);
       setAiResult({ assignments: toSchedule.map(w => ({ wo_id: w.wo_id })), message: `${scheduled} WOs distributed Mon-Fri` });
       loadCalendarData();
       loadPrograms();

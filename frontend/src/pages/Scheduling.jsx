@@ -1223,7 +1223,7 @@ export default function Scheduling() {
 
       const weekLabel = `${weekDays[0]} to ${weekDays[4]}`;
       toast.success(`${scheduled} WOs scheduled for ${weekLabel} with ${techs.length} technicians`);
-      setAiResult({ assignments: toSchedule.map(w => ({ wo_id: w.wo_id })), message: `${scheduled} WOs distributed Mon-Fri` });
+      setAiResult({ assignments: [], message: `✓ ${scheduled} WOs scheduled for ${weekLabel}` });
       loadCalendarData();
       loadPrograms();
       loadGantt();

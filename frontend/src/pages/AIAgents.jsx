@@ -5,11 +5,11 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
 const TABS = [
-    { id: 'status', icon: Cpu, label: 'Estado IA' },
+    { id: 'status', icon: Cpu, label: 'AI Status' },
     { id: 'troubleshoot', icon: Search, label: 'Troubleshooting' },
     { id: 'checklists', icon: ClipboardCheck, label: 'Checklists' },
-    { id: 'sessions', icon: BrainCircuit, label: 'Sesiones' },
-    { id: 'or_projects', icon: FolderOpen, label: 'Proyectos OR' },
+    { id: 'sessions', icon: BrainCircuit, label: 'Sessions' },
+    { id: 'or_projects', icon: FolderOpen, label: 'OR Projects' },
     { id: 'tools', icon: Wrench, label: 'Tools' },
 ];
 
@@ -45,9 +45,12 @@ export default function AIAgents() {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-3">
-                <BrainCircuit className="w-7 h-7 text-primary" />
-                <h1 className="text-2xl font-bold text-foreground">Agentes IA (CORTEX)</h1>
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white mb-4">
+                <div className="flex items-center gap-3 mb-2">
+                    <BrainCircuit className="w-8 h-8" />
+                    <h1 className="text-2xl font-bold">AI Agents — CORTEX Engine</h1>
+                </div>
+                <p className="text-indigo-100 text-sm">Intelligent maintenance agents powered by AI for autonomous decision-making</p>
             </div>
 
             {/* Tabs */}
@@ -113,11 +116,11 @@ function StatusTab() {
                 <div className={`rounded-xl border p-5 ${ready ? 'border-green-500/30 bg-green-50' : 'border-yellow-500/30 bg-yellow-50'}`}>
                     <div className="flex items-center gap-3 mb-3">
                         {ready ? <CheckCircle className="w-6 h-6 text-green-600" /> : <AlertTriangle className="w-6 h-6 text-yellow-600" />}
-                        <h3 className="font-semibold text-lg">{ready ? 'Sistema Listo' : 'API Key no configurada'}</h3>
+                        <h3 className="font-semibold text-lg">{ready ? 'System Ready' : 'API Key not configured'}</h3>
                     </div>
                     <p className="text-sm text-muted-foreground">
                         {ready
-                            ? 'Los 13 agentes CORTEX están disponibles.'
+                            ? 'All 13 CORTEX agents are available.'
                             : 'Configure ANTHROPIC_API_KEY en el servidor para activar los agentes.'}
                     </p>
                 </div>
@@ -126,14 +129,14 @@ function StatusTab() {
                 <div className="rounded-xl border p-5">
                     <h3 className="font-semibold mb-1">Tools Registradas</h3>
                     <div className="text-4xl font-bold text-primary">{status.total_tools}</div>
-                    <p className="text-sm text-muted-foreground mt-1">herramientas de dominio disponibles</p>
+                    <p className="text-sm text-muted-foreground mt-1">domain tools available</p>
                 </div>
 
                 {/* Agents count */}
                 <div className="rounded-xl border p-5">
                     <h3 className="font-semibold mb-1">Agentes Especializados</h3>
                     <div className="text-4xl font-bold text-primary">{Object.keys(agentTools).length}</div>
-                    <p className="text-sm text-muted-foreground mt-1">agentes en 4 equipos de trabajo</p>
+                    <p className="text-sm text-muted-foreground mt-1">agents in 4 work teams</p>
                 </div>
             </div>
 
@@ -196,7 +199,7 @@ function ORProjectsTab() {
             setForm({ client_name: '', plant_code: '', project_type: 'greenfield' });
             setShowForm(false);
         } catch (err) {
-            toast.error('Error creating proyecto: ' + err.message);
+            toast.error('Error creating project: ' + err.message);
         } finally {
             setCreating(false);
         }
@@ -212,7 +215,7 @@ function ORProjectsTab() {
             <div className="flex justify-between items-center">
                 <div>
                     <h3 className="font-semibold">Proyectos Operational Readiness</h3>
-                    <p className="text-sm text-muted-foreground">Cada proyecto activa múltiples agentes CORTEX para generar entregables de consultoría</p>
+                    <p className="text-sm text-muted-foreground">Each project activates multiple CORTEX agents to generate consulting deliverables</p>
                 </div>
                 <button
                     onClick={() => setShowForm(v => !v)}
@@ -325,7 +328,7 @@ function ORProjectsTab() {
                 <div className="text-center py-12 text-muted-foreground text-sm">
                     <FolderOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
                     <p>No active OR projects.</p>
-                    <p>Cree un nuevo proyecto para activar los 13 agentes CORTEX.</p>
+                    <p>Create a new project to activate all 13 CORTEX agents.</p>
                 </div>
             )}
         </div>
@@ -610,10 +613,10 @@ function SessionsTab() {
     return (
         <div className="space-y-4">
             <div className="rounded-xl border p-5">
-                <h3 className="font-semibold mb-3">Nueva Sesión de Estrategia</h3>
+                <h3 className="font-semibold mb-3">New Strategy Session</h3>
                 <div className="flex gap-2">
                     <input type="text" value={equipmentTag} onChange={(e) => setEquipmentTag(e.target.value)}
-                        placeholder="Tag del equipo (ej: SAG-MILL-001)"
+                        placeholder="Equipment tag (e.g. SAG-MILL-001)"
                         className="flex-1 px-3 py-2 border rounded-lg text-sm bg-background" />
                     <button onClick={handleCreate} disabled={creating || !equipmentTag.trim()}
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium disabled:opacity-50">
@@ -684,8 +687,8 @@ function ToolsTab() {
         <div className="space-y-4">
             <div className="flex items-center gap-3">
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar herramientas..." className="flex-1 px-3 py-2 border rounded-lg text-sm bg-background" />
-                <span className="text-sm text-muted-foreground">{filtered.length} herramientas</span>
+                    placeholder="Search tools..." className="flex-1 px-3 py-2 border rounded-lg text-sm bg-background" />
+                <span className="text-sm text-muted-foreground">{filtered.length} tools</span>
             </div>
             <div className="rounded-xl border divide-y max-h-[60vh] overflow-y-auto">
                 {filtered.map((tool) => (

@@ -882,39 +882,62 @@ export default function FailureCapture({ onNavigateTab }) {
     });
   };
 
-  // ── Ensure realistic resource allocation from AI suggestions ──
+  // ── Ensure realistic resource allocation based on failure category ──
   const ensureRealisticResources = (aiResources, aiMaterials, category, duration, descText) => {
     let res = (aiResources || []).filter(r => !/supervisor/i.test(r.type || r));
     const hasType = (t) => res.some(r => (r.type || '').toLowerCase().includes(t.toLowerCase()));
     const cat = (category || '').toUpperCase();
     const dur = parseFloat(duration || 4);
-    // Mechanical/hydraulic: ensure mechanical resources
-    if ((cat === 'MECHANICAL' || cat === 'HYDRAULIC' || !cat) && !hasType('Mechanical')) {
-      res.unshift({ type: 'Mechanical', quantity: 2, hours: Math.max(dur, 6) });
+    const dl = (descText || '').toLowerCase();
+    const isHeavy = /compresor|pump|bomba|motor|crusher|chancador|molino|mill|turbina|ventilador|fan/i.test(dl);
+
+    if (cat === 'MECHANICAL' || cat === 'HYDRAULIC') {
+      if (!hasType('Mechanical')) res.unshift({ type: 'Mechanical', quantity: 2, hours: Math.max(dur, 6) });
+      res = res.map(r => ((r.type || '').toLowerCase() === 'mechanical' && (r.hours || 0) < 4) ? { ...r, hours: Math.max(dur, 6), quantity: Math.max(r.quantity || 1, 2) } : r);
+      if (!hasType('Electrical')) res.push({ type: 'Electrical', quantity: 1, hours: 2 }); // isolation
+      if (isHeavy && !hasType('Rigger')) res.push({ type: 'Rigger', quantity: 1, hours: 3 });
+      if (isHeavy && !hasType('Helper')) res.push({ type: 'Helper', quantity: 1, hours: Math.max(dur, 4) });
+    } else if (cat === 'ELECTRICAL') {
+      if (!hasType('Electrical')) res.unshift({ type: 'Electrical', quantity: 2, hours: Math.max(dur, 4) });
+      res = res.map(r => ((r.type || '').toLowerCase() === 'electrical' && (r.hours || 0) < 3) ? { ...r, hours: Math.max(dur, 4), quantity: Math.max(r.quantity || 1, 2) } : r);
+      if (!hasType('Helper')) res.push({ type: 'Helper', quantity: 1, hours: 2 });
+    } else if (cat === 'INSTRUMENTATION') {
+      if (!hasType('Instrumentation')) res.unshift({ type: 'Instrumentation', quantity: 1, hours: Math.max(dur, 3) });
+      if (!hasType('Electrical') && /plc|dcs|panel|actuador|valve/i.test(dl)) res.push({ type: 'Electrical', quantity: 1, hours: 1.5 });
+    } else if (cat === 'STRUCTURAL') {
+      if (!hasType('Mechanical')) res.unshift({ type: 'Mechanical', quantity: 2, hours: Math.max(dur, 6) });
+      if (!hasType('Welder') && /crack|soldadura|weld|corrosion/i.test(dl)) res.push({ type: 'Welder', quantity: 1, hours: 4 });
+      if (!hasType('Rigger')) res.push({ type: 'Rigger', quantity: 1, hours: 3 });
+    } else {
+      // Unknown category — add minimum crew based on description
+      if (!hasType('Mechanical') && /vibra|bearing|rod|pump|compresor|leak|seal/i.test(dl)) res.unshift({ type: 'Mechanical', quantity: 2, hours: Math.max(dur, 6) });
+      if (!hasType('Electrical') && /motor|panel|trip|voltage|circuit/i.test(dl)) res.unshift({ type: 'Electrical', quantity: 2, hours: Math.max(dur, 4) });
+      if (res.length < 2 && !hasType('Electrical')) res.push({ type: 'Electrical', quantity: 1, hours: 2 });
     }
-    // Boost mechanical hours if too low
-    res = res.map(r => ((r.type || '').toLowerCase() === 'mechanical' && (r.hours || 0) < 4) ? { ...r, hours: Math.max(dur, 6), quantity: Math.max(r.quantity || 1, 2) } : r);
-    // Add Electrical if missing
-    if (!hasType('Electrical')) res.push({ type: 'Electrical', quantity: 1, hours: 2 });
-    // Add Helper
-    if (!hasType('Helper') && !hasType('Rigger')) res.push({ type: 'Helper', quantity: 1, hours: Math.max(dur, 4) });
-    // Add Rigger for heavy equipment
-    if (!hasType('Rigger') && /compresor|pump|bomba|motor|crusher|chancador|molino|mill/i.test(descText || '')) {
-      res.push({ type: 'Rigger', quantity: 1, hours: 3 });
-    }
+
     setF('resources', res);
-    // Fix duration
+    // Adjust duration to critical path
     const maxHrs = Math.max(...res.map(r => r.hours || 0), dur);
     if (maxHrs > dur) setF('estimatedDuration', String(maxHrs));
-    // Ensure minimum materials
+
+    // Materials — only add what makes sense for the category
     let mats = [...(aiMaterials || [])];
     const hasMat = (kw) => mats.some(m => (m.description || '').toLowerCase().includes(kw));
-    if (cat === 'MECHANICAL' || cat === 'HYDRAULIC' || !cat) {
+    if (cat === 'MECHANICAL' || cat === 'HYDRAULIC') {
       if (!hasMat('sello') && !hasMat('seal')) mats.push({ sapId: '10002001', description: 'Kit sellos mecanicos', quantity: 1, unit: 'UD' });
       if (!hasMat('empaquetadura') && !hasMat('gasket') && !hasMat('junta')) mats.push({ sapId: '10002050', description: 'Empaquetadura / junta', quantity: 2, unit: 'UD' });
       if (!hasMat('perno') && !hasMat('bolt')) mats.push({ sapId: '10005015', description: 'Pernos fijacion M12x40', quantity: 8, unit: 'UD' });
       if (!hasMat('grasa') && !hasMat('lubricant') && !hasMat('aceite') && !hasMat('grease')) mats.push({ sapId: '10004010', description: 'Grasa lubricante NLGI 2', quantity: 2, unit: 'KG' });
-      if (!hasMat('filtro') && !hasMat('filter')) mats.push({ sapId: '10003001', description: 'Filtro aceite/aire', quantity: 1, unit: 'UD' });
+    } else if (cat === 'ELECTRICAL') {
+      if (!hasMat('cable') && !hasMat('conductor')) mats.push({ sapId: '10007001', description: 'Cable conductor 3x2.5mm', quantity: 10, unit: 'MT' });
+      if (!hasMat('fusible') && !hasMat('fuse')) mats.push({ sapId: '10007010', description: 'Fusibles proteccion', quantity: 3, unit: 'UD' });
+      if (!hasMat('cinta') && !hasMat('tape')) mats.push({ sapId: '10007020', description: 'Cinta aislante electrica', quantity: 2, unit: 'UD' });
+    } else if (cat === 'INSTRUMENTATION') {
+      if (!hasMat('calibra') && !hasMat('sensor') && !hasMat('transducer')) mats.push({ sapId: '10008001', description: 'Sensor/transductor repuesto', quantity: 1, unit: 'UD' });
+    }
+    // Always add fasteners if none present and job is not instrumentation-only
+    if (cat !== 'INSTRUMENTATION' && !hasMat('perno') && !hasMat('bolt') && !hasMat('fastener')) {
+      mats.push({ sapId: '10005015', description: 'Pernos fijacion M12x40', quantity: 8, unit: 'UD' });
     }
     setF('materials', mats);
   };

@@ -67,7 +67,7 @@ export default function Header({
     ].map(p => ({ ...p, label: t(p.labelKey) })), [t]);
 
     useEffect(() => {
-        api.listNotifications({ limit: 50 }).then(n => {
+        api.listNotifications({ limit: 50, plant_id: plant || '' }).then(n => {
             const list = Array.isArray(n) ? n : [];
             setNotifications(list);
             setNotifCount(list.filter(x => !x.is_read).length);

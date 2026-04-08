@@ -890,96 +890,136 @@ export default function Execution() {
             </div>
           )}
 
-          {tab === 'daily' && (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h2 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-2">
-                  <Calendar size={16} /> Daily Meeting de Execution
-                </h2>
-                <p className="text-xs text-blue-600 mb-3">
-                  Review of HH capacity, assignments and status of active WOs for the day.
-                </p>
+          {tab === 'daily' && (() => {
+            const today = new Date().toISOString().slice(0, 10);
+            const todayWOs = inProgressWOs.filter(wo => wo.planned_start?.slice(0, 10) === today);
+            const totalHH = inProgressWOs.reduce((s, w) => s + (w.estimated_hours || 0), 0);
+            const p1p2 = inProgressWOs.filter(wo => ['P1', 'P2'].includes(wo.priority_code));
+            return (
+            <div className="space-y-5">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 className="text-lg font-bold flex items-center gap-2">
+                      <Calendar size={20} /> Daily Execution Meeting
+                    </h2>
+                    <p className="text-blue-100 text-sm mt-1">{new Date().toLocaleDateString('en', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  </div>
+                  <button onClick={generateBriefing} disabled={loadingBriefing}
+                    className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors">
+                    {loadingBriefing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                    AI Briefing
+                  </button>
+                </div>
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{todayWOs.length}</p>
+                    <p className="text-[10px] text-blue-100 uppercase font-semibold">Today</p>
+                  </div>
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{inProgressWOs.length}</p>
+                    <p className="text-[10px] text-blue-100 uppercase font-semibold">Active WOs</p>
+                  </div>
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{p1p2.length}</p>
+                    <p className="text-[10px] text-blue-100 uppercase font-semibold">P1/P2 Urgent</p>
+                  </div>
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{totalHH.toFixed(0)}h</p>
+                    <p className="text-[10px] text-blue-100 uppercase font-semibold">Total HH</p>
+                  </div>
+                </div>
               </div>
 
               {/* AI Briefing */}
               {briefing && (
-                <div className="bg-white rounded-xl border border-purple-200 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-purple-700 uppercase flex items-center gap-1">
-                      <Zap size={12} /> AI Daily Briefing
+                <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-2xl border border-purple-200 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-bold text-purple-800 flex items-center gap-2">
+                      <Zap size={16} className="text-purple-600" /> AI Analysis & Recommendations
                     </span>
-                    <button onClick={() => setBriefing(null)} className="text-xs text-gray-400 hover:text-gray-600">Dismiss</button>
+                    <button onClick={() => setBriefing(null)} className="text-xs text-purple-400 hover:text-purple-600">Dismiss</button>
                   </div>
-                  <div className="prose prose-sm max-w-none text-gray-700 text-sm whitespace-pre-line">
+                  <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line bg-white rounded-xl p-4 border border-purple-100">
                     {briefing.briefing}
                   </div>
                 </div>
               )}
 
-              {/* Daily summary */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-blue-50 rounded-xl border border-blue-100 p-4 text-center">
-                  <p className="text-2xl font-bold text-blue-700">{inProgressWOs.length}</p>
-                  <p className="text-xs text-blue-600 font-semibold">Active WOs</p>
+              {/* Priority breakdown */}
+              {p1p2.length > 0 && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
+                  <h3 className="text-sm font-bold text-red-800 mb-3 flex items-center gap-2">
+                    <AlertTriangle size={16} /> Priority Attention Required ({p1p2.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {p1p2.map(wo => (
+                      <div key={wo.wo_id} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-red-100">
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded text-white ${wo.priority_code === 'P1' ? 'bg-red-600' : 'bg-orange-500'}`}>{wo.priority_code}</span>
+                        <div className="flex-1">
+                          <span className="font-mono text-xs font-bold">{wo.wo_number}</span>
+                          <span className="text-xs text-gray-500 ml-2">{wo.equipment_tag}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">{wo.estimated_hours}h</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="bg-amber-50 rounded-xl border border-amber-100 p-4 text-center">
-                  <p className="text-2xl font-bold text-amber-700">{fastTrackWOs.length}</p>
-                  <p className="text-xs text-amber-600 font-semibold">Emergencies</p>
-                </div>
-                <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4 text-center">
-                  <p className="text-2xl font-bold text-emerald-700">{completedWOs.length}</p>
-                  <p className="text-xs text-emerald-600 font-semibold">Completed</p>
-                </div>
-                <div className="bg-purple-50 rounded-xl border border-purple-100 p-4 text-center">
-                  <p className="text-2xl font-bold text-purple-700">
-                    {inProgressWOs.reduce((s, w) => s + (w.estimated_hours || 0), 0).toFixed(0)}h
-                  </p>
-                  <p className="text-xs text-purple-600 font-semibold">HH This Week</p>
-                </div>
-              </div>
+              )}
 
-              {/* Active WOs list */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <span className="text-sm font-bold text-gray-700">Active WOs — Daily Review</span>
+              {/* WO Cards Grid */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-gray-800">Work Orders — Weekly Overview</h3>
+                  <span className="text-xs text-gray-400">{inProgressWOs.length} total</span>
                 </div>
-                <div className="divide-y divide-gray-50">
-                  {inProgressWOs.length > 0 ? inProgressWOs.slice(0, 20).map(wo => (
-                    <div key={wo.wo_id || wo.work_order_id} className="p-4">
-                      <div className="flex items-center justify-between mb-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                  {inProgressWOs.slice(0, 30).map(wo => {
+                    const pct = wo.completion_pct || 0;
+                    const workers = (wo.assigned_workers || []).map(w => typeof w === 'string' ? w : (w.name || w.full_name || '')).filter(Boolean);
+                    return (
+                      <div key={wo.wo_id || wo.work_order_id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="font-mono text-xs font-bold text-gray-900">{wo.wo_number}</span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-white ${
+                                wo.priority_code === 'P1' ? 'bg-red-500' : wo.priority_code === 'P2' ? 'bg-orange-500' : wo.priority_code === 'P4' ? 'bg-gray-500' : 'bg-blue-500'
+                              }`}>{wo.priority_code}</span>
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                                wo.status === 'PROGRAMADO' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                wo.status === 'EN_EJECUCION' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                'bg-gray-50 text-gray-500 border-gray-200'
+                              }`}>{wo.status}</span>
+                            </div>
+                            <p className="text-xs text-gray-600 truncate max-w-[250px]">{wo.equipment_tag} — {(wo.description || '').substring(0, 40)}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold text-gray-800">{wo.estimated_hours || 0}h</p>
+                            <p className="text-[10px] text-gray-400">{wo.planned_start?.slice(5, 10) || ''}</p>
+                          </div>
+                        </div>
+                        {workers.length > 0 && (
+                          <div className="flex items-center gap-1 mb-2">
+                            <User size={10} className="text-gray-400" />
+                            <span className="text-[10px] text-gray-500 truncate">{workers.join(', ')}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-bold text-gray-900">{wo.wo_number}</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            wo.priority_code === 'P1' ? 'bg-red-100 text-red-700' :
-                            wo.priority_code === 'P2' ? 'bg-orange-100 text-orange-700' :
-                            'bg-blue-100 text-blue-700'
-                          }`}>{wo.priority_code}</span>
-                          {wo.is_fast_track && <Zap size={12} className="text-amber-500" />}
+                          <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-emerald-500' : pct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`} style={{ width: `${Math.max(pct, 1)}%` }} />
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-500 w-8 text-right">{pct}%</span>
                         </div>
-                        <span className="text-xs text-gray-400">{wo.estimated_hours || 0}h</span>
                       </div>
-                      <p className="text-sm text-gray-600">{wo.equipment_tag} — {wo.description}</p>
-                      {wo.assigned_workers?.length > 0 && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <User size={10} className="text-gray-400" />
-                          <span className="text-xs text-gray-500">
-                            {wo.assigned_workers.map(w => typeof w === 'string' ? w : (w.name || w.full_name || w.worker_id || '')).filter(Boolean).join(', ') || '—'}
-                          </span>
-                        </div>
-                      )}
-                      <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
-                        <div className={`h-1.5 rounded-full ${(wo.completion_pct || 0) >= 100 ? 'bg-emerald-500' : (wo.completion_pct || 0) > 0 ? 'bg-blue-500' : 'bg-gray-300'}`} style={{ width: `${Math.max(wo.completion_pct || 0, 2)}%` }} />
-                      </div>
-                    </div>
-                  )) : (
-                    <div className="text-center py-10 text-gray-400">
-                      <p>No active WOs</p>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {tab === 'handovers' && (
             <div className="space-y-3">

@@ -1503,7 +1503,7 @@ export default function Execution() {
                     </button>
                     <button onClick={async () => {
                         try {
-                          const token = localStorage.getItem('token');
+                          const token = localStorage.getItem('access_token');
                           const res = await fetch('/api/v1/managed-work-orders/' + closureWO.wo_id + '/closure-report', { headers: { Authorization: 'Bearer ' + token } });
                           if (!res.ok) throw new Error('Failed');
                           const blob = await res.blob();

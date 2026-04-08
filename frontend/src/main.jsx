@@ -77,6 +77,8 @@ const Execution = lazyRetry(() => import('./pages/Execution'));
 const PostMaintenance = lazyRetry(() => import('./pages/PostMaintenance'));
 const DataImport = lazyRetry(() => import('./pages/DataImport'));
 
+const LandingPage = lazyRetry(() => import('./pages/LandingPage'));
+
 const ALL = ['admin', 'manager', 'planner', 'tecnico', 'engineer'];
 const MGMT = ['admin', 'manager'];
 const PLAN = ['admin', 'manager', 'planner', 'engineer'];
@@ -99,6 +101,7 @@ createRoot(document.getElementById('root')).render(
                     <ConfirmProvider>
                         <BrowserRouter>
                             <Routes>
+                                <Route path="landing" element={<S><LandingPage /></S>} />
                                 <Route path="login" element={<S><Login /></S>} />
 
                                 <Route element={<P roles={ALL}><App /></P>}>

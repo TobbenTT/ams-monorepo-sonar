@@ -894,11 +894,11 @@ ${materials.length ? `<div class="section">
                   {t('common.reject')}
                 </button>
                 <button
-                  onClick={() => { onCancel(item.id); onClose(); }}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  onClick={() => { if (window.confirm('Cancel this WR? Status will change to CANCELLED.')) { onCancel(item.id); onClose(); } }}
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
-                  Cancel
+                  Cancel WR
                 </button>
               </>
             )}
@@ -920,11 +920,11 @@ ${materials.length ? `<div class="section">
                   Reject
                 </button>
                 <button
-                  onClick={() => { onCancel(item.id); onClose(); }}
-                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gray-100 text-gray-700 border border-gray-300 text-sm font-semibold hover:bg-gray-200 transition-colors"
+                  onClick={() => { if (window.confirm('Cancel this WR? Status will change to CANCELLED.')) { onCancel(item.id); onClose(); } }}
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
-                  Cancel
+                  Cancel WR
                 </button>
               </>
             )}
@@ -955,6 +955,13 @@ ${materials.length ? `<div class="section">
                 Cierre Técnico
               </button>
             )}
+            {/* Always show Close button */}
+            <button
+              onClick={onClose}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gray-100 text-gray-600 border border-gray-200 text-sm font-medium hover:bg-gray-200 transition-colors"
+            >
+              Close
+            </button>
           </div>
         )}
       </div>

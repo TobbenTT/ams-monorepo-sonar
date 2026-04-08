@@ -892,55 +892,101 @@ function HHBalanceTab({ programId, t }) {
   const utilizationColor = data.utilization_pct > 100 ? 'text-red-600 dark:text-red-400' : data.utilization_pct > 80 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
   const utilizationLabel = data.utilization_pct > 100 ? t('scheduling.overloaded') : data.utilization_pct > 80 ? t('scheduling.balanced') : t('scheduling.underloaded');
 
+  const specs = (data.by_specialty || []).sort((a, b) => b.assigned - a.assigned);
+  const activeSpecs = specs.filter(s => s.assigned > 0 || s.capacity > 0);
+
+  const specColors = {
+    'Mecánico': '#047857', 'Eléctrico': '#2563eb', 'Instrumentación': '#7c3aed',
+    'Lubricación': '#d97706', 'DCS': '#0891b2', 'Predictivo': '#be185d', 'General': '#6b7280',
+  };
+
   return (
     <div className="space-y-5">
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard icon={Users} color="text-blue-500" label={t('scheduling.workers')} value={data.worker_count} sub={t('scheduling.available')} />
-        <KpiCard icon={Clock} color="text-purple-500" label={t('scheduling.capacity')} value={`${data.capacity}h`} sub="HH/week" />
-        <KpiCard icon={Wrench} color="text-amber-500" label={t('scheduling.assigned')} value={`${data.assigned}h`} sub={`${data.available}h ${t('scheduling.available').toLowerCase()}`} />
-        <KpiCard icon={BarChart3} color={utilizationColor.split(' ')[0].replace('text-', 'text-')} label={t('scheduling.utilization')} value={`${data.utilization_pct}%`} sub={utilizationLabel} highlight={data.utilization_pct > 100} />
-      </div>
-
-      {/* Overall utilization bar */}
-      <div className="bg-card border border-border rounded-xl p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold text-foreground">{t('scheduling.utilization')} Global</span>
-          <span className={`text-sm font-bold ${utilizationColor}`}>{data.utilization_pct}%</span>
-        </div>
-        <div className="relative h-4 bg-muted rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all ${data.utilization_pct > 100 ? 'bg-red-500' : data.utilization_pct > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-            style={{ width: `${Math.min(data.utilization_pct, 100)}%` }} />
-          <div className="absolute top-0 bottom-0 w-0.5 bg-foreground/50" style={{ left: '80%' }} />
-          <div className="absolute top-0 bottom-0 w-0.5 bg-red-500" style={{ left: '100%' }} />
+      {/* Summary — big circular gauge + stats */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <div className="flex items-center gap-8">
+          {/* Circular gauge */}
+          <div className="relative w-36 h-36 shrink-0">
+            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#e5e7eb" strokeWidth="8" />
+              <circle cx="50" cy="50" r="42" fill="none"
+                stroke={data.utilization_pct > 100 ? '#ef4444' : data.utilization_pct > 80 ? '#f59e0b' : '#10b981'}
+                strokeWidth="8" strokeLinecap="round"
+                strokeDasharray={`${Math.min(data.utilization_pct, 100) * 2.64} 264`} />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className={`text-2xl font-bold ${data.utilization_pct > 100 ? 'text-red-600' : data.utilization_pct > 80 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                {data.utilization_pct}%
+              </span>
+              <span className="text-[10px] text-gray-500 uppercase font-semibold">Load</span>
+            </div>
+          </div>
+          {/* Stats grid */}
+          <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-blue-50 rounded-xl border border-blue-100">
+              <Users size={20} className="text-blue-600 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-blue-800">{data.worker_count}</p>
+              <p className="text-[10px] text-blue-600 uppercase font-semibold">Workers</p>
+            </div>
+            <div className="text-center p-3 bg-purple-50 rounded-xl border border-purple-100">
+              <Clock size={20} className="text-purple-600 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-purple-800">{data.capacity}h</p>
+              <p className="text-[10px] text-purple-600 uppercase font-semibold">Capacity</p>
+            </div>
+            <div className="text-center p-3 bg-amber-50 rounded-xl border border-amber-100">
+              <Wrench size={20} className="text-amber-600 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-amber-800">{data.assigned}h</p>
+              <p className="text-[10px] text-amber-600 uppercase font-semibold">Assigned</p>
+            </div>
+            <div className="text-center p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+              <CheckCircle size={20} className="text-emerald-600 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-emerald-800">{data.available}h</p>
+              <p className="text-[10px] text-emerald-600 uppercase font-semibold">Available</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Per-specialty breakdown */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border">
-          <h2 className="font-semibold text-foreground">{t('scheduling.hhBalance')} por {t('scheduling.specialty')}</h2>
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+          <h2 className="font-semibold text-foreground">HH Balance by Specialty</h2>
+          <span className="text-xs text-muted-foreground">{activeSpecs.length} specialties</span>
         </div>
-        <div className="divide-y divide-border">
-          {(data.by_specialty || []).map(spec => {
+        <div className="p-4 space-y-4">
+          {activeSpecs.map(spec => {
             const pct = spec.utilization_pct;
-            const barColor = pct > 100 ? 'bg-red-500' : pct > 80 ? 'bg-amber-500' : 'bg-emerald-500';
-            const textColor = pct > 100 ? 'text-red-600 dark:text-red-400' : pct > 80 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
+            const color = specColors[spec.specialty] || '#6b7280';
+            const isOver = pct > 100;
+            const isHigh = pct > 80;
             return (
-              <div key={spec.specialty} className="px-5 py-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-foreground">{spec.specialty}</span>
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="text-muted-foreground">{spec.assigned}h / {spec.capacity}h</span>
-                    <span className={`font-bold ${textColor}`}>{pct}%</span>
+              <div key={spec.specialty} className="group">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                    <span className="text-sm font-semibold text-foreground">{spec.specialty}</span>
+                    <span className="text-[10px] text-gray-400">{Math.round(spec.capacity / 40)} workers</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">{spec.assigned}h / {spec.capacity}h</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isOver ? 'bg-red-100 text-red-700' : isHigh ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                      {pct}%
+                    </span>
                   </div>
                 </div>
-                <div className="relative h-3 bg-muted rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                <div className="relative h-5 bg-gray-100 rounded-lg overflow-hidden">
+                  <div className="h-full rounded-lg transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color + (isOver ? '' : '90') }} />
+                  {/* 80% and 100% markers */}
+                  <div className="absolute top-0 bottom-0 w-px bg-gray-300" style={{ left: '80%' }} />
+                  {isOver && <div className="absolute top-0 bottom-0 w-px bg-red-400" style={{ left: '100%' }} />}
+                  {/* Available hours inside bar */}
+                  {spec.available > 0 && (
+                    <span className="absolute right-2 top-0 bottom-0 flex items-center text-[9px] font-bold text-gray-500">
+                      +{spec.available}h free
+                    </span>
+                  )}
                 </div>
-                {spec.available < 0 && (
-                  <p className="text-xs text-red-500 mt-1">Overloaded: {Math.abs(spec.available)}h excess</p>
-                )}
+                {isOver && <p className="text-[10px] text-red-500 mt-0.5 font-medium">⚠ Overloaded by {Math.abs(spec.available)}h — reassign or add workers</p>}
               </div>
             );
           })}

@@ -202,21 +202,24 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold flex items-center gap-2">
-            <SettingsIcon className="w-6 h-6 text-emerald-600" />
-            {t('settings.title')}
-          </h2>
-          <p className="text-gray-600 mt-1">{t('settings.subtitle')}</p>
-        </div>
-        {saveSuccess && (
-          <div className="flex items-center gap-2 text-emerald-600 text-sm bg-emerald-50 px-4 py-2 rounded-lg">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{t('settings.profile.profileUpdated')}</span>
+    <div className="space-y-6">
+      {/* Gradient Header */}
+      <div className="bg-gradient-to-r from-slate-700 via-gray-600 to-zinc-600 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-3">
+              <SettingsIcon className="w-7 h-7" />
+              {t('settings.title')}
+            </h1>
+            <p className="text-slate-200 text-sm mt-1">{t('settings.subtitle')}</p>
           </div>
-        )}
+          {saveSuccess && (
+            <div className="flex items-center gap-2 text-white text-sm bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{t('settings.profile.profileUpdated')}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="general" className="w-full">

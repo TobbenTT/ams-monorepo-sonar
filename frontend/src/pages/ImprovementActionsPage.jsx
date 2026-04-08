@@ -242,25 +242,24 @@ export default function ImprovementActionsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50">
-      {/* Top Banner - AI Detection & Creation Center */}
-      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+    <div className="space-y-6">
+      {/* Gradient Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <h3 className="text-base font-bold text-gray-900">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-3">
+              <Zap className="w-7 h-7" />
               {t('improvementActions.aiDetectionCenter')}
-            </h3>
+            </h1>
+            <p className="text-blue-100 text-sm mt-1">Track and manage continuous improvement actions</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-700">{t('improvementActions.automaticActionCreation')}</span>
+              <span className="text-sm font-medium text-white/80">{t('improvementActions.automaticActionCreation')}</span>
               <button
                 onClick={() => setAutomaticCreation(!automaticCreation)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  automaticCreation ? 'bg-emerald-600' : 'bg-gray-300'
+                  automaticCreation ? 'bg-white/40' : 'bg-white/20'
                 }`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -269,7 +268,7 @@ export default function ImprovementActionsPage() {
               </button>
             </div>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2"
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 flex items-center gap-2"
               onClick={handleAnalyze}
               disabled={analyzing}
             >
@@ -278,7 +277,7 @@ export default function ImprovementActionsPage() {
             </Button>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Module Tab Switcher */}
       <div className="flex border-b border-gray-200 mb-2">

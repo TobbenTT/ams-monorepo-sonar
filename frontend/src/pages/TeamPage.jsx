@@ -222,22 +222,24 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold flex items-center gap-2">
-            <Users className="w-6 h-6 text-emerald-600" />
-            {t('team.title')}
-          </h2>
-          <p className="text-gray-600 mt-1">{t('team.subtitle')}</p>
+    <div className="space-y-6">
+      {/* Gradient Header */}
+      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-500 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-3">
+              <Users className="w-7 h-7" />
+              {t('team.title')}
+            </h1>
+            <p className="text-violet-100 text-sm mt-1">{t('team.subtitle')}</p>
+          </div>
+          <Button
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 flex items-center gap-2"
+            onClick={() => setShowAddDialog(true)}
+          >
+            <Plus className="w-4 h-4" /> {t('team.addMember')}
+          </Button>
         </div>
-        <Button
-          className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2"
-          onClick={() => setShowAddDialog(true)}
-        >
-          <Plus className="w-4 h-4" /> {t('team.addMember')}
-        </Button>
       </div>
 
       {/* Stats */}

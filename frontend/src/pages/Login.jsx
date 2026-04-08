@@ -217,6 +217,14 @@ export default function Login() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Back to landing */}
+                    <button
+                        onClick={() => navigate('/')}
+                        className="mt-4 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors text-center"
+                    >
+                        &larr; Back to Home
+                    </button>
                 </div>
             </div>
         </div>

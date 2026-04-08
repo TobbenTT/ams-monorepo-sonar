@@ -1302,15 +1302,7 @@ export default function Scheduling() {
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
             >
               {aiScheduling ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {aiScheduling ? 'AI Scheduling...' : 'AI Auto-Schedule'}
-            </button>
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="flex items-center gap-2 px-4 py-2 bg-[#1B5E20] text-white rounded-lg hover:bg-[#2E7D32] transition-colors text-sm font-medium disabled:opacity-50"
-            >
-              {generating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {generating ? t('scheduling.generating') : t('scheduling.generateProgram')}
+              {aiScheduling ? 'Programando...' : 'Programar Semana'}
             </button>
             <button
               onClick={() => setShowClearConfirm(true)}

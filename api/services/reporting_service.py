@@ -22,17 +22,23 @@ def _compute_weekly_stats(db: Session, plant_id: str) -> dict:
     from api.database.models import WorkRequestModel, BacklogItemModel
     from sqlalchemy import func, cast, String
 
-    total = db.query(func.count(WorkRequestModel.request_id)).scalar() or 0
-    completed = db.query(func.count(WorkRequestModel.request_id)).filter(
+    wr_q = db.query(func.count(WorkRequestModel.request_id))
+    bl_q = db.query(func.count(BacklogItemModel.backlog_id))
+    if plant_id:
+        wr_q = wr_q.filter(WorkRequestModel.plant_id == plant_id)
+        bl_q = bl_q.filter(BacklogItemModel.plant_id == plant_id)
+
+    total = wr_q.scalar() or 0
+    completed = wr_q.filter(
         WorkRequestModel.status.in_(["COMPLETED", "CLOSED"])
     ).scalar() or 0
-    in_progress = db.query(func.count(WorkRequestModel.request_id)).filter(
+    in_progress = wr_q.filter(
         WorkRequestModel.status == "IN_PROGRESS"
     ).scalar() or 0
-    open_wrs = db.query(func.count(WorkRequestModel.request_id)).filter(
+    open_wrs = wr_q.filter(
         WorkRequestModel.status.in_(["DRAFT", "PENDING_VALIDATION", "VALIDATED", "ASSIGNED", "SCHEDULED", "IN_PROGRESS"])
     ).scalar() or 0
-    backlog = db.query(func.count(BacklogItemModel.backlog_id)).scalar() or 0
+    backlog = bl_q.scalar() or 0
 
     compliance = round((completed / total * 100) if total > 0 else 0, 1)
 
@@ -302,44 +308,53 @@ def run_cross_module_analysis(db: Session, plant_id: str, data: dict) -> dict:
 
 # ── SF-57: Generate report from DB data ─────────────────────────────
 
-def generate_report_from_db(db: Session, report_type: str = "operational") -> dict:
+def generate_report_from_db(db: Session, report_type: str = "operational", plant_id: str | None = None) -> dict:
     """Query WRs, WOs, backlog directly from DB and return structured report."""
     from api.database.models import WorkRequestModel, ManagedWorkOrderModel, BacklogItemModel
     from sqlalchemy import func
 
+    # Base queries with optional plant filter
+    wr_q = db.query(WorkRequestModel)
+    wo_q = db.query(ManagedWorkOrderModel)
+    bl_q = db.query(BacklogItemModel)
+    if plant_id:
+        wr_q = wr_q.filter(WorkRequestModel.plant_id == plant_id)
+        wo_q = wo_q.filter(ManagedWorkOrderModel.plant_id == plant_id)
+        bl_q = bl_q.filter(BacklogItemModel.plant_id == plant_id)
+
     # Work Requests stats
-    wr_total = db.query(func.count(WorkRequestModel.request_id)).scalar() or 0
+    wr_total = wr_q.count()
     wr_by_status = dict(
-        db.query(WorkRequestModel.status, func.count(WorkRequestModel.request_id))
+        wr_q.with_entities(WorkRequestModel.status, func.count(WorkRequestModel.request_id))
         .group_by(WorkRequestModel.status).all()
     )
     wr_by_priority = dict(
-        db.query(WorkRequestModel.priority_code, func.count(WorkRequestModel.request_id))
+        wr_q.with_entities(WorkRequestModel.priority_code, func.count(WorkRequestModel.request_id))
         .filter(WorkRequestModel.priority_code.isnot(None))
         .group_by(WorkRequestModel.priority_code).all()
     )
 
     # Work Orders stats
-    wo_total = db.query(func.count(ManagedWorkOrderModel.wo_id)).scalar() or 0
+    wo_total = wo_q.count()
     wo_by_status = dict(
-        db.query(ManagedWorkOrderModel.status, func.count(ManagedWorkOrderModel.wo_id))
+        wo_q.with_entities(ManagedWorkOrderModel.status, func.count(ManagedWorkOrderModel.wo_id))
         .group_by(ManagedWorkOrderModel.status).all()
     )
     wo_by_type = dict(
-        db.query(ManagedWorkOrderModel.wo_type, func.count(ManagedWorkOrderModel.wo_id))
+        wo_q.with_entities(ManagedWorkOrderModel.wo_type, func.count(ManagedWorkOrderModel.wo_id))
         .filter(ManagedWorkOrderModel.wo_type.isnot(None))
         .group_by(ManagedWorkOrderModel.wo_type).all()
     )
 
     # Backlog stats
-    bl_total = db.query(func.count(BacklogItemModel.backlog_id)).scalar() or 0
+    bl_total = bl_q.count()
     bl_by_priority = dict(
-        db.query(BacklogItemModel.priority, func.count(BacklogItemModel.backlog_id))
+        bl_q.with_entities(BacklogItemModel.priority, func.count(BacklogItemModel.backlog_id))
         .group_by(BacklogItemModel.priority).all()
     )
 
     # Recent work requests
-    recent_wrs = db.query(WorkRequestModel).order_by(
+    recent_wrs = wr_q.order_by(
         WorkRequestModel.created_at.desc()
     ).limit(50).all()
     wr_rows = []
@@ -359,7 +374,7 @@ def generate_report_from_db(db: Session, report_type: str = "operational") -> di
         })
 
     # Recent work orders
-    recent_wos = db.query(ManagedWorkOrderModel).order_by(
+    recent_wos = wo_q.order_by(
         ManagedWorkOrderModel.created_at.desc()
     ).limit(50).all()
     wo_rows = []

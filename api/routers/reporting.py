@@ -123,10 +123,11 @@ import io
 def generate_report_from_db(
     report_type: str = "operational",
     format: str = "json",
+    plant_id: str | None = None,
     db: Session = Depends(get_db),
 ):
     """Generate a report directly from DB data (SF-57).
     report_type: weekly | monthly | operational
     format: json (returns structured data for frontend XLSX generation)
     """
-    return reporting_service.generate_report_from_db(db, report_type)
+    return reporting_service.generate_report_from_db(db, report_type, plant_id)

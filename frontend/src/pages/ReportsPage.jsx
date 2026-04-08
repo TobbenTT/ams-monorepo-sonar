@@ -212,7 +212,7 @@ export default function Reports() {
         setGenerating(true);
         try {
             if (reportType === 'operational') {
-                const dbReport = await api.generateReportFromDB({ report_type: 'operational' });
+                const dbReport = await api.generateReportFromDB({ report_type: 'operational', plant_id: plant });
                 setPreview(dbReport);
                 toast.success('Operational report generated from DB');
                 const updated = await api.listReports({ plant_id: plant });
@@ -434,7 +434,7 @@ export default function Reports() {
                                         onClick={async () => {
                                             try {
                                                 setGenerating(true);
-                                                const res = await api.generateReportFromDB({ report_type: t(tpl.titleKey) });
+                                                const res = await api.generateReportFromDB({ report_type: t(tpl.titleKey), plant_id: plant });
                                                 setPreview(res);
                                                 toast.success(t(tpl.titleKey));
                                             } catch {

@@ -1,0 +1,7803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AMS Data Model — ERD Diagram</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; overflow: hidden; }
+#toolbar { position: fixed; top: 0; left: 0; right: 0; background: #16213e; padding: 10px 20px; z-index: 100; display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #0f3460; }
+#toolbar h1 { color: #10b981; font-size: 16px; }
+#toolbar .stat { color: #94a3b8; font-size: 12px; }
+#toolbar button { background: #0f3460; color: #e2e8f0; border: 1px solid #1a4a8a; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+#toolbar button:hover { background: #1a4a8a; }
+#toolbar input { background: #0f3460; color: #e2e8f0; border: 1px solid #1a4a8a; padding: 6px 12px; border-radius: 6px; font-size: 12px; width: 200px; }
+#canvas { position: absolute; top: 50px; left: 0; right: 0; bottom: 0; }
+svg { width: 100%; height: 100%; }
+.table-box { cursor: move; }
+.table-box rect.header { rx: 6; ry: 6; }
+.table-box rect.body { rx: 0 0 6 6; }
+.table-box text { font-family: 'Cascadia Code', 'Consolas', monospace; }
+.rel-line { stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+.legend { position: fixed; bottom: 20px; right: 20px; background: #16213e; padding: 12px 16px; border-radius: 8px; border: 1px solid #0f3460; }
+.legend div { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.legend .swatch { width: 14px; height: 14px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <h1>AMS ERD Diagram</h1>
+  <span class="stat" id="info"></span>
+  <input type="text" id="search" placeholder="Search table..." oninput="highlightTable(this.value)">
+  <button onclick="resetZoom()">Reset View</button>
+  <button onclick="autoLayout()">Auto Layout</button>
+</div>
+<div id="canvas">
+  <svg id="svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#818cf8"/>
+      </marker>
+    </defs>
+    <g id="zoom-group">
+      <g id="lines-group"></g>
+      <g id="tables-group"></g>
+    </g>
+  </svg>
+</div>
+<div class="legend">
+  <div><span class="swatch" style="background:#10b981"></span> Core (plants, hierarchy)</div>
+  <div><span class="swatch" style="background:#3b82f6"></span> Work Management</div>
+  <div><span class="swatch" style="background:#f59e0b"></span> Maintenance Data</div>
+  <div><span class="swatch" style="background:#8b5cf6"></span> Auth / Users</div>
+  <div><span class="swatch" style="background:#ef4444"></span> Analytics / KPI</div>
+  <div><span class="swatch" style="background:#64748b"></span> Other</div>
+  <div style="margin-top:6px;color:#818cf8">─── Foreign Key</div>
+</div>
+
+<script>
+const SCHEMA = {
+  "tables": {
+    "activity_classes": {
+      "pk": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "notification_class",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "classification",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "priority",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "activity_code",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "activity_desc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "wo_class",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "wo_class_desc",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "ai_feedback": {
+      "pk": [
+        "feedback_id"
+      ],
+      "columns": [
+        {
+          "name": "feedback_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "work_request_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "work_order_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "field_name",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "predicted_value",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "actual_value",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "rating",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "feedback_source",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "ai_interactions": {
+      "pk": [
+        "interaction_id"
+      ],
+      "columns": [
+        {
+          "name": "interaction_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "session_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "agent_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "milestone",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "instruction",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "response_summary",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "tool_calls",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "tokens_used",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "duration_ms",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "session_id"
+          ],
+          "to_table": "ai_sessions",
+          "to_cols": [
+            "session_id"
+          ]
+        }
+      ]
+    },
+    "ai_sessions": {
+      "pk": [
+        "session_id"
+      ],
+      "columns": [
+        {
+          "name": "session_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "current_milestone",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "session_state",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "milestone_gates",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "annual_budget_capex": {
+      "pk": [],
+      "columns": [
+        {
+          "name": "capex_id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "capex_category",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "capex_category_desc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "project_name",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "wbs_element",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "cost_center",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "asset_class",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "sap_func_loc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "jan_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "feb_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "mar_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "apr_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "may_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jun_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jul_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "aug_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "sep_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "oct_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "nov_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "dec_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "annual_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "approval_status",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "priority",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "annual_budget_equipment": {
+      "pk": [],
+      "columns": [
+        {
+          "name": "sap_func_loc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "sap_func_loc_short",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "equipment_name",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "equnr",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "cost_center",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "planning_group",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "cost_element",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "cost_element_desc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "jan_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "feb_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "mar_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "apr_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "may_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jun_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jul_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "aug_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "sep_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "oct_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "nov_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "dec_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "annual_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "annual_budget_executive": {
+      "pk": [],
+      "columns": [
+        {
+          "name": "kpi_category",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "kpi_name",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "kpi_description",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "unit",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "jan_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "feb_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "mar_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "apr_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "may_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jun_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jul_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "aug_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "sep_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "oct_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "nov_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "dec_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "annual_budget",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "annual_actual",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "variance_pct",
+          "type": "REAL",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "annual_budget_kpi_targets": {
+      "pk": [],
+      "columns": [
+        {
+          "name": "kpi_domain",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "kpi_name",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "kpi_description",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "area",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "planning_group",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "unit",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "jan_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "feb_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "mar_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "apr_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "may_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jun_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jul_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "aug_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "sep_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "oct_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "nov_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "dec_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "annual_target",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "calculation_method",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "data_source_file",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "annual_budget_maintenance": {
+      "pk": [],
+      "columns": [
+        {
+          "name": "fleet_group",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "fleet_description",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "sap_func_loc_l2",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "cost_center",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "planning_group",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "maint_cost_type",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "maint_cost_type_desc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "jan_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "feb_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "mar_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "apr_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "may_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jun_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jul_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "aug_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "sep_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "oct_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "nov_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "dec_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "annual_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "budget_source",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "annual_budget_opex": {
+      "pk": [],
+      "columns": [
+        {
+          "name": "cost_center",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "cost_center_desc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "business_area",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "cost_element",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "cost_element_desc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "cost_sub_element",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "jan_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "feb_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "mar_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "apr_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "may_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jun_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jul_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "aug_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "sep_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "oct_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "nov_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "dec_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "annual_budget_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jan_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "feb_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "mar_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "apr_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "may_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jun_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jul_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "aug_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "sep_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "oct_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "nov_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "dec_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "annual_actual_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "variance_usd",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "variance_pct",
+          "type": "REAL",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "annual_budget_production": {
+      "pk": [],
+      "columns": [
+        {
+          "name": "production_area",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "parameter",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "parameter_desc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "unit",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "ene",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "feb",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "mar",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "abr",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "may",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jun",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "jul",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "ago",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "sep",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "oct",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "nov",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "dic",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "annual_total",
+          "type": "REAL",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "audit_log": {
+      "pk": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "entity_type",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "entity_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "action",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "payload",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "user",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "timestamp",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "ip_address",
+          "type": "VARCHAR(45)",
+          "nullable": true
+        },
+        {
+          "name": "user_agent",
+          "type": "VARCHAR(500)",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "backlog_items": {
+      "pk": [
+        "backlog_id"
+      ],
+      "columns": [
+        {
+          "name": "backlog_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "work_request_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "priority",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "wo_type",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "blocking_reason",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "estimated_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "specialties",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "materials_ready",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "shutdown_required",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "age_days",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "work_request_id"
+          ],
+          "to_table": "work_requests",
+          "to_cols": [
+            "request_id"
+          ]
+        }
+      ]
+    },
+    "bom_items": {
+      "pk": [
+        "item_id"
+      ],
+      "columns": [
+        {
+          "name": "item_id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "equipment_tag",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "item_number",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "component",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "sap_code",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "quantity",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "unit",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "critical",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "lead_time_days",
+          "type": "INTEGER",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "capa_items": {
+      "pk": [
+        "capa_id"
+      ],
+      "columns": [
+        {
+          "name": "capa_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "capa_type",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(300)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "root_cause",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "current_phase",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "assigned_to",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "target_date",
+          "type": "DATE",
+          "nullable": true
+        },
+        {
+          "name": "closed_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "verified_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "actions_planned",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "actions_completed",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "effectiveness_verified",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "lessons_learned",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "cost_centers": {
+      "pk": [
+        "cc_id"
+      ],
+      "columns": [
+        {
+          "name": "cc_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "cc_code",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "cc_name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "area",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "responsible",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "budget_annual",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "budget_used",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "currency",
+          "type": "VARCHAR(5)",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "criticality_assessments": {
+      "pk": [
+        "assessment_id"
+      ],
+      "columns": [
+        {
+          "name": "assessment_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "node_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "assessed_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "assessed_by",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "method",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "criteria_scores",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "probability",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "overall_score",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "risk_class",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "ai_suggested_class",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "ai_justification",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "node_id"
+          ],
+          "to_table": "hierarchy_nodes",
+          "to_cols": [
+            "node_id"
+          ]
+        }
+      ]
+    },
+    "data_import_log": {
+      "pk": [
+        "import_id"
+      ],
+      "columns": [
+        {
+          "name": "import_id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "table_name",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "filename",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "rows_imported",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "mode",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "error_message",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "de_kpi_snapshots": {
+      "pk": [
+        "snapshot_id"
+      ],
+      "columns": [
+        {
+          "name": "snapshot_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "period_start",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "period_end",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "kpis",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "overall_compliance",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "program_score",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "maturity_level",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "calculated_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "deliverables": {
+      "pk": [
+        "deliverable_id"
+      ],
+      "columns": [
+        {
+          "name": "deliverable_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "name_fr",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "category",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "milestone",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "execution_plan_stage_id",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "quality_score_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "estimated_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "actual_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "artifact_paths",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "client_slug",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "project_slug",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "assigned_agent",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "submitted_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "reviewed_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "client_feedback",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "consultant_notes",
+          "type": "TEXT",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "detailed_feedback": {
+      "pk": [
+        "feedback_id"
+      ],
+      "columns": [
+        {
+          "name": "feedback_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "user_name",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "user_role",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "feedback_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "priority",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(300)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "rating",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "page_url",
+          "type": "VARCHAR(500)",
+          "nullable": false
+        },
+        {
+          "name": "page_name",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "section",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "component",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "browser_info",
+          "type": "VARCHAR(500)",
+          "nullable": false
+        },
+        {
+          "name": "screen_size",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "device_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "os_info",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "screenshots",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "attachments",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "steps_to_reproduce",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "expected_behavior",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "actual_behavior",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "admin_notes",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "frequency",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "impact",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "contact_email",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "desired_behavior",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "expected_benefit",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "equipment_handovers": {
+      "pk": [
+        "handover_id"
+      ],
+      "columns": [
+        {
+          "name": "handover_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "wo_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "handover_type",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "from_user",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "to_user",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "condition_notes",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "tests_passed",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "test_notes",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "handover_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "execution_checklists": {
+      "pk": [
+        "checklist_id"
+      ],
+      "columns": [
+        {
+          "name": "checklist_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "work_package_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "task_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "checklist_items",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "safety_items",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "loto_steps",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "ppe_requirements",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "completed_items",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "total_items",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "work_package_name",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "work_package_code",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "equipment_name",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "steps",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "safety_section",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "pre_task_notes",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "post_task_notes",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "assigned_to",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "supervisor",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "supervisor_signature",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "closure_summary",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "started_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "closed_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "expert_cards": {
+      "pk": [
+        "expert_id"
+      ],
+      "columns": [
+        {
+          "name": "expert_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "domains",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "equipment_expertise",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "certifications",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "years_experience",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "resolution_count",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "last_active",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "contact_method",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "languages",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "is_retired",
+          "type": "BOOLEAN",
+          "nullable": true
+        },
+        {
+          "name": "retired_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "hourly_rate_usd",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "availability_hours",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "preferred_contact",
+          "type": "VARCHAR",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "expert_consultations": {
+      "pk": [
+        "consultation_id"
+      ],
+      "columns": [
+        {
+          "name": "consultation_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "session_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "expert_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "technician_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_type_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "symptoms_snapshot",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "candidates_snapshot",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "ai_suggestion",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "expert_guidance",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "expert_fm_codes",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "expert_confidence",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "token",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "token_expires_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "requested_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "viewed_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "responded_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "closed_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "response_time_minutes",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "compensation_status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "language",
+          "type": "VARCHAR(5)",
+          "nullable": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "expert_contributions": {
+      "pk": [
+        "contribution_id"
+      ],
+      "columns": [
+        {
+          "name": "contribution_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "consultation_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "expert_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_type_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "fm_codes",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "symptom_descriptions",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "diagnostic_steps",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "corrective_actions",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "tips",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "validated_by",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "validated_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "promoted_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "promoted_targets",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "failure_catalog": {
+      "pk": [
+        "catalog_id"
+      ],
+      "columns": [
+        {
+          "name": "catalog_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "equipment_name",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "sap_func_loc",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "area",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "mechanism",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "cause",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "failure_pattern",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "failure_consequence",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "evidence",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "detection_method",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "downtime_hours",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "rpn_severity",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "rpn_occurrence",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "rpn_detection",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "rpn_total",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "subunit",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "maintainable_item",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "failure_modes": {
+      "pk": [
+        "failure_mode_id"
+      ],
+      "columns": [
+        {
+          "name": "failure_mode_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "functional_failure_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "fm_status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "what",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "mechanism",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "cause",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "failure_pattern",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "failure_consequence",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "is_hidden",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "failure_effect",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "strategy_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "ai_generated",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "ai_confidence",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "existing_task_source",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "justification_category",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "functional_failure_id"
+          ],
+          "to_table": "functional_failures",
+          "to_cols": [
+            "failure_id"
+          ]
+        }
+      ]
+    },
+    "failure_predictions": {
+      "pk": [
+        "prediction_id"
+      ],
+      "columns": [
+        {
+          "name": "prediction_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "predicted_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "weibull_params",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "current_age_days",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "reliability_current",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "predicted_failure_window_days",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "confidence_level",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "risk_score",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "failure_pattern",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "recommendation",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "field_captures": {
+      "pk": [
+        "capture_id"
+      ],
+      "columns": [
+        {
+          "name": "capture_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "technician_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "capture_type",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "language",
+          "type": "VARCHAR(5)",
+          "nullable": false
+        },
+        {
+          "name": "raw_text",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "raw_voice_text",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "images",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "equipment_tag_manual",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "location_hint",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "version",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "synced_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "modified_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "audio_file_path",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "audio_transcription",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "gps_lat",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "gps_lon",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "image_analysis_result",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "fmeca_worksheets": {
+      "pk": [
+        "worksheet_id"
+      ],
+      "columns": [
+        {
+          "name": "worksheet_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_name",
+          "type": "VARCHAR(300)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "current_stage",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "rows",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "stage_completion",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "analyst",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "functional_failures": {
+      "pk": [
+        "failure_id"
+      ],
+      "columns": [
+        {
+          "name": "failure_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "function_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "failure_type",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "description_fr",
+          "type": "TEXT",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "function_id"
+          ],
+          "to_table": "functions",
+          "to_cols": [
+            "function_id"
+          ]
+        }
+      ]
+    },
+    "functions": {
+      "pk": [
+        "function_id"
+      ],
+      "columns": [
+        {
+          "name": "function_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "node_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "function_type",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "description_fr",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "performance_standard",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "ai_generated",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "node_id"
+          ],
+          "to_table": "hierarchy_nodes",
+          "to_cols": [
+            "node_id"
+          ]
+        }
+      ]
+    },
+    "health_scores": {
+      "pk": [
+        "score_id"
+      ],
+      "columns": [
+        {
+          "name": "score_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "node_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "calculated_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "dimensions",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "composite_score",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "health_class",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "trend",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "recommendations",
+          "type": "JSON",
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "node_id"
+          ],
+          "to_table": "hierarchy_nodes",
+          "to_cols": [
+            "node_id"
+          ]
+        }
+      ]
+    },
+    "hierarchy_nodes": {
+      "pk": [
+        "node_id"
+      ],
+      "columns": [
+        {
+          "name": "node_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "node_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "name_fr",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "code",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "parent_node_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "level",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "tag",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "criticality",
+          "type": "VARCHAR(10)",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_lib_ref",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "component_lib_ref",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "sap_func_loc",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "sap_equipment_nr",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "order",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "metadata_json",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "gps_lat",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "gps_lon",
+          "type": "FLOAT",
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "parent_node_id"
+          ],
+          "to_table": "hierarchy_nodes",
+          "to_cols": [
+            "node_id"
+          ]
+        },
+        {
+          "from": [
+            "plant_id"
+          ],
+          "to_table": "plants",
+          "to_cols": [
+            "plant_id"
+          ]
+        }
+      ]
+    },
+    "import_history": {
+      "pk": [
+        "import_id"
+      ],
+      "columns": [
+        {
+          "name": "import_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "filename",
+          "type": "VARCHAR(255)",
+          "nullable": false
+        },
+        {
+          "name": "file_size_kb",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "total_rows",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "valid_rows",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "error_rows",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "errors_json",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "imported_by",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "imported_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "improvement_actions": {
+      "pk": [
+        "action_id"
+      ],
+      "columns": [
+        {
+          "name": "action_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(300)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "source_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "source_ref",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "action_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "priority",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "category",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "assigned_to",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "created_by",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "target_date",
+          "type": "DATE",
+          "nullable": true
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "ai_generated",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "ai_suggestion",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "resolution",
+          "type": "TEXT",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "inventory_items": {
+      "pk": [
+        "item_id"
+      ],
+      "columns": [
+        {
+          "name": "item_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "material_code",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "warehouse_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "VARCHAR(300)",
+          "nullable": false
+        },
+        {
+          "name": "quantity_on_hand",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "quantity_reserved",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "quantity_available",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "min_stock",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "reorder_point",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "last_movement_date",
+          "type": "DATE",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "kpi_metrics": {
+      "pk": [
+        "metrics_id"
+      ],
+      "columns": [
+        {
+          "name": "metrics_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "period_start",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "period_end",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "calculated_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "mtbf_days",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "mttr_hours",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "availability_pct",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "oee_pct",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "schedule_compliance_pct",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "backlog_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "pm_compliance_pct",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "total_work_orders",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "corrective_wo_count",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "preventive_wo_count",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "reactive_ratio_pct",
+          "type": "FLOAT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "maintenance_plans": {
+      "pk": [
+        "plan_id"
+      ],
+      "columns": [
+        {
+          "name": "plan_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "plan_number",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "plan_type",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "strategy",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "cycle_value",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "cycle_unit",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "call_horizon_pct",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "scheduling_period",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "task_list_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "last_planned_date",
+          "type": "DATE",
+          "nullable": true
+        },
+        {
+          "name": "next_planned_date",
+          "type": "DATE",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "maintenance_tasks": {
+      "pk": [
+        "task_id"
+      ],
+      "columns": [
+        {
+          "name": "task_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "failure_mode_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(72)",
+          "nullable": false
+        },
+        {
+          "name": "name_fr",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "task_type",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "is_secondary",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "acceptable_limits",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "conditional_comments",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "consequences",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "justification",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "constraint",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "access_time_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "frequency_value",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "frequency_unit",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "origin",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "budget_type",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "budgeted_life",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "labour_resources",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "material_resources",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "tools_list",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "special_equipment",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "ai_generated",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "ai_confidence",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "failure_mode_id"
+          ],
+          "to_table": "failure_modes",
+          "to_cols": [
+            "failure_mode_id"
+          ]
+        }
+      ]
+    },
+    "managed_work_orders": {
+      "pk": [
+        "wo_id"
+      ],
+      "columns": [
+        {
+          "name": "wo_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "wo_number",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "work_request_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "wo_type",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "priority_code",
+          "type": "VARCHAR(5)",
+          "nullable": false
+        },
+        {
+          "name": "work_class",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "operations",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "materials",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "tools",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "documents",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "labour_summary",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "planned_start",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "planned_end",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "actual_start",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "actual_end",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "estimated_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "actual_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "planned_by",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "released_by",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "released_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "closed_by",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "closed_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "assigned_workers",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "completion_pct",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "execution_notes",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "risk_analysis",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "budget_approved",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "budget_amount",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "is_fast_track",
+          "type": "BOOLEAN",
+          "nullable": true
+        },
+        {
+          "name": "labor_cost",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "material_cost",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "external_cost",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "actual_total_cost",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "planned_material_cost",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "planned_external_cost",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "technical_location",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "planning_group",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "work_center",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "shift",
+          "type": "VARCHAR(10)",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "measurement_readings": {
+      "pk": [
+        "reading_id"
+      ],
+      "columns": [
+        {
+          "name": "reading_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "point_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "value",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "read_by",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "read_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "is_alarm",
+          "type": "BOOLEAN",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "point_id"
+          ],
+          "to_table": "measuring_points",
+          "to_cols": [
+            "point_id"
+          ]
+        }
+      ]
+    },
+    "measuring_points": {
+      "pk": [
+        "point_id"
+      ],
+      "columns": [
+        {
+          "name": "point_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "point_name",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "measurement_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "unit",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "lower_limit",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "upper_limit",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "target_value",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "last_reading",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "last_reading_date",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "reading_interval_hours",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "moc_requests": {
+      "pk": [
+        "moc_id"
+      ],
+      "columns": [
+        {
+          "name": "moc_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(300)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "category",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "risk_level",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "requester_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "reviewer_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "approver_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "affected_equipment",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "affected_procedures",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "risk_assessment",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "impact_analysis",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "submitted_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "approved_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "closed_at",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "notifications": {
+      "pk": [
+        "notification_id"
+      ],
+      "columns": [
+        {
+          "name": "notification_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "notification_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "level",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(300)",
+          "nullable": false
+        },
+        {
+          "name": "message",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "acknowledged",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "acknowledged_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "recipient_id",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "consultation_id",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "channel",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "read_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "optimized_backlogs": {
+      "pk": [
+        "optimization_id"
+      ],
+      "columns": [
+        {
+          "name": "optimization_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "period_start",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "period_end",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "total_items",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "stratification",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "work_packages",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "schedule",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "alerts",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "generated_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "or_deliverables": {
+      "pk": [
+        "deliverable_id"
+      ],
+      "columns": [
+        {
+          "name": "deliverable_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "project_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "agent_type",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "file_path",
+          "type": "VARCHAR(500)",
+          "nullable": true
+        },
+        {
+          "name": "file_type",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "quality_score",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "quality_dimensions",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "gate",
+          "type": "VARCHAR(10)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "project_id"
+          ],
+          "to_table": "or_projects",
+          "to_cols": [
+            "project_id"
+          ]
+        }
+      ]
+    },
+    "or_projects": {
+      "pk": [
+        "project_id"
+      ],
+      "columns": [
+        {
+          "name": "project_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "client_name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "plant_code",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "project_type",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "current_gate",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "gate_status",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "active_agents",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "permits_to_work": {
+      "pk": [
+        "permit_id"
+      ],
+      "columns": [
+        {
+          "name": "permit_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "permit_number",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "permit_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "wo_number",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "risk_level",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "requested_by",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "approved_by",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "valid_from",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "valid_until",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "loto_required",
+          "type": "BOOLEAN",
+          "nullable": true
+        },
+        {
+          "name": "loto_points",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "safety_measures",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "closed_at",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "planner_recommendations": {
+      "pk": [
+        "recommendation_id"
+      ],
+      "columns": [
+        {
+          "name": "recommendation_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "work_request_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "resource_analysis",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "scheduling_suggestion",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "risk_assessment",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "planner_action",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "ai_confidence",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "generated_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "work_request_id"
+          ],
+          "to_table": "work_requests",
+          "to_cols": [
+            "request_id"
+          ]
+        }
+      ]
+    },
+    "planning_kpi_snapshots": {
+      "pk": [
+        "snapshot_id"
+      ],
+      "columns": [
+        {
+          "name": "snapshot_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "period_start",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "period_end",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "kpis",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "overall_health",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "on_target_count",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "below_target_count",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "calculated_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "plants": {
+      "pk": [
+        "plant_id"
+      ],
+      "columns": [
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "name_fr",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "name_ar",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "location",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "post_maintenance_reviews": {
+      "pk": [
+        "review_id"
+      ],
+      "columns": [
+        {
+          "name": "review_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "period_start",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "period_end",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "wo_summary",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "performance_kpis",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "delays",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "unplanned_work",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "rework_items",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "meeting_date",
+          "type": "DATE",
+          "nullable": true
+        },
+        {
+          "name": "attendees",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "meeting_notes",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "improvement_actions",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "lessons_learned",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "created_by",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "purchase_requisitions": {
+      "pk": [
+        "pr_id"
+      ],
+      "columns": [
+        {
+          "name": "pr_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "pr_number",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "wo_number",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "material_code",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "quantity",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "unit",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "estimated_cost",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "currency",
+          "type": "VARCHAR(5)",
+          "nullable": true
+        },
+        {
+          "name": "delivery_date",
+          "type": "DATE",
+          "nullable": true
+        },
+        {
+          "name": "vendor",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "approved_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "po_number",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "rbi_assessments": {
+      "pk": [
+        "assessment_id"
+      ],
+      "columns": [
+        {
+          "name": "assessment_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "analyzed_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "total_equipment",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "assessments",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "high_risk_count",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "overdue_count",
+          "type": "INTEGER",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "rca_analyses": {
+      "pk": [
+        "analysis_id"
+      ],
+      "columns": [
+        {
+          "name": "analysis_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "event_description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "level",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "team_members",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "analysis_5w2h",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "cause_effect",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "evidence_5p",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "solutions",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "reports": {
+      "pk": [
+        "report_id"
+      ],
+      "columns": [
+        {
+          "name": "report_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "report_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "period_start",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "period_end",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "generated_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "content",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "metadata_json",
+          "type": "JSON",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "responsible_work_posts": {
+      "pk": [
+        "post_id"
+      ],
+      "columns": [
+        {
+          "name": "post_id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "code",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "planning_group",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "post_type",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "sap_materials": {
+      "pk": [
+        "sap_id"
+      ],
+      "columns": [
+        {
+          "name": "sap_id",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "VARCHAR(200)",
+          "nullable": true
+        },
+        {
+          "name": "category",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "unit",
+          "type": "VARCHAR(10)",
+          "nullable": true
+        },
+        {
+          "name": "unit_cost_usd",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "manufacturer",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "part_number",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "ved_class",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "abc_class",
+          "type": "VARCHAR(5)",
+          "nullable": true
+        },
+        {
+          "name": "max_stock",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "min_stock",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "current_stock",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "lead_time_days",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "warehouse",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "applicable_equipment",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "sap_upload_packages": {
+      "pk": [
+        "package_id"
+      ],
+      "columns": [
+        {
+          "name": "package_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "generated_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "plant_code",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "maintenance_plan",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "maintenance_items",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "task_lists",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "settlement_rules": {
+      "pk": [
+        "rule_id"
+      ],
+      "columns": [
+        {
+          "name": "rule_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "wo_number",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "cost_center_code",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "settlement_pct",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "settled_amount",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "settlement_date",
+          "type": "DATE",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "shutdown_calendar": {
+      "pk": [
+        "shutdown_id"
+      ],
+      "columns": [
+        {
+          "name": "shutdown_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "start_date",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "end_date",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "shutdown_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "areas",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "shutdown_events": {
+      "pk": [
+        "shutdown_id"
+      ],
+      "columns": [
+        {
+          "name": "shutdown_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "planned_start",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "planned_end",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "actual_start",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "actual_end",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "planned_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "actual_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "work_orders",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "completed_work_orders",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "completion_pct",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "delay_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "delay_reasons",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "spare_part_analyses": {
+      "pk": [
+        "analysis_id"
+      ],
+      "columns": [
+        {
+          "name": "analysis_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "analyzed_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "total_parts",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "results",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "total_inventory_value",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "recommended_reduction_pct",
+          "type": "FLOAT",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "sync_conflicts": {
+      "pk": [
+        "conflict_id"
+      ],
+      "columns": [
+        {
+          "name": "conflict_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "entity_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "entity_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "field",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "local_value",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "server_value",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "local_modified_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "server_modified_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "resolution",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "resolved_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "device_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "time_logs": {
+      "pk": [
+        "log_id"
+      ],
+      "columns": [
+        {
+          "name": "log_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "deliverable_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "logged_by",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "logged_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "activity_type",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "deliverable_id"
+          ],
+          "to_table": "deliverables",
+          "to_cols": [
+            "deliverable_id"
+          ]
+        }
+      ]
+    },
+    "troubleshooting_diagnostics": {
+      "pk": [
+        "diagnostic_id"
+      ],
+      "columns": [
+        {
+          "name": "diagnostic_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "symptom_description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "ai_diagnosis",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "probable_causes",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "recommended_actions",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "confidence_score",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "resolved",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "resolution_notes",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "created_by",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "troubleshooting_sessions": {
+      "pk": [
+        "session_id"
+      ],
+      "columns": [
+        {
+          "name": "session_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_type_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "symptoms",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "tests_performed",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "candidate_diagnoses",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "final_fm_code",
+          "type": "VARCHAR(10)",
+          "nullable": true
+        },
+        {
+          "name": "final_mechanism",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "final_cause",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "final_confidence",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "actual_cause_feedback",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "technician_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "expert_consultation_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "user_feedback": {
+      "pk": [
+        "feedback_id"
+      ],
+      "columns": [
+        {
+          "name": "feedback_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "page",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "rating",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "comment",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "users": {
+      "pk": [
+        "user_id"
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "email",
+          "type": "VARCHAR(255)",
+          "nullable": false
+        },
+        {
+          "name": "username",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "hashed_password",
+          "type": "VARCHAR(255)",
+          "nullable": false
+        },
+        {
+          "name": "full_name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "is_active",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "last_login",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "variance_alerts": {
+      "pk": [
+        "alert_id"
+      ],
+      "columns": [
+        {
+          "name": "alert_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "metric_name",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "plant_value",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "portfolio_mean",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "portfolio_std",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "z_score",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "variance_level",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "detected_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "message",
+          "type": "TEXT",
+          "nullable": false
+        }
+      ],
+      "fks": []
+    },
+    "warehouses": {
+      "pk": [
+        "wh_id"
+      ],
+      "columns": [
+        {
+          "name": "wh_id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "wh_code",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "wh_name",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "plant_id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "location",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "weekly_programs": {
+      "pk": [
+        "program_id"
+      ],
+      "columns": [
+        {
+          "name": "program_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "week_number",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "year",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "work_packages",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "total_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "resource_slots",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "conflicts",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "support_tasks",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "finalized_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "published_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "published_by",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "material_status",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "hh_balance",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "work_assignments": {
+      "pk": [
+        "assignment_id"
+      ],
+      "columns": [
+        {
+          "name": "assignment_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "work_package_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "assigned_to",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "required_competencies",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "matched_competencies",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "competency_match_score",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "scheduled_date",
+          "type": "DATE",
+          "nullable": true
+        },
+        {
+          "name": "estimated_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "wo_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "task_description",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "task_understood",
+          "type": "BOOLEAN",
+          "nullable": true
+        },
+        {
+          "name": "progress_pct",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "partial_notes",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "shift_handover_notes",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "work_centers": {
+      "pk": [
+        "code"
+      ],
+      "columns": [
+        {
+          "name": "code",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "plant_type",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "area_code",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "area_name",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "specialty_code",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "specialty_name",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "is_external",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "headcount_day",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "headcount_night",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "effective_hours_per_person",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "shift_hours",
+          "type": "REAL",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "work_orders": {
+      "pk": [
+        "work_order_id"
+      ],
+      "columns": [
+        {
+          "name": "work_order_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "order_type",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "priority",
+          "type": "VARCHAR(10)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "created_date",
+          "type": "DATE",
+          "nullable": false
+        },
+        {
+          "name": "actual_duration_hours",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "materials_consumed",
+          "type": "JSON",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "work_packages": {
+      "pk": [
+        "work_package_id"
+      ],
+      "columns": [
+        {
+          "name": "work_package_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(40)",
+          "nullable": false
+        },
+        {
+          "name": "code",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "node_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "frequency_value",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "frequency_unit",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "constraint",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "access_time_hours",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "work_package_type",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "job_preparation",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "post_shutdown",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "allocated_tasks",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "labour_summary",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "material_summary",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "sap_upload_ref",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "node_id"
+          ],
+          "to_table": "hierarchy_nodes",
+          "to_cols": [
+            "node_id"
+          ]
+        }
+      ]
+    },
+    "work_permits": {
+      "pk": [
+        "permit_id"
+      ],
+      "columns": [
+        {
+          "name": "permit_id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "permit_type",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "equipment_tag",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "wo_reference",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "issued_by",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "valid_from",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "valid_until",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "plant_id",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    },
+    "work_requests": {
+      "pk": [
+        "request_id"
+      ],
+      "columns": [
+        {
+          "name": "request_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "source_capture_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_id",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_tag",
+          "type": "VARCHAR(100)",
+          "nullable": false
+        },
+        {
+          "name": "equipment_confidence",
+          "type": "FLOAT",
+          "nullable": false
+        },
+        {
+          "name": "resolution_method",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "problem_description",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "ai_classification",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "spare_parts",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "image_analysis",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "validation",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "nullable": false
+        },
+        {
+          "name": "version",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "synced_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "modified_at",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "priority_code",
+          "type": "VARCHAR(5)",
+          "nullable": true
+        },
+        {
+          "name": "work_class",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "sla_deadline",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "created_by",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "approver_id",
+          "type": "VARCHAR(50)",
+          "nullable": true
+        },
+        {
+          "name": "approved_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "approval_comment",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "rejection_reason",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "notification_type",
+          "type": "VARCHAR(30)",
+          "nullable": true
+        },
+        {
+          "name": "reported_by",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "reported_at",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "documents",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "support_equipment",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "circumstances",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "aviso_coding",
+          "type": "VARCHAR(10)",
+          "nullable": true
+        },
+        {
+          "name": "planning_group",
+          "type": "VARCHAR(10)",
+          "nullable": true
+        },
+        {
+          "name": "area_empresa",
+          "type": "VARCHAR(10)",
+          "nullable": true
+        },
+        {
+          "name": "work_center",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "failure_object_part",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "technical_location",
+          "type": "VARCHAR(100)",
+          "nullable": true
+        },
+        {
+          "name": "aviso_number",
+          "type": "INTEGER",
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "from": [
+            "source_capture_id"
+          ],
+          "to_table": "field_captures",
+          "to_cols": [
+            "capture_id"
+          ]
+        }
+      ]
+    },
+    "workforce": {
+      "pk": [
+        "worker_id"
+      ],
+      "columns": [
+        {
+          "name": "worker_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(200)",
+          "nullable": false
+        },
+        {
+          "name": "specialty",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "shift",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "plant_id",
+          "type": "VARCHAR(50)",
+          "nullable": false
+        },
+        {
+          "name": "available",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "certifications",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "competency_level",
+          "type": "VARCHAR",
+          "nullable": true
+        },
+        {
+          "name": "years_experience",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "name": "equipment_expertise",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "safety_training_current",
+          "type": "BOOLEAN",
+          "nullable": true
+        },
+        {
+          "name": "competencies",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "fks": []
+    }
+  },
+  "relationships": [
+    {
+      "from_table": "ai_interactions",
+      "from_col": "session_id",
+      "to_table": "ai_sessions",
+      "to_col": "session_id"
+    },
+    {
+      "from_table": "backlog_items",
+      "from_col": "work_request_id",
+      "to_table": "work_requests",
+      "to_col": "request_id"
+    },
+    {
+      "from_table": "criticality_assessments",
+      "from_col": "node_id",
+      "to_table": "hierarchy_nodes",
+      "to_col": "node_id"
+    },
+    {
+      "from_table": "failure_modes",
+      "from_col": "functional_failure_id",
+      "to_table": "functional_failures",
+      "to_col": "failure_id"
+    },
+    {
+      "from_table": "functional_failures",
+      "from_col": "function_id",
+      "to_table": "functions",
+      "to_col": "function_id"
+    },
+    {
+      "from_table": "functions",
+      "from_col": "node_id",
+      "to_table": "hierarchy_nodes",
+      "to_col": "node_id"
+    },
+    {
+      "from_table": "health_scores",
+      "from_col": "node_id",
+      "to_table": "hierarchy_nodes",
+      "to_col": "node_id"
+    },
+    {
+      "from_table": "hierarchy_nodes",
+      "from_col": "parent_node_id",
+      "to_table": "hierarchy_nodes",
+      "to_col": "node_id"
+    },
+    {
+      "from_table": "hierarchy_nodes",
+      "from_col": "plant_id",
+      "to_table": "plants",
+      "to_col": "plant_id"
+    },
+    {
+      "from_table": "maintenance_tasks",
+      "from_col": "failure_mode_id",
+      "to_table": "failure_modes",
+      "to_col": "failure_mode_id"
+    },
+    {
+      "from_table": "measurement_readings",
+      "from_col": "point_id",
+      "to_table": "measuring_points",
+      "to_col": "point_id"
+    },
+    {
+      "from_table": "or_deliverables",
+      "from_col": "project_id",
+      "to_table": "or_projects",
+      "to_col": "project_id"
+    },
+    {
+      "from_table": "planner_recommendations",
+      "from_col": "work_request_id",
+      "to_table": "work_requests",
+      "to_col": "request_id"
+    },
+    {
+      "from_table": "time_logs",
+      "from_col": "deliverable_id",
+      "to_table": "deliverables",
+      "to_col": "deliverable_id"
+    },
+    {
+      "from_table": "work_packages",
+      "from_col": "node_id",
+      "to_table": "hierarchy_nodes",
+      "to_col": "node_id"
+    },
+    {
+      "from_table": "work_requests",
+      "from_col": "source_capture_id",
+      "to_table": "field_captures",
+      "to_col": "capture_id"
+    }
+  ],
+  "excel_mapping": {
+    "01_equipment_hierarchy.xlsx": "hierarchy_nodes",
+    "02_criticality_assessment.xlsx": "criticality_assessments",
+    "03_failure_modes.xlsx": "failure_modes",
+    "04_measurement_points.xlsx": "measuring_points",
+    "05_work_packages.xlsx": "work_packages",
+    "06_work_order_history.xlsx": "work_orders",
+    "07_spare_parts_inventory.xlsx": "inventory_items",
+    "08_shutdown_calendar.xlsx": "shutdown_calendar",
+    "09_workforce.xlsx": "workforce",
+    "10_field_capture.xlsx": "field_captures",
+    "11_work_centers.xlsx": "work_centers",
+    "23_active_backlog.xlsx": "backlog_items",
+    "24_notifications.xlsx": "notifications",
+    "28_equipment_bom.xlsx": "bom_items",
+    "29_cost_history.xlsx": "cost_centers",
+    "34_permits_to_work.xlsx": "permits_to_work",
+    "39_execution_checklists.xlsx": "execution_checklists"
+  },
+  "excel_headers": {
+    "00_data_dictionary.xlsx": [
+      "file_name",
+      "sheet_name",
+      "column_name",
+      "data_type",
+      "description",
+      "source",
+      "mandatory"
+    ],
+    "01_equipment_hierarchy.xlsx": [
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "fl_type",
+      "pltxt",
+      "level",
+      "parent_fl",
+      "equnr",
+      "eqktx",
+      "eqart",
+      "eqart_desc",
+      "herst",
+      "model",
+      "power_kw",
+      "weight_kg",
+      "abckz",
+      "abckz_desc",
+      "stat",
+      "planning_center",
+      "planning_group",
+      "business_area",
+      "install_date",
+      "serial_number"
+    ],
+    "02_criticality_assessment.xlsx": [
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "sub_area",
+      "system",
+      "equipment_desc",
+      "tag_ut",
+      "ut_description",
+      "main_function",
+      "failure_event",
+      "failure_consequence",
+      "installed_qty",
+      "required_qty",
+      "redundancy",
+      "redundancy_type",
+      "downtime_days",
+      "process_capacity_impact",
+      "utilization_factor",
+      "process_delay_hours",
+      "process_loss_hours",
+      "process_loss_usd",
+      "is_sce",
+      "probability",
+      "consequence_margin",
+      "consequence_cost",
+      "consequence_safety",
+      "consequence_environment",
+      "consequence_rsc",
+      "dominant_consequence",
+      "risk_consideration",
+      "risk_coefficient",
+      "risk_valuation",
+      "criticality_level"
+    ],
+    "03_failure_modes.xlsx": [
+      "equipment_tag",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "sap_func_loc",
+      "area",
+      "equipment_function_description",
+      "equipment_functional_failure",
+      "function_type",
+      "failure_type",
+      "subunit",
+      "maintainable_item",
+      "maintainable_item_function_description",
+      "maintainable_item_functional_failure",
+      "partes_falla",
+      "sintomas_falla",
+      "causas_falla",
+      "fm_what",
+      "fm_mechanism",
+      "fm_cause",
+      "fm_number",
+      "failure_pattern",
+      "failure_consequence",
+      "evidence",
+      "downtime_hours",
+      "detection_method",
+      "rpn_severity",
+      "rpn_occurrence",
+      "rpn_detection",
+      "rpn_total"
+    ],
+    "04_measurement_points.xlsx": [
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "point_id",
+      "point_desc",
+      "meas_type",
+      "unit",
+      "lower_limit",
+      "upper_limit",
+      "target_value",
+      "reading_frequency",
+      "is_counter",
+      "counter_overflow"
+    ],
+    "05_work_packages.xlsx": [
+      "wp_id",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "wp_desc",
+      "eqart",
+      "task_list_type",
+      "task_list_group",
+      "operation_no",
+      "operation_desc",
+      "work_center",
+      "duration_hours",
+      "num_persons",
+      "frequency",
+      "strategy"
+    ],
+    "05_work_packages_construction-template.xlsx": [
+      "wp_code",
+      "wp_name",
+      "equipment_tag",
+      "execution_sequence",
+      "task_id",
+      "task_name",
+      "task_type",
+      "constraint",
+      "estimated_hours"
+    ],
+    "06_work_order_history.xlsx": [
+      "order_number",
+      "order_type",
+      "description",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "priority",
+      "status",
+      "plan_start",
+      "plan_end",
+      "actual_start",
+      "actual_end",
+      "work_center",
+      "planning_group",
+      "total_hours",
+      "total_cost_usd",
+      "notification_number",
+      "created_by",
+      "completed_by"
+    ],
+    "07_spare_parts_inventory.xlsx": [
+      "material_code",
+      "sap_material_number",
+      "description",
+      "manufacturer",
+      "part_number",
+      "ved_class",
+      "fsn_class",
+      "abc_class",
+      "quantity_on_hand",
+      "min_stock",
+      "max_stock",
+      "reorder_point",
+      "lead_time_days",
+      "unit_cost_usd",
+      "unit_of_measure",
+      "applicable_equipment_csv",
+      "warehouse_location"
+    ],
+    "08_shutdown_calendar.xlsx": [
+      "shutdown_id",
+      "shutdown_type",
+      "description",
+      "area",
+      "sub_area",
+      "start_date",
+      "end_date",
+      "duration_days",
+      "status",
+      "year",
+      "estimated_cost_usd",
+      "actual_cost_usd",
+      "work_orders_count"
+    ],
+    "09_workforce.xlsx": [
+      "employee_id",
+      "name",
+      "position",
+      "specialty",
+      "work_center",
+      "planning_group",
+      "shift_pattern",
+      "certification",
+      "hire_date",
+      "hourly_rate_usd",
+      "status",
+      "supervisor_id"
+    ],
+    "10_field_capture.xlsx": [
+      "capture_id",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "capture_date",
+      "inspector",
+      "inspection_type",
+      "condition_score",
+      "observation",
+      "photo_ref",
+      "gps_lat",
+      "gps_lon",
+      "follow_up_required"
+    ],
+    "11_work_centers.xlsx": [
+      "work_center",
+      "description",
+      "plant",
+      "work_center_cat",
+      "person_responsible",
+      "capacity_hours_day",
+      "num_workers",
+      "cost_center",
+      "business_area"
+    ],
+    "12_planning_kpi_input.xlsx": [
+      "period",
+      "area",
+      "planning_group",
+      "total_wo_planned",
+      "total_wo_executed",
+      "compliance_pct",
+      "backlog_hours",
+      "wrench_time_pct",
+      "schedule_compliance_pct",
+      "emergency_wo_pct",
+      "avg_wo_duration_hours"
+    ],
+    "13_de_kpi_input.xlsx": [
+      "period",
+      "area",
+      "mtbf_hours",
+      "mttr_hours",
+      "availability_pct",
+      "reliability_pct",
+      "oee_pct",
+      "failure_count",
+      "pm_compliance_pct",
+      "cost_per_ton_usd",
+      "maintenance_cost_usd",
+      "production_tons"
+    ],
+    "14_maintenance_strategy.xlsx": [
+      "strategy_id",
+      "description",
+      "strategy_type",
+      "package_number",
+      "cycle_length",
+      "cycle_unit",
+      "shift_factor",
+      "call_number",
+      "scheduling_indicator",
+      "applicable_eqart"
+    ],
+    "14_maintenance_strategy_construction-template.xlsx": [
+      "strategy_id",
+      "equipment_tag",
+      "subunit",
+      "maintainable_item",
+      "function_and_failure",
+      "what",
+      "mechanism",
+      "cause",
+      "status",
+      "tactics_type",
+      "primary_task_id",
+      "primary_task_name",
+      "primary_task_interval",
+      "operational_units",
+      "time_units",
+      "primary_task_acceptable_limits",
+      "primary_task_conditional_comments",
+      "primary_task_constraint",
+      "primary_task_task_type",
+      "primary_task_access_time",
+      "secondary_task_id",
+      "secondary_task_name",
+      "secondary_task_constraint",
+      "secondary_task_task_type",
+      "secondary_task_access_time",
+      "secondary_task_comments",
+      "budgeted_as",
+      "budgeted_life",
+      "budgeted_life_time_units",
+      "budgeted_life_operational_units",
+      "existing_task",
+      "justification_category",
+      "justification",
+      "notes"
+    ],
+    "14_maintenance_strategy_construction.xlsx": [
+      "strategy_id",
+      "sap_func_loc_short",
+      "equipment_name",
+      "subunit",
+      "maintainable_item",
+      "partes_falla",
+      "sintomas_falla",
+      "causas_falla",
+      "function_and_failure",
+      "what",
+      "mechanism",
+      "cause",
+      "status",
+      "tactics_type",
+      "primary_task_id",
+      "primary_task_name",
+      "primary_task_interval",
+      "operational_units",
+      "time_units",
+      "primary_task_acceptable_limits",
+      "primary_task_conditional_comments",
+      "primary_task_constraint",
+      "primary_task_task_type",
+      "primary_task_access_time",
+      "secondary_task_id",
+      "secondary_task_name",
+      "secondary_task_constraint",
+      "secondary_task_task_type",
+      "secondary_task_access_time",
+      "secondary_task_comments",
+      "budgeted_as",
+      "budgeted_life",
+      "budgeted_life_time_units",
+      "budgeted_life_operational_units",
+      "existing_task",
+      "justification_category",
+      "justification",
+      "notes"
+    ],
+    "15_catalog_profiles.xlsx": [
+      "C\u00f3d. perfil cat\u00e1logo",
+      "Denominaci\u00f3n perfil cat\u00e1logo",
+      "Tipo cat\u00e1logo",
+      "C\u00f3digo cat\u00e1logo",
+      "equipment_name"
+    ],
+    "16_route_sheets.xlsx": [
+      "route_id",
+      "route_desc",
+      "task_list_type",
+      "group",
+      "counter",
+      "operation_no",
+      "operation_desc",
+      "work_center",
+      "duration_min",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "strategy"
+    ],
+    "17_maintenance_plans.xlsx": [
+      "plan_number",
+      "plan_desc",
+      "plan_type",
+      "strategy",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "task_list_id",
+      "cycle_length",
+      "cycle_unit",
+      "start_date",
+      "call_horizon_pct",
+      "scheduling_indicator",
+      "planning_group",
+      "work_center",
+      "status"
+    ],
+    "18_dms_maf_documents.xlsx": [
+      "document_number",
+      "document_type",
+      "document_desc",
+      "version",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "eqart",
+      "file_path",
+      "created_date",
+      "created_by",
+      "status"
+    ],
+    "19_classification.xlsx": [
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "class_type",
+      "class_name",
+      "char_name",
+      "char_value",
+      "char_unit"
+    ],
+    "20_financial_assignments.xlsx": [
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "cost_center",
+      "wbs_element",
+      "asset_number",
+      "profit_center",
+      "business_area",
+      "settlement_rule",
+      "budget_annual_usd"
+    ],
+    "21_configuration_points.xlsx": [
+      "config_id",
+      "description",
+      "module",
+      "transaction",
+      "parameter",
+      "value",
+      "status",
+      "responsible"
+    ],
+    "22_org_structure_config.xlsx": [
+      "org_level",
+      "code",
+      "description",
+      "parent_code",
+      "type",
+      "responsible",
+      "status"
+    ],
+    "23_active_backlog.xlsx": [
+      "order_number",
+      "order_type",
+      "description",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "priority",
+      "status",
+      "creation_date",
+      "required_date",
+      "estimated_hours",
+      "work_center",
+      "planning_group",
+      "backlog_age_days",
+      "waiting_reason",
+      "constraint_detail",
+      "materials_status",
+      "special_equipment_status",
+      "notification_number"
+    ],
+    "24_notifications.xlsx": [
+      "notification_number",
+      "notif_type",
+      "description",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "priority",
+      "status",
+      "creation_date",
+      "malfunction_start",
+      "malfunction_end",
+      "reported_by",
+      "catalog_profile",
+      "damage_code",
+      "cause_code",
+      "order_number"
+    ],
+    "25_measurement_documents.xlsx": [
+      "doc_number",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "point_id",
+      "meas_date",
+      "meas_value",
+      "unit",
+      "measured_by",
+      "is_alarm",
+      "alarm_type"
+    ],
+    "26_time_confirmations.xlsx": [
+      "confirmation_number",
+      "order_number",
+      "operation",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "work_center",
+      "employee_id",
+      "conf_date",
+      "actual_hours",
+      "activity_type",
+      "final_confirmation"
+    ],
+    "27_material_movements.xlsx": [
+      "movement_id",
+      "movement_type",
+      "movement_type_desc",
+      "movement_category",
+      "material_code",
+      "sap_material_number",
+      "description",
+      "quantity",
+      "unit",
+      "order_number",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "posting_date",
+      "cost_center",
+      "storage_location_from",
+      "storage_location_to",
+      "total_value_usd",
+      "document_number",
+      "reversal_indicator"
+    ],
+    "28_equipment_bom.xlsx": [
+      "parent_func_loc",
+      "parent_func_loc_short",
+      "parent_equipment_name",
+      "parent_equnr",
+      "component_name",
+      "component_type",
+      "component_func_loc",
+      "component_func_loc_short",
+      "component_equipment_name",
+      "level"
+    ],
+    "29_cost_history.xlsx": [
+      "period",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "cost_element",
+      "cost_element_desc",
+      "value_category",
+      "amount_usd",
+      "currency",
+      "order_number",
+      "posting_date"
+    ],
+    "30_reliability_data.xlsx": [
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "period",
+      "operating_hours",
+      "downtime_hours",
+      "failure_count",
+      "mtbf_hours",
+      "mttr_hours",
+      "availability_pct",
+      "reliability_pct",
+      "maint_cost_usd",
+      "criticality"
+    ],
+    "31_maintenance_schedule_3w.xlsx": [
+      "schedule_week",
+      "scheduled_date",
+      "order_number",
+      "order_type",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "order_description",
+      "priority",
+      "operation_number",
+      "operation_description",
+      "work_center",
+      "specialty",
+      "planned_hours",
+      "num_persons",
+      "planned_start",
+      "planned_end",
+      "material_required",
+      "material_available",
+      "status",
+      "source",
+      "constraint_notes"
+    ],
+    "32_typical_operations.xlsx": [
+      "operation_catalog_id",
+      "operation_category",
+      "operation_code",
+      "operation_description",
+      "description_detail",
+      "eqart_applicable",
+      "specialty_required",
+      "typical_duration_hours",
+      "num_persons",
+      "requires_permit",
+      "permit_type",
+      "safety_level",
+      "mandatory",
+      "sequence_order"
+    ],
+    "33_shutdown_detail.xlsx": [
+      "shutdown_id",
+      "activity_id",
+      "activity_name",
+      "activity_type",
+      "parent_activity_id",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "order_number",
+      "predecessor_id",
+      "dependency_type",
+      "lag_hours",
+      "planned_start",
+      "planned_end",
+      "duration_hours",
+      "work_center",
+      "specialty",
+      "num_persons",
+      "is_critical_path",
+      "float_hours",
+      "status",
+      "constraint_type",
+      "notes"
+    ],
+    "34_permits_to_work.xlsx": [
+      "permit_id",
+      "permit_type",
+      "order_number",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "description",
+      "requested_by",
+      "approved_by",
+      "safety_supervisor",
+      "valid_from",
+      "valid_to",
+      "shift",
+      "loto_points",
+      "loto_detail",
+      "gas_monitoring_required",
+      "rescue_plan_required",
+      "ppe_special",
+      "status",
+      "risk_level"
+    ],
+    "35_weekly_program.xlsx": [
+      "program_week",
+      "program_date",
+      "planning_group",
+      "work_center",
+      "specialty",
+      "available_hh",
+      "planned_hh_pm",
+      "planned_hh_cm",
+      "planned_hh_shutdown",
+      "total_planned_hh",
+      "utilization_pct",
+      "overload_flag",
+      "num_orders_pm",
+      "num_orders_cm",
+      "order_number",
+      "order_type",
+      "order_description",
+      "notification_number",
+      "backlog_hh_remaining",
+      "compliance_target_pct",
+      "notes"
+    ],
+    "36_resource_availability.xlsx": [
+      "date",
+      "shift",
+      "work_center",
+      "specialty",
+      "total_headcount",
+      "available_headcount",
+      "available_hh",
+      "assigned_hh",
+      "remaining_hh",
+      "absence_reason",
+      "absent_count"
+    ],
+    "37_material_reservations.xlsx": [
+      "reservation_id",
+      "order_number",
+      "operation_number",
+      "material_code",
+      "sap_material_number",
+      "description",
+      "quantity_required",
+      "quantity_withdrawn",
+      "quantity_available",
+      "unit",
+      "storage_location",
+      "availability_status",
+      "expected_delivery_date",
+      "is_critical",
+      "ved_class"
+    ],
+    "38_kpi_snapshots.xlsx": [
+      "snapshot_date",
+      "period_type",
+      "area",
+      "planning_group",
+      "kpi_name",
+      "kpi_value",
+      "kpi_target",
+      "kpi_unit",
+      "trend",
+      "variance_pct"
+    ],
+    "39_execution_checklists.xlsx": [
+      "checklist_id",
+      "eqart",
+      "maintenance_type",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "equnr",
+      "checklist_name",
+      "step_number",
+      "step_description",
+      "step_type",
+      "expected_value",
+      "unit",
+      "is_mandatory",
+      "requires_photo",
+      "safety_critical"
+    ],
+    "40_daily_log.xlsx": [
+      "log_id",
+      "log_date",
+      "shift",
+      "area",
+      "work_center",
+      "shift_supervisor",
+      "entry_type",
+      "description",
+      "related_order",
+      "sap_func_loc",
+      "sap_func_loc_short",
+      "equipment_name",
+      "priority_flag",
+      "follow_up_required",
+      "follow_up_assigned_to"
+    ],
+    "41_annual_budget.xlsx": [
+      "kpi_category",
+      "kpi_name",
+      "kpi_description",
+      "unit",
+      "jan_budget",
+      "feb_budget",
+      "mar_budget",
+      "apr_budget",
+      "may_budget",
+      "jun_budget",
+      "jul_budget",
+      "aug_budget",
+      "sep_budget",
+      "oct_budget",
+      "nov_budget",
+      "dec_budget",
+      "annual_budget",
+      "annual_actual",
+      "variance_pct"
+    ],
+    "mm60_materials.xlsx": [
+      "Material",
+      "Centro",
+      "Clase de valoraci\u00f3n",
+      "Texto breve de material",
+      "\u00daltima modificaci\u00f3n",
+      "Tipo material",
+      "Grupo de art\u00edculos",
+      "Unidad medida base",
+      "Grupo de compras",
+      "Indicador ABC",
+      "Caract.planif.nec.",
+      "Categor\u00eda valoraci\u00f3n",
+      "Control de precios",
+      "Precio",
+      "Moneda",
+      "Cantidad base",
+      "Creado por"
+    ],
+    "ppto_2017_costos.xlsx": [
+      "MANTENCI\u00d3N"
+    ]
+  },
+  "table_count": 81,
+  "relationship_count": 16
+};
+
+const COLOR_MAP = {
+  'plants': '#10b981', 'hierarchy_nodes': '#10b981', 'criticality_assessments': '#10b981',
+  'work_requests': '#3b82f6', 'managed_work_orders': '#3b82f6', 'work_orders': '#3b82f6',
+  'backlog_items': '#3b82f6', 'work_packages': '#3b82f6', 'work_assignments': '#3b82f6',
+  'failure_modes': '#f59e0b', 'measuring_points': '#f59e0b', 'bom_items': '#f59e0b',
+  'inventory_items': '#f59e0b', 'spare_part_analyses': '#f59e0b', 'maintenance_plans': '#f59e0b',
+  'maintenance_tasks': '#f59e0b', 'failure_catalog': '#f59e0b', 'field_captures': '#f59e0b',
+  'shutdown_calendar': '#f59e0b', 'work_centers': '#f59e0b',
+  'users': '#8b5cf6', 'workforce': '#8b5cf6',
+  'kpi_metrics': '#ef4444', 'planning_kpi_snapshots': '#ef4444', 'de_kpi_snapshots': '#ef4444',
+  'health_scores': '#ef4444', 'failure_predictions': '#ef4444',
+  'notifications': '#3b82f6', 'permits_to_work': '#f59e0b',
+  'rca_analyses': '#ef4444', 'improvement_actions': '#ef4444',
+};
+
+// Select tables to show
+const CORE = new Set();
+SCHEMA.relationships.forEach(r => { CORE.add(r.from_table); CORE.add(r.to_table); });
+['plants','hierarchy_nodes','work_requests','managed_work_orders','workforce','users',
+ 'work_orders','failure_modes','inventory_items','backlog_items','work_packages',
+ 'measuring_points','bom_items','work_centers','shutdown_calendar','criticality_assessments',
+ 'maintenance_plans','field_captures','notifications','work_assignments','kpi_metrics',
+ 'failure_catalog','maintenance_tasks','rca_analyses','improvement_actions','permits_to_work',
+ 'health_scores','spare_part_analyses'].forEach(t => { if (SCHEMA.tables[t]) CORE.add(t); });
+
+const tableList = [...CORE].sort();
+const positions = {};
+const TABLE_W = 220;
+const ROW_H = 16;
+const HEADER_H = 28;
+const MAX_COLS = 8; // Max columns to show per table
+
+// Auto-layout: grid
+function autoLayout() {
+  const cols = 6;
+  const gapX = 280;
+  const gapY = 40;
+  tableList.forEach((t, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const colCount = Math.min(SCHEMA.tables[t].columns.length, MAX_COLS);
+    positions[t] = { x: 60 + col * gapX, y: 80 + row * (HEADER_H + colCount * ROW_H + gapY) };
+  });
+  render();
+}
+
+// Render
+function render() {
+  const tablesG = document.getElementById('tables-group');
+  const linesG = document.getElementById('lines-group');
+  tablesG.innerHTML = '';
+  linesG.innerHTML = '';
+
+  // Draw tables
+  tableList.forEach(t => {
+    const pos = positions[t];
+    const table = SCHEMA.tables[t];
+    const cols = table.columns.slice(0, MAX_COLS);
+    const color = COLOR_MAP[t] || '#64748b';
+    const pkSet = new Set(table.pk || []);
+    const fkSet = new Set();
+    (table.fks || []).forEach(fk => fk.from.forEach(c => fkSet.add(c)));
+    const bodyH = cols.length * ROW_H + 8;
+    const totalH = HEADER_H + bodyH;
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.classList.add('table-box');
+    g.id = 'table-' + t;
+    g.setAttribute('transform', `translate(${pos.x},${pos.y})`);
+
+    // Header
+    g.innerHTML = `
+      <rect class="header" x="0" y="0" width="${TABLE_W}" height="${HEADER_H}" fill="${color}" stroke="${color}" stroke-width="2"/>
+      <text x="10" y="18" fill="white" font-size="12" font-weight="bold">${t}</text>
+      <text x="${TABLE_W - 8}" y="18" fill="white" font-size="9" text-anchor="end">${table.columns.length}cols</text>
+      <rect class="body" x="0" y="${HEADER_H}" width="${TABLE_W}" height="${bodyH}" fill="#1e293b" stroke="${color}" stroke-width="1.5"/>
+      ${cols.map((c, i) => {
+        const y = HEADER_H + 14 + i * ROW_H;
+        const isPk = pkSet.has(c.name);
+        const isFk = fkSet.has(c.name);
+        const icon = isPk ? '🔑' : isFk ? '🔗' : '  ';
+        const fill = isPk ? '#f59e0b' : isFk ? '#818cf8' : '#cbd5e1';
+        return `<text x="8" y="${y}" fill="${fill}" font-size="10">${icon} ${c.name} <tspan fill="#4a5568" font-size="9">${c.type.substring(0,12)}</tspan></text>`;
+      }).join('')}
+      ${table.columns.length > MAX_COLS ? `<text x="8" y="${HEADER_H + 14 + cols.length * ROW_H}" fill="#4a5568" font-size="9" font-style="italic">... +${table.columns.length - MAX_COLS} more</text>` : ''}
+    `;
+
+    // Drag
+    let dragging = false, dx = 0, dy = 0;
+    g.addEventListener('mousedown', e => {
+      dragging = true;
+      dx = e.clientX - pos.x * zoom;
+      dy = e.clientY - pos.y * zoom;
+      e.stopPropagation();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      pos.x = (e.clientX - dx) / zoom;
+      pos.y = (e.clientY - dy) / zoom;
+      g.setAttribute('transform', `translate(${pos.x},${pos.y})`);
+      drawLines();
+    });
+    document.addEventListener('mouseup', () => { dragging = false; });
+
+    tablesG.appendChild(g);
+  });
+
+  drawLines();
+}
+
+function drawLines() {
+  const linesG = document.getElementById('lines-group');
+  linesG.innerHTML = '';
+
+  SCHEMA.relationships.forEach(r => {
+    if (!positions[r.from_table] || !positions[r.to_table]) return;
+    const from = positions[r.from_table];
+    const to = positions[r.to_table];
+
+    const x1 = from.x + TABLE_W;
+    const y1 = from.y + HEADER_H / 2;
+    const x2 = to.x;
+    const y2 = to.y + HEADER_H / 2;
+
+    // Bezier curve
+    const cx = (x1 + x2) / 2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`);
+    path.setAttribute('stroke', '#818cf880');
+    path.setAttribute('class', 'rel-line');
+    linesG.appendChild(path);
+  });
+}
+
+// Zoom & pan
+let zoom = 0.85;
+let panX = 0, panY = 0;
+const zoomGroup = document.getElementById('zoom-group');
+
+function applyTransform() {
+  zoomGroup.setAttribute('transform', `translate(${panX},${panY}) scale(${zoom})`);
+}
+
+document.getElementById('svg').addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom *= e.deltaY > 0 ? 0.92 : 1.08;
+  zoom = Math.max(0.2, Math.min(3, zoom));
+  applyTransform();
+});
+
+let panning = false, startPanX, startPanY;
+document.getElementById('svg').addEventListener('mousedown', e => {
+  if (e.target.closest('.table-box')) return;
+  panning = true;
+  startPanX = e.clientX - panX;
+  startPanY = e.clientY - panY;
+});
+document.addEventListener('mousemove', e => {
+  if (!panning) return;
+  panX = e.clientX - startPanX;
+  panY = e.clientY - startPanY;
+  applyTransform();
+});
+document.addEventListener('mouseup', () => { panning = false; });
+
+function resetZoom() { zoom = 0.85; panX = 0; panY = 0; applyTransform(); }
+
+function highlightTable(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.table-box').forEach(g => {
+    const name = g.id.replace('table-', '');
+    g.style.opacity = !q || name.includes(q) ? 1 : 0.15;
+  });
+}
+
+document.getElementById('info').textContent = `${tableList.length} tables · ${SCHEMA.relationships.length} relationships`;
+
+autoLayout();
+applyTransform();
+</script>
+</body>
+</html>

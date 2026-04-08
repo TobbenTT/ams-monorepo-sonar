@@ -500,10 +500,27 @@ def generate_closure_report(
         if isinstance(m, dict):
             mats_html += f"<tr><td>{esc(str(m.get('sapId', m.get('code',''))))}</td><td>{esc(str(m.get('description','')))}</td><td>{esc(str(m.get('quantity',0)))} {esc(str(m.get('unit','PZ')))}</td></tr>"
 
+    # Resolve user UUIDs to names
+    from api.database.models import UserModel
+    _user_cache = {}
+    def _resolve_user(uid):
+        if not uid or len(str(uid)) < 30: return str(uid)
+        if uid in _user_cache: return _user_cache[uid]
+        u = db.query(UserModel).filter(UserModel.user_id == uid).first()
+        name = (u.full_name or u.username) if u else uid[:12]
+        _user_cache[uid] = name
+        return name
+
+    # Deduplicate execution notes
+    seen_notes = set()
     notes_html = ""
     for n in wo.get("execution_notes", []) or []:
         if isinstance(n, dict):
-            notes_html += f"<tr><td>{esc(str(n.get('timestamp',''))[:16])}</td><td>{esc(str(n.get('user','')))}</td><td>{esc(str(n.get('note','')))}</td></tr>"
+            note_key = n.get('note', '')
+            if note_key in seen_notes: continue
+            seen_notes.add(note_key)
+            user_name = _resolve_user(n.get('user', ''))
+            notes_html += f"<tr><td>{esc(str(n.get('timestamp',''))[:16])}</td><td>{esc(user_name)}</td><td>{esc(str(note_key))}</td></tr>"
 
     variance = ""
     est = wo.get("estimated_hours", 0) or 0
@@ -544,7 +561,7 @@ th {{ background: #E8F5E9; color: #1B5E20; font-weight: bold; }}
   <div class="info-item"><div class="info-label">Actual Hours</div><div class="info-value">{act}h {variance}</div></div>
   <div class="info-item"><div class="info-label">Planned Start</div><div class="info-value">{wo.get("planned_start","—")}</div></div>
   <div class="info-item"><div class="info-label">Actual End</div><div class="info-value">{wo.get("actual_end","—")}</div></div>
-  <div class="info-item"><div class="info-label">Closed By</div><div class="info-value">{wo.get("closed_by","—")}</div></div>
+  <div class="info-item"><div class="info-label">Closed By</div><div class="info-value">{_resolve_user(wo.get("closed_by","")) or "—"}</div></div>
   <div class="info-item"><div class="info-label">Closed At</div><div class="info-value">{wo.get("closed_at","—")}</div></div>
 </div>
 
@@ -570,7 +587,7 @@ th {{ background: #E8F5E9; color: #1B5E20; font-weight: bold; }}
 <table><tr><th>Time</th><th>User</th><th>Note</th></tr>{notes_html or "<tr><td colspan=3>No notes</td></tr>"}</table>
 
 <div class="footer">
-  Generated {datetime.now().strftime("%Y-%m-%d %H:%M")} | OCP Maintenance Platform | {esc(str(wo.get("wo_number","")))}
+  Generated {datetime.now().strftime("%Y-%m-%d %H:%M")} | AMS Platform | {esc(str(wo.get("wo_number","")))}
 </div>
 </body></html>"""
 

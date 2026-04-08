@@ -1290,6 +1290,8 @@ export default function Scheduling() {
       const weekNum = getISOWeek(viewedMonday);
       const year = viewedMonday.getFullYear();
       try { await api.createProgram({ plant_id: plant, week_number: weekNum, year }); } catch {}
+      // Auto-generate execution tasks for technicians
+      try { await api.autoGenerateTasks(plant); } catch {}
 
       const weekLabel = `${weekDays[0]} to ${weekDays[4]}`;
       toast.success(`${scheduled} WOs scheduled for ${weekLabel} with ${techs.length} technicians`);

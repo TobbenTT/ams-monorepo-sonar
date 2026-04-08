@@ -46,6 +46,67 @@ class HandoverCreate(BaseModel):
     test_notes: str = ""
 
 
+# ── Auto-generate tasks from scheduled WOs ──────────────────────────
+
+@router.post("/auto-generate-tasks")
+def auto_generate_tasks(
+    plant_id: str = "GOLDFIELDS-SN",
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Auto-create execution tasks for all PROGRAMADO WOs with assigned workers."""
+    from api.database.models import _uuid
+    from datetime import date as _date
+
+    wos = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == plant_id,
+        ManagedWorkOrderModel.status == "PROGRAMADO",
+    ).all()
+
+    # Get existing assignments to avoid duplicates
+    existing_wo_ids = set(
+        r[0] for r in db.query(WorkAssignmentModel.wo_id).filter(
+            WorkAssignmentModel.wo_id != None,
+            WorkAssignmentModel.status.in_(["ASSIGNED", "IN_PROGRESS", "PENDING"]),
+        ).all()
+    )
+
+    created = 0
+    for wo in wos:
+        if wo.wo_id in existing_wo_ids:
+            continue
+        workers = wo.assigned_workers or []
+        if not isinstance(workers, list) or not workers:
+            continue
+
+        for worker in workers:
+            if not isinstance(worker, dict):
+                continue
+            worker_id = worker.get("worker_id") or worker.get("user_id") or ""
+            worker_name = worker.get("name") or worker.get("full_name") or ""
+
+            sched = None
+            if wo.planned_start:
+                sched = wo.planned_start.date() if hasattr(wo.planned_start, 'date') else wo.planned_start
+
+            assignment = WorkAssignmentModel(
+                assignment_id=_uuid(),
+                work_package_id=wo.wo_id,
+                plant_id=wo.plant_id,
+                assigned_to=worker_id or worker_name,
+                estimated_hours=wo.estimated_hours or 4,
+                scheduled_date=sched,
+                status="ASSIGNED",
+                wo_id=wo.wo_id,
+                task_description=f"{wo.wo_number} — {(wo.description or '')[:100]}",
+            )
+            db.add(assignment)
+            created += 1
+
+    db.commit()
+    return {"created": created, "total_wos": len(wos), "skipped": len(existing_wo_ids)}
+
+
 # ── Assign task to technician ────────────────────────────────────────
 
 @router.post("/tasks")
@@ -96,8 +157,10 @@ def my_tasks(
     """Get all tasks assigned to the current user."""
     uid = getattr(user, "user_id", "")
     username = getattr(user, "username", "")
+    full_name = getattr(user, "full_name", "")
+    search_vals = [v for v in [uid, username, full_name] if v]
     q = db.query(WorkAssignmentModel).filter(
-        WorkAssignmentModel.assigned_to.in_([uid, username]),
+        WorkAssignmentModel.assigned_to.in_(search_vals),
         WorkAssignmentModel.status.notin_(["COMPLETED", "CANCELLED"]),
     ).order_by(WorkAssignmentModel.scheduled_date.asc().nullslast())
     return [_task_to_dict(t) for t in q.all()]

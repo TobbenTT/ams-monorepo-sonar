@@ -1202,24 +1202,24 @@ export default function Execution() {
 
           {tab === 'closure' && (
             <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <h2 className="text-sm font-bold text-green-800 flex items-center gap-2 mb-2">
-                  <CheckCircle2 size={16} /> WO Closure — Verification & Material Return
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white">
+                <h2 className="text-lg font-bold flex items-center gap-2 mb-1">
+                  <CheckCircle size={20} /> WO Closure
                 </h2>
-                <p className="text-xs text-green-600">
-                  Record actual data, verify with AI, return materials, and close work orders.
-                </p>
-              </div>
-
-              {/* WOs ready for closure (EN_EJECUCION + COMPLETED) */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-white rounded-xl border p-4 text-center">
-                  <p className="text-2xl font-bold text-amber-700">{enExecutionWOs.length}</p>
-                  <p className="text-xs text-gray-500">In Execution</p>
-                </div>
-                <div className="bg-white rounded-xl border p-4 text-center">
-                  <p className="text-2xl font-bold text-green-700">{cerradoWOs.length}</p>
-                  <p className="text-xs text-gray-500">Already Closed</p>
+                <p className="text-emerald-100 text-sm">Record actual data, verify with AI, and close work orders</p>
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{enExecutionWOs.length}</p>
+                    <p className="text-[10px] text-emerald-100 uppercase font-semibold">In Execution</p>
+                  </div>
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{enExecutionWOs.reduce((s, w) => s + (parseFloat(w.actual_hours) || 0), 0).toFixed(0)}h</p>
+                    <p className="text-[10px] text-emerald-100 uppercase font-semibold">Actual HH</p>
+                  </div>
+                  <div className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                    <p className="text-2xl font-bold">{cerradoWOs.length}</p>
+                    <p className="text-[10px] text-emerald-100 uppercase font-semibold">Closed</p>
+                  </div>
                 </div>
               </div>
 
@@ -1505,43 +1505,63 @@ export default function Execution() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-700">WOs In Execution — Select to Close</h3>
-                  {[...enExecutionWOs, ...inProgressWOs].length > 0 ? [...enExecutionWOs, ...inProgressWOs].map(wo => (
-                    <div key={wo.wo_id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:border-green-300 cursor-pointer transition-colors"
-                      onClick={() => { setClosureWO(wo); setClosureForm({ actual_hours: wo.actual_hours || '', observations: '', materials_returned: [], external_services: [] }); setAiResult(null); setEstimateResult(null); }}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-mono text-sm font-bold">{wo.wo_number}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded ${wo.priority_code === 'P1' ? 'bg-red-100 text-red-700' : wo.priority_code === 'P2' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>{wo.priority_code}</span>
-                            <span className="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-700">{wo.status}</span>
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-gray-800">Select a WO to close</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[...enExecutionWOs].length > 0 ? [...enExecutionWOs].map(wo => {
+                      const pct = wo.completion_pct || 0;
+                      const workers = (wo.assigned_workers || []).map(w => typeof w === 'string' ? w : (w.name || '')).filter(Boolean);
+                      return (
+                      <div key={wo.wo_id} className="bg-white rounded-2xl border-2 border-amber-200 hover:border-emerald-400 hover:shadow-lg cursor-pointer transition-all group"
+                        onClick={() => { setClosureWO(wo); setClosureForm({ actual_hours: wo.actual_hours || '', observations: '', materials_returned: [], external_services: [] }); setAiResult(null); setEstimateResult(null); }}>
+                        <div className="p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="font-mono text-xs font-bold text-gray-900">{wo.wo_number}</span>
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-white ${wo.priority_code === 'P1' ? 'bg-red-500' : wo.priority_code === 'P2' ? 'bg-orange-500' : 'bg-blue-500'}`}>{wo.priority_code}</span>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200 font-bold">EN_EJECUCION</span>
+                              </div>
+                              <p className="text-xs text-gray-600 truncate max-w-[250px]">{wo.equipment_tag} — {(wo.description || '').slice(0, 40)}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-gray-800">{wo.estimated_hours || 0}h</p>
+                              <p className="text-[10px] text-gray-400">{wo.wo_type}</p>
+                            </div>
                           </div>
-                          <p className="text-sm text-gray-600">{wo.equipment_tag} — {(wo.description || '').slice(0, 80)}</p>
-                          <p className="text-xs text-gray-400 mt-1">{wo.estimated_hours}h planned · {wo.wo_type}</p>
+                          {workers.length > 0 && <p className="text-[10px] text-gray-400 mb-2 flex items-center gap-1"><User size={10} /> {workers.join(', ')}</p>}
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                              <div className={`h-full rounded-full ${pct >= 80 ? 'bg-emerald-500' : pct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`} style={{ width: `${Math.max(pct, 1)}%` }} />
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-500">{pct}%</span>
+                          </div>
                         </div>
-                        <ArrowRightLeft size={16} className="text-green-500" />
+                        <div className="px-4 py-2 bg-emerald-50 border-t border-emerald-100 flex items-center justify-between rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-[10px] text-emerald-700 font-semibold">Click to open closure form</span>
+                          <CheckCircle size={14} className="text-emerald-500" />
+                        </div>
                       </div>
-                    </div>
-                  )) : (
-                    <div className="text-center py-16 text-gray-400">
-                      <CheckCircle2 size={48} className="mx-auto mb-3 opacity-40" />
-                      <p>No WOs in execution</p>
-                    </div>
-                  )}
+                      );
+                    }) : (
+                      <div className="col-span-2 text-center py-16 text-gray-400">
+                        <CheckCircle size={48} className="mx-auto mb-3 opacity-40" />
+                        <p>No WOs in execution</p>
+                      </div>
+                    )}
+                  </div>
 
                   {cerradoWOs.length > 0 && (
                     <>
-                      <h3 className="text-sm font-semibold text-gray-500 mt-6">Recently Closed</h3>
-                      {cerradoWOs.slice(0, 5).map(wo => (
-                        <div key={wo.wo_id} className="bg-gray-50 rounded-xl border border-gray-100 p-3 opacity-60">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 size={14} className="text-green-500" />
-                            <span className="font-mono text-xs font-bold">{wo.wo_number}</span>
-                            <span className="text-xs text-gray-500">{wo.equipment_tag}</span>
-                            <span className="text-xs text-gray-400 ml-auto">{wo.actual_hours || wo.estimated_hours}h</span>
+                      <h3 className="text-sm font-semibold text-gray-500 mt-4">Recently Closed ({cerradoWOs.length})</h3>
+                      <div className="space-y-1.5">
+                        {cerradoWOs.slice(0, 5).map(wo => (
+                          <div key={wo.wo_id} className="bg-gray-50 rounded-xl border border-gray-100 p-3 flex items-center gap-3">
+                            <CheckCircle size={14} className="text-green-500 shrink-0" />
+                            <span className="font-mono text-xs font-bold text-gray-600">{wo.wo_number}</span>
+                            <span className="text-xs text-gray-400 truncate">{wo.equipment_tag} — {(wo.description || '').slice(0, 40)}</span>
+                            <span className="text-xs text-gray-400 ml-auto shrink-0">{wo.actual_hours || wo.estimated_hours}h</span>
                           </div>
-                        </div>
                       ))}
                     </>
                   )}

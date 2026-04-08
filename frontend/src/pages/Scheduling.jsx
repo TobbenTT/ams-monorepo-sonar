@@ -868,18 +868,21 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
 }
 
 /* ───── Phase 3: HH Balance Tab ───── */
-function HHBalanceTab({ programId, t }) {
+function HHBalanceTab({ programId, t, plantId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!programId) { setLoading(false); return; }
     setLoading(true);
-    api.hhBalance(programId)
+    // Use live endpoint that reads from actual scheduled WOs
+    api.hhBalanceLive(plantId)
       .then(setData)
-      .catch(() => {})
+      .catch(() => {
+        // Fallback to program-based if live fails
+        if (programId) api.hhBalance(programId).then(setData).catch(() => {});
+      })
       .finally(() => setLoading(false));
-  }, [programId]);
+  }, [plantId, programId]);
 
   if (loading) return <div className="py-10 flex justify-center"><LoadingSpinner /></div>;
   if (!data) return (
@@ -997,18 +1000,19 @@ function HHBalanceTab({ programId, t }) {
 }
 
 /* ───── Phase 3: Materials Tab ───── */
-function MaterialsTab({ programId, t }) {
+function MaterialsTab({ programId, t, plantId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!programId) { setLoading(false); return; }
     setLoading(true);
-    api.materialCheck(programId)
+    api.materialsLive(plantId)
       .then(setData)
-      .catch(() => {})
+      .catch(() => {
+        if (programId) api.materialCheck(programId).then(setData).catch(() => {});
+      })
       .finally(() => setLoading(false));
-  }, [programId]);
+  }, [plantId, programId]);
 
   if (loading) return <div className="py-10 flex justify-center"><LoadingSpinner /></div>;
   if (!data) return (
@@ -1448,10 +1452,10 @@ export default function Scheduling() {
         <GanttTab ganttData={ganttData} t={t} weeksRange={ganttWeeks} onWeeksChange={setGanttWeeks} />
       )}
       {tab === 'hh' && (
-        <HHBalanceTab programId={activeProgramId} t={t} />
+        <HHBalanceTab programId={activeProgramId} t={t} plantId={plant} />
       )}
       {tab === 'materials' && (
-        <MaterialsTab programId={activeProgramId} t={t} />
+        <MaterialsTab programId={activeProgramId} t={t} plantId={plant} />
       )}
 
       {/* Modals */}

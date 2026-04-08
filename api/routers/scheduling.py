@@ -114,6 +114,18 @@ def hh_balance(program_id: str, db: Session = Depends(get_db)):
     return result
 
 
+@router.get("/hh-balance-live")
+def hh_balance_live(plant_id: str = "OCP-JFC1", db: Session = Depends(get_db)):
+    """HH balance from actual scheduled WOs (not from program backlog)."""
+    return scheduling_service.hh_balance_from_wos(db, plant_id)
+
+
+@router.get("/materials-live")
+def materials_live(plant_id: str = "OCP-JFC1", db: Session = Depends(get_db)):
+    """Materials status from actual scheduled WOs."""
+    return scheduling_service.materials_from_wos(db, plant_id)
+
+
 # ── Phase 3: Gantt from managed WOs ─────────────────────────────────
 
 @router.get("/gantt")

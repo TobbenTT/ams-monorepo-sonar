@@ -402,6 +402,135 @@ def _program_to_dict(model: WeeklyProgramModel) -> dict:
     }
 
 
+def hh_balance_from_wos(db: Session, plant_id: str) -> dict:
+    """Compute HH balance directly from managed_work_orders (not from program backlog)."""
+    workers = db.query(WorkforceModel).filter(
+        WorkforceModel.plant_id == plant_id,
+        WorkforceModel.available == True,
+    ).all()
+
+    HH_PER_WEEK = 40.0
+    SPEC_MAP = {
+        "mecanico": "Mecánico", "mechanical": "Mecánico", "mecanica": "Mecánico",
+        "electrico": "Eléctrico", "electrical": "Eléctrico",
+        "instrumentista": "Instrumentación", "instrumentation": "Instrumentación", "instrument tech": "Instrumentación",
+        "lubricador": "Lubricación", "lubrication": "Lubricación",
+        "soldador": "Soldadura", "welder": "Soldadura",
+        "predictivo": "Predictivo", "dcs": "DCS", "general": "General",
+    }
+    def _norm(s):
+        if not isinstance(s, str): return "General"
+        return SPEC_MAP.get(s.lower().strip(), s.strip() or "General")
+
+    capacity_by_spec = {}
+    for w in workers:
+        ns = _norm(w.specialty or "General")
+        capacity_by_spec[ns] = capacity_by_spec.get(ns, 0) + HH_PER_WEEK
+    total_capacity = sum(capacity_by_spec.values())
+
+    # Get actual scheduled WOs
+    wos = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == plant_id,
+        ManagedWorkOrderModel.status.in_(["PROGRAMADO", "EN_EJECUCION"]),
+    ).all()
+
+    assigned_by_spec = {}
+    total_assigned = 0.0
+    for wo in wos:
+        hours = wo.estimated_hours or 4
+        total_assigned += hours
+        # Get specialty from operations or workers
+        spec = "Mecánico"  # default
+        if wo.operations and isinstance(wo.operations, list):
+            for op in wo.operations:
+                if isinstance(op, dict) and op.get("specialty"):
+                    spec = _norm(op["specialty"])
+                    break
+        elif wo.assigned_workers and isinstance(wo.assigned_workers, list):
+            for w in wo.assigned_workers:
+                if isinstance(w, dict) and w.get("specialty"):
+                    spec = _norm(w["specialty"])
+                    break
+        assigned_by_spec[spec] = assigned_by_spec.get(spec, 0) + hours
+
+    all_specs = sorted(set(list(capacity_by_spec.keys()) + list(assigned_by_spec.keys())))
+    by_specialty = []
+    for spec in all_specs:
+        cap = capacity_by_spec.get(spec, 0)
+        asgn = round(assigned_by_spec.get(spec, 0), 1)
+        by_specialty.append({
+            "specialty": spec, "capacity": cap, "assigned": asgn,
+            "available": round(cap - asgn, 1),
+            "utilization_pct": round((asgn / cap * 100), 1) if cap > 0 else 0,
+        })
+
+    return {
+        "capacity": total_capacity,
+        "assigned": round(total_assigned, 1),
+        "available": round(total_capacity - total_assigned, 1),
+        "utilization_pct": round((total_assigned / total_capacity * 100), 1) if total_capacity > 0 else 0,
+        "worker_count": len(workers),
+        "wo_count": len(wos),
+        "by_specialty": by_specialty,
+    }
+
+
+def materials_from_wos(db: Session, plant_id: str) -> dict:
+    """Get materials status from actual scheduled WOs."""
+    wos = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == plant_id,
+        ManagedWorkOrderModel.status.in_(["PROGRAMADO", "EN_EJECUCION"]),
+    ).all()
+
+    packages = []
+    total_materials = 0
+    ready_count = 0
+    pending_count = 0
+
+    for wo in wos:
+        mats = wo.materials or []
+        if not isinstance(mats, list):
+            mats = []
+        mat_items = []
+        for m in mats:
+            if isinstance(m, dict):
+                mat_items.append({
+                    "code": m.get("code") or m.get("sapId") or "",
+                    "description": m.get("description") or m.get("name") or "",
+                    "quantity": m.get("quantity", 0),
+                    "unit": m.get("unit", "PZ"),
+                    "status": "READY",
+                })
+        total_materials += len(mat_items)
+        if mat_items:
+            ready_count += 1
+            packages.append({
+                "wo_number": wo.wo_number,
+                "equipment_tag": wo.equipment_tag,
+                "description": (wo.description or "")[:60],
+                "materials": mat_items,
+                "status": "READY",
+            })
+        else:
+            packages.append({
+                "wo_number": wo.wo_number,
+                "equipment_tag": wo.equipment_tag,
+                "description": (wo.description or "")[:60],
+                "materials": [],
+                "status": "NO_MATERIALS",
+            })
+
+    return {
+        "total_packages": len(packages),
+        "confirmed": ready_count,
+        "pending": pending_count,
+        "unavailable": 0,
+        "total_materials": total_materials,
+        "all_ready": pending_count == 0,
+        "packages": packages[:50],  # limit for performance
+    }
+
+
 # ══════════════════════════════════════════════════════════════════════
 # Phase 3 — Scheduling Improvements
 # ══════════════════════════════════════════════════════════════════════

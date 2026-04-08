@@ -1276,13 +1276,13 @@ export default function Scheduling() {
             </button>
             <button
               onClick={async () => {
-                if (!window.confirm('¿Eliminar TODAS las asignaciones del programa semanal?\n\nEsto quitará técnicos asignados y fechas programadas de todas las OTs.\n\nNo se pueden recuperar.')) return;
+                const total = (scheduledWOs || []).length;
+                if (!window.confirm(`¿Eliminar ${total} asignaciones del programa semanal?\n\nEsto quitará técnicos asignados y fechas programadas.\nLas OTs volverán a estado PLANIFICADO.`)) return;
                 try {
-                  const wos = calendarData?.rows?.flatMap(r => (r.tasks || []).map(t => t.wo_id || t.id)).filter(Boolean) || [];
                   let cleared = 0;
-                  for (const woId of wos) {
+                  for (const wo of (scheduledWOs || [])) {
                     try {
-                      await api.updateManagedWO(woId, { assigned_workers: [], planned_start: null, planned_end: null, status: 'PLANIFICADO' });
+                      await api.updateManagedWO(wo.wo_id, { assigned_workers: [], planned_start: null, planned_end: null, status: 'PLANIFICADO' });
                       cleared++;
                     } catch {}
                   }

@@ -294,7 +294,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
     failure_mode: item.failure_mode || '',
     estimated_duration: item.estimated_duration || '',
     production_impact: item.production_impact || 'MEDIUM',
-    suggested_action: item.suggested_action || '',
+    suggested_action: (item.suggested_action || '').replace(/(\d+)\.\s/g, (m, num) => num === '1' ? m : '\n' + m),
     failure_category: item.failure_category || '',
     failure_symptom: item.failure_symptom || '',
     failure_cause: item.failure_cause || '',
@@ -675,7 +675,7 @@ ${materials.length ? `<div class="section">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Acción Sugerida</p>
             {editing ? (
               <textarea value={editData.suggested_action || ''} onChange={e => setEditData(d => ({ ...d, suggested_action: e.target.value }))}
-                rows={5} placeholder="¿Qué se debe hacer?"
+                rows={10} placeholder="¿Qué se debe hacer?"
                 className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-y" />
             ) : /\d{1,2}\.\s/.test(item.suggested_action) ? (
               <div className="space-y-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
@@ -773,11 +773,12 @@ ${materials.length ? `<div class="section">
                         setEditData(d => ({ ...d, resources: arr }));
                       }} className="text-sm px-2 py-1.5 border border-border rounded bg-background">
                         <option value="">Select...</option>
-                        <option value="Mecanico">Mechanical</option>
-                        <option value="Electrico">Electrical</option>
-                        <option value="Instrumentacion">Instrument Tech</option>
-                        <option value="Soldador">Welder</option>
+                        <option value="Mechanical">Mechanical</option>
+                        <option value="Electrical">Electrical</option>
+                        <option value="Instrumentation">Instrumentation</option>
+                        <option value="Welder">Welder</option>
                         <option value="Rigger">Rigger</option>
+                        <option value="Helper">Helper</option>
                       </select>
                       <input type="number" min="1" value={res.quantity || 1} onChange={e => {
                         const arr = [...(editData.resources || [])];

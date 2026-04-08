@@ -976,10 +976,11 @@ export default function Execution() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
                   {inProgressWOs.slice(0, 30).map(wo => {
-                    const pct = wo.completion_pct || 0;
+                    const pct = wo.status === 'PROGRAMADO' ? 0 : (wo.completion_pct || 0);
                     const workers = (wo.assigned_workers || []).map(w => typeof w === 'string' ? w : (w.name || w.full_name || '')).filter(Boolean);
                     return (
-                      <div key={wo.wo_id || wo.work_order_id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer">
+                      <div key={wo.wo_id || wo.work_order_id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
+                        onClick={() => window.location.href = '/work-orders'}>
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <div className="flex items-center gap-2 mb-0.5">

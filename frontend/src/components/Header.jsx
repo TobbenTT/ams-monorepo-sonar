@@ -251,9 +251,15 @@ export default function Header({
                                                 // Navigate to related resource
                                                 try {
                                                     const msg = typeof n.message === 'string' && n.message.startsWith('{') ? JSON.parse(n.message) : {};
-                                                    if (msg.order_number) { navigate('/work-orders'); setNotifOpen(false); }
-                                                    else if (msg.wr_id || n.notification_type === 'WR_CREATED') { navigate('/work-management?tab=identification'); setNotifOpen(false); }
-                                                    else { setNotifOpen(false); }
+                                                    const txt = typeof n.message === 'string' ? n.message : '';
+                                                    const title = n.title || '';
+                                                    if (msg.order_number || n.notification_type === 'WO_STATUS' || title.includes('OT ') || txt.includes('WO-') || title.includes('WO ') || title.includes('Scheduled')) {
+                                                        navigate('/work-orders'); setNotifOpen(false);
+                                                    } else if (msg.wr_id || n.notification_type === 'WR_CREATED' || title.includes('Aviso') || txt.includes('WR-')) {
+                                                        navigate('/work-management?tab=identification'); setNotifOpen(false);
+                                                    } else {
+                                                        navigate('/'); setNotifOpen(false);
+                                                    }
                                                 } catch { setNotifOpen(false); }
                                             }}>
                                             <div className="flex items-start gap-2">

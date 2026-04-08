@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card } from '../ui/card';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart } from 'recharts';
-import { ArrowDown, TrendingDown, Loader2 } from 'lucide-react';
+import { ArrowDown, TrendingDown, Loader2, Crosshair } from 'lucide-react';
 import * as api from '../../api';
 import { getDateRange, filterByDateRange } from '../../utils/dateRange';
 
@@ -162,7 +162,34 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50">
+    <div className="space-y-6">
+      {/* Gradient Header */}
+      <div className="bg-gradient-to-r from-indigo-700 via-blue-600 to-cyan-500 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-3">
+              <Crosshair className="w-7 h-7" />
+              Tactical Operations Dashboard
+            </h1>
+            <p className="text-indigo-100 text-sm mt-1">Work volume, schedule compliance, and operational metrics</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
+              <span className="text-indigo-200 text-xs">Plant</span>
+              <div className="font-semibold">{selectedPlant}</div>
+            </div>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
+              <span className="text-indigo-200 text-xs">WOs</span>
+              <div className="font-semibold">{filteredWOs.length}</div>
+            </div>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
+              <span className="text-indigo-200 text-xs">WRs</span>
+              <div className="font-semibold">{filteredWRs.length}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* SECTION I - WORK VOLUME */}
       <Card className="p-6 bg-white">
         <div className="flex items-center justify-between mb-4">

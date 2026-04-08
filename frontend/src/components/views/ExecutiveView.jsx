@@ -843,7 +843,30 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50">
+    <div className="space-y-6">
+      {/* Gradient Header */}
+      <div className="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-500 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-3">
+              <Target className="w-7 h-7" />
+              Executive Dashboard
+            </h1>
+            <p className="text-emerald-100 text-sm mt-1">Plant performance overview and strategic insights</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
+              <span className="text-emerald-200 text-xs">Plant</span>
+              <div className="font-semibold">{selectedPlant}</div>
+            </div>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
+              <span className="text-emerald-200 text-xs">Period</span>
+              <div className="font-semibold">{selectedTimeRange}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <RootCauseInsightsPanel />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-gray-100 border border-gray-200 p-1.5 w-full justify-start rounded-xl gap-1">

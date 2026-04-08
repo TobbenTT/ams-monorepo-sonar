@@ -1563,6 +1563,7 @@ export default function Execution() {
                             <span className="text-xs text-gray-400 ml-auto shrink-0">{wo.actual_hours || wo.estimated_hours}h</span>
                           </div>
                       ))}
+                      </div>
                     </>
                   )}
                 </div>

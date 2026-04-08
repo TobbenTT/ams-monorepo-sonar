@@ -417,7 +417,7 @@ def assign_work_request(request_id: str, data: WRAssignRequest, user=Depends(req
     wr = work_request_service.get_work_request(db, request_id)
     if not wr:
         raise HTTPException(status_code=404, detail="Work request not found")
-    if wr.status not in ("VALIDATED", "APPROVED", "ASSIGNED"):
+    if wr.status not in ("VALIDATED", "APPROVED", "ASSIGNED", "PENDIENTE", "APROBADO"):
         raise HTTPException(status_code=400, detail=f"Cannot assign WR in status {wr.status}")
     if not data.workers:
         raise HTTPException(status_code=400, detail="At least one worker is required")

@@ -396,8 +396,8 @@ export default function FailuresEvents() {
   };
 
   const handleGenerateWorkOrder = async () => {
-    const pending = filteredWRs.find(w => ['VALIDATED', 'APPROVED', 'ASSIGNED'].includes(w.status));
-    if (!pending) { toast.warning(t('failuresEvents.action.generateWO.noData') || 'No hay avisos validados para crear OT'); return; }
+    const pending = filteredWRs.find(w => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO', 'PENDIENTE'].includes(w.status));
+    if (!pending) { toast.warning('No work requests available to create WO'); return; }
     setActionLoading('generateWO');
     try {
       const wo = await api.createWOFromWR({ work_request_id: pending.request_id });
@@ -408,8 +408,8 @@ export default function FailuresEvents() {
   };
 
   const handleDispatchSupport = () => {
-    const unassigned = filteredWRs.find(w => !w.assigned_to_name && ['VALIDATED', 'APPROVED'].includes(w.status));
-    if (!unassigned) { toast.warning(t('failuresEvents.action.dispatchSupport.noData') || 'No hay avisos sin asignar'); return; }
+    const unassigned = filteredWRs.find(w => !w.assigned_to_name && ['VALIDATED', 'APPROVED', 'APROBADO', 'PENDIENTE'].includes(w.status));
+    if (!unassigned) { toast.warning('No unassigned work requests found'); return; }
     runAction('dispatchSupport', () => api.assignWorkRequest(unassigned.request_id, {
       workers: [{ worker_id: topAssignee.name || 'auto', worker_name: topAssignee.name || 'Auto-assigned' }],
     }));

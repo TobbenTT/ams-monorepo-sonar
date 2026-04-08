@@ -1043,33 +1043,37 @@ function MaterialsTab({ programId, t, plantId }) {
       </div>
 
       {/* Details per work package */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border">
-          <h2 className="font-semibold text-foreground">{t('scheduling.materialStatus')} per Work Package</h2>
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+          <h2 className="font-semibold text-foreground">Materials by Work Order</h2>
+          <span className="text-xs text-muted-foreground">{data.total_materials || 0} items total</span>
         </div>
-        <div className="divide-y divide-border">
-          {(data.details || []).map((pkg, idx) => (
+        <div className="divide-y divide-border" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+          {(data.packages || data.details || []).filter(pkg => (pkg.materials || pkg.items || []).length > 0).map((pkg, idx) => (
             <div key={idx} className="px-5 py-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-medium text-foreground">{pkg.name || pkg.wp_id}</span>
-                  {pkg.wp_id && pkg.name && <span className="text-xs text-muted-foreground ml-2">({pkg.wp_id})</span>}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold text-foreground">{pkg.wo_number || pkg.name || pkg.wp_id}</span>
+                  <span className="text-xs text-muted-foreground">{pkg.equipment_tag}</span>
+                  <span className="text-[10px] text-gray-400 truncate max-w-[200px]">{pkg.description}</span>
                 </div>
-                <span className={`text-xs font-bold px-2 py-1 rounded ${
-                  pkg.status === 'ok' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                  : pkg.status === 'no_materials' ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                  : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  pkg.status === 'READY' || pkg.status === 'ok' ? 'bg-emerald-100 text-emerald-700'
+                  : pkg.status === 'NO_MATERIALS' || pkg.status === 'no_materials' ? 'bg-gray-100 text-gray-500'
+                  : 'bg-amber-100 text-amber-700'
                 }`}>
-                  {pkg.status === 'ok' ? t('scheduling.materialsOk') : pkg.status === 'no_materials' ? t('scheduling.noMaterials') : t('scheduling.materialsIncomplete')}
+                  {(pkg.materials || pkg.items || []).length} items
                 </span>
               </div>
-              {pkg.items && pkg.items.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {pkg.items.map((item, iIdx) => (
-                    <div key={iIdx} className="flex items-center gap-2 text-xs">
-                      {item.check === 'ok' ? <CheckCircle size={12} className="text-emerald-500" /> : item.check === 'partial' ? <Clock size={12} className="text-amber-500" /> : <AlertTriangle size={12} className="text-red-500" />}
-                      <span className="text-muted-foreground">{item.description || item.material_code || item.code}</span>
-                      <span className="ml-auto font-mono">{item.qty_available || 0}/{item.qty_required || 0}</span>
+              {(pkg.materials || pkg.items || []).length > 0 && (
+                <div className="mt-1 space-y-1">
+                  {(pkg.materials || pkg.items || []).map((item, iIdx) => (
+                    <div key={iIdx} className="flex items-center gap-3 text-xs bg-gray-50 rounded-lg px-3 py-1.5">
+                      <Package size={12} className="text-emerald-500 shrink-0" />
+                      <span className="font-mono text-gray-500 w-20 shrink-0">{item.code || item.material_code || ''}</span>
+                      <span className="text-gray-700 flex-1 truncate">{item.description || ''}</span>
+                      <span className="font-bold text-gray-800">{item.quantity || item.qty_required || 0}</span>
+                      <span className="text-gray-400 text-[10px] w-6">{item.unit || 'PZ'}</span>
                     </div>
                   ))}
                 </div>

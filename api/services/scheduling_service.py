@@ -30,7 +30,23 @@ def create_program(
     year: int,
 ) -> dict:
     """Create a DRAFT weekly program from current backlog."""
-    db_items = db.query(BacklogItemModel).all()
+    # Filter backlog by plant — join with managed_work_orders or work_requests
+    from api.database.models import WorkRequestModel
+    db_items_all = db.query(BacklogItemModel).all()
+    # Filter: only items whose WR belongs to this plant
+    plant_wr_ids = set()
+    if plant_id:
+        wrs = db.query(WorkRequestModel.request_id, WorkRequestModel.ai_classification).all()
+        for wr in wrs:
+            ai = wr.ai_classification
+            if isinstance(ai, str):
+                if plant_id in ai:
+                    plant_wr_ids.add(wr.request_id)
+            elif isinstance(ai, dict) and ai.get("plant_id") == plant_id:
+                plant_wr_ids.add(wr.request_id)
+        db_items = [i for i in db_items_all if i.work_request_id in plant_wr_ids] if plant_wr_ids else db_items_all
+    else:
+        db_items = db_items_all
     items = [_to_schema_item(i) for i in db_items]
 
     schedulable = [i for i in items if i.materials_ready and not i.shutdown_required]

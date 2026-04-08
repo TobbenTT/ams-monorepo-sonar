@@ -1053,6 +1053,8 @@ export default function Scheduling() {
   const [detailOrder, setDetailOrder] = useState(null);
   const [closureOrder, setClosureOrder] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [aiScheduling, setAiScheduling] = useState(false);
   const [aiResult, setAiResult] = useState(null);
@@ -1275,22 +1277,7 @@ export default function Scheduling() {
               {generating ? t('scheduling.generating') : t('scheduling.generateProgram')}
             </button>
             <button
-              onClick={async () => {
-                const total = (scheduledWOs || []).length;
-                if (!window.confirm(`¿Eliminar ${total} asignaciones del programa semanal?\n\nEsto quitará técnicos asignados y fechas programadas.\nLas OTs volverán a estado PLANIFICADO.`)) return;
-                try {
-                  let cleared = 0;
-                  for (const wo of (scheduledWOs || [])) {
-                    try {
-                      await api.updateManagedWO(wo.wo_id, { assigned_workers: [], planned_start: null, planned_end: null, status: 'PLANIFICADO' });
-                      cleared++;
-                    } catch {}
-                  }
-                  toast.success(`${cleared} asignaciones eliminadas`);
-                  loadCalendarData();
-                  loadPrograms();
-                } catch { toast.error('Error limpiando asignaciones'); }
-              }}
+              onClick={() => setShowClearConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
             >
               <Trash2 size={16} /> Limpiar Asignaciones
@@ -1367,6 +1354,45 @@ export default function Scheduling() {
       )}
       {closureOrder && (
         <OCRClosureModal order={closureOrder} t={t} onClose={() => setClosureOrder(null)} onSubmit={handleClosureSubmit} />
+      )}
+      {/* Clear Assignments Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => !clearing && setShowClearConfirm(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={24} className="text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Limpiar Asignaciones</h3>
+            <p className="text-sm text-gray-500 mb-1">¿Eliminar <span className="font-bold text-red-600">{(scheduledWOs || []).length}</span> asignaciones?</p>
+            <p className="text-xs text-gray-400 mb-6">Las OTs perderán técnicos y fechas asignadas.<br/>Volverán a estado PLANIFICADO.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowClearConfirm(false)} disabled={clearing}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                Cancelar
+              </button>
+              <button disabled={clearing} onClick={async () => {
+                setClearing(true);
+                try {
+                  let cleared = 0;
+                  for (const wo of (scheduledWOs || [])) {
+                    try {
+                      await api.updateManagedWO(wo.wo_id, { assigned_workers: [], planned_start: null, planned_end: null, status: 'PLANIFICADO' });
+                      cleared++;
+                    } catch {}
+                  }
+                  toast.success(`${cleared} asignaciones eliminadas`);
+                  loadCalendarData();
+                  loadPrograms();
+                } catch { toast.error('Error limpiando'); }
+                finally { setClearing(false); setShowClearConfirm(false); }
+              }}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                {clearing ? <><Loader2 size={14} className="animate-spin" /> Limpiando...</> : 'Sí, limpiar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

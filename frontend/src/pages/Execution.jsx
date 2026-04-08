@@ -1476,7 +1476,17 @@ export default function Execution() {
                           {aiResult.ready ? "WO ready to close" : "Review before closing"}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-700 whitespace-pre-line">{aiResult.message}</p>
+                      <div className="text-xs text-gray-700 leading-relaxed space-y-1 mt-2">
+                        {(aiResult.message || '').split('\n').filter(l => l.trim()).map((line, i) => {
+                          const clean = line.replace(/\*\*/g, '').trim();
+                          if (clean.startsWith('#')) return <h4 key={i} className="font-bold text-gray-800 mt-2">{clean.replace(/^#+\s*/, '')}</h4>;
+                          if (clean.startsWith('- ')) return <div key={i} className="flex gap-1.5 ml-2"><span className="text-gray-400">•</span><span>{clean.slice(2)}</span></div>;
+                          if (clean.startsWith('WARNINGS:') || clean.startsWith('Concerns:')) return <p key={i} className="font-bold text-amber-700 mt-2">{clean}</p>;
+                          if (clean.startsWith('AI ASSESSMENT:') || clean.startsWith('Recommendation:')) return <p key={i} className="font-bold text-purple-700 mt-2">{clean}</p>;
+                          if (clean.startsWith('Status:')) return <p key={i} className={`font-bold mt-1 ${clean.includes('NOT READY') ? 'text-red-600' : 'text-green-600'}`}>{clean}</p>;
+                          return <p key={i}>{clean}</p>;
+                        })}
+                      </div>
                     </div>
                   )}
 
@@ -1491,11 +1501,19 @@ export default function Execution() {
                       {verifying ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
                       {verifying ? 'Verifying...' : 'AI Verify'}
                     </button>
-                    <a href={'/api/v1/managed-work-orders/' + closureWO.wo_id + '/closure-report'}
-                      target="_blank"
+                    <button onClick={async () => {
+                        try {
+                          const token = localStorage.getItem('token');
+                          const res = await fetch('/api/v1/managed-work-orders/' + closureWO.wo_id + '/closure-report', { headers: { Authorization: 'Bearer ' + token } });
+                          if (!res.ok) throw new Error('Failed');
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          window.open(url, '_blank');
+                        } catch { toast.error('Error generating PDF report'); }
+                      }}
                       className="px-4 py-2.5 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300 flex items-center gap-1">
                       PDF Report
-                    </a>
+                    </button>
                     <button onClick={() => handleCloseWO(closureWO)}
                       disabled={closing || !closureForm.actual_hours || (aiResult && !aiResult.ready)}
                       className="px-5 py-2.5 text-sm font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">

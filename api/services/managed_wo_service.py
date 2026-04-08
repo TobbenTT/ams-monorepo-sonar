@@ -330,15 +330,19 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
         "operations", "materials", "tools", "documents", "labour_summary",
         "planned_start", "planned_end", "risk_analysis", "budget_amount", "budget_approved",
         "labor_cost", "material_cost", "external_cost", "actual_total_cost", "actual_hours", "shift",
+        "assigned_workers", "status",
     ]
     for key in updatable:
         if key in data:
             val = data[key]
-            if key in ("planned_start", "planned_end") and isinstance(val, str):
-                try:
-                    val = datetime.fromisoformat(val)
-                except ValueError:
-                    continue
+            if key in ("planned_start", "planned_end"):
+                if val is None or val == '' or val == 'null':
+                    val = None
+                elif isinstance(val, str):
+                    try:
+                        val = datetime.fromisoformat(val)
+                    except ValueError:
+                        val = None
             setattr(wo, key, val)
 
     if "priority_code" in data:

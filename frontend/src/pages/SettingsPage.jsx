@@ -202,7 +202,7 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Gradient Header */}
       <div className="bg-gradient-to-r from-slate-700 via-gray-600 to-zinc-600 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between">

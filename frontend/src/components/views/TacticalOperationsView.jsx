@@ -162,7 +162,7 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Gradient Header */}
       <div className="bg-gradient-to-r from-indigo-700 via-blue-600 to-cyan-500 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between">

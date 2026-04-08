@@ -242,7 +242,7 @@ export default function ImprovementActionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Gradient Header */}
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between">

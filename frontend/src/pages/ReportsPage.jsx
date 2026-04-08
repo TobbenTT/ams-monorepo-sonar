@@ -323,7 +323,7 @@ export default function Reports() {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="p-6 space-y-6">
             {/* Gradient Header */}
             <div className="bg-gradient-to-r from-teal-600 via-emerald-600 to-green-600 rounded-2xl p-6 text-white shadow-lg">
                 <div className="flex items-center justify-between">

@@ -1506,10 +1506,11 @@ export default function Execution() {
                           const token = localStorage.getItem('access_token');
                           const res = await fetch('/api/v1/managed-work-orders/' + closureWO.wo_id + '/closure-report', { headers: { Authorization: 'Bearer ' + token } });
                           if (!res.ok) throw new Error('Failed');
-                          const blob = await res.blob();
-                          const url = URL.createObjectURL(blob);
-                          window.open(url, '_blank');
-                        } catch { toast.error('Error generating PDF report'); }
+                          const html = await res.text();
+                          const w = window.open('', '_blank');
+                          w.document.write(html + '<script>setTimeout(()=>window.print(),500)<\/script>');
+                          w.document.close();
+                        } catch { toast.error('Error generating report'); }
                       }}
                       className="px-4 py-2.5 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300 flex items-center gap-1">
                       PDF Report

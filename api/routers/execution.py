@@ -173,12 +173,15 @@ def list_tasks(
     wo_id: str | None = None,
     status: str | None = None,
     assigned_to: str | None = None,
+    plant_id: str | None = None,
     limit: int = 200,
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
     """List execution tasks with optional filters."""
     q = db.query(WorkAssignmentModel).order_by(WorkAssignmentModel.created_at.desc())
+    if plant_id:
+        q = q.filter(WorkAssignmentModel.plant_id == plant_id)
     if wo_id:
         q = q.filter(WorkAssignmentModel.wo_id == wo_id)
     if status:

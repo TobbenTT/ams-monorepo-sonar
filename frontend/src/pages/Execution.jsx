@@ -186,7 +186,7 @@ export default function Execution() {
       if (tab === 'my') {
         setMyTasks(await getMyTasks());
       } else if (tab === 'all') {
-        setAllTasks(await listExecutionTasks());
+        setAllTasks(await listExecutionTasks({ plant_id: plant }));
       } else {
         setHandovers(await listHandovers());
       }
@@ -614,7 +614,7 @@ export default function Execution() {
         const parse = r => Array.isArray(r) ? r : r.items || [];
         setWos([...parse(r1), ...parse(r2), ...parse(r3)]);
       }).catch(() => {});
-      authListUsers().then(r => setUsers(Array.isArray(r) ? r : r.users || [])).catch(() => {});
+      authListUsers(plant ? { plant_id: plant } : {}).then(r => setUsers(Array.isArray(r) ? r : r.users || [])).catch(() => {});
     }, []);
 
     async function submit(e) {

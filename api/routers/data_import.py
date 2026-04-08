@@ -106,12 +106,14 @@ def _cell_val(v):
 @router.get("/tables")
 def list_tables(db: Session = Depends(get_db)):
     """List all tables with row counts."""
-    from sqlalchemy import inspect as sa_inspect
+    from sqlalchemy import inspect as sa_inspect, table, column, func, select
     insp = sa_inspect(db.bind)
+    valid_tables = set(insp.get_table_names())
     result = []
-    for tname in sorted(insp.get_table_names()):
+    for tname in sorted(valid_tables):
         try:
-            count = db.execute(text('SELECT COUNT(*) FROM "%s"' % tname)).scalar()
+            t = table(tname, column("id"))
+            count = db.execute(select(func.count()).select_from(t)).scalar()
         except Exception:
             count = 0
         cols = insp.get_columns(tname)
@@ -129,8 +131,13 @@ async def upload_file(file: UploadFile = File(...)):
     if ext not in ALLOWED_EXT:
         raise HTTPException(400, "Unsupported file type: %s. Use .xlsx or .csv" % ext)
 
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext, dir="/tmp")
     content = await file.read()
+    if len(content) > 50 * 1024 * 1024:  # 50MB max
+        raise HTTPException(413, "File too large (max 50MB)")
+    if not content:
+        raise HTTPException(400, "Empty file")
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext, dir="/tmp")
     tmp.write(content)
     tmp.close()
 
@@ -222,11 +229,16 @@ async def execute_import(
             else:
                 raise HTTPException(400, "Source column '%s' not found in file" % src_col)
 
-        # Validate target table
+        # Validate target table and columns against schema (prevent SQL injection)
         from sqlalchemy import inspect as sa_inspect
         insp = sa_inspect(db.bind)
-        if table_name not in insp.get_table_names():
+        valid_tables = set(insp.get_table_names())
+        if table_name not in valid_tables:
             raise HTTPException(400, "Table '%s' does not exist" % table_name)
+        valid_cols = {col["name"] for col in insp.get_columns(table_name)}
+        for col in db_cols:
+            if col not in valid_cols:
+                raise HTTPException(400, "Column '%s' does not exist in table '%s'" % (col, table_name))
 
         if mode == "replace":
             db.execute(text('DELETE FROM "%s"' % table_name))
@@ -461,6 +473,10 @@ def ai_analyze(req: AIAnalyzeRequest, db: Session = Depends(get_db), user=Depend
     if scored and scored[0][0] > 10:
         try:
             top_name = scored[0][1]
+            from sqlalchemy import inspect as _insp
+            _valid = set(_insp(db.bind).get_table_names())
+            if top_name not in _valid:
+                raise ValueError("Invalid table")
             r = db.execute(text('SELECT * FROM "%s" LIMIT 2' % top_name))
             rows = [dict(row._mapping) for row in r]
             if rows:

@@ -43,6 +43,8 @@ async def transcribe_audio(
     audio_bytes = await file.read()
     if not audio_bytes:
         raise HTTPException(status_code=400, detail="Empty audio file.")
+    if len(audio_bytes) > 50 * 1024 * 1024:  # 50MB max
+        raise HTTPException(status_code=413, detail="Audio file too large (max 50MB).")
 
     mime_type = file.content_type or "audio/webm"
 
@@ -83,8 +85,20 @@ async def analyze_image(
     image_bytes = await file.read()
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Empty image file.")
+    if len(image_bytes) > 20 * 1024 * 1024:  # 20MB max for images
+        raise HTTPException(status_code=413, detail="Image file too large (max 20MB).")
 
-    mime_type = file.content_type or "image/jpeg"
+    # Validate magic bytes
+    MAGIC = {b'\xff\xd8\xff': 'image/jpeg', b'\x89PNG': 'image/png', b'RIFF': 'image/webp'}
+    detected = None
+    for sig, mt in MAGIC.items():
+        if image_bytes[:len(sig)] == sig:
+            detected = mt
+            break
+    if not detected:
+        raise HTTPException(status_code=415, detail="Unsupported image format. Use JPEG, PNG, or WebP.")
+
+    mime_type = detected
     # Normalize common variations
     if mime_type in ("image/jpg",):
         mime_type = "image/jpeg"

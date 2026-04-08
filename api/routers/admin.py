@@ -87,14 +87,14 @@ def agent_status():
 # ── Platform Settings (persisted) ──
 _platform_settings = {}  # In-memory fallback; for production use a DB table
 
-@router.get("/settings")
+@router.get("/settings", dependencies=[Depends(require_role("admin", "manager"))])
 def get_settings():
     """Return platform settings."""
     return _platform_settings
 
-@router.put("/settings")
+@router.put("/settings", dependencies=[Depends(require_role("admin"))])
 def save_settings(data: dict):
-    """Save platform settings."""
+    """Save platform settings (admin only)."""
     _platform_settings.update(data)
     return {"status": "saved", "settings": _platform_settings}
 

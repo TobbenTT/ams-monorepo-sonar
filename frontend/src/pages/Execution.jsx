@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import {
   Wrench, ClipboardCheck, ArrowRightLeft, Plus, CheckCircle2,
   Clock, AlertTriangle, User, Send, RefreshCw, ChevronDown, ChevronUp, Zap,
-  Calendar, Shield, Loader2, DollarSign, BarChart2, X, PackagePlus
+  Calendar, Shield, Loader2, DollarSign, BarChart2, X, PackagePlus, ArrowRight, CheckCircle
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import {
@@ -1023,40 +1023,95 @@ export default function Execution() {
           })()}
 
           {tab === 'handovers' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4 text-center">
+                  <p className="text-2xl font-bold text-emerald-700">{handovers.length}</p>
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase">Total Handovers</p>
+                </div>
+                <div className="bg-green-50 rounded-xl border border-green-100 p-4 text-center">
+                  <p className="text-2xl font-bold text-green-700">{handovers.filter(h => h.handover_type === 'TO_OPERATIONS').length}</p>
+                  <p className="text-[10px] text-green-600 font-semibold uppercase">To Operations</p>
+                </div>
+                <div className="bg-blue-50 rounded-xl border border-blue-100 p-4 text-center">
+                  <p className="text-2xl font-bold text-blue-700">{handovers.filter(h => h.handover_type === 'TO_MAINTENANCE').length}</p>
+                  <p className="text-[10px] text-blue-600 font-semibold uppercase">To Maintenance</p>
+                </div>
+              </div>
+
               {handovers.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
                   <ArrowRightLeft size={48} className="mx-auto mb-3 opacity-40" />
                   <p className="text-lg font-medium">No handovers recorded</p>
                 </div>
               ) : (
-                handovers.map(h => (
-                  <div key={h.handover_id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            h.handover_type === 'TO_OPERATIONS' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {h.handover_type === 'TO_OPERATIONS' ? 'To Operations' : 'To Maintenance'}
-                          </span>
-                          {h.tests_passed && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">
-                              Tests OK
-                            </span>
+                <div className="space-y-3">
+                  {handovers.map(h => {
+                    const isOps = h.handover_type === 'TO_OPERATIONS';
+                    const timeAgo = h.handover_at ? (() => {
+                      const diff = Date.now() - new Date(h.handover_at).getTime();
+                      const hrs = Math.floor(diff / 3600000);
+                      return hrs < 1 ? 'Just now' : hrs < 24 ? `${hrs}h ago` : `${Math.floor(hrs/24)}d ago`;
+                    })() : '';
+                    return (
+                      <div key={h.handover_id} className={`rounded-2xl border-2 overflow-hidden transition-all hover:shadow-md ${isOps ? 'border-green-200' : 'border-blue-200'}`}>
+                        <div className={`px-5 py-3 flex items-center justify-between ${isOps ? 'bg-green-50' : 'bg-blue-50'}`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isOps ? 'bg-green-500' : 'bg-blue-500'}`}>
+                              <ArrowRightLeft size={18} className="text-white" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-gray-900">{h.equipment_tag}</h3>
+                              <span className={`text-[10px] font-bold uppercase ${isOps ? 'text-green-600' : 'text-blue-600'}`}>
+                                {isOps ? 'Delivered to Operations' : 'Returned to Maintenance'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs text-gray-500 block">{h.handover_at?.slice(0, 16).replace('T', ' ')}</span>
+                            <span className="text-[10px] text-gray-400">{timeAgo}</span>
+                          </div>
+                        </div>
+                        <div className="px-5 py-3 bg-white">
+                          <div className="flex items-center gap-4 mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center text-[10px] font-bold text-red-700">{(h.from_user || '?')[0]}</div>
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase">From</p>
+                                <p className="text-xs font-semibold text-gray-800">{h.from_user}</p>
+                              </div>
+                            </div>
+                            <ArrowRight size={16} className="text-gray-300" />
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-700">{(h.to_user || '?')[0]}</div>
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase">To</p>
+                                <p className="text-xs font-semibold text-gray-800">{h.to_user}</p>
+                              </div>
+                            </div>
+                            <div className="ml-auto flex items-center gap-2">
+                              {h.tests_passed ? (
+                                <span className="flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg"><CheckCircle size={12} /> Tests OK</span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded-lg"><AlertTriangle size={12} /> Tests Pending</span>
+                              )}
+                            </div>
+                          </div>
+                          {h.condition_notes && (
+                            <div className="bg-gray-50 rounded-lg p-3 mt-2">
+                              <p className="text-[10px] text-gray-400 uppercase font-semibold mb-0.5">Condition Notes</p>
+                              <p className="text-xs text-gray-700">{h.condition_notes}</p>
+                            </div>
+                          )}
+                          {h.test_notes && h.test_notes !== 'Functional test OK' && (
+                            <p className="text-[10px] text-gray-500 italic mt-1">{h.test_notes}</p>
                           )}
                         </div>
-                        <h3 className="font-semibold text-gray-900">{h.equipment_tag}</h3>
-                        <p className="text-sm text-gray-500">
-                          De: <span className="font-medium">{h.from_user}</span> → A: <span className="font-medium">{h.to_user}</span>
-                        </p>
-                        {h.condition_notes && <p className="text-sm text-gray-600 mt-1">{h.condition_notes}</p>}
-                        {h.test_notes && <p className="text-sm text-gray-500 mt-1 italic">{h.test_notes}</p>}
                       </div>
-                      <span className="text-xs text-gray-400">{h.handover_at?.slice(0, 16).replace('T', ' ')}</span>
-                    </div>
-                  </div>
-                ))
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}

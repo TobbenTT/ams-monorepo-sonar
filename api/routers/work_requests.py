@@ -772,11 +772,24 @@ IMPORTANT: Detect the language of the user description. If the description is in
   "estimatedDuration": "hours (numeric string)",
   "plantCondition": "running | stopped | reduced",
   "productionImpact": "CRITICAL | HIGH | MEDIUM | LOW",
-  "resources": [{"type": "Mechanical|Electrical|Instrumentation|Supervisor", "quantity": N, "hours": N}],
+  "resources": [{"type": "Mechanical|Electrical|Instrumentation|Rigger|Helper", "quantity": N, "hours": N}],
   "materials": [{"sapId": "8 digits", "description": "material", "quantity": N, "unit": "PZ|KG|LT|UD"}],
   "supportEquipment": ["support equipment"],
   "workConditions": "working conditions"
 }
+
+RESOURCE ESTIMATION RULES (BE REALISTIC — industrial maintenance, not household repair):
+- ALWAYS include at least 2-3 resource types for any job
+- Mechanical work: minimum 2 mechanics, 4-8 hours for bearing/pump/compressor jobs
+- If heavy equipment involved: add Rigger (1 person, 2-4 hrs) for lifting/rigging
+- If electrical disconnection needed: add Electrical (1 person, 1-2 hrs)
+- If instruments/sensors involved: add Instrumentation (1 person, 1-3 hrs)
+- Add Helper (1-2 people, same hours as main trade) for large equipment
+- estimatedDuration should be the LONGEST resource hours (critical path)
+- P1 jobs: 4-12 hours, P2: 6-16 hours, P3: 4-8 hours, P4: 2-4 hours
+- NEVER put Supervisor as a resource — supervisors oversee, they don't execute
+- Include minimum 3-5 materials for any mechanical job (bearings + seals + lubricant + fasteners + gaskets)
+- Include minimum 2-3 materials for electrical jobs (cables + contactors + fuses)
 
 SAP CODES: 10001XXX=Bearings, 10002XXX=Seals, 10003XXX=Filters, 10004XXX=Lubricants,
 10005XXX=Fasteners, 10006XXX=Transmission, 10007XXX=Electrical, 10008XXX=Instrumentation
@@ -865,7 +878,7 @@ The enhanced_description and suggestedAction should match the user's language.""
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
+        max_tokens=2048,
         system=system_prompt,
         messages=[{"role": "user", "content": user_msg}],
     )

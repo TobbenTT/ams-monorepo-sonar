@@ -52,6 +52,8 @@ class WOUpdateRequest(BaseModel):
     shift: str | None = None
     status: str | None = None
     assigned_workers: list | None = None
+    planning_group: str | None = None
+    work_center: str | None = None
 
 
 class WOScheduleRequest(BaseModel):

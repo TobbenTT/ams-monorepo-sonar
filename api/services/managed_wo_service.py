@@ -92,6 +92,33 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
     }
 
 
+def _auto_planning_group(wo_type: str, priority: str, description: str) -> str:
+    """Auto-assign planning group based on WO type and content."""
+    dl = (description or '').lower()
+    if any(k in dl for k in ['electr', 'motor', 'panel', 'cable', 'voltage', 'circuit']):
+        return 'ELEC-01'
+    if any(k in dl for k in ['instrum', 'sensor', 'transm', 'plc', 'dcs', 'calibra', 'valvula control']):
+        return 'INST-01'
+    if any(k in dl for k in ['estructur', 'soldadura', 'weld', 'crack', 'corrosion', 'foundation']):
+        return 'STRU-01'
+    if wo_type == 'PM02':
+        return 'PREV-01'
+    return 'MECH-01'
+
+
+def _auto_work_center(planning_group: str, plant_id: str) -> str:
+    """Auto-assign work center based on planning group."""
+    prefix = (plant_id or 'PLT')[:3].upper()
+    center_map = {
+        'MECH-01': f'{prefix}-MEC01',
+        'ELEC-01': f'{prefix}-ELE01',
+        'INST-01': f'{prefix}-INS01',
+        'STRU-01': f'{prefix}-STR01',
+        'PREV-01': f'{prefix}-PRV01',
+    }
+    return center_map.get(planning_group, f'{prefix}-GEN01')
+
+
 def create_work_order(
     db: Session,
     equipment_tag: str,
@@ -105,6 +132,8 @@ def create_work_order(
     operations: list | None = None,
     materials: list | None = None,
     tools: list | None = None,
+    planning_group: str | None = None,
+    work_center: str | None = None,
 ) -> dict:
     """Create a new managed work order (optionally from an approved WR).
     P1/P2 priorities trigger fast track: OT created directly in RELEASED status."""
@@ -116,6 +145,10 @@ def create_work_order(
     LABOR_RATE = 50.0
     auto_budget = round(estimated_hours * LABOR_RATE, 2)
 
+    # Auto-assign planning group and work center if not provided
+    pg = planning_group or _auto_planning_group(wo_type, priority_code, description)
+    wc = work_center or _auto_work_center(pg, plant_id)
+
     wo = ManagedWorkOrderModel(
         wo_number=wo_number,
         work_request_id=work_request_id,
@@ -126,6 +159,8 @@ def create_work_order(
         wo_type=wo_type,
         priority_code=priority_code,
         work_class=work_class,
+        planning_group=pg,
+        work_center=wc,
         planned_by=planned_by,
         estimated_hours=estimated_hours,
         budget_amount=auto_budget,
@@ -330,7 +365,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
         "operations", "materials", "tools", "documents", "labour_summary",
         "planned_start", "planned_end", "risk_analysis", "budget_amount", "budget_approved",
         "labor_cost", "material_cost", "external_cost", "actual_total_cost", "actual_hours", "shift",
-        "assigned_workers", "status",
+        "assigned_workers", "status", "planning_group", "work_center",
     ]
     for key in updatable:
         if key in data:

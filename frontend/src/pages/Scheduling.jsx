@@ -1156,7 +1156,7 @@ export default function Scheduling() {
       const techs = technicians || [];
 
       if (toSchedule.length === 0) {
-        toast.info('No hay OTs para programar');
+        toast.info('No WOs to schedule');
         setAiScheduling(false);
         return;
       }
@@ -1206,8 +1206,8 @@ export default function Scheduling() {
         } catch {}
       }
 
-      toast.success(`${scheduled} OTs programadas en 5 días con ${techs.length} técnicos`);
-      setAiResult({ assignments: toSchedule.map(w => ({ wo_id: w.wo_id })), message: `${scheduled} OTs distribuidas Lun-Vie` });
+      toast.success(`${scheduled} WOs scheduled across 5 days with ${techs.length} technicians`);
+      setAiResult({ assignments: toSchedule.map(w => ({ wo_id: w.wo_id })), message: `${scheduled} WOs distributed Mon-Fri` });
       loadCalendarData();
       loadPrograms();
       loadGantt();
@@ -1302,13 +1302,13 @@ export default function Scheduling() {
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
             >
               {aiScheduling ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {aiScheduling ? 'Programando...' : 'Programar Semana'}
+              {aiScheduling ? 'Scheduling...' : 'Schedule Week'}
             </button>
             <button
               onClick={() => setShowClearConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
             >
-              <Trash2 size={16} /> Limpiar Asignaciones
+              <Trash2 size={16} /> Clear Assignments
             </button>
           </div>
         )}
@@ -1391,13 +1391,13 @@ export default function Scheduling() {
             <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 size={24} className="text-red-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Limpiar Asignaciones</h3>
-            <p className="text-sm text-gray-500 mb-1">¿Eliminar <span className="font-bold text-red-600">todas</span> las asignaciones programadas?</p>
-            <p className="text-xs text-gray-400 mb-6">Las OTs perderán técnicos y fechas asignadas.<br/>Volverán a estado PLANIFICADO.</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Clear Assignments</h3>
+            <p className="text-sm text-gray-500 mb-1">Remove <span className="font-bold text-red-600">all</span> scheduled assignments?</p>
+            <p className="text-xs text-gray-400 mb-6">WOs will lose assigned technicians and planned dates.<br/>Status will return to PLANNED.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowClearConfirm(false)} disabled={clearing}
                 className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50">
-                Cancelar
+                Cancel
               </button>
               <button disabled={clearing} onClick={async () => {
                 setClearing(true);
@@ -1415,14 +1415,14 @@ export default function Scheduling() {
                       cleared++;
                     } catch {}
                   }
-                  toast.success(`${cleared} asignaciones eliminadas`);
+                  toast.success(`${cleared} assignments cleared`);
                   loadCalendarData();
                   loadPrograms();
-                } catch { toast.error('Error limpiando'); }
+                } catch { toast.error('Error clearing'); }
                 finally { setClearing(false); setShowClearConfirm(false); }
               }}
                 className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                {clearing ? <><Loader2 size={14} className="animate-spin" /> Limpiando...</> : 'Sí, limpiar'}
+                {clearing ? <><Loader2 size={14} className="animate-spin" /> Clearing...</> : 'Yes, clear all'}
               </button>
             </div>
           </div>

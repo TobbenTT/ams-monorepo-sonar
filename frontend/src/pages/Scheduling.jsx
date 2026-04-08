@@ -734,122 +734,133 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
 
 /* ───── Phase 3: Gantt Tab ───── */
 function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
+  const [hoveredWO, setHoveredWO] = useState(null);
+
   if (!ganttData || ganttData.length === 0) {
     return (
       <div className="bg-card border border-border rounded-xl p-12 text-center">
         <BarChart3 size={40} className="text-muted-foreground/40 mx-auto mb-3" />
-        <p className="text-muted-foreground">No scheduled WOs to display in Gantt</p>
+        <p className="text-muted-foreground">No scheduled WOs to display</p>
       </div>
     );
   }
 
-  // Calculate date range for the Gantt
+  // Generate day columns (not just weeks)
   const now = new Date();
-  const endDate = new Date(now.getTime() + weeksRange * 7 * 86400000);
+  const monday = getMonday(now);
   const totalDays = weeksRange * 7;
-
-  // Generate week labels
-  const weekLabels = [];
-  for (let i = 0; i < weeksRange; i++) {
-    const weekStart = new Date(now.getTime() + i * 7 * 86400000);
-    const weekNum = getISOWeek(weekStart);
-    weekLabels.push({ label: `S${weekNum}`, start: i * 7, width: 7 });
+  const days = [];
+  for (let i = 0; i < totalDays; i++) {
+    const d = addDays(monday, i);
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    days.push({ date: d, label: d.getDate(), dayName: ['S','M','T','W','T','F','S'][d.getDay()], isWeekend, month: d.toLocaleString('en', { month: 'short' }) });
   }
+
+  // Group days by week
+  const weeks = [];
+  for (let i = 0; i < weeksRange; i++) {
+    weeks.push({ label: `W${getISOWeek(addDays(monday, i * 7))}`, days: days.slice(i * 7, (i + 1) * 7) });
+  }
+
+  const prioColors = { P1: '#dc2626', P2: '#ea580c', P3: '#2563eb', P4: '#6b7280' };
 
   return (
     <div className="space-y-4">
-      {/* Range toggle */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-muted-foreground">Range:</span>
-        {[{ v: 2, l: t('scheduling.twoWeeks') }, { v: 12, l: t('scheduling.twelveWeeks') }].map(opt => (
-          <button key={opt.v} onClick={() => onWeeksChange(opt.v)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${weeksRange === opt.v ? 'bg-[#1B5E20] text-white border-[#1B5E20]' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
-            {opt.l}
-          </button>
-        ))}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Range:</span>
+          {[{ v: 2, l: '2 Weeks' }, { v: 4, l: '4 Weeks' }, { v: 12, l: '12 Weeks' }].map(opt => (
+            <button key={opt.v} onClick={() => onWeeksChange(opt.v)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${weeksRange === opt.v ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
+              {opt.l}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-3 text-xs">
+          {Object.entries(prioColors).map(([p, c]) => (
+            <div key={p} className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: c }} /><span>{p}</span></div>
+          ))}
+        </div>
       </div>
 
-      {/* Gantt chart */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">{t('scheduling.ganttView')}</h2>
-          <span className="text-xs text-muted-foreground bg-muted rounded-full px-3 py-1">{ganttData.length} OTs</span>
-        </div>
-
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <div style={{ minWidth: 800, maxWidth: '100%' }}>
-            {/* Week header */}
-            <div className="flex border-b border-border bg-muted/50">
-              <div className="w-64 min-w-[256px] px-4 py-2 text-xs font-semibold text-muted-foreground uppercase border-r border-border">OT / Equipo</div>
-              <div className="flex-1 flex">
-                {weekLabels.map((w, i) => (
-                  <div key={i} className="flex-1 text-center text-xs font-semibold text-muted-foreground py-2 border-r border-border last:border-r-0">{w.label}</div>
-                ))}
+          <div style={{ minWidth: Math.max(800, totalDays * 32 + 280) }}>
+            {/* Header: weeks + days */}
+            <div className="flex border-b-2 border-border">
+              <div className="w-[280px] min-w-[280px] px-4 py-1 text-[10px] font-bold text-muted-foreground uppercase border-r-2 border-border bg-gray-50 flex items-end">
+                WO / Equipment
+              </div>
+              <div className="flex-1 flex flex-col">
+                {/* Week row */}
+                <div className="flex">
+                  {weeks.map((w, i) => (
+                    <div key={i} className="flex-1 text-center text-[10px] font-bold text-muted-foreground py-1 border-b border-border bg-gray-50" style={{ minWidth: w.days.length * 32 }}>
+                      {w.label}
+                    </div>
+                  ))}
+                </div>
+                {/* Day row */}
+                <div className="flex">
+                  {days.map((d, i) => (
+                    <div key={i} className={`text-center text-[9px] py-1 border-r border-border/40 ${d.isWeekend ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-600'}`} style={{ minWidth: 32, flex: '0 0 auto', width: `${100 / totalDays}%` }}>
+                      <div className="font-bold">{d.dayName}</div>
+                      <div>{d.label}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Rows */}
-            <div style={{maxHeight: "60vh", overflowY: "auto"}}>
-            {ganttData.map((wo) => {
-              const woStart = wo.planned_start ? new Date(wo.planned_start) : now;
-              const woEnd = wo.planned_end ? new Date(wo.planned_end) : new Date(woStart.getTime() + (wo.estimated_hours || 4) * 3600000);
+            <div style={{ maxHeight: '55vh', overflowY: 'auto' }}>
+              {ganttData.map((wo) => {
+                const woStart = wo.planned_start ? new Date(wo.planned_start) : now;
+                const woEnd = wo.planned_end ? new Date(wo.planned_end) : new Date(woStart.getTime() + (wo.estimated_hours || 4) * 3600000);
+                const startOffset = Math.max(0, (woStart - monday) / 86400000);
+                const duration = Math.max(0.5, (woEnd - woStart) / 86400000 + 1);
+                const leftPct = (startOffset / totalDays) * 100;
+                const widthPct = Math.max(2, (duration / totalDays) * 100);
+                const barColor = prioColors[wo.priority_code] || prioColors.P3;
+                const isHovered = hoveredWO === wo.wo_id;
 
-              const startOffset = Math.max(0, (woStart - now) / 86400000);
-              const duration = Math.max(0.5, (woEnd - woStart) / 86400000);
-              const leftPct = Math.max(0, Math.min((startOffset / totalDays) * 100, 95));
-              const widthPct = Math.max(2, Math.min((duration / totalDays) * 100, 100 - leftPct));
-
-              const barColor = GANTT_COLORS[wo.wo_type] || GANTT_COLORS[wo.type] || '#6B7280';
-              const statusMeta = STATUS_META[wo.status] || STATUS_META.PLANNED;
-
-              return (
-                <div key={wo.wo_id || wo.wo_number} className="flex border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
-                  {/* Label */}
-                  <div className="w-64 min-w-[256px] px-4 py-2.5 border-r border-border">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-foreground truncate">{wo.wo_number}</span>
-                      <span className={`text-[0.6rem] font-medium px-1.5 py-0.5 rounded border ${statusMeta.bg}`}>{wo.status}</span>
+                return (
+                  <div key={wo.wo_id || wo.wo_number}
+                    className={`flex border-b border-border/50 transition-colors ${isHovered ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                    onMouseEnter={() => setHoveredWO(wo.wo_id)} onMouseLeave={() => setHoveredWO(null)}>
+                    {/* Label */}
+                    <div className="w-[280px] min-w-[280px] px-3 py-2 border-r-2 border-border">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-[11px] font-bold text-foreground">{wo.wo_number}</span>
+                        <span className="text-[9px] font-bold px-1 py-0.5 rounded text-white" style={{ backgroundColor: barColor }}>{wo.priority_code}</span>
+                        <span className={`text-[9px] px-1 py-0.5 rounded border ${wo.status === 'PROGRAMADO' ? 'bg-blue-50 text-blue-700 border-blue-200' : wo.status === 'EN_EJECUCION' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>{wo.status}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground truncate">{wo.equipment_tag} — {(wo.description || '').substring(0, 35)}</p>
+                      <span className="text-[10px] text-gray-400">{wo.estimated_hours}h {wo.wo_type ? `· ${wo.wo_type}` : ''}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{wo.equipment_tag} — {wo.description}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className={`text-[0.6rem] font-bold px-1 py-0.5 rounded border ${PRIORITY_COLOR[wo.priority_code] || PRIORITY_COLOR.P3}`}>{wo.priority_code}</span>
-                      <span className="text-[0.6rem] text-muted-foreground">{wo.estimated_hours}h</span>
-                      {!wo.materials_ready && <Package size={10} className="text-amber-500" title="Materials pending" />}
-                    </div>
-                  </div>
-
-                  {/* Bar */}
-                  <div className="flex-1 relative py-2">
-                    <div className="absolute inset-y-0 flex items-center" style={{ left: `${leftPct}%`, width: `${Math.max(widthPct, 2)}%` }}>
-                      <div className="h-6 w-full rounded-md shadow-sm relative overflow-hidden" style={{ backgroundColor: barColor + '30', border: `1px solid ${barColor}60` }}>
-                        {/* Progress fill */}
-                        <div className="h-full rounded-md transition-all" style={{ width: `${wo.completion_pct || 0}%`, backgroundColor: barColor + '80' }} />
-                        {/* Label */}
-                        <span className="absolute inset-0 flex items-center justify-center text-[0.6rem] font-bold" style={{ color: barColor }}>
-                          {wo.completion_pct > 0 ? `${wo.completion_pct}%` : ''}
-                        </span>
+                    {/* Bar area */}
+                    <div className="flex-1 relative" style={{ minHeight: 44 }}>
+                      {/* Day grid */}
+                      {days.map((d, i) => (
+                        <div key={i} className={`absolute top-0 bottom-0 border-r ${d.isWeekend ? 'bg-gray-50/50 border-gray-200/50' : 'border-border/20'}`}
+                          style={{ left: `${(i / totalDays) * 100}%`, width: `${100 / totalDays}%` }} />
+                      ))}
+                      {/* Bar */}
+                      <div className="absolute top-2 bottom-2 flex items-center" style={{ left: `${Math.max(0, Math.min(leftPct, 98))}%`, width: `${Math.min(widthPct, 100 - leftPct)}%` }}>
+                        <div className={`h-full w-full rounded-md shadow-sm relative overflow-hidden transition-all ${isHovered ? 'ring-2 ring-offset-1' : ''}`}
+                          style={{ backgroundColor: barColor + '25', borderLeft: `3px solid ${barColor}`, ringColor: barColor }}>
+                          <div className="h-full rounded-r-md" style={{ width: `${wo.completion_pct || 0}%`, backgroundColor: barColor + '50' }} />
+                          <span className="absolute inset-0 flex items-center px-1.5 text-[9px] font-bold truncate" style={{ color: barColor }}>
+                            {wo.wo_number?.replace('WO-', '')} {wo.completion_pct > 0 ? `(${wo.completion_pct}%)` : ''}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    {/* Week grid lines */}
-                    {weekLabels.map((_, i) => (
-                      <div key={i} className="absolute top-0 bottom-0 border-r border-border/30" style={{ left: `${((i + 1) / weeksRange) * 100}%` }} />
-                    ))}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
             </div>
           </div>
-        </div>
-
-        {/* Legend */}
-        <div className="px-5 py-3 border-t border-border bg-muted/50 flex flex-wrap gap-4 text-xs text-muted-foreground">
-          {Object.entries(GANTT_COLORS).filter(([k]) => !k.startsWith('PM')).map(([type, color]) => (
-            <div key={type} className="flex items-center gap-1.5">
-              <div className="w-4 h-3 rounded" style={{ backgroundColor: color }} />
-              <span>{type}</span>
-            </div>
-          ))}
         </div>
       </div>
     </div>

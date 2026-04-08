@@ -78,13 +78,18 @@ export default function Execution() {
 
   async function loadWOsForTabs() {
     try {
-      const [ipRes, compRes, ejRes, cerRes] = await Promise.all([
+      const [ipRes, compRes, ejRes, cerRes, progRes] = await Promise.all([
         listManagedWOs({ status: 'IN_PROGRESS', limit: 50 }),
         listManagedWOs({ status: 'COMPLETED', limit: 50 }),
         listManagedWOs({ status: 'EN_EJECUCION', limit: 50 }),
         listManagedWOs({ status: 'CERRADO', limit: 50 }),
+        listManagedWOs({ status: 'PROGRAMADO', limit: 100 }),
       ]);
-      setInProgressWOs(Array.isArray(ipRes) ? ipRes : ipRes.items || []);
+      const ipList = Array.isArray(ipRes) ? ipRes : ipRes.items || [];
+      const ejList = Array.isArray(ejRes) ? ejRes : ejRes.items || [];
+      const progList = Array.isArray(progRes) ? progRes : progRes.items || [];
+      // Combine IN_PROGRESS + EN_EJECUCION + PROGRAMADO as "active"
+      setInProgressWOs([...ipList, ...ejList, ...progList]);
       setCompletedWOs(Array.isArray(compRes) ? compRes : compRes.items || []);
       setEnExecutionWOs(Array.isArray(ejRes) ? ejRes : ejRes.items || []);
       setCerradoWOs(Array.isArray(cerRes) ? cerRes : cerRes.items || []);
@@ -913,23 +918,23 @@ export default function Execution() {
 
               {/* Daily summary */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-white rounded-xl border p-4 text-center">
+                <div className="bg-blue-50 rounded-xl border border-blue-100 p-4 text-center">
                   <p className="text-2xl font-bold text-blue-700">{inProgressWOs.length}</p>
-                  <p className="text-xs text-gray-500">WOs In Progress</p>
+                  <p className="text-xs text-blue-600 font-semibold">Active WOs</p>
                 </div>
-                <div className="bg-white rounded-xl border p-4 text-center">
+                <div className="bg-amber-50 rounded-xl border border-amber-100 p-4 text-center">
                   <p className="text-2xl font-bold text-amber-700">{fastTrackWOs.length}</p>
-                  <p className="text-xs text-gray-500">Emergencies</p>
+                  <p className="text-xs text-amber-600 font-semibold">Emergencies</p>
                 </div>
-                <div className="bg-white rounded-xl border p-4 text-center">
+                <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4 text-center">
                   <p className="text-2xl font-bold text-emerald-700">{completedWOs.length}</p>
-                  <p className="text-xs text-gray-500">Completed Today</p>
+                  <p className="text-xs text-emerald-600 font-semibold">Completed</p>
                 </div>
-                <div className="bg-white rounded-xl border p-4 text-center">
-                  <p className="text-2xl font-bold text-gray-700">
-                    {inProgressWOs.reduce((s, w) => s + (w.estimated_hours || 0), 0)}h
+                <div className="bg-purple-50 rounded-xl border border-purple-100 p-4 text-center">
+                  <p className="text-2xl font-bold text-purple-700">
+                    {inProgressWOs.reduce((s, w) => s + (w.estimated_hours || 0), 0).toFixed(0)}h
                   </p>
-                  <p className="text-xs text-gray-500">HH Assigned</p>
+                  <p className="text-xs text-purple-600 font-semibold">HH This Week</p>
                 </div>
               </div>
 
@@ -939,7 +944,7 @@ export default function Execution() {
                   <span className="text-sm font-bold text-gray-700">Active WOs — Daily Review</span>
                 </div>
                 <div className="divide-y divide-gray-50">
-                  {inProgressWOs.length > 0 ? inProgressWOs.map(wo => (
+                  {inProgressWOs.length > 0 ? inProgressWOs.slice(0, 20).map(wo => (
                     <div key={wo.wo_id || wo.work_order_id} className="p-4">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">

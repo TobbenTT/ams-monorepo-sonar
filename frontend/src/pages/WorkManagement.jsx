@@ -24,14 +24,20 @@ export default function WorkManagement() {
   const { t } = useLanguage();
   const outletContext = useOutletContext();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'identification');
-  const [viewMode, setViewMode] = useState('planner'); // planner | supervisor
+  const [activeTab, setActiveTabState] = useState(() => searchParams.get('tab') || 'identification');
+  const [viewMode, setViewMode] = useState('planner');
 
-  // Read tab from URL on mount/change
+  // Sync tab to URL so refresh preserves it
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    setSearchParams({ tab }, { replace: true });
+  };
+
+  // Read tab from URL on mount
   useEffect(() => {
     const urlTab = searchParams.get('tab');
-    if (urlTab) { setActiveTab(urlTab); setSearchParams({}, { replace: true }); }
-  }, [searchParams]);
+    if (urlTab && urlTab !== activeTab) setActiveTabState(urlTab);
+  }, []);
 
   // viewMode change does NOT switch tabs — user stays on current tab
   const [phaseCounts, setPhaseCounts] = useState(null);

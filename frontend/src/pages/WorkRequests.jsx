@@ -1050,7 +1050,7 @@ function findDuplicates(currentReq, allRequests) {
    ═══════════════════════════════════════════════════════════ */
 const PAGE_SIZE = 25;
 
-export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenWrId, onClearAutoOpen, viewMode, isActive } = {}) {
+export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenWrId, onClearAutoOpen, viewMode, isActive, selectedTimeRange } = {}) {
   const [scope, setScope] = useState('all');
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -1124,8 +1124,13 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   /* ─── Scope filtering ─── */
   const scopeFiltered = useMemo(() => {
     if (scope === 'mine') {
+      const uid = user?.user_id || '';
+      const uname = user?.username || '';
+      const fname = user?.full_name || '';
       return requests.filter(
-        (r) => r.technician === user?.full_name || r.technician === user?.username || r.created_by === user?.username
+        (r) => r.created_by === uname || r.created_by === uid || r.created_by === fname ||
+               r.technician === fname || r.technician === uname ||
+               r.reported_by === uname || r.reported_by === fname
       );
     }
     if (scope === 'team') {
@@ -1179,9 +1184,20 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       const matchesDateFrom = !dateFrom || rDate >= dateFrom;
       const matchesDateTo = !dateTo || rDate <= dateTo;
       const matchesPriority = !priorityFilter || (r.priority_requested || r.priority_suggested || "") === priorityFilter;
-      return matchesFilter && matchesSearch && matchesLocation && matchesDateFrom && matchesDateTo && matchesPriority;
+      // Time range filter from header
+      let matchesTimeRange = true;
+      if (selectedTimeRange && rDate) {
+        const now = new Date();
+        const daysMap = { 'Last 7 Days': 7, 'Last 30 Days': 30, 'Last 90 Days': 90, 'Last 365 Days': 365 };
+        const days = daysMap[selectedTimeRange];
+        if (days) {
+          const cutoff = new Date(now.getTime() - days * 86400000).toISOString().slice(0, 10);
+          matchesTimeRange = rDate >= cutoff;
+        }
+      }
+      return matchesFilter && matchesSearch && matchesLocation && matchesDateFrom && matchesDateTo && matchesPriority && matchesTimeRange;
     });
-  }, [areaFiltered, statusFilter, search, locationFilter, dateFrom, dateTo, priorityFilter]);
+  }, [areaFiltered, statusFilter, search, locationFilter, dateFrom, dateTo, priorityFilter, selectedTimeRange]);
 
   /* ─── Sort + Paginate ─── */
   const sorted = useMemo(() => {
@@ -1469,7 +1485,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         {SCOPE_TABS.map((tab) => {
           const Icon = tab.icon;
           const count = tab.key === 'mine'
-            ? requests.filter((r) => r.technician === user?.full_name || r.technician === user?.username || r.created_by === user?.username).length
+            ? requests.filter((r) => r.created_by === (user?.username || '') || r.created_by === (user?.user_id || '') || r.technician === (user?.full_name || '') || r.reported_by === (user?.username || '')).length
             : tab.key === 'team'
               ? requests.filter((r) => r.plant === (user?.plant_id || 'JFC-1')).length
               : requests.length;

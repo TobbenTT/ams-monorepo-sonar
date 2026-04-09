@@ -573,13 +573,7 @@ export default function FailureCapture({ onNavigateTab }) {
     setF('whereTag', node.tag || node.code || '');
     setEquipSearch('');
     setShowEquipSearch(false);
-    // Check for duplicates on this equipment
-    const eqTag = node.tag || node.code || '';
-    if (eqTag) {
-      api.checkDuplicates({ description: form.whatHappens || '', equipment_tag: eqTag })
-        .then(res => { if (res?.duplicates?.length > 0) setDuplicates(res.duplicates); })
-        .catch(() => {});
-    }
+    // Duplicates checked only after AI analysis (not on equipment selection per client feedback)
     // Auto-find location
     if (node.parent_node_id && locationNodes.length > 0) {
       const nodeMap = {};

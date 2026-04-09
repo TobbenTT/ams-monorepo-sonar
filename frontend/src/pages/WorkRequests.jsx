@@ -440,14 +440,14 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
 </div>
 
 ${resources.length ? `<div class="section">
-  <div class="section-title">Required Resources</div>
+  <div class="section-title">Labour</div>
   <table><thead><tr><th>Specialty</th><th>Quantity</th><th>Hours</th></tr></thead><tbody>
   ${resources.map(r => typeof r === 'string' ? `<tr><td colspan="3">${r}</td></tr>` : `<tr><td>${r.type||''}</td><td>${r.quantity||1}</td><td>${r.hours||0}h</td></tr>`).join('')}
   </tbody></table>
 </div>` : ''}
 
 ${materials.length ? `<div class="section">
-  <div class="section-title">SAP Materials</div>
+  <div class="section-title">Spare Parts and Materials</div>
   <table><thead><tr><th>SAP ID</th><th>Description</th><th>Qty</th><th>Unit</th></tr></thead><tbody>
   ${materials.map(m => typeof m === 'string' ? `<tr><td colspan="4">${m}</td></tr>` : `<tr><td style="font-family:monospace">${m.sapId||''}</td><td>${m.description||''}</td><td>${m.quantity||1}</td><td>${m.unit||'PZ'}</td></tr>`).join('')}
   </tbody></table>
@@ -721,7 +721,7 @@ ${materials.length ? `<div class="section">
         {(item.resources?.length > 0 || item.materials?.length > 0 || editing) && (
           <div className="px-6 pb-4">
             <div className="mb-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Resources</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Labour</p>
               {editing ? (
                 <div className="space-y-2">
                   <div className="grid grid-cols-[1fr_80px_80px_30px] gap-2 text-xs text-muted-foreground font-semibold">
@@ -774,7 +774,7 @@ ${materials.length ? `<div class="section">
               )}
             </div>
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Materials</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Spare Parts and Materials</p>
               {editing ? (
                 <MaterialEditor materials={editData.materials || []} onChange={(mats) => setEditData(d => ({ ...d, materials: mats }))} />
               ) : (
@@ -1581,6 +1581,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('status')}>
                     {t('common.status')} {sortField === 'status' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    WO
+                  </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('ai_confidence')}>
                     {t('workRequests.aiConfidence')} {sortField === 'ai_confidence' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
@@ -1592,7 +1595,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               <tbody className="divide-y divide-border">
                 {paged.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                    <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground text-sm">
                       {t('common.noData')}
                     </td>
                   </tr>
@@ -1664,6 +1667,16 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                         <span className={`text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${statusColor(req.status)}`}>
                           {statusLabels[req.status] ?? req.status}
                         </span>
+                      </td>
+
+                      {/* WO Number */}
+                      <td className="px-4 py-3">
+                        {req.wo_number ? (
+                          <button onClick={() => onNavigateTab && onNavigateTab('planning', null, req.wo_number)}
+                            className="text-xs font-mono font-bold text-emerald-700 hover:text-emerald-900 hover:underline">
+                            {req.wo_number}
+                          </button>
+                        ) : <span className="text-xs text-gray-300">—</span>}
                       </td>
 
                       {/* AI Confidence */}

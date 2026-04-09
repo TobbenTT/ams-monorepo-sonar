@@ -1832,22 +1832,22 @@ export default function FailureCapture({ onNavigateTab }) {
 
           </div>
           <div style={{display: wizardStep === 3 ? undefined : "none"}}>
-          {/* 8. Required Resources */}
+          {/* 8. Labour */}
           <div className="border rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Required Resources</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Labour</label>
               <div className="flex gap-2">
                 <button onClick={addResource} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
-                  + Add
+                  + Add labour
                 </button>
                 {/* EXT button moved to Planning OT */}
               </div>
             </div>
             {form.resources.length === 0 ? (
               <div className="grid grid-cols-3 gap-2">
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Resource type</div>
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Quantity</div>
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Hours</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Type</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Qty</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Duration (Hrs.)</div>
               </div>
             ) : (
               <div className="space-y-2">
@@ -1913,7 +1913,7 @@ export default function FailureCapture({ onNavigateTab }) {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-gray-400" />
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">SAP Materials</label>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Spare Parts and Materials</label>
               </div>
               <div className="flex gap-2">
                 <button onClick={addMaterial} className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
@@ -1924,8 +1924,8 @@ export default function FailureCapture({ onNavigateTab }) {
             </div>
             {form.materials.length === 0 ? (
               <div className="grid grid-cols-3 gap-2">
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">SAP ID</div>
-                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Quantity</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Material Code</div>
+                <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Qty</div>
                 <div className="p-2.5 rounded-lg bg-gray-50 border text-xs text-gray-400">Description</div>
               </div>
             ) : (
@@ -2457,10 +2457,10 @@ export default function FailureCapture({ onNavigateTab }) {
             <div className="text-[10px] text-gray-400 mt-1">Pre-requisites and environmental conditions for the intervention</div>
           </div>
 
-          {/* 12. Notification Author */}
+          {/* 12. Notificated by */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" /> Notification Author
+              <Users className="w-3.5 h-3.5" /> Notificated by
             </label>
             <input type="text" value={form.reportedBy} onChange={e => setF('reportedBy', e.target.value)}
               placeholder="Nombre del supervisor o reportante"

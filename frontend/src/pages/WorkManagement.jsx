@@ -104,6 +104,16 @@ export default function WorkManagement() {
         </div>
       </div>
 
+      {/* Date range filter */}
+      <div className="flex items-center gap-3 text-sm">
+        <span className="text-xs text-gray-500 font-medium">Date range:</span>
+        <input type="date" className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs"
+          onChange={e => { /* pass to child tabs via context */ }} />
+        <span className="text-gray-300">—</span>
+        <input type="date" className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs"
+          onChange={e => { /* pass to child tabs via context */ }} />
+      </div>
+
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
         <div className="flex gap-0">

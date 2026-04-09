@@ -580,6 +580,16 @@ ${materials.length ? `<div class="section">
 
         </div>
 
+        {/* Original Request (raw text from technician) */}
+        {item.original_text && item.original_text !== item.failure_description && (
+          <div className="px-6 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Original Request</p>
+            <p className="text-sm text-muted-foreground italic leading-relaxed bg-gray-50 rounded-lg p-3 border border-gray-200">
+              "{item.original_text}"
+            </p>
+          </div>
+        )}
+
         {/* Failure Classification */}
         {(item.failure_category || item.failure_symptom || item.failure_cause || editing) && (
           <div className="px-6 pb-4">
@@ -633,6 +643,17 @@ ${materials.length ? `<div class="section">
           </div>
         )}
 
+        {/* Failure Short Description — auto-generated from catalog fields */}
+        {(item.failure_object_part || item.failure_symptom || item.failure_cause) && (
+          <div className="px-6 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Failure Short Description</p>
+            <p className="text-sm text-foreground leading-relaxed bg-amber-50 rounded-lg p-3 border border-amber-200">
+              {[item.failure_object_part, item.failure_symptom, item.failure_cause].filter(Boolean).join(' — ')}
+              {item.failure_category ? ` (${item.failure_category})` : ''}
+            </p>
+          </div>
+        )}
+
         {/* Suggested Action */}
         {(item.suggested_action || editing) && (
           <div className="px-6 pb-4">
@@ -669,7 +690,7 @@ ${materials.length ? `<div class="section">
         )}
 
         {/* SAP Aviso fields */}
-        {(item.reported_by || item.circumstances || item.support_equipment) && (
+        {(item.reported_by || item.circumstances) && (
           <div className="px-6 pb-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Notification Details</p>
             <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
@@ -791,6 +812,18 @@ ${materials.length ? `<div class="section">
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Support Equipment — independent section */}
+        {item.support_equipment?.length > 0 && (
+          <div className="px-6 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Support Equipment</p>
+            <div className="flex flex-wrap gap-1.5">
+              {(Array.isArray(item.support_equipment) ? item.support_equipment : []).map((eq, i) => (
+                <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full font-medium">{typeof eq === 'string' ? eq : eq.name || eq.tag || ''}</span>
+              ))}
             </div>
           </div>
         )}
@@ -965,6 +998,8 @@ function normalizeWR(wr) {
     priority_requested: cls.priority_suggested || wr.priority_requested || wr.priority || 'P3',
     priority_suggested: cls.priority_suggested || wr.priority_suggested || 'P3',
     failure_description: desc.original_text || desc.structured_description || wr.failure_description || (typeof wr.problem_description === 'string' ? wr.problem_description : '') || '',
+    original_text: desc.original_text || '',
+    technical_location: desc.technical_location || desc.technical_location_code || cls.technical_location || '',
     failure_mode: desc.failure_mode_detected || desc.failure_mode_code || wr.failure_mode || '',
     production_impact: wr.production_impact || cls.production_impact || 'MEDIUM',
     estimated_duration: cls.estimated_duration_hours || wr.estimated_duration || 4,
@@ -1634,7 +1669,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                               )}
                             </div>
                             <p className="font-semibold text-foreground text-xs">{req.equipment_name}</p>
-                            <p className="font-mono text-xs text-muted-foreground">{req.equipment_tag}</p>
+                            <p className="font-mono text-[10px] text-muted-foreground">{/^\d{8,}$/.test(req.equipment_tag) ? '' : req.equipment_tag}</p>
+                            {req.technical_location && <p className="text-[10px] text-blue-500">{req.technical_location}</p>}
                           </div>
                         </div>
                       </td>

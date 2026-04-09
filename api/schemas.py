@@ -502,6 +502,14 @@ class UserProfileUpdate(BaseModel):
     email: str | None = Field(default=None, max_length=254)
 
 
+class AdminUserUpdate(BaseModel):
+    username: str | None = Field(default=None, max_length=100)
+    full_name: str | None = Field(default=None, max_length=200)
+    email: str | None = Field(default=None, max_length=254)
+    plant_id: str | None = Field(default=None, max_length=50)
+    role: str | None = Field(default=None, max_length=20)
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(max_length=2048)
 

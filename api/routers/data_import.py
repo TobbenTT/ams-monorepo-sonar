@@ -164,6 +164,7 @@ async def execute_import(
     mode: str = Form("append"),
     sheet_name: str = Form(None),
     column_mapping: str = Form("{}"),
+    plant_id: str = Form(None),
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
@@ -271,7 +272,7 @@ async def execute_import(
                     vals[db_col] = _cell_val(v)
                 if _has_plant_id and "plant_id" not in vals:
                     # Get plant_id from localStorage via header or use default
-                    vals["plant_id"] = "GOLDFIELDS-SN"  # TODO: get from request
+                    vals["plant_id"] = plant_id or "GOLDFIELDS-SN"
                 db.execute(text(insert_sql), vals)
                 inserted += 1
             except Exception as e:

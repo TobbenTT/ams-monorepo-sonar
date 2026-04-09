@@ -10,7 +10,6 @@ import { Button } from './ui/button';
 const LANG_OPTIONS = [
     { code: 'en', label: 'EN', flag: '\u{1F1EC}\u{1F1E7}' },
     { code: 'es', label: 'ES', flag: '\u{1F1EA}\u{1F1F8}' },
-    { code: 'ar', label: 'AR', flag: '\u{1F1F2}\u{1F1E6}' },
 ];
 
 const TIME_RANGE_OPTIONS = [

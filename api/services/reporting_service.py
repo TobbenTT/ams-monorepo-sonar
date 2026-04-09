@@ -25,8 +25,7 @@ def _compute_weekly_stats(db: Session, plant_id: str) -> dict:
     wr_q = db.query(func.count(WorkRequestModel.request_id))
     bl_q = db.query(func.count(BacklogItemModel.backlog_id))
     if plant_id:
-        wr_q = wr_q.filter(WorkRequestModel.plant_id == plant_id)
-        bl_q = bl_q.filter(BacklogItemModel.plant_id == plant_id)
+        pass  # WR and Backlog models have no plant_id column
 
     total = wr_q.scalar() or 0
     completed = wr_q.filter(
@@ -47,7 +46,7 @@ def _compute_weekly_stats(db: Session, plant_id: str) -> dict:
         "work_orders_open": open_wrs,
         "safety_incidents": 0,
         "schedule_compliance_pct": compliance,
-        "backlog_hours": backlog * 4.0,  # estimate 4h per backlog item
+        "backlog_hours": backlog * 4.0,  # default 4h per backlog item
     }
 
 
@@ -318,9 +317,9 @@ def generate_report_from_db(db: Session, report_type: str = "operational", plant
     wo_q = db.query(ManagedWorkOrderModel)
     bl_q = db.query(BacklogItemModel)
     if plant_id:
-        wr_q = wr_q.filter(WorkRequestModel.plant_id == plant_id)
+        # WorkRequestModel has no plant_id column — skip filter for WRs
         wo_q = wo_q.filter(ManagedWorkOrderModel.plant_id == plant_id)
-        bl_q = bl_q.filter(BacklogItemModel.plant_id == plant_id)
+        # BacklogItemModel has no plant_id column — skip filter
 
     # Work Requests stats
     wr_total = wr_q.count()

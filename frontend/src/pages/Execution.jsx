@@ -15,7 +15,10 @@ import {
   aiDailyBriefing, aiEstimateDuration, updateManagedWOProgress,
 } from '../api';
 
-const LABOR_RATE = 50; // USD per hour
+function getLaborRate() {
+  try { return JSON.parse(localStorage.getItem('ocp_settings') || '{}').laborRate || 50; } catch { return 50; }
+}
+const LABOR_RATE = getLaborRate();
 
 const STATUS_COLORS = {
   ASSIGNED: 'bg-blue-100 text-blue-700',

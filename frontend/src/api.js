@@ -170,6 +170,8 @@ export const getAnalyticsPageData = (plantId, startDate, endDate) => {
 export const seedDatabase = () => post('/admin/seed-database');
 export const getStats = () => get('/admin/stats');
 export const getAuditLog = (p) => get('/admin/audit-log', p);
+export const testEmail = (d) => post('/admin/test-email', d);
+export const getEmailStatus = () => get('/admin/email-status');
 
 // ── Capture ──
 export const submitCapture = (d) => post('/capture/', d);
@@ -351,6 +353,7 @@ export const authUpdateProfile = (d) => put('/auth/me', d);
 export const authRegister = (d) => post('/auth/register', d);
 export const authChangePassword = (d) => put('/auth/change-password', d);
 export const authListUsers = (p) => get('/auth/users', p);
+export const authUpdateUser = (id, d) => put(`/auth/users/${id}`, d);
 export const authUpdateRole = (id, d) => put(`/auth/users/${id}/role`, d);
 export const authDeactivate = (id) => put(`/auth/users/${id}/deactivate`);
 export const authActivate = (id) => put(`/auth/users/${id}/activate`);
@@ -494,6 +497,21 @@ export const suggestFailureFields = (d) => post('/work-requests/ai-assist', d);
 
 // ── Vision AI ──
 export const aiAssistImage = (d) => post("/work-requests/ai-assist-image", d);
+
+// ── Audio Transcription ──
+export async function transcribeAudio(blob, language = 'es') {
+  const formData = new FormData();
+  formData.append('file', blob, 'capture.webm');
+  formData.append('language', language);
+  const token = getToken();
+  const res = await fetch(`${BASE}/media/transcribe`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) throw new Error(`Transcription failed: ${res.status}`);
+  return res.json();
+}
 
 // -- AI Feedback --
 export const submitAIFeedback = (id, d) => post("/work-requests/\/feedback", d);

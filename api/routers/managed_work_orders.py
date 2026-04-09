@@ -26,6 +26,7 @@ class WOCreateRequest(BaseModel):
 class WOFromWRRequest(BaseModel):
     model_config = {"extra": "ignore"}
     work_request_id: str
+    plant_id: str | None = None
 
 
 class WOUpdateRequest(BaseModel):
@@ -117,7 +118,7 @@ def create_from_work_request(
 ):
     """Create a WO from an approved Work Request."""
     result = managed_wo_service.create_from_work_request(
-        db, data.work_request_id, planned_by=getattr(user, "user_id", ""),
+        db, data.work_request_id, planned_by=getattr(user, "user_id", ""), plant_id=data.plant_id,
     )
     if not result:
         raise HTTPException(status_code=400, detail="WR not found or not in approvable status")

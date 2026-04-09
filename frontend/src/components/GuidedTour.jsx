@@ -44,38 +44,21 @@ export default function GuidedTour({ onComplete }) {
     const [step, setStep] = useState(0);
     const [visible, setVisible] = useState(false);
 
-    useEffect(() => {
-        const seen = localStorage.getItem('ams_tour_completed');
-        if (!seen) setVisible(true);
-    }, []);
-
-    if (!visible) return null;
-
     const current = STEPS[step];
     const isFirst = step === 0;
     const isLast = step === STEPS.length - 1;
 
-    const handleClose = () => {
-        localStorage.setItem('ams_tour_completed', 'true');
-        setVisible(false);
-        onComplete?.();
-    };
-
-    const handleNext = () => {
-        if (isLast) {
-            handleClose();
-        } else {
-            setStep(s => s + 1);
+    useEffect(() => {
+        const seen = localStorage.getItem('ams_tour_completed');
+        if (!seen) {
+            const timer = setTimeout(() => setVisible(true), 2000);
+            return () => clearTimeout(timer);
         }
-    };
-
-    const handlePrev = () => {
-        if (!isFirst) setStep(s => s - 1);
-    };
+    }, []);
 
     // Highlight target element
     useEffect(() => {
-        if (!current.target) return;
+        if (!visible || !current.target) return;
         const el = document.querySelector(current.target);
         if (el) {
             el.style.position = 'relative';
@@ -89,7 +72,24 @@ export default function GuidedTour({ onComplete }) {
                 el.style.borderRadius = '';
             };
         }
-    }, [step, current.target]);
+    }, [visible, step, current.target]);
+
+    if (!visible) return null;
+
+    const handleClose = () => {
+        localStorage.setItem('ams_tour_completed', 'true');
+        setVisible(false);
+        onComplete?.();
+    };
+
+    const handleNext = () => {
+        if (isLast) handleClose();
+        else setStep(s => s + 1);
+    };
+
+    const handlePrev = () => {
+        if (!isFirst) setStep(s => s - 1);
+    };
 
     return (
         <>

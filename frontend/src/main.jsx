@@ -78,6 +78,9 @@ const PostMaintenance = lazyRetry(() => import('./pages/PostMaintenance'));
 const DataImport = lazyRetry(() => import('./pages/DataImport'));
 
 const LandingPage = lazyRetry(() => import('./pages/LandingPage'));
+const StatusPage = lazyRetry(() => import('./pages/StatusPage'));
+const UserGuidePage = lazyRetry(() => import('./pages/UserGuidePage'));
+const AuditLogPage = lazyRetry(() => import('./pages/AuditLogPage'));
 
 const ALL = ['admin', 'manager', 'planner', 'tecnico', 'engineer'];
 const MGMT = ['admin', 'manager'];
@@ -104,6 +107,7 @@ createRoot(document.getElementById('root')).render(
                                 <Route index element={<S><LandingPage /></S>} />
                                 <Route path="landing" element={<S><LandingPage /></S>} />
                                 <Route path="login" element={<S><Login /></S>} />
+                                <Route path="status" element={<S><StatusPage /></S>} />
 
                                 <Route element={<P roles={ALL}><App /></P>}>
                                     {/* ── New Design Routes (primary navigation) ── */}
@@ -120,6 +124,8 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="execution" element={<P roles={['admin', 'planner', 'tecnico']}><S><Execution /></S></P>} />
                                     <Route path="post-maintenance" element={<P roles={PLAN}><S><PostMaintenance /></S></P>} />
                                     <Route path="data-import" element={<P roles={MGMT}><S><DataImport /></S></P>} />
+                                    <Route path="user-guide" element={<S><UserGuidePage /></S>} />
+                                    <Route path="audit-log" element={<P roles={MGMT}><S><AuditLogPage /></S></P>} />
 
                                     {/* ── Mobile routes ── */}
                                     <Route path="m/tareas" element={<S><MobileWorkOrders /></S>} />

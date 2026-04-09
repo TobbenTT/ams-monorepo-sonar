@@ -503,6 +503,36 @@ export default function SettingsPage() {
                 </div>
                 <Switch checked={settings.notifInApp} onCheckedChange={(v) => updateSetting('notifInApp', v)} />
               </div>
+              {/* Email test */}
+              <div className="border-t pt-4 mt-4">
+                <p className="text-sm font-semibold text-gray-700 mb-2">{lang === 'es' ? 'Probar Notificacion Email' : 'Test Email Notification'}</p>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="email@example.com"
+                    className="flex-1 border rounded-lg px-3 py-2 text-sm"
+                    id="test-email-input"
+                  />
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                    onClick={async () => {
+                      const to = document.getElementById('test-email-input')?.value;
+                      if (!to) return;
+                      try {
+                        const res = await api.testEmail({ to });
+                        if (res.ok) toast.success(lang === 'es' ? 'Email enviado' : 'Email sent');
+                        else toast.error(res.error || 'Failed');
+                      } catch (e) { toast.error(e.message); }
+                    }}
+                  >
+                    {lang === 'es' ? 'Enviar Test' : 'Send Test'}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  {lang === 'es' ? 'Requiere SMTP_HOST, SMTP_USER, SMTP_PASS en variables de entorno del servidor' : 'Requires SMTP_HOST, SMTP_USER, SMTP_PASS env vars on server'}
+                </p>
+              </div>
             </div>
           </Card>
         </TabsContent>
@@ -693,7 +723,6 @@ export default function SettingsPage() {
                   <SelectContent>
                     <SelectItem value="es">Espanol (ES)</SelectItem>
                     <SelectItem value="en">English (EN)</SelectItem>
-                    <SelectItem value="ar">العربية (AR)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

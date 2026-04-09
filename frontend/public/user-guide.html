@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMS Platform — User Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --primary: #0f766e;
+    --primary-light: #14b8a6;
+    --primary-dark: #0d5c56;
+    --accent: #0ea5e9;
+    --accent-light: #7dd3fc;
+    --bg: #ffffff;
+    --bg-alt: #f8fafc;
+    --bg-card: #f1f5f9;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* COVER PAGE */
+  .cover {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f766e 0%, #0d9488 30%, #14b8a6 60%, #0ea5e9 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    padding: 60px 40px;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 70%, rgba(255,255,255,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 30%, rgba(255,255,255,0.05) 0%, transparent 50%);
+  }
+
+  .cover-logo {
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: 800;
+    margin-bottom: 40px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover h1 {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover h2 {
+    font-size: 22px;
+    font-weight: 400;
+    opacity: 0.9;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover .version {
+    font-size: 16px;
+    opacity: 0.7;
+    margin-bottom: 50px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover-company {
+    position: relative;
+    z-index: 1;
+    padding: 16px 32px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  .cover-company span {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  .cover-footer {
+    position: absolute;
+    bottom: 40px;
+    font-size: 13px;
+    opacity: 0.5;
+    z-index: 1;
+  }
+
+  /* MAIN CONTENT */
+  .content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 40px;
+  }
+
+  /* TOC */
+  .toc {
+    page-break-after: always;
+    margin-bottom: 60px;
+  }
+
+  .toc h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 30px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid var(--primary);
+  }
+
+  .toc-list {
+    list-style: none;
+    counter-reset: toc-counter;
+  }
+
+  .toc-list li {
+    counter-increment: toc-counter;
+    margin-bottom: 0;
+  }
+
+  .toc-list li a {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: var(--text);
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .toc-list li a:hover {
+    background: var(--bg-alt);
+    color: var(--primary);
+  }
+
+  .toc-list li a::before {
+    content: counter(toc-counter, decimal-leading-zero);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(15, 118, 110, 0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-right: 16px;
+    min-width: 36px;
+    text-align: center;
+  }
+
+  .toc-list li a .toc-dots {
+    flex: 1;
+    border-bottom: 2px dotted var(--border);
+    margin: 0 12px;
+    height: 1px;
+    align-self: flex-end;
+    margin-bottom: 6px;
+  }
+
+  /* SECTIONS */
+  .section {
+    margin-bottom: 50px;
+    page-break-inside: avoid;
+  }
+
+  .section-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 28px 32px;
+    border-radius: 16px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section-header::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 120px;
+    height: 120px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+
+  .section-header .section-number {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-bottom: 4px;
+  }
+
+  .section-header h2 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  /* Alternate section colors */
+  .section:nth-child(3n+1) .section-header {
+    background: linear-gradient(135deg, #0f766e, #14b8a6);
+  }
+  .section:nth-child(3n+2) .section-header {
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+  }
+  .section:nth-child(3n+3) .section-header {
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  }
+
+  h3 {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin: 28px 0 14px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--bg-card);
+  }
+
+  h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 20px 0 10px 0;
+  }
+
+  p {
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  /* LISTS */
+  ul, ol {
+    margin: 10px 0 16px 0;
+    padding-left: 24px;
+  }
+
+  li {
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  li strong {
+    color: var(--primary-dark);
+  }
+
+  /* NUMBERED STEPS */
+  .steps {
+    list-style: none;
+    padding-left: 0;
+    counter-reset: step-counter;
+  }
+
+  .steps li {
+    counter-increment: step-counter;
+    padding: 12px 16px 12px 56px;
+    position: relative;
+    margin-bottom: 8px;
+    background: var(--bg-alt);
+    border-radius: 10px;
+    border-left: 3px solid var(--primary-light);
+  }
+
+  .steps li::before {
+    content: counter(step-counter);
+    position: absolute;
+    left: 16px;
+    top: 12px;
+    width: 28px;
+    height: 28px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  /* INFO BOXES */
+  .info-box {
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+
+  .info-box.tip {
+    background: #ecfdf5;
+    border-left: 4px solid var(--success);
+    color: #065f46;
+  }
+
+  .info-box.warning {
+    background: #fffbeb;
+    border-left: 4px solid var(--warning);
+    color: #92400e;
+  }
+
+  .info-box.note {
+    background: #eff6ff;
+    border-left: 4px solid var(--info);
+    color: #1e40af;
+  }
+
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 16px 0 24px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-size: 14px;
+  }
+
+  thead th {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+
+  tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:nth-child(even) {
+    background: var(--bg-alt);
+  }
+
+  tbody tr:hover {
+    background: rgba(15, 118, 110, 0.04);
+  }
+
+  /* CODE / FLOW DIAGRAMS */
+  .code-block {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 20px 24px;
+    border-radius: 12px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+
+  .code-block .arrow { color: #94a3b8; }
+  .code-block .status { color: #5eead4; font-weight: 600; }
+  .code-block .alt { color: #f97316; }
+
+  code {
+    background: var(--bg-card);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    color: var(--primary-dark);
+  }
+
+  /* CARDS */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  .card {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+
+  .card h4 {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+    color: var(--primary);
+  }
+
+  .card p {
+    font-size: 13px;
+    color: var(--text-light);
+    margin: 0;
+  }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .badge.p1 { background: #fef2f2; color: #dc2626; }
+  .badge.p2 { background: #fff7ed; color: #ea580c; }
+  .badge.p3 { background: #fefce8; color: #ca8a04; }
+  .badge.p4 { background: #eff6ff; color: #2563eb; }
+  .badge.green { background: #ecfdf5; color: #059669; }
+  .badge.amber { background: #fffbeb; color: #d97706; }
+  .badge.red { background: #fef2f2; color: #dc2626; }
+  .badge.blue { background: #eff6ff; color: #2563eb; }
+  .badge.purple { background: #f5f3ff; color: #7c3aed; }
+  .badge.gray { background: #f1f5f9; color: #475569; }
+
+  /* KPI GRID */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .kpi-card {
+    text-align: center;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: white;
+  }
+
+  .kpi-card .label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .kpi-card .value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 4px 0;
+  }
+
+  /* FAQ */
+  .faq-item {
+    background: var(--bg-alt);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--primary);
+  }
+
+  .faq-item .question {
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-size: 15px;
+  }
+
+  .faq-item .answer {
+    color: var(--text-light);
+    font-size: 14px;
+  }
+
+  /* FOOTER */
+  .doc-footer {
+    margin-top: 80px;
+    padding-top: 30px;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .doc-footer strong {
+    color: var(--primary);
+  }
+
+  /* FLOATING TOOLBAR */
+  .floating-toolbar {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
+  }
+
+  .floating-toolbar button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .btn-pdf {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: white;
+  }
+  .btn-pdf:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(220,38,38,0.35); }
+
+  .btn-back {
+    background: white;
+    color: var(--text);
+    border: 1px solid var(--border) !important;
+  }
+  .btn-back:hover { background: var(--bg-alt); transform: translateY(-1px); }
+
+  .btn-pdf svg, .btn-back svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* PRINT */
+  @media print {
+    body { font-size: 12px; }
+    .cover { min-height: 100vh; }
+    .section { page-break-inside: avoid; }
+    .section-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .code-block { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .badge, .kpi-card, .faq-item, .info-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .floating-toolbar { display: none !important; }
+  }
+
+  /* SEPARATOR */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 40px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- FLOATING TOOLBAR -->
+<div class="floating-toolbar">
+  <button class="btn-back" onclick="history.back()" title="Go Back">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/></svg>
+    Back
+  </button>
+  <button class="btn-pdf" onclick="window.print()" title="Download PDF">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+    Download PDF
+  </button>
+</div>
+
+<!-- ===================== COVER ===================== -->
+<div class="cover">
+  <div class="cover-logo">AMS</div>
+  <h1>User Guide</h1>
+  <h2>Asset Management Software Platform</h2>
+  <p class="version">Version 2.0 &mdash; April 2026</p>
+  <div class="cover-company">
+    <span>Value Strategy Consulting</span>
+  </div>
+  <p class="cover-footer">Confidential document &mdash; Internal use only</p>
+</div>
+
+<!-- ===================== CONTENT ===================== -->
+<div class="content">
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ol class="toc-list">
+    <li><a href="#s1">Login<span class="toc-dots"></span></a></li>
+    <li><a href="#s2">Dashboard<span class="toc-dots"></span></a></li>
+    <li><a href="#s3">Work Management<span class="toc-dots"></span></a></li>
+    <li><a href="#s4">Work Requests<span class="toc-dots"></span></a></li>
+    <li><a href="#s5">Planning<span class="toc-dots"></span></a></li>
+    <li><a href="#s6">Scheduling<span class="toc-dots"></span></a></li>
+    <li><a href="#s7">Execution<span class="toc-dots"></span></a></li>
+    <li><a href="#s8">Failures &amp; Events<span class="toc-dots"></span></a></li>
+    <li><a href="#s9">Improvement Actions<span class="toc-dots"></span></a></li>
+    <li><a href="#s10">Analytics<span class="toc-dots"></span></a></li>
+    <li><a href="#s11">Reports<span class="toc-dots"></span></a></li>
+    <li><a href="#s12">Team<span class="toc-dots"></span></a></li>
+    <li><a href="#s13">Settings<span class="toc-dots"></span></a></li>
+    <li><a href="#s14">Data Import<span class="toc-dots"></span></a></li>
+    <li><a href="#s15">AI Agents (CORTEX)<span class="toc-dots"></span></a></li>
+    <li><a href="#s16">Mobile<span class="toc-dots"></span></a></li>
+    <li><a href="#s17">Roles &amp; Permissions<span class="toc-dots"></span></a></li>
+    <li><a href="#s18">FAQ<span class="toc-dots"></span></a></li>
+  </ol>
+</div>
+
+<!-- ===================== SECTION 1 ===================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-number">Section 01</div>
+    <h2>Login</h2>
+  </div>
+
+  <h3>Access</h3>
+  <ol class="steps">
+    <li>Navigate to your AMS instance URL (e.g.: <code>ocp.aiprowork.com</code>)</li>
+    <li>Enter your <strong>username</strong> and <strong>password</strong></li>
+    <li>Press <strong>Sign In</strong></li>
+  </ol>
+
+  <h3>First Time</h3>
+  <div class="info-box tip">
+    On your first login, a <strong>guided tour</strong> of 6 steps will appear. You can skip it with "Skip tour" or follow along with "Next". The tour will not show again.
+  </div>
+
+  <h3>Plant Selector</h3>
+  <ul>
+    <li>In the top left corner, select the plant you will be working on</li>
+    <li>Each plant has independent data (WRs, WOs, KPIs, team)</li>
+    <li>The selector remembers your last selection</li>
+  </ul>
+
+  <h3>View Toggle</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Executive View</h4>
+      <p>Strategic KPIs, trend charts, general overview</p>
+    </div>
+    <div class="card">
+      <h4>Tactical Operations View</h4>
+      <p>Detailed operational metrics, compliance, backlog</p>
+    </div>
+  </div>
+
+  <h3>Language</h3>
+  <p>Globe icon (top right corner) to switch between:</p>
+  <ul>
+    <li><span class="badge blue">EN</span> English</li>
+    <li><span class="badge green">ES</span> Spanish</li>
+    <li><span class="badge purple">AR</span> Arabic &mdash; RTL support</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 2 ===================== -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-number">Section 02</div>
+    <h2>Dashboard</h2>
+  </div>
+
+  <p>The dashboard is the main screen with two views:</p>
+
+  <h3>Executive View</h3>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="label">Availability</div><div class="value">96%</div></div>
+    <div class="kpi-card"><div class="label">MTBF</div><div class="value">720h</div></div>
+    <div class="kpi-card"><div class="label">MTTR</div><div class="value">4.2h</div></div>
+    <div class="kpi-card"><div class="label">OEE</div><div class="value">85%</div></div>
+  </div>
+
+  <p><strong>5 Available Tabs:</strong></p>
+  <ul>
+    <li><strong>Production:</strong> Production and efficiency metrics</li>
+    <li><strong>Maintenance:</strong> Work orders, compliance, backlog</li>
+    <li><strong>Staffing:</strong> Active personnel, availability, workload</li>
+    <li><strong>HSE:</strong> Safety, incidents, compliance</li>
+    <li><strong>Continuous Improvement:</strong> Improvement actions, CAPA tracking</li>
+  </ul>
+
+  <div class="info-box note">
+    <strong>AI Summary:</strong> AI-generated intelligent summary available via the "Generate AI Summary" button
+  </div>
+
+  <h3>Tactical Operations View</h3>
+  <ul>
+    <li><strong>Work Volume:</strong> Maintenance hours per week, trends</li>
+    <li><strong>Schedule Compliance:</strong> Program adherence vs target</li>
+    <li><strong>Work Orders by Type:</strong> Preventive, Corrective, Predictive</li>
+    <li><strong>Backlog Aging:</strong> Age of items in backlog</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 3 ===================== -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-number">Section 03</div>
+    <h2>Work Management</h2>
+  </div>
+
+  <p>Central hub showing the summary of all work management:</p>
+  <ul>
+    <li>Total active Work Requests</li>
+    <li>Total Work Orders by status</li>
+    <li>Visual workflow pipeline</li>
+    <li>Quick access to each module</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 4 ===================== -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-number">Section 04</div>
+    <h2>Work Requests</h2>
+  </div>
+
+  <h3>Create a Work Request</h3>
+  <ol class="steps">
+    <li>Click on <strong>+ New WR</strong> (green button)</li>
+    <li>Fill in the fields: <strong>Equipment</strong> (search by TAG or name), <strong>Failure Description</strong>, <strong>Priority</strong> and <strong>Production Impact</strong></li>
+    <li>AI automatically classifies the failure, suggests priority, detects duplicates and generates a descriptive title</li>
+    <li>Click <strong>Submit</strong></li>
+  </ol>
+
+  <h3>Priorities</h3>
+  <p>
+    <span class="badge p1">P1 Immediate</span>
+    <span class="badge p2">P2 High</span>
+    <span class="badge p3">P3 Medium</span>
+    <span class="badge p4">P4 Low</span>
+  </p>
+
+  <h3>Manage Work Requests</h3>
+  <ul>
+    <li><strong>Filters:</strong> By status, priority, area, equipment</li>
+    <li><span class="badge green">Approve</span> Validate and approve the request</li>
+    <li><span class="badge red">Reject</span> Reject with reason</li>
+    <li><span class="badge blue">Create WO</span> Convert to Work Order</li>
+    <li><span class="badge amber">Cancel WR</span> Cancel the request (with confirmation)</li>
+    <li><span class="badge gray">Close</span> Close without action</li>
+  </ul>
+
+  <div class="info-box tip">
+    <strong>Duplicate Detection:</strong> When creating a WR, the system shows similar WRs in a side-by-side carousel format.
+  </div>
+
+  <h3>WR Status Flow</h3>
+  <div class="code-block">
+<span class="status">DRAFT</span> <span class="arrow">&rarr;</span> <span class="status">PENDING</span> <span class="arrow">&rarr;</span> <span class="status">VALIDATED</span> <span class="arrow">&rarr;</span> <span class="status">APPROVED</span> <span class="arrow">&rarr;</span> <span class="status">IN_PROGRESS</span> <span class="arrow">&rarr;</span> <span class="status">COMPLETED</span> <span class="arrow">&rarr;</span> <span class="status">CLOSED</span>
+                  <span class="arrow">&searr;</span> <span class="alt">REJECTED</span>
+                  <span class="arrow">&searr;</span> <span class="alt">CANCELLED</span>
+                  <span class="arrow">&searr;</span> <span class="alt">DELETED</span>
+  </div>
+
+  <h3>Deleted (Recycle Bin)</h3>
+  <ul>
+    <li>"Deleted" tab to view deleted WRs</li>
+    <li>Only admin/manager can <strong>Restore</strong> or <strong>Permanently Delete</strong></li>
+    <li>Deletion reason is recorded</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 5 ===================== -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-number">Section 05</div>
+    <h2>Planning</h2>
+  </div>
+
+  <h3>Create Work Order from WR</h3>
+  <ol class="steps">
+    <li>In Work Requests, select an approved WR</li>
+    <li>Click <strong>Create WO</strong></li>
+    <li>Automatically generated with WO number (e.g.: <code>WO-2026-00042</code>), WR data and planned dates</li>
+  </ol>
+
+  <h3>Plan Work Order</h3>
+  <ol class="steps">
+    <li>Select a WO in CREATED status</li>
+    <li>Fill in: <strong>Operations</strong> (type, specialty, hours), <strong>Materials</strong> (SAP search), <strong>Work Center</strong>, <strong>Dates</strong> and <strong>Budget</strong></li>
+    <li>Click <strong>Plan</strong> to change status to PLANNED</li>
+  </ol>
+
+  <h3>External Vendor</h3>
+  <ul>
+    <li>Click <strong>+ External Service</strong> to add a vendor</li>
+    <li>SAP-style form: service number, description, quantity, unit price, plant, purchasing group, cost center</li>
+  </ul>
+
+  <h3>AI Tools</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Compare WOs</h4>
+      <p>Compare similar orders to estimate duration</p>
+    </div>
+    <div class="card">
+      <h4>Cost Alerts</h4>
+      <p>Cost overrun alerts based on historical data</p>
+    </div>
+    <div class="card">
+      <h4>Strategy</h4>
+      <p>Recommends maintenance strategy</p>
+    </div>
+    <div class="card">
+      <h4>AI Planning Group</h4>
+      <p>Auto-assigns work group and center by failure category</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SECTION 6 ===================== -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-number">Section 06</div>
+    <h2>Scheduling</h2>
+  </div>
+
+  <h3>Schedule Week</h3>
+  <ol class="steps">
+    <li>Click <strong>Schedule Week</strong> (purple button)</li>
+    <li>The system distributes WOs automatically by priority</li>
+    <li>Load balancing per day for uniform distribution</li>
+  </ol>
+
+  <p><strong>Priority distribution:</strong></p>
+  <table>
+    <thead>
+      <tr><th>Priority</th><th>Assigned Days</th><th>Reason</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="badge p1">P1</span></td><td>Monday</td><td>Urgent, immediate attention</td></tr>
+      <tr><td><span class="badge p2">P2</span></td><td>Monday - Wednesday</td><td>High priority</td></tr>
+      <tr><td><span class="badge p3">P3</span></td><td>Any day</td><td>Medium priority</td></tr>
+      <tr><td><span class="badge p4">P4</span></td><td>Friday</td><td>Low priority</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Gantt Chart</h3>
+  <ul>
+    <li>Visual view of scheduled WOs by day</li>
+    <li>Colors by type (Preventive=blue, Corrective=red, etc.)</li>
+    <li>Hover for details</li>
+  </ul>
+
+  <h3>Man-Hours Balance</h3>
+  <ul>
+    <li>Circular gauge of utilization by specialty</li>
+    <li><span class="badge red">Red</span> if > 100% (overloaded)</li>
+    <li><span class="badge green">Green</span> if < 80% (capacity available)</li>
+  </ul>
+
+  <h3>Materials</h3>
+  <ul>
+    <li>Material status per WO: <span class="badge green">Confirmed</span> <span class="badge amber">Pending</span> <span class="badge red">Missing</span></li>
+    <li>Verify availability before execution</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 7 ===================== -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-number">Section 07</div>
+    <h2>Execution</h2>
+  </div>
+
+  <h3>My Tasks</h3>
+  <ul>
+    <li>Tasks assigned to the logged-in user</li>
+    <li>Click to view details and update progress</li>
+    <li>Mark as "In Progress" or "Completed"</li>
+  </ul>
+
+  <h3>Daily Meeting</h3>
+  <div class="info-box note">
+    <strong>AI Briefing:</strong> Auto-generates daily summary with Work Order cards for discussion and status indicators for each WO.
+  </div>
+
+  <h3>Equipment Handovers</h3>
+  <ul>
+    <li>Equipment handover log between shifts</li>
+    <li>Cards with technician avatar, equipment status, notes</li>
+    <li>Color-coded by handover type</li>
+  </ul>
+
+  <h3>Supervisor Sign-off</h3>
+  <ul>
+    <li><strong>Plan vs Actual</strong> comparison per WO</li>
+    <li>Planned vs actual hours</li>
+    <li>Supervisor approval to close</li>
+  </ul>
+
+  <h3>WO Closure</h3>
+  <p>Closure form with:</p>
+  <ul>
+    <li>Actual hours worked</li>
+    <li>Materials used</li>
+    <li>Findings and observations</li>
+    <li>Final equipment status</li>
+    <li><strong>PDF Report:</strong> Generate downloadable closure report</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 8 ===================== -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-number">Section 08</div>
+    <h2>Failures &amp; Events</h2>
+  </div>
+
+  <h3>Main View</h3>
+  <p>Failure table with priority-based colors:</p>
+  <p>
+    <span class="badge p1">P1 Immediate</span>
+    <span class="badge p2">P2 High</span>
+    <span class="badge p3">P3 Medium</span>
+    <span class="badge p4">P4 Low</span>
+  </p>
+  <p>Filters by planning group, discipline, specialty</p>
+
+  <h3>Available Actions</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>RCA (Root Cause Analysis)</h4>
+      <p>Start root cause analysis</p>
+    </div>
+    <div class="card">
+      <h4>Generate WO</h4>
+      <p>Create Work Order from the failure</p>
+    </div>
+    <div class="card">
+      <h4>Dispatch Support</h4>
+      <p>Send technical support</p>
+    </div>
+    <div class="card">
+      <h4>Optimize Strategy</h4>
+      <p>AI suggests maintenance strategy</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SECTION 9 ===================== -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-number">Section 09</div>
+    <h2>Improvement Actions</h2>
+  </div>
+
+  <h3>Main Panel</h3>
+  <ul>
+    <li>Header with <strong>AI Detection Center</strong></li>
+    <li>Toggle for <strong>Automatic Action Creation</strong> (AI creates actions automatically)</li>
+    <li><strong>Analyze Weekly Deviations</strong> button to detect deviations</li>
+  </ul>
+
+  <h3>Manage Actions</h3>
+  <ul>
+    <li>Create new improvement action</li>
+    <li>Assign responsible person and deadline</li>
+    <li>Status tracking: <span class="badge blue">OPEN</span> &rarr; <span class="badge amber">IN_PROGRESS</span> &rarr; <span class="badge green">COMPLETED</span></li>
+  </ul>
+
+  <p><strong>Sources:</strong> Manual, RCA, FMEA, AI-detected, Audit</p>
+
+  <h3>Tabs</h3>
+  <ul>
+    <li><strong>Improvement Actions:</strong> Main list</li>
+    <li><strong>CAPA Tracking:</strong> Corrective and preventive actions</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 10 ===================== -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-number">Section 10</div>
+    <h2>Analytics</h2>
+  </div>
+
+  <h3>Executive View</h3>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="label">Availability</div><div class="value">96%</div></div>
+    <div class="kpi-card"><div class="label">MTBF</div><div class="value">720h</div></div>
+    <div class="kpi-card"><div class="label">MTTR</div><div class="value">4.2h</div></div>
+    <div class="kpi-card"><div class="label">OEE</div><div class="value">85%</div></div>
+  </div>
+  <ul>
+    <li><strong>Trend Chart:</strong> Adherence + OEE vs 95% target</li>
+    <li><strong>Reliability KPIs:</strong> MTBF, MTTR, Availability per equipment</li>
+    <li><strong>Work Orders by Type:</strong> Table with count, hours, criticality</li>
+    <li><strong>Cost by Area:</strong> Horizontal cost chart by area</li>
+  </ul>
+
+  <h3>Tactical Operations View</h3>
+  <ul>
+    <li><strong>Tabs:</strong> Result KPIs / Operational Discipline KPIs</li>
+    <li><strong>Discipline KPIs:</strong> Pending, Unassigned, Compliance, OEE</li>
+    <li><strong>Area Filters:</strong> Crushing, Grinding, Flotation, Thickening, Tailings</li>
+    <li><strong>WR Status Breakdown:</strong> Color-coded status cards</li>
+    <li><strong>Trend + Pareto:</strong> Trend and distribution charts</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 11 ===================== -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <div class="section-number">Section 11</div>
+    <h2>Reports</h2>
+  </div>
+
+  <h3>Generate Report</h3>
+  <ol class="steps">
+    <li>Select type: Weekly KPI, Monthly KPI, or Operational</li>
+    <li>Click <strong>Generate Report</strong></li>
+    <li>Preview appears in the left panel</li>
+    <li>Export as XLSX or CSV</li>
+  </ol>
+
+  <h3>Available Templates</h3>
+  <table>
+    <thead>
+      <tr><th>Template</th><th>Type</th><th>Frequency</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Weekly Maintenance Report</td><td><span class="badge blue">Operational</span></td><td>Weekly</td></tr>
+      <tr><td>Backlog Analysis</td><td><span class="badge purple">Analytical</span></td><td>Biweekly</td></tr>
+      <tr><td>Executive KPI Dashboard</td><td><span class="badge green">Executive</span></td><td>Monthly</td></tr>
+      <tr><td>Reliability Report</td><td><span class="badge amber">Technical</span></td><td>Monthly</td></tr>
+      <tr><td>SAP Order Closure</td><td><span class="badge gray">SAP</span></td><td>Weekly</td></tr>
+      <tr><td>FMEA/FMECA Review</td><td><span class="badge amber">Technical</span></td><td>Quarterly</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Data Export</h3>
+  <ul>
+    <li><strong>Work Requests:</strong> All requests with full detail</li>
+    <li><strong>Backlog Items:</strong> Backlog items with reason and age</li>
+    <li><strong>Reliability KPIs:</strong> MTBF, MTTR, Availability, OEE per equipment</li>
+    <li><strong>SAP Orders:</strong> Confirmed/closed SAP orders</li>
+  </ul>
+
+  <h3>Filters</h3>
+  <p>Filter tabs: <span class="badge gray">All</span> <span class="badge green">Executive</span> <span class="badge blue">Operations</span> <span class="badge amber">Reliability</span> <span class="badge purple">Engineering</span> <span class="badge red">Financial</span> <span class="badge gray">Planning</span></p>
+</div>
+
+<!-- ===================== SECTION 12 ===================== -->
+<div class="section" id="s12">
+  <div class="section-header">
+    <div class="section-number">Section 12</div>
+    <h2>Team</h2>
+  </div>
+
+  <h3>View Team</h3>
+  <ul>
+    <li>List of all members with name, email, role, assigned plant</li>
+    <li>Status (active/inactive) and last login</li>
+  </ul>
+
+  <h3>Add Member</h3>
+  <ol class="steps">
+    <li>Click <strong>+ Add Member</strong></li>
+    <li>Fill in: username, email, full name, password</li>
+    <li>Select role and plant</li>
+    <li>Click <strong>Create</strong></li>
+  </ol>
+
+  <h3>Roles</h3>
+  <table>
+    <thead>
+      <tr><th>Role</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="badge red">Admin</span></td><td>Full access to all modules</td></tr>
+      <tr><td><span class="badge purple">Manager</span></td><td>Executive dashboard, analytics, reports, team</td></tr>
+      <tr><td><span class="badge blue">Planner</span></td><td>Planning, scheduling, work requests, work orders</td></tr>
+      <tr><td><span class="badge amber">Engineer</span></td><td>Reliability, FMEA, analytics</td></tr>
+      <tr><td><span class="badge green">Supervisor</span></td><td>Execution, sign-off, supervision</td></tr>
+      <tr><td><span class="badge gray">Technician</span></td><td>Task execution, WR creation</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===================== SECTION 13 ===================== -->
+<div class="section" id="s13">
+  <div class="section-header">
+    <div class="section-number">Section 13</div>
+    <h2>Settings</h2>
+  </div>
+
+  <h3>General</h3>
+  <ul>
+    <li>Company name, timezone, default plant</li>
+    <li>Currency, auto-save, AI enablement</li>
+  </ul>
+
+  <h3>KPI Targets</h3>
+  <table>
+    <thead>
+      <tr><th>KPI</th><th>Configuration</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Availability target</td><td>Percentage (%)</td></tr>
+      <tr><td>MTBF target</td><td>Hours</td></tr>
+      <tr><td>MTTR target</td><td>Hours</td></tr>
+      <tr><td>Planned Work target</td><td>Percentage (%)</td></tr>
+      <tr><td>Labor rate</td><td>$/hour</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Notifications</h3>
+  <p>Configure alerts for: critical failures, WO delays, KPI alerts, improvement actions, weekly report.</p>
+  <p><strong>Channels:</strong> <span class="badge blue">Email</span> <span class="badge green">SMS</span> <span class="badge purple">In-App</span></p>
+
+  <h3>Appearance</h3>
+  <ul>
+    <li>Light/dark theme</li>
+    <li>Language (English, Spanish, Arabic)</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 14 ===================== -->
+<div class="section" id="s14">
+  <div class="section-header">
+    <div class="section-number">Section 14</div>
+    <h2>Data Import</h2>
+  </div>
+
+  <h3>Import Process</h3>
+  <ol class="steps">
+    <li><strong>Upload:</strong> Drag or select Excel (.xlsx) or CSV (.csv) file &mdash; Max 50MB</li>
+    <li><strong>Preview:</strong> View first rows and columns. For multi-sheet Excel, select the sheet</li>
+    <li><strong>Column Mapping:</strong> Automatic (detects by name) or Manual (drag columns)</li>
+    <li><strong>Target Table:</strong> Select destination table (equipment, WRs, WOs, etc.)</li>
+    <li><strong>Import Mode:</strong> Append (add new), Replace (replace all), or Merge (update + add)</li>
+    <li><strong>Execute:</strong> Click <strong>Import</strong> to run</li>
+    <li><strong>History:</strong> Review import history</li>
+  </ol>
+
+  <div class="info-box tip">
+    <strong>AI-Assisted Import:</strong> Enable the "AI Detection" toggle for AI to suggest optimal target table, detect data quality issues and map columns automatically.
+  </div>
+</div>
+
+<!-- ===================== SECTION 15 ===================== -->
+<div class="section" id="s15">
+  <div class="section-header">
+    <div class="section-number">Section 15</div>
+    <h2>AI Agents (CORTEX)</h2>
+  </div>
+
+  <h3>33 Specialized Agents in 4 Teams</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Team A &mdash; Project Delivery</h4>
+      <p>Orchestrator, Engineering, Construction, Contracts</p>
+    </div>
+    <div class="card">
+      <h4>Team B &mdash; Operations &amp; Assets</h4>
+      <p>Reliability, Planning, Spare Parts, Operations, HSE, Execution</p>
+    </div>
+    <div class="card">
+      <h4>Team C &mdash; Corporate</h4>
+      <p>Finance, HR &amp; Talent, IT/OT</p>
+    </div>
+    <div class="card">
+      <h4>Team D &mdash; Intelligence</h4>
+      <p>Web Intelligence</p>
+    </div>
+  </div>
+
+  <h3>Key Agents</h3>
+  <table>
+    <thead>
+      <tr><th>Agent</th><th>Function</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Equipment Doctor</td><td>Symptom-based equipment diagnostics</td></tr>
+      <tr><td>KPI Watchdog</td><td>Continuous KPI monitoring and alerts</td></tr>
+      <tr><td>Safety Checklist</td><td>Safety checklist generation</td></tr>
+      <tr><td>Smart Backlog</td><td>Intelligent backlog optimization</td></tr>
+      <tr><td>Predictive Health</td><td>Data-driven failure prediction</td></tr>
+      <tr><td>RCM Advisor</td><td>Reliability-centered maintenance recommendations</td></tr>
+      <tr><td>Budget Sentinel</td><td>Budget control and alerts</td></tr>
+      <tr><td>Chronic Failure Tracker</td><td>Chronic failure tracking</td></tr>
+      <tr><td>Material Readiness</td><td>Material availability verification</td></tr>
+      <tr><td>Shift Handover</td><td>Shift change assistance</td></tr>
+      <tr><td>Executive Report</td><td>Automatic executive report generation</td></tr>
+    </tbody>
+  </table>
+
+  <h3>AI Workflow</h3>
+  <ol class="steps">
+    <li>Agent receives system data (WRs, WOs, KPIs)</li>
+    <li>Analyzes patterns and generates recommendations</li>
+    <li>Presents results to the user</li>
+    <li><strong>Human-in-the-loop:</strong> Every decision requires human approval</li>
+  </ol>
+</div>
+
+<!-- ===================== SECTION 16 ===================== -->
+<div class="section" id="s16">
+  <div class="section-header">
+    <div class="section-number">Section 16</div>
+    <h2>Mobile</h2>
+  </div>
+
+  <h3>Access</h3>
+  <ul>
+    <li>Navigate to the same URL from your phone</li>
+    <li>The app automatically detects mobile devices</li>
+    <li>Installable as PWA (Add to Home Screen)</li>
+  </ul>
+
+  <h3>Mobile Features</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Dashboard</h4>
+      <p>Summarized KPIs, pending tasks</p>
+    </div>
+    <div class="card">
+      <h4>Create WR</h4>
+      <p>Simplified form to report field failures</p>
+    </div>
+    <div class="card">
+      <h4>My Tasks</h4>
+      <p>View and execute assigned tasks</p>
+    </div>
+    <div class="card">
+      <h4>Work Orders</h4>
+      <p>View assigned WOs</p>
+    </div>
+  </div>
+
+  <h3>Offline</h3>
+  <div class="info-box note">
+    The app automatically caches API data. When offline, it shows the latest available data. On reconnection, it syncs automatically.
+  </div>
+</div>
+
+<!-- ===================== SECTION 17 ===================== -->
+<div class="section" id="s17">
+  <div class="section-header">
+    <div class="section-number">Section 17</div>
+    <h2>Roles &amp; Permissions</h2>
+  </div>
+
+  <h3>Access Matrix</h3>
+  <table>
+    <thead>
+      <tr><th>Module</th><th>Admin</th><th>Manager</th><th>Planner</th><th>Engineer</th><th>Supervisor</th><th>Technician</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Dashboard</td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td></tr>
+      <tr><td>Work Requests</td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge amber">Create</span></td></tr>
+      <tr><td>Work Orders</td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td></tr>
+      <tr><td>Planning</td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td></tr>
+      <tr><td>Scheduling</td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td><td><span class="badge gray">No</span></td></tr>
+      <tr><td>Execution</td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td></tr>
+      <tr><td>Analytics</td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge gray">No</span></td></tr>
+      <tr><td>Reports</td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge gray">No</span></td></tr>
+      <tr><td>Team</td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td></tr>
+      <tr><td>Settings</td><td><span class="badge green">Full</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td></tr>
+      <tr><td>Data Import</td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td></tr>
+      <tr><td>AI Agents</td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td></tr>
+      <tr><td>FMEA/RCM</td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td><td><span class="badge green">Full</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td></tr>
+      <tr><td>Reliability</td><td><span class="badge green">Full</span></td><td><span class="badge blue">View</span></td><td><span class="badge blue">View</span></td><td><span class="badge green">Full</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td></tr>
+      <tr><td>SAP PM</td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge green">Full</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td><td><span class="badge gray">No</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Access Levels</h3>
+  <ul>
+    <li><span class="badge green">Full</span> View, create, edit, delete</li>
+    <li><span class="badge blue">View</span> Read only</li>
+    <li><span class="badge amber">Create</span> Can create new records but not edit/delete</li>
+    <li><span class="badge gray">No</span> No access (does not appear in sidebar)</li>
+  </ul>
+</div>
+
+<!-- ===================== SECTION 18 ===================== -->
+<div class="section" id="s18">
+  <div class="section-header">
+    <div class="section-number">Section 18</div>
+    <h2>Frequently Asked Questions</h2>
+  </div>
+
+  <div class="faq-item">
+    <div class="question">I can't see a module in the sidebar</div>
+    <div class="answer">Your role doesn't have permissions. Contact your administrator.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="question">KPIs show "&mdash;"</div>
+    <div class="answer">Not enough data to calculate. Import historical data or wait for records to accumulate.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="question">How do I change my password?</div>
+    <div class="answer">Settings > Profile > Change Password</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="question">How do I export data?</div>
+    <div class="answer">Reports > select template > Download (XLSX/CSV). Or use Data Export on the same page.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="question">The report doesn't filter by my plant</div>
+    <div class="answer">Make sure you have a plant selected in the top selector.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="question">How do I install the app on my phone?</div>
+    <div class="answer">Open the URL in Chrome/Safari > Menu > "Add to Home Screen" / "Install App"</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="question">Can I use the app without internet?</div>
+    <div class="answer">Yes, the app automatically caches data. On reconnection, it updates automatically.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="question">Where do I report a bug?</div>
+    <div class="answer">Use the Feedback button (bottom left corner) to report issues.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="question">How are KPIs calculated?</div>
+    <div class="answer">
+      <strong>MTBF</strong> = Total operating hours / Number of failures<br>
+      <strong>MTTR</strong> = Total repair hours / Number of repairs<br>
+      <strong>Availability</strong> = MTBF / (MTBF + MTTR) x 100<br>
+      <strong>OEE</strong> = Availability x Performance x Quality
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="doc-footer">
+  <p><strong>AMS Platform v2.0</strong></p>
+  <p>Value Strategy Consulting &mdash; April 2026</p>
+  <p style="margin-top: 8px; font-size: 12px; color: #94a3b8;">For technical assistance, contact your system administrator.</p>
+</div>
+
+</div><!-- /content -->
+
+</body>
+</html>

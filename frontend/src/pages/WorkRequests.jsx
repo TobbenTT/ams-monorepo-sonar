@@ -180,92 +180,90 @@ function PhotoCarousel({ photos = [], t }) {
 
 /* ─── Duplicate Carousel with Side-by-Side Comparison ─── */
 function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRequest }) {
-  const [carouselIdx, setCarouselIdx] = React.useState(0);
-  if (!duplicates || duplicates.length === 0) return null;
-  const dup = duplicates[carouselIdx] || duplicates[0];
+  const [dismissed, setDismissed] = React.useState([]);
+  const [idx, setIdx] = React.useState(0);
+  const visible = (duplicates || []).filter((_, i) => !dismissed.includes(i));
+  if (visible.length === 0) return null;
   const current = currentRequest || {};
+  const safeIdx = Math.min(idx, visible.length - 1);
+  const dup = visible[safeIdx];
+
+  const dismissOne = () => {
+    const realIdx = (duplicates || []).indexOf(dup);
+    setDismissed(prev => [...prev, realIdx]);
+    if (safeIdx >= visible.length - 1) setIdx(Math.max(0, safeIdx - 1));
+  };
+
   return (
-    <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-5 space-y-4">
+    <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 space-y-3">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-amber-600" />
-          <span className="text-sm font-bold text-amber-800">
-            {duplicates.length} Similar Open Request{duplicates.length > 1 ? 's' : ''} Found
-          </span>
+          <AlertTriangle className="w-4 h-4 text-amber-600" />
+          <span className="text-xs font-bold text-amber-800">{visible.length} Possible Duplicate{visible.length > 1 ? 's' : ''}</span>
         </div>
         <div className="flex items-center gap-2">
-          {duplicates.length > 1 && (
-            <div className="flex items-center gap-1 bg-white rounded-lg border border-amber-200 px-2 py-1">
-              <button onClick={() => setCarouselIdx(Math.max(0, carouselIdx - 1))} disabled={carouselIdx === 0}
-                className="p-0.5 rounded hover:bg-amber-100 disabled:opacity-30 text-amber-700">
-                <ChevronLeft size={16} />
+          {visible.length > 1 && (
+            <div className="flex items-center gap-1">
+              <button onClick={() => setIdx(Math.max(0, safeIdx - 1))} disabled={safeIdx === 0}
+                className="w-6 h-6 rounded-full bg-white border border-amber-200 flex items-center justify-center disabled:opacity-30 text-amber-700 hover:bg-amber-100">
+                <ChevronLeft size={14} />
               </button>
-              <span className="text-xs font-bold text-amber-800 min-w-[40px] text-center">{carouselIdx + 1} / {duplicates.length}</span>
-              <button onClick={() => setCarouselIdx(Math.min(duplicates.length - 1, carouselIdx + 1))} disabled={carouselIdx >= duplicates.length - 1}
-                className="p-0.5 rounded hover:bg-amber-100 disabled:opacity-30 text-amber-700">
-                <ChevronRight size={16} />
+              <span className="text-[10px] font-bold text-amber-700 min-w-[32px] text-center">{safeIdx + 1}/{visible.length}</span>
+              <button onClick={() => setIdx(Math.min(visible.length - 1, safeIdx + 1))} disabled={safeIdx >= visible.length - 1}
+                className="w-6 h-6 rounded-full bg-white border border-amber-200 flex items-center justify-center disabled:opacity-30 text-amber-700 hover:bg-amber-100">
+                <ChevronRight size={14} />
               </button>
             </div>
           )}
-          <button onClick={onDismiss} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 font-semibold">
-            Proceed Anyway
+          <button onClick={onDismiss} className="text-[10px] px-2 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 font-semibold">
+            Dismiss All
           </button>
         </div>
       </div>
 
-      {/* Side-by-side comparison */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Current Request */}
-        <div className="bg-white rounded-lg border-2 border-blue-200 p-3">
-          <div className="text-xs font-bold text-blue-700 uppercase mb-2 flex items-center gap-1">
-            <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Current Request
-          </div>
-          <div className="space-y-1.5 text-xs">
-            <div><span className="text-gray-500">ID:</span> <span className="font-mono font-bold">{current.id?.slice(0, 12) || '—'}</span></div>
-            <div><span className="text-gray-500">Equipment:</span> <span className="font-semibold">{current.equipment_tag || '—'}</span></div>
-            <div><span className="text-gray-500">Priority:</span> <span className={"font-bold " + (current.priority === 'P1' ? 'text-red-600' : current.priority === 'P2' ? 'text-orange-600' : 'text-gray-700')}>{current.priority || '—'}</span></div>
-            <div><span className="text-gray-500">Status:</span> <span>{current.status || '—'}</span></div>
-            <div className="pt-1 border-t border-gray-100">
-              <span className="text-gray-500">Description:</span>
-              <p className="text-gray-800 mt-0.5 line-clamp-3">{current.failure_description || current.description || '—'}</p>
-            </div>
-            <div><span className="text-gray-500">Created:</span> {current.created_at ? new Date(current.created_at).toLocaleDateString() : '—'}</div>
+      {/* Side-by-side: Current vs Duplicate */}
+      <div className="grid grid-cols-2 gap-2">
+        {/* Current */}
+        <div className="bg-white rounded-lg border border-blue-200 p-2.5">
+          <div className="text-[10px] font-bold text-blue-600 uppercase mb-1.5">Current</div>
+          <p className="text-xs font-semibold text-gray-800 truncate">{current.equipment_name || current.equipment_tag || '—'}</p>
+          <p className="text-[10px] text-gray-500 line-clamp-2 mt-1">{current.failure_description || current.description || '—'}</p>
+          <div className="flex gap-2 mt-1.5">
+            <span className={`text-[10px] font-bold ${current.priority === 'P1' ? 'text-red-600' : current.priority === 'P2' ? 'text-orange-600' : 'text-gray-500'}`}>{current.priority || '—'}</span>
+            <span className="text-[10px] text-gray-400">{current.status || '—'}</span>
           </div>
         </div>
 
         {/* Duplicate */}
-        <div className="bg-amber-50 rounded-lg border-2 border-amber-300 p-3">
-          <div className="text-xs font-bold text-amber-700 uppercase mb-2 flex items-center gap-1">
-            <span className="w-2 h-2 bg-amber-500 rounded-full"></span> Existing Duplicate
-          </div>
-          <div className="space-y-1.5 text-xs">
-            <div><span className="text-gray-500">ID:</span> <span className="font-mono font-bold">{dup.id?.slice(0, 12) || '—'}</span></div>
-            <div><span className="text-gray-500">Equipment:</span> <span className="font-semibold">{dup.equipment_tag || dup.equipment_name || '—'}</span></div>
-            <div><span className="text-gray-500">Priority:</span> <span className={"font-bold " + (dup.priority === 'P1' ? 'text-red-600' : dup.priority === 'P2' ? 'text-orange-600' : 'text-gray-700')}>{dup.priority || '—'}</span></div>
-            <div><span className="text-gray-500">Status:</span> <span>{dup.status || '—'}</span></div>
-            <div className="pt-1 border-t border-amber-100">
-              <span className="text-gray-500">Description:</span>
-              <p className="text-gray-800 mt-0.5 line-clamp-3">{dup.failure_description || dup.description || '—'}</p>
+        <div className="bg-amber-50 rounded-lg border-2 border-amber-300 p-2.5 relative">
+          <button onClick={dismissOne} className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors" title="Not a duplicate">
+            <X size={10} />
+          </button>
+          <div className="text-[10px] font-bold text-amber-700 uppercase mb-1.5">Duplicate #{safeIdx + 1}</div>
+          <p className="text-xs font-semibold text-gray-800 truncate pr-5">{dup.equipment_name || dup.equipment_tag || '—'}</p>
+          <p className="text-[10px] text-gray-500 line-clamp-2 mt-1">{dup.failure_description || dup.description || '—'}</p>
+          <div className="flex items-center justify-between mt-1.5">
+            <div className="flex gap-2">
+              <span className={`text-[10px] font-bold ${dup.priority === 'P1' ? 'text-red-600' : dup.priority === 'P2' ? 'text-orange-600' : 'text-gray-500'}`}>{dup.priority || 'P3'}</span>
+              <span className={`text-[10px] font-bold ${dup.status === 'APROBADO' ? 'text-green-600' : 'text-gray-500'}`}>{dup.status}</span>
             </div>
-            <div><span className="text-gray-500">Created:</span> {dup.created_at ? new Date(dup.created_at).toLocaleDateString() : '—'}</div>
+            <button onClick={() => onViewDuplicate(dup)} className="text-[10px] px-2 py-0.5 rounded bg-amber-200 text-amber-800 hover:bg-amber-300 font-semibold">
+              View
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center gap-2 pt-1">
-        <button onClick={() => onViewDuplicate(dup)} className="flex-1 text-xs px-3 py-2 rounded-lg bg-amber-200 text-amber-800 hover:bg-amber-300 font-semibold text-center">
-          Open This Duplicate
-        </button>
-        {duplicates.length > 1 && (
-          <div className="flex gap-1">
-            {duplicates.map((_, i) => (
-              <button key={i} onClick={() => setCarouselIdx(i)}
-                className={"w-2 h-2 rounded-full transition-colors " + (i === carouselIdx ? "bg-amber-600" : "bg-amber-200 hover:bg-amber-300")} />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Dots */}
+      {visible.length > 1 && (
+        <div className="flex justify-center gap-1">
+          {visible.map((_, i) => (
+            <button key={i} onClick={() => setIdx(i)}
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${i === safeIdx ? 'bg-amber-600' : 'bg-amber-200 hover:bg-amber-400'}`} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -364,7 +362,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
               )}
             </div>
             <h2 className="text-lg font-bold text-foreground">{(() => { try { const ai = typeof item.ai_classification === 'string' ? JSON.parse(item.ai_classification) : item.ai_classification; return ai?.wo_title || item.equipment_name; } catch { return item.equipment_name; } })()}</h2>
-            <p className="text-xs font-mono text-muted-foreground">{item.equipment_tag}</p>
+            <p className="text-xs font-mono text-muted-foreground">{/^\d{8,}$/.test(item.equipment_tag) ? (item.equipment_name || item.equipment_tag) : item.equipment_tag}</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => {
@@ -476,55 +474,7 @@ ${materials.length ? `<div class="section">
           </div>
         </div>
 
-        {/* Photo Carousel */}
-        {/* Duplicate Carousel */}
-        {duplicates.length > 0 && (
-          <div className="px-6 py-4 border-b border-amber-200 bg-amber-50/50">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <span className="text-xs font-bold text-amber-800">{duplicates.length} Similar Request{duplicates.length > 1 ? 's' : ''} Found</span>
-              </div>
-              {duplicates.length > 1 && (
-                <div className="flex items-center gap-1 bg-white rounded-lg border border-amber-200 px-2 py-0.5">
-                  <button onClick={() => setDupIdx(Math.max(0, dupIdx - 1))} disabled={dupIdx === 0} className="text-amber-700 disabled:opacity-30"><ChevronLeft size={14} /></button>
-                  <span className="text-xs font-bold text-amber-700 min-w-[30px] text-center">{dupIdx + 1}/{duplicates.length}</span>
-                  <button onClick={() => setDupIdx(Math.min(duplicates.length - 1, dupIdx + 1))} disabled={dupIdx >= duplicates.length - 1} className="text-amber-700 disabled:opacity-30"><ChevronRight size={14} /></button>
-                </div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white rounded-lg border-2 border-blue-200 p-3">
-                <div className="text-[10px] font-bold text-blue-600 uppercase mb-1.5">Current Request</div>
-                <div className="text-xs space-y-1">
-                  <div className="font-mono font-bold text-blue-700">{(item.id || '').slice(0,14)}</div>
-                  <div className="font-semibold">{item.equipment_tag}</div>
-                  <div className="text-gray-600 line-clamp-2">{item.failure_description || '—'}</div>
-                  <div><span className="text-gray-400">Priority:</span> <span className={"font-bold " + (item.priority === 'P1' ? 'text-red-600' : item.priority === 'P2' ? 'text-orange-600' : '')}>{item.priority}</span> <span className="text-gray-400 ml-2">Status:</span> {item.status}</div>
-                  <div className="text-gray-400">{item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</div>
-                </div>
-              </div>
-              <div className="bg-amber-50 rounded-lg border-2 border-amber-300 p-3">
-                <div className="text-[10px] font-bold text-amber-600 uppercase mb-1.5">Existing Duplicate</div>
-                {(() => { const d = duplicates[dupIdx]; return d ? (
-                  <div className="text-xs space-y-1">
-                    <div className="font-mono font-bold text-amber-700">{(d.id || '').slice(0,14)}</div>
-                    <div className="font-semibold">{d.equipment_tag}</div>
-                    <div className="text-gray-600 line-clamp-2">{d.failure_description || '—'}</div>
-                    <div><span className="text-gray-400">Priority:</span> <span className={"font-bold " + (d.priority === 'P1' ? 'text-red-600' : d.priority === 'P2' ? 'text-orange-600' : '')}>{d.priority}</span> <span className="text-gray-400 ml-2">Status:</span> {d.status}</div>
-                    <div className="text-gray-400">{d.created_at ? new Date(d.created_at).toLocaleDateString() : ''}</div>
-                    <button onClick={() => onOpenDuplicate && onOpenDuplicate(d)} className="mt-1 w-full text-[10px] py-1.5 bg-amber-200 text-amber-800 rounded-lg hover:bg-amber-300 font-semibold">View Full Duplicate</button>
-                  </div>
-                ) : null; })()}
-              </div>
-            </div>
-            {duplicates.length > 1 && (
-              <div className="flex justify-center gap-1 mt-2">
-                {duplicates.map((_, i) => <button key={i} onClick={() => setDupIdx(i)} className={"w-2 h-2 rounded-full transition-all " + (i === dupIdx ? "bg-amber-600 scale-125" : "bg-amber-200")} />)}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Duplicates shown in carousel wrapper, not here */}
         {/* Duplicates indicator - panels shown beside this modal */}
 
         <div className="px-6 py-4 border-b border-border">
@@ -608,6 +558,14 @@ ${materials.length ? `<div class="section">
           )}
         </div>
 
+        {/* WO Title */}
+        {item.wo_title && (
+          <div className="px-6 pb-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Work Order Title</p>
+            <p className="text-base font-bold text-foreground bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">{item.wo_title}</p>
+          </div>
+        )}
+
         {/* Failure Description */}
         <div className="px-6 pb-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t('workRequests.failureDesc')}</p>
@@ -646,10 +604,10 @@ ${materials.length ? `<div class="section">
               </div>
             ) : (
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
-                {item.failure_category && (
+                {item.failure_object_part && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground min-w-[80px]">Parte Objeto:</span>
-                    <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
+                    <span className="text-sm font-medium text-foreground">{item.failure_object_part}</span>
                   </div>
                 )}
                 {item.failure_symptom && (
@@ -660,8 +618,14 @@ ${materials.length ? `<div class="section">
                 )}
                 {item.failure_cause && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Cause:</span>
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Causa:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_cause}</span>
+                  </div>
+                )}
+                {item.failure_category && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                    <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
                   </div>
                 )}
               </div>
@@ -1000,6 +964,7 @@ function normalizeWR(wr) {
     id: wr.request_id || wr.id,
     equipment_tag: wr.equipment_tag || '',
     equipment_name: cls.wo_title || wr.equipment_name || wr.equipment_tag || '',
+    wo_title: cls.wo_title || desc.wo_title || '',
     plant: wr.plant_id || 'OCP-JFC1',
     area: wr.area || '',
     technician: wr.technician_name || wr.technician || cls.required_specialties?.[0] || '',
@@ -1018,9 +983,10 @@ function normalizeWR(wr) {
     // Classification fields (check both top-level, ai_classification, and problem_description)
     activity_class: wr.activity_class || cls.activity_class || '',
     work_class: wr.work_class || '',
-    failure_category: wr.failure_category || cls.failure_category || desc.failure_mode_detected || '',
-    failure_symptom: wr.failure_symptom || desc.failure_symptom || '',
-    failure_cause: wr.failure_cause || desc.failure_cause || '',
+    failure_category: wr.failure_category || cls.failure_category || desc.failure_catalog?.category || desc.failure_mode_detected || '',
+    failure_object_part: wr.failure_object_part || desc.failure_catalog?.object_part || '',
+    failure_symptom: wr.failure_symptom || desc.failure_catalog?.symptom || desc.failure_symptom || '',
+    failure_cause: wr.failure_cause || desc.failure_catalog?.cause || desc.failure_cause || '',
     plant_condition: wr.plant_condition || cls.plant_condition || '',
     suggested_action: wr.suggested_action || desc.suggested_action || '',
     // Resources & Materials (also check inside problem_description)
@@ -1072,6 +1038,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState(null);
+  const [dismissedDups, setDismissedDups] = useState([]);
+  const [carouselIdx, setCarouselIdx] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleteReason, setDeleteReason] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
@@ -1954,67 +1922,105 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         </div>
       )}
 
-      {/* Detail Modal — carousel of current + duplicates */}
+      {/* Detail Modal — 3D carousel of current + duplicates */}
       {selected && (() => {
         const dups = findDuplicates(selected, requests);
-        const allItems = [selected, ...dups];
-        const hasDups = dups.length > 0;
+        const allItems = [selected, ...dups.filter(d => !dismissedDups.includes(d.id))];
+        const hasDups = allItems.length > 1;
+        const carIdx = carouselIdx;
+        const setCarIdx = setCarouselIdx;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <div className="relative z-10 flex items-center gap-6 max-w-full" onClick={e => e.stopPropagation()}>
-              {/* Left arrow */}
-              {hasDups && (
-                <button onClick={() => { const el = document.getElementById('wr-carousel'); el.scrollBy({ left: -(el.firstChild?.offsetWidth || 600), behavior: 'smooth' }); }}
-                  className="shrink-0 w-12 h-12 bg-white/90 rounded-full shadow-xl border-2 border-gray-200 flex items-center justify-center hover:bg-white hover:scale-110 transition-all z-20">
-                  <ChevronLeft size={24} className="text-gray-700" />
-                </button>
-              )}
-              {/* Carousel container */}
-              <div id="wr-carousel"
-                className={`flex gap-5 overflow-x-auto snap-x snap-mandatory ${hasDups ? 'max-w-[88vw]' : 'max-w-3xl'}`}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {allItems.map((wrItem, idx) => (
-                  <div key={wrItem.id || idx} className="snap-center shrink-0 relative" style={{ width: hasDups ? 'min(580px, 44vw)' : '100%' }}>
-                    {/* DUPLICATE badge */}
-                    {idx > 0 && (
-                      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-red-500 text-white text-[11px] font-bold px-4 py-1 rounded-full shadow-lg tracking-wider">
-                        DUPLICADO #{idx}
+          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setSelected(null)}>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+            <div className="relative z-10 w-full max-w-5xl px-4" onClick={e => e.stopPropagation()}>
+              {/* 3D Carousel */}
+              <div className="relative flex items-center justify-center" style={{ perspective: '1200px', minHeight: '80vh' }}>
+                {allItems.map((wrItem, idx) => {
+                  const offset = idx - carIdx;
+                  const absOff = Math.abs(offset);
+                  const isCenter = offset === 0;
+                  const translateX = offset * 320;
+                  const translateZ = isCenter ? 0 : -150 - absOff * 50;
+                  const rotateY = offset * -15;
+                  const scale = isCenter ? 1 : Math.max(0.7, 0.85 - absOff * 0.08);
+                  const opacity = absOff > 2 ? 0 : isCenter ? 1 : 0.6;
+                  const zIndex = 10 - absOff;
+
+                  return (
+                    <div key={wrItem.id || idx}
+                      className="absolute transition-all duration-500 ease-out"
+                      style={{
+                        transform: `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
+                        opacity,
+                        zIndex,
+                        width: 'min(520px, 85vw)',
+                        pointerEvents: isCenter ? 'auto' : 'none',
+                      }}>
+                      {/* Badge */}
+                      {idx > 0 && (
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
+                          <span className="bg-red-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-lg">DUPLICADO #{idx}</span>
+                          {isCenter && (
+                            <button onClick={(e) => { e.stopPropagation(); setDismissedDups(prev => [...prev, wrItem.id]); setCarouselIdx(prev => Math.max(0, prev - 1)); }}
+                              className="w-6 h-6 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {idx === 0 && hasDups && (
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-30 bg-blue-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-lg">
+                          ACTUAL
+                        </div>
+                      )}
+                      <div className={`rounded-2xl shadow-2xl overflow-hidden ${isCenter ? '' : 'pointer-events-none'}`}>
+                        <DetailModal
+                          item={wrItem}
+                          critScore={idx === 0 ? critScore : null}
+                          duplicates={[]}
+                          onOpenDuplicate={() => {}}
+                          onClose={() => setSelected(null)}
+                          onValidate={handleValidate}
+                          onReject={handleReject}
+                          onCancel={handleCancel}
+                          onStart={handleStart}
+                          onComplete={handleComplete}
+                          onCloseWR={handleClose}
+                          onSaveEdit={handleSaveEdit}
+                          onPlannerCreateOT={handlePlannerCreateOT}
+                          userRole={user?.role}
+                          t={t}
+                          _isInCarousel={true}
+                          _isDuplicate={idx > 0}
+                        />
                       </div>
-                    )}
-                    {idx === 0 && hasDups && (
-                      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-blue-600 text-white text-[11px] font-bold px-4 py-1 rounded-full shadow-lg tracking-wider">
-                        ACTUAL
-                      </div>
-                    )}
-                    <DetailModal
-                      item={wrItem}
-                      critScore={idx === 0 ? critScore : null}
-                      duplicates={[]}
-                      onOpenDuplicate={() => {}}
-                      onClose={() => setSelected(null)}
-                      onValidate={handleValidate}
-                      onReject={handleReject}
-                      onCancel={handleCancel}
-                      onStart={handleStart}
-                      onComplete={handleComplete}
-                      onCloseWR={handleClose}
-                      onSaveEdit={handleSaveEdit}
-                      onPlannerCreateOT={handlePlannerCreateOT}
-                      userRole={user?.role}
-                      t={t}
-                      _isInCarousel={true}
-                      _isDuplicate={idx > 0}
-                    />
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
-              {/* Right arrow */}
+
+              {/* Navigation arrows */}
               {hasDups && (
-                <button onClick={() => { const el = document.getElementById('wr-carousel'); el.scrollBy({ left: el.firstChild?.offsetWidth || 600, behavior: 'smooth' }); }}
-                  className="shrink-0 w-12 h-12 bg-white/90 rounded-full shadow-xl border-2 border-gray-200 flex items-center justify-center hover:bg-white hover:scale-110 transition-all z-20">
-                  <ChevronRight size={24} className="text-gray-700" />
-                </button>
+                <>
+                  <button onClick={() => setCarIdx(Math.max(0, carIdx - 1))} disabled={carIdx === 0}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-12 h-12 bg-white/90 rounded-full shadow-xl border border-gray-200 flex items-center justify-center hover:bg-white hover:scale-110 transition-all disabled:opacity-30">
+                    <ChevronLeft size={24} className="text-gray-700" />
+                  </button>
+                  <button onClick={() => setCarIdx(Math.min(allItems.length - 1, carIdx + 1))} disabled={carIdx >= allItems.length - 1}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-12 h-12 bg-white/90 rounded-full shadow-xl border border-gray-200 flex items-center justify-center hover:bg-white hover:scale-110 transition-all disabled:opacity-30">
+                    <ChevronRight size={24} className="text-gray-700" />
+                  </button>
+                </>
+              )}
+
+              {/* Dots */}
+              {hasDups && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+                  {allItems.map((_, i) => (
+                    <button key={i} onClick={() => setCarIdx(i)}
+                      className={`w-3 h-3 rounded-full transition-all shadow-sm ${i === carIdx ? 'bg-emerald-500 scale-125' : i === 0 ? 'bg-blue-400' : 'bg-red-400 opacity-60'}`} />
+                  ))}
+                </div>
               )}
             </div>
           </div>

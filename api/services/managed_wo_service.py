@@ -141,8 +141,9 @@ def create_work_order(
     work_class = "NO_PROGRAMADO" if priority_code in ("P1", "P2") else "PROGRAMADO"
     is_fast_track = priority_code in ("P1", "P2")
 
-    # Auto-estimate budget from hours (default labor rate $50/hr)
-    LABOR_RATE = 50.0
+    # Auto-estimate budget from hours (labor rate from platform settings, default $50/hr)
+    from api.routers.admin import _platform_settings
+    LABOR_RATE = float(_platform_settings.get("laborRate", 50.0))
     auto_budget = round(estimated_hours * LABOR_RATE, 2)
 
     # Auto-assign planning group and work center if not provided
@@ -182,15 +183,15 @@ def create_work_order(
         }]
 
     db.add(wo)
-    log_action(db, "managed_work_order", wo.wo_id, "CREATE")
+    log_action(db, "managed_work_order", wo.wo_id, "CREATE", user=planned_by or "system")
     if is_fast_track:
-        log_action(db, "managed_work_order", wo.wo_id, "FAST_TRACK_PROGRAMADO")
+        log_action(db, "managed_work_order", wo.wo_id, "FAST_TRACK_PROGRAMADO", user=planned_by or "system")
     db.commit()
     db.refresh(wo)
     return _to_dict(wo)
 
 
-def create_from_work_request(db: Session, request_id: str, planned_by: str = "") -> dict | None:
+def create_from_work_request(db: Session, request_id: str, planned_by: str = "", plant_id: str | None = None) -> dict | None:
     """Create a WO from an approved WR — copies equipment, priority, description, operations, materials."""
     wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
     if not wr:
@@ -307,19 +308,29 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "")
     raw_type = ai.get("work_order_type", "")
     wo_type = text_to_pm.get(raw_type, raw_type) if raw_type and not raw_type.startswith("PM") else (raw_type or wo_type_map.get(wr.priority_code, "PM01"))
 
-    return create_work_order(
+    # Use explicit plant_id from request, then AI classification, then fallback
+    plant = plant_id or ai.get("plant_id") or "GOLDFIELDS-SN"
+
+    result = create_work_order(
         db=db,
         equipment_tag=wr.equipment_tag,
         description=desc_text,
         wo_type=wo_type,
         priority_code=wr.priority_code or "P3",
-        plant_id=ai.get("plant_id", "OCP-JFC1"),
+        plant_id=plant,
         work_request_id=request_id,
         planned_by=planned_by,
         estimated_hours=ai.get("estimated_duration_hours", 4.0) or 4.0,
         operations=operations,
         materials=materials,
     )
+
+    # Update WR status so it can't create duplicate WOs
+    if result:
+        wr.status = "EN_EJECUCION"
+        db.commit()
+
+    return result
 
 
 def get_work_order(db: Session, wo_id: str) -> dict | None:
@@ -384,7 +395,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
         wo.work_class = "NO_PROGRAMADO" if data["priority_code"] in ("P1", "P2") else "PROGRAMADO"
 
     wo.updated_at = datetime.now()
-    log_action(db, "managed_work_order", wo_id, "UPDATE")
+    log_action(db, "managed_work_order", wo_id, "UPDATE", user=data.get("updated_by", "system"))
     db.commit()
     db.refresh(wo)
     return _to_dict(wo)
@@ -442,7 +453,7 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
         wo.assigned_workers = kwargs["assigned_workers"]
 
     _create_notification(db, wo, old_status, target_status, user_id)
-    log_action(db, "managed_work_order", wo_id, target_status)
+    log_action(db, "managed_work_order", wo_id, target_status, user=user_id or "system")
     db.commit()
     db.refresh(wo)
     return _to_dict(wo)
@@ -589,7 +600,7 @@ def draft_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
         "note": f"Status: {old_status} -> CREADO (reverted to draft)",
     })
     wo.execution_notes = notes
-    log_action(db, "managed_work_order", wo_id, "DRAFT")
+    log_action(db, "managed_work_order", wo_id, "DRAFT", user=user_id or "system")
     db.commit()
     db.refresh(wo)
     return _to_dict(wo)

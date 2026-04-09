@@ -296,7 +296,8 @@ def get_analytics_page_data(
             })
 
     # ── Cost by area (from work packages grouped by parent hierarchy node) ──
-    LABOR_RATE = 250  # MAD per hour
+    from api.routers.admin import _platform_settings
+    LABOR_RATE = float(_platform_settings.get("laborRate", 250))
     MATERIAL_FACTOR = 0.6  # material cost ≈ 60% of labor
     area_costs: dict[str, dict] = {}
     for wp in wps:

@@ -30,7 +30,7 @@ def get_audit_log(entity_type: str | None = None, limit: int = 100, db: Session 
     entries = q.order_by(AuditLogModel.timestamp.desc()).limit(limit).all()
     return [
         {"id": e.id, "entity_type": e.entity_type, "entity_id": e.entity_id,
-         "action": e.action, "user": e.user,
+         "action": e.action, "user": e.user, "payload": e.payload,
          "timestamp": e.timestamp.isoformat() if e.timestamp else None}
         for e in entries
     ]
@@ -97,6 +97,26 @@ def save_settings(data: dict):
     """Save platform settings (admin only)."""
     _platform_settings.update(data)
     return {"status": "saved", "settings": _platform_settings}
+
+
+@router.post("/test-email", dependencies=[Depends(require_role("admin"))])
+def test_email(data: dict):
+    """Send a test email notification."""
+    from api.services.email_service import send_notification, is_configured
+    if not is_configured():
+        return {"ok": False, "error": "SMTP not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS env vars."}
+    to = data.get("to", "")
+    if not to:
+        return {"ok": False, "error": "Missing 'to' email address"}
+    ok = send_notification(to, "Test Notification", "This is a test email from AMS Platform. If you received this, email notifications are working correctly.")
+    return {"ok": ok, "message": f"Email {'sent' if ok else 'failed'} to {to}"}
+
+
+@router.get("/email-status", dependencies=[Depends(require_role("admin", "manager"))])
+def email_status():
+    """Check if email is configured."""
+    from api.services.email_service import is_configured, SMTP_HOST
+    return {"configured": is_configured(), "smtp_host": SMTP_HOST or None}
 
 @router.get("/export-data", dependencies=[Depends(require_role("admin", "manager"))])
 def export_all_data(db: Session = Depends(get_db)):

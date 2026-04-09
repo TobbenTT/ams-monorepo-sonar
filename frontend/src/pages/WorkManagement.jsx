@@ -33,12 +33,7 @@ export default function WorkManagement() {
     if (urlTab) { setActiveTab(urlTab); setSearchParams({}, { replace: true }); }
   }, [searchParams]);
 
-  // When viewMode changes, switch to appropriate default tab (only if no URL override)
-  useEffect(() => {
-    if (searchParams.get('tab')) return; // URL tab takes priority
-    if (viewMode === 'planner') setActiveTab('failure-capture');
-    else if (viewMode === 'supervisor') setActiveTab('identification');
-  }, [viewMode]);
+  // viewMode change does NOT switch tabs — user stays on current tab
   const [phaseCounts, setPhaseCounts] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [autoOpenWrId, setAutoOpenWrId] = useState(null);

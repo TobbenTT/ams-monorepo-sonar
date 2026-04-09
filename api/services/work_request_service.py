@@ -84,13 +84,27 @@ def approve_work_request(
     validation["approval_comment"] = comment
     wr.validation = validation
 
-    log_action(db, "work_request", request_id, "APPROVE")
+    log_action(db, "work_request", request_id, "APPROVE", user=approver_id)
     db.commit()
     db.refresh(wr)
 
     # Auto-add to backlog
     from api.services import backlog_service
     backlog_service.add_to_backlog(db, request_id)
+
+    # Email notification (async, non-blocking)
+    try:
+        from api.services.email_service import send_notification, is_configured
+        if is_configured():
+            eq = wr.equipment_tag or wr.equipment_name or ""
+            send_notification(
+                to=wr.reporter_email or "",
+                title=f"WR {request_id} Approved",
+                message=f"Work Request {request_id} for {eq} has been approved by {approver_id}.",
+                link=f"/work-requests",
+            )
+    except Exception:
+        pass
 
     return _to_dict(wr)
 
@@ -113,7 +127,7 @@ def reject_work_request(
     validation["rejection_reason"] = reason
     wr.validation = validation
 
-    log_action(db, "work_request", request_id, "REJECT")
+    log_action(db, "work_request", request_id, "REJECT", user=approver_id)
     db.commit()
     db.refresh(wr)
     return _to_dict(wr)
@@ -121,7 +135,7 @@ def reject_work_request(
 
 
 def cancel_work_request(
-    db: Session, request_id: str, reason: str = "",
+    db: Session, request_id: str, reason: str = "", user_id: str = "system",
 ) -> dict | None:
     """Cancel a work request (any open status)."""
     wr = get_work_request(db, request_id)
@@ -136,7 +150,7 @@ def cancel_work_request(
     validation["cancelled_at"] = datetime.now().isoformat()
     validation["cancel_reason"] = reason
     wr.validation = validation
-    log_action(db, "work_request", request_id, "CANCEL")
+    log_action(db, "work_request", request_id, "CANCEL", user=user_id)
     db.commit()
     db.refresh(wr)
     return _to_dict(wr)
@@ -185,7 +199,7 @@ def _record_ai_feedback(db, wr, modifications):
 
 
 def validate_work_request(
-    db: Session, request_id: str, action: str, modifications: dict | None = None
+    db: Session, request_id: str, action: str, modifications: dict | None = None, user_id: str = "system",
 ) -> dict | None:
     """Validate (approve/reject/modify) a work request — legacy endpoint."""
     wr = get_work_request(db, request_id)
@@ -218,7 +232,7 @@ def validate_work_request(
     validation["modifications_made"] = list(modifications.keys()) if modifications else []
     wr.validation = validation
 
-    log_action(db, "work_request", request_id, f"VALIDATE_{action}")
+    log_action(db, "work_request", request_id, f"VALIDATE_{action}", user=user_id)
     db.commit()
     db.refresh(wr)
 
@@ -246,7 +260,7 @@ def start_work_request(db: Session, request_id: str, user_id: str = "") -> dict 
     validation["started_by"] = user_id
     validation["started_at"] = datetime.now().isoformat()
     wr.validation = validation
-    log_action(db, "work_request", request_id, "START")
+    log_action(db, "work_request", request_id, "START", user=user_id)
     db.commit()
     db.refresh(wr)
     return _to_dict(wr)
@@ -269,7 +283,7 @@ def complete_work_request(
     validation["completion_notes"] = completion_notes
     validation["actual_hours"] = actual_hours
     wr.validation = validation
-    log_action(db, "work_request", request_id, "COMPLETE")
+    log_action(db, "work_request", request_id, "COMPLETE", user=user_id)
     db.commit()
     db.refresh(wr)
     return _to_dict(wr)
@@ -290,7 +304,7 @@ def close_work_request(
     validation["closed_at"] = datetime.now().isoformat()
     validation["closure_notes"] = closure_notes
     wr.validation = validation
-    log_action(db, "work_request", request_id, "CLOSE")
+    log_action(db, "work_request", request_id, "CLOSE", user=user_id)
     db.commit()
     db.refresh(wr)
     return _to_dict(wr)
@@ -307,7 +321,7 @@ def delete_work_request(db: Session, request_id: str, user_id: str = "", reason:
     wr.status = "ELIMINADO"
     # Store reason in rejection_reason field
     wr.rejection_reason = reason or None
-    log_action(db, "work_request", request_id, "SOFT_DELETE")
+    log_action(db, "work_request", request_id, "SOFT_DELETE", user=user_id)
     db.commit()
     return True
 

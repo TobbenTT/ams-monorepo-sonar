@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
 from api.database.models import UserModel
-from api.schemas import UserRegister, UserLogin, PasswordChange, UserRoleUpdate, RefreshRequest, UserProfileUpdate
+from api.schemas import UserRegister, UserLogin, PasswordChange, UserRoleUpdate, RefreshRequest, UserProfileUpdate, AdminUserUpdate
 from api.services import auth_service
 from api.dependencies.auth import get_current_user, require_role
 
@@ -116,6 +116,26 @@ def list_users(role: str | None = None, plant_id: str | None = None, db: Session
         q = q.filter(UserModel.plant_id == plant_id)
     users = q.all()
     return [_user_to_dict(u) for u in users]
+
+
+@router.put("/users/{user_id}")
+def admin_update_user(user_id: str, data: AdminUserUpdate, db: Session = Depends(get_db), user: UserModel = Depends(require_role("admin", "manager"))):
+    target = db.query(UserModel).filter(UserModel.user_id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if data.username is not None:
+        target.username = data.username
+    if data.full_name is not None:
+        target.full_name = data.full_name
+    if data.email is not None:
+        target.email = data.email
+    if data.plant_id is not None:
+        target.plant_id = data.plant_id
+    if data.role is not None:
+        target.role = data.role
+    db.commit()
+    db.refresh(target)
+    return _user_to_dict(target)
 
 
 @router.put("/users/{user_id}/role")

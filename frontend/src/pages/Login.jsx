@@ -7,7 +7,6 @@ import { Eye, EyeOff, AlertCircle, Shield, Wrench, BarChart3, Globe } from 'luci
 const LANG_OPTIONS = [
     { code: 'en', label: 'English', flag: '🇬🇧' },
     { code: 'es', label: 'Español', flag: '🇪🇸' },
-    { code: 'ar', label: 'العربية', flag: '🇲🇦' },
 ];
 
 export default function Login() {

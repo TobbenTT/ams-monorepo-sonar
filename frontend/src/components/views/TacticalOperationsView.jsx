@@ -3,6 +3,12 @@ import { Card } from '../ui/card';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart } from 'recharts';
 import { ArrowDown, TrendingDown, Loader2, Crosshair } from 'lucide-react';
 import * as api from '../../api';
+
+// Deterministic pseudo-random: same input always produces same output (-0.5 to +0.5)
+function seededNoise(seed) {
+  const x = Math.sin(seed * 9301 + 49297) * 49979;
+  return x - Math.floor(x) - 0.5;
+}
 import { getDateRange, filterByDateRange } from '../../utils/dateRange';
 
 export default function TacticalOperationsView({ selectedPlant, selectedTimeRange, selectedArea }) {
@@ -79,7 +85,7 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
   const lateWOWeekly = buildWeeklyBars(lateWOs, 'actual_end');
   const schedComplianceWeekly = useMemo(() => Array.from({ length: 12 }, (_, i) => ({
     week: `W${i + 1}`,
-    value: Math.max(0, Math.min(100, schedCompliance + Math.round((Math.random() - 0.5) * 6))),
+    value: Math.max(0, Math.min(100, schedCompliance + Math.round(seededNoise(i + 7) * 6))),
   })), [schedCompliance]);
 
   // ─── SECTION III: RELIABILITY ───
@@ -111,7 +117,8 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
         const val = typeof eq.mtbf === 'string' ? parseFloat(eq.mtbf) : (eq.mtbf || 0);
         return sum + val;
       }, 0) / areaGroups[area].length;
-      point[area] = Math.round(avgMtbf * (0.85 + (i / 12) * 0.3 + (Math.random() - 0.5) * 0.15));
+      const areaIdx = areaNames.indexOf(area);
+      point[area] = Math.round(avgMtbf * (0.85 + (i / 12) * 0.3 + seededNoise(i * 10 + areaIdx + 3) * 0.15));
     });
     return point;
   }), [analyticsData]);

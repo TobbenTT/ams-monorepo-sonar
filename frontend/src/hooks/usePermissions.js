@@ -65,6 +65,8 @@ const PERMISSIONS = {
     'data-import':        { view: ['admin', 'manager'], edit: ['admin'] },
     'sap-pm':             { view: ['admin', 'manager', 'planner'], edit: ['admin', 'planner'] },
     'profile':            { view: ALL_ROLES, edit: ALL_ROLES },
+    'user-guide':         { view: ALL_ROLES, edit: ['admin'] },
+    'audit-log':          { view: ['admin', 'manager'], edit: ['admin'] },
 };
 
 /* ── Role → edit scope label ── */

@@ -356,10 +356,10 @@ def get_work_request(request_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/{request_id}/validate")
-def validate_work_request(request_id: str, data: WRValidateRequest, db: Session = Depends(get_db)):
+def validate_work_request(request_id: str, data: WRValidateRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
     if data.action not in ("APPROVE", "REJECT", "MODIFY"):
         raise HTTPException(status_code=400, detail="action must be APPROVE, REJECT, or MODIFY")
-    result = work_request_service.validate_work_request(db, request_id, data.action, data.modifications)
+    result = work_request_service.validate_work_request(db, request_id, data.action, data.modifications, user_id=getattr(user, "username", "system"))
     if not result:
         raise HTTPException(status_code=404, detail="Work request not found")
     return result
@@ -831,13 +831,21 @@ STRUCTURAL:
 
 RULE: failureSymptom, failureCause and failureObjectPart MUST be EXACT copies of the values above.
 DO NOT invent free text for these fields. Choose the closest catalog value.
+ALL THREE fields (failureSymptom, failureCause, failureObjectPart) are MANDATORY — you MUST always fill them.
+If unsure, pick the most likely match from the catalog. NEVER leave them empty or null.
 
 P1/P2->M002, P3/P4->M001. ALWAYS include materials with sapId, supportEquipment and workConditions.
 
+RULE equipmentCondition: If priority is P1 or P2, equipmentCondition MUST be "stopped". If LEAKAGE, SEIZED, SHORT CIRCUIT, ARC FLASH, CRACK DETECTED — equipmentCondition MUST be "stopped" regardless of priority.
+
 RULE enhanced_description: Rewrite the user description in SAP PM technical format.
-- Include: equipment TAG, functional location if known, main symptom, measurement if any, operational impact
-- Format: short direct sentences, maintenance technical terminology
+- Use the EQUIPMENT NAME (e.g. "Molino SAG", "Bomba centrifuga"), NOT the numeric TAG/ID
+- NEVER include numeric IDs like 000000000189 or 000000000827 in the description or suggestedAction
+- Include: equipment name, functional location if known, main symptom, measurement if any, operational impact
+- Format: short direct sentences, maintenance technical terminology (2-3 sentences MAX, not longer)
 - If user already wrote well, just improve wording without changing meaning.
+
+RULE suggestedAction: Write numbered steps. Use equipment NAME not numeric TAG. Keep it concise (max 10 steps).
 
 IMPORTANT: Detect the language of the user input and respond in the SAME language.
 If user writes in Spanish, respond in Spanish. If in English, respond in English. If in French, respond in French.

@@ -242,6 +242,7 @@ export default function FailureCapture({ onNavigateTab }) {
   const [locationNodes, setLocationNodes] = useState([]);
   const [equipResults, setEquipResults] = useState([]);
   const [showEquipSearch, setShowEquipSearch] = useState(false);
+  const [equipFromLocation, setEquipFromLocation] = useState(false); // true when results come from location selection
   const [selectedEquip, setSelectedEquip] = useState(null);
 
   // Location search
@@ -314,32 +315,55 @@ export default function FailureCapture({ onNavigateTab }) {
       });
       if (res?.suggestions) {
         const s = res.suggestions;
-        if (s.failure_category) {
-          const cat = s.failure_category.toUpperCase().trim();
-          const validCats = ['MECHANICAL', 'ELECTRICAL', 'INSTRUMENTATION'];
+        // Helper: fuzzy match against catalog array (exact first, then includes)
+        const fuzzyMatch = (val, arr) => {
+          if (!val || !arr) return null;
+          const v = val.toUpperCase().trim();
+          const exact = arr.find(a => a === v);
+          if (exact) return exact;
+          const partial = arr.find(a => a.includes(v) || v.includes(a));
+          if (partial) return partial;
+          // Word overlap: pick best match
+          const vWords = v.split(/[\s/]+/);
+          let best = null, bestScore = 0;
+          for (const a of arr) {
+            const score = vWords.filter(w => a.includes(w)).length;
+            if (score > bestScore) { bestScore = score; best = a; }
+          }
+          return bestScore > 0 ? best : null;
+        };
+
+        // Helper: strip numeric TAGs from text
+        const stripNumericTags = (text) => (text || '').replace(/\b0{3,}\d+\b/g, '').replace(/\(TAG\s*\)/gi, '').replace(/TAG\s+\d{5,}/gi, '').replace(/\s{2,}/g, ' ').trim();
+
+        if (s.failure_category || s.failureCategory) {
+          const cat = (s.failure_category || s.failureCategory).toUpperCase().trim();
+          const validCats = ['MECHANICAL', 'ELECTRICAL', 'INSTRUMENTATION', 'HYDRAULIC', 'STRUCTURAL'];
           if (validCats.includes(cat)) setF('failureCategory', cat);
           else if (cat.includes('MEC')) setF('failureCategory', 'MECHANICAL');
           else if (cat.includes('ELEC')) setF('failureCategory', 'ELECTRICAL');
           else if (cat.includes('INST')) setF('failureCategory', 'INSTRUMENTATION');
+          else if (cat.includes('HYD')) setF('failureCategory', 'HYDRAULIC');
+          else if (cat.includes('STRU')) setF('failureCategory', 'STRUCTURAL');
         }
+        // Determine active category for catalog lookups
+        const activeCat = FAILURE_CATALOG[(s.failure_category || s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase()] || FAILURE_CATALOG.MECHANICAL;
+
         if (s.failure_symptom || s.failureSymptom) {
-          const sym = (s.failure_symptom || s.failureSymptom).toUpperCase().trim();
-          const tCat = FAILURE_CATALOG[form.failureCategory] || FAILURE_CATALOG.MECANICO;
-          if (tCat.symptoms.includes(sym)) setF('failureSymptom', sym);
+          const matched = fuzzyMatch(s.failure_symptom || s.failureSymptom, activeCat.symptoms);
+          if (matched) setF('failureSymptom', matched);
         }
         if (s.failure_cause || s.failureCause) {
-          const cau = (s.failure_cause || s.failureCause).toUpperCase().trim();
-          const tCat2 = FAILURE_CATALOG[form.failureCategory] || FAILURE_CATALOG.MECANICO;
-          if (tCat2.causes.includes(cau)) setF('failureCause', cau);
+          const matched = fuzzyMatch(s.failure_cause || s.failureCause, activeCat.causes);
+          if (matched) setF('failureCause', matched);
         }
         if (s.failure_object_part || s.failureObjectPart) {
-          const part = (s.failure_object_part || s.failureObjectPart).toUpperCase().trim();
-          const tCat3 = FAILURE_CATALOG[form.failureCategory] || FAILURE_CATALOG.MECANICO;
-          if (tCat3.parts.includes(part)) setF('failureObjectPart', part);
+          const matched = fuzzyMatch(s.failure_object_part || s.failureObjectPart, activeCat.parts);
+          if (matched) setF('failureObjectPart', matched);
         }
-        // Apply ALL fields from Claude (camelCase + snake_case)
-        if (s.enhanced_description) setF('whatHappens', s.enhanced_description);
-        if (s.suggestedAction || s.suggested_action) setF('suggestedAction', s.suggestedAction || s.suggested_action);
+        // Apply ALL fields from Claude (camelCase + snake_case) — strip numeric TAGs
+        if (s.enhanced_description) setF('whatHappens', stripNumericTags(s.enhanced_description));
+        if (s.suggestedAction || s.suggested_action) setF('suggestedAction', stripNumericTags(s.suggestedAction || s.suggested_action));
         // Auto-generate WO title from AI description (first clause, max 60 chars)
         if (s.enhanced_description) {
           let desc = s.enhanced_description;
@@ -367,8 +391,12 @@ export default function FailureCapture({ onNavigateTab }) {
           const pc = (s.equipmentCondition || s.equipment_condition).toLowerCase();
           setF('equipmentCondition', pc === 'running' ? 'operating' : pc === 'stopped' ? 'stopped' : pc);
         }
-        // P1 = emergency → equipment must be stopped
-        if (s.priority === 'P1') setF('equipmentCondition', 'stopped');
+        // P1/P2 or critical symptoms → equipment must be stopped
+        const criticalSymptoms = ['SEIZED', 'SHORT CIRCUIT', 'ARC FLASH', 'CRACK DETECTED', 'LEAKAGE'];
+        const symptomVal = (s.failure_symptom || s.failureSymptom || '').toUpperCase();
+        if (s.priority === 'P1' || s.priority === 'P2' || criticalSymptoms.some(cs => symptomVal.includes(cs))) {
+          setF('equipmentCondition', 'stopped');
+        }
         ensureRealisticResources(s.resources, s.materials, s.failureCategory, s.estimatedDuration || s.estimated_duration, s.enhanced_description);
         if (s.supportEquipment?.length) setF('supportEquipment', s.supportEquipment);
         if (s.support_equipment?.length) setF('supportEquipment', s.support_equipment);
@@ -400,13 +428,10 @@ export default function FailureCapture({ onNavigateTab }) {
 
   // ── Load equipment + location nodes ──
   const buildFuncLocPath = useCallback((node, nodeMap) => {
-    const parts = [];
-    let current = node;
-    while (current) {
-      parts.unshift(current.code || current.name || '');
-      current = current.parent_node_id ? nodeMap[current.parent_node_id] : null;
-    }
-    return parts.join('-');
+    // If node already has sap_func_loc, use it directly
+    if (node.sap_func_loc) return node.sap_func_loc;
+    // Otherwise use the node's own code (already contains the full path in most seed data)
+    return node.code || node.name || '';
   }, []);
 
   useEffect(() => {
@@ -430,23 +455,45 @@ export default function FailureCapture({ onNavigateTab }) {
 
   // Filter equipment results
   useEffect(() => {
-    if (equipSearch.length === 0) { setEquipResults(allEquipment.slice(0, 20)); return; }
+    if (equipSearch.length === 0) {
+      if (!equipFromLocation) {
+        // If a location is selected, only show equipment under that location's code prefix
+        const locCode = selectedLoc?.code || selectedLoc?._funcLoc || '';
+        if (locCode) {
+          const locPrefix = locCode.toUpperCase();
+          const filtered = allEquipment.filter(n => (n.code || '').toUpperCase().startsWith(locPrefix));
+          setEquipResults(filtered.length > 0 ? filtered.slice(0, 30) : []);
+        } else {
+          setEquipResults(allEquipment.slice(0, 20));
+        }
+      }
+      return;
+    }
     if (equipSearch.length < 2) { setEquipResults([]); return; }
-    // Server-side search for large datasets
+    setEquipFromLocation(false);
     const timer = setTimeout(() => {
-      api.listNodes({ search: equipSearch, node_type: 'EQUIPMENT', limit: 15, plant_id: plant }).then(res => {
+      // Search scoped to selected location if available
+      const locCode = selectedLoc?.code || '';
+      const searchParams = { search: equipSearch, node_type: 'EQUIPMENT', limit: 20, plant_id: plant };
+      if (locCode) searchParams.parent_node_id_prefix = locCode;
+      api.listNodes(searchParams).then(res => {
         const nodes = Array.isArray(res) ? res : res?.items || [];
-        setEquipResults(nodes);
+        // Filter client-side by location prefix if server doesn't support it
+        const locPrefix = locCode.toUpperCase();
+        const filtered = locPrefix ? nodes.filter(n => (n.code || '').toUpperCase().startsWith(locPrefix)) : nodes;
+        setEquipResults(filtered.length > 0 ? filtered : nodes.slice(0, 15));
       }).catch(() => {
-        // Fallback to client-side
         const q = equipSearch.toLowerCase();
-        setEquipResults(allEquipment.filter(n =>
-          (n.tag || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
-        ).slice(0, 10));
+        const locPrefix = locCode.toUpperCase();
+        setEquipResults(allEquipment.filter(n => {
+          const matchesSearch = (n.tag || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q);
+          const matchesLoc = !locPrefix || (n.code || '').toUpperCase().startsWith(locPrefix);
+          return matchesSearch && matchesLoc;
+        }).slice(0, 15));
       });
     }, 300);
     return () => clearTimeout(timer);
-  }, [equipSearch, allEquipment]);
+  }, [equipSearch, allEquipment, selectedLoc]);
 
   // Filter location results
   useEffect(() => {
@@ -571,15 +618,16 @@ export default function FailureCapture({ onNavigateTab }) {
         const equipList = children.filter(n => n.node_type === 'EQUIPMENT');
         if (equipList.length > 0) {
           setEquipResults(equipList);
+          setEquipFromLocation(true);
           setShowEquipSearch(true);
         } else if (children.length > 0) {
-          // Children are systems/areas, go deeper to find equipment
           const childIds = children.map(c => c.node_id);
           Promise.all(childIds.slice(0, 10).map(id => api.listNodes({ parent_node_id: id, limit: 100, plant_id: plant }).catch(() => []))).then(results => {
-            const allNodes = results.flatMap(r => Array.isArray(r) ? r : r?.items || []);
-            const equips = allNodes.filter(n => n.node_type === 'EQUIPMENT');
+            const allEq = results.flatMap(r => Array.isArray(r) ? r : r?.items || []);
+            const equips = allEq.filter(n => n.node_type === 'EQUIPMENT');
             if (equips.length > 0) {
               setEquipResults(equips);
+              setEquipFromLocation(true);
               setShowEquipSearch(true);
             }
           });
@@ -613,26 +661,55 @@ export default function FailureCapture({ onNavigateTab }) {
   // ── Voice ──
   const handleVoice = async () => {
     if (isRecording) {
-      // Stop recording
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      if (recognitionRef.current) recognitionRef.current.stop();
       setIsRecording(false);
       return;
     }
 
     if (!SpeechRecognition) {
-      toast.error('Speech recognition not supported in this browser');
+      // Fallback: record audio and send to backend (Claude/Whisper transcription)
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+        const chunks = [];
+        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+          toast.info('Transcribing with AI...');
+          try {
+            const lang = document.documentElement.lang === 'en' ? 'en' : 'es';
+            const res = await api.transcribeAudio(blob, lang);
+            const text = res.text || res.transcription || '';
+            if (text) {
+              setF('whatHappens', text);
+              toast.success('Voice transcribed — AI analyzing...');
+              handleAiSuggest(text);
+            } else {
+              toast.error('No speech detected');
+            }
+          } catch (err) { toast.error('Transcription failed: ' + err.message); }
+        };
+        mediaRecorder.start();
+        setIsRecording(true);
+        recognitionRef.current = { stop: () => mediaRecorder.stop() };
+        toast.info('Recording... click again to stop');
+      } catch (e) {
+        toast.error('Microphone access denied');
+      }
       return;
     }
 
+    // Use native Speech Recognition
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    // Auto-detect language: Spanish by default for this app
+    recognition.lang = document.documentElement.lang === 'en' ? 'en-US' : 'es-ES';
     recognitionRef.current = recognition;
 
     let finalTranscript = '';
+    const baseText = (form.whatHappens || '').trim();
 
     recognition.onresult = (event) => {
       let interim = '';
@@ -643,34 +720,23 @@ export default function FailureCapture({ onNavigateTab }) {
           interim += event.results[i][0].transcript;
         }
       }
-      // Show interim in the textarea
-      const current = form.whatHappens || '';
-      const base = current.replace(/\[listening\.\.\.].*$/, '').trim();
-      if (interim) {
-        setF('whatHappens', (base ? base + ' ' : '') + finalTranscript + '[listening...] ' + interim);
-      } else if (finalTranscript) {
-        setF('whatHappens', (base ? base + ' ' : '') + finalTranscript.trim());
-      }
+      // Live update textarea with what's being said
+      const newText = (finalTranscript + interim).trim();
+      if (newText) setF('whatHappens', baseText ? baseText + ' ' + newText : newText);
     };
 
     recognition.onerror = (event) => {
-      console.error('Speech error:', event.error);
-      if (event.error !== 'no-speech') {
-        toast.error('Speech error: ' + event.error);
-      }
+      if (event.error !== 'no-speech') toast.error('Speech error: ' + event.error);
       setIsRecording(false);
     };
 
     recognition.onend = () => {
       setIsRecording(false);
+      const fullText = (baseText ? baseText + ' ' : '') + finalTranscript.trim();
       if (finalTranscript.trim()) {
-        // Clean up the textarea
-        const current = form.whatHappens || '';
-        const cleaned = current.replace(/\[listening\.\.\.].*$/, '').trim();
-        setF('whatHappens', cleaned);
-        toast.success('Voice captured — AI analyzing your description...');
-        // SF-41/214: Auto-trigger AI to extract structured fields from voice
-        handleAiSuggest(cleaned);
+        setF('whatHappens', fullText);
+        toast.success('Voice captured — AI analyzing...');
+        handleAiSuggest(fullText);
       }
     };
 
@@ -1573,11 +1639,11 @@ export default function FailureCapture({ onNavigateTab }) {
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
                     {locResults.map((node, i) => (
                       <button key={node.node_id || i} onClick={() => selectLocation(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{node.node_type}</span>
-                          <span className="text-sm font-bold text-gray-900">{node._funcLoc}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{node.node_type}</span>
+                          <span className="text-sm font-bold text-gray-900">{node.name || node._funcLoc}</span>
                         </div>
-                        <div className="text-xs text-gray-500">{node.name}</div>
+                        <div className="text-xs text-gray-400 pl-14">{node._funcLoc}</div>
                       </button>
                     ))}
                     <button type="button" onClick={openBrowseModal}
@@ -1603,7 +1669,7 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
             {selectedEquip && selectedLoc && (
               <div className="mt-2 flex items-center gap-1 text-xs text-emerald-600">
-                <CheckCircle className="w-3 h-3" /> Ubicacion auto-detectada desde {form.whereTag}
+                <CheckCircle className="w-3 h-3" /> Ubicacion auto-detectada desde {selectedEquip?.name || form.whereTag}
               </div>
             )}
           </div>
@@ -1639,11 +1705,23 @@ export default function FailureCapture({ onNavigateTab }) {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input type="text" value={equipSearch}
                     onChange={e => { setEquipSearch(e.target.value); setShowEquipSearch(true); }}
-                    onFocus={() => { setShowEquipSearch(true); if (equipSearch.length < 2) setEquipResults(allEquipment.slice(0, 10)); }} onBlur={() => setTimeout(() => setShowEquipSearch(false), 200)}
+                    onFocus={() => {
+                      setShowEquipSearch(true);
+                      if (equipSearch.length < 2) {
+                        const locCode = (selectedLoc?.code || '').toUpperCase();
+                        const filtered = locCode ? allEquipment.filter(n => (n.code || '').toUpperCase().startsWith(locCode)) : allEquipment;
+                        setEquipResults(filtered.slice(0, 20));
+                      }
+                    }} onBlur={() => setTimeout(() => setShowEquipSearch(false), 400)}
                     placeholder="Search by TAG, code or equipment name..."
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                 </div>
+                {showEquipSearch && equipResults.length === 0 && selectedLoc && equipSearch.length < 2 && (
+                  <div className="mt-1 p-3 text-xs text-center rounded-lg bg-gray-50 text-gray-500 border border-gray-200">
+                    No equipment found under {selectedLoc.name || selectedLoc.code}
+                  </div>
+                )}
                 {equipSearch.length >= 2 && equipResults.length === 0 && (
                   <button onClick={() => selectEquip({ tag: equipSearch, name: `${equipSearch} (No catalogado)` })}
                     className="w-full mt-1 p-2 text-xs text-left rounded-lg bg-yellow-50 text-yellow-800 border border-yellow-200">
@@ -1654,8 +1732,8 @@ export default function FailureCapture({ onNavigateTab }) {
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
                     {equipResults.map((node, i) => (
                       <button key={node.node_id || i} onClick={() => selectEquip(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
-                        <div className="text-sm font-bold text-gray-900">{node.tag || node.code}</div>
-                        <div className="text-xs text-gray-500">{node.name}</div>
+                        <div className="text-sm font-bold text-gray-900">{node.name || node.tag || node.code}</div>
+                        <div className="text-xs text-gray-500">{node.tag && !/^\d{8,}$/.test(node.tag) ? node.tag : node.code || node.tag}</div>
                       </button>
                     ))}
                     <button type="button" onClick={openBrowseModal}
@@ -1668,8 +1746,8 @@ export default function FailureCapture({ onNavigateTab }) {
             ) : (
               <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border-2 border-emerald-500">
                 <div>
-                  <div className="text-sm font-bold text-emerald-700">{form.whereTag}</div>
-                  <div className="text-xs text-emerald-600">{selectedEquip.name}</div>
+                  <div className="text-sm font-bold text-emerald-700">{selectedEquip.name || form.whereTag}</div>
+                  <div className="text-xs text-emerald-600">{!/^\d{8,}$/.test(form.whereTag) ? form.whereTag : (selectedEquip.code || form.whereTag)}</div>
                 </div>
                 <button onClick={() => { setSelectedEquip(null); setF('whereTag', ''); clearLocation(); }}>
                   <X className="w-4 h-4 text-emerald-600" />

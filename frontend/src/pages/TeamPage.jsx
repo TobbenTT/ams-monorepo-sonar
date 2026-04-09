@@ -49,6 +49,8 @@ export default function TeamPage() {
   // Profile dialog
   const [profileMember, setProfileMember] = useState(null);
   const [editingRole, setEditingRole] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editForm, setEditForm] = useState({ username: '', full_name: '', email: '', plant_id: '' });
   const [newRole, setNewRole] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -107,7 +109,30 @@ export default function TeamPage() {
   const openProfile = (member) => {
     setProfileMember(member);
     setEditingRole(false);
+    setEditingProfile(false);
     setNewRole(member.role);
+    setEditForm({
+      username: member.username || '',
+      full_name: member.full_name || '',
+      email: member.email || '',
+      plant_id: member.plant_id || '',
+    });
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profileMember) return;
+    try {
+      setSaving(true);
+      const updated = await api.authUpdateUser(profileMember.user_id, editForm);
+      setProfileMember({ ...profileMember, ...updated });
+      setEditingProfile(false);
+      await fetchTeam();
+      toast.success('Profile updated');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleChangeRole = async () => {
@@ -383,73 +408,139 @@ export default function TeamPage() {
 
           {profileMember && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-gray-500">{t('team.profileDialog.username')}</p>
-                  <p className="font-medium">{profileMember.username}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">{t('team.profileDialog.email')}</p>
-                  <p className="font-medium text-emerald-600">{profileMember.email}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">{t('team.profileDialog.plant')}</p>
-                  <p className="font-medium">{profileMember.plant_id || t('team.profileDialog.notAssigned')}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">{t('team.profileDialog.memberSince')}</p>
-                  <p className="font-medium">{formatDate(profileMember.created_at)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">{t('team.profileDialog.lastLogin')}</p>
-                  <p className="font-medium">{formatDate(profileMember.last_login)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">{t('team.profileDialog.status')}</p>
-                  <Badge className={profileMember.is_active
-                    ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }>
-                    {profileMember.is_active ? t('common.active') : t('common.inactive')}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Role editing */}
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-semibold text-gray-700">{t('team.profileDialog.role')}</p>
-                  {!editingRole && (
-                    <Button size="sm" variant="ghost" onClick={() => { setEditingRole(true); setNewRole(profileMember.role); }}>
-                      <Pencil className="w-3 h-3 mr-1" /> {t('team.profileDialog.editRole')}
-                    </Button>
-                  )}
-                </div>
-                {editingRole ? (
-                  <div className="flex items-center gap-2">
+              {editingProfile ? (
+                /* ── Edit Mode ── */
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">{t('team.profileDialog.username')}</label>
+                    <input
+                      className="w-full border rounded px-3 py-2 text-sm mt-1"
+                      value={editForm.username}
+                      onChange={e => setEditForm({ ...editForm, username: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">{t('team.addDialog.fullName') || 'Full Name'}</label>
+                    <input
+                      className="w-full border rounded px-3 py-2 text-sm mt-1"
+                      value={editForm.full_name}
+                      onChange={e => setEditForm({ ...editForm, full_name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">{t('team.profileDialog.email')}</label>
+                    <input
+                      type="email"
+                      className="w-full border rounded px-3 py-2 text-sm mt-1"
+                      value={editForm.email}
+                      onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">{t('team.profileDialog.plant')}</label>
                     <select
-                      value={newRole}
-                      onChange={(e) => setNewRole(e.target.value)}
-                      className="flex-1 border rounded px-3 py-1.5 text-sm"
+                      className="w-full border rounded px-3 py-2 text-sm mt-1"
+                      value={editForm.plant_id}
+                      onChange={e => setEditForm({ ...editForm, plant_id: e.target.value })}
                     >
-                      {ROLES.map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
+                      <option value="">Select plant...</option>
+                      {(plants || []).map(p => (
+                        <option key={p.plant_id} value={p.plant_id}>{p.plant_id} — {p.name}</option>
+                      ))}
                     </select>
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handleChangeRole} disabled={saving}>
-                      {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 flex-1" onClick={handleSaveProfile} disabled={saving}>
+                      {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                      {lang === 'es' ? 'Guardar' : 'Save'}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingRole(false)}>
-                      <X className="w-3 h-3" />
+                    <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditingProfile(false)}>
+                      <X className="w-3 h-3 mr-1" /> {lang === 'es' ? 'Cancelar' : 'Cancel'}
                     </Button>
                   </div>
-                ) : (
-                  <Badge className={`${ROLE_COLORS[profileMember.role] || ''} text-sm`}>
-                    {roleLabel(profileMember.role)}
-                  </Badge>
-                )}
-              </div>
+                </div>
+              ) : (
+                /* ── View Mode ── */
+                <>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-500">{t('team.profileDialog.username')}</p>
+                      <p className="font-medium">{profileMember.username}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">{t('team.profileDialog.email')}</p>
+                      <p className="font-medium text-emerald-600">{profileMember.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">{t('team.profileDialog.plant')}</p>
+                      <p className="font-medium">{profileMember.plant_id || t('team.profileDialog.notAssigned')}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">{t('team.profileDialog.memberSince')}</p>
+                      <p className="font-medium">{formatDate(profileMember.created_at)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">{t('team.profileDialog.lastLogin')}</p>
+                      <p className="font-medium">{formatDate(profileMember.last_login)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">{t('team.profileDialog.status')}</p>
+                      <Badge className={profileMember.is_active
+                        ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }>
+                        {profileMember.is_active ? t('common.active') : t('common.inactive')}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Role editing */}
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-semibold text-gray-700">{t('team.profileDialog.role')}</p>
+                      {!editingRole && (
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingRole(true); setNewRole(profileMember.role); }}>
+                          <Pencil className="w-3 h-3 mr-1" /> {t('team.profileDialog.editRole')}
+                        </Button>
+                      )}
+                    </div>
+                    {editingRole ? (
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={newRole}
+                          onChange={(e) => setNewRole(e.target.value)}
+                          className="flex-1 border rounded px-3 py-1.5 text-sm"
+                        >
+                          {ROLES.map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
+                        </select>
+                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handleChangeRole} disabled={saving}>
+                          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingRole(false)}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Badge className={`${ROLE_COLORS[profileMember.role] || ''} text-sm`}>
+                        {roleLabel(profileMember.role)}
+                      </Badge>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
           <DialogFooter className="flex gap-2">
+            {!editingProfile && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                onClick={() => setEditingProfile(true)}
+              >
+                <Pencil className="w-3 h-3 mr-1" /> {lang === 'es' ? 'Editar Perfil' : 'Edit Profile'}
+              </Button>
+            )}
             <Button
               size="sm"
               variant={profileMember?.is_active ? 'outline' : 'default'}

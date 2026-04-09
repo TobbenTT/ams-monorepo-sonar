@@ -140,11 +140,83 @@ class TranscriptionService:
         )
 
 
-def get_transcription_service() -> TranscriptionService:
-    """Factory: creates TranscriptionService from app settings.
+class ClaudeTranscriptionService:
+    """Voice-to-text transcription via Anthropic Claude API (audio input support)."""
 
-    Raises TranscriptionNotConfiguredError if OPENAI_API_KEY is not set,
-    allowing callers to degrade gracefully.
-    """
+    def __init__(self, api_key: str) -> None:
+        if not api_key:
+            raise TranscriptionNotConfiguredError("ANTHROPIC_API_KEY is not configured.")
+        self._api_key = api_key
+
+    def transcribe(
+        self,
+        audio_bytes: bytes,
+        mime_type: str,
+        language_hint: Optional[str] = None,
+        filename: str = "capture.webm",
+    ) -> AudioTranscriptionResult:
+        if mime_type not in SUPPORTED_MIME_TYPES:
+            raise UnsupportedAudioFormatError(f"Unsupported: {mime_type}")
+
+        import base64
+        import anthropic
+
+        audio_b64 = base64.b64encode(audio_bytes).decode()
+        # Map mime types for Claude
+        claude_media = mime_type
+        if mime_type == "audio/x-wav":
+            claude_media = "audio/wav"
+
+        lang_name = {"es": "Spanish", "en": "English", "fr": "French", "ar": "Arabic"}.get(
+            (language_hint or "es").lower(), "Spanish"
+        )
+
+        client = anthropic.Anthropic(api_key=self._api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "audio",
+                        "source": {"type": "base64", "media_type": claude_media, "data": audio_b64},
+                    },
+                    {
+                        "type": "text",
+                        "text": f"Transcribe this audio recording exactly as spoken. The speaker is a maintenance technician describing an equipment failure in {lang_name}. Return ONLY the transcription text, nothing else.",
+                    },
+                ],
+            }],
+        )
+
+        text = response.content[0].text.strip()
+        logger.info("Claude transcription: %d chars, lang=%s", len(text), language_hint or "es")
+
+        return AudioTranscriptionResult(
+            text=text,
+            language_detected=language_hint or "es",
+            duration_seconds=None,
+            confidence=0.9,
+        )
+
+
+def get_transcription_service():
+    """Factory: tries OpenAI Whisper first, falls back to Claude for transcription."""
     from api.config import settings
-    return TranscriptionService(api_key=settings.OPENAI_API_KEY, model=settings.WHISPER_MODEL)
+
+    # Try OpenAI Whisper first
+    if getattr(settings, 'OPENAI_API_KEY', None):
+        try:
+            return TranscriptionService(api_key=settings.OPENAI_API_KEY, model=settings.WHISPER_MODEL)
+        except Exception:
+            pass
+
+    # Fallback to Claude
+    anthropic_key = getattr(settings, 'ANTHROPIC_API_KEY', None) or __import__('os').environ.get('ANTHROPIC_API_KEY', '')
+    if anthropic_key:
+        return ClaudeTranscriptionService(api_key=anthropic_key)
+
+    raise TranscriptionNotConfiguredError(
+        "Neither OPENAI_API_KEY nor ANTHROPIC_API_KEY configured. Set one to enable voice transcription."
+    )

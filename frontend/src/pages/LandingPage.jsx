@@ -4,7 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import {
     Shield, Zap, BarChart3, Wrench, Users, Globe, Brain, CheckCircle2,
     ArrowRight, Play, Clock, Target, Gauge, TrendingUp, Layers, Bot,
-    FileText, Calendar, AlertTriangle, Smartphone, Languages
+    FileText, Calendar, AlertTriangle, Smartphone, Languages,
+    ScrollText, Bell, FileDown, Activity,
 } from 'lucide-react';
 
 const T = {
@@ -12,75 +13,69 @@ const T = {
     badge: 'AI-Powered Maintenance Management',
     heroTitle1: 'Transform Your',
     heroTitle2: 'Maintenance Operations',
-    heroDesc: 'Enterprise-grade asset management platform with 33 AI agents, predictive analytics, and end-to-end maintenance workflows — from work request to closure.',
+    heroDesc: 'Enterprise-grade asset management platform with 33 AI agents, predictive analytics, email alerts, audit trail, and end-to-end maintenance workflows — from work request to closure.',
     startDemo: 'Start Demo',
     seeFeatures: 'See Features',
     apiEndpoints: 'API Endpoints', modules: 'Modules', aiAgents: 'AI Agents', userRoles: 'User Roles', languages: 'Languages', dataModels: 'Data Models',
+    statusPage: 'Status',
     everythingTitle: 'Everything You Need',
-    everythingDesc: 'A complete maintenance management ecosystem — from AI-powered diagnostics to SAP integration.',
+    everythingDesc: 'A complete maintenance management ecosystem — from AI-powered diagnostics to SAP integration, audit compliance, and PDF reporting.',
     f1t: 'Work Management', f1d: 'Full lifecycle: Work Requests → Planning → Scheduling → Execution → Closure with SAP integration.',
     f2t: 'AI Agents (CORTEX)', f2d: '33 specialized agents: Equipment Doctor, Predictive Health, Smart Backlog, RCM Advisor, Safety Checklists, and more.',
     f3t: 'Analytics & KPIs', f3d: 'Real-time MTBF, MTTR, OEE, Availability. Executive and tactical dashboards with trend analysis and alerts.',
-    f4t: 'FMEA / RCM', f4d: 'Failure Mode Analysis, RCM decision logic, criticality assessment, FMECA worksheets — ISO 14224 aligned.',
+    f4t: 'Audit & Compliance', f4d: 'Full activity log with user tracking, date filtering, detail inspection, and CSV export. Enterprise audit trail.',
     f5t: 'Smart Scheduling', f5d: 'AI priority-based distribution. Gantt visualization, HH balance by specialty, material tracking.',
     f6t: 'Mobile PWA', f6d: 'Field technician app: create WRs, execute tasks, capture photos. Works offline with automatic sync.',
+    f7t: 'Email Notifications', f7d: 'SMTP-based alerts for WR approvals, WO status changes, KPI thresholds, and critical failures.',
+    f8t: 'Reports & PDF Export', f8d: 'Weekly, monthly, and operational reports. Export as XLSX, CSV, or PDF with professional formatting.',
+    f9t: 'FMEA / RCM', f9d: 'Failure Mode Analysis, RCM decision logic, criticality assessment, FMECA worksheets — ISO 14224 aligned.',
     impactTitle: 'Proven Impact', impactDesc: 'Typical results from implementing AMS in industrial maintenance operations.',
     b1: 'Reduction in Unplanned Downtime', b2: 'Improvement in Schedule Adherence', b3: 'Faster Work Order Processing', b4: 'Faster Root Cause Analysis',
     platformTitle: 'Enterprise-Ready Platform', platformDesc: 'Built for scale, security, and reliability.',
-    secTitle: 'Security', secItems: ['JWT + RBAC auth', 'Rate limiting', 'CSP + HSTS headers', 'Encrypted passwords'],
+    secTitle: 'Security', secItems: ['JWT + RBAC (6 roles)', 'Rate limiting & CSP', 'Full audit trail', 'SSL/HTTPS enforced'],
     mpTitle: 'Multi-Plant', mpItems: ['Unlimited plants', 'Per-plant data isolation', 'Cross-plant analytics', 'Plant-level roles'],
     perfTitle: 'Performance', perfItems: ['Gzip compression', 'Asset caching (1yr)', 'Lazy-loaded modules', 'Sub-second API'],
-    scaleTitle: 'Scalable', scaleItems: ['Docker Compose', 'PostgreSQL ready', 'Redis-compatible', 'Horizontal scaling'],
+    scaleTitle: 'Operations', scaleItems: ['Docker Compose', 'Email notifications (SMTP)', 'Health status page', 'PDF & CSV exports'],
     ctaTitle: 'Ready to Transform Your Operations?', ctaDesc: 'Start with a free demo. No credit card required.',
     ctaBtn: 'Access Platform',
-    signIn: 'Sign In', features: 'Features', benefits: 'Benefits', platform: 'Platform',
+    signIn: 'Sign In', features: 'Features', benefits: 'Benefits', platform: 'Platform', docs: 'User Guide',
   },
   es: {
     badge: 'Gestion de Mantenimiento con IA',
     heroTitle1: 'Transforma tus',
     heroTitle2: 'Operaciones de Mantenimiento',
-    heroDesc: 'Plataforma empresarial de gestion de activos con 33 agentes de IA, analitica predictiva y flujos de trabajo completos — desde la solicitud hasta el cierre.',
+    heroDesc: 'Plataforma empresarial de gestion de activos con 33 agentes de IA, analitica predictiva, alertas por email, auditoria completa y flujos de trabajo — desde la solicitud hasta el cierre.',
     startDemo: 'Ver Demo',
     seeFeatures: 'Ver Funciones',
     apiEndpoints: 'Endpoints API', modules: 'Modulos', aiAgents: 'Agentes IA', userRoles: 'Roles', languages: 'Idiomas', dataModels: 'Modelos de Datos',
+    statusPage: 'Estado',
     everythingTitle: 'Todo lo que Necesitas',
-    everythingDesc: 'Un ecosistema completo de gestion de mantenimiento — desde diagnosticos con IA hasta integracion SAP.',
+    everythingDesc: 'Un ecosistema completo de gestion de mantenimiento — desde diagnosticos con IA hasta integracion SAP, compliance de auditoria y reportes PDF.',
     f1t: 'Gestion de Trabajo', f1d: 'Ciclo completo: Avisos → Planificacion → Programacion → Ejecucion → Cierre con integracion SAP.',
     f2t: 'Agentes IA (CORTEX)', f2d: '33 agentes especializados: Doctor de Equipos, Salud Predictiva, Backlog Inteligente, Asesor RCM, Checklists de Seguridad.',
     f3t: 'Analitica y KPIs', f3d: 'MTBF, MTTR, OEE, Disponibilidad en tiempo real. Dashboards ejecutivos y tacticos con analisis de tendencias.',
-    f4t: 'FMEA / RCM', f4d: 'Analisis de Modos de Falla, logica RCM, evaluacion de criticidad, hojas FMECA — alineado con ISO 14224.',
+    f4t: 'Auditoria y Compliance', f4d: 'Registro completo de actividad con seguimiento de usuarios, filtros por fecha, detalle expandible y exportacion CSV.',
     f5t: 'Programacion Inteligente', f5d: 'Distribucion por prioridad con IA. Gantt visual, balance HH por especialidad, seguimiento de materiales.',
     f6t: 'App Movil PWA', f6d: 'App para tecnicos en campo: crear avisos, ejecutar tareas, capturar fotos. Funciona offline con sincronizacion automatica.',
+    f7t: 'Notificaciones Email', f7d: 'Alertas SMTP para aprobaciones de WR, cambios de estado de OT, umbrales de KPI y fallas criticas.',
+    f8t: 'Reportes y PDF', f8d: 'Reportes semanales, mensuales y operacionales. Exporta como XLSX, CSV o PDF con formato profesional.',
+    f9t: 'FMEA / RCM', f9d: 'Analisis de Modos de Falla, logica RCM, evaluacion de criticidad, hojas FMECA — alineado con ISO 14224.',
     impactTitle: 'Impacto Comprobado', impactDesc: 'Resultados tipicos al implementar AMS en operaciones de mantenimiento industrial.',
     b1: 'Reduccion de Paradas No Planificadas', b2: 'Mejora en Adherencia al Programa', b3: 'Procesamiento de OT mas Rapido', b4: 'Analisis de Causa Raiz mas Rapido',
     platformTitle: 'Plataforma Empresarial', platformDesc: 'Construida para escala, seguridad y confiabilidad.',
-    secTitle: 'Seguridad', secItems: ['Autenticacion JWT + RBAC', 'Limitacion de tasa', 'Headers CSP + HSTS', 'Contrasenas encriptadas'],
+    secTitle: 'Seguridad', secItems: ['JWT + RBAC (6 roles)', 'Rate limiting y CSP', 'Auditoria completa', 'SSL/HTTPS forzado'],
     mpTitle: 'Multi-Planta', mpItems: ['Plantas ilimitadas', 'Datos aislados por planta', 'Analitica cross-planta', 'Roles por planta'],
     perfTitle: 'Rendimiento', perfItems: ['Compresion Gzip', 'Cache de assets (1 ano)', 'Modulos lazy-load', 'API sub-segundo'],
-    scaleTitle: 'Escalable', scaleItems: ['Docker Compose', 'PostgreSQL ready', 'Compatible con Redis', 'Escalamiento horizontal'],
+    scaleTitle: 'Operaciones', scaleItems: ['Docker Compose', 'Notificaciones email (SMTP)', 'Pagina de estado', 'Exportacion PDF y CSV'],
     ctaTitle: '¿Listo para Transformar tus Operaciones?', ctaDesc: 'Comienza con una demo gratuita. Sin tarjeta de credito.',
     ctaBtn: 'Acceder a la Plataforma',
-    signIn: 'Iniciar Sesion', features: 'Funciones', benefits: 'Beneficios', platform: 'Plataforma',
+    signIn: 'Iniciar Sesion', features: 'Funciones', benefits: 'Beneficios', platform: 'Plataforma', docs: 'Manual de Usuario',
   },
 };
 
-const FEATURES = [
-    { icon: Wrench, title: 'Work Management', desc: 'Full lifecycle: Work Requests → Planning → Scheduling → Execution → Closure. SAP-integrated workflows.', color: 'from-emerald-500 to-teal-500' },
-    { icon: Brain, title: 'AI Agents (CORTEX)', desc: '33 specialized agents for predictive maintenance, RCA, equipment diagnostics, and autonomous scheduling.', color: 'from-purple-500 to-indigo-500' },
-    { icon: BarChart3, title: 'Analytics & KPIs', desc: 'Real-time MTBF, MTTR, OEE, availability tracking. Executive and tactical views with trend analysis.', color: 'from-blue-500 to-cyan-500' },
-    { icon: Shield, title: 'FMEA / RCM', desc: 'Failure Mode Analysis, RCM decision logic, criticality assessment, and FMECA worksheets.', color: 'from-red-500 to-orange-500' },
-    { icon: Calendar, title: 'Smart Scheduling', desc: 'AI-powered priority-based distribution. Gantt visualization, HH balance, material tracking.', color: 'from-amber-500 to-yellow-500' },
-    { icon: Smartphone, title: 'Mobile Field App', desc: 'PWA for technicians: create WRs, execute tasks, capture photos — works offline.', color: 'from-pink-500 to-rose-500' },
-];
+// Not used — features are now inline with translations
 
-const STATS = [
-    { value: '404', label: 'API Endpoints', icon: Layers },
-    { value: '49+', label: 'Modules', icon: Target },
-    { value: '33', label: 'AI Agents', icon: Bot },
-    { value: '6', label: 'User Roles', icon: Users },
-    { value: '3', label: 'Languages', icon: Globe },
-    { value: '60+', label: 'Data Models', icon: FileText },
-];
+// Not used — stats are inline with translations
 
 const BENEFITS = [
     { metric: '40%', label: 'Reduction in unplanned downtime', icon: AlertTriangle },
@@ -111,6 +106,8 @@ export default function LandingPage() {
                         <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.features}</a>
                         <a href="#benefits" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.benefits}</a>
                         <a href="#platform" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.platform}</a>
+                        <a href={lang === 'es' ? '/manual-usuario.html' : '/user-guide.html'} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors hidden sm:block">{t.docs}</a>
+                        <a href="/status" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.statusPage}</a>
                         {/* Language toggle */}
                         <button
                             onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
@@ -167,7 +164,7 @@ export default function LandingPage() {
                             { value: '49+', label: t.modules, icon: Target },
                             { value: '33', label: t.aiAgents, icon: Bot },
                             { value: '6', label: t.userRoles, icon: Users },
-                            { value: '3', label: t.languages, icon: Globe },
+                            { value: '2', label: t.languages, icon: Globe },
                             { value: '60+', label: t.dataModels, icon: FileText },
                         ].map(s => (
                             <div key={s.label} className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
@@ -192,9 +189,12 @@ export default function LandingPage() {
                             { icon: Wrench, title: t.f1t, desc: t.f1d, color: 'from-emerald-500 to-teal-500' },
                             { icon: Brain, title: t.f2t, desc: t.f2d, color: 'from-purple-500 to-indigo-500' },
                             { icon: BarChart3, title: t.f3t, desc: t.f3d, color: 'from-blue-500 to-cyan-500' },
-                            { icon: Shield, title: t.f4t, desc: t.f4d, color: 'from-red-500 to-orange-500' },
+                            { icon: ScrollText, title: t.f4t, desc: t.f4d, color: 'from-slate-500 to-zinc-500' },
                             { icon: Calendar, title: t.f5t, desc: t.f5d, color: 'from-amber-500 to-yellow-500' },
                             { icon: Smartphone, title: t.f6t, desc: t.f6d, color: 'from-pink-500 to-rose-500' },
+                            { icon: Bell, title: t.f7t, desc: t.f7d, color: 'from-orange-500 to-red-500' },
+                            { icon: FileDown, title: t.f8t, desc: t.f8d, color: 'from-teal-500 to-cyan-500' },
+                            { icon: Shield, title: t.f9t, desc: t.f9d, color: 'from-red-500 to-orange-500' },
                         ].map(f => (
                             <div key={f.title} className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:border-gray-200 transition-all group">
                                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>

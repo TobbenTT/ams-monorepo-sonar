@@ -3,7 +3,10 @@
 import logging
 import os
 import time
+from datetime import datetime
 from contextlib import asynccontextmanager
+
+_app_start = datetime.now()
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -266,11 +269,28 @@ def create_app() -> FastAPI:
         except Exception as e:
             logger.error("Health check DB failure: %s", e)
             db_status = "error"
+        # Count key entities
+        counts = {}
+        if db_status == "ok":
+            try:
+                with SessionLocal() as db:
+                    for tbl in ["work_requests", "managed_work_orders", "hierarchy_nodes", "users"]:
+                        r = db.execute(text(f'SELECT COUNT(*) FROM "{tbl}"'))
+                        counts[tbl] = r.scalar() or 0
+            except:
+                pass
+
+        import os as _os
+        ai_configured = bool(_os.environ.get("ANTHROPIC_API_KEY"))
+
         return {
             "status": "ok" if db_status == "ok" else "degraded",
-            "version": "1.0.0",
+            "version": "2.0.0",
             "database": db_status,
             "build": _build_hash,
+            "ai_available": ai_configured,
+            "uptime_seconds": int((datetime.now() - _app_start).total_seconds()) if '_app_start' in dir() else None,
+            "counts": counts,
         }
 
     return app

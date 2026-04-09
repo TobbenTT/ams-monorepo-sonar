@@ -152,7 +152,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
 
   // Auto-calculate costs from operations + materials
-  const LABOR_RATE = 50; // $/hr default
+  const LABOR_RATE = (() => { try { return JSON.parse(localStorage.getItem('ocp_settings') || '{}').laborRate || 50; } catch { return 50; } })();
   const calculatedCosts = useMemo(() => {
     const laborHours = editOps.reduce((sum, op) => sum + ((op.quantity || 1) * (op.hours || op.duration || 0)), 0);
     const laborCost = laborHours * LABOR_RATE;

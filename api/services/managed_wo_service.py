@@ -327,7 +327,7 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
 
     # Update WR status so it can't create duplicate WOs
     if result:
-        wr.status = "EN_EJECUCION"
+        wr.status = "OT_CREADA"
         db.commit()
 
     return result

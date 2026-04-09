@@ -1586,7 +1586,7 @@ export default function FailureCapture({ onNavigateTab }) {
           {/* 3. Equipment Condition + Priority */}
           <div className="grid grid-cols-2 gap-4">
             <div className="border rounded-xl p-4">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Equipment Condition</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Required Equipment Condition</label>
               <div className="grid grid-cols-2 gap-2">
                 {PLANT_CONDITIONS.map(opt => (
                   <button key={opt.value}

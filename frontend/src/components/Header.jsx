@@ -316,20 +316,7 @@ export default function Header({
                         </Select>
                     </div>
 
-                    {/* Area */}
-                    <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-gray-500" />
-                        <Select value={selectedArea} onValueChange={onAreaChange}>
-                            <SelectTrigger className="w-44 h-9 text-sm border-gray-300">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {dynamicAreas.map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {/* Area filter removed per client feedback */}
                 </div>
             )}
 

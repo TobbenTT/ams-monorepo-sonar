@@ -536,7 +536,7 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Wrench} label="Activity Class" value={item.activity_class} />
           )}
           {item.plant_condition && (
-            <DetailCard icon={Zap} label="Equipment Condition" value={item.plant_condition} />
+            <DetailCard icon={Zap} label="Required Condition" value={item.plant_condition} />
           )}
           {item.created_at && (
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
@@ -671,12 +671,12 @@ ${materials.length ? `<div class="section">
         {/* SAP Aviso fields */}
         {(item.reported_by || item.circumstances || item.support_equipment) && (
           <div className="px-6 pb-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Datos del Aviso (SAP)</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Notification Details</p>
             <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
               {item.reported_by && (
                 <div className="flex items-center gap-2">
                   <User size={14} className="text-muted-foreground flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground">Notification Author:</span>
+                  <span className="text-xs text-muted-foreground">Notificated by:</span>
                   <span className="text-sm font-medium text-foreground">{item.reported_by}</span>
                 </div>
               )}
@@ -893,15 +893,7 @@ ${materials.length ? `<div class="section">
                 </button>
               </>
             )}
-            {canStart && (
-              <button
-                onClick={() => { onStart(item.id); onClose(); }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
-              >
-                <Wrench size={16} />
-                Start Work
-              </button>
-            )}
+            {/* Start Work button removed per client feedback */}
             {canComplete && (
               <button
                 onClick={() => { onComplete(item.id); onClose(); }}

@@ -423,7 +423,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                         name: 'Weekly Summary',
                         headers: ['Metric', 'Value'],
                         rows: [
-                          ['Report', 'AMS Platform — Weekly Operational Report'],
+                          ['Report', 'MAGEAM — Weekly Operational Report'],
                           ['Period', 'Last ' + (s.period_days || 7) + ' days'],
                           ['Generated', new Date().toLocaleString('en-US')],
                           ['', ''],

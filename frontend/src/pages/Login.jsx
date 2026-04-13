@@ -118,7 +118,7 @@ export default function Login() {
                             <img src="/AMS_LOGO.png" alt="AMS" className="w-14 h-14 object-contain" />
                         </div>
                         <div>
-                            <div className="text-xl font-bold text-foreground">AMS Platform</div>
+                            <div className="text-xl font-bold text-foreground">MAGEAM</div>
                             <div className="text-xs text-muted-foreground">Industrial Platform</div>
                         </div>
                     </div>

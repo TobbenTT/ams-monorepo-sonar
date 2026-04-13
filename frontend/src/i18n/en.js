@@ -112,7 +112,7 @@ export default {
         execution: 'Execution',
         postMaintenance: 'Post Maintenance',
         profile: 'Profile',
-        brandTitle: 'AMS Platform',
+        brandTitle: 'MAGEAM',
         brandSubtitle: 'Reliability Platform',
     },
 
@@ -144,7 +144,7 @@ export default {
 
     // ─── Login ─────────────────────────────────────────────
     login: {
-        title: 'AMS Platform',
+        title: 'MAGEAM',
         subtitle: 'AI-Powered Platform',
         headline: 'Intelligent Industrial\nMaintenance Management',
         description: 'Comprehensive platform for asset management, maintenance planning and reliability analysis powered by artificial intelligence.',
@@ -156,7 +156,7 @@ export default {
 
     // ─── Dashboard ─────────────────────────────────────────
     dashboard: {
-        title: 'AMS Platform',
+        title: 'MAGEAM',
         subtitle: 'Intelligent Maintenance Management Platform',
         adherence: 'Schedule Adherence',
         misclassification: 'P1 Misclassification',
@@ -2292,7 +2292,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         },
 
         // Advanced Tactical Drill-Down
-        advancedTacticalDrillDown: 'AMS Platform - Advanced Tactical Drill-Down',
+        advancedTacticalDrillDown: 'MAGEAM - Advanced Tactical Drill-Down',
 
         // AI Overview
         aiOverview: 'AI Overview',

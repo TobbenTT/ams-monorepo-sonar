@@ -49,7 +49,7 @@ export default function StatusPage() {
 
         {/* Header */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">AMS Platform Status</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">MAGEAM Status</h1>
           <p className="text-gray-500">Real-time system health</p>
         </div>
 
@@ -159,7 +159,7 @@ export default function StatusPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-10">
-          AMS Platform &middot; Value Strategy Consulting
+          MAGEAM &middot; Value Strategy Consulting
         </p>
       </div>
     </div>

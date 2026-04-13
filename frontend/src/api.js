@@ -1,4 +1,4 @@
-/* API Client — AMS Platform MVP */
+/* API Client — MAGEAM MVP */
 const BASE = '/api/v1';
 
 /** Get currently selected plant from localStorage */

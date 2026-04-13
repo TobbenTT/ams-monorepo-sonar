@@ -98,8 +98,8 @@ export default function LandingPage() {
             <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-lg border-b border-gray-100 z-50">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src="/AMS_LOGO.png" alt="AMS" className="w-8 h-8 rounded-lg" />
-                        <span className="text-xl font-bold text-gray-900">AMS Platform</span>
+                        <img src="/MAGEAM_LOGO.png" alt="MAGEAM" className="w-8 h-8 rounded-lg" />
+                        <span className="text-xl font-bold text-gray-900">MAGEAM</span>
                         <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Enterprise</span>
                     </div>
                     <div className="flex items-center gap-4">
@@ -276,7 +276,7 @@ export default function LandingPage() {
                         {t.ctaBtn} <ArrowRight className="w-5 h-5" />
                     </button>
                     <p className="text-sm text-gray-400 mt-6">
-                        AMS Platform v2.0 — Value Strategy Consulting
+                        MAGEAM v2.0 — Value Strategy Consulting
                     </p>
                 </div>
             </section>

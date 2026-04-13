@@ -80,7 +80,7 @@ export default function SecurityCompliancePage() {
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-slate-700 hover:text-emerald-700 transition">
             <ArrowLeft className="w-4 h-4" />
-            <span className="font-semibold">AMS Platform</span>
+            <span className="font-semibold">MAGEAM</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link to="/contact" className="text-sm text-slate-600 hover:text-emerald-700">Contact Sales</Link>
@@ -104,7 +104,7 @@ export default function SecurityCompliancePage() {
           Security & Compliance
         </h1>
         <p className="text-lg text-slate-600 max-w-2xl">
-          AMS Platform is built to meet the cybersecurity requirements of enterprise mining, oil &amp; gas,
+          MAGEAM is built to meet the cybersecurity requirements of enterprise mining, oil &amp; gas,
           and industrial clients. Our compliance status is transparent, continuously assessed, and auditable.
         </p>
       </section>
@@ -221,7 +221,7 @@ export default function SecurityCompliancePage() {
 
       <footer className="border-t border-slate-200 bg-white py-6">
         <div className="max-w-6xl mx-auto px-6 text-center text-xs text-slate-500">
-          AMS Platform v{data.version} · Value Strategy Consulting · <Link to="/" className="hover:text-emerald-600">Home</Link>
+          MAGEAM v{data.version} · Value Strategy Consulting · <Link to="/" className="hover:text-emerald-600">Home</Link>
         </div>
       </footer>
     </div>

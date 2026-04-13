@@ -10,7 +10,7 @@ export default function UserGuidePage() {
           <h1 className="text-3xl font-bold">Manual de Usuario</h1>
         </div>
         <p className="text-teal-100 text-lg">
-          Guia completa de AMS Platform &mdash; 18 secciones cubriendo todos los modulos
+          Guia completa de MAGEAM &mdash; 18 secciones cubriendo todos los modulos
         </p>
       </div>
 

@@ -1,19 +1,19 @@
-# AMS Platform — Security Policy
+# MAGEAM — Security Policy
 
 **Version**: 1.0 (2026-04-10)
 **Vendor**: Value Strategy Consulting
-**Platform**: AMS Platform v2.0.0
+**Platform**: MAGEAM v2.0.0
 **Reference Framework**: Mining-industry vendor cybersecurity checklist (ISO 27001 / SOC 2 inspired)
 
 ---
 
 ## 1. Scope
 
-This policy defines the security controls, operational procedures, and client obligations that govern the AMS Platform ("the Service") when deployed for enterprise customers in mining, oil & gas, and industrial sectors.
+This policy defines the security controls, operational procedures, and client obligations that govern the MAGEAM ("the Service") when deployed for enterprise customers in mining, oil & gas, and industrial sectors.
 
 ## 2. Controls Implemented
 
-See the public compliance status page at [`/security-compliance`](https://ams.aiprowork.com/security-compliance) or call `GET /api/v1/security/compliance-status` for a live assessment.
+See the public compliance status page at [`/security-compliance`](https://mageam.com/security-compliance) or call `GET /api/v1/security/compliance-status` for a live assessment.
 
 ### 2.1 Authentication & Access Control
 - JWT bearer tokens with minimum 32-character HMAC secret
@@ -64,7 +64,7 @@ Use `POST /api/v1/security/report-incident` to log and broadcast an incident. Th
 
 ## 4. Contract Termination & Data Exit
 
-When a client contract ends, AMS Platform guarantees:
+When a client contract ends, MAGEAM guarantees:
 
 1. **Data return**: Complete export in JSON format via `GET /api/v1/admin/export-data`. Excel/CSV per table available on request.
 2. **Secure deletion**: Cascading delete across all plant-scoped tables via `POST /api/v1/security/certificate-of-deletion?plant_id=X&confirm=true`.
@@ -80,7 +80,7 @@ When a client contract ends, AMS Platform guarantees:
 
 ## 5. Client Rights
 
-Clients of AMS Platform have the right to:
+Clients of MAGEAM have the right to:
 - **Audit**: Request the audit log for their data via `/api/v1/admin/audit-log`
 - **Export**: Download all their data at any time
 - **Delete**: Request secure deletion with certificate of deletion
@@ -101,7 +101,7 @@ Clients of AMS Platform have the right to:
 
 - **Security incidents**: security@aiprowork.com
 - **Sales / compliance questions**: sales@aiprowork.com
-- **Platform status**: https://ams.aiprowork.com/status
+- **Platform status**: https://mageam.com/status
 
 ---
 

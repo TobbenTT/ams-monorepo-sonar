@@ -204,7 +204,7 @@ def compliance_status():
     pct = round(implemented / total * 100)
 
     return {
-        "platform": "AMS Platform",
+        "platform": "MAGEAM",
         "version": "2.0.0",
         "assessed_at": datetime.utcnow().isoformat() + "Z",
         "summary": {
@@ -247,7 +247,7 @@ def siem_export(
         for e in entries:
             ts = e.timestamp.strftime("%b %d %Y %H:%M:%S") if e.timestamp else ""
             ext = f"rt={ts} suser={e.user or 'system'} cs1={e.entity_type} cs1Label=EntityType cs2={e.entity_id} cs2Label=EntityId"
-            line = f"CEF:0|ValueStrategy|AMSPlatform|2.0.0|{e.id}|{e.action}|5|{ext}"
+            line = f"CEF:0|ValueStrategy|MAGEAMPlatform|2.0.0|{e.id}|{e.action}|5|{ext}"
             lines.append(line)
         return Response(content="\n".join(lines), media_type="text/plain")
 
@@ -351,7 +351,7 @@ def certificate_of_deletion(
     cert_data = {
         "certificate_type": "DATA_DELETION",
         "standard": "Mining Industry Cybersecurity Checklist (2026-04)",
-        "platform": "AMS Platform v2.0.0",
+        "platform": "MAGEAM v2.0.0",
         "vendor": "Value Strategy Consulting",
         "plant_id": plant_id,
         "plant_name": plant.name,

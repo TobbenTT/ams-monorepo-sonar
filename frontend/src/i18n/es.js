@@ -112,7 +112,7 @@ export default {
         execution: 'Ejecucion',
         postMaintenance: 'Post Mantenimiento',
         profile: 'Perfil',
-        brandTitle: 'AMS Platform',
+        brandTitle: 'MAGEAM',
         brandSubtitle: 'Plataforma de Confiabilidad',
     },
 
@@ -144,7 +144,7 @@ export default {
 
     // ─── Login ─────────────────────────────────────────────
     login: {
-        title: 'AMS Platform',
+        title: 'MAGEAM',
         subtitle: 'Plataforma con IA',
         headline: 'Gestión Inteligente\nde Mantenimiento Industrial',
         description: 'Plataforma integral para la gestión de activos, planificación de mantenimiento y análisis de confiabilidad con inteligencia artificial.',
@@ -156,7 +156,7 @@ export default {
 
     // ─── Dashboard ─────────────────────────────────────────
     dashboard: {
-        title: 'AMS Platform',
+        title: 'MAGEAM',
         subtitle: 'Plataforma Inteligente de Gestión de Mantenimiento',
         adherence: 'Adherencia al Programa',
         misclassification: 'Misclasificación P1',
@@ -2218,7 +2218,7 @@ export default {
         },
 
         // Advanced Tactical Drill-Down
-        advancedTacticalDrillDown: 'AMS Platform - Drill-Down Táctico Avanzado',
+        advancedTacticalDrillDown: 'MAGEAM - Drill-Down Táctico Avanzado',
 
         // AI Overview
         aiOverview: 'Resumen de IA',

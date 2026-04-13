@@ -3,7 +3,7 @@ import { X, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 
 const STEPS = [
     {
-        title: 'Welcome to AMS Platform',
+        title: 'Welcome to MAGEAM',
         description: 'Your AI-powered maintenance management system. Let us show you around in 60 seconds.',
         target: null, // no highlight, just overlay
         position: 'center',

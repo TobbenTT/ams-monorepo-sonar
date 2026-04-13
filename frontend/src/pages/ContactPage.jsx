@@ -28,7 +28,7 @@ export default function ContactPage() {
 
   const T = lang === 'es' ? {
     back: 'Volver', title: 'Contactar al Equipo de Ventas',
-    subtitle: 'Agenda una demo personalizada y descubre como AMS Platform puede transformar tus operaciones de mantenimiento',
+    subtitle: 'Agenda una demo personalizada y descubre como MAGEAM puede transformar tus operaciones de mantenimiento',
     fullName: 'Nombre Completo', fullNamePh: 'Juan Perez',
     company: 'Empresa', companyPh: 'Mineria ABC',
     email: 'Email Corporativo', emailPh: 'juan.perez@empresa.com',
@@ -50,7 +50,7 @@ export default function ContactPage() {
     error: 'Error al enviar. Intenta de nuevo.',
   } : {
     back: 'Back', title: 'Contact Sales',
-    subtitle: 'Schedule a personalized demo and discover how AMS Platform can transform your maintenance operations',
+    subtitle: 'Schedule a personalized demo and discover how MAGEAM can transform your maintenance operations',
     fullName: 'Full Name', fullNamePh: 'John Smith',
     company: 'Company', companyPh: 'Mining Corp',
     email: 'Business Email', emailPh: 'john.smith@company.com',
@@ -122,8 +122,8 @@ export default function ContactPage() {
             <ArrowLeft className="w-4 h-4" /> {T.back}
           </button>
           <div className="flex items-center gap-3">
-            <img src="/AMS_LOGO.png" alt="AMS" className="w-7 h-7 rounded-lg" />
-            <span className="text-base font-bold text-gray-900">AMS Platform</span>
+            <img src="/MAGEAM_LOGO.png" alt="MAGEAM" className="w-7 h-7 rounded-lg" />
+            <span className="text-base font-bold text-gray-900">MAGEAM</span>
             <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Enterprise</span>
           </div>
           <button onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
@@ -277,7 +277,7 @@ export default function ContactPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-10">
-          AMS Platform v2.0 &mdash; Value Strategy Consulting
+          MAGEAM v2.0 &mdash; Value Strategy Consulting
         </p>
       </div>
     </div>

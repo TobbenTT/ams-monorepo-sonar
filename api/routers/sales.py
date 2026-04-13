@@ -37,7 +37,7 @@ def submit_contact(data: ContactRequest):
         <div style="font-family: Inter, system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #0f766e, #14b8a6); border-radius: 12px; padding: 24px; color: white; margin-bottom: 20px;">
                 <h2 style="margin: 0; font-size: 20px;">New Sales Lead</h2>
-                <p style="margin: 4px 0 0; opacity: 0.9; font-size: 13px;">AMS Platform — {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+                <p style="margin: 4px 0 0; opacity: 0.9; font-size: 13px;">MAGEAM — {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
             </div>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px;">
                 <h3 style="margin: 0 0 16px; color: #1e293b; font-size: 18px;">{data.full_name}</h3>
@@ -54,7 +54,7 @@ def submit_contact(data: ContactRequest):
                 {f'<div style="margin-top: 16px; padding: 12px; background: white; border-left: 3px solid #0f766e; border-radius: 6px;"><p style="margin: 0 0 4px; font-size: 12px; color: #64748b; font-weight: 600;">MESSAGE:</p><p style="margin: 0; color: #1e293b; font-size: 14px; line-height: 1.6;">{data.message}</p></div>' if data.message else ''}
             </div>
             <p style="text-align: center; color: #94a3b8; font-size: 11px; margin-top: 20px;">
-                AMS Platform — Value Strategy Consulting<br>
+                MAGEAM — Value Strategy Consulting<br>
                 Reply within 24 hours for best conversion
             </p>
         </div>
@@ -75,19 +75,19 @@ def submit_contact(data: ContactRequest):
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px;">
                     <p style="margin: 0 0 12px; color: #1e293b; font-size: 15px;">Dear {data.full_name},</p>
                     <p style="margin: 0 0 12px; color: #475569; font-size: 14px; line-height: 1.6;">
-                        Thank you for your interest in <strong>AMS Platform</strong>. We have received your request and our sales team will contact you within 24 business hours to schedule a personalized demo.
+                        Thank you for your interest in <strong>MAGEAM</strong>. We have received your request and our sales team will contact you within 24 business hours to schedule a personalized demo.
                     </p>
                     <p style="margin: 0 0 12px; color: #475569; font-size: 14px; line-height: 1.6;">
-                        In the meantime, feel free to explore our <a href="https://ams.aiprowork.com/user-guide.html" style="color: #0f766e; font-weight: 600;">User Guide</a> or visit our <a href="https://ams.aiprowork.com/status" style="color: #0f766e; font-weight: 600;">Platform Status</a> page.
+                        In the meantime, feel free to explore our <a href="https://mageam.com/user-guide.html" style="color: #0f766e; font-weight: 600;">User Guide</a> or visit our <a href="https://mageam.com/status" style="color: #0f766e; font-weight: 600;">Platform Status</a> page.
                     </p>
                     <p style="margin: 16px 0 0; color: #64748b; font-size: 13px;">
-                        Best regards,<br><strong>Value Strategy Consulting</strong><br>AMS Platform Team
+                        Best regards,<br><strong>Value Strategy Consulting</strong><br>MAGEAM Team
                     </p>
                 </div>
             </div>
             """
             try:
-                send_email(data.email, "We received your AMS Platform demo request", confirm_html)
+                send_email(data.email, "We received your MAGEAM demo request", confirm_html)
             except Exception:
                 pass
 

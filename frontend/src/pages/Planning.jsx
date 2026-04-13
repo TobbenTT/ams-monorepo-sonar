@@ -433,21 +433,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           {isPlanner ? 'Assign group, work center and create WOs' : 'Review backlog and priorities — read only'}
         </span>
         {isPlanner && (<>
-          <button onClick={async () => {
-            try {
-              const wo = await api.createManagedWO({
-                plant_id: plant || 'OCP-JFC1',
-                wo_type: 'PM02',
-                priority_code: 'P3',
-                description: 'New Preventive WO',
-                estimated_hours: 4,
-              });
-              toast.success('OT Preventiva ' + (wo.wo_number || wo.wo_id || '') + ' creada');
-              fetchData();
-            } catch (e) { toast.error('Error: ' + (e.message || '')); }
-          }} className="ml-auto px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1">
-            + New Preventive WO
-          </button>
+          {/* +New Preventive WO removed per Jorge feedback #6 — WOs without aviso only created by strategy engine */}
           <button onClick={() => {
             toast.success('AI analyzing backlog...');
             api.agenticSmartBacklog({ plant_id: plant, strategy: 'risk_weighted' })

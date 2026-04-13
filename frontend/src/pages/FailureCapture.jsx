@@ -34,12 +34,10 @@ export default function FailureCapture({ onNavigateTab }) {
     PM01: [
       { value: 'M001', label: 'Maintenance Request' },
       { value: 'M002', label: 'Avería' },
-      { value: 'M003', label: 'Reparación de componentes' },
     ],
     PM03: [
       { value: 'M001', label: 'Maintenance Request' },
       { value: 'M002', label: 'Avería' },
-      { value: 'M003', label: 'Reparación de componentes' },
     ],
   };
 
@@ -133,7 +131,6 @@ export default function FailureCapture({ onNavigateTab }) {
     A1: [
       { value: 'M001', label: 'M001 - Maintenance Request' },
       { value: 'M002', label: 'M002 - Breakdown' },
-      { value: 'M003', label: 'M003 - Component Repair' },
     ],
     A2: [
       { value: 'P001', label: 'P001 - Predictive' },
@@ -2481,12 +2478,12 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          {/* 15. Notification Class (SAP) */}
+          {/* 15. Notification Class */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-              Notification Class (SAP)
+              Notification Class
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {actClasses.map(ac => (
                 <button key={ac.value} onClick={() => setF('activityClass', ac.value)}
                   className={`p-2.5 rounded-lg border-2 text-xs font-semibold text-center transition-all ${form.activityClass === ac.value ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
@@ -2494,6 +2491,33 @@ export default function FailureCapture({ onNavigateTab }) {
                 </button>
               ))}
             </div>
+            {selectedPriority && (
+              <p className="text-xs text-gray-500 mt-2">
+                Auto-selected <strong>{form.activityClass === 'M002' ? 'M002 - Avería' : 'M001 - Maintenance Request'}</strong> based on priority {selectedPriority.value}
+              </p>
+            )}
+          </div>
+
+          {/* 16. Activity Class (Clase de Actividad) */}
+          <div className="border rounded-xl p-4">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+              Activity Class
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 'PM01', label: 'PM01 - Preventive/Request', desc: 'Scheduled or requested maintenance' },
+                { value: 'PM03', label: 'PM03 - Corrective', desc: 'Breakdown / corrective repair' },
+              ].map(ac => (
+                <button key={ac.value} onClick={() => {/* read-only, set by priority */}}
+                  className={`p-3 rounded-lg border-2 text-left transition-all ${claseOT === ac.value ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 opacity-50'}`}>
+                  <div className={`text-xs font-bold ${claseOT === ac.value ? 'text-emerald-700' : 'text-gray-500'}`}>{ac.value}</div>
+                  <div className={`text-[10px] mt-0.5 ${claseOT === ac.value ? 'text-emerald-600' : 'text-gray-400'}`}>{ac.desc}</div>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Determined by priority: {selectedPriority?.value || '—'} → <strong>{claseOT}</strong>
+            </p>
           </div>
         </div>
         </div>

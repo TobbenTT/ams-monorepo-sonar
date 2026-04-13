@@ -1750,25 +1750,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           >
                             <Eye size={16} />
                           </button>
-                          {/* PENDIENTE: Validate + Reject */}
-                          {isPending && (
-                            <>
-                              <button
-                                onClick={() => handleOpenDetail(req)}
-                                className="text-[10px] px-2 py-1 rounded bg-[#1B5E20] text-white hover:bg-[#2E7D32] font-medium transition-colors"
-                                title="Validar aviso"
-                              >
-                                Validate
-                              </button>
-                              <button
-                                onClick={() => handleReject(req.id)}
-                                className="text-[10px] px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 font-medium transition-colors border border-red-200"
-                                title="Rechazar aviso"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
+                          {/* Validate/Reject moved to detail modal only (Jorge feedback #5) */}
                           {/* VALIDATED/APROBADO: Create WO + Cancel */}
                           {['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(req.status) && !wrsWithOT.has(req.id) && (
                             <>

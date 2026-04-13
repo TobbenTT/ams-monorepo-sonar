@@ -93,8 +93,8 @@ export default function WorkOrdersPage() {
   ];
 
   const ACTIVITY_CLASSES = {
-    PM01: [{ value: 'M001', label: 'M001 — Solicitud de Mantenimiento' }, { value: 'M003', label: 'M003 — Reparación / Prep. Components' }],
-    PM03: [{ value: 'M002', label: 'M002 — Avería' }, { value: 'M003', label: 'M003 — Reparación / Prep. Components' }],
+    PM01: [{ value: 'M001', label: 'M001 — Solicitud de Mantenimiento' }, { value: 'M002', label: 'M002 — Avería' }],
+    PM03: [{ value: 'M002', label: 'M002 — Avería' }, { value: 'M001', label: 'M001 — Solicitud de Mantenimiento' }],
   };
 
   const SPECIAL_EQUIPMENT = [
@@ -668,10 +668,32 @@ export default function WorkOrdersPage() {
   };
 
   // ── Open OT detail & load editable data ──
-  const openOTDetail = (ot) => {
+  const openOTDetail = async (ot) => {
     setSelectedOT(ot);
     setOtDetailTab('resumen');
-    setOtOps(Array.isArray(ot.operations) ? ot.operations.map((op, i) => ({ ...op, _id: i, op_type: op.op_type || 'INT', quantity: op.quantity || 1, duration: op.duration || op.estimated_hours || op.planned_hours || 1, planned_hours: op.planned_hours || ((op.quantity || 1) * (op.duration || op.estimated_hours || 1)) })) : []);
+    let ops = Array.isArray(ot.operations) ? ot.operations.map((op, i) => ({ ...op, _id: i, op_type: op.op_type || 'INT', quantity: op.quantity || 1, duration: op.duration || op.estimated_hours || op.planned_hours || 1, planned_hours: op.planned_hours || ((op.quantity || 1) * (op.duration || op.estimated_hours || 1)) })) : [];
+
+    // If operations are empty and WO has a parent WR, load suggested_actions from WR
+    if (ops.length === 0 && ot.work_request_id) {
+      try {
+        const wr = await api.getWorkRequest(ot.work_request_id);
+        const sa = wr?.ai_classification?.suggested_actions || wr?.suggested_action || wr?.ai_classification?.corrective_actions || '';
+        if (sa) {
+          const lines = (typeof sa === 'string' ? sa : JSON.stringify(sa)).split(/\n|(?:\d+[\.\)])\s*/).filter(l => l.trim());
+          ops = lines.map((line, i) => ({
+            _id: i,
+            op_type: 'INT',
+            description: line.trim().replace(/^\d+[\.\)]\s*/, ''),
+            quantity: 1,
+            duration: parseFloat(wr?.ai_classification?.estimated_duration_hours || 1) / Math.max(lines.length, 1),
+            planned_hours: parseFloat(wr?.ai_classification?.estimated_duration_hours || 1) / Math.max(lines.length, 1),
+            _from_wr: true,
+          }));
+        }
+      } catch { /* WR not accessible — leave ops empty */ }
+    }
+
+    setOtOps(ops);
     setOtMats(Array.isArray(ot.materials) ? ot.materials.map((m, i) => ({ ...m, _id: i, code: m.code || m.sapId || '', unit: m.unit || 'PZ', quantity: parseInt(m.quantity) || 1 })) : []);
     setOtCosts({ labor_cost: ot.labor_cost || 0, material_cost: ot.material_cost || 0, external_cost: ot.external_cost || 0 });
     setNewNote('');

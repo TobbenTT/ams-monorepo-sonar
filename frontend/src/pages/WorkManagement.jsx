@@ -54,9 +54,9 @@ export default function WorkManagement() {
       const woList = Array.isArray(wos) ? wos : [];
       setPhaseCounts({
         'failure-capture': null,
-        identification: wrList.filter(w => ['PENDING_VALIDATION', 'VALIDATED'].includes(w.status)).length,
-        planning: wrList.filter(w => w.status === 'VALIDATED').length,
-        scheduling: woList.filter(w => ['DRAFT', 'PLANNED', 'RELEASED'].includes(w.status)).length,
+        identification: wrList.filter(w => ['PENDING_VALIDATION', 'VALIDATED', 'PENDIENTE', 'APROBADO'].includes(w.status)).length,
+        planning: wrList.filter(w => ['VALIDATED', 'APROBADO', 'OT_CREADA'].includes(w.status)).length,
+        scheduling: woList.filter(w => ['DRAFT', 'PLANNED', 'RELEASED', 'CREADO', 'PLANIFICADO', 'PROGRAMADO'].includes(w.status)).length,
       });
     });
   }, []);
@@ -85,29 +85,7 @@ export default function WorkManagement() {
           <p className="text-sm text-gray-500 mt-1">{t('workManagement.subtitle')}</p>
         </div>
 
-        {/* Planner / Supervisor View Toggle */}
-        <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
-          <button
-            onClick={() => setViewMode('planner')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-              viewMode === 'planner'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Planner View
-          </button>
-          <button
-            onClick={() => setViewMode('supervisor')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-              viewMode === 'supervisor'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Supervisor View
-          </button>
-        </div>
+        {/* View toggle removed per client feedback #1 */}
       </div>
 
       {/* Date range filter */}

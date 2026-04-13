@@ -1056,7 +1056,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const { user } = useAuth();
   const defaultQueue = user?.role === 'manager' ? 'supervisor' : user?.role === 'planner' ? 'planner' : 'all';
   const [priorityQueue, setPriorityQueue] = useState(defaultQueue); // 'all' | 'supervisor' (P1/P2) | 'planner' (P3/P4)
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState([]); // empty array = ALL, multi-select
   const [priorityFilter, setPriorityFilter] = useState('');
   const [search, setSearch] = useState('');
 
@@ -1167,7 +1167,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
     return areaFiltered.filter((r) => {
       const statusMap = { PENDING_VALIDATION: 'PENDIENTE', VALIDATED: 'APROBADO', REJECTED: 'RECHAZADO', CANCELLED: 'CANCELADO', CLOSED: 'CERRADO', DRAFT: 'PENDIENTE', ASSIGNED: 'APROBADO', IN_PROGRESS: 'APROBADO', COMPLETED: 'CERRADO' };
       const normalizedStatus = statusMap[r.status] || r.status;
-      const matchesFilter = statusFilter === 'ALL' || normalizedStatus === statusFilter || r.status === statusFilter;
+      const matchesFilter = statusFilter.length === 0 || statusFilter.includes(normalizedStatus) || statusFilter.includes(r.status);
       const q = search.toLowerCase();
       const matchesSearch =
         !search ||
@@ -1184,11 +1184,11 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       const matchesDateFrom = !dateFrom || rDate >= dateFrom;
       const matchesDateTo = !dateTo || rDate <= dateTo;
       const matchesPriority = !priorityFilter || (r.priority_requested || r.priority_suggested || "") === priorityFilter;
-      // Time range filter from header
+      // Time range filter — only apply for explicit short ranges, not the default "Last 30 Days"
       let matchesTimeRange = true;
-      if (selectedTimeRange && rDate) {
+      if (selectedTimeRange && selectedTimeRange !== 'Last 30 Days' && rDate) {
         const now = new Date();
-        const daysMap = { 'Last 7 Days': 7, 'Last 30 Days': 30, 'Last 90 Days': 90, 'Last 365 Days': 365 };
+        const daysMap = { 'Last 7 Days': 7, 'Last 90 Days': 90, 'Last 365 Days': 365 };
         const days = daysMap[selectedTimeRange];
         if (days) {
           const cutoff = new Date(now.getTime() - days * 86400000).toISOString().slice(0, 10);
@@ -1561,16 +1561,20 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               placeholder={t('workRequests.searchPlaceholder')}
               className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             {STATUS_KEYS.map(key => {
               const colors = { ALL: 'bg-gray-600', PENDIENTE: 'bg-gray-500', APROBADO: 'bg-green-600', RECHAZADO: 'bg-red-600', CANCELADO: 'bg-red-500', CERRADO: 'bg-emerald-700' };
               const cnt = key === 'ALL' ? areaFiltered.length : areaFiltered.filter(r => {
                 const sm = { PENDING_VALIDATION: 'PENDIENTE', VALIDATED: 'APROBADO', REJECTED: 'RECHAZADO', CANCELLED: 'CANCELADO', CLOSED: 'CERRADO', DRAFT: 'PENDIENTE', ASSIGNED: 'APROBADO', IN_PROGRESS: 'APROBADO', COMPLETED: 'CERRADO' };
                 return (sm[r.status] || r.status) === key || r.status === key;
               }).length;
+              const isSelected = key === 'ALL' ? statusFilter.length === 0 : statusFilter.includes(key);
               return (
-                <button key={key} onClick={() => setStatusFilter(key)}
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${statusFilter === key ? (colors[key] || 'bg-gray-600') + ' text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                <button key={key} onClick={() => {
+                  if (key === 'ALL') { setStatusFilter([]); return; }
+                  setStatusFilter(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+                }}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${isSelected ? (colors[key] || 'bg-gray-600') + ' text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                   {statusLabels[key] ?? key} <span className="ml-1 opacity-75">{cnt}</span>
                 </button>
               );
@@ -1595,8 +1599,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             <option value="P3">P3 - Medium</option>
             <option value="P4">P4 - Low</option>
           </select>
-          {(search || statusFilter !== 'ALL' || priorityFilter) && (
-            <button onClick={() => { setSearch(''); setStatusFilter('ALL'); setPriorityFilter(''); setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
+          {(search || statusFilter.length > 0 || priorityFilter) && (
+            <button onClick={() => { setSearch(''); setStatusFilter([]); setPriorityFilter(''); setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
               className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
           )}
         </div>

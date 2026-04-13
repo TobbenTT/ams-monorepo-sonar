@@ -79,6 +79,8 @@ const DataImport = lazyRetry(() => import('./pages/DataImport'));
 
 const LandingPage = lazyRetry(() => import('./pages/LandingPage'));
 const StatusPage = lazyRetry(() => import('./pages/StatusPage'));
+const ContactPage = lazyRetry(() => import('./pages/ContactPage'));
+const SecurityCompliancePage = lazyRetry(() => import('./pages/SecurityCompliancePage'));
 const UserGuidePage = lazyRetry(() => import('./pages/UserGuidePage'));
 const AuditLogPage = lazyRetry(() => import('./pages/AuditLogPage'));
 
@@ -108,6 +110,9 @@ createRoot(document.getElementById('root')).render(
                                 <Route path="landing" element={<S><LandingPage /></S>} />
                                 <Route path="login" element={<S><Login /></S>} />
                                 <Route path="status" element={<S><StatusPage /></S>} />
+                                <Route path="contact" element={<S><ContactPage /></S>} />
+                                <Route path="security" element={<S><SecurityCompliancePage /></S>} />
+                                <Route path="security-compliance" element={<S><SecurityCompliancePage /></S>} />
 
                                 <Route element={<P roles={ALL}><App /></P>}>
                                     {/* ── New Design Routes (primary navigation) ── */}

@@ -14,7 +14,7 @@ const T = {
     heroTitle1: 'Transform Your',
     heroTitle2: 'Maintenance Operations',
     heroDesc: 'Enterprise-grade asset management platform with 33 AI agents, predictive analytics, email alerts, audit trail, and end-to-end maintenance workflows — from work request to closure.',
-    startDemo: 'Start Demo',
+    startDemo: 'Request Demo',
     seeFeatures: 'See Features',
     apiEndpoints: 'API Endpoints', modules: 'Modules', aiAgents: 'AI Agents', userRoles: 'User Roles', languages: 'Languages', dataModels: 'Data Models',
     statusPage: 'Status',
@@ -36,8 +36,8 @@ const T = {
     mpTitle: 'Multi-Plant', mpItems: ['Unlimited plants', 'Per-plant data isolation', 'Cross-plant analytics', 'Plant-level roles'],
     perfTitle: 'Performance', perfItems: ['Gzip compression', 'Asset caching (1yr)', 'Lazy-loaded modules', 'Sub-second API'],
     scaleTitle: 'Operations', scaleItems: ['Docker Compose', 'Email notifications (SMTP)', 'Health status page', 'PDF & CSV exports'],
-    ctaTitle: 'Ready to Transform Your Operations?', ctaDesc: 'Start with a free demo. No credit card required.',
-    ctaBtn: 'Access Platform',
+    ctaTitle: 'Ready to Transform Your Operations?', ctaDesc: 'Schedule a personalized demo with our team.',
+    ctaBtn: 'Contact Sales',
     signIn: 'Sign In', features: 'Features', benefits: 'Benefits', platform: 'Platform', docs: 'User Guide',
   },
   es: {
@@ -45,7 +45,7 @@ const T = {
     heroTitle1: 'Transforma tus',
     heroTitle2: 'Operaciones de Mantenimiento',
     heroDesc: 'Plataforma empresarial de gestion de activos con 33 agentes de IA, analitica predictiva, alertas por email, auditoria completa y flujos de trabajo — desde la solicitud hasta el cierre.',
-    startDemo: 'Ver Demo',
+    startDemo: 'Solicitar Demo',
     seeFeatures: 'Ver Funciones',
     apiEndpoints: 'Endpoints API', modules: 'Modulos', aiAgents: 'Agentes IA', userRoles: 'Roles', languages: 'Idiomas', dataModels: 'Modelos de Datos',
     statusPage: 'Estado',
@@ -67,8 +67,8 @@ const T = {
     mpTitle: 'Multi-Planta', mpItems: ['Plantas ilimitadas', 'Datos aislados por planta', 'Analitica cross-planta', 'Roles por planta'],
     perfTitle: 'Rendimiento', perfItems: ['Compresion Gzip', 'Cache de assets (1 ano)', 'Modulos lazy-load', 'API sub-segundo'],
     scaleTitle: 'Operaciones', scaleItems: ['Docker Compose', 'Notificaciones email (SMTP)', 'Pagina de estado', 'Exportacion PDF y CSV'],
-    ctaTitle: '¿Listo para Transformar tus Operaciones?', ctaDesc: 'Comienza con una demo gratuita. Sin tarjeta de credito.',
-    ctaBtn: 'Acceder a la Plataforma',
+    ctaTitle: '¿Listo para Transformar tus Operaciones?', ctaDesc: 'Agenda una demo personalizada con nuestro equipo.',
+    ctaBtn: 'Contactar Ventas',
     signIn: 'Iniciar Sesion', features: 'Funciones', benefits: 'Beneficios', platform: 'Plataforma', docs: 'Manual de Usuario',
   },
 };
@@ -108,6 +108,7 @@ export default function LandingPage() {
                         <a href="#platform" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.platform}</a>
                         <a href={lang === 'es' ? '/manual-usuario.html' : '/user-guide.html'} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors hidden sm:block">{t.docs}</a>
                         <a href="/status" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.statusPage}</a>
+                        <a href="/security-compliance" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">Security</a>
                         {/* Language toggle */}
                         <button
                             onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
@@ -117,10 +118,10 @@ export default function LandingPage() {
                             {lang === 'en' ? 'ES' : 'EN'}
                         </button>
                         <button
-                            onClick={() => navigate('/login')}
+                            onClick={() => navigate('/contact')}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md"
                         >
-                            {t.signIn}
+                            {t.startDemo}
                         </button>
                     </div>
                 </div>
@@ -143,7 +144,7 @@ export default function LandingPage() {
                         </p>
                         <div className="flex items-center justify-center gap-4">
                             <button
-                                onClick={() => navigate('/login')}
+                                onClick={() => navigate('/contact')}
                                 className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white px-8 py-3.5 rounded-xl text-base font-semibold transition-all shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 flex items-center gap-2"
                             >
                                 {t.startDemo} <ArrowRight className="w-5 h-5" />
@@ -269,7 +270,7 @@ export default function LandingPage() {
                     <h2 className="text-3xl font-bold text-gray-900 mb-4">{t.ctaTitle}</h2>
                     <p className="text-lg text-gray-600 mb-8">{t.ctaDesc}</p>
                     <button
-                        onClick={() => navigate('/login')}
+                        onClick={() => navigate('/contact')}
                         className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white px-10 py-4 rounded-xl text-lg font-semibold transition-all shadow-lg shadow-emerald-500/25 hover:shadow-xl flex items-center gap-3 mx-auto"
                     >
                         {t.ctaBtn} <ArrowRight className="w-5 h-5" />

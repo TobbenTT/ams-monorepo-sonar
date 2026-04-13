@@ -22,6 +22,18 @@ def seed_database(db: Session = Depends(get_db)):
     return result
 
 
+@router.post("/seed-demo-plant", dependencies=[Depends(require_role("admin"))])
+def seed_demo_plant_endpoint(
+    plant_code: str = "DEMO-CORP",
+    plant_name: str = "Demo Mining Corporation",
+    location: str = "International",
+    db: Session = Depends(get_db),
+):
+    """Create a fully-populated demo plant for sales presentations (idempotent)."""
+    from api.seed_demo import seed_demo_plant
+    return seed_demo_plant(db, plant_code, plant_name, location)
+
+
 @router.get("/audit-log", dependencies=[Depends(require_role("admin", "manager"))])
 def get_audit_log(entity_type: str | None = None, limit: int = 100, db: Session = Depends(get_db)):
     q = db.query(AuditLogModel)
@@ -84,19 +96,53 @@ def agent_status():
 
 
 
-# ── Platform Settings (persisted) ──
-_platform_settings = {}  # In-memory fallback; for production use a DB table
+# ── Platform Settings (per-plant, in-memory) ──
+# Keyed by plant_id; "_global" holds cross-plant defaults.
+_platform_settings: dict[str, dict] = {}
+
+_PLANT_DEFAULTS = {
+    "OCP-JFC1": {
+        "companyName": "OCP Group",
+        "timezone": "gmt+1",
+        "currency": "mad",
+        "defaultPlant": "OCP-JFC1",
+    },
+    "GOLDFIELDS-SN": {
+        "companyName": "Gold Fields — Salares Norte",
+        "timezone": "gmt-3",
+        "currency": "usd",
+        "defaultPlant": "GOLDFIELDS-SN",
+    },
+    "FLUOR-ALFA": {
+        "companyName": "Fluor Corporation",
+        "timezone": "gmt-5",
+        "currency": "usd",
+        "defaultPlant": "FLUOR-ALFA",
+    },
+    "DEMO-CORP": {
+        "companyName": "Demo Mining Corporation",
+        "timezone": "gmt+0",
+        "currency": "usd",
+        "defaultPlant": "DEMO-CORP",
+    },
+}
+
 
 @router.get("/settings", dependencies=[Depends(require_role("admin", "manager"))])
-def get_settings():
-    """Return platform settings."""
-    return _platform_settings
+def get_settings(plant_id: str | None = None):
+    """Return platform settings for a given plant (or global if none)."""
+    key = plant_id or "_global"
+    stored = _platform_settings.get(key, {})
+    defaults = _PLANT_DEFAULTS.get(plant_id or "", {})
+    return {**defaults, **stored}
+
 
 @router.put("/settings", dependencies=[Depends(require_role("admin"))])
-def save_settings(data: dict):
-    """Save platform settings (admin only)."""
-    _platform_settings.update(data)
-    return {"status": "saved", "settings": _platform_settings}
+def save_settings(data: dict, plant_id: str | None = None):
+    """Save platform settings for a given plant (admin only)."""
+    key = plant_id or "_global"
+    _platform_settings.setdefault(key, {}).update(data)
+    return {"status": "saved", "plant_id": key, "settings": _platform_settings[key]}
 
 
 @router.post("/test-email", dependencies=[Depends(require_role("admin"))])

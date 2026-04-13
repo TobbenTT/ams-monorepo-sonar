@@ -11,29 +11,40 @@ import { Settings as SettingsIcon, Bell, Shield, Database, Users, Palette, Loade
 import * as api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const SETTINGS_KEY = 'ocp_settings';
+const SETTINGS_KEY_BASE = 'ocp_settings';
+const settingsKeyFor = (plantId) => plantId ? `${SETTINGS_KEY_BASE}_${plantId}` : SETTINGS_KEY_BASE;
+const currentPlant = () => localStorage.getItem('selected_plant') || '';
 
-function loadSettings() {
+const PLANT_DEFAULTS = {
+  'OCP-JFC1':      { companyName: 'OCP Group',                    timezone: 'gmt+1', currency: 'mad', defaultPlant: 'OCP-JFC1' },
+  'GOLDFIELDS-SN': { companyName: 'Gold Fields — Salares Norte',   timezone: 'gmt-3', currency: 'usd', defaultPlant: 'GOLDFIELDS-SN' },
+  'FLUOR-ALFA':    { companyName: 'Fluor Corporation',             timezone: 'gmt-5', currency: 'usd', defaultPlant: 'FLUOR-ALFA' },
+  'DEMO-CORP':     { companyName: 'Demo Mining Corporation',       timezone: 'gmt+0', currency: 'usd', defaultPlant: 'DEMO-CORP' },
+};
+
+function loadSettings(plantId) {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
+    const raw = localStorage.getItem(settingsKeyFor(plantId));
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
 
-function saveSettings(s) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+function saveSettings(s, plantId) {
+  localStorage.setItem(settingsKeyFor(plantId), JSON.stringify(s));
 }
 
 export default function SettingsPage() {
   const { t, lang, setLang } = useLanguage();
   const navigate = useNavigate();
 
-  // Persisted general settings
-  const [settings, setSettings] = useState(() => ({
-    companyName: 'OCP Manufacturing',
-    timezone: 'gmt+1',
-    defaultPlant: 'PLANT-01',
-    currency: 'mad',
+  const [plantId, setPlantId] = useState(() => currentPlant());
+
+  // Persisted general settings (per-plant)
+  const buildInitialSettings = (pid) => ({
+    companyName: '',
+    timezone: 'gmt+0',
+    defaultPlant: pid || '',
+    currency: 'usd',
     autoSaveWO: true,
     enableAI: true,
     availabilityTarget: 95,
@@ -41,7 +52,6 @@ export default function SettingsPage() {
     mttrTarget: 3.5,
     laborRate: 35,
     plannedWorkTarget: 80,
-    // Notifications
     notifCritical: true,
     notifWODelays: true,
     notifKPI: true,
@@ -50,12 +60,13 @@ export default function SettingsPage() {
     notifEmail: true,
     notifSMS: false,
     notifInApp: true,
-    // Appearance
     theme: 'emerald',
     compactView: false,
     dashboardLayout: 'standard',
-    ...loadSettings(),
-  }));
+    ...(PLANT_DEFAULTS[pid] || {}),
+    ...loadSettings(pid),
+  });
+  const [settings, setSettings] = useState(() => buildInitialSettings(currentPlant()));
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -85,16 +96,45 @@ export default function SettingsPage() {
   const [importError, setImportError] = useState(null);
   const [exporting, setExporting] = useState(false);
 
-  // Fetch profile on mount
+  // Reload settings whenever the selected plant changes (cross-tab + same-tab)
   useEffect(() => {
-    // Load settings from backend
-    api.getSettings().then(remote => {
+    const syncPlant = () => {
+      const pid = currentPlant();
+      setPlantId(prev => (prev !== pid ? pid : prev));
+    };
+    window.addEventListener('storage', syncPlant);
+    const interval = setInterval(syncPlant, 1000);
+    return () => { window.removeEventListener('storage', syncPlant); clearInterval(interval); };
+  }, []);
+
+  // Load DB stats + health for the Data tab
+  useEffect(() => {
+    api.getStats().then(s => {
+      setDbStats(prev => ({
+        ...(prev || {}),
+        total_nodes: s?.total_nodes,
+        plants: s?.plants,
+      }));
+    }).catch(() => {});
+    api.healthCheck().then(h => {
+      setDbStats(prev => ({ ...(prev || {}), ...(h?.counts || {}), _health: h }));
+    }).catch(() => {});
+  }, [plantId]);
+
+  useEffect(() => {
+    // Seed local state from per-plant localStorage + plant defaults
+    setSettings(buildInitialSettings(plantId));
+    // Then hydrate from backend
+    api.getSettings(plantId || undefined).then(remote => {
       if (remote && Object.keys(remote).length > 0) {
-        setSettings(prev => ({ ...prev, ...remote }));
-        saveSettings({ ...settings, ...remote });
+        setSettings(prev => {
+          const merged = { ...prev, ...remote };
+          saveSettings(merged, plantId);
+          return merged;
+        });
       }
     }).catch(() => {});
-  }, []);
+  }, [plantId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,22 +162,22 @@ export default function SettingsPage() {
   const updateSetting = (key, value) => {
     setSettings(prev => {
       const next = { ...prev, [key]: value };
-      saveSettings(next);
+      saveSettings(next, plantId);
       return next;
     });
   };
 
   const handleSaveAll = async () => {
-    saveSettings(settings);
+    saveSettings(settings, plantId);
     try {
-      await api.saveSettingsAPI(settings);
+      await api.saveSettingsAPI(settings, plantId || undefined);
     } catch { /* fallback: localStorage only */ }
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   const handleResetDefaults = () => {
-    localStorage.removeItem(SETTINGS_KEY);
+    localStorage.removeItem(settingsKeyFor(plantId));
     window.location.reload();
   };
 
@@ -186,6 +226,44 @@ export default function SettingsPage() {
     }
   };
 
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedIntegration, setSelectedIntegration] = useState(null);
+  const [dbStats, setDbStats] = useState(null);
+  const [lastExport, setLastExport] = useState(() => localStorage.getItem('last_export_ts') || null);
+
+  const ROLE_KEYS = [
+    { key: 'admin',    label: t('settings.users.roles.administrator') },
+    { key: 'engineer', label: t('settings.users.roles.reliabilityEngineer') },
+    { key: 'manager',  label: t('settings.users.roles.maintenanceManager') },
+    { key: 'tecnico',  label: t('settings.users.roles.technician') },
+    { key: 'planner',  label: t('settings.users.roles.planner') },
+  ];
+
+  // Permission matrix — aligned with backend require_role() decorators
+  const PERMISSIONS = {
+    admin:    { dashboard: 'full', workOrders: 'full', workRequests: 'full', failures: 'full', improvement: 'full', analytics: 'full', reports: 'full', team: 'full', settings: 'full', sapPm: 'full', dataImport: 'full', auditLog: 'full', aiAgents: 'full' },
+    manager:  { dashboard: 'full', workOrders: 'full', workRequests: 'full', failures: 'full', improvement: 'full', analytics: 'full', reports: 'full', team: 'full', settings: 'read', sapPm: 'full', dataImport: 'full', auditLog: 'read', aiAgents: 'full' },
+    planner:  { dashboard: 'full', workOrders: 'full', workRequests: 'full', failures: 'full', improvement: 'full', analytics: 'none', reports: 'full', team: 'full', settings: 'none', sapPm: 'full', dataImport: 'none', auditLog: 'none', aiAgents: 'none' },
+    engineer: { dashboard: 'full', workOrders: 'full', workRequests: 'full', failures: 'full', improvement: 'full', analytics: 'none', reports: 'full', team: 'none', settings: 'none', sapPm: 'none', dataImport: 'none', auditLog: 'none', aiAgents: 'full' },
+    tecnico:  { dashboard: 'read', workOrders: 'read', workRequests: 'full', failures: 'full', improvement: 'read', analytics: 'none', reports: 'read', team: 'none', settings: 'none', sapPm: 'none', dataImport: 'none', auditLog: 'none', aiAgents: 'none' },
+  };
+
+  const MODULES = [
+    { key: 'dashboard',   label: 'Dashboard' },
+    { key: 'workOrders',  label: 'Work Orders' },
+    { key: 'workRequests',label: 'Work Requests' },
+    { key: 'failures',    label: 'Failures & Events' },
+    { key: 'improvement', label: 'Improvement Actions' },
+    { key: 'analytics',   label: 'Analytics' },
+    { key: 'reports',     label: 'Reports' },
+    { key: 'team',        label: 'Team' },
+    { key: 'sapPm',       label: 'SAP PM' },
+    { key: 'dataImport',  label: 'Data Import' },
+    { key: 'aiAgents',    label: 'AI Agents' },
+    { key: 'auditLog',    label: 'Audit Log' },
+    { key: 'settings',    label: 'Settings' },
+  ];
+
   const ROLES = [
     t('settings.users.roles.administrator'),
     t('settings.users.roles.reliabilityEngineer'),
@@ -195,10 +273,46 @@ export default function SettingsPage() {
   ];
 
   const INTEGRATIONS = [
-    { name: 'SAP ERP', statusKey: 'connected', color: 'green' },
-    { name: 'CMMS Integration', statusKey: 'connected', color: 'green' },
-    { name: 'Asset Management', statusKey: 'pending', color: 'yellow' },
-    { name: 'IoT Sensors', statusKey: 'notConnected', color: 'gray' },
+    {
+      name: 'SAP ERP',
+      statusKey: 'connected',
+      color: 'green',
+      desc: 'Bi-directional sync of work orders, notifications (avisos), functional locations, and cost centers with SAP PM.',
+      endpoints: ['POST /sap/orders', 'GET /sap/notifications', 'GET /catalogs/*'],
+      lastSync: '2 minutes ago',
+    },
+    {
+      name: 'CMMS Integration',
+      statusKey: 'connected',
+      color: 'green',
+      desc: 'Legacy CMMS adapter for equipment hierarchy and maintenance history imports.',
+      endpoints: ['POST /imports/upload', 'GET /hierarchy/nodes'],
+      lastSync: '14 hours ago',
+    },
+    {
+      name: 'Email Notifications (SMTP)',
+      statusKey: 'connected',
+      color: 'green',
+      desc: 'Outbound email for sales leads, WO alerts, and user auto-replies.',
+      endpoints: ['POST /admin/test-email', 'GET /admin/email-status'],
+      lastSync: 'Live',
+    },
+    {
+      name: 'Anthropic Claude API',
+      statusKey: 'connected',
+      color: 'green',
+      desc: 'LLM backend for AI classification, voice transcription fallback, and troubleshooting assistant.',
+      endpoints: ['/ai-agents/*', '/troubleshooting/*', '/media/transcribe'],
+      lastSync: 'Live',
+    },
+    {
+      name: 'IoT Sensors (OPC-UA)',
+      statusKey: 'notConnected',
+      color: 'gray',
+      desc: 'Real-time vibration, temperature, and pressure ingestion from plant sensors via OPC-UA gateway.',
+      endpoints: ['Pending configuration'],
+      lastSync: 'Never',
+    },
   ];
 
   return (
@@ -212,6 +326,13 @@ export default function SettingsPage() {
               {t('settings.title')}
             </h1>
             <p className="text-slate-200 text-sm mt-1">{t('settings.subtitle')}</p>
+            {plantId && (
+              <div className="mt-2 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-full text-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-300"></span>
+                <span className="text-slate-100">Editing settings for</span>
+                <span className="font-semibold text-white">{plantId}</span>
+              </div>
+            )}
           </div>
           {saveSuccess && (
             <div className="flex items-center gap-2 text-white text-sm bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
@@ -556,18 +677,130 @@ export default function SettingsPage() {
               {t('settings.users.rolesPermissions')}
             </h3>
             <div className="space-y-3">
-              {ROLES.map((role) => (
-                <div key={role} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="font-medium">{role}</span>
-                  <Button variant="outline" size="sm">{t('settings.users.configure')}</Button>
-                </div>
-              ))}
+              {ROLE_KEYS.map(({ key, label }) => {
+                const perms = PERMISSIONS[key] || {};
+                const fullCount = Object.values(perms).filter(v => v === 'full').length;
+                const readCount = Object.values(perms).filter(v => v === 'read').length;
+                return (
+                  <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                    <div>
+                      <div className="font-medium">{label}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        <span className="text-emerald-700">{fullCount} full access</span>
+                        {readCount > 0 && <span className="text-amber-700"> · {readCount} read-only</span>}
+                        <span className="text-gray-500"> · {MODULES.length - fullCount - readCount} restricted</span>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setSelectedRole({ key, label })}>
+                      {t('settings.users.configure')}
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           </Card>
+
+          {selectedRole && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setSelectedRole(null)}
+            >
+              <div
+                className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <Shield className="w-5 h-5" />
+                        {selectedRole.label}
+                      </h3>
+                      <p className="text-emerald-50 text-xs mt-1">Permission matrix across platform modules</p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedRole(null)}
+                      className="text-white/80 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10"
+                    >×</button>
+                  </div>
+                </div>
+                <div className="overflow-y-auto p-5">
+                  <div className="space-y-2">
+                    {MODULES.map(({ key, label }) => {
+                      const level = (PERMISSIONS[selectedRole.key] || {})[key] || 'none';
+                      const styles = {
+                        full: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', badge: 'bg-emerald-600', icon: '✓', tag: 'Full access' },
+                        read: { bg: 'bg-amber-50',   border: 'border-amber-200',   text: 'text-amber-700',   badge: 'bg-amber-500',   icon: '◐', tag: 'Read only' },
+                        none: { bg: 'bg-gray-50',    border: 'border-gray-200',    text: 'text-gray-500',    badge: 'bg-gray-400',    icon: '×', tag: 'Restricted' },
+                      }[level];
+                      return (
+                        <div key={key} className={`flex items-center justify-between p-3 rounded-lg border ${styles.bg} ${styles.border}`}>
+                          <span className={`font-medium ${styles.text}`}>{label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-semibold ${styles.text}`}>{styles.tag}</span>
+                            <span className={`${styles.badge} text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold`}>
+                              {styles.icon}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-5 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>Permissions are enforced at the API level. To modify role assignments, use <strong>Manage Users</strong> in the Team section.</span>
+                  </div>
+                </div>
+                <div className="p-4 border-t bg-gray-50 flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setSelectedRole(null)}>Close</Button>
+                  <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setSelectedRole(null); navigate('/team'); }}>
+                    Manage Users
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Data & Integration */}
         <TabsContent value="data" className="space-y-6">
+          {/* Database Stats */}
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Database className="w-5 h-5 text-emerald-600" />
+              Database Overview
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: 'Hierarchy Nodes', value: dbStats?.hierarchy_nodes ?? dbStats?.total_nodes, color: 'emerald' },
+                { label: 'Work Requests', value: dbStats?.work_requests, color: 'blue' },
+                { label: 'Work Orders', value: dbStats?.managed_work_orders, color: 'purple' },
+                { label: 'Users', value: dbStats?.users, color: 'amber' },
+              ].map((s) => (
+                <div key={s.label} className={`p-4 rounded-lg bg-${s.color}-50 border border-${s.color}-200`}>
+                  <div className={`text-2xl font-bold text-${s.color}-700`}>
+                    {typeof s.value === 'number' ? s.value.toLocaleString() : '—'}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">{s.label}</div>
+                </div>
+              ))}
+            </div>
+            {dbStats?._health && (
+              <div className="mt-4 flex items-center gap-3 text-xs text-gray-600">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${dbStats._health.status === 'ok' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                  Database: <strong className="text-gray-800">{dbStats._health.database}</strong>
+                </span>
+                <span>·</span>
+                <span>Build <strong className="text-gray-800">{dbStats._health.build}</strong></span>
+                <span>·</span>
+                <span>Uptime <strong className="text-gray-800">{Math.floor((dbStats._health.uptime_seconds || 0) / 3600)}h</strong></span>
+                <span>·</span>
+                <span>AI: <strong className={dbStats._health.ai_available ? 'text-emerald-700' : 'text-gray-500'}>{dbStats._health.ai_available ? 'Available' : 'Offline'}</strong></span>
+              </div>
+            )}
+          </Card>
+
           <Card className="p-6">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <Database className="w-5 h-5 text-emerald-600" />
@@ -579,7 +812,7 @@ export default function SettingsPage() {
                   <p className="font-medium">{t('settings.data.retentionPeriod')}</p>
                   <p className="text-sm text-gray-600">{t('settings.data.retentionDesc')}</p>
                 </div>
-                <Select defaultValue="5years">
+                <Select value={settings.dataRetention || '5years'} onValueChange={(v) => updateSetting('dataRetention', v)}>
                   <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1year">{t('settings.data.year1')}</SelectItem>
@@ -595,12 +828,17 @@ export default function SettingsPage() {
                   <p className="font-medium">{t('settings.data.autoBackups')}</p>
                   <p className="text-sm text-gray-600">{t('settings.data.autoBackupsDesc')}</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked={settings.autoBackups !== false} onCheckedChange={(v) => updateSetting('autoBackups', v)} />
               </div>
 
               <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="font-medium text-emerald-800">{t('settings.data.exportAll')}</p>
+                  <div>
+                    <p className="font-medium text-emerald-800">{t('settings.data.exportAll')}</p>
+                    {lastExport && (
+                      <p className="text-xs text-emerald-600 mt-0.5">Last export: {new Date(lastExport).toLocaleString()}</p>
+                    )}
+                  </div>
                   <Button variant="outline" size="sm" disabled={exporting} onClick={async () => {
                     try {
                       setExporting(true);
@@ -609,9 +847,12 @@ export default function SettingsPage() {
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = `ocp-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                      a.download = `ams-backup-${plantId || 'all'}-${new Date().toISOString().slice(0, 10)}.json`;
                       a.click();
                       URL.revokeObjectURL(url);
+                      const ts = new Date().toISOString();
+                      localStorage.setItem('last_export_ts', ts);
+                      setLastExport(ts);
                     } catch (err) { alert('Export failed: ' + (err.message || 'Unknown error')); }
                     finally { setExporting(false); }
                   }}>{exporting ? <><Loader2 className="w-4 h-4 animate-spin mr-1" />Exporting...</> : <><Download className="w-4 h-4 mr-1" />{t('common.export')}</>}</Button>
@@ -654,7 +895,7 @@ export default function SettingsPage() {
                       setImporting(true);
                       setImportError(null);
                       setImportResult(null);
-                      const result = await api.importUpload(importFile, importSource, settings.defaultPlant || 'PLANT-01');
+                      const result = await api.importUpload(importFile, importSource, plantId || settings.defaultPlant || 'PLANT-01');
                       setImportResult(result);
                     } catch (err) {
                       setImportError(err.message || 'Import failed');
@@ -688,18 +929,76 @@ export default function SettingsPage() {
             <h3 className="font-semibold mb-4">{t('settings.data.integrations')}</h3>
             <div className="space-y-3">
               {INTEGRATIONS.map((integration) => (
-                <div key={integration.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">{integration.name}</p>
-                    <p className={`text-sm ${integration.color === 'green' ? 'text-green-600' : integration.color === 'yellow' ? 'text-yellow-600' : 'text-gray-600'}`}>
-                      {t(`settings.data.${integration.statusKey}`)}
-                    </p>
+                <div key={integration.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2.5 h-2.5 rounded-full ${integration.color === 'green' ? 'bg-emerald-500 animate-pulse' : integration.color === 'yellow' ? 'bg-amber-500' : 'bg-gray-400'}`}></span>
+                    <div>
+                      <p className="font-medium">{integration.name}</p>
+                      <p className={`text-sm ${integration.color === 'green' ? 'text-emerald-600' : integration.color === 'yellow' ? 'text-amber-600' : 'text-gray-500'}`}>
+                        {t(`settings.data.${integration.statusKey}`)} · Last sync: {integration.lastSync}
+                      </p>
+                    </div>
                   </div>
-                  <Button variant="outline" size="sm">{t('settings.users.configure')}</Button>
+                  <Button variant="outline" size="sm" onClick={() => setSelectedIntegration(integration)}>
+                    {t('settings.users.configure')}
+                  </Button>
                 </div>
               ))}
             </div>
           </Card>
+
+          {selectedIntegration && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setSelectedIntegration(null)}
+            >
+              <div
+                className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={`${selectedIntegration.color === 'green' ? 'bg-gradient-to-r from-emerald-600 to-teal-600' : selectedIntegration.color === 'yellow' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-slate-500 to-gray-600'} text-white p-5`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <Database className="w-5 h-5" />
+                        {selectedIntegration.name}
+                      </h3>
+                      <p className="text-white/90 text-xs mt-1">
+                        {t(`settings.data.${selectedIntegration.statusKey}`)} · Last sync: {selectedIntegration.lastSync}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedIntegration(null)}
+                      className="text-white/80 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10"
+                    >×</button>
+                  </div>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-1">Description</p>
+                    <p className="text-sm text-gray-700 leading-relaxed">{selectedIntegration.desc}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-2">API Endpoints</p>
+                    <div className="space-y-1">
+                      {selectedIntegration.endpoints.map((ep) => (
+                        <div key={ep} className="text-xs font-mono bg-gray-50 border border-gray-200 rounded px-3 py-1.5 text-gray-700">
+                          {ep}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>To modify connection credentials, contact your system administrator or check the deployment environment variables.</span>
+                  </div>
+                </div>
+                <div className="p-4 border-t bg-gray-50 flex justify-end">
+                  <Button variant="outline" onClick={() => setSelectedIntegration(null)}>Close</Button>
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Appearance */}

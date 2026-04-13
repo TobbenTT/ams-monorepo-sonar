@@ -43,6 +43,8 @@ from api.routers import (
     sap_pm,
     data_import,
     agentic,
+    sales,
+    security,
 )
 
 
@@ -182,6 +184,9 @@ def create_app() -> FastAPI:
     app.include_router(rca.router, prefix=prefix)
     # Auth
     app.include_router(auth.router, prefix=prefix)
+    app.include_router(sales.router, prefix=prefix)
+    # Security & Compliance (cybersecurity checklist endpoints)
+    app.include_router(security.router, prefix=prefix)
     # AI Agents (CORTEX)
     app.include_router(ai_agents.router, prefix=prefix)
     # GAP-W03 — Offline Sync

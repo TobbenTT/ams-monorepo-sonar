@@ -27,6 +27,14 @@ const PLANT_CONFIG = {
     icon: '🔧',
     tagline: 'Engineering & Construction',
   },
+  'DEMO-CORP': {
+    color: 'teal',
+    gradient: 'from-teal-600 to-cyan-700',
+    hoverGradient: 'from-teal-500 to-cyan-600',
+    ring: 'ring-teal-400',
+    icon: '🎯',
+    tagline: 'Demo Environment — Sales Presentations',
+  },
 };
 
 const DEFAULT_CONFIG = {

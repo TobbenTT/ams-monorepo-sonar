@@ -1,573 +1,444 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { StatusBadge, KPICard, LoadingSpinner } from '../components/Shared';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
+import {
+  Search, Plus, ChevronDown, ChevronUp, AlertTriangle, CheckCircle,
+  Loader2, ArrowRight, Target, Zap, Shield, Clock, FileText, Activity,
+  TrendingUp, X, Play,
+} from 'lucide-react';
 
-const STAGES = ['Identify', 'Prioritize', 'Analyze', 'Implement', 'Control'];
+const STAGES = [
+  { id: 'IDENTIFIED', label: 'Identified', icon: Target, color: 'bg-red-500' },
+  { id: 'ANALYZING', label: 'Analyzing', icon: Search, color: 'bg-amber-500' },
+  { id: 'IMPLEMENTING', label: 'Implementing', icon: Play, color: 'bg-blue-500' },
+  { id: 'CONTROLLED', label: 'Controlled', icon: Shield, color: 'bg-emerald-500' },
+  { id: 'CLOSED', label: 'Closed', icon: CheckCircle, color: 'bg-gray-400' },
+];
 
-const CAPA_STATUS_CYCLE = ['PENDING', 'IN_PROGRESS', 'COMPLETED'];
+const W5H2_KEYS = [
+  { key: 'what', label: 'What happened?', icon: '1', color: 'border-red-400 bg-red-50 dark:bg-red-900/10' },
+  { key: 'where', label: 'Where did it happen?', icon: '2', color: 'border-amber-400 bg-amber-50 dark:bg-amber-900/10' },
+  { key: 'when', label: 'When did it happen?', icon: '3', color: 'border-blue-400 bg-blue-50 dark:bg-blue-900/10' },
+  { key: 'who', label: 'Who was involved?', icon: '4', color: 'border-purple-400 bg-purple-50 dark:bg-purple-900/10' },
+  { key: 'why', label: 'Why did it happen?', icon: '5', color: 'border-orange-400 bg-orange-50 dark:bg-orange-900/10' },
+  { key: 'how', label: 'How did it happen?', icon: 'H1', color: 'border-teal-400 bg-teal-50 dark:bg-teal-900/10' },
+  { key: 'how_much', label: 'How much impact?', icon: 'H2', color: 'border-pink-400 bg-pink-50 dark:bg-pink-900/10' },
+];
 
 export default function RCA() {
-    const { plant } = useOutletContext();
-    const toast = useToast();
-    const { t } = useLanguage();
-    const [rcas, setRcas] = useState([]);
-    const [selected, setSelected] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [summary, setSummary] = useState(null);
-    const [showNewRca, setShowNewRca] = useState(false);
-    const [newRca, setNewRca] = useState({ event_description: '', equipment_id: '' });
-    const [nodes, setNodes] = useState([]);
+  const { plant } = useOutletContext();
+  const toast = useToast();
+  const { t } = useLanguage();
+  const [rcas, setRcas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createDesc, setCreateDesc] = useState('');
+  const [createEquip, setCreateEquip] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [running5w2h, setRunning5w2h] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
+  const [recentFailures, setRecentFailures] = useState([]);
+  const [filterStage, setFilterStage] = useState('all');
+  const [searchQ, setSearchQ] = useState('');
 
-    // --- Editing state ---
-    const [editingField, setEditingField] = useState(null);
-    const [editValue, setEditValue] = useState('');
-    const [editingEventInfo, setEditingEventInfo] = useState(false);
-    const [editEventDesc, setEditEventDesc] = useState('');
-    const [editEquipmentId, setEditEquipmentId] = useState('');
-    const [showAddCapa, setShowAddCapa] = useState(false);
-    const [newCapa, setNewCapa] = useState({ description: '', type: 'corrective', responsible: '', due_date: '' });
-    const editRef = useRef(null);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [rcaRes, wrRes] = await Promise.all([
+        api.listRcas({ plant_id: plant }).catch(() => []),
+        api.listWorkRequests({ plant_id: plant, status: 'VALIDATED', limit: 20 }).catch(() => []),
+      ]);
+      setRcas(Array.isArray(rcaRes) ? rcaRes : []);
+      const wrs = Array.isArray(wrRes) ? wrRes : [];
+      // Extract failures with P1/P2 or recurrent equipment
+      const failures = wrs.filter(wr => {
+        const pd = wr.problem_description || {};
+        return wr.priority_code === 'P1' || wr.priority_code === 'P2' || pd.failure_mode_detected;
+      }).slice(0, 10);
+      setRecentFailures(failures);
+    } catch {}
+    setLoading(false);
+  };
 
-    useEffect(() => {
-        setLoading(true);
-        Promise.allSettled([
-            api.listRcas({ plant_id: plant }),
-            api.getRcaSummary({ plant_id: plant }),
-            api.listNodes({ plant_id: plant, node_type: 'EQUIPMENT' }),
-        ]).then(([r, s, n]) => {
-            setRcas(r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : []) : []);
-            setSummary(s.status === 'fulfilled' ? s.value : null);
-            setNodes(n.status === 'fulfilled' ? (Array.isArray(n.value) ? n.value : []) : []);
-            setLoading(false);
-        });
-    }, [plant]);
+  useEffect(() => { loadData(); }, [plant]);
 
-    const loadDetail = async (rca) => {
-        try { const d = await api.getRca(rca.analysis_id); setSelected(d); } catch { setSelected(rca); }
-    };
+  const handleCreate = async (desc, equip) => {
+    if (!desc?.trim()) return;
+    setCreating(true);
+    try {
+      const res = await api.createRca({ event_description: desc, equipment_id: equip || '', plant_id: plant });
+      toast.success('RCA created — running AI analysis...');
+      setShowCreate(false);
+      setCreateDesc('');
+      setCreateEquip('');
+      setSelected(res);
+      // Auto-run 5W2H with AI immediately
+      try {
+        const aiRes = await api.run5w2h(res.analysis_id, {});
+        setSelected(prev => ({ ...prev, five_w_two_h: aiRes.five_w_two_h || aiRes }));
+        toast.success('AI completed 5W2H analysis automatically');
+      } catch {
+        toast.info('RCA created — click AI Auto-Fill to analyze');
+      }
+      loadData();
+    } catch (e) { toast.error('Error: ' + (e.message || '')); }
+    setCreating(false);
+  };
 
-    const getStageIndex = (status) => {
-        const map = { IDENTIFIED: 0, PRIORITIZED: 1, ANALYZING: 2, IMPLEMENTING: 3, CONTROLLED: 4, COMPLETED: 4, CLOSED: 4 };
-        return map[status] ?? 0;
-    };
+  const handleCreateFromWR = (wr) => {
+    const pd = wr.problem_description || {};
+    const desc = pd.original_text || wr.description || '';
+    const symptom = pd.failure_symptom || '';
+    const cause = pd.failure_cause || '';
+    const mode = pd.failure_mode_detected || '';
+    const fullDesc = [desc, mode && `Category: ${mode}`, symptom && `Symptom: ${symptom}`, cause && `Cause: ${cause}`].filter(Boolean).join('. ');
+    handleCreate(fullDesc + ' [Equipment: ' + (wr.equipment_tag || '') + ', Priority: ' + (wr.priority_code || '') + ']', wr.equipment_tag);
+  };
 
-    const handleCreateRca = async () => {
-        if (!newRca.event_description.trim()) return;
-        try {
-            const res = await api.createRca({ ...newRca, plant_id: plant });
-            setRcas(prev => [res, ...prev]);
-            setShowNewRca(false);
-            setNewRca({ event_description: '', equipment_id: '' });
-            toast.success('RCA event created');
-            loadDetail(res);
-        } catch (e) {
-            toast.error('Failed to create RCA: ' + e.message);
-        }
-    };
+  const handle5w2h = async () => {
+    if (!selected?.analysis_id) return;
+    setRunning5w2h(true);
+    try {
+      const res = await api.run5w2h(selected.analysis_id, {});
+      setSelected(prev => ({ ...prev, five_w_two_h: res.five_w_two_h || res }));
+      toast.success('5W2H analysis completed by AI');
+    } catch (e) { toast.error('5W2H failed: ' + (e.message || '')); }
+    setRunning5w2h(false);
+  };
 
-    const handleRun5w2h = async () => {
-        if (!selected?.analysis_id) return;
-        try {
-            const res = await api.run5w2h(selected.analysis_id, {});
-            setSelected(prev => ({ ...prev, five_w_two_h: res.five_w_two_h || res }));
-            toast.success('5W2H analysis completed');
-        } catch (e) {
-            toast.error('5W2H failed: ' + e.message);
-        }
-    };
+  const handleAdvance = async () => {
+    if (!selected?.analysis_id) return;
+    setAdvancing(true);
+    try {
+      const stageOrder = ['IDENTIFIED', 'ANALYZING', 'IMPLEMENTING', 'CONTROLLED', 'CLOSED'];
+      const curIdx = stageOrder.indexOf(selected.status || 'IDENTIFIED');
+      const next = stageOrder[Math.min(curIdx + 1, stageOrder.length - 1)];
+      await api.advanceRca(selected.analysis_id, { status: next });
+      const updated = await api.getRca(selected.analysis_id).catch(() => ({ ...selected, status: next }));
+      setSelected(updated);
+      loadData();
+      toast.success('Advanced to ' + next);
+    } catch (e) { toast.error('Error: ' + (e.message || '')); }
+    setAdvancing(false);
+  };
 
-    const handleAdvance = async () => {
-        if (!selected?.analysis_id) return;
-        const curIdx = getStageIndex(selected.status);
-        if (curIdx >= STAGES.length - 1) { toast.warning('Already at final stage'); return; }
-        try {
-            const nextStatus = STAGES[curIdx + 1].toUpperCase();
-            const statusMap = { IDENTIFY: 'IDENTIFIED', PRIORITIZE: 'PRIORITIZED', ANALYZE: 'ANALYZING', IMPLEMENT: 'IMPLEMENTING', CONTROL: 'CONTROLLED' };
-            await api.advanceRca(selected.analysis_id, { status: statusMap[nextStatus] || nextStatus });
-            loadDetail(selected);
-            toast.success(`Advanced to ${STAGES[curIdx + 1]}`);
-        } catch (e) {
-            toast.error('Advance failed: ' + e.message);
-        }
-    };
+  const handleSave5w2h = async (key, value) => {
+    if (!selected?.analysis_id) return;
+    const newData = { ...(selected.five_w_two_h || {}), [key]: value };
+    setSelected(prev => ({ ...prev, five_w_two_h: newData }));
+    try { await api.updateRca(selected.analysis_id, { analysis_5w2h: newData }); } catch {}
+  };
 
-    // --- Edit handlers ---
+  // Filter
+  const filtered = rcas.filter(r => {
+    if (filterStage !== 'all' && r.status !== filterStage) return false;
+    if (searchQ) {
+      const q = searchQ.toLowerCase();
+      return (r.event_description || '').toLowerCase().includes(q) || (r.equipment_id || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
 
-    // Event Information: start editing
-    const startEditEventInfo = () => {
-        setEditingEventInfo(true);
-        setEditEventDesc(selected.event_description || '');
-        setEditEquipmentId(selected.equipment_id || '');
-    };
+  const stageCount = (id) => rcas.filter(r => r.status === id).length;
 
-    // Event Information: save to API
-    const saveEditEventInfo = async () => {
-        try {
-            const updated = await api.updateRca(selected.analysis_id, {
-                event_description: editEventDesc,
-                equipment_id: editEquipmentId,
-            });
-            setSelected(updated);
-            setRcas(prev => prev.map(r =>
-                r.analysis_id === selected.analysis_id
-                    ? { ...r, event_description: editEventDesc, equipment_id: editEquipmentId }
-                    : r
-            ));
-            toast.success(t('common.saved'));
-        } catch (e) {
-            toast.error('Error: ' + e.message);
-        }
-        setEditingEventInfo(false);
-    };
+  if (loading) return <div className="p-6 flex justify-center min-h-[300px] items-center"><Loader2 className="w-8 h-8 animate-spin text-red-500" /></div>;
 
-    const cancelEditEventInfo = () => {
-        setEditingEventInfo(false);
-    };
+  return (
+    <div className="p-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-red-100 dark:bg-red-900/30 rounded-xl">
+            <Search size={22} className="text-red-700 dark:text-red-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Root Cause Analysis</h1>
+            <p className="text-sm text-muted-foreground">Identify, analyze and eliminate failure root causes</p>
+          </div>
+        </div>
+        <button onClick={() => setShowCreate(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-semibold transition-colors">
+          <Plus size={16} /> New RCA
+        </button>
+      </div>
 
-    // 5W+2H: start editing a specific key
-    const startEdit5w2h = (key, currentValue) => {
-        setEditingField(`5w2h_${key}`);
-        setEditValue(currentValue || '');
-    };
+      {/* Stage pipeline */}
+      <div className="grid grid-cols-5 gap-2">
+        {STAGES.map(s => {
+          const count = stageCount(s.id);
+          const isActive = filterStage === s.id;
+          return (
+            <button key={s.id} onClick={() => setFilterStage(isActive ? 'all' : s.id)}
+              className={`rounded-xl border-2 p-3 text-center transition-all hover:shadow-md ${isActive ? 'ring-2 ring-blue-500 shadow-md' : ''} ${count > 0 ? 'border-border' : 'border-border/50 opacity-60'}`}>
+              <div className={`w-8 h-8 ${s.color} rounded-lg flex items-center justify-center mx-auto mb-2`}>
+                <s.icon size={16} className="text-white" />
+              </div>
+              <div className="text-xl font-extrabold text-foreground">{count}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</div>
+            </button>
+          );
+        })}
+      </div>
 
-    // 5W+2H: save on blur or Enter — persist to API
-    const saveEdit5w2h = async (key) => {
-        const newData = { ...selected.five_w_two_h, [key]: editValue };
-        setSelected(prev => ({ ...prev, five_w_two_h: newData }));
-        setEditingField(null);
-        setEditValue('');
-        try {
-            await api.updateRca(selected.analysis_id, { analysis_5w2h: newData });
-        } catch (e) {
-            toast.error('Error: ' + e.message);
-        }
-    };
+      {/* Critical failures from WRs (auto-detected) */}
+      {recentFailures.length > 0 && !selected && (
+        <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle size={16} className="text-red-600" />
+            <span className="text-sm font-bold text-red-800 dark:text-red-300">Critical Failures Detected</span>
+            <span className="text-xs text-red-500 ml-auto">{recentFailures.length} P1/P2 events without RCA</span>
+          </div>
+          <div className="space-y-2">
+            {recentFailures.slice(0, 5).map(wr => {
+              const pd = wr.problem_description || {};
+              return (
+                <div key={wr.request_id} className="flex items-center gap-3 bg-white dark:bg-card rounded-lg px-3 py-2 border border-red-100 dark:border-red-900/30">
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${wr.priority_code === 'P1' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'}`}>{wr.priority_code}</span>
+                  <span className="text-xs font-mono text-muted-foreground">{wr.equipment_tag}</span>
+                  <span className="text-xs text-foreground flex-1 truncate">{pd.original_text || wr.description || ''}</span>
+                  <span className="text-[10px] text-red-500">{pd.failure_mode_detected}</span>
+                  <button onClick={() => handleCreateFromWR(wr)}
+                    className="text-[10px] px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 font-semibold shrink-0">
+                    Start RCA
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-    // Root Cause Levels: start editing
-    const startEditCause = (key, currentValue) => {
-        setEditingField(`cause_${key}`);
-        setEditValue(currentValue || '');
-    };
+      {/* Search + list */}
+      {!selected && (
+        <>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search RCA events..."
+                className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-red-500/30" />
+            </div>
+            {filterStage !== 'all' && (
+              <button onClick={() => setFilterStage('all')} className="text-xs text-blue-600 hover:underline">Clear filter</button>
+            )}
+          </div>
 
-    // Root Cause Levels: save on blur — persist to API
-    const saveEditCause = async (key) => {
-        const newCauses = { ...selected.root_cause_levels, [key]: editValue };
-        setSelected(prev => ({ ...prev, root_cause_levels: newCauses }));
-        setEditingField(null);
-        setEditValue('');
-        try {
-            await api.updateRca(selected.analysis_id, { root_cause_levels: newCauses });
-        } catch (e) {
-            toast.error('Error: ' + e.message);
-        }
-    };
+          {filtered.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <Search size={40} className="text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-foreground font-semibold mb-1">No RCA events yet</p>
+              <p className="text-sm text-muted-foreground mb-4">Start an RCA from a critical failure above, or create one manually</p>
+              <button onClick={() => setShowCreate(true)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700">
+                <Plus size={14} className="inline mr-1" /> Create First RCA
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map(rca => {
+                const stage = STAGES.find(s => s.id === rca.status) || STAGES[0];
+                return (
+                  <div key={rca.analysis_id} onClick={() => api.getRca(rca.analysis_id).then(setSelected).catch(() => setSelected(rca))}
+                    className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-red-200 transition-all">
+                    <div className={`w-10 h-10 ${stage.color} rounded-lg flex items-center justify-center shrink-0`}>
+                      <stage.icon size={18} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{rca.event_description}</p>
+                      <p className="text-xs text-muted-foreground">{rca.equipment_id || 'No equipment'} · Created {rca.created_at ? new Date(rca.created_at).toLocaleDateString() : ''}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded ${stage.color} text-white`}>{stage.label}</span>
+                    <ArrowRight size={14} className="text-muted-foreground" />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
 
-    // CAPA: cycle status — persist to API
-    const cycleCapaStatus = async (index) => {
-        const actions = [...(selected.capa_actions || [])];
-        const current = actions[index].status || 'PENDING';
-        const currentIdx = CAPA_STATUS_CYCLE.indexOf(current);
-        const nextIdx = (currentIdx + 1) % CAPA_STATUS_CYCLE.length;
-        actions[index] = { ...actions[index], status: CAPA_STATUS_CYCLE[nextIdx] };
-        setSelected(prev => ({ ...prev, capa_actions: actions }));
-        try {
-            await api.updateRca(selected.analysis_id, { capa_actions: actions });
-            toast.success(t('common.saved'));
-        } catch (e) {
-            toast.error('Error: ' + e.message);
-        }
-    };
+      {/* ═══ RCA DETAIL ═══ */}
+      {selected && (
+        <div className="space-y-4">
+          <button onClick={() => setSelected(null)} className="flex items-center gap-1 text-sm text-blue-600 hover:underline">
+            <ArrowRight size={14} className="rotate-180" /> Back to list
+          </button>
 
-    // CAPA: add new action — persist to API
-    const handleAddCapa = async () => {
-        if (!newCapa.description.trim()) {
-            toast.error(t('rca.actionRequired'));
-            return;
-        }
-        const action = {
-            description: newCapa.description,
-            type: newCapa.type,
-            responsible: newCapa.responsible,
-            due_date: newCapa.due_date,
-            status: 'PENDING',
-        };
-        const actions = [...(selected.capa_actions || []), action];
-        setSelected(prev => ({ ...prev, capa_actions: actions }));
-        setNewCapa({ description: '', type: 'corrective', responsible: '', due_date: '' });
-        setShowAddCapa(false);
-        try {
-            await api.updateRca(selected.analysis_id, { capa_actions: actions });
-            toast.success(t('common.saved'));
-        } catch (e) {
-            toast.error('Error: ' + e.message);
-        }
-    };
+          {/* Event header */}
+          <div className="bg-card border border-border rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-foreground">{selected.event_description}</h2>
+              <div className="flex items-center gap-2">
+                {selected.equipment_id && <span className="text-xs font-mono bg-muted px-2 py-1 rounded text-muted-foreground">{selected.equipment_id}</span>}
+                <span className={`text-xs font-bold px-2 py-1 rounded text-white ${(STAGES.find(s => s.id === selected.status) || STAGES[0]).color}`}>
+                  {(STAGES.find(s => s.id === selected.status) || STAGES[0]).label}
+                </span>
+              </div>
+            </div>
+            {/* Stage progress */}
+            <div className="flex items-center gap-1">
+              {STAGES.map((s, i) => {
+                const curIdx = STAGES.findIndex(st => st.id === selected.status);
+                const done = i <= curIdx;
+                return (
+                  <div key={s.id} className="flex items-center flex-1">
+                    <div className={`h-2 flex-1 rounded-full ${done ? s.color : 'bg-gray-200 dark:bg-gray-700'}`} />
+                    {i < STAGES.length - 1 && <div className="w-1" />}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-between mt-1">
+              {STAGES.map(s => <span key={s.id} className="text-[9px] text-muted-foreground">{s.label}</span>)}
+            </div>
+          </div>
 
-    return (
-        <div>
-            <h1 className="text-2xl font-bold text-foreground mb-5">🔍 {t('rca.title')}</h1>
+          {/* 5W2H Analysis */}
+          <div className="bg-card border border-border rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-foreground">5W + 2H Analysis</h3>
+              <button onClick={handle5w2h} disabled={running5w2h}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">
+                {running5w2h ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                {running5w2h ? 'AI Analyzing...' : 'AI Auto-Fill'}
+              </button>
+            </div>
+            <div className="space-y-3">
+              {W5H2_KEYS.map(item => {
+                const value = (selected.five_w_two_h || {})[item.key] || '';
+                return (
+                  <div key={item.key} className={`border-l-4 rounded-lg p-3 ${item.color}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-bold bg-gray-800 text-white px-1.5 py-0.5 rounded">{item.icon}</span>
+                      <span className="text-xs font-bold text-foreground">{item.label}</span>
+                    </div>
+                    <textarea value={value}
+                      onChange={e => {
+                        const newVal = e.target.value;
+                        setSelected(prev => ({ ...prev, five_w_two_h: { ...(prev.five_w_two_h || {}), [item.key]: newVal } }));
+                      }}
+                      onBlur={e => handleSave5w2h(item.key, e.target.value)}
+                      placeholder="Click to fill or use AI Auto-Fill..."
+                      className="w-full text-sm bg-transparent border-0 focus:outline-none text-foreground resize-none min-h-[40px] placeholder:text-gray-400" rows={2} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-                <KPICard label={t('rca.eventsThisYear')} value={summary?.total_events ?? rcas.length} />
-                <KPICard label={t('rca.avgResolution')} value={`${summary?.avg_resolution_days ?? 12} ${t('common.days')}`} variant="info" />
-                <KPICard label={t('rca.recurrenceRate')} value={`${summary?.recurrence_rate ?? 8}%`} variant="warning" />
-                <KPICard label={t('rca.capaCompletion')} value={`${summary?.capa_completion ?? 72}%`} />
+          {/* Root causes */}
+          {selected.root_cause_levels && Object.keys(selected.root_cause_levels).length > 0 && (
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h3 className="text-sm font-bold text-foreground mb-3">Root Cause Levels</h3>
+              <div className="space-y-2">
+                {Object.entries(selected.root_cause_levels).map(([level, cause]) => (
+                  <div key={level} className="flex items-start gap-3 text-sm">
+                    <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded shrink-0">{level}</span>
+                    <span className="text-foreground">{cause}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* CAPAs */}
+          {(selected.corrective_actions || []).length > 0 && (
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h3 className="text-sm font-bold text-foreground mb-3">Corrective Actions (CAPA)</h3>
+              <div className="space-y-2">
+                {selected.corrective_actions.map((capa, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2 text-sm">
+                    <CheckCircle size={14} className={capa.status === 'COMPLETED' ? 'text-emerald-500' : 'text-gray-300'} />
+                    <span className="flex-1 text-foreground">{capa.description}</span>
+                    <span className="text-xs text-muted-foreground">{capa.responsible}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${capa.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : capa.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {capa.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Advance button */}
+          {selected.status !== 'CLOSED' && (
+            <div className="flex justify-end gap-3">
+              <button onClick={handleAdvance} disabled={advancing}
+                className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-semibold disabled:opacity-50 transition-colors">
+                {advancing ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+                Advance Stage
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══ CREATE MODAL — Select from existing failures ═══ */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
+          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">New Root Cause Analysis</h3>
+                <p className="text-xs text-muted-foreground">Select a failure event or describe manually</p>
+              </div>
+              <button onClick={() => setShowCreate(false)} className="p-1 hover:bg-muted rounded-lg"><X size={18} /></button>
             </div>
 
-            {showNewRca && (
-                <div className="bg-card border-2 border-primary rounded-lg p-5 shadow-sm mb-4">
-                    <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">{t('rca.newRCA')}</div>
-                    <div className="mb-3.5">
-                        <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('rca.eventDescription')}</div>
-                        <textarea className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[120px] resize-y" rows={3} value={newRca.event_description} onChange={e => setNewRca(prev => ({ ...prev, event_description: e.target.value }))} placeholder={t('rca.eventDescription')} />
-                    </div>
-                    <div className="mb-3.5">
-                        <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('common.equipment')}</div>
-                        <select className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" value={newRca.equipment_id} onChange={e => setNewRca(prev => ({ ...prev, equipment_id: e.target.value }))}>
-                            <option value="">{t('rca.selectEquipment')}...</option>
-                            {nodes.map(n => <option key={n.node_id} value={n.node_id}>{n.code || ''} — {n.name}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex gap-2">
-                        <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" onClick={handleCreateRca} disabled={!newRca.event_description.trim()}>{t('common.create')}</button>
-                        <button className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted transition-colors" onClick={() => setShowNewRca(false)}>{t('common.cancel')}</button>
-                    </div>
+            {/* Recent failures to pick from */}
+            {recentFailures.length > 0 && (
+              <div className="mb-4">
+                <label className="text-xs font-semibold text-red-600 mb-2 block flex items-center gap-1">
+                  <AlertTriangle size={12} /> Select from recent critical failures:
+                </label>
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                  {recentFailures.map(wr => {
+                    const pd = wr.problem_description || {};
+                    return (
+                      <button key={wr.request_id} onClick={() => { handleCreateFromWR(wr); }}
+                        disabled={creating}
+                        className="w-full text-left bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2.5 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${wr.priority_code === 'P1' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'}`}>{wr.priority_code}</span>
+                          <span className="text-xs font-mono text-muted-foreground">{wr.equipment_tag}</span>
+                          <span className="text-[10px] text-red-500 ml-auto">{pd.failure_mode_detected || ''}</span>
+                        </div>
+                        <p className="text-xs text-foreground mt-1 line-clamp-2">{pd.original_text || wr.description || ''}</p>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
             )}
 
-            <div className="flex gap-5 flex-col lg:flex-row">
-                <div className="lg:w-[35%] min-w-0">
-                    <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-primary uppercase tracking-wider">{t('rca.title')}</span><button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" onClick={() => setShowNewRca(true)}>+ {t('rca.newRCA')}</button></div>
-                        {loading ? <LoadingSpinner /> : rcas.length === 0 ? <p className="text-muted-foreground p-4">{t('common.noData')}</p> : rcas.map((r, i) => (
-                            <div key={i} onClick={() => loadDetail(r)} className={`py-2.5 px-3.5 border-b border-border cursor-pointer border-l-[3px] ${selected?.analysis_id === r.analysis_id ? 'bg-primary/10 border-l-primary' : 'border-l-transparent'}`}>
-                                <div className="font-semibold text-[0.85rem]">{r.event_description?.slice(0, 50) || r.analysis_id?.slice(0, 12)}</div>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <StatusBadge status={r.status} />
-                                    <span className="text-[0.72rem] text-muted-foreground">{r.equipment_id?.slice(0, 8)}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+            {/* Active WOs to pick from */}
+            {recentFailures.length === 0 && (
+              <div className="mb-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 rounded-lg p-3">
+                <p className="text-xs text-amber-700">No critical failures detected. You can describe the event manually below.</p>
+              </div>
+            )}
 
-                <div className="flex-1 min-w-0">
-                    {selected ? (
-                        <div>
-                            {/* Stage Progress */}
-                            <div className="bg-card border border-border rounded-lg p-5 shadow-sm mb-4">
-                                <div className="flex items-center gap-0 mb-6">
-                                    {STAGES.map((s, i) => {
-                                        const curIdx = getStageIndex(selected.status);
-                                        const isDone = i < curIdx;
-                                        const isActive = i === curIdx;
-                                        return (
-                                            <div key={s} className="flex items-center">
-                                                <div className="flex flex-col items-center text-center">
-                                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold ${isActive ? 'bg-primary text-primary-foreground border-primary' : isDone ? 'bg-green-100 text-green-800 border-green-600' : 'border-border'}`}>{isDone ? '✓' : i + 1}</div>
-                                                    <span className="text-xs mt-1">{t(`rca.stages.${s.toLowerCase()}`)}</span>
-                                                </div>
-                                                {i < STAGES.length - 1 && <div className={`flex-1 h-0.5 min-w-[2rem] ${isDone ? 'bg-green-600' : 'bg-border'}`}></div>}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Event Information (with inline editing) */}
-                            <div className="bg-card border border-border rounded-lg p-5 shadow-sm mb-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="text-xs font-bold text-primary uppercase tracking-wider">{t('rca.eventDescription')}</div>
-                                    {!editingEventInfo && (
-                                        <button
-                                            className="px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-card hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                                            onClick={startEditEventInfo}
-                                            title={t('common.edit')}
-                                        >
-                                            {t('common.edit')}
-                                        </button>
-                                    )}
-                                </div>
-
-                                {editingEventInfo ? (
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="font-mono text-xs">{selected.analysis_id?.slice(0, 12)}</span>
-                                            <StatusBadge status={selected.status} />
-                                        </div>
-                                        <div className="mb-3">
-                                            <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('rca.eventDescription')}</div>
-                                            <textarea
-                                                className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px] resize-y"
-                                                rows={3}
-                                                value={editEventDesc}
-                                                onChange={e => setEditEventDesc(e.target.value)}
-                                                placeholder={t('rca.eventDescription')}
-                                            />
-                                        </div>
-                                        <div className="mb-3">
-                                            <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('common.equipment')}</div>
-                                            <select
-                                                className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                                                value={editEquipmentId}
-                                                onChange={e => setEditEquipmentId(e.target.value)}
-                                            >
-                                                <option value="">{t('rca.selectEquipment')}...</option>
-                                                {nodes.map(n => <option key={n.node_id} value={n.node_id}>{n.code || ''} — {n.name}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                                                onClick={saveEditEventInfo}
-                                            >
-                                                {t('common.save')}
-                                            </button>
-                                            <button
-                                                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted transition-colors"
-                                                onClick={cancelEditEventInfo}
-                                            >
-                                                {t('common.cancel')}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="font-mono text-xs">{selected.analysis_id?.slice(0, 12)}</span>
-                                            <StatusBadge status={selected.status} />
-                                        </div>
-                                        <p className="text-sm">{selected.event_description || t('common.noData')}</p>
-                                        {selected.equipment_id && <div className="mt-2"><span className="inline-flex items-center gap-1 bg-muted px-2.5 py-1 rounded-md text-xs font-mono text-muted-foreground">{t('common.equipment')}: {selected.equipment_id.slice(0, 8)}</span></div>}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 5W + 2H Analysis (with inline cell editing) */}
-                            {selected.five_w_two_h && (
-                                <div className="bg-card border border-border rounded-lg p-5 shadow-sm mb-4">
-                                    <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">{t('rca.fiveW2H')}</div>
-                                    <div className="overflow-x-auto">
-                                        <table className="data-table">
-                                            <thead><tr><th>{t('rca.fiveW2H')}</th><th>{t('common.description')}</th></tr></thead>
-                                            <tbody>
-                                                {Object.entries(selected.five_w_two_h).map(([k, v]) => (
-                                                    <tr key={k}>
-                                                        <td className="font-semibold">{k}</td>
-                                                        <td
-                                                            className="cursor-pointer hover:bg-muted/50 transition-colors"
-                                                            onClick={() => {
-                                                                if (editingField !== `5w2h_${k}`) {
-                                                                    startEdit5w2h(k, v);
-                                                                }
-                                                            }}
-                                                        >
-                                                            {editingField === `5w2h_${k}` ? (
-                                                                <textarea
-                                                                    ref={editRef}
-                                                                    className="w-full px-2 py-1 border border-primary rounded bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y min-h-[36px]"
-                                                                    value={editValue}
-                                                                    onChange={e => setEditValue(e.target.value)}
-                                                                    onBlur={() => saveEdit5w2h(k)}
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                                                            e.preventDefault();
-                                                                            saveEdit5w2h(k);
-                                                                        }
-                                                                        if (e.key === 'Escape') {
-                                                                            setEditingField(null);
-                                                                            setEditValue('');
-                                                                        }
-                                                                    }}
-                                                                    autoFocus
-                                                                />
-                                                            ) : (
-                                                                <span className="inline-flex items-center gap-1.5 group">
-                                                                    <span>{v || '\u2014'}</span>
-                                                                    <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity text-xs" title={t('common.edit')}>&#9998;</span>
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Root Cause Levels (with inline editing) */}
-                            {selected.root_cause_levels && (
-                                <div className="bg-card border border-border rounded-lg p-5 shadow-sm mb-4">
-                                    <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">{t('rca.rootCauses')}</div>
-                                    <div className="flex flex-col gap-2">
-                                        {['physical_cause', 'human_cause', 'latent_cause'].map((k, i) => (
-                                            selected.root_cause_levels[k] != null && (
-                                                <div
-                                                    key={k}
-                                                    className={`py-2.5 px-3.5 rounded-sm border-l-[3px] ${i === 0 ? 'bg-orange-50 border-l-orange-800' : i === 1 ? 'bg-amber-50 border-l-amber-700' : 'bg-red-50 border-l-red-800'}`}
-                                                    style={{ marginLeft: i * 24 }}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="text-[0.72rem] font-bold uppercase text-muted-foreground">{t(`rca.${k.replace(/_([a-z])/g, (_, c) => c.toUpperCase())}`)}</div>
-                                                        {editingField !== `cause_${k}` && (
-                                                            <button
-                                                                className="text-muted-foreground hover:text-foreground transition-colors text-xs px-1"
-                                                                onClick={() => startEditCause(k, selected.root_cause_levels[k])}
-                                                                title={t('common.edit')}
-                                                            >
-                                                                &#9998;
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    {editingField === `cause_${k}` ? (
-                                                        <textarea
-                                                            className="w-full mt-1 px-2 py-1 border border-primary rounded bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y min-h-[36px]"
-                                                            value={editValue}
-                                                            onChange={e => setEditValue(e.target.value)}
-                                                            onBlur={() => saveEditCause(k)}
-                                                            onKeyDown={e => {
-                                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                                    e.preventDefault();
-                                                                    saveEditCause(k);
-                                                                }
-                                                                if (e.key === 'Escape') {
-                                                                    setEditingField(null);
-                                                                    setEditValue('');
-                                                                }
-                                                            }}
-                                                            autoFocus
-                                                        />
-                                                    ) : (
-                                                        <div className="text-[0.85rem]">{selected.root_cause_levels[k]}</div>
-                                                    )}
-                                                </div>
-                                            )
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* CAPA Actions (with status cycling + add new action) */}
-                            <div className="bg-card border border-border rounded-lg p-5 shadow-sm mb-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="text-xs font-bold text-primary uppercase tracking-wider">{t('rca.capaActions')}</div>
-                                    <button
-                                        className="px-2.5 py-1 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                                        onClick={() => setShowAddCapa(true)}
-                                        title={t('rca.addAction')}
-                                    >
-                                        + {t('rca.addAction')}
-                                    </button>
-                                </div>
-
-                                {/* Add CAPA form */}
-                                {showAddCapa && (
-                                    <div className="border-2 border-dashed border-primary/40 rounded-lg p-4 mb-4 bg-primary/5">
-                                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-3">{t('rca.addAction')}</div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                            <div className="md:col-span-2">
-                                                <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('common.description')}</div>
-                                                <textarea
-                                                    className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[60px] resize-y"
-                                                    rows={2}
-                                                    value={newCapa.description}
-                                                    onChange={e => setNewCapa(prev => ({ ...prev, description: e.target.value }))}
-                                                    placeholder={t('common.description')}
-                                                />
-                                            </div>
-                                            <div>
-                                                <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('common.type')}</div>
-                                                <select
-                                                    className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                                                    value={newCapa.type}
-                                                    onChange={e => setNewCapa(prev => ({ ...prev, type: e.target.value }))}
-                                                >
-                                                    <option value="corrective">{t('rca.corrective')}</option>
-                                                    <option value="preventive">{t('rca.preventive')}</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('rca.responsible')}</div>
-                                                <input
-                                                    type="text"
-                                                    className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                                                    value={newCapa.responsible}
-                                                    onChange={e => setNewCapa(prev => ({ ...prev, responsible: e.target.value }))}
-                                                    placeholder={t('rca.responsible')}
-                                                />
-                                            </div>
-                                            <div>
-                                                <div className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{t('rca.dueDate')}</div>
-                                                <input
-                                                    type="date"
-                                                    className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                                                    value={newCapa.due_date}
-                                                    onChange={e => setNewCapa(prev => ({ ...prev, due_date: e.target.value }))}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                                                onClick={handleAddCapa}
-                                                disabled={!newCapa.description.trim()}
-                                            >
-                                                {t('rca.addAction')}
-                                            </button>
-                                            <button
-                                                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted transition-colors"
-                                                onClick={() => { setShowAddCapa(false); setNewCapa({ description: '', type: 'corrective', responsible: '', due_date: '' }); }}
-                                            >
-                                                {t('common.cancel')}
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* CAPA table */}
-                                {selected.capa_actions && selected.capa_actions.length > 0 ? (
-                                    <div className="overflow-x-auto">
-                                        <table className="data-table">
-                                            <thead><tr><th>#</th><th>{t('common.actions')}</th><th>{t('common.type')}</th><th>{t('rca.responsible')}</th><th>{t('rca.dueDate')}</th><th>{t('common.status')}</th></tr></thead>
-                                            <tbody>
-                                                {selected.capa_actions.map((a, i) => (
-                                                    <tr key={i}>
-                                                        <td>{i + 1}</td>
-                                                        <td>{a.description}</td>
-                                                        <td><span className="badge badge-info">{a.type}</span></td>
-                                                        <td className="text-xs text-muted-foreground">{a.responsible || '\u2014'}</td>
-                                                        <td className="text-xs text-muted-foreground">{a.due_date || '\u2014'}</td>
-                                                        <td>
-                                                            <button
-                                                                className="cursor-pointer hover:opacity-80 transition-opacity"
-                                                                onClick={() => cycleCapaStatus(i)}
-                                                                title={t('common.status')}
-                                                            >
-                                                                <StatusBadge status={a.status} />
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                ) : (
-                                    !showAddCapa && <p className="text-muted-foreground text-sm py-2">{t('common.noData')}</p>
-                                )}
-                            </div>
-
-                            <div className="flex gap-2 mt-4 flex-wrap">
-                                <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" onClick={handleAdvance}>{t('rca.advanceStage')}</button>
-                                <button className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted transition-colors" onClick={handleRun5w2h}>{t('rca.run5w2h')}</button>
-                            </div>
-                        </div>
-                    ) : <div className="bg-card border border-border rounded-lg p-5 shadow-sm"><div className="text-center py-16 px-5 text-muted-foreground"><div className="text-5xl mb-4 opacity-40">🔍</div><h3>{t('rca.title')}</h3><p>{t('rca.subtitle')}</p></div></div>}
-                </div>
+            {/* Manual entry */}
+            <div className="border-t border-border pt-4 space-y-3">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Or describe manually:</label>
+              <textarea value={createDesc} onChange={e => setCreateDesc(e.target.value)}
+                placeholder="Describe the failure event..."
+                className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-red-500/30 min-h-[60px]" />
+              <input value={createEquip} onChange={e => setCreateEquip(e.target.value)}
+                placeholder="Equipment TAG or name"
+                className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-red-500/30" />
+              <button onClick={() => handleCreate(createDesc, createEquip)} disabled={creating || !createDesc.trim()}
+                className="w-full py-2.5 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-40 flex items-center justify-center gap-2">
+                {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                Create RCA + AI Analysis
+              </button>
             </div>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 }

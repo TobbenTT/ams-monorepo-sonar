@@ -358,20 +358,18 @@ export default function FailureCapture({ onNavigateTab }) {
           const matched = fuzzyMatch(s.failure_object_part || s.failureObjectPart, activeCat.parts);
           if (matched) setF('failureObjectPart', matched);
         }
-        // Apply ALL fields from Claude (camelCase + snake_case) — strip numeric TAGs
-        if (s.enhanced_description) setF('whatHappens', stripNumericTags(s.enhanced_description));
+        // Store AI enhanced description separately — do NOT overwrite user's original text
+        if (s.enhanced_description) setF('aiEnhancedDescription', stripNumericTags(s.enhanced_description));
         if (s.suggestedAction || s.suggested_action) setF('suggestedAction', stripNumericTags(s.suggestedAction || s.suggested_action));
-        // Auto-generate WO title from AI description (first clause, max 60 chars)
-        // WO Title = corrective action (first step of suggested action)
-        const action = stripNumericTags(s.suggestedAction || s.suggested_action || '');
-        if (action) {
-          // Extract first numbered step or first sentence as title
-          let title = action.replace(/^\d+[\.\)]\s*/, '').split(/\n/)[0].split(/[.,;]/)[0].trim();
+        // Auto-generate WO title = main corrective action (not step 1, but the principal action)
+        // Use AI's main_action field if available, otherwise extract from original text
+        if (s.main_action || s.mainAction) {
+          let title = stripNumericTags(s.main_action || s.mainAction).trim();
           if (title.length > 70) title = title.substring(0, 70).replace(/\s+\S*$/, '');
           setF('woTitle', title);
         } else if (s.enhanced_description) {
-          // Fallback to description if no action
-          let title = stripNumericTags(s.enhanced_description).split(/[.,]/)[0].trim();
+          // Fallback: extract main verb+object from enhanced description
+          let title = stripNumericTags(s.enhanced_description).split(/[.,;]/)[0].trim();
           if (title.length > 70) title = title.substring(0, 70).replace(/\s+\S*$/, '');
           setF('woTitle', title);
         }
@@ -429,7 +427,7 @@ export default function FailureCapture({ onNavigateTab }) {
     // Load locations (PLANT + AREA + top SYSTEM) and equipment separately
     Promise.all([
       api.listNodes({ limit: 300, plant_id: plant }).catch(() => []),
-      api.listNodes({ node_type: 'EQUIPMENT', limit: 100, plant_id: plant }).catch(() => []),
+      api.listNodes({ node_type: 'EQUIPMENT', limit: 500, plant_id: plant }).catch(() => []),
     ]).then(([locRes, eqRes]) => {
       const locs = Array.isArray(locRes) ? locRes : locRes?.items || [];
       const eqs = Array.isArray(eqRes) ? eqRes : eqRes?.items || [];
@@ -606,14 +604,27 @@ export default function FailureCapture({ onNavigateTab }) {
           setEquipFromLocation(true);
           setShowEquipSearch(true);
         } else if (children.length > 0) {
+          // Recursively search up to 3 levels deep for equipment
           const childIds = children.map(c => c.node_id);
-          Promise.all(childIds.slice(0, 10).map(id => api.listNodes({ parent_node_id: id, limit: 100, plant_id: plant }).catch(() => []))).then(results => {
-            const allEq = results.flatMap(r => Array.isArray(r) ? r : r?.items || []);
-            const equips = allEq.filter(n => n.node_type === 'EQUIPMENT');
-            if (equips.length > 0) {
-              setEquipResults(equips);
+          Promise.all(childIds.slice(0, 15).map(id => api.listNodes({ parent_node_id: id, limit: 200, plant_id: plant }).catch(() => []))).then(results => {
+            const allLevel2 = results.flatMap(r => Array.isArray(r) ? r : r?.items || []);
+            const equips2 = allLevel2.filter(n => n.node_type === 'EQUIPMENT');
+            if (equips2.length > 0) {
+              setEquipResults(equips2);
               setEquipFromLocation(true);
               setShowEquipSearch(true);
+            } else if (allLevel2.length > 0) {
+              // Go one more level deep (level 3)
+              const level2Ids = allLevel2.map(c => c.node_id);
+              Promise.all(level2Ids.slice(0, 20).map(id => api.listNodes({ parent_node_id: id, limit: 200, plant_id: plant }).catch(() => []))).then(res3 => {
+                const allLevel3 = res3.flatMap(r => Array.isArray(r) ? r : r?.items || []);
+                const equips3 = allLevel3.filter(n => n.node_type === 'EQUIPMENT');
+                if (equips3.length > 0) {
+                  setEquipResults(equips3);
+                  setEquipFromLocation(true);
+                  setShowEquipSearch(true);
+                }
+              });
             }
           });
         }
@@ -1285,7 +1296,7 @@ export default function FailureCapture({ onNavigateTab }) {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-gray-900">Create Work Notification</h2>
-              <p className="text-xs text-gray-500 mt-0.5">SAP PM Form - Failure Notification / Work Request</p>
+              <p className="text-xs text-gray-500 mt-0.5">Failure Notification / Work Request</p>
             </div>
             <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold">
               Will create Notification (WR)
@@ -1606,7 +1617,7 @@ export default function FailureCapture({ onNavigateTab }) {
 
           </div>
           <div style={{display: wizardStep === 1 ? undefined : "none"}}>
-          {/* 3b. Technical Location (SAP) */}
+          {/* 3b. Technical Location */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5" /> Technical Location *
@@ -1893,7 +1904,7 @@ export default function FailureCapture({ onNavigateTab }) {
               className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
           </div>
 
-          {/* 10. SAP Materials */}
+          {/* 10. Materials */}
           <div className="border rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -1919,7 +1930,7 @@ export default function FailureCapture({ onNavigateTab }) {
                   <div key={i} className={"grid grid-cols-3 gap-2 p-2 rounded-lg " + (mat.isExternal ? "bg-purple-50/50 border border-purple-200" : "bg-gray-50")}>
                     <div className="relative">
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                      <input type="text" placeholder="Buscar material SAP..." value={mat.sapId}
+                      <input type="text" placeholder="Buscar material..." value={mat.sapId}
                         onChange={e => { updateMaterial(i, 'sapId', e.target.value); setActiveMatSapIdx(i); }}
                         onFocus={() => setActiveMatSapIdx(i)}
                         onBlur={() => setTimeout(() => setActiveMatSapIdx(-1), 150)}
@@ -1949,16 +1960,13 @@ export default function FailureCapture({ onNavigateTab }) {
                     <div className="flex gap-1">
                       <input type="number" min="0" placeholder="Cant" value={mat.quantity} onChange={e => updateMaterial(i, 'quantity', e.target.value)}
                         className="w-14 p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-                      <select value={mat.unit || 'UD'} onChange={e => updateMaterial(i, 'unit', e.target.value)}
-                        className="flex-1 p-1 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
-                        <option>UD</option><option>M</option><option>CM</option><option>MM</option>
-                        <option>KG</option><option>G</option><option>L</option><option>ML</option>
-                        <option>H</option><option>PZA</option><option>ROLLO</option><option>CAJA</option>
-                      </select>
+                      <input type="text" value={mat.unit || 'UD'} readOnly
+                        className="flex-1 p-1 rounded-lg border border-gray-100 text-xs bg-gray-50 text-gray-500 cursor-not-allowed" />
                     </div>
                     <div className="flex gap-1">
-                      <input type="text" placeholder="Description" value={mat.description} onChange={e => updateMaterial(i, 'description', e.target.value)}
-                        className="flex-1 p-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                      <input type="text" placeholder="Description" value={mat.description} readOnly={!!mat.sapId && !!mat.description}
+                        onChange={e => !mat.sapId ? updateMaterial(i, 'description', e.target.value) : null}
+                        className={"flex-1 p-2 rounded-lg border text-xs " + (mat.sapId && mat.description ? "border-gray-100 bg-gray-50 text-gray-500 cursor-not-allowed" : "border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30")} />
                       <button onClick={() => removeMaterial(i)} className="px-1 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
                     </div>
                   </div>
@@ -1978,7 +1986,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-white font-bold text-sm flex items-center gap-2">
-                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-mono">SAP PM03</span>
+                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-mono">PM03</span>
                     External Resource Contract
                   </h3>
                   <p className="text-blue-200 text-xs mt-0.5">Framework Contract / External Workforce</p>
@@ -2105,7 +2113,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-white font-bold text-sm flex items-center gap-2">
-                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-mono">SAP ME51N</span>
+                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-mono">ME51N</span>
                     Direct Purchase Request
                   </h3>
                   <p className="text-amber-100 text-xs mt-0.5">Material not in catalog - Purchase Requisition</p>
@@ -2292,7 +2300,7 @@ export default function FailureCapture({ onNavigateTab }) {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-white font-bold text-sm flex items-center gap-2">
-                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-mono">SAP ME51N</span>
+                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-mono">ME51N</span>
                     External Service Request
                   </h3>
                   <p className="text-purple-200 text-xs mt-0.5">Framework Contract / Direct Procurement</p>
@@ -2450,7 +2458,7 @@ export default function FailureCapture({ onNavigateTab }) {
             <input type="text" value={form.reportedBy} onChange={e => setF('reportedBy', e.target.value)}
               placeholder="Nombre del supervisor o reportante"
               className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-            <div className="text-[10px] text-gray-400 mt-1">SAP PM: Notification author (field QMNUM)</div>
+            <div className="text-[10px] text-gray-400 mt-1">Notification author</div>
           </div>
 
           {/* 14. Adjuntos */}

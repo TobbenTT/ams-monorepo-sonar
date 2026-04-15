@@ -1,9 +1,10 @@
 """Sales contact form router — handles demo requests and sales inquiries."""
 
+import re
 import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,23 @@ class ContactRequest(BaseModel):
     num_plants: str = Field(default="", max_length=50)
     interest: str = Field(default="demo", max_length=50)  # demo | pricing | partnership | other
     message: str = Field(default="", max_length=2000)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v):
+        v = v.strip()
+        if "\n" in v or "\r" in v:
+            raise ValueError("Invalid email: contains newline characters")
+        if not re.match(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$", v):
+            raise ValueError("Invalid email format")
+        return v
+
+    @field_validator("full_name", "company", "phone", "country", "industry", "message")
+    @classmethod
+    def sanitize_text(cls, v):
+        if isinstance(v, str):
+            return v.replace("\r", "").replace("\n", " ").replace("\x00", "").strip()
+        return v
 
 
 @router.post("/contact")
@@ -44,14 +62,14 @@ def submit_contact(data: ContactRequest):
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                     <tr><td style="padding: 6px 0; color: #64748b; width: 140px;">Company:</td><td style="color: #1e293b; font-weight: 600;">{data.company}</td></tr>
                     <tr><td style="padding: 6px 0; color: #64748b;">Email:</td><td><a href="mailto:{data.email}" style="color: #0f766e;">{data.email}</a></td></tr>
-                    {f'<tr><td style="padding: 6px 0; color: #64748b;">Phone:</td><td style="color: #1e293b;">{data.phone}</td></tr>' if data.phone else ''}
-                    {f'<tr><td style="padding: 6px 0; color: #64748b;">Country:</td><td style="color: #1e293b;">{data.country}</td></tr>' if data.country else ''}
-                    {f'<tr><td style="padding: 6px 0; color: #64748b;">Industry:</td><td style="color: #1e293b;">{data.industry}</td></tr>' if data.industry else ''}
-                    {f'<tr><td style="padding: 6px 0; color: #64748b;">Employees:</td><td style="color: #1e293b;">{data.num_employees}</td></tr>' if data.num_employees else ''}
-                    {f'<tr><td style="padding: 6px 0; color: #64748b;">Plants:</td><td style="color: #1e293b;">{data.num_plants}</td></tr>' if data.num_plants else ''}
+                    <tr><td style="padding: 6px 0; color: #64748b;">Phone:</td><td style="color: #1e293b;">{data.phone or 'N/A'}</td></tr>
+                    <tr><td style="padding: 6px 0; color: #64748b;">Country:</td><td style="color: #1e293b;">{data.country or 'N/A'}</td></tr>
+                    <tr><td style="padding: 6px 0; color: #64748b;">Industry:</td><td style="color: #1e293b;">{data.industry or 'N/A'}</td></tr>
+                    <tr><td style="padding: 6px 0; color: #64748b;">Employees:</td><td style="color: #1e293b;">{data.num_employees or 'N/A'}</td></tr>
+                    <tr><td style="padding: 6px 0; color: #64748b;">Plants:</td><td style="color: #1e293b;">{data.num_plants or 'N/A'}</td></tr>
                     <tr><td style="padding: 6px 0; color: #64748b;">Interest:</td><td style="color: #1e293b;"><strong>{data.interest.upper()}</strong></td></tr>
                 </table>
-                {f'<div style="margin-top: 16px; padding: 12px; background: white; border-left: 3px solid #0f766e; border-radius: 6px;"><p style="margin: 0 0 4px; font-size: 12px; color: #64748b; font-weight: 600;">MESSAGE:</p><p style="margin: 0; color: #1e293b; font-size: 14px; line-height: 1.6;">{data.message}</p></div>' if data.message else ''}
+                <div style="margin-top: 16px; padding: 12px; background: white; border-left: 3px solid #0f766e; border-radius: 6px;"><p style="margin: 0 0 4px; font-size: 12px; color: #64748b; font-weight: 600;">MESSAGE:</p><p style="margin: 0; color: #1e293b; font-size: 14px; line-height: 1.6;">{data.message or 'N/A'}</p></div>
             </div>
             <p style="text-align: center; color: #94a3b8; font-size: 11px; margin-top: 20px;">
                 MAGEAM — Value Strategy Consulting<br>
@@ -63,7 +81,7 @@ def submit_contact(data: ContactRequest):
         sent = False
         if is_configured():
             # Send to sales team
-            sales_email = "sales@aiprowork.com"
+            sales_email = "jose.cortinat@valuestrategyconsulting.com"
             sent = send_email(sales_email, f"New Lead: {data.company} - {data.full_name}", html)
 
             # Auto-reply to the lead

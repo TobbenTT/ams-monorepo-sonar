@@ -121,10 +121,8 @@ export default function ContactPage() {
           <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
             <ArrowLeft className="w-4 h-4" /> {T.back}
           </button>
-          <div className="flex items-center gap-3">
-            <img src="/MAGEAM_LOGO.png" alt="MAGEAM" className="w-7 h-7 rounded-lg" />
-            <span className="text-base font-bold text-gray-900">MAGEAM</span>
-            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Enterprise</span>
+          <div className="flex items-center">
+            <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-9 w-auto" />
           </div>
           <button onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-100">
@@ -151,7 +149,7 @@ export default function ContactPage() {
                 <Mail className="w-5 h-5 text-emerald-600" />
               </div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Email</p>
-              <a href="mailto:sales@aiprowork.com" className="text-sm font-medium text-gray-900 hover:text-emerald-600">sales@aiprowork.com</a>
+              <a href="mailto:jose.cortinat@valuestrategyconsulting.com" className="text-sm font-medium text-gray-900 hover:text-emerald-600 break-all">jose.cortinat@valuestrategyconsulting.com</a>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
               <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
@@ -277,7 +275,7 @@ export default function ContactPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-10">
-          MAGEAM v2.0 &mdash; Value Strategy Consulting
+          MagEAM v2.0 &mdash; Value Strategy Consulting
         </p>
       </div>
     </div>

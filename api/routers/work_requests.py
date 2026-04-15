@@ -761,7 +761,8 @@ IMPORTANT: Detect the language of the user description. If the description is in
 
 {
   "equipment_tag": "Equipment TAG identified from the description (e.g. PP-CR-001). null if not identifiable",
-  "enhanced_description": "Improved technical description of the problem (SAP PM style, 2-3 sentences, include equipment/TAG, location, symptom, impact)",
+  "enhanced_description": "Technical description (keep the user's ORIGINAL text as-is, only add equipment name and location if missing)",
+  "main_action": "The single main corrective action extracted from the description (e.g. 'Reemplazar placas de acero mandibulas', 'Replace main bearing'). This becomes the WO title - max 70 chars, verb + object format",
   "failureCategory": "MECHANICAL | ELECTRICAL | INSTRUMENTATION | HYDRAULIC | STRUCTURAL",
   "priority": "P1 | P2 | P3 | P4",
   "activityClass": "M001 | M002 | M003",
@@ -838,12 +839,15 @@ P1/P2->M002, P3/P4->M001. ALWAYS include materials with sapId, supportEquipment 
 
 RULE equipmentCondition: If priority is P1 or P2, equipmentCondition MUST be "stopped". If LEAKAGE, SEIZED, SHORT CIRCUIT, ARC FLASH, CRACK DETECTED — equipmentCondition MUST be "stopped" regardless of priority.
 
-RULE enhanced_description: Rewrite the user description in SAP PM technical format.
-- Use the EQUIPMENT NAME (e.g. "Molino SAG", "Bomba centrifuga"), NOT the numeric TAG/ID
-- NEVER include numeric IDs like 000000000189 or 000000000827 in the description or suggestedAction
-- Include: equipment name, functional location if known, main symptom, measurement if any, operational impact
-- Format: short direct sentences, maintenance technical terminology (2-3 sentences MAX, not longer)
-- If user already wrote well, just improve wording without changing meaning.
+RULE enhanced_description: PRESERVE the user's original text as much as possible. Do NOT rewrite or rephrase what the user wrote.
+- Only add the equipment name and location if the user omitted them
+- NEVER include numeric IDs like 000000000189 or 000000000827
+- The user's original wording is sacred — do not "improve" or "maquillaje" it
+
+RULE main_action: Extract the SINGLE main corrective action from the user's description.
+- Format: verb + object (e.g. "Reemplazar placas de acero mandibulas", "Replace main bearing")
+- This becomes the Work Order title — max 70 characters
+- Do NOT copy the first step of suggestedAction — identify the principal action from the problem description
 
 RULE suggestedAction: Write numbered steps. Use equipment NAME not numeric TAG. Keep it concise (max 10 steps).
 

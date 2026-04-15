@@ -475,60 +475,151 @@ def hh_balance_from_wos(db: Session, plant_id: str) -> dict:
     }
 
 
+COLLECTION_STATUSES = ["PENDIENTE", "PARCIAL", "COMPLETADO", "EN_AREA_ESPERA", "ENTREGADO"]
+
+
 def materials_from_wos(db: Session, plant_id: str) -> dict:
-    """Get materials status from actual scheduled WOs."""
+    """Get materials status from actual scheduled WOs with collection tracking."""
     wos = db.query(ManagedWorkOrderModel).filter(
         ManagedWorkOrderModel.plant_id == plant_id,
-        ManagedWorkOrderModel.status.in_(["PROGRAMADO", "EN_EJECUCION"]),
+        ManagedWorkOrderModel.status.in_(["PROGRAMADO", "EN_EJECUCION", "PLANIFICADO"]),
     ).all()
 
     packages = []
     total_materials = 0
+    count_by_status = {s: 0 for s in COLLECTION_STATUSES}
     ready_count = 0
     pending_count = 0
+    delivered_count = 0
 
     for wo in wos:
         mats = wo.materials or []
         if not isinstance(mats, list):
             mats = []
         mat_items = []
-        for m in mats:
+        wo_all_delivered = True
+        for i, m in enumerate(mats):
             if isinstance(m, dict):
+                coll_status = m.get("collection_status", "PENDIENTE")
+                if coll_status not in COLLECTION_STATUSES:
+                    coll_status = "PENDIENTE"
+                count_by_status[coll_status] = count_by_status.get(coll_status, 0) + 1
+                if coll_status not in ("ENTREGADO", "EN_AREA_ESPERA", "COMPLETADO"):
+                    wo_all_delivered = False
                 mat_items.append({
+                    "index": i,
                     "code": m.get("code") or m.get("sapId") or "",
                     "description": m.get("description") or m.get("name") or "",
                     "quantity": m.get("quantity", 0),
                     "unit": m.get("unit", "PZ"),
-                    "status": "READY",
+                    "collection_status": coll_status,
+                    "collected_by": m.get("collected_by", ""),
+                    "collected_at": m.get("collected_at", ""),
+                    "notes": m.get("collection_notes", ""),
                 })
         total_materials += len(mat_items)
-        if mat_items:
-            ready_count += 1
-            packages.append({
-                "wo_number": wo.wo_number,
-                "equipment_tag": wo.equipment_tag,
-                "description": (wo.description or "")[:60],
-                "materials": mat_items,
-                "status": "READY",
-            })
+
+        # Determine WO-level material readiness
+        if not mat_items:
+            wo_status = "NO_MATERIALS"
+        elif wo_all_delivered:
+            wo_status = "ENTREGADO"
+            delivered_count += 1
+        elif any(m["collection_status"] != "PENDIENTE" for m in mat_items):
+            wo_status = "EN_PROCESO"
+            pending_count += 1
         else:
-            packages.append({
-                "wo_number": wo.wo_number,
-                "equipment_tag": wo.equipment_tag,
-                "description": (wo.description or "")[:60],
-                "materials": [],
-                "status": "NO_MATERIALS",
-            })
+            wo_status = "PENDIENTE"
+            pending_count += 1
+
+        packages.append({
+            "wo_id": wo.wo_id,
+            "wo_number": wo.wo_number,
+            "equipment_tag": wo.equipment_tag,
+            "description": (wo.description or "")[:60],
+            "priority_code": wo.priority_code,
+            "planned_start": str(wo.planned_start)[:10] if wo.planned_start else "",
+            "wo_type": wo.wo_type or "",
+            "reservation_code": getattr(wo, 'reservation_code', None) or "",
+            "materials": mat_items,
+            "status": wo_status,
+            "total_items": len(mat_items),
+            "collected_items": sum(1 for m in mat_items if m["collection_status"] in ("COMPLETADO", "EN_AREA_ESPERA", "ENTREGADO")),
+        })
+
+    # Sort: PENDIENTE first, then EN_PROCESO, then delivered
+    status_order = {"PENDIENTE": 0, "EN_PROCESO": 1, "ENTREGADO": 2, "NO_MATERIALS": 3}
+    packages.sort(key=lambda p: (status_order.get(p["status"], 9), p.get("planned_start", "")))
 
     return {
         "total_packages": len(packages),
-        "confirmed": ready_count,
+        "confirmed": delivered_count,
         "pending": pending_count,
         "unavailable": 0,
         "total_materials": total_materials,
-        "all_ready": pending_count == 0,
-        "packages": packages[:50],  # limit for performance
+        "all_ready": pending_count == 0 and total_materials > 0,
+        "by_status": count_by_status,
+        "packages": packages[:80],
     }
+
+
+def update_material_collection(db: Session, wo_id: str, data: dict, user_id: str) -> dict:
+    """Update collection status for a single material in a WO."""
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return {"ok": False, "error": "WO not found"}
+
+    idx = data.get("material_index", -1)
+    new_status = data.get("status", "")
+    notes = data.get("notes", "")
+
+    if new_status not in COLLECTION_STATUSES:
+        return {"ok": False, "error": f"Invalid status. Must be one of: {COLLECTION_STATUSES}"}
+
+    mats = wo.materials or []
+    if not isinstance(mats, list) or idx < 0 or idx >= len(mats):
+        return {"ok": False, "error": "Invalid material index"}
+
+    mats[idx]["collection_status"] = new_status
+    mats[idx]["collected_by"] = user_id
+    mats[idx]["collected_at"] = datetime.now().isoformat()
+    if notes:
+        mats[idx]["collection_notes"] = notes
+
+    wo.materials = mats
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(wo, "materials")
+    db.commit()
+
+    return {"ok": True, "wo_id": wo_id, "material_index": idx, "new_status": new_status}
+
+
+def bulk_update_material_collection(db: Session, wo_id: str, status: str, user_id: str) -> dict:
+    """Bulk update all materials in a WO to a given collection status."""
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return {"ok": False, "error": "WO not found"}
+
+    if status not in COLLECTION_STATUSES:
+        return {"ok": False, "error": f"Invalid status. Must be one of: {COLLECTION_STATUSES}"}
+
+    mats = wo.materials or []
+    if not isinstance(mats, list):
+        return {"ok": False, "error": "No materials"}
+
+    now = datetime.now().isoformat()
+    for m in mats:
+        if isinstance(m, dict):
+            m["collection_status"] = status
+            m["collected_by"] = user_id
+            m["collected_at"] = now
+
+    wo.materials = mats
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(wo, "materials")
+    db.commit()
+
+    return {"ok": True, "wo_id": wo_id, "updated": len(mats), "new_status": status}
 
 
 # ══════════════════════════════════════════════════════════════════════

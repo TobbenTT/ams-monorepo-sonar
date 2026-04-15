@@ -126,6 +126,33 @@ def materials_live(plant_id: str = "OCP-JFC1", db: Session = Depends(get_db)):
     return scheduling_service.materials_from_wos(db, plant_id)
 
 
+@router.put("/materials/{wo_id}/collection-status")
+def update_material_collection(
+    wo_id: str,
+    data: dict,
+    user=Depends(require_role("admin", "manager", "planner", "supervisor")),
+    db: Session = Depends(get_db),
+):
+    """Update material collection status for a WO.
+    data: { material_index: int, status: str, notes: str? }
+    Statuses: PENDIENTE, PARCIAL, COMPLETADO, EN_AREA_ESPERA, ENTREGADO
+    """
+    return scheduling_service.update_material_collection(db, wo_id, data, user.get("user_id", ""))
+
+
+@router.put("/materials/{wo_id}/bulk-status")
+def bulk_update_material_status(
+    wo_id: str,
+    data: dict,
+    user=Depends(require_role("admin", "manager", "planner", "supervisor")),
+    db: Session = Depends(get_db),
+):
+    """Bulk update all materials in a WO to a given status.
+    data: { status: str }
+    """
+    return scheduling_service.bulk_update_material_collection(db, wo_id, data.get("status", ""), user.get("user_id", ""))
+
+
 # ── Phase 3: Gantt from managed WOs ─────────────────────────────────
 
 @router.get("/gantt")

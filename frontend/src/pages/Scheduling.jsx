@@ -732,9 +732,19 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   );
 }
 
-/* ───── Phase 3: Gantt Tab ───── */
-function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
+/* ───── Phase 3: Gantt Tab (Interactive with Drag & Drop) ───── */
+function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
   const [hoveredWO, setHoveredWO] = useState(null);
+  const [draggingWO, setDraggingWO] = useState(null);
+  const [dragDayIdx, setDragDayIdx] = useState(null);
+  const [tooltip, setTooltip] = useState(null);
+  const [sortBy, setSortBy] = useState('priority'); // priority | date | equipment | type
+  const [filterPrio, setFilterPrio] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+  const [searchGantt, setSearchGantt] = useState('');
+  const [ganttPage, setGanttPage] = useState(0);
+  const GANTT_PAGE_SIZE = 25;
+  const ganttAreaRef = useRef(null);
 
   if (!ganttData || ganttData.length === 0) {
     return (
@@ -745,7 +755,6 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
     );
   }
 
-  // Generate day columns (not just weeks)
   const now = new Date();
   const monday = getMonday(now);
   const totalDays = weeksRange * 7;
@@ -753,68 +762,157 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
   for (let i = 0; i < totalDays; i++) {
     const d = addDays(monday, i);
     const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-    days.push({ date: d, label: d.getDate(), dayName: ['S','M','T','W','T','F','S'][d.getDay()], isWeekend, month: d.toLocaleString('en', { month: 'short' }) });
+    const isToday = toDateStr(d) === toDateStr(now);
+    days.push({ date: d, label: d.getDate(), dayName: ['S','M','T','W','T','F','S'][d.getDay()], isWeekend, isToday, month: d.toLocaleString('en', { month: 'short' }), str: toDateStr(d) });
   }
 
-  // Group days by week
   const weeks = [];
   for (let i = 0; i < weeksRange; i++) {
     weeks.push({ label: `W${getISOWeek(addDays(monday, i * 7))}`, days: days.slice(i * 7, (i + 1) * 7) });
   }
 
   const prioColors = { P1: '#dc2626', P2: '#ea580c', P3: '#2563eb', P4: '#6b7280' };
+  const typeColors = { PM01: '#EF4444', PM02: '#3B82F6', PM03: '#F59E0B', CORRECTIVO: '#EF4444', PREVENTIVO: '#3B82F6', PREDICTIVO: '#8B5CF6', MEJORA: '#10B981' };
+
+  // Filter & sort
+  let filtered = [...ganttData];
+  if (filterPrio !== 'all') filtered = filtered.filter(wo => wo.priority_code === filterPrio);
+  if (filterType !== 'all') filtered = filtered.filter(wo => wo.wo_type === filterType);
+  if (searchGantt) {
+    const q = searchGantt.toLowerCase();
+    filtered = filtered.filter(wo => (wo.wo_number || '').toLowerCase().includes(q) || (wo.equipment_tag || '').toLowerCase().includes(q) || (wo.description || '').toLowerCase().includes(q));
+  }
+  if (sortBy === 'priority') filtered.sort((a, b) => (a.priority_code || 'P4').localeCompare(b.priority_code || 'P4'));
+  else if (sortBy === 'date') filtered.sort((a, b) => new Date(a.planned_start || 0) - new Date(b.planned_start || 0));
+  else if (sortBy === 'equipment') filtered.sort((a, b) => (a.equipment_tag || '').localeCompare(b.equipment_tag || ''));
+  else if (sortBy === 'type') filtered.sort((a, b) => (a.wo_type || '').localeCompare(b.wo_type || ''));
+
+  // Daily load summary
+  const dailyLoad = {};
+  ganttData.forEach(wo => {
+    const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
+    if (start) dailyLoad[start] = (dailyLoad[start] || 0) + (wo.estimated_hours || 0);
+  });
+
+  const uniqueTypes = [...new Set(ganttData.map(wo => wo.wo_type).filter(Boolean))];
+
+  const handleBarDragStart = (e, wo) => {
+    setDraggingWO(wo);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', wo.wo_id);
+  };
+
+  const handleDayDrop = (e, dayIdx) => {
+    e.preventDefault();
+    if (draggingWO && onReschedule) {
+      const newDate = days[dayIdx].date;
+      const oldStart = draggingWO.planned_start ? new Date(draggingWO.planned_start) : now;
+      const oldEnd = draggingWO.planned_end ? new Date(draggingWO.planned_end) : oldStart;
+      const duration = Math.max(0, (oldEnd - oldStart) / 86400000);
+      const newEnd = addDays(newDate, duration);
+      onReschedule(draggingWO, toDateStr(newDate), toDateStr(newEnd));
+    }
+    setDraggingWO(null);
+    setDragDayIdx(null);
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground">Range:</span>
-          {[{ v: 2, l: '2 Weeks' }, { v: 4, l: '4 Weeks' }, { v: 12, l: '12 Weeks' }].map(opt => (
+          {[{ v: 2, l: '2W' }, { v: 4, l: '4W' }, { v: 8, l: '8W' }, { v: 12, l: '12W' }].map(opt => (
             <button key={opt.v} onClick={() => onWeeksChange(opt.v)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${weeksRange === opt.v ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
               {opt.l}
             </button>
           ))}
-        </div>
-        <div className="flex gap-3 text-xs">
-          {Object.entries(prioColors).map(([p, c]) => (
-            <div key={p} className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: c }} /><span>{p}</span></div>
+          <div className="w-px h-6 bg-border mx-1" />
+          <span className="text-sm font-medium text-muted-foreground">Sort:</span>
+          {[{ v: 'priority', l: 'Priority' }, { v: 'date', l: 'Date' }, { v: 'equipment', l: 'Equipment' }, { v: 'type', l: 'Type' }].map(opt => (
+            <button key={opt.v} onClick={() => setSortBy(opt.v)}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${sortBy === opt.v ? 'bg-blue-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}>
+              {opt.l}
+            </button>
           ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input type="text" value={searchGantt} onChange={e => { setSearchGantt(e.target.value); setGanttPage(0); }} placeholder="Search..."
+              className="pl-7 pr-2 py-1 text-xs border border-border rounded-lg bg-background text-foreground w-36 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+          </div>
+          <select value={filterPrio} onChange={e => { setFilterPrio(e.target.value); setGanttPage(0); }}
+            className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
+            <option value="all">All Priorities</option>
+            {['P1','P2','P3','P4'].map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <select value={filterType} onChange={e => { setFilterType(e.target.value); setGanttPage(0); }}
+            className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
+            <option value="all">All Types</option>
+            {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
         </div>
       </div>
 
+      {/* Legend */}
+      <div className="flex items-center gap-4 text-xs flex-wrap">
+        <span className="text-muted-foreground font-medium">Priority:</span>
+        {Object.entries(prioColors).map(([p, c]) => (
+          <div key={p} className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: c }} /><span>{p}</span></div>
+        ))}
+        <div className="w-px h-4 bg-border mx-1" />
+        <span className="text-muted-foreground font-medium">{filtered.length} WOs</span>
+        <span className="text-muted-foreground">· Drag bars to reschedule</span>
+      </div>
+
+      {/* Gantt Chart */}
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <div style={{ minWidth: Math.max(800, totalDays * 32 + 280) }}>
-            {/* Header: weeks + days */}
-            <div className="flex border-b-2 border-border">
-              <div className="w-[280px] min-w-[280px] px-4 py-1 text-[10px] font-bold text-muted-foreground uppercase border-r-2 border-border bg-gray-50 flex items-end">
+        <div className="overflow-x-auto" ref={ganttAreaRef}>
+          <div style={{ minWidth: Math.max(900, totalDays * 36 + 300) }}>
+            {/* Header */}
+            <div className="flex border-b-2 border-border sticky top-0 z-10 bg-card">
+              <div className="w-[300px] min-w-[300px] px-4 py-1 text-[10px] font-bold text-muted-foreground uppercase border-r-2 border-border bg-gray-50 dark:bg-gray-800/50 flex items-end">
                 WO / Equipment
               </div>
               <div className="flex-1 flex flex-col">
-                {/* Week row */}
                 <div className="flex">
                   {weeks.map((w, i) => (
-                    <div key={i} className="flex-1 text-center text-[10px] font-bold text-muted-foreground py-1 border-b border-border bg-gray-50" style={{ minWidth: w.days.length * 32 }}>
+                    <div key={i} className="flex-1 text-center text-[10px] font-bold text-muted-foreground py-1 border-b border-border bg-gray-50 dark:bg-gray-800/50" style={{ minWidth: w.days.length * 36 }}>
                       {w.label}
                     </div>
                   ))}
                 </div>
-                {/* Day row */}
                 <div className="flex">
                   {days.map((d, i) => (
-                    <div key={i} className={`text-center text-[9px] py-1 border-r border-border/40 ${d.isWeekend ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-600'}`} style={{ minWidth: 32, flex: '0 0 auto', width: `${100 / totalDays}%` }}>
-                      <div className="font-bold">{d.dayName}</div>
+                    <div key={i}
+                      className={`text-center text-[9px] py-1 border-r border-border/40 ${d.isToday ? 'bg-emerald-100 dark:bg-emerald-900/30 font-bold' : d.isWeekend ? 'bg-gray-100 dark:bg-gray-800 text-gray-400' : 'bg-white dark:bg-card text-gray-600'}`}
+                      style={{ minWidth: 36, flex: '0 0 auto', width: `${100 / totalDays}%` }}>
+                      <div className={`font-bold ${d.isToday ? 'text-emerald-700 dark:text-emerald-300' : ''}`}>{d.dayName}</div>
                       <div>{d.label}</div>
                     </div>
                   ))}
                 </div>
+                {/* Daily load indicator */}
+                <div className="flex border-t border-border/50">
+                  {days.map((d, i) => {
+                    const load = dailyLoad[d.str] || 0;
+                    const pct = Math.min(load / 40, 1);
+                    return (
+                      <div key={i} className="relative" style={{ minWidth: 36, flex: '0 0 auto', width: `${100 / totalDays}%`, height: 4 }}>
+                        <div className={`absolute inset-0 ${load > 40 ? 'bg-red-400' : load > 24 ? 'bg-amber-400' : load > 0 ? 'bg-emerald-400' : 'bg-transparent'}`}
+                          style={{ opacity: Math.max(0.2, pct) }} />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Rows */}
-            <div style={{ maxHeight: '55vh', overflowY: 'auto' }}>
-              {ganttData.map((wo) => {
+            {/* Rows (paginated) */}
+            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              {filtered.slice(ganttPage * GANTT_PAGE_SIZE, (ganttPage + 1) * GANTT_PAGE_SIZE).map((wo) => {
                 const woStart = wo.planned_start ? new Date(wo.planned_start) : now;
                 const woEnd = wo.planned_end ? new Date(wo.planned_end) : new Date(woStart.getTime() + (wo.estimated_hours || 4) * 3600000);
                 const startOffset = Math.max(0, (woStart - monday) / 86400000);
@@ -823,32 +921,55 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
                 const widthPct = Math.max(2, (duration / totalDays) * 100);
                 const barColor = prioColors[wo.priority_code] || prioColors.P3;
                 const isHovered = hoveredWO === wo.wo_id;
+                const isDragging = draggingWO?.wo_id === wo.wo_id;
+                const workers = (wo.assigned_workers || []).map(w => w.name).join(', ');
 
                 return (
                   <div key={wo.wo_id || wo.wo_number}
-                    className={`flex border-b border-border/50 transition-colors ${isHovered ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
-                    onMouseEnter={() => setHoveredWO(wo.wo_id)} onMouseLeave={() => setHoveredWO(null)}>
+                    className={`flex border-b border-border/50 transition-colors ${isDragging ? 'opacity-50 bg-blue-50 dark:bg-blue-900/10' : isHovered ? 'bg-blue-50/50 dark:bg-blue-900/5' : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30'}`}
+                    onMouseEnter={() => setHoveredWO(wo.wo_id)} onMouseLeave={() => { setHoveredWO(null); setTooltip(null); }}>
                     {/* Label */}
-                    <div className="w-[280px] min-w-[280px] px-3 py-2 border-r-2 border-border">
+                    <div className="w-[300px] min-w-[300px] px-3 py-2 border-r-2 border-border">
                       <div className="flex items-center gap-1.5">
+                        <GripVertical size={10} className="text-gray-300" />
                         <span className="font-mono text-[11px] font-bold text-foreground">{wo.wo_number}</span>
                         <span className="text-[9px] font-bold px-1 py-0.5 rounded text-white" style={{ backgroundColor: barColor }}>{wo.priority_code}</span>
-                        <span className={`text-[9px] px-1 py-0.5 rounded border ${wo.status === 'PROGRAMADO' ? 'bg-blue-50 text-blue-700 border-blue-200' : wo.status === 'EN_EJECUCION' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>{wo.status}</span>
+                        <span className={`text-[9px] px-1 py-0.5 rounded border ${wo.status === 'PROGRAMADO' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700' : wo.status === 'EN_EJECUCION' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700' : 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}>{wo.status}</span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate">{wo.equipment_tag} — {(wo.description || '').substring(0, 35)}</p>
-                      <span className="text-[10px] text-gray-400">{wo.estimated_hours}h {wo.wo_type ? `· ${wo.wo_type}` : ''}</span>
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{wo.equipment_tag} — {(wo.description || '').substring(0, 30)}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-gray-400">{wo.estimated_hours}h · {wo.wo_type || ''}</span>
+                        {workers && <span className="text-[10px] text-blue-500 truncate max-w-[100px]">👷 {workers}</span>}
+                      </div>
                     </div>
-                    {/* Bar area */}
-                    <div className="flex-1 relative" style={{ minHeight: 44 }}>
-                      {/* Day grid */}
+                    {/* Bar area with drop zones */}
+                    <div className="flex-1 relative" style={{ minHeight: 52 }}>
+                      {/* Day grid + drop zones */}
                       {days.map((d, i) => (
-                        <div key={i} className={`absolute top-0 bottom-0 border-r ${d.isWeekend ? 'bg-gray-50/50 border-gray-200/50' : 'border-border/20'}`}
-                          style={{ left: `${(i / totalDays) * 100}%`, width: `${100 / totalDays}%` }} />
+                        <div key={i}
+                          className={`absolute top-0 bottom-0 border-r transition-colors ${d.isToday ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-300/50' : d.isWeekend ? 'bg-gray-50/50 dark:bg-gray-800/20 border-gray-200/50' : 'border-border/20'} ${dragDayIdx === i && draggingWO ? 'bg-blue-100/50 dark:bg-blue-900/20' : ''}`}
+                          style={{ left: `${(i / totalDays) * 100}%`, width: `${100 / totalDays}%` }}
+                          onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragDayIdx(i); }}
+                          onDragLeave={() => setDragDayIdx(null)}
+                          onDrop={e => handleDayDrop(e, i)} />
                       ))}
-                      {/* Bar */}
-                      <div className="absolute top-2 bottom-2 flex items-center" style={{ left: `${Math.max(0, Math.min(leftPct, 98))}%`, width: `${Math.min(widthPct, 100 - leftPct)}%` }}>
-                        <div className={`h-full w-full rounded-md shadow-sm relative overflow-hidden transition-all ${isHovered ? 'ring-2 ring-offset-1' : ''}`}
+                      {/* Today marker */}
+                      {(() => {
+                        const todayIdx = days.findIndex(d => d.isToday);
+                        if (todayIdx >= 0) return <div className="absolute top-0 bottom-0 w-0.5 bg-emerald-500 z-10" style={{ left: `${((todayIdx + 0.5) / totalDays) * 100}%` }} />;
+                        return null;
+                      })()}
+                      {/* Draggable Bar */}
+                      <div className="absolute top-2 bottom-2 flex items-center cursor-grab active:cursor-grabbing"
+                        draggable
+                        onDragStart={e => handleBarDragStart(e, wo)}
+                        onDragEnd={() => { setDraggingWO(null); setDragDayIdx(null); }}
+                        onMouseEnter={() => setTooltip(wo)}
+                        onMouseLeave={() => setTooltip(null)}
+                        style={{ left: `${Math.max(0, Math.min(leftPct, 98))}%`, width: `${Math.min(widthPct, 100 - leftPct)}%`, zIndex: isHovered ? 5 : 1 }}>
+                        <div className={`h-full w-full rounded-md shadow-sm relative overflow-hidden transition-all ${isHovered ? 'ring-2 ring-offset-1 scale-[1.02]' : ''} ${isDragging ? 'ring-2 ring-blue-400 scale-95' : ''}`}
                           style={{ backgroundColor: barColor + '25', borderLeft: `3px solid ${barColor}`, ringColor: barColor }}>
+                          {/* Progress fill */}
                           <div className="h-full rounded-r-md" style={{ width: `${wo.completion_pct || 0}%`, backgroundColor: barColor + '50' }} />
                           <span className="absolute inset-0 flex items-center px-1.5 text-[9px] font-bold truncate" style={{ color: barColor }}>
                             {wo.wo_number?.replace('WO-', '')} {wo.completion_pct > 0 ? `(${wo.completion_pct}%)` : ''}
@@ -863,6 +984,305 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange }) {
           </div>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filtered.length > GANTT_PAGE_SIZE && (
+        <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-2">
+          <span className="text-xs text-muted-foreground">
+            Showing {ganttPage * GANTT_PAGE_SIZE + 1}-{Math.min((ganttPage + 1) * GANTT_PAGE_SIZE, filtered.length)} of {filtered.length} WOs
+          </span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setGanttPage(p => Math.max(0, p - 1))} disabled={ganttPage === 0}
+              className="px-3 py-1 text-xs font-medium border border-border rounded-lg hover:bg-muted disabled:opacity-40 text-foreground">
+              Previous
+            </button>
+            {Array.from({ length: Math.ceil(filtered.length / GANTT_PAGE_SIZE) }, (_, i) => (
+              <button key={i} onClick={() => setGanttPage(i)}
+                className={`w-7 h-7 text-xs font-medium rounded-lg transition-colors ${ganttPage === i ? 'bg-emerald-700 text-white' : 'border border-border hover:bg-muted text-foreground'}`}>
+                {i + 1}
+              </button>
+            )).slice(Math.max(0, ganttPage - 2), ganttPage + 3)}
+            <button onClick={() => setGanttPage(p => Math.min(Math.ceil(filtered.length / GANTT_PAGE_SIZE) - 1, p + 1))}
+              disabled={ganttPage >= Math.ceil(filtered.length / GANTT_PAGE_SIZE) - 1}
+              className="px-3 py-1 text-xs font-medium border border-border rounded-lg hover:bg-muted disabled:opacity-40 text-foreground">
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-xl shadow-xl p-4 min-w-[280px] text-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-mono font-bold">{tooltip.wo_number}</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: prioColors[tooltip.priority_code] || '#6b7280' }}>{tooltip.priority_code}</span>
+            <span className="text-xs text-muted-foreground">{tooltip.wo_type}</span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-1">{tooltip.equipment_tag}</p>
+          <p className="text-xs text-foreground mb-2">{tooltip.description}</p>
+          <div className="grid grid-cols-2 gap-1 text-xs">
+            <span className="text-muted-foreground">Start:</span><span>{tooltip.planned_start || 'N/A'}</span>
+            <span className="text-muted-foreground">End:</span><span>{tooltip.planned_end || 'N/A'}</span>
+            <span className="text-muted-foreground">Hours:</span><span>{tooltip.estimated_hours}h</span>
+            <span className="text-muted-foreground">Progress:</span><span>{tooltip.completion_pct || 0}%</span>
+            {(tooltip.assigned_workers || []).length > 0 && (
+              <><span className="text-muted-foreground">Workers:</span><span>{tooltip.assigned_workers.map(w => w.name).join(', ')}</span></>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ───── Phase 3b: Mass Change Tab ───── */
+function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
+  const toast = useToast();
+  const [selected, setSelected] = useState(new Set());
+  const [edits, setEdits] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchMC, setSearchMC] = useState('');
+  const [bulkField, setBulkField] = useState('');
+  const [bulkValue, setBulkValue] = useState('');
+
+  const allWOs = useMemo(() => [...(scheduledWOs || []), ...(releasedWOs || [])], [scheduledWOs, releasedWOs]);
+
+  const filtered = useMemo(() => {
+    let list = allWOs;
+    if (filterStatus !== 'all') list = list.filter(wo => wo.status === filterStatus);
+    if (searchMC) {
+      const q = searchMC.toLowerCase();
+      list = list.filter(wo => (wo.wo_number || '').toLowerCase().includes(q) || (wo.equipment_tag || '').toLowerCase().includes(q));
+    }
+    return list;
+  }, [allWOs, filterStatus, searchMC]);
+
+  const toggleSelect = (woId) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(woId) ? next.delete(woId) : next.add(woId);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(wo => wo.wo_id)));
+  };
+
+  const updateEdit = (woId, field, value) => {
+    setEdits(prev => ({
+      ...prev,
+      [woId]: { ...(prev[woId] || {}), [field]: value },
+    }));
+  };
+
+  const applyBulkChange = () => {
+    if (!bulkField || selected.size === 0) return;
+    const newEdits = { ...edits };
+    selected.forEach(woId => {
+      newEdits[woId] = { ...(newEdits[woId] || {}), [bulkField]: bulkValue };
+    });
+    setEdits(newEdits);
+    toast.success(`Applied "${bulkField}" = "${bulkValue}" to ${selected.size} WOs`);
+    setBulkField('');
+    setBulkValue('');
+  };
+
+  const saveAll = async () => {
+    const entries = Object.entries(edits).filter(([, v]) => Object.keys(v).length > 0);
+    if (entries.length === 0) { toast.info('No changes to save'); return; }
+    setSaving(true);
+    let ok = 0, fail = 0;
+    for (const [woId, changes] of entries) {
+      try {
+        await api.updateManagedWO(woId, changes);
+        ok++;
+      } catch { fail++; }
+    }
+    setSaving(false);
+    setEdits({});
+    setSelected(new Set());
+    toast.success(`Saved ${ok} WOs${fail > 0 ? `, ${fail} failed` : ''}`);
+    onRefresh?.();
+  };
+
+  const editedCount = Object.keys(edits).filter(k => Object.keys(edits[k]).length > 0).length;
+  const statuses = [...new Set(allWOs.map(wo => wo.status))];
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Wrench size={16} className="text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">Mass Change</span>
+          <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{allWOs.length} WOs</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input type="text" value={searchMC} onChange={e => setSearchMC(e.target.value)} placeholder="Search..."
+              className="pl-7 pr-2 py-1 text-xs border border-border rounded-lg bg-background text-foreground w-36 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+          </div>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+            className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
+            <option value="all">All Status</option>
+            {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-3 flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">{selected.size} selected</span>
+          <div className="w-px h-6 bg-blue-200 dark:bg-blue-700" />
+          <select value={bulkField} onChange={e => setBulkField(e.target.value)}
+            className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground">
+            <option value="">Select field...</option>
+            <option value="status">Status</option>
+            <option value="priority_code">Priority</option>
+            <option value="shift">Shift</option>
+            <option value="planned_start">Planned Start</option>
+            <option value="planned_end">Planned End</option>
+            <option value="work_center">Work Center</option>
+          </select>
+          {bulkField === 'status' && (
+            <select value={bulkValue} onChange={e => setBulkValue(e.target.value)}
+              className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground">
+              <option value="">Select...</option>
+              {['CREADO','PLANIFICADO','PROGRAMADO','EN_EJECUCION','COMPLETADO','CERRADO'].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          )}
+          {bulkField === 'priority_code' && (
+            <select value={bulkValue} onChange={e => setBulkValue(e.target.value)}
+              className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground">
+              <option value="">Select...</option>
+              {['P1','P2','P3','P4'].map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          )}
+          {bulkField === 'shift' && (
+            <select value={bulkValue} onChange={e => setBulkValue(e.target.value)}
+              className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground">
+              <option value="">Select...</option>
+              <option value="day">Day</option>
+              <option value="night">Night</option>
+            </select>
+          )}
+          {(bulkField === 'planned_start' || bulkField === 'planned_end') && (
+            <input type="date" value={bulkValue} onChange={e => setBulkValue(e.target.value)}
+              className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground" />
+          )}
+          {bulkField === 'work_center' && (
+            <input type="text" value={bulkValue} onChange={e => setBulkValue(e.target.value)} placeholder="e.g. PASMEC01"
+              className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground w-28" />
+          )}
+          <button onClick={applyBulkChange} disabled={!bulkField || !bulkValue}
+            className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors">
+            Apply to {selected.size}
+          </button>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto" style={{ maxHeight: '65vh' }}>
+          <table className="w-full border-collapse text-xs">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-gray-100 dark:bg-gray-800 border-b-2 border-border">
+                <th className="px-3 py-3 text-left w-8"><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded accent-emerald-600" /></th>
+                <th className="px-3 py-3 text-left font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">WO#</th>
+                <th className="px-3 py-3 text-left font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Equipment</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Type</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Priority</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Status</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Start</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">End</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Shift</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">HH</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Work Center</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((wo, rowIdx) => {
+                const e = edits[wo.wo_id] || {};
+                const isEdited = Object.keys(e).length > 0;
+                const isSel = selected.has(wo.wo_id);
+                const prio = e.priority_code ?? wo.priority_code ?? 'P3';
+                const prioStyle = prio === 'P1' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300' : prio === 'P2' ? 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' : prio === 'P3' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400';
+                const stat = e.status ?? wo.status ?? '';
+                const statStyle = stat === 'PROGRAMADO' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : stat === 'EN_EJECUCION' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : stat === 'CERRADO' || stat === 'COMPLETADO' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : stat === 'PLANIFICADO' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+                const typeMeta = wo.wo_type === 'PM01' ? 'bg-red-50 text-red-600 border-red-200' : wo.wo_type === 'PM02' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-purple-50 text-purple-600 border-purple-200';
+                return (
+                  <tr key={wo.wo_id} className={`border-b border-border/30 transition-all ${isEdited ? 'bg-amber-50/70 dark:bg-amber-900/15 ring-1 ring-inset ring-amber-300/50' : isSel ? 'bg-blue-50/50 dark:bg-blue-900/10' : rowIdx % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-gray-50/50 dark:bg-gray-800/20'} hover:bg-blue-50/40 dark:hover:bg-blue-900/10`}>
+                    <td className="px-3 py-2"><input type="checkbox" checked={isSel} onChange={() => toggleSelect(wo.wo_id)} className="rounded accent-emerald-600" /></td>
+                    <td className="px-3 py-2 font-mono font-bold text-foreground text-[11px]">{wo.wo_number}</td>
+                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[160px] text-[11px]">{wo.equipment_tag}</td>
+                    <td className="px-3 py-2 text-center"><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${typeMeta}`}>{wo.wo_type}</span></td>
+                    <td className="px-3 py-2 text-center">
+                      <select value={prio} onChange={ev => updateEdit(wo.wo_id, 'priority_code', ev.target.value)}
+                        className={`text-[10px] font-bold px-2 py-1 rounded-md border cursor-pointer ${e.priority_code ? 'ring-2 ring-amber-400' : ''} ${prioStyle}`}>
+                        {['P1','P2','P3','P4'].map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <select value={stat} onChange={ev => updateEdit(wo.wo_id, 'status', ev.target.value)}
+                        className={`text-[10px] font-semibold px-2 py-1 rounded-md cursor-pointer ${e.status ? 'ring-2 ring-amber-400' : ''} ${statStyle}`}>
+                        {['CREADO','LIBERADO','PLANIFICADO','EN_PROGRAMACION','PROGRAMADO','EN_EJECUCION','COMPLETADO','CERRADO'].map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <input type="date" value={e.planned_start ?? (wo.planned_start || '').slice(0, 10)} onChange={ev => updateEdit(wo.wo_id, 'planned_start', ev.target.value)}
+                        className={`border rounded-md px-1.5 py-1 bg-background text-foreground text-[10px] w-[105px] ${e.planned_start ? 'ring-2 ring-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700'}`} />
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <input type="date" value={e.planned_end ?? (wo.planned_end || '').slice(0, 10)} onChange={ev => updateEdit(wo.wo_id, 'planned_end', ev.target.value)}
+                        className={`border rounded-md px-1.5 py-1 bg-background text-foreground text-[10px] w-[105px] ${e.planned_end ? 'ring-2 ring-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700'}`} />
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <select value={e.shift ?? wo.shift ?? 'day'} onChange={ev => updateEdit(wo.wo_id, 'shift', ev.target.value)}
+                        className={`text-[10px] px-2 py-1 rounded-md border cursor-pointer ${e.shift ? 'ring-2 ring-amber-400' : 'border-gray-200 dark:border-gray-700'} bg-background text-foreground`}>
+                        <option value="day">Day</option>
+                        <option value="night">Night</option>
+                      </select>
+                    </td>
+                    <td className="px-3 py-2 text-center"><span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded text-[10px]">{wo.estimated_hours || 0}h</span></td>
+                    <td className="px-3 py-2 text-center">
+                      <input type="text" value={e.work_center ?? wo.work_center ?? ''} onChange={ev => updateEdit(wo.wo_id, 'work_center', ev.target.value)}
+                        className={`border rounded-md px-1.5 py-1 bg-background text-foreground text-[10px] w-24 text-center ${e.work_center ? 'ring-2 ring-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700'}`}
+                        placeholder="—" />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Save bar */}
+      {editedCount > 0 && (
+        <div className="sticky bottom-4 bg-card border-2 border-amber-400 rounded-xl p-4 shadow-xl flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="text-sm font-semibold text-foreground">{editedCount} WO(s) modified</span>
+            <span className="text-xs text-muted-foreground">Changes are not saved yet</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setEdits({}); setSelected(new Set()); }}
+              className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors text-foreground">
+              Discard
+            </button>
+            <button onClick={saveAll} disabled={saving}
+              className="px-6 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2">
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+              Save All Changes
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1000,11 +1420,27 @@ function HHBalanceTab({ programId, t, plantId }) {
 }
 
 /* ───── Phase 3: Materials Tab ───── */
+/* ───── Materials Coordination Tab (RSR - Resource Status Report) ───── */
+const COLL_STATUS = [
+  { id: 'PENDIENTE', label: 'Pendiente', icon: '⏳', color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700' },
+  { id: 'PARCIAL', label: 'Parcial', icon: '🔄', color: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700' },
+  { id: 'COMPLETADO', label: 'Completado', icon: '✅', color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700' },
+  { id: 'EN_AREA_ESPERA', label: 'En Area Espera', icon: '📦', color: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700' },
+  { id: 'ENTREGADO', label: 'Entregado', icon: '🚚', color: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700' },
+];
+const COLL_MAP = Object.fromEntries(COLL_STATUS.map(s => [s.id, s]));
+
 function MaterialsTab({ programId, t, plantId }) {
+  const toast = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(null);
+  const [expandedWO, setExpandedWO] = useState(new Set());
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [matPage, setMatPage] = useState(0);
+  const MAT_PAGE_SIZE = 20;
 
-  useEffect(() => {
+  const loadData = () => {
     setLoading(true);
     api.materialsLive(plantId)
       .then(setData)
@@ -1012,75 +1448,239 @@ function MaterialsTab({ programId, t, plantId }) {
         if (programId) api.materialCheck(programId).then(setData).catch(() => {});
       })
       .finally(() => setLoading(false));
-  }, [plantId, programId]);
+  };
+
+  useEffect(() => { loadData(); }, [plantId, programId]);
+
+  const handleStatusChange = async (woId, matIndex, newStatus) => {
+    const key = `${woId}:${matIndex}`;
+    setUpdating(key);
+    try {
+      await api.updateMaterialCollection(woId, { material_index: matIndex, status: newStatus });
+      const meta = COLL_MAP[newStatus];
+      toast.success(`${meta?.icon || ''} Material ${meta?.label || newStatus}`);
+      loadData();
+    } catch (e) {
+      toast.error('Error updating: ' + (e.message || ''));
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleBulkStatus = async (woId, woNumber, newStatus) => {
+    setUpdating(woId);
+    try {
+      await api.bulkUpdateMaterialStatus(woId, newStatus);
+      const meta = COLL_MAP[newStatus];
+      toast.success(`${woNumber}: all materials → ${meta?.label || newStatus}`);
+      loadData();
+    } catch (e) {
+      toast.error('Error: ' + (e.message || ''));
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const toggleExpand = (woId) => {
+    setExpandedWO(prev => {
+      const next = new Set(prev);
+      next.has(woId) ? next.delete(woId) : next.add(woId);
+      return next;
+    });
+  };
 
   if (loading) return <div className="py-10 flex justify-center"><LoadingSpinner /></div>;
   if (!data) return (
     <div className="bg-card border border-border rounded-xl p-12 text-center">
       <Package size={40} className="text-muted-foreground/40 mx-auto mb-3" />
-      <p className="text-muted-foreground">Select a program to check materials</p>
+      <p className="text-muted-foreground">No materials data available</p>
     </div>
   );
 
-  const allOk = data.pending === 0 && data.unavailable === 0;
+  const byStatus = data.by_status || {};
+  const allOk = data.pending === 0 && data.total_materials > 0;
+  const packages = data.packages || [];
+  const filtered = filterStatus === 'all' ? packages : packages.filter(p => p.status === filterStatus);
 
   return (
     <div className="space-y-5">
-      {/* Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard icon={Package} color="text-blue-500" label="Paquetes" value={data.total_packages} sub="total" />
-        <KpiCard icon={CheckCircle} color="text-emerald-500" label={t('scheduling.confirmed')} value={data.confirmed} sub={t('scheduling.materialsOk')} />
-        <KpiCard icon={Clock} color="text-amber-500" label={t('scheduling.pendingMat')} value={data.pending} sub="partial" highlight={data.pending > 0} />
-        <KpiCard icon={AlertTriangle} color="text-red-500" label={t('scheduling.unavailable')} value={data.unavailable} sub="out of stock" highlight={data.unavailable > 0} />
+      {/* Pipeline progress bar */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <Package size={16} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <span className="text-sm font-bold text-foreground">Material Collection Pipeline</span>
+              <p className="text-[10px] text-muted-foreground">Track material readiness from warehouse to work site</p>
+            </div>
+          </div>
+          <span className="text-xs font-semibold bg-muted px-3 py-1 rounded-full text-muted-foreground">{data.total_materials} items / {data.total_packages} WOs</span>
+        </div>
+        {/* Horizontal pipeline */}
+        <div className="flex rounded-lg overflow-hidden h-8 bg-gray-100 dark:bg-gray-800">
+          {COLL_STATUS.map(s => {
+            const count = byStatus[s.id] || 0;
+            const pct = data.total_materials > 0 ? (count / data.total_materials) * 100 : 0;
+            if (pct === 0) return null;
+            const bgColor = s.id === 'PENDIENTE' ? 'bg-gray-400' : s.id === 'PARCIAL' ? 'bg-amber-500' : s.id === 'COMPLETADO' ? 'bg-blue-500' : s.id === 'EN_AREA_ESPERA' ? 'bg-purple-500' : 'bg-emerald-500';
+            return (
+              <div key={s.id} className={`${bgColor} flex items-center justify-center cursor-pointer transition-all hover:opacity-80 ${filterStatus === s.id ? 'ring-2 ring-inset ring-white' : ''}`}
+                style={{ width: `${pct}%` }}
+                onClick={() => setFilterStatus(filterStatus === s.id ? 'all' : s.id)}>
+                {pct > 8 && <span className="text-[10px] font-bold text-white">{count}</span>}
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex justify-between mt-2">
+          {COLL_STATUS.map(s => {
+            const count = byStatus[s.id] || 0;
+            return (
+              <div key={s.id} className={`text-center cursor-pointer transition-opacity ${filterStatus !== 'all' && filterStatus !== s.id ? 'opacity-40' : ''}`}
+                onClick={() => setFilterStatus(filterStatus === s.id ? 'all' : s.id)}>
+                <span className="text-[9px] text-muted-foreground">{s.icon} {s.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Overall status */}
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {COLL_STATUS.map(s => {
+          const count = byStatus[s.id] || 0;
+          const bgCard = s.id === 'PENDIENTE' ? 'border-gray-300 bg-gray-50 dark:bg-gray-800/50' : s.id === 'PARCIAL' ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/20' : s.id === 'COMPLETADO' ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20' : s.id === 'EN_AREA_ESPERA' ? 'border-purple-300 bg-purple-50 dark:bg-purple-900/20' : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/20';
+          const numColor = s.id === 'PENDIENTE' ? 'text-gray-700 dark:text-gray-300' : s.id === 'PARCIAL' ? 'text-amber-700 dark:text-amber-300' : s.id === 'COMPLETADO' ? 'text-blue-700 dark:text-blue-300' : s.id === 'EN_AREA_ESPERA' ? 'text-purple-700 dark:text-purple-300' : 'text-emerald-700 dark:text-emerald-300';
+          return (
+            <div key={s.id} onClick={() => { setFilterStatus(filterStatus === s.id ? 'all' : s.id); setMatPage(0); }}
+              className={`rounded-xl border-2 p-4 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${filterStatus === s.id ? 'ring-2 ring-blue-500 shadow-md' : ''} ${bgCard}`}>
+              <div className="text-2xl font-bold mb-1">{s.icon}</div>
+              <div className={`text-2xl font-extrabold ${numColor}`}>{count}</div>
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mt-1">{s.label}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Overall readiness */}
       <div className={`border rounded-xl p-4 flex items-center gap-3 ${allOk ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-700' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-700'}`}>
         {allOk ? <CheckCircle size={20} className="text-emerald-600 dark:text-emerald-400" /> : <AlertTriangle size={20} className="text-amber-600 dark:text-amber-400" />}
         <span className={`text-sm font-medium ${allOk ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
-          {allOk ? t('scheduling.materialsOk') + ' \u2014 Program ready to publish' : t('scheduling.materialsIncomplete') + ` \u2014 ${data.pending + data.unavailable} items pending`}
+          {allOk ? 'All materials collected & delivered — Ready for execution' : `${data.pending} WOs with pending materials`}
         </span>
+        {filterStatus !== 'all' && (
+          <button onClick={() => setFilterStatus('all')} className="ml-auto text-xs text-blue-600 hover:underline">Clear filter</button>
+        )}
       </div>
 
-      {/* Details per work package */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">Materials by Work Order</h2>
-          <span className="text-xs text-muted-foreground">{data.total_materials || 0} items total</span>
-        </div>
-        <div className="divide-y divide-border" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
-          {(data.packages || data.details || []).filter(pkg => (pkg.materials || pkg.items || []).length > 0).map((pkg, idx) => (
-            <div key={idx} className="px-5 py-3">
-              <div className="flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded-lg transition-colors" onClick={() => { window.location.href = '/work-orders'; }}>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-blue-600 hover:underline">{pkg.wo_number || pkg.name || pkg.wp_id}</span>
-                  <span className="text-xs text-muted-foreground">{pkg.equipment_tag}</span>
-                  <span className="text-[10px] text-gray-400 truncate max-w-[200px]">{pkg.description}</span>
-                </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  pkg.status === 'READY' || pkg.status === 'ok' ? 'bg-emerald-100 text-emerald-700'
-                  : pkg.status === 'NO_MATERIALS' || pkg.status === 'no_materials' ? 'bg-gray-100 text-gray-500'
-                  : 'bg-amber-100 text-amber-700'
-                }`}>
-                  {(pkg.materials || pkg.items || []).length} items
-                </span>
-              </div>
-              {(pkg.materials || pkg.items || []).length > 0 && (
-                <div className="mt-1 space-y-1">
-                  {(pkg.materials || pkg.items || []).map((item, iIdx) => (
-                    <div key={iIdx} className="flex items-center gap-3 text-xs bg-gray-50 rounded-lg px-3 py-1.5">
-                      <Package size={12} className="text-emerald-500 shrink-0" />
-                      <span className="font-mono text-gray-500 w-20 shrink-0">{item.code || item.material_code || ''}</span>
-                      <span className="text-gray-700 flex-1 truncate">{item.description || ''}</span>
-                      <span className="font-bold text-gray-800">{item.quantity || item.qty_required || 0}</span>
-                      <span className="text-gray-400 text-[10px] w-6">{item.unit || 'PZ'}</span>
+      {/* Work Orders with materials */}
+      <div className="space-y-3">
+        {filtered.length > MAT_PAGE_SIZE && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Showing {matPage * MAT_PAGE_SIZE + 1}-{Math.min((matPage + 1) * MAT_PAGE_SIZE, filtered.length)} of {filtered.length} WOs</span>
+            <div className="flex gap-1">
+              <button onClick={() => setMatPage(p => Math.max(0, p - 1))} disabled={matPage === 0}
+                className="px-2 py-1 border border-border rounded hover:bg-muted disabled:opacity-40">Prev</button>
+              <button onClick={() => setMatPage(p => Math.min(Math.ceil(filtered.length / MAT_PAGE_SIZE) - 1, p + 1))}
+                disabled={matPage >= Math.ceil(filtered.length / MAT_PAGE_SIZE) - 1}
+                className="px-2 py-1 border border-border rounded hover:bg-muted disabled:opacity-40">Next</button>
+            </div>
+          </div>
+        )}
+        {filtered.slice(matPage * MAT_PAGE_SIZE, (matPage + 1) * MAT_PAGE_SIZE).map(pkg => {
+          const isExpanded = expandedWO.has(pkg.wo_id);
+          const hasMats = pkg.materials && pkg.materials.length > 0;
+          const progress = pkg.total_items > 0 ? Math.round((pkg.collected_items / pkg.total_items) * 100) : 0;
+          const statusMeta = pkg.status === 'ENTREGADO' ? { bg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300', icon: '🚚' }
+            : pkg.status === 'EN_PROCESO' ? { bg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', icon: '🔄' }
+            : pkg.status === 'NO_MATERIALS' ? { bg: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400', icon: '—' }
+            : { bg: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300', icon: '⏳' };
+
+          return (
+            <div key={pkg.wo_id} className="bg-card border border-border rounded-xl overflow-hidden">
+              {/* WO Header */}
+              <div className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                onClick={() => hasMats && toggleExpand(pkg.wo_id)}>
+                {hasMats && (isExpanded ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />)}
+                <span className="font-mono text-sm font-bold text-foreground">{pkg.wo_number}</span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${statusMeta.bg}`}>{statusMeta.icon} {pkg.status}</span>
+                <span className="text-xs text-muted-foreground truncate">{pkg.equipment_tag}</span>
+                <span className="text-[10px] text-gray-400 truncate max-w-[150px]">{pkg.description}</span>
+                {pkg.reservation_code && <span className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-1.5 py-0.5 rounded ml-auto">RES: {pkg.reservation_code}</span>}
+                {pkg.planned_start && <span className={`text-[10px] text-blue-500 ${pkg.reservation_code ? '' : 'ml-auto'}`}>{pkg.planned_start}</span>}
+                {hasMats && (
+                  <div className="flex items-center gap-2 ml-2">
+                    <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
                     </div>
-                  ))}
+                    <span className="text-[10px] font-bold text-foreground">{pkg.collected_items}/{pkg.total_items}</span>
+                  </div>
+                )}
+                {/* Bulk actions */}
+                {hasMats && pkg.status !== 'ENTREGADO' && (
+                  <div className="flex gap-1 ml-2" onClick={e => e.stopPropagation()}>
+                    {pkg.status === 'PENDIENTE' && (
+                      <button onClick={() => handleBulkStatus(pkg.wo_id, pkg.wo_number, 'COMPLETADO')}
+                        disabled={updating === pkg.wo_id}
+                        className="text-[10px] px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors disabled:opacity-50 dark:bg-blue-900/30 dark:text-blue-300">
+                        All Collected
+                      </button>
+                    )}
+                    {(pkg.status === 'EN_PROCESO' || pkg.collected_items === pkg.total_items) && (
+                      <button onClick={() => handleBulkStatus(pkg.wo_id, pkg.wo_number, 'EN_AREA_ESPERA')}
+                        disabled={updating === pkg.wo_id}
+                        className="text-[10px] px-2 py-1 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors disabled:opacity-50 dark:bg-purple-900/30 dark:text-purple-300">
+                        To Staging
+                      </button>
+                    )}
+                    <button onClick={() => handleBulkStatus(pkg.wo_id, pkg.wo_number, 'ENTREGADO')}
+                      disabled={updating === pkg.wo_id}
+                      className="text-[10px] px-2 py-1 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      Delivered
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Expanded materials list */}
+              {isExpanded && hasMats && (
+                <div className="border-t border-border divide-y divide-border/50">
+                  {pkg.materials.map((item, iIdx) => {
+                    const cs = COLL_MAP[item.collection_status] || COLL_MAP.PENDIENTE;
+                    const isUpdating = updating === `${pkg.wo_id}:${item.index}`;
+                    return (
+                      <div key={iIdx} className="px-4 py-2.5 flex items-center gap-3 text-xs hover:bg-muted/20 transition-colors">
+                        <span className="font-mono text-gray-400 w-16 shrink-0">{item.code}</span>
+                        <span className="text-foreground flex-1 truncate">{item.description}</span>
+                        <span className="font-bold text-foreground w-10 text-right">{item.quantity}</span>
+                        <span className="text-gray-400 w-6">{item.unit}</span>
+                        {/* Status selector */}
+                        <select
+                          value={item.collection_status}
+                          onChange={e => handleStatusChange(pkg.wo_id, item.index, e.target.value)}
+                          disabled={isUpdating}
+                          className={`text-[11px] font-semibold px-2 py-1 rounded-lg border cursor-pointer transition-colors disabled:opacity-50 ${cs.color}`}>
+                          {COLL_STATUS.map(s => (
+                            <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+                          ))}
+                        </select>
+                        {isUpdating && <Loader2 size={12} className="animate-spin text-blue-500" />}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          ))}
-        </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="bg-card border border-border rounded-xl p-8 text-center">
+            <Package size={32} className="text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">{filterStatus !== 'all' ? 'No WOs match this filter' : 'No WOs with materials scheduled'}</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1213,11 +1813,12 @@ export default function Scheduling() {
       .catch(() => toast.error(`Error scheduling ${wo.wo_number}`));
   };
 
+  const [capacityLimit, setCapacityLimit] = useState(85); // % max capacity for auto-level
+
   const handleAISchedule = async () => {
     setAiScheduling(true);
     setAiResult(null);
     try {
-      // Step 1: Get all unscheduled WOs (PLANIFICADO without dates)
       const toSchedule = [...(releasedWOs || [])];
       const techs = technicians || [];
 
@@ -1227,7 +1828,6 @@ export default function Scheduling() {
         return;
       }
 
-      // Step 2: Use the week being VIEWED in the calendar
       const viewedMonday = viewedWeekStart || getMonday(new Date());
       const weekDays = [];
       for (let d = 0; d < 5; d++) {
@@ -1235,42 +1835,73 @@ export default function Scheduling() {
         day.setDate(viewedMonday.getDate() + d);
         weekDays.push(day.toISOString().slice(0, 10));
       }
-      const today = new Date().toISOString().slice(0, 10);
 
-      // Step 3: Sort by priority (P1 first)
+      // Sort by priority (P1 first)
       const prioOrder = { P1: 0, P2: 1, P3: 2, P4: 3 };
       toSchedule.sort((a, b) => (prioOrder[a.priority_code] || 3) - (prioOrder[b.priority_code] || 3));
 
-      // Step 4: Distribute respecting priority deadlines
-      // P1 (<24h) → today/Monday, P2 (<7 days) → this week spread, P3 (>7 days) → spread evenly, P4 → last day
+      // Capacity-constrained auto-level (Prometheus-style)
+      // Max HH per day = techs * 8h * capacityLimit%
+      const maxHHPerDay = techs.length * 8 * (capacityLimit / 100);
       const dayLoad = [0, 0, 0, 0, 0];
-      let techIdx = 0;
+
+      // Track per-technician daily load
+      const techDayLoad = {};
+      techs.forEach(t => { techDayLoad[t.worker_id] = [0, 0, 0, 0, 0]; });
+
       let scheduled = 0;
+      let deferred = 0;
+      const assignments = [];
 
       for (const wo of toSchedule) {
         const prio = wo.priority_code || 'P3';
         const hours = parseFloat(wo.estimated_hours) || 4;
-        let bestDay;
 
+        // Find best day respecting capacity limit
+        let bestDay = -1;
         if (prio === 'P1') {
-          // Emergency: first available day (Monday or today)
+          // Emergency: force first day even if over capacity
           bestDay = 0;
         } else if (prio === 'P2') {
-          // Urgent: spread across Mon-Wed (first half of week)
-          bestDay = [0, 1, 2].reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b);
-        } else if (prio === 'P4') {
-          // Shutdown: prefer Friday
-          bestDay = 4;
+          // Urgent: first half of week, under capacity
+          bestDay = [0, 1, 2].find(d => dayLoad[d] + hours <= maxHHPerDay);
+          if (bestDay === undefined) bestDay = [0, 1, 2].reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b);
         } else {
-          // P3 Normal: distribute evenly across all 5 days
-          bestDay = dayLoad.indexOf(Math.min(...dayLoad));
+          // P3/P4: find day with least load under capacity
+          const candidates = [0, 1, 2, 3, 4].filter(d => dayLoad[d] + hours <= maxHHPerDay);
+          if (candidates.length > 0) {
+            bestDay = prio === 'P4' ? candidates[candidates.length - 1] : candidates.reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b);
+          }
+        }
+
+        if (bestDay < 0) {
+          deferred++;
+          continue; // Skip — would exceed capacity limit
         }
 
         dayLoad[bestDay] += hours;
 
-        // Assign technician round-robin
-        const tech = techs.length > 0 ? techs[techIdx % techs.length] : null;
-        techIdx++;
+        // Match technician by specialty and daily load
+        const woSpec = (wo.work_center || wo.specialty || '').toUpperCase();
+        let bestTech = null;
+
+        // First try: match specialty + least loaded on that day
+        const specMatch = techs.filter(t => {
+          const tSpec = (t.specialty || '').toUpperCase();
+          return tSpec && woSpec && (tSpec.includes(woSpec.slice(0, 3)) || woSpec.includes(tSpec.slice(0, 3)));
+        });
+        const pool = specMatch.length > 0 ? specMatch : techs;
+        if (pool.length > 0) {
+          bestTech = pool.reduce((a, b) => {
+            const aLoad = techDayLoad[a.worker_id]?.[bestDay] || 0;
+            const bLoad = techDayLoad[b.worker_id]?.[bestDay] || 0;
+            return aLoad <= bLoad ? a : b;
+          });
+        }
+
+        if (bestTech && techDayLoad[bestTech.worker_id]) {
+          techDayLoad[bestTech.worker_id][bestDay] += hours;
+        }
 
         try {
           const updateData = {
@@ -1278,29 +1909,31 @@ export default function Scheduling() {
             planned_end: weekDays[bestDay],
             status: 'PROGRAMADO',
           };
-          if (tech) {
-            updateData.assigned_workers = [{ worker_id: tech.worker_id || tech.user_id, name: tech.name || tech.full_name, specialty: tech.specialty || '' }];
+          if (bestTech) {
+            updateData.assigned_workers = [{ worker_id: bestTech.worker_id || bestTech.user_id, name: bestTech.name || bestTech.full_name, specialty: bestTech.specialty || '' }];
           }
           await api.scheduleManagedWO(wo.wo_id, updateData);
           scheduled++;
+          assignments.push({ wo_number: wo.wo_number, worker_name: bestTech?.name || 'Unassigned', day: weekDays[bestDay], reason: `${prio} ${hours}h` });
         } catch {}
       }
 
-      // Also create a weekly program for HH Balance
+      // Create weekly program + execution tasks
       const weekNum = getISOWeek(viewedMonday);
       const year = viewedMonday.getFullYear();
       try { await api.createProgram({ plant_id: plant, week_number: weekNum, year }); } catch {}
-      // Auto-generate execution tasks for technicians
       try { await api.autoGenerateTasks(plant); } catch {}
 
       const weekLabel = `${weekDays[0]} to ${weekDays[4]}`;
-      toast.success(`${scheduled} WOs scheduled for ${weekLabel} with ${techs.length} technicians`);
-      setAiResult({ assignments: [], message: `✓ ${scheduled} WOs scheduled for ${weekLabel}` });
+      const loadPctFinal = maxHHPerDay > 0 ? Math.round((Math.max(...dayLoad) / maxHHPerDay) * 100) : 0;
+      const msg = `✓ ${scheduled} WOs auto-leveled for ${weekLabel} at ${capacityLimit}% capacity${deferred > 0 ? ` (${deferred} deferred — over capacity)` : ''} · Peak load: ${loadPctFinal}%`;
+      toast.success(msg);
+      setAiResult({ assignments, message: msg });
       loadCalendarData();
       loadPrograms();
       loadGantt();
     } catch (e) {
-      toast.error('AI Schedule error: ' + (e.message || ''));
+      toast.error('Auto-level error: ' + (e.message || ''));
     } finally {
       setAiScheduling(false);
     }
@@ -1360,6 +1993,7 @@ export default function Scheduling() {
     ...(isTechnician ? [{ id: 'inbox', icon: Inbox, label: t('scheduling.myInbox') }] : []),
     { id: 'schedule', icon: Calendar, label: t('scheduling.weeklySchedule') },
     { id: 'gantt', icon: BarChart3, label: t('scheduling.ganttView') },
+    { id: 'masschange', icon: Wrench, label: 'Mass Change' },
     { id: 'hh', icon: Users, label: t('scheduling.hhBalance') },
     { id: 'materials', icon: Package, label: t('scheduling.materials') },
   ];
@@ -1384,14 +2018,21 @@ export default function Scheduling() {
                 <Lock size={12} /> {t('scheduling.published')}
               </span>
             )}
-            <button
-              onClick={handleAISchedule}
-              disabled={aiScheduling}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
-            >
-              {aiScheduling ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {aiScheduling ? 'Scheduling...' : 'Schedule Week'}
-            </button>
+            <div className="flex items-center gap-1 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg px-1">
+              <select value={capacityLimit} onChange={e => setCapacityLimit(Number(e.target.value))}
+                className="text-xs bg-transparent text-purple-700 dark:text-purple-300 font-semibold py-2 px-1 focus:outline-none cursor-pointer"
+                title="Max capacity % for auto-leveling">
+                {[70, 75, 80, 85, 90, 95, 100].map(v => <option key={v} value={v}>{v}%</option>)}
+              </select>
+              <button
+                onClick={handleAISchedule}
+                disabled={aiScheduling}
+                className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {aiScheduling ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {aiScheduling ? 'Leveling...' : 'Auto-Level'}
+              </button>
+            </div>
             <button
               onClick={() => setShowClearConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
@@ -1455,7 +2096,16 @@ export default function Scheduling() {
         />
       )}
       {tab === 'gantt' && (
-        <GanttTab ganttData={ganttData} t={t} weeksRange={ganttWeeks} onWeeksChange={setGanttWeeks} />
+        <GanttTab ganttData={ganttData} t={t} weeksRange={ganttWeeks} onWeeksChange={setGanttWeeks}
+          onReschedule={(wo, newStart, newEnd) => {
+            api.updateManagedWO(wo.wo_id, { planned_start: newStart, planned_end: newEnd })
+              .then(() => { toast.success(`${wo.wo_number} → ${newStart}`); loadGantt(); loadCalendarData(); })
+              .catch(() => toast.error(`Error rescheduling ${wo.wo_number}`));
+          }} />
+      )}
+      {tab === 'masschange' && (
+        <MassChangeTab scheduledWOs={scheduledWOs} releasedWOs={releasedWOs} t={t} plantId={plant}
+          onRefresh={() => { loadCalendarData(); loadGantt(); }} />
       )}
       {tab === 'hh' && (
         <HHBalanceTab programId={activeProgramId} t={t} plantId={plant} />

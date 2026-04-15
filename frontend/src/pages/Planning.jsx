@@ -97,6 +97,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [editMats, setEditMats] = useState([]);
   const [editBudget, setEditBudget] = useState({ labor: '', material: '', external: '' });
   const [editDates, setEditDates] = useState({ start: '', end: '' });
+  const [showOTCreatedModal, setShowOTCreatedModal] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(null); // { woId, woNumber, status }
+  const [cancelReason, setCancelReason] = useState('');
   const [savingOT, setSavingOT] = useState(false);
   const [expandedOps, setExpandedOps] = useState({});
   const [extModal, setExtModal] = useState({ open: false, opIdx: -1, context: 'operation' });
@@ -319,7 +322,20 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           priority_code: editFields.priority || wr.priority || wr.priority_code || 'P3',
         });
       }
-      // 2. Create OT with updated data
+      // 2. Build operations from suggested_actions (WR AI analysis)
+      const sugActions = wr.problem_description?.suggested_action || wr.suggested_action || '';
+      const resources = wr.problem_description?.resources || wr.resources || [];
+      let operations = [];
+      if (sugActions) {
+        // Parse numbered steps: "1. Do X\n2. Do Y\n..."
+        const steps = sugActions.split(/\n/).filter(l => /^\d+[\.\)]\s/.test(l.trim()));
+        operations = steps.map((step, i) => {
+          const desc = step.replace(/^\d+[\.\)]\s*/, '').trim();
+          const res = resources[i] || resources[0] || {};
+          return { type: 'INT', description: desc, specialty: res.type || 'Mechanical', quantity: res.quantity || 1, hours: res.hours || 2 };
+        });
+      }
+      // 3. Create OT with operations and original text
       const res = await api.createWOFromWR({
         work_request_id: wrId,
         description: wr.problem_description?.original_text || wr.description || 'WO from Notification',
@@ -330,14 +346,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         estimated_hours: wr.estimated_hours || 4,
         planning_group: editFields.planning_group || wr.planning_group || '',
         work_center: editFields.work_center || wr.work_center || '',
+        operations: operations.length > 0 ? operations : undefined,
       });
       setCreatedOT(res);
-      toast.success('WO created: ' + (res?.wo_number || 'OK'));
       fetchData();
-      // 3. Navigate to the new OT in Work Orders
-      if (res?.wo_id) {
-        setTimeout(() => navigate('/work-orders', { state: { openWoId: res.wo_id } }), 1200);
-      }
+      // Show centered confirmation modal
+      setShowOTCreatedModal({ woNumber: res?.wo_number, woId: res?.wo_id });
     } catch (err) {
       toast.error('Error: ' + (err.message || 'Could not create WO'));
     } finally { setActionLoading(null); }
@@ -390,11 +404,18 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
     setOtActionLoading(ns);
     try {
       let upd;
-      if (ns === 'CREADO' || ns === 'PENDIENTE')   upd = await api.draftManagedWO(WO_ID);
+      if (ns === 'CANCELADO') {
+        setOtActionLoading(null);
+        setShowCancelModal({ woId: WO_ID, woNumber: wo.wo_number, status: wo.status });
+        setCancelReason('');
+        return;
+      }
+      else if (ns === 'CREADO' || ns === 'PENDIENTE') upd = await api.draftManagedWO(WO_ID);
+      else if (ns === 'LIBERADO') upd = await api.updateManagedWO(WO_ID, { status: 'LIBERADO' });
       else if (ns === 'PLANIFICADO' || ns === 'APROBADO') upd = await api.planManagedWO(WO_ID);
-      else if (ns === 'PROGRAMADO')   upd = await api.scheduleManagedWO(WO_ID, {});
+      else if (ns === 'EN_PROGRAMACION') upd = await api.updateManagedWO(WO_ID, { status: 'EN_PROGRAMACION' });
+      else if (ns === 'PROGRAMADO') upd = await api.scheduleManagedWO(WO_ID, {});
       else if (ns === 'REPROGRAMADO') upd = await api.rescheduleManagedWO(WO_ID);
-      else if (ns === 'CANCELADO')    upd = await api.cancelManagedWO(WO_ID);
       else if (ns === 'EN_EJECUCION' || ns === 'EN_PROGRESO') upd = await api.startManagedWO(WO_ID);
       else if (ns === 'CERRADO') {
         const hours = parseFloat(execData.actual_hours) || wo.actual_hours || 0;
@@ -948,33 +969,36 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         const wo = selectedOT;
         const SAP = {
           CREADO:{label:'Created',color:'bg-yellow-100 text-yellow-700'},
-          PLANIFICADO:{label:'Released',color:'bg-emerald-100 text-emerald-700'},
-          LIBERADO:{label:'Released',color:'bg-emerald-100 text-emerald-700'},
-          PROGRAMADO:{label:'Scheduled',color:'bg-indigo-100 text-indigo-700'},
+          LIBERADO:{label:'Released',color:'bg-blue-100 text-blue-700'},
+          PLANIFICADO:{label:'Planned',color:'bg-teal-100 text-teal-700'},
+          EN_PROGRAMACION:{label:'In Scheduling',color:'bg-indigo-100 text-indigo-700'},
+          PROGRAMADO:{label:'Scheduled',color:'bg-purple-100 text-purple-700'},
           REPROGRAMADO:{label:'Rescheduled',color:'bg-orange-100 text-orange-700'},
           EN_EJECUCION:{label:'In Execution',color:'bg-amber-100 text-amber-700'},
           CERRADO:{label:'Closed',color:'bg-green-100 text-green-700'},
           CANCELADO:{label:'Cancelled',color:'bg-gray-300 text-gray-600'},
           PENDIENTE:{label:'Created',color:'bg-yellow-100 text-yellow-700'},
-          APROBADO:{label:'Released',color:'bg-emerald-100 text-emerald-700'},
+          APROBADO:{label:'Released',color:'bg-blue-100 text-blue-700'},
           EN_PROGRESO:{label:'In Execution',color:'bg-amber-100 text-amber-700'},
         };
         const NEXT = {
-          CREADO:[['PLANIFICADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
-          PLANIFICADO:[['PROGRAMADO','Schedule','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
-          PROGRAMADO:[['EN_EJECUCION','Start Execution','bg-amber-500 text-white hover:bg-amber-600'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
-          REPROGRAMADO:[['PROGRAMADO','Reschedule','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
+          CREADO:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
+          LIBERADO:[['PLANIFICADO','Mark Planned','bg-teal-600 text-white hover:bg-teal-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
+          PLANIFICADO:[['EN_PROGRAMACION','To Scheduling','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
+          EN_PROGRAMACION:[['PROGRAMADO','Schedule','bg-purple-600 text-white hover:bg-purple-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
+          PROGRAMADO:[['EN_EJECUCION','Start Execution','bg-amber-500 text-white hover:bg-amber-600'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
+          REPROGRAMADO:[['PROGRAMADO','Reschedule','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
           EN_EJECUCION:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600']],
           CERRADO:[],
           CANCELADO:[],
-          PENDIENTE:[['PLANIFICADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
-          APROBADO:[['PROGRAMADO','Schedule','bg-indigo-600 text-white hover:bg-indigo-700'],['EN_EJECUCION','Start','bg-amber-500 text-white hover:bg-amber-600'],['CANCELADO','Cancel','bg-gray-100 text-gray-700 hover:bg-gray-200']],
+          PENDIENTE:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
+          APROBADO:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
           EN_PROGRESO:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700']],
         };
         const TLBL = {PM01:'PM01',PM02:'PM02',PM03:'PM03',PM05:'PM05'};
         const s = SAP[wo.status] || {label:wo.status,color:"bg-gray-100 text-gray-600"};
         const actions = NEXT[wo.status] || [];
-        const ALL = ['CREADO','PLANIFICADO','PROGRAMADO','EN_EJECUCION','CERRADO'];
+        const ALL = ['CREADO','LIBERADO','PLANIFICADO','EN_PROGRAMACION','PROGRAMADO','EN_EJECUCION','CERRADO'];
 
         const OT_TABS = [
           { id: 'resumen', label: 'Summary', icon: Info },
@@ -1128,8 +1152,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             <div className="flex items-center gap-2 p-3 cursor-pointer" onClick={() => setExpandedOps(prev => ({...prev, [idx]: !prev[idx]}))}>
                               <span className="text-xs font-bold text-gray-400 w-5">#{idx+1}</span>
                               <span className={"text-xs font-bold px-1.5 py-0.5 rounded "+(op.type === 'EXT' ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600")}>{op.type || 'INT'}</span>
-                              <span className="flex-1 text-sm font-medium text-gray-800 truncate">{op.description ? (/^\d+\.\s/.test(op.description) ? op.description.replace(/^\d+\.\s*/, '').split(/\s*\d+\.\s/)[0].trim() + ' ...' : op.description.substring(0, 80) + (op.description.length > 80 ? '...' : '')) : <span className="text-gray-400 italic">No description</span>}</span>
-                              <span className="text-xs text-gray-500">{op.specialty || 'Mechanical'} · {((op.quantity || 1) * (op.hours || 0)).toFixed(1)}HH</span>
+                              <span className="flex-1 text-sm font-medium text-gray-800 truncate">{op.description ? op.description.replace(/^\d+[\.\)]\s*/, '').substring(0, 60) + (op.description.length > 60 ? '...' : '') : <span className="text-gray-400 italic">No description</span>}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">{op.specialty || 'Mechanical'}</span>
+                              <span className="text-[10px] text-gray-500">{op.quantity || 1}p</span>
+                              <span className="text-[10px] text-gray-500">{op.hours || 0}h</span>
+                              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">{((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH</span>
                               <button type="button" onClick={e => { e.stopPropagation(); setEditOps(prev => prev.filter((_,i) => i !== idx)); }} className="text-red-400 hover:text-red-600 p-1 ml-1"><X size={12} /></button>
                               {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
                             </div>
@@ -1178,12 +1205,22 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         })}
                       </div>
                     )}
+                    {/* Total HH summary */}
+                    {editOps.length > 0 && (
+                      <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2 border">
+                        <span className="text-xs text-gray-500">{editOps.length} operations</span>
+                        <div className="flex items-center gap-4">
+                          <span className="text-xs text-gray-500">Total Hours: <strong className="text-gray-800">{editOps.reduce((s, o) => s + (o.hours || 0), 0).toFixed(1)}h</strong></span>
+                          <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">Total HH: {editOps.reduce((s, o) => s + (o.quantity || 1) * (o.hours || 0), 0).toFixed(1)}</span>
+                        </div>
+                      </div>
+                    )}
                     {/* External Vendor Modal rendered outside tabs */}
                     {false && (
                       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setExtModal({ open: false, opIdx: -1 })}>
                         <div className="bg-white rounded-xl shadow-xl w-[520px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                           <div className="p-4 border-b bg-purple-50">
-                            <h3 className="font-bold text-purple-800 text-sm">External Service — SAP PM External Operation</h3>
+                            <h3 className="font-bold text-purple-800 text-sm">External Service — External Operation</h3>
                             <p className="text-[10px] text-purple-600">Service Entry Sheet (SES) / Purchase Order details</p>
                           </div>
                           <div className="p-4 space-y-3">
@@ -1601,7 +1638,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 <input value={mat.code || mat.sapId || mat.sap_id || ''}
                                   onFocus={() => { setActiveMatIdx(idx); setMatSearchQuery(mat.code || mat.sapId || ''); }}
                                   onChange={e => { setActiveMatIdx(idx); setMatSearchQuery(e.target.value); const n = [...editMats]; n[idx].code = e.target.value; n[idx].sapId = e.target.value; setEditMats(n); }}
-                                  className="w-28 text-xs border rounded px-2 py-1 font-mono" placeholder="SAP Code" />
+                                  className="w-28 text-xs border rounded px-2 py-1 font-mono" placeholder="Code" />
                                 {activeMatIdx === idx && matSearchResults.length > 0 && (
                                   <div className="absolute z-50 top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
                                     {matSearchResults.map((r, ri) => (
@@ -1616,27 +1653,20 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 )}
                                 {activeMatIdx === idx && matSearchLoading && <div className="absolute right-1 top-1.5 w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
                               </div>
-                              <input value={mat.description || ''} onChange={e => { const n = [...editMats]; n[idx].description = e.target.value; setEditMats(n); }}
-                                className="flex-1 text-sm border rounded px-2 py-1" placeholder="Material description" />
+                              <input value={mat.description || ''} readOnly={!!(mat.code || mat.sapId)}
+                                onChange={e => { if (!(mat.code || mat.sapId)) { const n = [...editMats]; n[idx].description = e.target.value; setEditMats(n); } }}
+                                className={"flex-1 text-sm border rounded px-2 py-1 " + ((mat.code || mat.sapId) ? "bg-gray-50 text-gray-500 cursor-not-allowed border-gray-100" : "")} placeholder="Material description" />
                               <button onClick={() => setEditMats(prev => prev.filter((_,i) => i !== idx))}
                                 className="text-red-400 hover:text-red-600 text-xs px-1">x</button>
                             </div>
                             <div className="flex items-center gap-3">
-                              <select value={mat.type || 'INT'} onChange={e => { const n = [...editMats]; n[idx].type = e.target.value; setEditMats(n); if (e.target.value === 'EXT') { setExtModal({ open: true, opIdx: idx, context: 'material' }); setExtForm({ vendor: '', vendor_other: '', contract_ref: '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: '', currency: 'USD', start_date: '', end_date: '', lead_time_days: '', contact_name: '', contact_phone: '', safety_requirements: '', notes: '' }); } }}
-                                className="text-xs border rounded px-2 py-1 w-16 font-bold">
-                                <option value="INT">INT</option><option value="EXT">EXT</option>
-                              </select>
-                              {mat.type === 'EXT' && mat.vendor && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">{mat.vendor}</span>}
-                              {mat.type === 'EXT' && <button type="button" onClick={() => { setExtModal({ open: true, opIdx: idx, context: 'material' }); setExtForm({ vendor: mat.vendor || '', vendor_other: mat.vendor_other || '', contract_ref: mat.contract_ref || '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: mat.unit_price ? String((mat.unit_price||0)*(mat.quantity||1)) : '', currency: 'USD', start_date: '', end_date: '', lead_time_days: mat.lead_time_days || '', contact_name: '', contact_phone: '', safety_requirements: '', notes: mat.notes || '' }); }} className="text-[10px] text-purple-600 underline">Vendor</button>}
                               <div className="flex items-center gap-1">
                                 <label className="text-[10px] text-gray-500">Qty:</label>
                                 <input type="number" min="1" value={mat.quantity || 1} onChange={e => { const n = [...editMats]; n[idx].quantity = parseInt(e.target.value)||1; setEditMats(n); }}
                                   className="w-14 text-xs border rounded px-1 py-1 text-center" />
                               </div>
-                              <select value={mat.unit || 'PZ'} onChange={e => { const n = [...editMats]; n[idx].unit = e.target.value; setEditMats(n); }}
-                                className="text-xs border rounded px-2 py-1 w-16">
-                                {['PZ','KG','LT','MT','UD','GL','M3'].map(u => <option key={u} value={u}>{u}</option>)}
-                              </select>
+                              <input value={mat.unit || 'PZ'} readOnly
+                                className="text-xs border border-gray-100 rounded px-2 py-1 w-16 bg-gray-50 text-gray-500 cursor-not-allowed" />
                               <div className="flex items-center gap-1">
                                 <label className="text-[10px] text-gray-500">$/u:</label>
                                 <input type="number" min="0" step="0.01" value={mat.unit_price || ''} onChange={e => { const n = [...editMats]; n[idx].unit_price = parseFloat(e.target.value) || 0; setEditMats(n); }}
@@ -1647,10 +1677,32 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         ))}
                       </div>
                     )}
-                    <button onClick={saveOTChanges} disabled={savingOT}
-                      className="w-full mt-2 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
-                      {savingOT ? 'Saving...' : 'Save Materials'}
-                    </button>
+                    <div className="flex gap-2 mt-2">
+                      <button onClick={saveOTChanges} disabled={savingOT}
+                        className="flex-1 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+                        {savingOT ? 'Saving...' : 'Save Materials'}
+                      </button>
+                      <button onClick={async () => {
+                        await saveOTChanges();
+                        const code = 'RES-' + String(Date.now()).slice(-6);
+                        const woId = selectedOT?.wo_id;
+                        if (woId) {
+                          try {
+                            await api.updateManagedWO(woId, { reservation_code: code });
+                            toast.success('Material reservation created: ' + code);
+                          } catch { toast.success('Reservation: ' + code); }
+                        }
+                      }} disabled={savingOT || editMats.length === 0}
+                        className="flex-1 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                        Create Reservation
+                      </button>
+                    </div>
+                    {selectedOT?.reservation_code && (
+                      <div className="mt-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 flex items-center justify-between">
+                        <span className="text-xs text-indigo-600">Reservation:</span>
+                        <span className="font-mono font-bold text-indigo-800">{selectedOT.reservation_code}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1847,6 +1899,73 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
       {activeTab === 'capacity' && (
         <CapacityEvaluation />
+      )}
+
+      {/* Cancel WO Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCancelModal(null)} />
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <X className="w-7 h-7 text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-1">Cancel Work Order</h3>
+            <p className="text-sm text-gray-500 text-center mb-4">{showCancelModal.woNumber}</p>
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">Cancellation reason *</label>
+              <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)}
+                placeholder="Explain why this WO is being cancelled..."
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 min-h-[80px]" />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowCancelModal(null)}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
+                Go Back
+              </button>
+              <button disabled={!cancelReason.trim()} onClick={async () => {
+                const { woId } = showCancelModal;
+                try {
+                  await api.cancelManagedWO(woId);
+                  // Log the reason in history
+                  try { await api.updateManagedWO(woId, { cancellation_reason: cancelReason.trim() }); } catch {}
+                  toast.success('WO cancelled: ' + showCancelModal.woNumber);
+                  setShowCancelModal(null);
+                  setCancelReason('');
+                  setSelectedOT(null);
+                  fetchData();
+                } catch (e) { toast.error('Error: ' + (e.message || '')); }
+              }}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                Confirm Cancellation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OT Created Confirmation Modal */}
+      {showOTCreatedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowOTCreatedModal(null)} />
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Work Order Created</h3>
+            <p className="text-sm text-gray-500 mb-1">WO Number:</p>
+            <p className="text-lg font-mono font-bold text-emerald-700 mb-6">{showOTCreatedModal.woNumber}</p>
+            <div className="flex gap-3">
+              <button onClick={() => { setShowOTCreatedModal(null); setSelectedWR(null); }}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
+                Close
+              </button>
+              <button onClick={() => { setShowOTCreatedModal(null); setSelectedWR(null); if (showOTCreatedModal.woId) navigate('/work-orders', { state: { openWoId: showOTCreatedModal.woId } }); }}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700">
+                View WO
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

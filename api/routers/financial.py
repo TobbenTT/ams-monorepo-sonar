@@ -223,7 +223,7 @@ def get_financial_kpis(db: Session = Depends(get_db)):
 @router.get("/equipment-costs")
 def get_equipment_costs(limit: int = Query(20, ge=1, le=100), db: Session = Depends(get_db)):
     """Top N equipment by annual maintenance budget."""
-    rows = db.execute(text(f"""
+    rows = db.execute(text("""
         SELECT sap_func_loc_short, equipment_name, cost_center,
                SUM(COALESCE(jan_budget_usd,0)+COALESCE(feb_budget_usd,0)+COALESCE(mar_budget_usd,0)+
                    COALESCE(apr_budget_usd,0)+COALESCE(may_budget_usd,0)+COALESCE(jun_budget_usd,0)+
@@ -232,8 +232,8 @@ def get_equipment_costs(limit: int = Query(20, ge=1, le=100), db: Session = Depe
         FROM annual_budget_equipment
         GROUP BY sap_func_loc_short, equipment_name, cost_center
         ORDER BY annual_total DESC
-        LIMIT {limit}
-    """)).fetchall()
+        LIMIT :lim
+    """), {"lim": limit}).fetchall()
     return [{
         "equipment_tag": r[0],
         "description": r[1],

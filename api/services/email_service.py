@@ -21,11 +21,20 @@ def is_configured():
     return bool(SMTP_HOST and SMTP_USER)
 
 
+def _sanitize_header(value: str) -> str:
+    """Strip newlines and carriage returns to prevent email header injection."""
+    return value.replace("\r", "").replace("\n", "").replace("\x00", "").strip()
+
+
 def send_email(to: str, subject: str, body_html: str) -> bool:
     """Send an HTML email. Returns True on success."""
     if not is_configured():
         logger.warning("Email not configured — SMTP_HOST/SMTP_USER not set")
         return False
+
+    # Sanitize headers to prevent injection
+    to = _sanitize_header(to)
+    subject = _sanitize_header(subject)
 
     msg = MIMEMultipart("alternative")
     msg["From"] = SMTP_FROM

@@ -86,7 +86,15 @@ async function request(method, path, data, params) {
     }
   }
 
-  if (!r.ok) throw new Error(`${method} ${path} → ${r.status}`);
+  if (!r.ok) {
+    // Sanitize error — don't expose internal paths or stack traces
+    let detail = '';
+    try { detail = (await r.json()).detail || ''; } catch {}
+    if (typeof detail === 'string' && (detail.includes('/app/') || detail.includes('Traceback') || detail.includes('sqlalchemy'))) {
+      detail = 'Server error';
+    }
+    throw new Error(detail || `Request failed (${r.status})`);
+  }
   return r.json();
 }
 
@@ -290,6 +298,8 @@ export const hhBalance = (id) => get(`/scheduling/programs/${id}/hh-balance`);
 export const hhBalanceLive = (plantId) => get('/scheduling/hh-balance-live', { plant_id: plantId });
 export const autoGenerateTasks = (plantId) => post('/execution/auto-generate-tasks', { plant_id: plantId });
 export const materialsLive = (plantId) => get('/scheduling/materials-live', { plant_id: plantId });
+export const updateMaterialCollection = (woId, data) => put(`/scheduling/materials/${woId}/collection-status`, data);
+export const bulkUpdateMaterialStatus = (woId, status) => put(`/scheduling/materials/${woId}/bulk-status`, { status });
 export const getGanttManaged = (p) => get('/scheduling/gantt', p);
 
 // ── SAP BOM / Materials ──

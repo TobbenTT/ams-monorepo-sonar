@@ -5,7 +5,7 @@ import {
     Shield, Zap, BarChart3, Wrench, Users, Globe, Brain, CheckCircle2,
     ArrowRight, Play, Clock, Target, Gauge, TrendingUp, Layers, Bot,
     FileText, Calendar, AlertTriangle, Smartphone, Languages,
-    ScrollText, Bell, FileDown, Activity,
+    ScrollText, Bell, FileDown, ClipboardCheck, ExternalLink,
 } from 'lucide-react';
 
 const T = {
@@ -13,7 +13,7 @@ const T = {
     badge: 'AI-Powered Maintenance Management',
     heroTitle1: 'Transform Your',
     heroTitle2: 'Maintenance Operations',
-    heroDesc: 'Enterprise-grade asset management platform with 33 AI agents, predictive analytics, email alerts, audit trail, and end-to-end maintenance workflows — from work request to closure.',
+    heroDesc: 'Enterprise-grade asset management platform with 8 AI agents, predictive analytics, email alerts, audit trail, and end-to-end maintenance workflows — from work request to closure.',
     startDemo: 'Request Demo',
     seeFeatures: 'See Features',
     apiEndpoints: 'API Endpoints', modules: 'Modules', aiAgents: 'AI Agents', userRoles: 'User Roles', languages: 'Languages', dataModels: 'Data Models',
@@ -21,7 +21,7 @@ const T = {
     everythingTitle: 'Everything You Need',
     everythingDesc: 'A complete maintenance management ecosystem — from AI-powered diagnostics to SAP integration, audit compliance, and PDF reporting.',
     f1t: 'Work Management', f1d: 'Full lifecycle: Work Requests → Planning → Scheduling → Execution → Closure with SAP integration.',
-    f2t: 'AI Agents (CORTEX)', f2d: '33 specialized agents: Equipment Doctor, Predictive Health, Smart Backlog, RCM Advisor, Safety Checklists, and more.',
+    f2t: 'AI Agents (CORTEX)', f2d: '8 specialized agents: Equipment Doctor, Predictive Health, Smart Backlog, RCM Advisor, Safety Checklists, and more.',
     f3t: 'Analytics & KPIs', f3d: 'Real-time MTBF, MTTR, OEE, Availability. Executive and tactical dashboards with trend analysis and alerts.',
     f4t: 'Audit & Compliance', f4d: 'Full activity log with user tracking, date filtering, detail inspection, and CSV export. Enterprise audit trail.',
     f5t: 'Smart Scheduling', f5d: 'AI priority-based distribution. Gantt visualization, HH balance by specialty, material tracking.',
@@ -38,13 +38,15 @@ const T = {
     scaleTitle: 'Operations', scaleItems: ['Docker Compose', 'Email notifications (SMTP)', 'Health status page', 'PDF & CSV exports'],
     ctaTitle: 'Ready to Transform Your Operations?', ctaDesc: 'Schedule a personalized demo with our team.',
     ctaBtn: 'Contact Sales',
+    assessTitle: 'How mature is your maintenance?', assessDesc: 'Take our free Maintenance Maturity Scorecard - a quick assessment that benchmarks your operations against industry best practices and identifies improvement opportunities.',
+    assessBtn: 'Start assessment', assessLangEs: 'Spanish', assessLangEn: 'English',
     signIn: 'Sign In', features: 'Features', benefits: 'Benefits', platform: 'Platform', docs: 'User Guide',
   },
   es: {
     badge: 'Gestion de Mantenimiento con IA',
     heroTitle1: 'Transforma tus',
     heroTitle2: 'Operaciones de Mantenimiento',
-    heroDesc: 'Plataforma empresarial de gestion de activos con 33 agentes de IA, analitica predictiva, alertas por email, auditoria completa y flujos de trabajo — desde la solicitud hasta el cierre.',
+    heroDesc: 'Plataforma empresarial de gestion de activos con 8 agentes de IA, analitica predictiva, alertas por email, auditoria completa y flujos de trabajo — desde la solicitud hasta el cierre.',
     startDemo: 'Solicitar Demo',
     seeFeatures: 'Ver Funciones',
     apiEndpoints: 'Endpoints API', modules: 'Modulos', aiAgents: 'Agentes IA', userRoles: 'Roles', languages: 'Idiomas', dataModels: 'Modelos de Datos',
@@ -52,7 +54,7 @@ const T = {
     everythingTitle: 'Todo lo que Necesitas',
     everythingDesc: 'Un ecosistema completo de gestion de mantenimiento — desde diagnosticos con IA hasta integracion SAP, compliance de auditoria y reportes PDF.',
     f1t: 'Gestion de Trabajo', f1d: 'Ciclo completo: Avisos → Planificacion → Programacion → Ejecucion → Cierre con integracion SAP.',
-    f2t: 'Agentes IA (CORTEX)', f2d: '33 agentes especializados: Doctor de Equipos, Salud Predictiva, Backlog Inteligente, Asesor RCM, Checklists de Seguridad.',
+    f2t: 'Agentes IA (CORTEX)', f2d: '8 agentes especializados: Doctor de Equipos, Salud Predictiva, Backlog Inteligente, Asesor RCM, Checklists de Seguridad.',
     f3t: 'Analitica y KPIs', f3d: 'MTBF, MTTR, OEE, Disponibilidad en tiempo real. Dashboards ejecutivos y tacticos con analisis de tendencias.',
     f4t: 'Auditoria y Compliance', f4d: 'Registro completo de actividad con seguimiento de usuarios, filtros por fecha, detalle expandible y exportacion CSV.',
     f5t: 'Programacion Inteligente', f5d: 'Distribucion por prioridad con IA. Gantt visual, balance HH por especialidad, seguimiento de materiales.',
@@ -69,6 +71,8 @@ const T = {
     scaleTitle: 'Operaciones', scaleItems: ['Docker Compose', 'Notificaciones email (SMTP)', 'Pagina de estado', 'Exportacion PDF y CSV'],
     ctaTitle: '¿Listo para Transformar tus Operaciones?', ctaDesc: 'Agenda una demo personalizada con nuestro equipo.',
     ctaBtn: 'Contactar Ventas',
+    assessTitle: '¿Que tan maduro es tu mantenimiento?', assessDesc: 'Realiza nuestro Scorecard de Madurez de Mantenimiento gratuito - una evaluacion rapida que compara tus operaciones contra las mejores practicas de la industria e identifica oportunidades de mejora.',
+    assessBtn: 'Iniciar evaluacion', assessLangEs: 'Espanol', assessLangEn: 'Ingles',
     signIn: 'Iniciar Sesion', features: 'Funciones', benefits: 'Beneficios', platform: 'Plataforma', docs: 'Manual de Usuario',
   },
 };
@@ -97,10 +101,8 @@ export default function LandingPage() {
             {/* Nav */}
             <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-lg border-b border-gray-100 z-50">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <img src="/MAGEAM_LOGO.png" alt="MAGEAM" className="w-8 h-8 rounded-lg" />
-                        <span className="text-xl font-bold text-gray-900">MAGEAM</span>
-                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Enterprise</span>
+                    <div className="flex items-center">
+                        <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-10 w-auto" />
                     </div>
                     <div className="flex items-center gap-4">
                         <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.features}</a>
@@ -163,7 +165,7 @@ export default function LandingPage() {
                         {[
                             { value: '404', label: t.apiEndpoints, icon: Layers },
                             { value: '49+', label: t.modules, icon: Target },
-                            { value: '33', label: t.aiAgents, icon: Bot },
+                            { value: '8', label: t.aiAgents, icon: Bot },
                             { value: '6', label: t.userRoles, icon: Users },
                             { value: '2', label: t.languages, icon: Globe },
                             { value: '60+', label: t.dataModels, icon: FileText },
@@ -233,6 +235,32 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* Assessment Scorecard CTA */}
+            <section className="py-20 px-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+                <div className="max-w-4xl mx-auto text-center">
+                    <div className="inline-flex items-center gap-2 bg-white border border-indigo-200 rounded-full px-4 py-1.5 text-sm font-medium text-indigo-700 mb-6 shadow-sm">
+                        <ClipboardCheck className="w-4 h-4" /> Maintenance Maturity Scorecard
+                    </div>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-4">{t.assessTitle}</h2>
+                    <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">{t.assessDesc}</p>
+                    <div className="flex items-center justify-center gap-4">
+                        <a href="https://scorecard.mageam.com/ams-assessment-tool-ES.html" target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl">
+                            <ClipboardCheck className="w-5 h-5" />
+                            {t.assessBtn} ({t.assessLangEs})
+                            <ExternalLink className="w-4 h-4 opacity-60" />
+                        </a>
+                        <a href="https://scorecard.mageam.com/ams-assessment-tool-EN.html" target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-white text-indigo-700 border-2 border-indigo-200 px-6 py-3 rounded-xl font-semibold hover:bg-indigo-50 hover:border-indigo-300 transition-colors">
+                            <ClipboardCheck className="w-5 h-5" />
+                            {t.assessBtn} ({t.assessLangEn})
+                            <ExternalLink className="w-4 h-4 opacity-60" />
+                        </a>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4">Free - No account required - Takes 5 minutes</p>
+                </div>
+            </section>
+
             {/* Platform overview */}
             <section id="platform" className="py-20 px-6 bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-white">
                 <div className="max-w-7xl mx-auto">
@@ -275,8 +303,15 @@ export default function LandingPage() {
                     >
                         {t.ctaBtn} <ArrowRight className="w-5 h-5" />
                     </button>
-                    <p className="text-sm text-gray-400 mt-6">
-                        MAGEAM v2.0 — Value Strategy Consulting
+                    <div className="mt-8 flex items-center justify-center gap-4">
+                        <a href="https://valuestrategyconsulting.com/" target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-emerald-700 border border-gray-200 hover:border-emerald-300 rounded-lg px-4 py-2 transition-colors">
+                            <Globe className="w-4 h-4" /> Value Strategy Consulting
+                            <ExternalLink className="w-3 h-3 opacity-50" />
+                        </a>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4">
+                        MagEAM v2.0 — Value Strategy Consulting
                     </p>
                 </div>
             </section>

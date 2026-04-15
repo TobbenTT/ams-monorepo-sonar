@@ -145,10 +145,14 @@ def get_stats(plant_id: str | None = None, db: Session = Depends(get_db)):
 
 
 @router.get("/{wo_id}")
-def get_work_order(wo_id: str, db: Session = Depends(get_db)):
+def get_work_order(wo_id: str, plant_id: str | None = None, user=Depends(get_current_user), db: Session = Depends(get_db)):
     result = managed_wo_service.get_work_order(db, wo_id)
     if not result:
         raise HTTPException(status_code=404, detail="Work order not found")
+    # IDOR protection: verify user has access to this plant
+    wo_plant = result.get("plant_id")
+    if wo_plant and plant_id and wo_plant != plant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this work order")
     return result
 
 

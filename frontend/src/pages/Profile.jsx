@@ -56,8 +56,12 @@ export default function Profile() {
             toast.error(t('profile.passwordMismatch'));
             return;
         }
-        if (newPassword.length < 8) {
-            toast.error(t('profile.passwordTooShort'));
+        if (newPassword.length < 12) {
+            toast.error(t('profile.passwordTooShort') || 'Password must be at least 12 characters');
+            return;
+        }
+        if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+            toast.error('Password must include uppercase, lowercase, number, and symbol');
             return;
         }
         setChangingPw(true);

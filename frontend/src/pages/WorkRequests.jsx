@@ -1750,78 +1750,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           >
                             <Eye size={16} />
                           </button>
-                          {/* Validate/Reject moved to detail modal only (Jorge feedback #5) */}
-                          {/* VALIDATED/APROBADO: Create WO + Cancel */}
-                          {['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(req.status) && !wrsWithOT.has(req.id) && (
-                            <>
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const wo = await api.createWOFromWR({ work_request_id: req.id });
-                                    setWrsWithOT(prev => new Set([...prev, req.id]));
-                                    onRefreshCounts?.();
-                                    toast.success('OT ' + (wo.wo_number || '') + ' creada');
-                                    if (onNavigateTab) onNavigateTab('planning', null, wo.wo_id || wo.wo_number);
-                                  } catch (e) { toast.error('Error creando OT: ' + (e.message || '')); }
-                                }}
-                                className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
-                                title="Create Work Order"
-                              >
-                                Create WO
-                              </button>
-                              <button
-                                onClick={() => handleCancel(req.id)}
-                                className="text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors border border-gray-300"
-                                title="Cancelar aviso"
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          )}
-                          {['VALIDATED', 'ASSIGNED', 'SCHEDULED', 'APROBADO'].includes(req.status) && wrsWithOT.has(req.id) && (
-                            <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">
-                              OT Created
-                            </span>
-                          )}
-                          {/* IN_PROGRESS: Complete + Cancel */}
-                          {req.status === 'IN_PROGRESS' && (
-                            <>
-                              <button
-                                onClick={() => handleComplete(req.id)}
-                                className="text-[10px] px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition-colors"
-                                title="Completar trabajo"
-                              >
-                                Complete
-                              </button>
-                              <button
-                                onClick={() => handleCancel(req.id)}
-                                className="text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors border border-gray-300"
-                                title="Cancelar"
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          )}
-                          {/* COMPLETED: Close */}
-                          {req.status === 'COMPLETED' && (
-                            <button
-                              onClick={() => handleClose(req.id)}
-                              className="text-[10px] px-2 py-1 rounded bg-gray-600 text-white hover:bg-gray-700 font-medium transition-colors"
-                              title="Cierre tecnico"
-                            >
-                              Close
-                            </button>
-                          )}
-                          {/* CANCELLED/REJECTED/CLOSED: Reopen (admin/manager only) */}
-                          {['CANCELLED', 'CANCELADO', 'REJECTED', 'RECHAZADO', 'CERRADO', 'CLOSED'].includes(req.status) && ['admin', 'manager'].includes(user?.role) && (
-                            <button
-                              onClick={() => handleReopen(req.id)}
-                              className="text-[10px] px-2 py-1 rounded bg-amber-100 text-amber-800 hover:bg-amber-200 font-medium transition-colors border border-amber-300"
-                              title="Reabrir aviso"
-                            >
-                              Reopen
-                            </button>
-                          )}
+                          {/* All actions moved to detail modal — user must open the WR to take action (Jorge feedback) */}
                           <button
                             onClick={() => handleDelete(req.id)}
                             className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"

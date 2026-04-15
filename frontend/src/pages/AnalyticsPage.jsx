@@ -51,10 +51,11 @@ export default function AnalyticsPage() {
       try {
         setLoading(true);
         setError(null);
+        const timeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
         const [pageData, healthData, wrs] = await Promise.all([
-          api.getAnalyticsPageData(plantId),
-          api.getAssetHealth({ plant_id: plantId }).catch(() => ({ count: 0, assets: [] })),
-          api.listWorkRequests({ plant_id: plantId }).catch(() => []),
+          timeout(api.getAnalyticsPageData(plantId), 8000).catch(() => ({ kpis: {}, kpi_history: [], work_orders_by_type: [], cost_by_area: [], reliability_kpis: [] })),
+          timeout(api.getAssetHealth({ plant_id: plantId }), 8000).catch(() => ({ count: 0, assets: [] })),
+          timeout(api.listWorkRequests({ plant_id: plantId, limit: 50 }), 8000).catch(() => []),
         ]);
         if (!cancelled) {
           setKpis(pageData.kpis || { mtbf: '\u2014', mttr: '\u2014', availability: '\u2014', oee: '\u2014' });

@@ -1,7 +1,0 @@
-(Transcrito por TurboScribe. Actualizar a Ilimitado para eliminar este mensaje.)
-
-En la vista de Planner, me voy a WorkRequest, debo sacar este cosito de Supervisor. Y lo mismo con la vista de Supervisor, me voy a WorkRequest. Y en la vista de Admin, si yo estoy en planificación, por ejemplo, Supervisor, Planner se me va de página.
-
-Me voy a Scheduling y me voy a Supervisor, también me saca y se me va a identificación. Es como que salta de un lado a otro, no sé por qué.
-
-(Transcrito por TurboScribe. Actualizar a Ilimitado para eliminar este mensaje.)

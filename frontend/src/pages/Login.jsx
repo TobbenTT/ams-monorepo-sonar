@@ -44,14 +44,10 @@ export default function Login() {
                 </div>
 
                 <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-2">
-                        <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center overflow-hidden">
-                            <img src="/AMS_LOGO.png" alt="AMS" className="w-18 h-18 object-contain" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-bold tracking-tight">{t('login.title')}</h1>
-                            <p className="text-green-200 text-sm font-medium">{t('login.subtitle')}</p>
-                        </div>
+                    <div className="mb-4">
+                        <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-14 w-auto brightness-0 invert mb-4" />
+                        <h1 className="text-3xl font-bold tracking-tight">{t('login.title')}</h1>
+                        <p className="text-green-200 text-sm font-medium mt-1">{t('login.subtitle')}</p>
                     </div>
                 </div>
 
@@ -113,14 +109,8 @@ export default function Login() {
                     </div>
 
                     {/* Mobile logo */}
-                    <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-                        <div className="w-16 h-16 bg-[#047857] rounded-xl flex items-center justify-center overflow-hidden">
-                            <img src="/AMS_LOGO.png" alt="AMS" className="w-14 h-14 object-contain" />
-                        </div>
-                        <div>
-                            <div className="text-xl font-bold text-foreground">MAGEAM</div>
-                            <div className="text-xs text-muted-foreground">Industrial Platform</div>
-                        </div>
+                    <div className="lg:hidden flex items-center justify-center mb-8">
+                        <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-12 w-auto" />
                     </div>
 
                     <div className="mb-8">

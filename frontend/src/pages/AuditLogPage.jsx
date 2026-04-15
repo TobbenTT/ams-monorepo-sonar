@@ -149,40 +149,30 @@ export default function AuditLogPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-700 via-slate-600 to-zinc-500 rounded-2xl p-6 text-white shadow-lg">
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl">
+            <ScrollText size={22} className="text-slate-700 dark:text-slate-300" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-3">
-              <ScrollText className="w-7 h-7" />
-              {lang === 'es' ? 'Registro de Actividad' : 'Activity Log'}
-            </h1>
-            <p className="text-slate-200 text-sm mt-1">
-              {lang === 'es' ? 'Historial completo de acciones — quien hizo que y cuando' : 'Complete action history — who did what and when'}
-            </p>
+            <h1 className="text-2xl font-bold text-foreground">{lang === 'es' ? 'Registro de Actividad' : 'Activity Log'}</h1>
+            <p className="text-sm text-muted-foreground">{lang === 'es' ? 'Quien hizo que y cuando' : 'Who did what and when'}</p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0"
-              onClick={exportCSV}
-              disabled={filtered.length === 0}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              CSV
-            </Button>
-            <Button
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0"
-              onClick={fetchLog}
-              disabled={loading}
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              {lang === 'es' ? 'Actualizar' : 'Refresh'}
-            </Button>
-          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={exportCSV} disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-border rounded-lg hover:bg-muted disabled:opacity-40 text-foreground transition-colors">
+            <Download size={14} /> CSV
+          </button>
+          <button onClick={fetchLog} disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-border rounded-lg hover:bg-muted disabled:opacity-40 text-foreground transition-colors">
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {lang === 'es' ? 'Actualizar' : 'Refresh'}
+          </button>
         </div>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
+      <div className="bg-card border border-border rounded-xl p-4">
         <div className="flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -227,7 +217,7 @@ export default function AuditLogPage() {
             {filtered.length} {lang === 'es' ? 'registros' : 'entries'}
           </span>
         </div>
-      </Card>
+      </div>
 
       {/* Log entries */}
       {loading ? (
@@ -235,12 +225,12 @@ export default function AuditLogPage() {
           <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-12 text-center">
-          <ScrollText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">{lang === 'es' ? 'No hay registros de actividad' : 'No activity log entries'}</p>
-        </Card>
+        <div className="bg-card border border-border rounded-xl p-12 text-center">
+          <ScrollText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-muted-foreground">{lang === 'es' ? 'No hay registros de actividad' : 'No activity log entries'}</p>
+        </div>
       ) : (
-        <Card className="divide-y divide-gray-100 overflow-hidden">
+        <div className="bg-card border border-border rounded-xl divide-y divide-border/50 overflow-hidden" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
           {filtered.map((entry) => {
             const isExpanded = expandedId === entry.id;
             return (
@@ -338,7 +328,7 @@ export default function AuditLogPage() {
               </div>
             );
           })}
-        </Card>
+        </div>
       )}
     </div>
   );

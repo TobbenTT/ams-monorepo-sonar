@@ -7,6 +7,7 @@ import {
   FileText, Download, Calendar, CheckCircle, Clock, Loader2,
   BarChart3, TrendingUp, FileSpreadsheet, RefreshCw,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const REPORTS = [
   { id: 'weekly', title: 'Weekly Maintenance Report', desc: 'WOs completed, HH summary, pending backlog, material status', icon: FileText, freq: 'Weekly', color: 'bg-blue-500' },
@@ -27,19 +28,50 @@ export default function ReportsPage() {
     api.getAnalyticsPageData(plantId).then(setKpis).catch(() => {});
   }, [plantId]);
 
+  const downloadExcel = (sheets, filename) => {
+    const wb = XLSX.utils.book_new();
+    sheets.forEach(s => {
+      const ws = XLSX.utils.json_to_sheet(s.data);
+      XLSX.utils.book_append_sheet(wb, ws, s.name);
+    });
+    XLSX.writeFile(wb, filename);
+  };
+
   const handleGenerate = async (reportId) => {
+    if (!kpis) { toast.error('No data loaded'); return; }
     setGenerating(reportId);
-    toast.success('Generating ' + reportId + ' report...');
     try {
-      // Try to export as Excel
-      if (reportId === 'weekly' || reportId === 'monthly') {
-        const res = await api.exportReport({ plant_id: plantId, type: reportId }).catch(() => null);
-        if (res?.url) { window.open(res.url, '_blank'); }
-        else { toast.info('Report data prepared - export coming soon'); }
-      } else {
-        toast.info('Report preview ready');
+      const date = new Date().toISOString().slice(0, 10);
+      if (reportId === 'weekly') {
+        const woData = await api.listManagedWOs({ plant_id: plantId, limit: 200 }).catch(() => []);
+        const wos = Array.isArray(woData) ? woData : [];
+        downloadExcel([
+          { name: 'KPIs', data: [{ MTBF: kpis.kpis?.mtbf, MTTR: kpis.kpis?.mttr, Availability: kpis.kpis?.availability, OEE: kpis.kpis?.oee, Plant: plantId, Date: date }] },
+          { name: 'Work Orders', data: wos.map(w => ({ WO: w.wo_number, Equipment: w.equipment_tag, Status: w.status, Priority: w.priority_code, Type: w.wo_type, Planned_Hours: w.estimated_hours, Actual_Hours: w.actual_hours || 0, Start: w.planned_start, End: w.planned_end })) },
+          { name: 'Cost by Area', data: (kpis.cost_by_area || []).map(a => ({ Area: a.area, Labor: a.labor, Material: a.material, Total: (a.labor || 0) + (a.material || 0) })) },
+        ], `MagEAM_Weekly_${plantId}_${date}.xlsx`);
+        toast.success('Weekly report downloaded');
+      } else if (reportId === 'monthly') {
+        downloadExcel([
+          { name: 'KPIs', data: [{ MTBF: kpis.kpis?.mtbf, MTTR: kpis.kpis?.mttr, Availability: kpis.kpis?.availability, OEE: kpis.kpis?.oee }] },
+          { name: 'KPI History', data: kpis.kpi_history || [] },
+          { name: 'WO by Type', data: kpis.work_orders_by_type || [] },
+          { name: 'Cost by Area', data: (kpis.cost_by_area || []).map(a => ({ Area: a.area, Labor: a.labor, Material: a.material })) },
+        ], `MagEAM_Monthly_${plantId}_${date}.xlsx`);
+        toast.success('Monthly report downloaded');
+      } else if (reportId === 'executive') {
+        downloadExcel([
+          { name: 'Executive KPIs', data: [{ MTBF: kpis.kpis?.mtbf, MTTR: kpis.kpis?.mttr, Availability: kpis.kpis?.availability, OEE: kpis.kpis?.oee, Plant: plantId }] },
+          { name: 'Cost Summary', data: (kpis.cost_by_area || []).slice(0, 15).map(a => ({ Area: a.area, Labor: a.labor, Material: a.material, Total: (a.labor || 0) + (a.material || 0) })) },
+        ], `MagEAM_Executive_${plantId}_${date}.xlsx`);
+        toast.success('Executive report downloaded');
+      } else if (reportId === 'reliability') {
+        downloadExcel([
+          { name: 'Equipment Reliability', data: (kpis.reliability_kpis || []).slice(0, 100).map(r => ({ Equipment: r.equipment_tag, Name: r.equipment_name, MTBF: r.mtbf, MTTR: r.mttr, Availability: r.availability, OEE: r.oee, Trend: r.trend })) },
+        ], `MagEAM_Reliability_${plantId}_${date}.xlsx`);
+        toast.success('Reliability report downloaded');
       }
-    } catch { toast.info('Report generated'); }
+    } catch (e) { toast.error('Error: ' + (e.message || '')); }
     setGenerating(null);
   };
 

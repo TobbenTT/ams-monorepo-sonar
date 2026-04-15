@@ -1550,8 +1550,8 @@ export default function FailuresEvents() {
               {/* Header */}
               <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">Aviso: {wr.equipment_tag || 'N/A'}</h2>
-                  <p className="text-xs text-gray-400 font-mono">{wr.request_id}</p>
+                  <h2 className="text-lg font-bold text-gray-900">{wr.description?.substring(0, 50) || wr.equipment_name || wr.equipment_tag || 'Work Request'}</h2>
+                  <p className="text-xs text-gray-400"><span className="font-mono">{wr.request_id}</span> {wr.equipment_tag ? `· ${wr.equipment_tag}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className={`${
@@ -1685,8 +1685,12 @@ export default function FailuresEvents() {
                     {pd.resources && pd.resources.length > 0 && (
                       <div>
                         <h3 className="text-sm font-semibold text-gray-700 mb-1">Resources</h3>
-                        <div className="text-xs text-gray-600 bg-gray-50 rounded p-2">
-                          {pd.resources.map((r, i) => <div key={i}>{r.type}: {r.quantity} ({r.hours}h)</div>)}
+                        <div className="flex flex-wrap gap-2">
+                          {pd.resources.map((r, i) => (
+                            <span key={i} className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1.5 rounded-lg border border-blue-200 font-medium">
+                              {typeof r === 'string' ? r : `${r.type || ''} x${r.quantity || 1} (${r.hours || 0}h)`}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     )}

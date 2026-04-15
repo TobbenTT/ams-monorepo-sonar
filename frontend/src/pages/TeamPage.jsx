@@ -81,14 +81,33 @@ export default function TeamPage() {
     try {
       setLoading(true);
       setError(null);
-      const users = await api.authListUsers(plant ? { plant_id: plant } : {});
-      setTeam(Array.isArray(users) ? users : []);
+      const [users, techs] = await Promise.all([
+        api.authListUsers(plant ? { plant_id: plant } : {}).catch(() => []),
+        api.listTechnicians({ plant_id: plant }).catch(() => []),
+      ]);
+      const userList = Array.isArray(users) ? users : [];
+      const techList = Array.isArray(techs) ? techs : techs?.technicians || [];
+      // Merge: add workforce technicians that aren't already in users
+      const userNames = new Set(userList.map(u => (u.full_name || u.username || '').toLowerCase()));
+      const extraTechs = techList.filter(t => !userNames.has((t.name || '').toLowerCase())).map(t => ({
+        user_id: t.worker_id,
+        username: t.name?.toLowerCase().replace(/\s+/g, '.') || t.worker_id,
+        full_name: t.name,
+        email: '',
+        role: 'tecnico',
+        plant_id: plant,
+        is_active: t.available !== false,
+        specialty: t.specialty,
+        shift: t.shift,
+        _source: 'workforce',
+      }));
+      setTeam([...userList, ...extraTechs]);
     } catch (err) {
       setError(err.message || t('team.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, plant]);
 
   useEffect(() => { fetchTeam(); }, [fetchTeam]);
 

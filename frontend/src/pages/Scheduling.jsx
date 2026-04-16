@@ -418,6 +418,8 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   const toast = useToast();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewRange, setViewRange] = useState(1);
+  const [viewBy, setViewBy] = useState('technician'); // 'technician' | 'wo'
+  const [expandedWOs, setExpandedWOs] = useState(new Set());
   const [search, setSearch] = useState('');
   const [showShifts, setShowShifts] = useState(true);
   const [includeWeekends, setIncludeWeekends] = useState(true);
@@ -579,6 +581,16 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             </button>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              <button onClick={() => setViewBy('technician')}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'technician' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
+                👷 Technicians
+              </button>
+              <button onClick={() => setViewBy('wo')}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'wo' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
+                🔧 Work Orders
+              </button>
+            </div>
             <button onClick={() => setShowShifts(s => !s)}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${showShifts ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
               {showShifts ? '☀️🌙 Shifts' : '📅 No Shifts'}
@@ -635,7 +647,80 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         </div>
 
         {/* Calendar grid */}
-        {technicians.length > 0 ? (
+        {viewBy === 'wo' ? (
+          /* ═══ WO VIEW — rows are Work Orders, expandable to show operations ═══ */
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="overflow-x-auto" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              <table className="w-full border-collapse" style={{ minWidth: days.length * 100 + 250 }}>
+                <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase border-r border-border" style={{ width: 250, minWidth: 250 }}>Work Order</th>
+                    {days.map(d => (
+                      <th key={d.str} className={"text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground border-r border-border last:border-r-0" + (d.isWeekend ? " bg-gray-100 dark:bg-gray-800/50" : "")} style={{ minWidth: 100 }}>
+                        <div className="font-bold">{d.label}</div>
+                        <div className="text-[0.65rem] font-normal">{d.dateLabel}</div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {scheduledWOs.filter(wo => {
+                    const s = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
+                    const dayStrs = days.map(d => d.str);
+                    return s && dayStrs.includes(s);
+                  }).map(wo => {
+                    const ops = wo.operations || [];
+                    const isExp = expandedWOs.has(wo.wo_id);
+                    const woDay = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
+                    const typeMeta = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+                    const prioColor = wo.priority_code === 'P1' ? 'bg-red-500 text-white' : wo.priority_code === 'P2' ? 'bg-orange-500 text-white' : wo.priority_code === 'P3' ? 'bg-blue-500 text-white' : 'bg-gray-400 text-white';
+                    return (
+                      <tbody key={wo.wo_id}>
+                        <tr className="border-t border-border hover:bg-muted/20 cursor-pointer" onClick={() => setExpandedWOs(prev => { const n = new Set(prev); n.has(wo.wo_id) ? n.delete(wo.wo_id) : n.add(wo.wo_id); return n; })}>
+                          <td className="px-3 py-2 border-r border-border">
+                            <div className="flex items-center gap-1.5">
+                              {ops.length > 0 && (isExp ? <ChevronUp size={12} className="text-muted-foreground" /> : <ChevronDown size={12} className="text-muted-foreground" />)}
+                              <span className="font-mono text-xs font-bold text-foreground">{wo.wo_number}</span>
+                              <span className={`text-[9px] font-bold px-1 py-0.5 rounded ${prioColor}`}>{wo.priority_code}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground truncate">{wo.equipment_tag} · {wo.estimated_hours || 0}h · {ops.length} ops</p>
+                          </td>
+                          {days.map(d => (
+                            <td key={d.str} className={`px-1 py-1 border-r border-border last:border-r-0 text-center ${d.isWeekend ? 'bg-gray-50 dark:bg-gray-800/30' : ''}`}>
+                              {d.str === woDay && (
+                                <div className={`p-1 rounded text-[10px] font-bold ${typeMeta.bg}`}>
+                                  {wo.estimated_hours || 0}h
+                                </div>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                        {/* Expanded operations */}
+                        {isExp && ops.map((op, oi) => (
+                          <tr key={`${wo.wo_id}-op-${oi}`} className="bg-blue-50/30 dark:bg-blue-900/5 border-t border-border/30">
+                            <td className="px-3 py-1.5 border-r border-border pl-8">
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 flex items-center justify-center text-[10px] font-bold">{oi + 1}</span>
+                                <span className="text-foreground truncate">{(op.description || '').substring(0, 40)}</span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground ml-7">{op.specialty} · {op.quantity || 1}p · {op.hours || 0}h · {((op.quantity || 1) * (op.hours || 0)).toFixed(1)}HH</span>
+                            </td>
+                            {days.map(d => (
+                              <td key={d.str} className={`px-1 py-1 border-r border-border last:border-r-0 ${d.isWeekend ? 'bg-gray-50/50' : ''}`}>
+                                {d.str === woDay && (
+                                  <div className="text-[9px] text-blue-600 font-medium">{((op.quantity || 1) * (op.hours || 0)).toFixed(1)}HH</div>
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    );
+                  })}
+              </table>
+            </div>
+          </div>
+        ) : technicians.length > 0 ? (
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto" style={{maxWidth: "100%"}}>
               <table className="w-full border-collapse" style={{ minWidth: days.length * (showShifts ? 200 : 140) + 180 }}>

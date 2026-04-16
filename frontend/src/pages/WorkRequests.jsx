@@ -68,7 +68,7 @@ function MaterialEditor({ materials, onChange }) {
                 <input type="text" value={searchIdx === i ? searchText : (mat.description || '')}
                   onChange={e => handleSearch(e.target.value, i)}
                   onFocus={() => { setSearchIdx(i); setSearchText(mat.description || ''); }}
-                  placeholder="Buscar material SAP..."
+                  placeholder="Search material..."
                   className="w-full text-sm px-2 py-1.5 border border-border rounded bg-background" />
                 {searchIdx === i && searchResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-30 max-h-48 overflow-y-auto">
@@ -1318,7 +1318,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
 
   function handleReopen(id) {
     api.reopenWorkRequest(id)
-      .then(() => { toast.success('Aviso reabierto'); onRefreshCounts?.(); refreshList(); })
+      .then(() => { toast.success('Notification reopened'); onRefreshCounts?.(); refreshList(); })
       .catch(() => toast.error('Error reopening'));
   }
 

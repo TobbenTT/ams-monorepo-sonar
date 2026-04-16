@@ -643,9 +643,11 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                   onDrop={e => { e.preventDefault(); if (dragWO) { const techLoad = techHours[tech.worker_id] || 0; if (techLoad >= HOURS_PER_WEEK) { if (!window.confirm('⚠️ WARNING: ' + tech.name + ' is already at ' + Math.round(techLoad) + 'h/' + HOURS_PER_WEEK + 'h capacity. Schedule anyway?')) { setDragWO(null); setDropTarget(null); return; } } onScheduleWO(dragWO, tech, d.date, shift.id); } setDragWO(null); setDropTarget(null); }}>
                                   {cellWOs.map(wo => {
                                     const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+                                    const tip = `${wo.wo_number} · ${wo.wo_type || ''}\n${wo.equipment_tag || ''}\n${wo.description ? wo.description.substring(0, 80) : ''}\nPriority: ${wo.priority_code || 'P3'} · ${wo.estimated_hours || 0}h\nStart: ${wo.planned_start || '—'}\nWorkers: ${(wo.assigned_workers || []).map(w => w.name).join(', ') || '—'}`;
                                     return (
                                       <div key={wo.wo_id}
                                         draggable
+                                        title={tip}
                                         onDragStart={e => { e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
                                         className={`mb-1 p-1 rounded text-xs border cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400 ${woType.bg}`}>
                                         <div className="font-bold truncate text-[0.65rem]">{wo.wo_number}</div>
@@ -676,8 +678,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                               onDrop={e => handleDrop(e, tech, d)}>
                               {cellWOs.map(wo => {
                                 const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+                                const tip = `${wo.wo_number} · ${wo.wo_type || ''}\n${wo.equipment_tag || ''}\n${wo.description ? wo.description.substring(0, 80) : ''}\nPriority: ${wo.priority_code || 'P3'} · ${wo.estimated_hours || 0}h\nStart: ${wo.planned_start || '—'}\nWorkers: ${(wo.assigned_workers || []).map(w => w.name).join(', ') || '—'}`;
                                 return (
-                                  <div key={wo.wo_id} className={`mb-1 p-1.5 rounded text-xs border cursor-default ${woType.bg}`}>
+                                  <div key={wo.wo_id} title={tip} className={`mb-1 p-1.5 rounded text-xs border cursor-default hover:ring-2 hover:ring-blue-400 ${woType.bg}`}>
                                     <div className="font-bold truncate">{wo.wo_number}</div>
                                     <div className="truncate text-[0.65rem]">{wo.equipment_tag}</div>
                                     <div className="text-[0.6rem] mt-0.5">{wo.estimated_hours}h</div>

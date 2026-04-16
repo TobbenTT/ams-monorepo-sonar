@@ -2157,9 +2157,9 @@ export default function Scheduling() {
             <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 size={24} className="text-red-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Clear Assignments</h3>
-            <p className="text-sm text-gray-500 mb-1">Remove <span className="font-bold text-red-600">all</span> scheduled assignments?</p>
-            <p className="text-xs text-gray-400 mb-6">WOs will lose assigned technicians and planned dates.<br/>Status will return to PLANNED.</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Clear Week Assignments</h3>
+            <p className="text-sm text-gray-500 mb-1">Remove assignments for <span className="font-bold text-red-600">this week only</span>?</p>
+            <p className="text-xs text-gray-400 mb-6">Only WOs scheduled within the viewed week will be cleared.<br/>Status will return to PLANNED.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowClearConfirm(false)} disabled={clearing}
                 className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50">
@@ -2168,14 +2168,23 @@ export default function Scheduling() {
               <button disabled={clearing} onClick={async () => {
                 setClearing(true);
                 try {
-                  // Fetch ALL scheduled WOs fresh from API
+                  // Only clear WOs in the viewed week
+                  const weekMon = viewedWeekStart || getMonday(new Date());
+                  const weekSun = addDays(weekMon, 6);
+                  const weekMonStr = toDateStr(weekMon);
+                  const weekSunStr = toDateStr(weekSun);
                   const [prog, exec] = await Promise.all([
                     api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
                     api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
                   ]);
                   const allWOs = [...(Array.isArray(prog) ? prog : []), ...(Array.isArray(exec) ? exec : [])];
+                  // Filter to only this week
+                  const weekWOs = allWOs.filter(wo => {
+                    const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
+                    return start && start >= weekMonStr && start <= weekSunStr;
+                  });
                   let cleared = 0;
-                  for (const wo of allWOs) {
+                  for (const wo of weekWOs) {
                     try {
                       await api.updateManagedWO(wo.wo_id, { assigned_workers: [], planned_start: '', planned_end: '', status: 'PLANIFICADO' });
                       cleared++;

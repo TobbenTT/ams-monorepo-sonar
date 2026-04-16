@@ -1983,15 +1983,16 @@ export default function Scheduling() {
 
   useEffect(() => { loadPrograms(); loadCalendarData(); }, [plant]);
 
-  // Real-time updates via WebSocket — debounced to avoid race conditions
+  // Real-time updates via WebSocket — debounced, disabled when modal is open
   const wsTimerRef = useRef(null);
   useWebSocket(plant, useCallback((msg) => {
+    // Don't reload when AI modal or any action is in progress
+    if (showAIModal || aiScheduling || showClearConfirm || clearing) return;
     if (msg.event?.startsWith('wo_') || msg.event === 'wo_bulk_clear') {
-      // Debounce: only reload 2s after last event to avoid rapid-fire reloads
       if (wsTimerRef.current) clearTimeout(wsTimerRef.current);
-      wsTimerRef.current = setTimeout(() => { loadCalendarData(); loadGantt(); }, 2000);
+      wsTimerRef.current = setTimeout(() => { loadCalendarData(); loadGantt(); }, 3000);
     }
-  }, []));
+  }, [showAIModal, aiScheduling, showClearConfirm, clearing]));
   useEffect(() => { loadGantt(); }, [plant, ganttWeeks]);
 
   const handleScheduleWO = (wo, tech, dayDate, shift = 'day') => {
@@ -2232,7 +2233,13 @@ export default function Scheduling() {
                 {[70, 75, 80, 85, 90, 95, 100].map(v => <option key={v} value={v}>{v}%</option>)}
               </select>
               <button
-                onClick={() => { setAiResult(null); setAiInstructions(''); setShowAIModal(true); }}
+                onClick={() => {
+                  const wos = (releasedWOs || []).length;
+                  const techs = technicians.length;
+                  if (wos === 0) { toast.info('No WOs to schedule'); return; }
+                  if (techs === 0) { toast.error('No technicians available — cannot auto-level'); return; }
+                  setShowAIModal(true);
+                }}
                 disabled={aiScheduling}
                 className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
               >

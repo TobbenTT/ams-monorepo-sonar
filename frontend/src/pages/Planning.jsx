@@ -1028,7 +1028,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
         return (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setSelectedOT(null); setModalFullscreen(false); }}>
-            <div className={`bg-white rounded-2xl shadow-xl flex flex-col transition-all duration-300 ${modalFullscreen ? "w-[98vw] h-[96vh]" : "w-[90vw] max-w-5xl h-[85vh]"}`} onClick={e => e.stopPropagation()}>
+            <div className={`bg-white rounded-2xl shadow-xl flex flex-col transition-all duration-300 ${modalFullscreen ? "w-[95vw] max-w-7xl h-[92vh]" : "w-[90vw] max-w-5xl h-[85vh]"}`} onClick={e => e.stopPropagation()}>
 
               {/* HEADER */}
               <div className="border-b px-6 py-4 rounded-t-2xl">

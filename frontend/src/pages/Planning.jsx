@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useWebSocket } from '../hooks/useWebSocket';
 import CapacityEvaluation from '../components/CapacityEvaluation';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { KPICard, PriorityBadge, StatusBadge, LoadingSpinner } from '../components/Shared';
@@ -253,6 +254,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
     }).catch(() => setWorkRequests([])).finally(() => setLoading(false));
   };
   useEffect(() => { fetchData(); }, [plant]);
+  useWebSocket(plant, useCallback((msg) => {
+    if (msg.event?.startsWith('wo_') || msg.event?.startsWith('wr_')) fetchData();
+  }, []));
 
   // Only VALIDATED WRs
   const approvedWRs = useMemo(() => workRequests.filter(wr => ['VALIDATED', 'APROBADO', 'APPROVED'].includes(wr.status)), [workRequests]);

@@ -409,7 +409,7 @@ export default function FailureCapture({ onNavigateTab }) {
       }
     } catch (e) {
       console.error('AI suggest failed:', e);
-      alert('Error al conectar con IA. Verifica configuración del servidor.');
+      alert('Error connecting to AI. Check server configuration.');
     } finally {
       setAiLoading(false);
     }
@@ -918,7 +918,7 @@ export default function FailureCapture({ onNavigateTab }) {
       }
     } catch (e) {
       console.error('Vision AI error:', e);
-      toast.error('Error al analizar fotos con IA');
+      toast.error('Error analyzing photos with AI');
     } finally {
       setVisionLoading(false);
     }

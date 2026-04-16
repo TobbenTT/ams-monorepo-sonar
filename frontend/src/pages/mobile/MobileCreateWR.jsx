@@ -1072,7 +1072,7 @@ export default function MobileCreateWR() {
                                         <div className="relative">
                                             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: '#94A3B8' }} />
                                             <input
-                                                type="text" placeholder="Buscar material SAP..." value={mat.sapId}
+                                                type="text" placeholder="Search material..." value={mat.sapId}
                                                 onChange={(e) => { updateMaterial(i, 'sapId', e.target.value); setActiveMatSapIdx(i); }}
                                                 onFocus={() => setActiveMatSapIdx(i)}
                                                 onBlur={() => setTimeout(() => setActiveMatSapIdx(-1), 150)}

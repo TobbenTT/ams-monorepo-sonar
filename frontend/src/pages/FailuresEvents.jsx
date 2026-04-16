@@ -1512,26 +1512,28 @@ export default function FailuresEvents() {
         };
 
         const handleApprove = async () => {
-          if (!wrActionComment) { toast.warning('Escribe un comentario para aprobar'); return; }
+          if (!wrActionComment) { toast.warning('Write a comment to approve'); return; }
           setWrSaving(true);
           try {
             await api.approveWorkRequest(wr.request_id, { comment: wrActionComment });
             const updated = await api.getWorkRequest(wr.request_id);
             setSelectedWR(updated);
             setWrActionComment('');
-          } catch (e) { console.error(e); toast.error('Error al aprobar'); }
+            toast.success('Notification approved');
+          } catch (e) { console.error(e); toast.error('Error approving'); }
           setWrSaving(false);
         };
 
         const handleReject = async () => {
-          if (!wrActionComment) { toast.warning('Escribe una razon para rechazar'); return; }
+          if (!wrActionComment) { toast.warning('Write a reason to reject'); return; }
           setWrSaving(true);
           try {
             await api.rejectWorkRequest(wr.request_id, { reason: wrActionComment });
             const updated = await api.getWorkRequest(wr.request_id);
             setSelectedWR(updated);
             setWrActionComment('');
-          } catch (e) { console.error(e); toast.error('Error al rechazar'); }
+            toast.success('Notification rejected');
+          } catch (e) { console.error(e); toast.error('Error rejecting'); }
           setWrSaving(false);
         };
 
@@ -1706,7 +1708,7 @@ export default function FailuresEvents() {
                       <div className="border-t pt-3 space-y-2">
                         <label className="text-sm font-semibold text-gray-700">Comentario (requerido para aprobar/rechazar)</label>
                         <textarea value={wrActionComment} onChange={e => setWrActionComment(e.target.value)}
-                          placeholder="Comentario de aprobacion o razon de rechazo..."
+                          placeholder="Approval comment or rejection reason..."
                           className="w-full border rounded-lg p-2 text-sm" rows={2} />
                         <div className="flex gap-2">
                           <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleApprove} disabled={wrSaving}>

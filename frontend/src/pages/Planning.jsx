@@ -112,8 +112,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const filteredWOs = useMemo(() => {
     let wos = managedWOs;
     if (woSearch) {
-      const q = woSearch.toLowerCase();
-      wos = wos.filter(wo => (wo.wo_number || "").toLowerCase().includes(q) || (wo.equipment_tag || "").toLowerCase().includes(q) || (wo.description || "").toLowerCase().includes(q));
+      const q = woSearch.toLowerCase().replace(/[\s\-]+/g, '');
+      wos = wos.filter(wo => (wo.wo_number || "").toLowerCase().replace(/[\s\-]+/g, '').includes(q) || (wo.equipment_tag || "").toLowerCase().includes(woSearch.toLowerCase()) || (wo.description || "").toLowerCase().includes(woSearch.toLowerCase()));
     }
     if (woStatusFilter !== "All") wos = wos.filter(wo => wo.status === woStatusFilter);
     if (woPriorityFilter !== "All") wos = wos.filter(wo => (wo.priority_code || wo.priority) === woPriorityFilter);

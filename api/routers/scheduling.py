@@ -153,6 +153,38 @@ def bulk_update_material_status(
     return scheduling_service.bulk_update_material_collection(db, wo_id, data.get("status", ""), user.get("user_id", ""))
 
 
+# ── Support Equipment (Cranes, Heavy Equipment) ─────────────────────
+
+@router.get("/support-equipment")
+def list_support_equipment(plant_id: str = "OCP-JFC1", db: Session = Depends(get_db)):
+    from api.database.models import SupportEquipmentModel
+    items = db.query(SupportEquipmentModel).filter(SupportEquipmentModel.plant_id == plant_id).all()
+    return [{"equipment_id": e.equipment_id, "name": e.name, "equipment_type": e.equipment_type,
+             "capacity_tons": e.capacity_tons, "available": e.available, "is_rented": e.is_rented,
+             "out_of_service_reason": e.out_of_service_reason} for e in items]
+
+
+@router.post("/support-equipment")
+def create_support_equipment(data: dict, user=Depends(require_role("admin", "manager")), db: Session = Depends(get_db)):
+    from api.database.models import SupportEquipmentModel
+    eq = SupportEquipmentModel(plant_id=data.get("plant_id", "OCP-JFC1"), name=data.get("name", ""),
+        equipment_type=data.get("equipment_type", "MOBILE_CRANE"), capacity_tons=data.get("capacity_tons"),
+        available=data.get("available", True), is_rented=data.get("is_rented", False))
+    db.add(eq); db.commit(); db.refresh(eq)
+    return {"ok": True, "equipment_id": eq.equipment_id}
+
+
+@router.put("/support-equipment/{equipment_id}")
+def update_support_equipment(equipment_id: str, data: dict, user=Depends(require_role("admin", "manager", "supervisor")), db: Session = Depends(get_db)):
+    from api.database.models import SupportEquipmentModel
+    eq = db.query(SupportEquipmentModel).filter(SupportEquipmentModel.equipment_id == equipment_id).first()
+    if not eq: raise HTTPException(status_code=404, detail="Equipment not found")
+    for k in ["name", "available", "is_rented", "out_of_service_reason", "out_of_service_until", "capacity_tons"]:
+        if k in data: setattr(eq, k, data[k])
+    db.commit()
+    return {"ok": True}
+
+
 # ── Workforce availability management ─────────────────────────────────
 
 @router.put("/workforce/{worker_id}/availability")

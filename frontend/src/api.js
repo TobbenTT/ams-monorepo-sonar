@@ -302,6 +302,9 @@ export const updateMaterialCollection = (woId, data) => put(`/scheduling/materia
 export const bulkUpdateMaterialStatus = (woId, status) => put(`/scheduling/materials/${woId}/bulk-status`, { status });
 export const getGanttManaged = (p) => get('/scheduling/gantt', p);
 export const updateWorkerAvailability = (workerId, data) => put(`/scheduling/workforce/${workerId}/availability`, data);
+export const listSupportEquipment = (plantId) => get('/scheduling/support-equipment', { plant_id: plantId });
+export const createSupportEquipment = (data) => post('/scheduling/support-equipment', data);
+export const updateSupportEquipment = (id, data) => put(`/scheduling/support-equipment/${id}`, data);
 
 // ── SAP BOM / Materials ──
 export const searchBOM = (query) => get('/sap/mock/MM60', { search: query });

@@ -657,6 +657,22 @@ class WorkforceModel(Base):
     absence_until: Mapped[str | None] = mapped_column(String(20), nullable=True)  # date string
 
 
+# ── Support Equipment (Cranes, Heavy Equipment) ─────────────────────
+
+class SupportEquipmentModel(Base):
+    __tablename__ = "support_equipment"
+
+    equipment_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    plant_id: Mapped[str] = mapped_column(String(50))
+    name: Mapped[str] = mapped_column(String(200))
+    equipment_type: Mapped[str] = mapped_column(String(50))  # BRIDGE_CRANE, MOBILE_CRANE, FORKLIFT, SCAFFOLDING
+    capacity_tons: Mapped[float | None] = mapped_column(Float, nullable=True)
+    available: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_rented: Mapped[bool] = mapped_column(Boolean, default=False)
+    out_of_service_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    out_of_service_until: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+
 # ── Shutdown Calendar ────────────────────────────────────────────────
 
 class ShutdownCalendarModel(Base):

@@ -1060,17 +1060,17 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <div className="text-3xl font-black">{d.s}</div>
                       </div>;
                     })()}
+                    {/* WO Title (Título de Cabecera) — from AI main_action */}
+                    {wo.wo_title && (
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase">WO Title</label>
+                        <p className="text-base font-bold text-gray-900 mt-1">{wo.wo_title}</p>
+                      </div>
+                    )}
                     <div>
                       <label className="text-xs font-semibold text-gray-500 uppercase">Description</label>
                       <p className="text-sm text-gray-800 mt-1 bg-gray-50 rounded-lg p-3">{wo.description||wo.failure_description||"No description"}</p>
                     </div>
-                    {ops.length > 0 && (
-                      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-                        <div className="text-[10px] font-bold text-indigo-500 uppercase mb-1">First Operation</div>
-                        <p className="text-sm font-semibold text-indigo-800">{ops[0].description || "—"}</p>
-                        {ops.length > 1 && <p className="text-xs text-indigo-500 mt-1">+{ops.length - 1} more operation{ops.length > 2 ? 's' : ''}</p>}
-                      </div>
-                    )}
                     <div className="grid grid-cols-4 gap-3">
                       <div className="bg-blue-50 rounded-lg p-3 text-center"><div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Hrs</div><div className="text-lg font-bold text-blue-700">{wo.estimated_hours||"0"}h</div></div>
                       <div className="bg-green-50 rounded-lg p-3 text-center"><div className="text-[10px] text-green-600 font-semibold uppercase">Actual Hrs</div><div className="text-lg font-bold text-green-700">{wo.actual_hours||execData.actual_hours||"0"}h</div></div>

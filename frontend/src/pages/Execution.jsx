@@ -40,16 +40,18 @@ export default function Execution() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [prog, exec, comp, closed] = await Promise.all([
+      const [prog, exec, comp, closed, planned] = await Promise.all([
         listManagedWOs({ status: 'PROGRAMADO', plant_id: plant, limit: 100 }),
         listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant, limit: 100 }),
         listManagedWOs({ status: 'COMPLETADO', plant_id: plant, limit: 50 }),
         listManagedWOs({ status: 'CERRADO', plant_id: plant, limit: 50 }),
+        listManagedWOs({ status: 'PLANIFICADO', plant_id: plant, limit: 100 }),
       ]);
       const toArr = r => Array.isArray(r) ? r : r?.items || [];
       const execList = toArr(exec);
       const progList = toArr(prog);
-      setActiveWOs([...execList, ...progList]);
+      const plannedList = toArr(planned);
+      setActiveWOs([...execList, ...progList, ...plannedList]);
       // "Ready to close" = COMPLETADO + all EN_EJECUCION (supervisor can close any)
       const compList = toArr(comp);
       setCompletedWOs([...compList, ...execList]);

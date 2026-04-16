@@ -78,7 +78,20 @@ const SPEC_BADGE = {
   INSTRUMENTACION: { label: 'INST', bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
   SOLDADOR: { label: 'SOLD', bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
 };
-const HOURS_PER_WEEK = 40;
+function getCapacitySettings() {
+  try {
+    const plantId = localStorage.getItem('selected_plant') || 'OCP-JFC1';
+    const s = JSON.parse(localStorage.getItem(`ocp_settings_${plantId}`) || localStorage.getItem('ocp_settings') || '{}');
+    return {
+      effectiveHours: s.effectiveHoursPerShift || 10,
+      schedulingPct: s.schedulingPercent || 80,
+      productivityPct: s.productivityFactor || 90,
+    };
+  } catch { return { effectiveHours: 10, schedulingPct: 80, productivityPct: 90 }; }
+}
+const CAP = getCapacitySettings();
+const PROGRAMMABLE_HH_PER_DAY = CAP.effectiveHours * (CAP.schedulingPct / 100) * (CAP.productivityPct / 100);
+const HOURS_PER_WEEK = PROGRAMMABLE_HH_PER_DAY * 5;
 
 function getMonday(d) {
   const date = new Date(d);
@@ -459,7 +472,8 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     return h;
   }, [technicians, scheduledWOs, days]);
 
-  const hoursPerWeek = includeWeekends ? 56 : 40;
+  const daysInView = includeWeekends ? 7 : 5;
+  const hoursPerWeek = technicians.length > 0 ? PROGRAMMABLE_HH_PER_DAY * daysInView : daysInView * 8;
   const totalAvailable = technicians.length * hoursPerWeek * viewRange;
   const totalAssigned = Object.values(techHours).reduce((a, b) => a + b, 0);
   const loadPct = totalAvailable > 0 ? Math.round((totalAssigned / totalAvailable) * 100) : 0;
@@ -741,7 +755,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                     </td>
                     {days.map(d => {
                       const total = dailyTotals[d.str] || 0;
-                      const maxDaily = technicians.length * 8;
+                      const maxDaily = technicians.length * PROGRAMMABLE_HH_PER_DAY;
                       const pct = maxDaily > 0 ? Math.min((total / maxDaily) * 100, 100) : 0;
                       const barColor = pct > 100 ? 'bg-red-500' : pct > 85 ? 'bg-amber-500' : pct > 0 ? 'bg-emerald-500' : '';
                       const textColor = pct > 100 ? 'text-red-600 font-extrabold' : pct > 85 ? 'text-amber-600' : 'text-foreground';

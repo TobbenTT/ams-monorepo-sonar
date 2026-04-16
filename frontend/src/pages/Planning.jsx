@@ -1089,7 +1089,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       <div className="bg-amber-50 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-600 font-semibold uppercase">Actual Cost</div><div className="text-lg font-bold text-amber-700">${totalReal.toFixed(0)}</div></div>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">SAP Flow</label>
+                      <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Status Flow</label>
                       <div className="flex items-center gap-1 text-xs flex-wrap">
                         {ALL.map((st,i) => (
                           <span key={st} className="flex items-center gap-1">

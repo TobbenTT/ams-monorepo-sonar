@@ -543,7 +543,7 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
           )}
           {item.notification_type && (
-            <DetailCard icon={FileText} label="Notification Type (SAP)" value={item.notification_type} />
+            <DetailCard icon={FileText} label="Notification Type" value={item.notification_type} />
           )}
           {item.work_class && (
             <DetailCard icon={Tag} label="Work Class" value={item.work_class} />

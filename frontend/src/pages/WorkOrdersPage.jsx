@@ -2275,7 +2275,7 @@ export default function WorkOrdersPage() {
                           {isEditable ? (
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
-                                <input type="text" className="w-28 text-xs font-mono border rounded-lg px-2 py-1.5 bg-gray-50" placeholder="SAP Code"
+                                <input type="text" className="w-28 text-xs font-mono border rounded-lg px-2 py-1.5 bg-gray-50" placeholder="Code"
                                   value={mat.code || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, code: e.target.value } : m))} />
                                 <input type="text" className="flex-1 text-sm border rounded-lg px-3 py-1.5" placeholder="Descripción del material..."
                                   value={mat.description || ''} onChange={(e) => setOtMats(prev => prev.map(m => m._id === mat._id ? { ...m, description: e.target.value } : m))} />

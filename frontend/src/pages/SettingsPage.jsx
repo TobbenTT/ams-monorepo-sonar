@@ -52,6 +52,12 @@ export default function SettingsPage() {
     mttrTarget: 3.5,
     laborRate: 35,
     plannedWorkTarget: 80,
+    // Scheduling capacity config
+    nominalHoursPerShift: 12,
+    effectiveHoursPerShift: 10,
+    schedulingPercent: 80,
+    productivityFactor: 90,
+    shiftType: 'day_night', // day_night | abc_8h
     notifCritical: true,
     notifWODelays: true,
     notifKPI: true,
@@ -457,6 +463,52 @@ export default function SettingsPage() {
                 <Label htmlFor="laborRate">Internal Labor Rate (ZMANT001) $/h</Label>
                 <Input id="laborRate" type="number" value={settings.laborRate} onChange={(e) => updateSetting('laborRate', Number(e.target.value))} className="mt-1" />
                 <p className="text-xs text-gray-500 mt-1">Fixed hourly rate for internal labor. Used in SAP Cost Control.</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Scheduling Capacity Config */}
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <SettingsIcon className="w-5 h-5 text-indigo-600" />
+              Scheduling Capacity Configuration
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">Configure work capacity parameters for the scheduling board. These values determine how many hours can be programmed per day.</p>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <Label>Nominal Hours per Shift</Label>
+                <Input type="number" value={settings.nominalHoursPerShift} onChange={e => updateSetting('nominalHoursPerShift', Number(e.target.value))} className="mt-1" />
+                <p className="text-xs text-gray-400 mt-1">Total shift duration (e.g. 12h, 8h)</p>
+              </div>
+              <div>
+                <Label>Effective Hours per Shift</Label>
+                <Input type="number" value={settings.effectiveHoursPerShift} onChange={e => updateSetting('effectiveHoursPerShift', Number(e.target.value))} className="mt-1" />
+                <p className="text-xs text-gray-400 mt-1">After subtracting lunch, meetings, etc.</p>
+              </div>
+              <div>
+                <Label>Scheduling % (Programmable)</Label>
+                <Input type="number" min="50" max="100" value={settings.schedulingPercent} onChange={e => updateSetting('schedulingPercent', Number(e.target.value))} className="mt-1" />
+                <p className="text-xs text-gray-400 mt-1">% of effective hours for planned work. Rest reserved for corrective/emergencies.</p>
+              </div>
+              <div>
+                <Label>Productivity Factor %</Label>
+                <Input type="number" min="50" max="100" value={settings.productivityFactor} onChange={e => updateSetting('productivityFactor', Number(e.target.value))} className="mt-1" />
+                <p className="text-xs text-gray-400 mt-1">Accounts for travel time, setup, etc.</p>
+              </div>
+              <div>
+                <Label>Shift Type</Label>
+                <select value={settings.shiftType} onChange={e => updateSetting('shiftType', e.target.value)}
+                  className="mt-1 w-full border rounded-md px-3 py-2 text-sm">
+                  <option value="day_night">Day / Night (12h shifts)</option>
+                  <option value="abc_8h">ABC Rotation (8h shifts)</option>
+                </select>
+              </div>
+              <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                <div className="text-xs font-bold text-indigo-600 uppercase mb-1">Programmable HH per Person per Day</div>
+                <div className="text-2xl font-extrabold text-indigo-800">
+                  {((settings.effectiveHoursPerShift || 10) * (settings.schedulingPercent || 80) / 100 * (settings.productivityFactor || 90) / 100).toFixed(1)}h
+                </div>
+                <p className="text-xs text-indigo-500 mt-1">{settings.effectiveHoursPerShift}h x {settings.schedulingPercent}% x {settings.productivityFactor}%</p>
               </div>
             </div>
           </Card>

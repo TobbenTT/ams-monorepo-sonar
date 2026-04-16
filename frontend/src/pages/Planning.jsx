@@ -526,8 +526,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
                 <option value="All">All Status</option>
                 <option value="CREADO">Created</option>
-                <option value="PLANIFICADO">Released</option>
                 <option value="LIBERADO">Released</option>
+                <option value="PLANIFICADO">Planned</option>
+                <option value="EN_PROGRAMACION">In Scheduling</option>
                 <option value="PROGRAMADO">Scheduled</option>
                 <option value="EN_EJECUCION">In Execution</option>
                 <option value="CERRADO">Closed</option>
@@ -584,14 +585,17 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   {filteredWOs.map((wo, i) => {
                     const SAP_STATUS = {
                       CREADO: { label: 'Created', color: 'bg-yellow-100 text-yellow-700' },
-                      PLANIFICADO: { label: 'Released', color: 'bg-emerald-100 text-emerald-700' },
-                      PROGRAMADO: { label: 'Scheduled', color: 'bg-indigo-100 text-indigo-700' },
+                      LIBERADO: { label: 'Released', color: 'bg-blue-100 text-blue-700' },
+                      PLANIFICADO: { label: 'Planned', color: 'bg-teal-100 text-teal-700' },
+                      EN_PROGRAMACION: { label: 'In Scheduling', color: 'bg-indigo-100 text-indigo-700' },
+                      PROGRAMADO: { label: 'Scheduled', color: 'bg-purple-100 text-purple-700' },
                       REPROGRAMADO: { label: 'Rescheduled', color: 'bg-orange-100 text-orange-700' },
                       EN_EJECUCION: { label: 'In Execution', color: 'bg-amber-100 text-amber-700' },
+                      COMPLETADO: { label: 'Completed', color: 'bg-emerald-100 text-emerald-700' },
                       CERRADO: { label: 'Closed', color: 'bg-green-100 text-green-700' },
                       CANCELADO: { label: 'Cancelled', color: 'bg-gray-300 text-gray-600' },
                       PENDIENTE: { label: 'Created', color: 'bg-yellow-100 text-yellow-700' },
-                      APROBADO: { label: 'Released', color: 'bg-emerald-100 text-emerald-700' },
+                      APROBADO: { label: 'Released', color: 'bg-blue-100 text-blue-700' },
                       EN_PROGRESO: { label: 'In Execution', color: 'bg-amber-100 text-amber-700' },
                     };
                     const TYPE_LABEL = {

@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useWebSocket } from '../hooks/useWebSocket';
+const QRScanner = lazy(() => import('../components/QRScanner'));
 import {
-  Wrench, CheckCircle, Clock, AlertTriangle, User, ChevronDown, ChevronUp,
+  Wrench, CheckCircle, Clock, AlertTriangle, User, ChevronDown, ChevronUp, QrCode,
   Zap, Calendar, Loader2, Play, X, ArrowRight, BarChart2, Package, FileText,
   Timer, TrendingUp, Users, Activity,
 } from 'lucide-react';
@@ -37,6 +38,7 @@ export default function Execution() {
   const [closureHours, setClosureHours] = useState('');
   const [closureNotes, setClosureNotes] = useState('');
   const [closing, setClosing] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -151,9 +153,14 @@ export default function Execution() {
             <p className="text-sm text-muted-foreground">Real-time work tracking and closure</p>
           </div>
         </div>
-        <button onClick={loadData} className="flex items-center gap-2 px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors text-foreground">
-          <Activity size={14} /> Refresh
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowQR(true)} className="flex items-center gap-2 px-3 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium">
+            <QrCode size={14} /> Scan QR
+          </button>
+          <button onClick={loadData} className="flex items-center gap-2 px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors text-foreground">
+            <Activity size={14} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* KPI Strip */}
@@ -402,6 +409,29 @@ export default function Execution() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ═══ QR SCANNER ═══ */}
+      {showQR && (
+        <Suspense fallback={null}>
+          <QRScanner
+            onClose={() => setShowQR(false)}
+            onScan={(code) => {
+              setShowQR(false);
+              // Find WO by equipment tag or WO number
+              const match = activeWOs.find(wo =>
+                (wo.equipment_tag || '').toLowerCase().includes(code.toLowerCase()) ||
+                (wo.wo_number || '').toLowerCase().includes(code.toLowerCase())
+              );
+              if (match) {
+                toast.success('Found: ' + match.wo_number + ' — Starting execution');
+                handleStart(match);
+              } else {
+                toast.error('No active WO found for: ' + code);
+              }
+            }}
+          />
+        </Suspense>
       )}
 
       {/* ═══ CLOSURE MODAL ═══ */}

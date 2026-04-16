@@ -28,17 +28,26 @@ def _user_to_dict(u: UserModel) -> dict:
 
 @router.post("/login")
 def login(data: UserLogin, db: Session = Depends(get_db)):
+    from fastapi.responses import JSONResponse as JR
     user = auth_service.authenticate_user(db, data.username, data.password)
     if not user:
-        raise HTTPException(status_code=401, detail="Credenciales invalidas")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    # Check if MFA is enabled
+    mfa_required = bool(getattr(user, "mfa_secret", None))
     access = auth_service.create_access_token({"sub": user.user_id, "role": user.role})
     refresh = auth_service.create_refresh_token({"sub": user.user_id, "role": user.role})
-    return {
+    response_data = {
         "access_token": access,
         "refresh_token": refresh,
         "token_type": "bearer",
         "user": _user_to_dict(user),
+        "mfa_required": mfa_required,
     }
+    response = JR(content=response_data)
+    # Also set HTTP-only cookies for enhanced security
+    response.set_cookie("access_token", access, httponly=True, secure=True, samesite="lax", max_age=3600)
+    response.set_cookie("refresh_token", refresh, httponly=True, secure=True, samesite="lax", max_age=86400 * 7)
+    return response
 
 
 @router.post("/refresh")

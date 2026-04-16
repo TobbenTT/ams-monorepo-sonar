@@ -306,6 +306,13 @@ export const listSupportEquipment = (plantId) => get('/scheduling/support-equipm
 export const createSupportEquipment = (data) => post('/scheduling/support-equipment', data);
 export const updateSupportEquipment = (id, data) => put(`/scheduling/support-equipment/${id}`, data);
 
+// MFA
+export const mfaStatus = () => get('/mfa/status');
+export const mfaEnroll = () => post('/mfa/enroll');
+export const mfaConfirm = (code) => post('/mfa/confirm', { code });
+export const mfaVerify = (code) => post('/mfa/verify', { code });
+export const mfaDisable = () => del('/mfa/disable');
+
 // ── SAP BOM / Materials ──
 export const searchBOM = (query) => get('/sap/mock/MM60', { search: query });
 

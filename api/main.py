@@ -45,6 +45,7 @@ from api.routers import (
     agentic,
     sales,
     security,
+    mfa,
 )
 
 
@@ -198,6 +199,7 @@ def create_app() -> FastAPI:
     # Auth
     app.include_router(auth.router, prefix=prefix)
     app.include_router(sales.router, prefix=prefix)
+    app.include_router(mfa.router, prefix=prefix)
     # Security & Compliance (cybersecurity checklist endpoints)
     app.include_router(security.router, prefix=prefix)
     # AI Agents (CORTEX)

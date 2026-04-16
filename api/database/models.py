@@ -35,6 +35,8 @@ class UserModel(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    mfa_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    mfa_pending_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     __table_args__ = (
         Index("ix_users_role", "role"),

@@ -402,6 +402,7 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
 
 /* ───── Weekly Calendar View (drag-and-drop scheduling grid) ───── */
 function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange }) {
+  const toast = useToast();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewRange, setViewRange] = useState(1);
   const [search, setSearch] = useState('');
@@ -475,13 +476,20 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   }, [scheduledWOs, days]);
 
   const filteredReleased = useMemo(() => {
-    if (!search) return releasedWOs;
-    const q = search.toLowerCase();
-    return releasedWOs.filter(wo =>
-      (wo.wo_number || '').toLowerCase().includes(q) ||
-      (wo.equipment_tag || '').toLowerCase().includes(q) ||
-      (wo.description || '').toLowerCase().includes(q)
-    );
+    // Sort by priority (P1 first = highest impact)
+    let list = [...releasedWOs].sort((a, b) => {
+      const order = { P1: 0, P2: 1, P3: 2, P4: 3 };
+      return (order[a.priority_code] ?? 9) - (order[b.priority_code] ?? 9);
+    });
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(wo =>
+        (wo.wo_number || '').toLowerCase().includes(q) ||
+        (wo.equipment_tag || '').toLowerCase().includes(q) ||
+        (wo.description || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
   }, [releasedWOs, search]);
 
   const weekEnd = days[days.length - 1]?.date || weekStart;
@@ -571,6 +579,26 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 {opt.l}
               </button>
             ))}
+            <button onClick={async () => {
+                // Reserve: change all scheduled WOs in this week from EN_PROGRAMACION to PROGRAMADO
+                const weekMon = weekStart;
+                const weekSunStr = toDateStr(addDays(weekMon, 6));
+                const weekMonStr = toDateStr(weekMon);
+                const weekWOs = scheduledWOs.filter(wo => {
+                  const s = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
+                  return s && s >= weekMonStr && s <= weekSunStr;
+                });
+                if (weekWOs.length === 0) { return; }
+                let reserved = 0;
+                for (const wo of weekWOs) {
+                  try { await api.scheduleManagedWO(wo.wo_id, {}); reserved++; } catch {}
+                }
+                if (reserved > 0) toast.success(`${reserved} WOs reserved as PROGRAMADO`);
+                onWeekChange?.(weekStart);
+              }}
+              className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors">
+              <Lock size={14} /> Reserve Week
+            </button>
             {canPublish && (
               <button onClick={onPublish} disabled={publishing}
                 className="flex items-center gap-2 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50">
@@ -715,11 +743,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                       const total = dailyTotals[d.str] || 0;
                       const maxDaily = technicians.length * 8;
                       const pct = maxDaily > 0 ? Math.min((total / maxDaily) * 100, 100) : 0;
+                      const barColor = pct > 100 ? 'bg-red-500' : pct > 85 ? 'bg-amber-500' : pct > 0 ? 'bg-emerald-500' : '';
+                      const textColor = pct > 100 ? 'text-red-600 font-extrabold' : pct > 85 ? 'text-amber-600' : 'text-foreground';
                       return (
-                        <td key={d.str} colSpan={showShifts ? 2 : 1} className="px-2 py-2.5 border-r border-border last:border-r-0">
-                          <div className="text-sm font-bold text-foreground mb-1">{Math.round(total)}h</div>
+                        <td key={d.str} colSpan={showShifts ? 2 : 1} className={`px-2 py-2.5 border-r border-border last:border-r-0 ${pct > 100 ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
+                          <div className={`text-sm font-bold mb-1 ${textColor}`}>{Math.round(total)}h {pct > 100 ? '⚠️' : ''}</div>
                           <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full transition-all ${total > 0 ? 'bg-[#1B5E20]' : ''}`} style={{ width: `${pct}%` }} />
+                            <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                           </div>
                         </td>
                       );

@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Eye, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Download, AlertCircle, Plus, XCircle, Ban,
-  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search
+  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2
 } from 'lucide-react';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
@@ -92,7 +92,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [selectedWR, setSelectedWR] = useState(null); // inline detail modal
   const [selectedOT, setSelectedOT] = useState(null);
   const [otModalTab, setOtModalTab] = useState('resumen');
-  const [modalFullscreen, setModalFullscreen] = useState(false);
+  const [modalFullscreen, setModalFullscreen] = useState(true);
   const [editOps, setEditOps] = useState([]);
   const [editMats, setEditMats] = useState([]);
   const [editBudget, setEditBudget] = useState({ labor: '', material: '', external: '' });
@@ -1038,6 +1038,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     </div>
                     <p className="text-sm text-gray-500 mt-0.5">{wo.equipment_tag||"No equipment"} {wo.priority_code ? "\• "+wo.priority_code : ""}</p>
                   </div>
+                  <button onClick={() => setModalFullscreen(f => !f)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title={modalFullscreen ? 'Minimize' : 'Maximize'}>
+                    {modalFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  </button>
                   <button onClick={() => setSelectedOT(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
                 </div>
                 <div className="flex gap-1 mt-3 -mb-4">
@@ -1420,7 +1423,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     )}
                     <button type="button" onClick={saveOTChanges} disabled={savingOT}
                       className="w-full mt-2 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
-                      {savingOT ? 'Saving...' : 'Save Operations'}
+                      {savingOT ? 'Saving...' : 'Save All Changes'}
                     </button>
                   </div>
                 )}

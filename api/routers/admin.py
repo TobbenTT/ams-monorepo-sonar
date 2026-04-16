@@ -40,9 +40,17 @@ def get_audit_log(entity_type: str | None = None, limit: int = 100, db: Session 
     if entity_type:
         q = q.filter(AuditLogModel.entity_type == entity_type)
     entries = q.order_by(AuditLogModel.timestamp.desc()).limit(limit).all()
+    # Resolve user IDs to usernames
+    user_ids = set(e.user for e in entries if e.user and e.user != 'system')
+    user_map = {}
+    if user_ids:
+        from api.database.models import UserModel
+        users = db.query(UserModel).filter(UserModel.user_id.in_(user_ids)).all()
+        user_map = {u.user_id: u.full_name or u.username for u in users}
     return [
         {"id": e.id, "entity_type": e.entity_type, "entity_id": e.entity_id,
-         "action": e.action, "user": e.user, "payload": e.payload,
+         "action": e.action, "user": user_map.get(e.user, e.user), "user_id": e.user,
+         "payload": e.payload,
          "timestamp": e.timestamp.isoformat() if e.timestamp else None}
         for e in entries
     ]

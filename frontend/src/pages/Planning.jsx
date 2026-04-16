@@ -1108,11 +1108,19 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3 border">
                         <div className="text-[10px] text-gray-500 font-semibold uppercase">Planning Group</div>
-                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.planning_group || '—'}</div>
+                        <select value={wo.planning_group || ''} onChange={e => api.updateManagedWO(wo.wo_id, { planning_group: e.target.value }).then(() => { wo.planning_group = e.target.value; setSelectedOT({...wo}); }).catch(() => {})}
+                          className="text-sm font-semibold text-gray-800 mt-1 bg-transparent border-none p-0 w-full focus:ring-0">
+                          <option value="">—</option>
+                          {PLANNING_GROUPS.map(g => <option key={g.code} value={g.code}>{g.code} - {g.label}</option>)}
+                        </select>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3 border">
                         <div className="text-[10px] text-gray-500 font-semibold uppercase">Work Center</div>
-                        <div className="text-sm font-semibold text-gray-800 mt-1">{wo.work_center || '—'}</div>
+                        <select value={wo.work_center || ''} onChange={e => api.updateManagedWO(wo.wo_id, { work_center: e.target.value }).then(() => { wo.work_center = e.target.value; setSelectedOT({...wo}); }).catch(() => {})}
+                          className="text-sm font-semibold text-gray-800 mt-1 bg-transparent border-none p-0 w-full focus:ring-0">
+                          <option value="">—</option>
+                          {WORK_CENTERS.map(w => <option key={w.code} value={w.code}>{w.code} - {w.label}</option>)}
+                        </select>
                       </div>
                     </div>
 

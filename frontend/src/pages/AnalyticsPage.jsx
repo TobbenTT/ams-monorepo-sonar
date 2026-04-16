@@ -28,9 +28,9 @@ const AREA_I18N_KEYS = {
 };
 
 export default function AnalyticsPage() {
-  const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
+  const ctx = useOutletContext();
   const { t } = useLanguage();
-  const plantId = selectedPlant?.plant_id || selectedPlant || 'OCP-JFC1';
+  const plantId = ctx?.selectedPlant?.plant_id || ctx?.selectedPlant || ctx?.plant || 'OCP-JFC1';
   const [activeTab, setActiveTab] = useState('operational');
   const [selectedAreas, setSelectedAreas] = useState(new Set(AREA_NAMES));
 

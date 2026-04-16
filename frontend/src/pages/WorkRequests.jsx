@@ -1065,6 +1065,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState(null);
+  const [rejectModal, setRejectModal] = useState(null); // { id, title }
+  const [rejectReason, setRejectReason] = useState('');
   const [dismissedDups, setDismissedDups] = useState([]);
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -1295,13 +1297,19 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   }
 
   function handleReject(id) {
-    const reason = prompt('Motivo del rechazo:');
-    if (!reason) return;
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'RECHAZADO', rejection_reason: reason } : r)));
-    api.validateWorkRequest(id, { action: 'REJECT', rejection_reason: reason })
-      .then(() => toast.success('Notification rejected. El creador será notificado.'))
-      .catch(() => toast.error('Error al rechazar aviso'))
-      .finally(() => { onRefreshCounts?.(); refreshList(); });
+    const wr = requests.find(r => r.id === id);
+    setRejectModal({ id, title: wr?.equipment_tag || wr?.description?.substring(0, 40) || id });
+    setRejectReason('');
+  }
+
+  function confirmReject() {
+    if (!rejectModal || !rejectReason.trim()) return;
+    const { id } = rejectModal;
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'RECHAZADO', rejection_reason: rejectReason } : r)));
+    api.validateWorkRequest(id, { action: 'REJECT', rejection_reason: rejectReason })
+      .then(() => toast.success('Notification rejected'))
+      .catch(() => toast.error('Error rejecting'))
+      .finally(() => { setRejectModal(null); setRejectReason(''); onRefreshCounts?.(); refreshList(); });
   }
 
   function handleReopen(id) {
@@ -1998,6 +2006,28 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           </div>
         );
       })()}
+      {/* Reject Modal */}
+      {rejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRejectModal(null)} />
+          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <X size={24} className="text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-center mb-1">Reject Notification</h3>
+            <p className="text-sm text-gray-500 text-center mb-4">{rejectModal.title}</p>
+            <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+              placeholder="Rejection reason..."
+              className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 min-h-[80px] mb-4" />
+            <div className="flex gap-3">
+              <button onClick={() => setRejectModal(null)}
+                className="flex-1 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl hover:bg-gray-50">Cancel</button>
+              <button onClick={confirmReject} disabled={!rejectReason.trim()}
+                className="flex-1 py-2.5 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-40">Reject</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

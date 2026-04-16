@@ -446,18 +446,26 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   // Build assignment grid: "workerId:dateStr" -> [wo, ...]
   const grid = useMemo(() => {
     const g = {};
+    const daySet = new Set(days.map(d => d.str));
     scheduledWOs.forEach(wo => {
-      const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
-      if (!start) return;
+      const startDate = wo.planned_start ? new Date(wo.planned_start) : null;
+      if (!startDate) return;
       const shift = wo.shift || 'day';
+      const hours = wo.estimated_hours || 0;
+      const spanDays = Math.max(1, Math.ceil(hours / PROGRAMMABLE_HH_PER_DAY));
       (wo.assigned_workers || []).forEach(w => {
-        const key = showShifts ? `${w.worker_id}:${start}:${shift}` : `${w.worker_id}:${start}`;
-        if (!g[key]) g[key] = [];
-        g[key].push(wo);
+        for (let d = 0; d < spanDays; d++) {
+          const dayStr = toDateStr(addDays(startDate, d));
+          if (!daySet.has(dayStr)) continue;
+          const key = showShifts ? `${w.worker_id}:${dayStr}:${shift}` : `${w.worker_id}:${dayStr}`;
+          if (!g[key]) g[key] = [];
+          if (d === 0) g[key].push(wo);
+          else g[key].push({ ...wo, _continuation: true, _dayNum: d + 1, _totalDays: spanDays });
+        }
       });
     });
     return g;
-  }, [scheduledWOs, showShifts]);
+  }, [scheduledWOs, showShifts, days]);
 
   // Per-technician total hours in view
   const techHours = useMemo(() => {
@@ -770,7 +778,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                   style={{ minHeight: 60, minWidth: 90 }}
                                   onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
                                   onDragLeave={() => setDropTarget(null)}
-                                  onDrop={e => { e.preventDefault(); if (dragWO) { const techLoad = techHours[tech.worker_id] || 0; if (techLoad >= HOURS_PER_WEEK) { if (!window.confirm('⚠️ WARNING: ' + tech.name + ' is already at ' + Math.round(techLoad) + 'h/' + HOURS_PER_WEEK + 'h capacity. Schedule anyway?')) { setDragWO(null); setDropTarget(null); return; } } onScheduleWO(dragWO, tech, d.date, shift.id); } setDragWO(null); setDropTarget(null); }}>
+                                  onDrop={e => { e.preventDefault(); if (dragWO) { const techLoad = techHours[tech.worker_id] || 0; if (techLoad >= HOURS_PER_WEEK) { toast.error('⛔ ' + tech.name + ' is at ' + Math.round(techLoad) + 'h/' + Math.round(HOURS_PER_WEEK) + 'h — OVER CAPACITY. Cannot schedule more work.'); setDragWO(null); setDropTarget(null); return; } onScheduleWO(dragWO, tech, d.date, shift.id); } setDragWO(null); setDropTarget(null); }}>
                                   {cellWOs.map(wo => {
                                     const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
                                     return (
@@ -779,10 +787,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                         onMouseEnter={() => setHoverWO(wo)}
                                         onMouseLeave={() => setHoverWO(null)}
                                         onDragStart={e => { e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
-                                        className={`mb-1 p-1 rounded text-xs border cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400 ${woType.bg}`}>
-                                        <div className="font-bold truncate text-[0.65rem]">{wo.wo_number}</div>
+                                        className={`mb-1 p-1 rounded text-xs border cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400 ${woType.bg} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
+                                        <div className="font-bold truncate text-[0.65rem]">{wo.wo_number} {wo._continuation ? `(${wo._dayNum}/${wo._totalDays})` : ''}</div>
                                         <div className="truncate text-[0.6rem]">{wo.equipment_tag}</div>
-                                        <div className="text-[0.55rem] mt-0.5">{wo.estimated_hours}h</div>
+                                        <div className="text-[0.55rem] mt-0.5">{wo._continuation ? 'cont.' : wo.estimated_hours + 'h'}</div>
                                       </div>
                                     );
                                   })}

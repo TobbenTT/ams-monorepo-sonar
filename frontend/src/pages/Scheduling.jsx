@@ -1908,16 +1908,20 @@ export default function Scheduling() {
   const [programs, setPrograms] = useState([]);
 
   const loadCalendarData = () => {
+    // Load technicians separately — never overwrite with empty on error
+    api.listTechnicians({ plant_id: plant }).then(techs => {
+      const list = Array.isArray(techs) ? techs : techs?.technicians || [];
+      if (list.length > 0) setTechnicians(list); // Only update if we got data
+    }).catch(() => {});
+    // Load WOs
     Promise.all([
-      api.listTechnicians({ plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'CREADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'PLANIFICADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'LIBERADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'EN_PROGRAMACION', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
-    ]).then(([techs, created, planned, released, enProg, scheduled, executing]) => {
-      setTechnicians(Array.isArray(techs) ? techs : techs?.technicians || []);
+    ]).then(([created, planned, released, enProg, scheduled, executing]) => {
       const toSchedule = [...(Array.isArray(created) ? created : []), ...(Array.isArray(planned) ? planned : []), ...(Array.isArray(released) ? released : []), ...(Array.isArray(enProg) ? enProg : [])];
       setReleasedWOs(toSchedule);
       const allScheduled = [...(Array.isArray(scheduled) ? scheduled : []), ...(Array.isArray(executing) ? executing : [])];
@@ -2352,10 +2356,21 @@ export default function Scheduling() {
                 className="flex-1 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 dark:text-foreground hover:bg-gray-50 dark:hover:bg-muted">
                 Cancel
               </button>
-              <button onClick={() => { setShowAIModal(false); handleAISchedule(); }} disabled={aiScheduling}
+              <button onClick={() => {
+                if (aiResult?.assignments?.length > 0) {
+                  // User accepted the plan — apply it
+                  setShowAIModal(false);
+                  handleAISchedule();
+                } else {
+                  // First click — show what will happen
+                  const wos = releasedWOs || [];
+                  const preview = wos.slice(0, 10).map(wo => `${wo.wo_number} (${wo.priority_code}) → ${wo.estimated_hours || 0}h`);
+                  setAiResult({ assignments: [], message: `Preview: ${wos.length} WOs will be distributed across ${technicians.length} technicians at ${capacityLimit}% capacity.`, preview });
+                }
+              }} disabled={aiScheduling}
                 className="flex-1 py-2.5 text-sm font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2">
                 {aiScheduling ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                Generate Plan
+                {aiResult?.preview ? 'Accept & Apply Plan' : 'Preview Plan'}
               </button>
             </div>
           </div>

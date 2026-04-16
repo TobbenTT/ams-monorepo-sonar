@@ -1971,11 +1971,13 @@ export default function Scheduling() {
 
   useEffect(() => { loadPrograms(); loadCalendarData(); }, [plant]);
 
-  // Real-time updates via WebSocket
+  // Real-time updates via WebSocket — debounced to avoid race conditions
+  const wsTimerRef = useRef(null);
   useWebSocket(plant, useCallback((msg) => {
-    if (msg.event === 'wo_updated' || msg.event === 'wo_status' || msg.event === 'wo_created') {
-      loadCalendarData();
-      loadGantt();
+    if (msg.event?.startsWith('wo_') || msg.event === 'wo_bulk_clear') {
+      // Debounce: only reload 2s after last event to avoid rapid-fire reloads
+      if (wsTimerRef.current) clearTimeout(wsTimerRef.current);
+      wsTimerRef.current = setTimeout(() => { loadCalendarData(); loadGantt(); }, 2000);
     }
   }, []));
   useEffect(() => { loadGantt(); }, [plant, ganttWeeks]);

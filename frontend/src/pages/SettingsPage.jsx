@@ -58,6 +58,7 @@ export default function SettingsPage() {
     schedulingPercent: 80,
     productivityFactor: 90,
     shiftType: 'day_night', // day_night | abc_8h
+    weekStartDay: 1, // 1=Monday, 3=Wednesday
     notifCritical: true,
     notifWODelays: true,
     notifKPI: true,
@@ -502,6 +503,17 @@ export default function SettingsPage() {
                   <option value="day_night">Day / Night (12h shifts)</option>
                   <option value="abc_8h">ABC Rotation (8h shifts)</option>
                 </select>
+              </div>
+              <div>
+                <Label>Week Start Day</Label>
+                <select value={settings.weekStartDay} onChange={e => updateSetting('weekStartDay', Number(e.target.value))}
+                  className="mt-1 w-full border rounded-md px-3 py-2 text-sm">
+                  <option value={1}>Monday (standard)</option>
+                  <option value={0}>Sunday</option>
+                  <option value={3}>Wednesday (mining)</option>
+                  <option value={6}>Saturday</option>
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Some mines use Wed-Tue cycles</p>
               </div>
               <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
                 <div className="text-xs font-bold text-indigo-600 uppercase mb-1">Programmable HH per Person per Day</div>

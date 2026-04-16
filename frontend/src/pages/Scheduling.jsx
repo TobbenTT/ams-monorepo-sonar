@@ -86,6 +86,7 @@ function getCapacitySettings() {
       effectiveHours: s.effectiveHoursPerShift || 10,
       schedulingPct: s.schedulingPercent || 80,
       productivityPct: s.productivityFactor || 90,
+      weekStartDay: s.weekStartDay ?? 1,
     };
   } catch { return { effectiveHours: 10, schedulingPct: 80, productivityPct: 90 }; }
 }
@@ -93,13 +94,17 @@ const CAP = getCapacitySettings();
 const PROGRAMMABLE_HH_PER_DAY = CAP.effectiveHours * (CAP.schedulingPct / 100) * (CAP.productivityPct / 100);
 const HOURS_PER_WEEK = PROGRAMMABLE_HH_PER_DAY * 5;
 
-function getMonday(d) {
+function getWeekStart(d) {
+  const cap = getCapacitySettings();
+  const startDay = cap.weekStartDay ?? 1; // 0=Sun, 1=Mon, 3=Wed
   const date = new Date(d);
   const day = date.getDay();
-  date.setDate(date.getDate() - day + (day === 0 ? -6 : 1));
+  const diff = (day - startDay + 7) % 7;
+  date.setDate(date.getDate() - diff);
   date.setHours(0, 0, 0, 0);
   return date;
 }
+function getMonday(d) { return getWeekStart(d); }
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
 function fmtDateShort(d) { return d.toLocaleDateString('en', { month: 'short', day: 'numeric' }); }
 function toDateStr(d) {

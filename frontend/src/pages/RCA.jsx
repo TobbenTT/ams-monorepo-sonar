@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
@@ -64,6 +65,7 @@ export default function RCA() {
   };
 
   useEffect(() => { loadData(); }, [plant]);
+  useWebSocket(plant, useCallback((msg) => { if (msg.event) loadData(); }, []));
 
   const handleCreate = async (desc, equip) => {
     if (!desc?.trim()) return;

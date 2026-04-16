@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { Card } from '../components/ui/card';
@@ -74,6 +75,14 @@ export default function FailuresEvents() {
     fetchData();
     return () => { cancelled = true; };
   }, [plant]);
+
+  // WebSocket real-time updates
+  const refreshWRs = useCallback(() => {
+    api.listWorkRequests({ plant_id: plant }).then(d => setWorkRequests(Array.isArray(d) ? d : [])).catch(() => {});
+  }, [plant]);
+  useWebSocket(plant, useCallback((msg) => {
+    if (msg.event?.startsWith('wr_') || msg.event?.startsWith('wo_')) refreshWRs();
+  }, [refreshWRs]));
 
   // --- Filter work requests: time range → page filters ---
   const _timeFiltered = useMemo(() => filterByDateRange(workRequests, selectedTimeRange), [workRequests, selectedTimeRange]);

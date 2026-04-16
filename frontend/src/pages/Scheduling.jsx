@@ -614,10 +614,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                   const s = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
                   return s && s >= weekMonStr && s <= weekSunStr;
                 });
-                if (weekWOs.length === 0) { return; }
+                if (weekWOs.length === 0) { toast.info('No WOs scheduled this week'); return; }
                 let reserved = 0;
                 for (const wo of weekWOs) {
-                  try { await api.scheduleManagedWO(wo.wo_id, {}); reserved++; } catch {}
+                  try { await api.updateManagedWO(wo.wo_id, { status: 'PROGRAMADO' }); reserved++; } catch {}
                 }
                 if (reserved > 0) toast.success(`${reserved} WOs reserved as PROGRAMADO`);
                 onWeekChange?.(weekStart);

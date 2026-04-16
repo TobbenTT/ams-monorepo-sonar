@@ -368,7 +368,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
     if not wo:
         return None
-    if wo.status not in ("CREADO", "PLANIFICADO", "PROGRAMADO", "PENDIENTE", "APROBADO"):
+    if wo.status in ("CERRADO", "CANCELADO"):
         return None
 
     updatable = [
@@ -377,6 +377,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
         "planned_start", "planned_end", "risk_analysis", "budget_amount", "budget_approved",
         "labor_cost", "material_cost", "external_cost", "actual_total_cost", "actual_hours", "shift",
         "assigned_workers", "status", "planning_group", "work_center",
+        "reservation_code", "cancellation_reason", "completion_pct", "execution_notes",
     ]
     for key in updatable:
         if key in data:

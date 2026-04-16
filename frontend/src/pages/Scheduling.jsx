@@ -408,6 +408,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   const [includeWeekends, setIncludeWeekends] = useState(false);
   const [dragWO, setDragWO] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
+  const [hoverWO, setHoverWO] = useState(null);
 
   const days = useMemo(() => {
     const result = [];
@@ -643,11 +644,11 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                   onDrop={e => { e.preventDefault(); if (dragWO) { const techLoad = techHours[tech.worker_id] || 0; if (techLoad >= HOURS_PER_WEEK) { if (!window.confirm('⚠️ WARNING: ' + tech.name + ' is already at ' + Math.round(techLoad) + 'h/' + HOURS_PER_WEEK + 'h capacity. Schedule anyway?')) { setDragWO(null); setDropTarget(null); return; } } onScheduleWO(dragWO, tech, d.date, shift.id); } setDragWO(null); setDropTarget(null); }}>
                                   {cellWOs.map(wo => {
                                     const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
-                                    const tip = `${wo.wo_number} · ${wo.wo_type || ''}\n${wo.equipment_tag || ''}\n${wo.description ? wo.description.substring(0, 80) : ''}\nPriority: ${wo.priority_code || 'P3'} · ${wo.estimated_hours || 0}h\nStart: ${wo.planned_start || '—'}\nWorkers: ${(wo.assigned_workers || []).map(w => w.name).join(', ') || '—'}`;
                                     return (
                                       <div key={wo.wo_id}
                                         draggable
-                                        title={tip}
+                                        onMouseEnter={() => setHoverWO(wo)}
+                                        onMouseLeave={() => setHoverWO(null)}
                                         onDragStart={e => { e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
                                         className={`mb-1 p-1 rounded text-xs border cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400 ${woType.bg}`}>
                                         <div className="font-bold truncate text-[0.65rem]">{wo.wo_number}</div>
@@ -678,9 +679,11 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                               onDrop={e => handleDrop(e, tech, d)}>
                               {cellWOs.map(wo => {
                                 const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
-                                const tip = `${wo.wo_number} · ${wo.wo_type || ''}\n${wo.equipment_tag || ''}\n${wo.description ? wo.description.substring(0, 80) : ''}\nPriority: ${wo.priority_code || 'P3'} · ${wo.estimated_hours || 0}h\nStart: ${wo.planned_start || '—'}\nWorkers: ${(wo.assigned_workers || []).map(w => w.name).join(', ') || '—'}`;
                                 return (
-                                  <div key={wo.wo_id} title={tip} className={`mb-1 p-1.5 rounded text-xs border cursor-default hover:ring-2 hover:ring-blue-400 ${woType.bg}`}>
+                                  <div key={wo.wo_id}
+                                    onMouseEnter={() => setHoverWO(wo)}
+                                    onMouseLeave={() => setHoverWO(null)}
+                                    className={`mb-1 p-1.5 rounded text-xs border cursor-default hover:ring-2 hover:ring-blue-400 ${woType.bg}`}>
                                     <div className="font-bold truncate">{wo.wo_number}</div>
                                     <div className="truncate text-[0.65rem]">{wo.equipment_tag}</div>
                                     <div className="text-[0.6rem] mt-0.5">{wo.estimated_hours}h</div>
@@ -731,6 +734,27 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
           </div>
         )}
       </div>
+
+      {/* Floating tooltip */}
+      {hoverWO && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-xl shadow-xl p-4 min-w-[280px] text-sm pointer-events-none">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-mono font-bold">{hoverWO.wo_number}</span>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded text-white ${hoverWO.priority_code === 'P1' ? 'bg-red-500' : hoverWO.priority_code === 'P2' ? 'bg-orange-500' : hoverWO.priority_code === 'P3' ? 'bg-blue-500' : 'bg-gray-400'}`}>{hoverWO.priority_code}</span>
+            <span className="text-xs text-muted-foreground">{hoverWO.wo_type}</span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-1">{hoverWO.equipment_tag}</p>
+          <p className="text-xs text-foreground mb-2">{(hoverWO.description || '').substring(0, 100)}</p>
+          <div className="grid grid-cols-2 gap-1 text-xs">
+            <span className="text-muted-foreground">Start:</span><span>{hoverWO.planned_start || '—'}</span>
+            <span className="text-muted-foreground">Hours:</span><span>{hoverWO.estimated_hours || 0}h</span>
+            <span className="text-muted-foreground">Status:</span><span>{hoverWO.status}</span>
+            {(hoverWO.assigned_workers || []).length > 0 && (
+              <><span className="text-muted-foreground">Workers:</span><span>{hoverWO.assigned_workers.map(w => w.name).join(', ')}</span></>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

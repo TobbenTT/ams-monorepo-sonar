@@ -2011,25 +2011,37 @@ export default function Scheduling() {
       }
 
       const viewedMonday = viewedWeekStart || getMonday(new Date());
+      const numDays = 7;
       const weekDays = [];
-      for (let d = 0; d < 5; d++) {
+      for (let d = 0; d < numDays; d++) {
         const day = new Date(viewedMonday);
         day.setDate(viewedMonday.getDate() + d);
         weekDays.push(day.toISOString().slice(0, 10));
       }
 
-      // Sort by priority (P1 first)
+      // Sort by priority (P1 first) + apply AI instructions for priority override
       const prioOrder = { P1: 0, P2: 1, P3: 2, P4: 3 };
-      toSchedule.sort((a, b) => (prioOrder[a.priority_code] || 3) - (prioOrder[b.priority_code] || 3));
+      const instructions = aiInstructions.toLowerCase();
+      toSchedule.sort((a, b) => {
+        // If instructions mention specific WO, boost it to top
+        const aBoost = instructions.includes((a.wo_number || '').toLowerCase()) ? -10 : 0;
+        const bBoost = instructions.includes((b.wo_number || '').toLowerCase()) ? -10 : 0;
+        // If instructions mention equipment, boost those
+        const aEquipBoost = a.equipment_tag && instructions.includes((a.equipment_tag || '').toLowerCase()) ? -5 : 0;
+        const bEquipBoost = b.equipment_tag && instructions.includes((b.equipment_tag || '').toLowerCase()) ? -5 : 0;
+        return (prioOrder[a.priority_code] || 3) + aBoost + aEquipBoost - ((prioOrder[b.priority_code] || 3) + bBoost + bEquipBoost);
+      });
 
-      // Capacity-constrained auto-level (Prometheus-style)
-      // Max HH per day = techs * 8h * capacityLimit%
-      const maxHHPerDay = techs.length * 8 * (capacityLimit / 100);
-      const dayLoad = [0, 0, 0, 0, 0];
+      // Capacity-constrained auto-level
+      const maxHHPerDay = techs.length * PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100);
+      const dayLoad = [0, 0, 0, 0, 0, 0, 0]; // 7 days
+      // Apply "keep X light" instructions — reduce capacity for that day
+      const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      const lightDays = dayNames.map((name, i) => instructions.includes(name) && (instructions.includes('light') || instructions.includes('libre') || instructions.includes('liviano')) ? 0.5 : 1);
 
       // Track per-technician daily load
       const techDayLoad = {};
-      techs.forEach(t => { techDayLoad[t.worker_id] = [0, 0, 0, 0, 0]; });
+      techs.forEach(t => { techDayLoad[t.worker_id] = new Array(numDays).fill(0); });
 
       let scheduled = 0;
       let deferred = 0;
@@ -2039,18 +2051,16 @@ export default function Scheduling() {
         const prio = wo.priority_code || 'P3';
         const hours = parseFloat(wo.estimated_hours) || 4;
 
-        // Find best day respecting capacity limit
+        // Find best day respecting capacity limit + AI instructions
         let bestDay = -1;
+        const allDays = Array.from({ length: numDays }, (_, i) => i);
         if (prio === 'P1') {
-          // Emergency: force first day even if over capacity
           bestDay = 0;
         } else if (prio === 'P2') {
-          // Urgent: first half of week, under capacity
-          bestDay = [0, 1, 2].find(d => dayLoad[d] + hours <= maxHHPerDay);
-          if (bestDay === undefined) bestDay = [0, 1, 2].reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b);
+          bestDay = allDays.slice(0, 3).find(d => dayLoad[d] + hours <= maxHHPerDay * (lightDays[d] || 1));
+          if (bestDay === undefined) bestDay = allDays.slice(0, 3).reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b);
         } else {
-          // P3/P4: find day with least load under capacity
-          const candidates = [0, 1, 2, 3, 4].filter(d => dayLoad[d] + hours <= maxHHPerDay);
+          const candidates = allDays.filter(d => dayLoad[d] + hours <= maxHHPerDay * (lightDays[d] || 1));
           if (candidates.length > 0) {
             bestDay = prio === 'P4' ? candidates[candidates.length - 1] : candidates.reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b);
           }

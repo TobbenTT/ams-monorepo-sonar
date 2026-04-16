@@ -588,7 +588,7 @@ export default function MobileCreateWR() {
                                 value={equipSearch}
                                 onChange={(e) => { setEquipSearch(e.target.value); setShowEquipSearch(true); }}
                                 onFocus={() => equipSearch.length >= 2 && setShowEquipSearch(true)}
-                                placeholder="Buscar por TAG (ej: P-1201A)..."
+                                placeholder="Search by TAG (e.g. P-1201A)..."
                                 className="w-full pl-10 pr-4 py-3 rounded-xl border text-sm outline-none"
                                 style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
                             />

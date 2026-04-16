@@ -194,7 +194,7 @@ export default function MobileWRDetail() {
             toast.success(`Asignado a ${names}`);
             setShowAssignPanel(false);
             loadWr();
-        } catch (e) { toast.error('Error al asignar: ' + (e.message || e)); }
+        } catch (e) { toast.error('Error assigning: ' + (e.message || e)); }
         setActionLoading(false);
     };
 
@@ -202,22 +202,22 @@ export default function MobileWRDetail() {
         setActionLoading(true);
         try {
             await api.validateWorkRequest(wr.request_id, { action: 'APPROVE', modifications: {} });
-            toast.success('Aviso aprobado exitosamente');
+            toast.success('Notification approved');
             loadWr();
-        } catch (e) { toast.error('Error al aprobar: ' + (e.message || e)); }
+        } catch (e) { toast.error('Error approving: ' + (e.message || e)); }
         setActionLoading(false);
     };
 
     const handleReject = async () => {
-        if (!rejectReason.trim()) { toast.error('Ingresa un motivo de rechazo'); return; }
+        if (!rejectReason.trim()) { toast.error('Enter a rejection reason'); return; }
         setActionLoading(true);
         try {
             await api.validateWorkRequest(wr.request_id, { action: 'REJECT', modifications: { reason: rejectReason } });
-            toast.success('Aviso rechazado');
+            toast.success('Notification rejected');
             loadWr();
             setShowRejectForm(false);
             setRejectReason('');
-        } catch (e) { toast.error('Error al rechazar: ' + (e.message || e)); }
+        } catch (e) { toast.error('Error rejecting: ' + (e.message || e)); }
         setActionLoading(false);
     };
 
@@ -225,9 +225,9 @@ export default function MobileWRDetail() {
         setActionLoading(true);
         try {
             await api.cancelWorkRequest(wr.request_id);
-            toast.success('Aviso cancelado');
+            toast.success('Notification cancelled');
             loadWr();
-        } catch (e) { toast.error('Error al cancelar: ' + (e.message || e)); }
+        } catch (e) { toast.error('Error cancelling: ' + (e.message || e)); }
         setActionLoading(false);
     };
 
@@ -250,7 +250,7 @@ export default function MobileWRDetail() {
             toast.success('Aviso actualizado');
             setEditing(false);
             loadWr();
-        } catch (e) { toast.error('Error al actualizar: ' + (e.message || e)); }
+        } catch (e) { toast.error('Error updating: ' + (e.message || e)); }
         setActionLoading(false);
     };
 

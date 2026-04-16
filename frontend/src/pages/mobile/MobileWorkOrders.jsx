@@ -181,7 +181,7 @@ export default function MobileWorkOrders() {
                         type="text"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        placeholder="Buscar por OT, equipo o TAG..."
+                        placeholder="Search by WO, equipment or TAG..."
                         className="w-full pl-10 pr-4 py-3 rounded-xl border text-sm outline-none"
                         style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
                     />

@@ -47,8 +47,24 @@ def get_audit_log(entity_type: str | None = None, limit: int = 100, db: Session 
         from api.database.models import UserModel
         users = db.query(UserModel).filter(UserModel.user_id.in_(user_ids)).all()
         user_map = {u.user_id: u.full_name or u.username for u in users}
+    # Resolve WO IDs to WO numbers
+    wo_ids = set(e.entity_id for e in entries if e.entity_type in ('managed_work_order', 'work_order') and e.entity_id)
+    wo_map = {}
+    if wo_ids:
+        from api.database.models import ManagedWorkOrderModel
+        wos = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id.in_(wo_ids)).all()
+        wo_map = {w.wo_id: w.wo_number for w in wos}
+    # Resolve WR IDs
+    wr_ids = set(e.entity_id for e in entries if e.entity_type == 'work_request' and e.entity_id)
+    wr_map = {}
+    if wr_ids:
+        from api.database.models import WorkRequestModel
+        wrs = db.query(WorkRequestModel).filter(WorkRequestModel.request_id.in_(wr_ids)).all()
+        wr_map = {w.request_id: w.request_id for w in wrs}
     return [
-        {"id": e.id, "entity_type": e.entity_type, "entity_id": e.entity_id,
+        {"id": e.id, "entity_type": e.entity_type,
+         "entity_id": wo_map.get(e.entity_id, wr_map.get(e.entity_id, e.entity_id)),
+         "entity_id_raw": e.entity_id,
          "action": e.action, "user": user_map.get(e.user, e.user), "user_id": e.user,
          "payload": e.payload,
          "timestamp": e.timestamp.isoformat() if e.timestamp else None}

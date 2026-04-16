@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
@@ -1122,6 +1123,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   useEffect(() => {
     if (isActive) refreshList();
   }, [isActive]);
+  useWebSocket(plantId, useCallback((msg) => {
+    if (msg.event?.startsWith('wr_') || msg.event?.startsWith('wo_')) refreshList();
+  }, []));
 
   /* ─── Scope filtering ─── */
   const scopeFiltered = useMemo(() => {

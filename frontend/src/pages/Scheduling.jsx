@@ -405,7 +405,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   const [viewRange, setViewRange] = useState(1);
   const [search, setSearch] = useState('');
   const [showShifts, setShowShifts] = useState(true);
-  const [includeWeekends, setIncludeWeekends] = useState(false);
+  const [includeWeekends, setIncludeWeekends] = useState(true);
   const [dragWO, setDragWO] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
   const [hoverWO, setHoverWO] = useState(null);
@@ -457,7 +457,8 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     return h;
   }, [technicians, scheduledWOs, days]);
 
-  const totalAvailable = technicians.length * HOURS_PER_WEEK * viewRange;
+  const hoursPerWeek = includeWeekends ? 56 : 40;
+  const totalAvailable = technicians.length * hoursPerWeek * viewRange;
   const totalAssigned = Object.values(techHours).reduce((a, b) => a + b, 0);
   const loadPct = totalAvailable > 0 ? Math.round((totalAssigned / totalAvailable) * 100) : 0;
 

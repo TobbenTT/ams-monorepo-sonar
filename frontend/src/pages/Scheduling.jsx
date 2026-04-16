@@ -1988,6 +1988,9 @@ export default function Scheduling() {
   };
 
   const [capacityLimit, setCapacityLimit] = useState(85); // % max capacity for auto-level
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiInstructions, setAiInstructions] = useState('');
+  const [aiPreview, setAiPreview] = useState(null);
 
   const handleAISchedule = async () => {
     setAiScheduling(true);
@@ -2199,7 +2202,7 @@ export default function Scheduling() {
                 {[70, 75, 80, 85, 90, 95, 100].map(v => <option key={v} value={v}>{v}%</option>)}
               </select>
               <button
-                onClick={handleAISchedule}
+                onClick={() => setShowAIModal(true)}
                 disabled={aiScheduling}
                 className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
               >
@@ -2296,6 +2299,51 @@ export default function Scheduling() {
       {closureOrder && (
         <OCRClosureModal order={closureOrder} t={t} onClose={() => setClosureOrder(null)} onSubmit={handleClosureSubmit} />
       )}
+      {/* AI Auto-Level Modal */}
+      {showAIModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !aiScheduling && setShowAIModal(false)} />
+          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles size={24} className="text-purple-600" />
+            </div>
+            <h3 className="text-lg font-bold text-center mb-1">AI Auto-Level Schedule</h3>
+            <p className="text-sm text-gray-500 text-center mb-4">
+              {releasedWOs.length} WOs to schedule at {capacityLimit}% capacity with {technicians.length} technicians
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 block">Instructions for AI (optional)</label>
+                <textarea value={aiInstructions} onChange={e => setAiInstructions(e.target.value)}
+                  placeholder="e.g. Prioritize OT-2026-00031, spread mechanical work across Mon-Wed, keep Friday light for emergencies..."
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 min-h-[80px] bg-background text-foreground" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-purple-700 dark:text-purple-300">{capacityLimit}%</div>
+                  <div className="text-purple-500">Max capacity</div>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-blue-700 dark:text-blue-300">{Math.round(PROGRAMMABLE_HH_PER_DAY)}h</div>
+                  <div className="text-blue-500">Per person/day</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => { setShowAIModal(false); setAiInstructions(''); }}
+                className="flex-1 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 dark:text-foreground hover:bg-gray-50 dark:hover:bg-muted">
+                Cancel
+              </button>
+              <button onClick={() => { setShowAIModal(false); handleAISchedule(); }} disabled={aiScheduling}
+                className="flex-1 py-2.5 text-sm font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                {aiScheduling ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                Generate Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Clear Assignments Confirmation Modal */}
       {showClearConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => !clearing && setShowClearConfirm(false)}>

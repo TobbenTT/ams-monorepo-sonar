@@ -139,6 +139,19 @@ def create_app() -> FastAPI:
         logger.error("Internal error on %s %s: %s", request.method, request.url.path, exc)
         return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
+    # ── WebSocket notification flush middleware ──
+    from api.services.ws_manager import flush_notifications
+
+    @app.middleware("http")
+    async def ws_flush_middleware(request: Request, call_next):
+        response = await call_next(request)
+        # Flush any queued WS notifications after response
+        try:
+            await flush_notifications()
+        except Exception:
+            pass
+        return response
+
     allowed_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
     if not settings.DEBUG:
         unsafe = [o for o in allowed_origins if "localhost" in o or "127.0.0.1" in o]
@@ -297,6 +310,22 @@ def create_app() -> FastAPI:
             "uptime_seconds": int((datetime.now() - _app_start).total_seconds()) if '_app_start' in dir() else None,
             "counts": counts,
         }
+
+    # ── WebSocket endpoint for real-time updates ──
+    from fastapi import WebSocket, WebSocketDisconnect
+    from api.services.ws_manager import manager
+
+    @app.websocket("/ws/{plant_id}")
+    async def websocket_endpoint(websocket: WebSocket, plant_id: str = "global"):
+        await manager.connect(websocket, plant_id)
+        try:
+            while True:
+                # Keep connection alive, client can send pings
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_text("pong")
+        except WebSocketDisconnect:
+            manager.disconnect(websocket, plant_id)
 
     return app
 

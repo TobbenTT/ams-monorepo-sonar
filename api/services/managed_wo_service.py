@@ -6,6 +6,7 @@ from sqlalchemy import func
 
 from api.database.models import ManagedWorkOrderModel, WorkRequestModel
 from api.services.audit_service import log_action
+from api.services.ws_manager import queue_notify
 
 
 # Valid status transitions
@@ -402,6 +403,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
     log_action(db, "managed_work_order", wo_id, "UPDATE", user=data.get("updated_by", "system"))
     db.commit()
     db.refresh(wo)
+    queue_notify("wo_updated", {"wo_id": wo_id, "wo_number": wo.wo_number, "status": wo.status}, wo.plant_id)
     return _to_dict(wo)
 
 
@@ -460,6 +462,7 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
     log_action(db, "managed_work_order", wo_id, target_status, user=user_id or "system")
     db.commit()
     db.refresh(wo)
+    queue_notify("wo_status", {"wo_id": wo_id, "wo_number": wo.wo_number, "old": old_status, "new": target_status}, wo.plant_id)
     return _to_dict(wo)
 
 

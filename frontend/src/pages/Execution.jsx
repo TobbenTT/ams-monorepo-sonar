@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useWebSocket } from '../hooks/useWebSocket';
 import {
   Wrench, CheckCircle, Clock, AlertTriangle, User, ChevronDown, ChevronUp,
   Zap, Calendar, Loader2, Play, X, ArrowRight, BarChart2, Package, FileText,
@@ -61,6 +62,9 @@ export default function Execution() {
   };
 
   useEffect(() => { loadData(); }, [plant]);
+  useWebSocket(plant, useCallback((msg) => {
+    if (msg.event?.startsWith('wo_')) loadData();
+  }, []));
 
   // KPIs
   const kpis = useMemo(() => {

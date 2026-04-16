@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { CritBadge, LoadingSpinner } from '../components/Shared';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -1825,6 +1826,14 @@ export default function Scheduling() {
   };
 
   useEffect(() => { loadPrograms(); loadCalendarData(); }, [plant]);
+
+  // Real-time updates via WebSocket
+  useWebSocket(plant, useCallback((msg) => {
+    if (msg.event === 'wo_updated' || msg.event === 'wo_status' || msg.event === 'wo_created') {
+      loadCalendarData();
+      loadGantt();
+    }
+  }, []));
   useEffect(() => { loadGantt(); }, [plant, ganttWeeks]);
 
   const handleScheduleWO = (wo, tech, dayDate, shift = 'day') => {

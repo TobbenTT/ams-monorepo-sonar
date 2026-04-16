@@ -1912,11 +1912,13 @@ export default function Scheduling() {
       api.listTechnicians({ plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'CREADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'PLANIFICADO', plant_id: plant }).catch(() => []),
+      api.listManagedWOs({ status: 'LIBERADO', plant_id: plant }).catch(() => []),
+      api.listManagedWOs({ status: 'EN_PROGRAMACION', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
       api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
-    ]).then(([techs, created, planned, scheduled, executing]) => {
+    ]).then(([techs, created, planned, released, enProg, scheduled, executing]) => {
       setTechnicians(Array.isArray(techs) ? techs : techs?.technicians || []);
-      const toSchedule = [...(Array.isArray(created) ? created : []), ...(Array.isArray(planned) ? planned : [])];
+      const toSchedule = [...(Array.isArray(created) ? created : []), ...(Array.isArray(planned) ? planned : []), ...(Array.isArray(released) ? released : []), ...(Array.isArray(enProg) ? enProg : [])];
       setReleasedWOs(toSchedule);
       const allScheduled = [...(Array.isArray(scheduled) ? scheduled : []), ...(Array.isArray(executing) ? executing : [])];
       setScheduledWOs(allScheduled);
@@ -2121,9 +2123,8 @@ export default function Scheduling() {
       const msg = `✓ ${scheduled} WOs auto-leveled for ${weekLabel} at ${capacityLimit}% capacity${deferred > 0 ? ` (${deferred} deferred — over capacity)` : ''} · Peak load: ${loadPctFinal}%`;
       toast.success(msg);
       setAiResult({ assignments, message: msg });
-      loadCalendarData();
-      loadPrograms();
-      loadGantt();
+      // Force reload with small delay to ensure backend has processed all changes
+      setTimeout(() => { loadCalendarData(); loadPrograms(); loadGantt(); }, 500);
     } catch (e) {
       toast.error('Auto-level error: ' + (e.message || ''));
     } finally {

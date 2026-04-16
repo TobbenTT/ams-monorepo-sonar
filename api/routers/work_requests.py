@@ -374,6 +374,8 @@ def approve_work_request(request_id: str, data: WRApproveRequest, user=Depends(r
     )
     if not result:
         raise HTTPException(status_code=404, detail="Work request not found")
+    from api.services.ws_manager import queue_notify
+    queue_notify("wr_approved", {"request_id": request_id}, result.get("ai_classification", {}).get("plant_id"))
     return result
 
 
@@ -385,6 +387,8 @@ def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(req
     )
     if not result:
         raise HTTPException(status_code=404, detail="Work request not found")
+    from api.services.ws_manager import queue_notify
+    queue_notify("wr_rejected", {"request_id": request_id}, result.get("ai_classification", {}).get("plant_id"))
     return result
 
 

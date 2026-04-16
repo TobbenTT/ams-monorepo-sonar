@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useWebSocket } from '../hooks/useWebSocket';
 import {
   Plus, CheckCircle, Clock, AlertTriangle, Loader2, X, Search,
   ArrowRight, Target, TrendingUp, Calendar, User, Edit2, Trash2,
@@ -62,6 +63,7 @@ export default function ImprovementActionsPage() {
   };
 
   useEffect(() => { fetchActions(); }, [plantId]);
+  useWebSocket(plantId, useCallback((msg) => { if (msg.event) fetchActions(); }, []));
 
   const filtered = useMemo(() => {
     let list = actions;

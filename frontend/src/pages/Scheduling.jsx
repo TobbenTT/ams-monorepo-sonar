@@ -1907,26 +1907,34 @@ export default function Scheduling() {
   const [ganttWeeks, setGanttWeeks] = useState(2);
   const [programs, setPrograms] = useState([]);
 
-  const loadCalendarData = () => {
-    // Load technicians separately — never overwrite with empty on error
-    api.listTechnicians({ plant_id: plant }).then(techs => {
-      const list = Array.isArray(techs) ? techs : techs?.technicians || [];
-      if (list.length > 0) setTechnicians(list); // Only update if we got data
-    }).catch(() => {});
-    // Load WOs
-    Promise.all([
-      api.listManagedWOs({ status: 'CREADO', plant_id: plant }).catch(() => []),
-      api.listManagedWOs({ status: 'PLANIFICADO', plant_id: plant }).catch(() => []),
-      api.listManagedWOs({ status: 'LIBERADO', plant_id: plant }).catch(() => []),
-      api.listManagedWOs({ status: 'EN_PROGRAMACION', plant_id: plant }).catch(() => []),
-      api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
-      api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
-    ]).then(([created, planned, released, enProg, scheduled, executing]) => {
-      const toSchedule = [...(Array.isArray(created) ? created : []), ...(Array.isArray(planned) ? planned : []), ...(Array.isArray(released) ? released : []), ...(Array.isArray(enProg) ? enProg : [])];
-      setReleasedWOs(toSchedule);
-      const allScheduled = [...(Array.isArray(scheduled) ? scheduled : []), ...(Array.isArray(executing) ? executing : [])];
-      setScheduledWOs(allScheduled);
-    });
+  const techsCacheRef = useRef([]);
+
+  const loadCalendarData = async () => {
+    try {
+      // Load technicians FIRST and cache them
+      const techs = await api.listTechnicians({ plant_id: plant }).catch(() => null);
+      if (techs) {
+        const list = Array.isArray(techs) ? techs : techs?.technicians || [];
+        if (list.length > 0) { techsCacheRef.current = list; setTechnicians(list); }
+      }
+      if (techsCacheRef.current.length > 0 && technicians.length === 0) {
+        setTechnicians(techsCacheRef.current);
+      }
+    } catch {}
+    try {
+      // Then load WOs sequentially to avoid overwhelming the backend
+      const [created, planned, released, enProg, scheduled, executing] = await Promise.all([
+        api.listManagedWOs({ status: 'CREADO', plant_id: plant }).catch(() => []),
+        api.listManagedWOs({ status: 'PLANIFICADO', plant_id: plant }).catch(() => []),
+        api.listManagedWOs({ status: 'LIBERADO', plant_id: plant }).catch(() => []),
+        api.listManagedWOs({ status: 'EN_PROGRAMACION', plant_id: plant }).catch(() => []),
+        api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
+        api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
+      ]);
+      const arr = v => Array.isArray(v) ? v : [];
+      setReleasedWOs([...arr(created), ...arr(planned), ...arr(released), ...arr(enProg)]);
+      setScheduledWOs([...arr(scheduled), ...arr(executing)]);
+    } catch {}
   };
 
   const loadPrograms = () => {
@@ -2224,7 +2232,7 @@ export default function Scheduling() {
                 {[70, 75, 80, 85, 90, 95, 100].map(v => <option key={v} value={v}>{v}%</option>)}
               </select>
               <button
-                onClick={() => setShowAIModal(true)}
+                onClick={() => { setAiResult(null); setAiInstructions(''); setShowAIModal(true); }}
                 disabled={aiScheduling}
                 className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
               >
@@ -2351,26 +2359,22 @@ export default function Scheduling() {
                 </div>
               </div>
             </div>
+            {/* Preview info */}
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-xs text-gray-600 dark:text-gray-300">
+              <p className="font-semibold mb-1">Plan preview:</p>
+              <p>{(releasedWOs || []).length} WOs will be distributed across {technicians.length} technicians</p>
+              <p>Max {capacityLimit}% capacity = {Math.round(PROGRAMMABLE_HH_PER_DAY * (capacityLimit/100))}h/person/day</p>
+              {aiInstructions && <p className="mt-1 text-purple-600 dark:text-purple-400">Instructions: "{aiInstructions}"</p>}
+            </div>
             <div className="flex gap-3 mt-4">
-              <button onClick={() => { setShowAIModal(false); setAiInstructions(''); }}
+              <button onClick={() => { setShowAIModal(false); setAiInstructions(''); setAiResult(null); }}
                 className="flex-1 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 dark:text-foreground hover:bg-gray-50 dark:hover:bg-muted">
                 Cancel
               </button>
-              <button onClick={() => {
-                if (aiResult?.assignments?.length > 0) {
-                  // User accepted the plan — apply it
-                  setShowAIModal(false);
-                  handleAISchedule();
-                } else {
-                  // First click — show what will happen
-                  const wos = releasedWOs || [];
-                  const preview = wos.slice(0, 10).map(wo => `${wo.wo_number} (${wo.priority_code}) → ${wo.estimated_hours || 0}h`);
-                  setAiResult({ assignments: [], message: `Preview: ${wos.length} WOs will be distributed across ${technicians.length} technicians at ${capacityLimit}% capacity.`, preview });
-                }
-              }} disabled={aiScheduling}
-                className="flex-1 py-2.5 text-sm font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2">
+              <button onClick={() => { setShowAIModal(false); handleAISchedule(); }} disabled={aiScheduling || (releasedWOs || []).length === 0}
+                className="flex-1 py-2.5 text-sm font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-40 flex items-center justify-center gap-2">
                 {aiScheduling ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                {aiResult?.preview ? 'Accept & Apply Plan' : 'Preview Plan'}
+                Apply Plan
               </button>
             </div>
           </div>

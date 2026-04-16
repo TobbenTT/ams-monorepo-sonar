@@ -653,6 +653,8 @@ class WorkforceModel(Base):
     equipment_expertise: Mapped[list | None] = mapped_column(JSON, nullable=True)
     safety_training_current: Mapped[bool] = mapped_column(Boolean, default=True)
     competencies: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    absence_reason: Mapped[str | None] = mapped_column(String(100), nullable=True)  # vacation, course, sick, etc.
+    absence_until: Mapped[str | None] = mapped_column(String(20), nullable=True)  # date string
 
 
 # ── Shutdown Calendar ────────────────────────────────────────────────

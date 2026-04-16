@@ -153,6 +153,30 @@ def bulk_update_material_status(
     return scheduling_service.bulk_update_material_collection(db, wo_id, data.get("status", ""), user.get("user_id", ""))
 
 
+# ── Workforce availability management ─────────────────────────────────
+
+@router.put("/workforce/{worker_id}/availability")
+def update_worker_availability(
+    worker_id: str,
+    data: dict,
+    user=Depends(require_role("admin", "manager", "planner", "supervisor")),
+    db: Session = Depends(get_db),
+):
+    """Update worker availability (vacations, courses, absences)."""
+    from api.database.models import WorkforceModel
+    worker = db.query(WorkforceModel).filter(WorkforceModel.worker_id == worker_id).first()
+    if not worker:
+        raise HTTPException(status_code=404, detail="Worker not found")
+    if "available" in data:
+        worker.available = data["available"]
+    if "absence_reason" in data:
+        worker.absence_reason = data.get("absence_reason", "")
+    if "absence_until" in data:
+        worker.absence_until = data.get("absence_until")
+    db.commit()
+    return {"ok": True, "worker_id": worker_id, "available": worker.available}
+
+
 # ── Phase 3: Gantt from managed WOs ─────────────────────────────────
 
 @router.get("/gantt")

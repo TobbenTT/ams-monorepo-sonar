@@ -301,6 +301,7 @@ export const materialsLive = (plantId) => get('/scheduling/materials-live', { pl
 export const updateMaterialCollection = (woId, data) => put(`/scheduling/materials/${woId}/collection-status`, data);
 export const bulkUpdateMaterialStatus = (woId, status) => put(`/scheduling/materials/${woId}/bulk-status`, { status });
 export const getGanttManaged = (p) => get('/scheduling/gantt', p);
+export const clearWeekAssignments = (data) => post('/scheduling/clear-week', data);
 export const updateWorkerAvailability = (workerId, data) => put(`/scheduling/workforce/${workerId}/availability`, data);
 export const listSupportEquipment = (plantId) => get('/scheduling/support-equipment', { plant_id: plantId });
 export const createSupportEquipment = (data) => post('/scheduling/support-equipment', data);

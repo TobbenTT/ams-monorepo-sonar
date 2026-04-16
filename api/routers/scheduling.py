@@ -153,6 +153,41 @@ def bulk_update_material_status(
     return scheduling_service.bulk_update_material_collection(db, wo_id, data.get("status", ""), user.get("user_id", ""))
 
 
+# ── Batch clear assignments ──────────────────────────────────────────
+
+@router.post("/clear-week")
+def clear_week_assignments(
+    data: dict,
+    user=Depends(require_role("admin", "manager", "planner")),
+    db: Session = Depends(get_db),
+):
+    """Clear all assignments for a specific week in one DB operation."""
+    from api.database.models import ManagedWorkOrderModel
+    from datetime import datetime
+    plant_id = data.get("plant_id", "OCP-JFC1")
+    week_start = data.get("week_start", "")
+    week_end = data.get("week_end", "")
+    if not week_start or not week_end:
+        raise HTTPException(status_code=400, detail="week_start and week_end required")
+    start_dt = datetime.fromisoformat(week_start)
+    end_dt = datetime.fromisoformat(week_end + "T23:59:59") if "T" not in week_end else datetime.fromisoformat(week_end)
+    count = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == plant_id,
+        ManagedWorkOrderModel.status.in_(["PROGRAMADO", "EN_EJECUCION", "EN_PROGRAMACION"]),
+        ManagedWorkOrderModel.planned_start >= start_dt,
+        ManagedWorkOrderModel.planned_start <= end_dt,
+    ).update({
+        ManagedWorkOrderModel.assigned_workers: None,
+        ManagedWorkOrderModel.planned_start: None,
+        ManagedWorkOrderModel.planned_end: None,
+        ManagedWorkOrderModel.status: "PLANIFICADO",
+    }, synchronize_session=False)
+    db.commit()
+    from api.services.ws_manager import queue_notify
+    queue_notify("wo_bulk_clear", {"cleared": count, "week": week_start}, plant_id)
+    return {"ok": True, "cleared": count}
+
+
 # ── Support Equipment (Cranes, Heavy Equipment) ─────────────────────
 
 @router.get("/support-equipment")

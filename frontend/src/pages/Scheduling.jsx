@@ -2379,28 +2379,15 @@ export default function Scheduling() {
               <button disabled={clearing} onClick={async () => {
                 setClearing(true);
                 try {
-                  // Only clear WOs in the viewed week
                   const weekMon = viewedWeekStart || getMonday(new Date());
                   const weekSun = addDays(weekMon, 6);
-                  const weekMonStr = toDateStr(weekMon);
-                  const weekSunStr = toDateStr(weekSun);
-                  const [prog, exec] = await Promise.all([
-                    api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
-                    api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
-                  ]);
-                  const allWOs = [...(Array.isArray(prog) ? prog : []), ...(Array.isArray(exec) ? exec : [])];
-                  // Filter to only this week
-                  const weekWOs = allWOs.filter(wo => {
-                    const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
-                    return start && start >= weekMonStr && start <= weekSunStr;
+                  // Single batch API call — clears all WOs in one DB operation
+                  const result = await api.clearWeekAssignments({
+                    plant_id: plant,
+                    week_start: toDateStr(weekMon),
+                    week_end: toDateStr(weekSun),
                   });
-                  let cleared = 0;
-                  for (const wo of weekWOs) {
-                    try {
-                      await api.updateManagedWO(wo.wo_id, { assigned_workers: [], planned_start: '', planned_end: '', status: 'PLANIFICADO' });
-                      cleared++;
-                    } catch {}
-                  }
+                  const cleared = result?.cleared || 0;
                   toast.success(`${cleared} assignments cleared`);
                   loadCalendarData();
                   loadPrograms();

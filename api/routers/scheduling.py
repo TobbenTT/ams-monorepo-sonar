@@ -171,20 +171,37 @@ def clear_week_assignments(
         raise HTTPException(status_code=400, detail="week_start and week_end required")
     start_dt = datetime.fromisoformat(week_start)
     end_dt = datetime.fromisoformat(week_end + "T23:59:59") if "T" not in week_end else datetime.fromisoformat(week_end)
-    count = db.query(ManagedWorkOrderModel).filter(
+    # Clear any WO that has a planned_start in this week, OR has assigned_workers
+    # but no planned_start yet (drafts sitting on technicians). Skip closed/cancelled
+    # and anything already being executed (don't pull the rug on a running WO).
+    SKIP = ("CERRADO", "CANCELADO", "EN_EJECUCION")
+    rows = db.query(ManagedWorkOrderModel).filter(
         ManagedWorkOrderModel.plant_id == plant_id,
-        ManagedWorkOrderModel.status.in_(["PROGRAMADO", "EN_EJECUCION", "EN_PROGRAMACION"]),
+        ~ManagedWorkOrderModel.status.in_(SKIP),
         ManagedWorkOrderModel.planned_start >= start_dt,
         ManagedWorkOrderModel.planned_start <= end_dt,
-    ).update({
-        ManagedWorkOrderModel.assigned_workers: None,
-        ManagedWorkOrderModel.planned_start: None,
-        ManagedWorkOrderModel.planned_end: None,
-        ManagedWorkOrderModel.status: "PLANIFICADO",
-    }, synchronize_session=False)
+    ).all()
+    # Also pick up WOs with assigned_workers but planned_start NULL (partial drafts).
+    orphans = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == plant_id,
+        ~ManagedWorkOrderModel.status.in_(SKIP),
+        ManagedWorkOrderModel.planned_start.is_(None),
+        ManagedWorkOrderModel.assigned_workers.isnot(None),
+    ).all()
+    count = 0
+    for wo in list(rows) + list(orphans):
+        wo.assigned_workers = None
+        wo.planned_start = None
+        wo.planned_end = None
+        if wo.status in ("PROGRAMADO", "EN_PROGRAMACION", "REPROGRAMADO"):
+            wo.status = "PLANIFICADO"
+        count += 1
     db.commit()
-    from api.services.ws_manager import queue_notify
-    queue_notify("wo_bulk_clear", {"cleared": count, "week": week_start}, plant_id)
+    try:
+        from api.services.ws_manager import queue_notify
+        queue_notify("wo_bulk_clear", {"cleared": count, "week": week_start}, plant_id)
+    except Exception:
+        pass
     return {"ok": True, "cleared": count}
 
 

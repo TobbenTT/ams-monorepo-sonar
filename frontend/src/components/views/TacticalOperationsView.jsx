@@ -83,10 +83,25 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
 
   const lateNotifWeekly = buildWeeklyBars(lateWRs);
   const lateWOWeekly = buildWeeklyBars(lateWOs, 'actual_end');
-  const schedComplianceWeekly = useMemo(() => Array.from({ length: 12 }, (_, i) => ({
-    week: `W${i + 1}`,
-    value: Math.max(0, Math.min(100, schedCompliance + Math.round(seededNoise(i + 7) * 6))),
-  })), [schedCompliance]);
+  // Real per-week schedule compliance, derived from WO closures (not synthetic noise)
+  const schedComplianceWeekly = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const weekEnd = new Date(now);
+      weekEnd.setDate(weekEnd.getDate() - ((11 - i) * 7));
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekStart.getDate() - 7);
+      const weekWOs = filteredWOs.filter(wo => {
+        const d = wo.planned_end ? new Date(wo.planned_end) : null;
+        return d && d >= weekStart && d <= weekEnd;
+      });
+      if (weekWOs.length === 0) return { week: `W${i + 1}`, value: null };
+      const onTime = weekWOs.filter(wo => {
+        if (!wo.actual_end || !wo.planned_end) return false;
+        return new Date(wo.actual_end) <= new Date(wo.planned_end);
+      }).length;
+      return { week: `W${i + 1}`, value: Math.round((onTime / weekWOs.length) * 100) };
+    });
+  }, [filteredWOs]);
 
   // ─── SECTION III: RELIABILITY ───
   const equipmentFailures = {};
@@ -110,15 +125,16 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
   });
 
   const areaNames = Object.keys(areaGroups).slice(0, 3);
+  // MTBF trend — current-average flat line per area (historical MTBF trend requires kpi_history)
   const mtbfTrendData = useMemo(() => Array.from({ length: 12 }, (_, i) => {
     const point = { week: `Wk ${i + 1}` };
     areaNames.forEach(area => {
+      if (!areaGroups[area]?.length) return;
       const avgMtbf = areaGroups[area].reduce((sum, eq) => {
         const val = typeof eq.mtbf === 'string' ? parseFloat(eq.mtbf) : (eq.mtbf || 0);
-        return sum + val;
+        return sum + (isNaN(val) ? 0 : val);
       }, 0) / areaGroups[area].length;
-      const areaIdx = areaNames.indexOf(area);
-      point[area] = Math.round(avgMtbf * (0.85 + (i / 12) * 0.3 + seededNoise(i * 10 + areaIdx + 3) * 0.15));
+      point[area] = Math.round(avgMtbf);
     });
     return point;
   }), [analyticsData]);
@@ -147,9 +163,9 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
 
     return {
       week: `Week ${i + 1}`,
-      planned: Math.round(planned) || wrCount * 4,
-      actual: Math.round(actual) || Math.round(wrCount * 3.5),
-      meta: Math.round((planned || wrCount * 4) * 1.1),
+      planned: Math.round(planned),
+      actual: Math.round(actual),
+      meta: Math.round(planned * 1.1),
     };
   }), [filteredWOs, filteredWRs]);
 
@@ -162,7 +178,7 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-          <p className="text-gray-600 text-sm">Loading dashboard data...</p>
+          <p className="text-gray-600 text-sm">Cargando datos del dashboard…</p>
         </div>
       </div>
     );
@@ -339,18 +355,30 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
               </div>
             </div>
             {top5Failing.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={top5Failing} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="asset" tick={{ fontSize: 11 }} width={100} />
-                  <Tooltip />
-                  <Bar dataKey="failures" fill="#10b981" name="Work Requests" />
-                </BarChart>
-              </ResponsiveContainer>
+              (() => {
+                // Build Pareto: sort desc + cumulative %
+                const sorted = [...top5Failing].sort((a, b) => b.failures - a.failures);
+                const total = sorted.reduce((s, r) => s + r.failures, 0) || 1;
+                let cum = 0;
+                const paretoData = sorted.map(r => { cum += r.failures; return { ...r, cumulative: Math.round((cum / total) * 100) }; });
+                return (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <ComposedChart data={paretoData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="asset" tick={{ fontSize: 10 }} angle={-15} textAnchor="end" height={50} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 11 }} label={{ value: 'Fallas', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+                      <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 11 }} label={{ value: '% acum', angle: 90, position: 'insideRight', fontSize: 10 }} />
+                      <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar yAxisId="left" dataKey="failures" fill="#10b981" name="Fallas" />
+                      <Line yAxisId="right" type="monotone" dataKey="cumulative" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} name="% acumulado (Pareto)" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                );
+              })()
             ) : (
               <div className="flex items-center justify-center h-[240px] text-gray-400 text-sm">
-                No failure data available
+                Sin datos de fallas aún. Los equipos con más fallas aparecerán al crear Work Requests.
               </div>
             )}
           </Card>
@@ -382,7 +410,7 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-[240px] text-gray-400 text-sm">
-                No reliability data available
+                Sin datos de confiabilidad. Requiere historia de cierres (MTBF/MTTR).
               </div>
             )}
           </Card>

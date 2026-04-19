@@ -1,0 +1,178 @@
+26 de febrero de 2026
+Se lanzó Nano Banana 2, Gemini 3.1 Flash Image Preview, un modelo de alta eficiencia optimizado para la velocidad y los casos de uso de gran volumen.
+
+Anuncio de baja: La versión preliminar de Gemini 3 Pro (gemini-3-pro-preview) se dará de baja el 9 de marzo de 2026.
+
+19 de febrero de 2026
+Lanzamos la versión preliminar de Gemini 3.1 Pro, nuestra iteración más reciente de la nueva familia de modelos Gemini 3.
+Se lanzó un extremo independiente gemini-3.1-pro-preview-customtools, que es mejor para priorizar herramientas personalizadas, para los usuarios que compilan con una combinación de bash y herramientas.
+
+17 de febrero de 2026
+Los siguientes modelos se cerraron:
+
+gemini-2.5-flash-preview-09-25
+imagen-4.0-generate-preview-06-06
+imagen-4.0-ultra-generate-preview-06-06
+29 de enero de 2026
+Se lanzó la compatibilidad con la herramienta Uso de la computadora en gemini-3-pro-preview y gemini-3-flash-preview.
+22 de enero de 2026
+Anuncio de baja: Los siguientes modelos se darán de baja el 31 de marzo de 2026:
+
+gemini-2.0-flash
+gemini-2.0-flash-001
+gemini-2.0-flash-lite
+gemini-2.0-flash-lite-001
+21 de enero de 2026
+Se cambiaron los alias de latest:
+
+gemini-pro-latest cambió a gemini-3-pro-preview
+gemini-flash-latest cambió a gemini-3-flash-preview
+15 de enero de 2026
+Anuncio de baja: Los siguientes modelos se cerrarán el 17 de febrero de 2026:
+
+gemini-2.5-flash-preview-09-25
+imagen-4.0-generate-preview-06-06
+imagen-4.0-ultra-generate-preview-06-06
+Se cerró el modelo gemini-2.5-flash-image-preview.
+
+14 de enero de 2026
+El modelo text-embedding-004 se cerró.
+13 de enero de 2026
+Se agregaron resoluciones de salida en 4K para Veo y más compatibilidad con videos verticales en todas las resoluciones.
+12 de enero de 2026
+Se lanzó la función de ciclo de vida del modelo. Algunos modelos ahora especificarán la etapa del ciclo de vida y el cronograma de baja. Consulta la siguiente documentación para obtener más información:
+
+Etapas del modelo
+8 de enero de 2026
+Se lanzó la compatibilidad con buckets de Cloud Storage y cualquier URL firmada previamente de BD pública y privada como fuente de entrada de datos para la API de Gemini. El límite de tamaño del archivo también aumentó de 20 MB a 100 MB. Para obtener más información, consulta la guía de métodos de entrada de archivos.
+19 de diciembre de 2025
+Se introdujo un cambio rotundo en la versión preliminar pública de la API de Interactions en la versión v1beta. Se cambió el nombre del campo total_reasoning_tokens a total_thought_tokens para que se alinee mejor con el concepto de "pensamientos" en los modelos de pensamiento.
+17 de diciembre de 2025
+Lanzamos la versión preliminar de Gemini 3 Flash, gemini-3-flash-preview, que ofrece un rendimiento rápido de vanguardia que compite con modelos más grandes a una fracción del costo. Con razonamiento visual y espacial mejorado, y capacidades de agente para programación Lee la documentación sobre algunas funciones nuevas, incluidas las siguientes:
+
+Respuestas de funciones multimodales
+Ejecución de código con imágenes
+12 de diciembre de 2025
+Se lanzó gemini-2.5-flash-native-audio-preview-12-2025, un nuevo modelo de audio nativo para la API de Live. Esta actualización mejora la capacidad del modelo para controlar flujos de trabajo complejos. Para obtener más información, consulta la guía de la API de Live y Gemini 2.5 Flash Native Audio.
+11 de diciembre de 2025
+Se lanzó la API de Interactions en versión beta. Esta API proporciona una interfaz unificada para interactuar con modelos y agentes de Gemini. Si deseas obtener más información, consulta la guía de la API de Interactions.
+
+Se lanzó el agente de Deep Research de Gemini en versión preliminar. Puede planificar, ejecutar y sintetizar de forma autónoma los resultados de tareas de investigación de varios pasos. Consulta la guía de Deep Research para obtener más detalles.
+
+10 de diciembre de 2025
+Lanzamos mejoras en nuestros modelos de texto a voz, la versión preliminar de Gemini 2.5 Flash TTS (optimizado para baja latencia) y la versión preliminar de Gemini 2.5 Pro TTS (optimizado para calidad), que incluyen mayor expresividad, ritmo preciso y diálogo fluido.
+9 de diciembre de 2025
+Los siguientes modelos de la API de Gemini Live ya no están disponibles:
+gemini-2.0-flash-live-001
+gemini-live-2.5-flash-preview
+5 de diciembre de 2025
+La facturación de Gemini 3 para la Fundamentación con la Búsqueda de Google comenzará el 5 de enero de 2026.
+4 de diciembre de 2025
+Anuncio de baja: El modelo gemini-2.5-flash-image-preview se cerrará el 15 de enero de 2026.
+13 de diciembre de 2023
+Anuncio de baja: El modelo text-embedding-004 se cerrará el 14 de enero de 2026.
+20 de noviembre de 2025
+Se lanzó la versión preliminar de Gemini 3 Pro Image, gemini-3-pro-image-preview, la próxima iteración del modelo Nano Banana. Lee la página Generación de imágenes para obtener más detalles.
+18 de noviembre de 2025
+Lanzamos el primer modelo de la serie Gemini 3, gemini-3-pro-preview, nuestro modelo de razonamiento y comprensión multimodal de vanguardia con potentes capacidades de agente y codificación.
+
+Además de las mejoras en la inteligencia y el rendimiento, la versión preliminar de Gemini 3 Pro presenta un nuevo comportamiento en relación con lo siguiente:
+
+Resolución de medios
+Firmas de pensamiento
+Niveles de pensamiento
+Lee la Guía para desarrolladores de Gemini 3 para obtener información sobre la migración, las funciones nuevas y las especificaciones.
+
+11 de noviembre de 2025
+Anuncio de baja: Se cerrarán los siguientes modelos:
+
+12 de noviembre:
+
+veo-3.0-fast-generate-preview
+veo-3.0-generate-preview
+14 de noviembre:
+
+gemini-2.0-flash-exp-image-generation
+gemini-2.0-flash-preview-image-generation
+10 de noviembre de 2025
+Se cerró el siguiente modelo:
+
+imagen-3.0-generate-002
+En su lugar, usa Imagen 4. Consulta la tabla de bajas de Gemini para obtener más detalles.
+
+6 de noviembre de 2025
+Se lanzó la API de File Search en versión preliminar pública, lo que permite a los desarrolladores fundamentar las respuestas en sus propios datos. Lee la nueva página de Búsqueda de archivos para obtener más información.
+4 de noviembre de 2025
+En el caso de Gemini 2.5 Flash Image, la cantidad de tokens de entrada para las imágenes se redujo de 1,290 a 258, lo que disminuye el costo de la edición de imágenes.
+
+Anuncio de baja: Se cerrarán los siguientes modelos:
+
+18 de noviembre:
+
+gemini-2.5-flash-lite-preview-06-17
+gemini-2.5-flash-preview-05-20
+2 de diciembre:
+
+gemini-2.0-flash-thinking-exp
+gemini-2.0-flash-thinking-exp-01-21
+gemini-2.0-flash-thinking-exp-1219
+gemini-2.5-pro-preview-03-25
+gemini-2.5-pro-preview-05-06
+gemini-2.5-pro-preview-06-05
+9 de diciembre:
+
+gemini-2.0-flash-lite-preview
+gemini-2.0-flash-lite-preview-02-05
+gemini-2.0-flash-exp
+gemini-2.0-pro-exp
+gemini-2.0-pro-exp-02-05
+29 de octubre de 2025
+Se lanzó la nueva herramienta de registro y conjuntos de datos para la API de Gemini.
+20 de octubre de 2025
+Los siguientes modelos de la API de Gemini Live ya no están disponibles:
+
+gemini-2.5-flash-preview-native-audio-dialog
+gemini-2.5-flash-exp-native-audio-thinking-dialog
+En su lugar, puedes usar gemini-2.5-flash-native-audio-preview-09-2025.
+
+Anuncio de baja: Se cerrarán gemini-2.0-flash-live-001 y gemini-live-2.5-flash-preview el 9 de diciembre de 2025.
+
+17 de octubre de 2025
+La Fundamentación con Google Maps ya está disponible de forma general. Para obtener más información, consulta la documentación de Grounding with Google Maps.
+15 de octubre de 2025
+Se lanzaron los modelos Veo 3.1 y 3.1 Fast en versión preliminar pública, con nuevas funciones, como las siguientes:
+
+Extensión de videos creados con Veo
+Hacer referencia a hasta tres imágenes para generar un video
+Proporciona imágenes del primer y último fotograma para generar videos.
+Con este lanzamiento, también se agregaron más opciones para la duración de los videos generados por Veo 3: 4, 6 y 8 segundos.
+
+Anuncio de baja: veo-3.0-generate-preview y veo-3.0-fast-generate-preview dejarán de estar disponibles el 12 de noviembre de 2025.
+
+7 de octubre de 2025
+Se lanzó la versión preliminar de Gemini 2.5 Computer Use
+4 de octubre de 2023
+Se lanzó la DG de Gemini 2.5 Flash Image: Generación de imágenes con Gemini
+29 de septiembre de 2025
+Los siguientes modelos de Gemini 1.5 ya no están disponibles:
+gemini-1.5-pro
+gemini-1.5-flash-8b
+gemini-1.5-flash
+25 de septiembre de 2025
+Se lanzó el modelo Gemini Robotics-ER 1.5 en versión preliminar. Consulta la descripción general de la robótica para obtener información sobre cómo usar el modelo en tu aplicación de robótica.
+
+Se lanzaron los siguientes modelos de vista previa:
+
+gemini-2.5-flash-preview-09-2025
+gemini-2.5-flash-lite-preview-09-2025
+Consulta la página Modelos para obtener más detalles.
+
+23 de septiembre de 2025
+Se lanzó gemini-2.5-flash-native-audio-preview-09-2025, un nuevo modelo de audio nativo para la API de Live con una mejor llamada a función y manejo de cortes de voz. Para obtener más información, consulta la guía de la API de Live y Gemini 2.5 Flash Native Audio.
+16 de septiembre de 2025
+Anuncio de baja: Los siguientes modelos se cerrarán en octubre de 2025:
+
+embedding-001
+embedding-gecko-001
+gemini-embedding-exp-03-07 (gemini-embedding-exp)
+Consulta la página Embeddings para obtener detalles sobre el modelo de embeddings más reciente.

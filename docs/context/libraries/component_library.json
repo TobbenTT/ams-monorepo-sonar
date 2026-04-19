@@ -1,0 +1,626 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Standard Industrial Component Type Library — OCP Maintenance AI MVP",
+    "source": "Industry data for phosphate beneficiation plants (OCP Group, Morocco)",
+    "component_count": 30,
+    "fm_validation": "All failure modes validated against 72-combo VALID_FM_COMBINATIONS (SRC-09)",
+    "cross_reference": "Components are referenced by equipment_library.json via component_lib_ref field"
+  },
+  "component_types": [
+    {
+      "component_type_id": "CL-BEARING-SPHERICAL-ROLLER",
+      "component_type": "SPHERICAL_ROLLER_BEARING",
+      "category": "BEARINGS",
+      "description": "Self-aligning double-row roller bearing for heavy radial and axial loads. Common in crushers, mills, and conveyor pulleys in phosphate processing.",
+      "manufacturers": ["SKF", "FAG", "NSK", "Timken"],
+      "common_models": ["SKF 22328", "SKF 23148", "FAG 22330-E1-XL", "NSK 23040", "Timken 22334"],
+      "typical_life_hours": 40000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "BREAKDOWN_OF_LUBRICATION", "weibull_beta": 2.5, "weibull_eta_hours": 35000},
+        {"mechanism": "WEARS", "cause": "LUBRICANT_CONTAMINATION", "weibull_beta": 2.0, "weibull_eta_hours": 25000},
+        {"mechanism": "OVERHEATS_MELTS", "cause": "LACK_OF_LUBRICATION", "weibull_beta": 1.2, "weibull_eta_hours": 15000},
+        {"mechanism": "CRACKS", "cause": "CYCLIC_LOADING", "weibull_beta": 3.5, "weibull_eta_hours": 50000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Inspect bearing for noise, vibration, and temperature anomalies", "frequency_weeks": 4},
+        {"task_type": "LUBRICATE", "description": "Re-grease bearing per OEM specification", "frequency_weeks": 12},
+        {"task_type": "TEST", "description": "Vibration analysis — measure overall velocity and envelope acceleration", "frequency_weeks": 8}
+      ]
+    },
+    {
+      "component_type_id": "CL-BEARING-CYLINDRICAL-ROLLER",
+      "component_type": "CYLINDRICAL_ROLLER_BEARING",
+      "category": "BEARINGS",
+      "description": "High radial load capacity roller bearing with line contact. Used in gearbox shafts and motor bearings in phosphate processing plants.",
+      "manufacturers": ["SKF", "FAG", "NSK", "Timken"],
+      "common_models": ["SKF NU2230", "FAG NU330-E-XL", "NSK NU328", "Timken NU2234"],
+      "typical_life_hours": 45000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "BREAKDOWN_OF_LUBRICATION", "weibull_beta": 2.8, "weibull_eta_hours": 40000},
+        {"mechanism": "OVERHEATS_MELTS", "cause": "MECHANICAL_OVERLOAD", "weibull_beta": 1.5, "weibull_eta_hours": 30000},
+        {"mechanism": "IMMOBILISED", "cause": "LACK_OF_LUBRICATION", "weibull_beta": 1.1, "weibull_eta_hours": 20000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Inspect bearing for noise and vibration", "frequency_weeks": 4},
+        {"task_type": "LUBRICATE", "description": "Re-grease bearing per OEM specification", "frequency_weeks": 12},
+        {"task_type": "TEST", "description": "Vibration analysis — measure bearing defect frequencies", "frequency_weeks": 8}
+      ]
+    },
+    {
+      "component_type_id": "CL-BEARING-DEEP-GROOVE-BALL",
+      "component_type": "DEEP_GROOVE_BALL_BEARING",
+      "category": "BEARINGS",
+      "description": "General purpose ball bearing for moderate radial and axial loads. Used in electric motors, pumps, and light-duty rotating equipment.",
+      "manufacturers": ["SKF", "FAG", "NSK", "NTN"],
+      "common_models": ["SKF 6328", "FAG 6322", "NSK 6324", "NTN 6330"],
+      "typical_life_hours": 50000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "BREAKDOWN_OF_LUBRICATION", "weibull_beta": 2.5, "weibull_eta_hours": 45000},
+        {"mechanism": "OVERHEATS_MELTS", "cause": "LACK_OF_LUBRICATION", "weibull_beta": 1.3, "weibull_eta_hours": 25000},
+        {"mechanism": "CRACKS", "cause": "IMPACT_SHOCK_LOADING", "weibull_beta": 1.5, "weibull_eta_hours": 60000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Listen for bearing noise and check temperature", "frequency_weeks": 4},
+        {"task_type": "LUBRICATE", "description": "Re-grease or top-up oil per OEM specification", "frequency_weeks": 16}
+      ]
+    },
+    {
+      "component_type_id": "CL-BEARING-THRUST",
+      "component_type": "THRUST_BEARING",
+      "category": "BEARINGS",
+      "description": "Axial load bearing for vertical shaft applications. Used in thickener drives, vertical pumps, and agitators in phosphate processing.",
+      "manufacturers": ["SKF", "FAG", "NSK", "Timken"],
+      "common_models": ["SKF 29434", "FAG 29340-E1-XL", "NSK 29428", "Timken T911"],
+      "typical_life_hours": 35000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "MECHANICAL_OVERLOAD", "weibull_beta": 2.2, "weibull_eta_hours": 30000},
+        {"mechanism": "OVERHEATS_MELTS", "cause": "LACK_OF_LUBRICATION", "weibull_beta": 1.2, "weibull_eta_hours": 18000},
+        {"mechanism": "WEARS", "cause": "LUBRICANT_CONTAMINATION", "weibull_beta": 2.0, "weibull_eta_hours": 22000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check bearing temperature and axial clearance", "frequency_weeks": 4},
+        {"task_type": "LUBRICATE", "description": "Replenish lubricant per OEM specification", "frequency_weeks": 8},
+        {"task_type": "TEST", "description": "Vibration analysis focusing on axial measurements", "frequency_weeks": 12}
+      ]
+    },
+    {
+      "component_type_id": "CL-SEAL-MECHANICAL",
+      "component_type": "MECHANICAL_SEAL",
+      "category": "SEALS",
+      "description": "Rotating mechanical face seal to prevent fluid leakage around pump shafts. Critical in slurry pumps and chemical pumps in phosphate processing.",
+      "manufacturers": ["John Crane", "Flowserve", "EagleBurgmann", "AESSEAL"],
+      "common_models": ["John Crane Type 21", "Flowserve ISC2", "EagleBurgmann MG1", "AESSEAL CDSA"],
+      "typical_life_hours": 12000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "weibull_beta": 2.8, "weibull_eta_hours": 10000},
+        {"mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 1.5, "weibull_eta_hours": 8000},
+        {"mechanism": "OVERHEATS_MELTS", "cause": "LACK_OF_LUBRICATION", "weibull_beta": 1.3, "weibull_eta_hours": 6000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check seal for visible leakage and flush flow rate", "frequency_weeks": 1},
+        {"task_type": "REPLACE", "description": "Replace mechanical seal assembly", "frequency_weeks": 52}
+      ]
+    },
+    {
+      "component_type_id": "CL-SEAL-GLAND-PACKING",
+      "component_type": "GLAND_PACKING",
+      "category": "SEALS",
+      "description": "Braided packing rings for shaft sealing in pumps and agitators. Economical alternative to mechanical seals for abrasive slurry service.",
+      "manufacturers": ["Garlock", "Chesterton", "Klinger", "John Crane"],
+      "common_models": ["Garlock 8921", "Chesterton 1400", "Klinger Top-Pack", "John Crane Y2232"],
+      "typical_life_hours": 4000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "weibull_beta": 3.0, "weibull_eta_hours": 3500},
+        {"mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "weibull_beta": 2.0, "weibull_eta_hours": 3000},
+        {"mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 1.8, "weibull_eta_hours": 2500}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check packing drip rate and adjust gland follower", "frequency_weeks": 1},
+        {"task_type": "REPLACE", "description": "Replace gland packing rings", "frequency_weeks": 26}
+      ]
+    },
+    {
+      "component_type_id": "CL-SEAL-LIP",
+      "component_type": "LIP_SEAL",
+      "category": "SEALS",
+      "description": "Elastomeric radial shaft seal for oil retention and dust exclusion. Used in gearboxes, pillow blocks, and bearing housings.",
+      "manufacturers": ["SKF", "Freudenberg", "Trelleborg", "NOK"],
+      "common_models": ["SKF HMS5", "Freudenberg Simrit", "Trelleborg Turcon", "NOK TC Type"],
+      "typical_life_hours": 20000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "weibull_beta": 3.2, "weibull_eta_hours": 18000},
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.5, "weibull_eta_hours": 25000},
+        {"mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "weibull_beta": 2.0, "weibull_eta_hours": 15000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check for oil leakage at seal lips", "frequency_weeks": 4},
+        {"task_type": "REPLACE", "description": "Replace lip seal during bearing maintenance", "frequency_weeks": 104}
+      ]
+    },
+    {
+      "component_type_id": "CL-SEAL-ORING",
+      "component_type": "O_RING",
+      "category": "SEALS",
+      "description": "Elastomeric static or dynamic O-ring seal for flanges, valve stems, and hydraulic connections. Wide material selection for phosphate processing environments.",
+      "manufacturers": ["Parker", "Trelleborg", "Freudenberg", "James Walker"],
+      "common_models": ["Parker N0674", "Trelleborg Turcon", "Freudenberg Merkel", "James Walker Elring"],
+      "typical_life_hours": 15000,
+      "failure_modes": [
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.0, "weibull_eta_hours": 14000},
+        {"mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 1.8, "weibull_eta_hours": 10000},
+        {"mechanism": "EXPIRES", "cause": "AGE", "weibull_beta": 4.0, "weibull_eta_hours": 20000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check for visible leakage at O-ring locations", "frequency_weeks": 4},
+        {"task_type": "REPLACE", "description": "Replace O-ring during overhaul", "frequency_weeks": 104}
+      ]
+    },
+    {
+      "component_type_id": "CL-MOTOR-LV",
+      "component_type": "LOW_VOLTAGE_MOTOR",
+      "category": "MOTORS",
+      "description": "Low voltage (<1kV) squirrel cage induction motor. Standard drive for pumps, conveyors, agitators, and fans up to 500kW in phosphate processing.",
+      "manufacturers": ["ABB", "Siemens", "WEG", "Nidec"],
+      "common_models": ["ABB M3BP 315", "Siemens 1LE1", "WEG W22 Premium", "Nidec LSPM"],
+      "typical_life_hours": 60000,
+      "failure_modes": [
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.0, "weibull_eta_hours": 55000},
+        {"mechanism": "THERMALLY_OVERLOADS", "cause": "OVERCURRENT", "weibull_beta": 1.0, "weibull_eta_hours": 40000},
+        {"mechanism": "OVERHEATS_MELTS", "cause": "CONTAMINATION", "weibull_beta": 1.2, "weibull_eta_hours": 30000},
+        {"mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "weibull_beta": 1.5, "weibull_eta_hours": 35000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check motor current draw, temperature, and vibration", "frequency_weeks": 4},
+        {"task_type": "TEST", "description": "Measure motor winding insulation resistance (megger test)", "frequency_weeks": 52},
+        {"task_type": "LUBRICATE", "description": "Re-grease motor bearings per OEM specification", "frequency_weeks": 26},
+        {"task_type": "CLEAN", "description": "Clean motor cooling fins and air intake", "frequency_weeks": 12}
+      ]
+    },
+    {
+      "component_type_id": "CL-MOTOR-HV",
+      "component_type": "HIGH_VOLTAGE_MOTOR",
+      "category": "MOTORS",
+      "description": "High voltage (3.3kV-11kV) squirrel cage or wound rotor motor for heavy-duty applications. Used on SAG mills, ball mills, crushers, and large compressors.",
+      "manufacturers": ["ABB", "Siemens", "WEG", "Teco-Westinghouse"],
+      "common_models": ["ABB AXR 500", "Siemens H-compact PLUS", "WEG HGF", "TECO AEHF"],
+      "typical_life_hours": 80000,
+      "failure_modes": [
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.2, "weibull_eta_hours": 70000},
+        {"mechanism": "THERMALLY_OVERLOADS", "cause": "OVERCURRENT", "weibull_beta": 1.0, "weibull_eta_hours": 50000},
+        {"mechanism": "OVERHEATS_MELTS", "cause": "CONTAMINATION", "weibull_beta": 1.2, "weibull_eta_hours": 40000},
+        {"mechanism": "SHORT_CIRCUITS", "cause": "BREAKDOWN_IN_INSULATION", "weibull_beta": 2.0, "weibull_eta_hours": 60000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Monitor motor current, temperature, and vibration", "frequency_weeks": 4},
+        {"task_type": "TEST", "description": "Measure motor winding insulation resistance and polarization index", "frequency_weeks": 26},
+        {"task_type": "TEST", "description": "Partial discharge measurement on stator windings", "frequency_weeks": 52},
+        {"task_type": "LUBRICATE", "description": "Re-grease motor bearings per OEM specification", "frequency_weeks": 12}
+      ]
+    },
+    {
+      "component_type_id": "CL-GEARBOX-HELICAL",
+      "component_type": "HELICAL_GEARBOX",
+      "category": "GEARBOXES",
+      "description": "Parallel shaft helical gear reducer for conveyors, agitators, and medium-duty mill drives. Robust design for continuous phosphate processing service.",
+      "manufacturers": ["SEW Eurodrive", "Flender (Siemens)", "Nord", "Bonfiglioli"],
+      "common_models": ["SEW MC Series", "Flender FZG", "Nord Maxxdrive", "Bonfiglioli HDO"],
+      "typical_life_hours": 80000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "METAL_TO_METAL_CONTACT", "weibull_beta": 2.8, "weibull_eta_hours": 70000},
+        {"mechanism": "WEARS", "cause": "BREAKDOWN_OF_LUBRICATION", "weibull_beta": 2.5, "weibull_eta_hours": 60000},
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.5, "weibull_eta_hours": 50000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check gearbox oil level, temperature, and listen for abnormal noise", "frequency_weeks": 4},
+        {"task_type": "INSPECT", "description": "Analyze oil sample for wear metals and contamination", "frequency_weeks": 12},
+        {"task_type": "REPLACE", "description": "Change gearbox oil", "frequency_weeks": 52}
+      ]
+    },
+    {
+      "component_type_id": "CL-GEARBOX-PLANETARY",
+      "component_type": "PLANETARY_GEARBOX",
+      "category": "GEARBOXES",
+      "description": "Epicyclic planetary gear reducer for high torque, compact applications. Used on SAG mill, ball mill, and thickener drives.",
+      "manufacturers": ["Flender (Siemens)", "David Brown (Textron)", "SEW Eurodrive", "Bonfiglioli"],
+      "common_models": ["Flender PEAG", "David Brown Series M", "SEW P Series", "Bonfiglioli 300 Series"],
+      "typical_life_hours": 100000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "METAL_TO_METAL_CONTACT", "weibull_beta": 2.5, "weibull_eta_hours": 80000},
+        {"mechanism": "WEARS", "cause": "BREAKDOWN_OF_LUBRICATION", "weibull_beta": 2.2, "weibull_eta_hours": 70000},
+        {"mechanism": "CRACKS", "cause": "CYCLIC_LOADING", "weibull_beta": 2.0, "weibull_eta_hours": 90000},
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.5, "weibull_eta_hours": 60000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check gearbox oil level, temperature, and vibration", "frequency_weeks": 4},
+        {"task_type": "INSPECT", "description": "Analyze oil sample for wear metals and particle count", "frequency_weeks": 12},
+        {"task_type": "REPLACE", "description": "Change gearbox oil", "frequency_weeks": 52},
+        {"task_type": "REPLACE", "description": "Replace gearbox seals", "frequency_weeks": 104}
+      ]
+    },
+    {
+      "component_type_id": "CL-COUPLING-FLEX",
+      "component_type": "FLEXIBLE_COUPLING",
+      "category": "COUPLINGS",
+      "description": "Elastomeric element flexible coupling for misalignment compensation. Used between motors and gearboxes/pumps throughout phosphate processing plants.",
+      "manufacturers": ["Rexnord Falk", "Voith", "Regal Rexnord", "KTR"],
+      "common_models": ["Falk Steelflex", "Voith Turbo", "Rexnord Omega", "KTR Rotex"],
+      "typical_life_hours": 40000,
+      "failure_modes": [
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.0, "weibull_eta_hours": 35000},
+        {"mechanism": "LOOSES_PRELOAD", "cause": "VIBRATION", "weibull_beta": 1.1, "weibull_eta_hours": 25000},
+        {"mechanism": "BREAKS_FRACTURE_SEPARATES", "cause": "MECHANICAL_OVERLOAD", "weibull_beta": 1.5, "weibull_eta_hours": 50000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Inspect coupling alignment and element condition", "frequency_weeks": 12},
+        {"task_type": "INSPECT", "description": "Check coupling bolt torque", "frequency_weeks": 26},
+        {"task_type": "REPLACE", "description": "Replace coupling flex element", "frequency_weeks": 156}
+      ]
+    },
+    {
+      "component_type_id": "CL-COUPLING-RIGID",
+      "component_type": "RIGID_COUPLING",
+      "category": "COUPLINGS",
+      "description": "Rigid flange or sleeve coupling for precision aligned shafts. Used where zero misalignment tolerance is required.",
+      "manufacturers": ["Regal Rexnord", "Lovejoy", "Ringfeder", "Ruland"],
+      "common_models": ["Rexnord 7300 Flange", "Lovejoy Sleeve", "Ringfeder RFN", "Ruland SC Series"],
+      "typical_life_hours": 80000,
+      "failure_modes": [
+        {"mechanism": "LOOSES_PRELOAD", "cause": "VIBRATION", "weibull_beta": 1.2, "weibull_eta_hours": 30000},
+        {"mechanism": "CRACKS", "cause": "CYCLIC_LOADING", "weibull_beta": 2.0, "weibull_eta_hours": 70000},
+        {"mechanism": "BREAKS_FRACTURE_SEPARATES", "cause": "MECHANICAL_OVERLOAD", "weibull_beta": 1.3, "weibull_eta_hours": 80000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check coupling bolt torque and alignment", "frequency_weeks": 12},
+        {"task_type": "TEST", "description": "Laser alignment check", "frequency_weeks": 52}
+      ]
+    },
+    {
+      "component_type_id": "CL-COUPLING-FLUID",
+      "component_type": "FLUID_COUPLING",
+      "category": "COUPLINGS",
+      "description": "Hydrodynamic fluid coupling for soft-start and overload protection. Used on conveyors and crusher drives in phosphate processing.",
+      "manufacturers": ["Voith", "Rexnord", "Fluidomat", "Transfluid"],
+      "common_models": ["Voith TVV", "Voith DTPKW", "Fluidomat KPTO", "Transfluid KSL"],
+      "typical_life_hours": 60000,
+      "failure_modes": [
+        {"mechanism": "OVERHEATS_MELTS", "cause": "MECHANICAL_OVERLOAD", "weibull_beta": 1.5, "weibull_eta_hours": 40000},
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.0, "weibull_eta_hours": 50000},
+        {"mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "weibull_beta": 2.5, "weibull_eta_hours": 55000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check fluid coupling oil level and temperature", "frequency_weeks": 4},
+        {"task_type": "REPLACE", "description": "Change coupling fluid", "frequency_weeks": 52},
+        {"task_type": "INSPECT", "description": "Inspect fusible plug condition", "frequency_weeks": 12}
+      ]
+    },
+    {
+      "component_type_id": "CL-IMPELLER-SLURRY",
+      "component_type": "SLURRY_IMPELLER",
+      "category": "IMPELLERS",
+      "description": "High-chrome or rubber-lined impeller for slurry pump service. Subject to extreme abrasive wear in phosphate slurry applications.",
+      "manufacturers": ["Weir Minerals", "Metso Outotec", "KSB", "Schurco Slurry"],
+      "common_models": ["Warman AH Series", "Metso HH Series", "KSB GIW", "Schurco S Series"],
+      "typical_life_hours": 3000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "weibull_beta": 2.8, "weibull_eta_hours": 2500},
+        {"mechanism": "CORRODES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 1.8, "weibull_eta_hours": 4000},
+        {"mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "weibull_beta": 2.5, "weibull_eta_hours": 3000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Monitor pump discharge pressure and flow for impeller wear", "frequency_weeks": 1},
+        {"task_type": "INSPECT", "description": "Visual inspection of impeller during pump overhaul", "frequency_weeks": 12},
+        {"task_type": "REPLACE", "description": "Replace slurry impeller", "frequency_weeks": 26}
+      ]
+    },
+    {
+      "component_type_id": "CL-IMPELLER-PUMP",
+      "component_type": "PUMP_IMPELLER",
+      "category": "IMPELLERS",
+      "description": "Cast or machined impeller for clear water or chemical service centrifugal pumps. Used in phosphate processing utility systems.",
+      "manufacturers": ["KSB", "Sulzer", "Grundfos", "Flowserve"],
+      "common_models": ["KSB Etanorm", "Sulzer CPE", "Grundfos CR", "Flowserve D Series"],
+      "typical_life_hours": 30000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "weibull_beta": 2.5, "weibull_eta_hours": 25000},
+        {"mechanism": "CORRODES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 2.0, "weibull_eta_hours": 20000},
+        {"mechanism": "WEARS", "cause": "ENTRAINED_AIR", "weibull_beta": 1.5, "weibull_eta_hours": 18000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Monitor pump head and flow for performance degradation", "frequency_weeks": 4},
+        {"task_type": "INSPECT", "description": "Inspect impeller condition during pump overhaul", "frequency_weeks": 52}
+      ]
+    },
+    {
+      "component_type_id": "CL-IMPELLER-AGITATOR",
+      "component_type": "AGITATOR_IMPELLER",
+      "category": "IMPELLERS",
+      "description": "Turbine or propeller type impeller for agitator and flotation cell mixing applications. Subjected to corrosive slurry environments.",
+      "manufacturers": ["Lightnin (SPX)", "EKATO", "Milton Roy", "NOV"],
+      "common_models": ["Lightnin A310", "EKATO Paravisc", "Milton Roy Mixing", "NOV Chemineer"],
+      "typical_life_hours": 15000,
+      "failure_modes": [
+        {"mechanism": "CORRODES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 1.8, "weibull_eta_hours": 12000},
+        {"mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "weibull_beta": 2.5, "weibull_eta_hours": 14000},
+        {"mechanism": "CRACKS", "cause": "CYCLIC_LOADING", "weibull_beta": 2.0, "weibull_eta_hours": 20000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Inspect impeller condition during planned shutdown", "frequency_weeks": 26},
+        {"task_type": "REPLACE", "description": "Replace agitator impeller", "frequency_weeks": 78}
+      ]
+    },
+    {
+      "component_type_id": "CL-LINER-MILL",
+      "component_type": "MILL_LINER",
+      "category": "LINERS",
+      "description": "High-chrome or rubber-steel composite liner for SAG, ball, and rod mills. Critical wear component in phosphate grinding circuits.",
+      "manufacturers": ["Metso Outotec", "FLSmidth", "ME Elecmetal", "Tega Industries"],
+      "common_models": ["Metso Megaliner", "FLSmidth Raptor", "ME Elecmetal Maxiliner", "Tega IntelliLiner"],
+      "typical_life_hours": 6000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "weibull_beta": 3.8, "weibull_eta_hours": 5000},
+        {"mechanism": "CRACKS", "cause": "IMPACT_SHOCK_LOADING", "weibull_beta": 1.5, "weibull_eta_hours": 8000},
+        {"mechanism": "BREAKS_FRACTURE_SEPARATES", "cause": "MECHANICAL_OVERLOAD", "weibull_beta": 1.3, "weibull_eta_hours": 10000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Measure liner thickness using ultrasonic testing", "frequency_weeks": 12},
+        {"task_type": "REPLACE", "description": "Replace mill liners during reline shutdown", "frequency_weeks": 52}
+      ]
+    },
+    {
+      "component_type_id": "CL-LINER-PUMP",
+      "component_type": "PUMP_LINER",
+      "category": "LINERS",
+      "description": "High-chrome or elastomer liner for slurry pump volute and suction. Protects pump casing from abrasive slurry wear.",
+      "manufacturers": ["Weir Minerals", "Metso Outotec", "KSB", "Schurco Slurry"],
+      "common_models": ["Warman Frame Plate Liner", "Metso HH Liner", "KSB GIW Liner", "Schurco Liner"],
+      "typical_life_hours": 4000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "weibull_beta": 3.0, "weibull_eta_hours": 3500},
+        {"mechanism": "CORRODES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 1.8, "weibull_eta_hours": 5000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Monitor pump performance for liner wear indication", "frequency_weeks": 1},
+        {"task_type": "REPLACE", "description": "Replace pump volute liner", "frequency_weeks": 26}
+      ]
+    },
+    {
+      "component_type_id": "CL-LINER-CHUTE",
+      "component_type": "CHUTE_LINER",
+      "category": "LINERS",
+      "description": "Ceramic, rubber, or AR steel liner for transfer chutes and hoppers. Protects structural steel from abrasive ore flow.",
+      "manufacturers": ["Tega Industries", "CMP (Bradken)", "Multotec", "Kingfisher"],
+      "common_models": ["Tega Tufline", "CMP ChromeClad", "Multotec Maxflo", "Kingfisher Ceramic"],
+      "typical_life_hours": 8000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "weibull_beta": 3.0, "weibull_eta_hours": 7000},
+        {"mechanism": "BREAKS_FRACTURE_SEPARATES", "cause": "MECHANICAL_OVERLOAD", "weibull_beta": 1.5, "weibull_eta_hours": 12000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Inspect chute liner wear and bolt integrity", "frequency_weeks": 12},
+        {"task_type": "REPLACE", "description": "Replace chute liner sections", "frequency_weeks": 52}
+      ]
+    },
+    {
+      "component_type_id": "CL-FILTER-CLOTH",
+      "component_type": "FILTER_CLOTH",
+      "category": "FILTERS",
+      "description": "Woven polypropylene or polyester filter cloth for belt filters and drum filters. Key consumable in phosphate dewatering circuits.",
+      "manufacturers": ["Clear Edge Filtration", "Sefar", "Andritz", "GKD"],
+      "common_models": ["Clear Edge CE750", "Sefar Tetex", "Andritz AG", "GKD Filterweave"],
+      "typical_life_hours": 3000,
+      "failure_modes": [
+        {"mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 3.0, "weibull_eta_hours": 2500},
+        {"mechanism": "BLOCKS", "cause": "CONTAMINATION", "weibull_beta": 1.0, "weibull_eta_hours": 1500},
+        {"mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "weibull_beta": 2.5, "weibull_eta_hours": 3000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check filter cake moisture and cloth condition", "frequency_weeks": 1},
+        {"task_type": "CLEAN", "description": "Wash filter cloth with high-pressure spray", "frequency_weeks": 1},
+        {"task_type": "REPLACE", "description": "Replace filter cloth", "frequency_weeks": 26}
+      ]
+    },
+    {
+      "component_type_id": "CL-FILTER-CARTRIDGE",
+      "component_type": "FILTER_CARTRIDGE",
+      "category": "FILTERS",
+      "description": "Pleated or wound cartridge filter element for hydraulic oil, lube oil, and process water filtration. Essential for equipment protection.",
+      "manufacturers": ["Pall", "Parker Hannifin", "Hydac", "Donaldson"],
+      "common_models": ["Pall HC9800", "Parker 937396Q", "Hydac 0660R", "Donaldson P171580"],
+      "typical_life_hours": 2000,
+      "failure_modes": [
+        {"mechanism": "BLOCKS", "cause": "CONTAMINATION", "weibull_beta": 2.5, "weibull_eta_hours": 1800},
+        {"mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 2.0, "weibull_eta_hours": 3000},
+        {"mechanism": "EXPIRES", "cause": "AGE", "weibull_beta": 4.0, "weibull_eta_hours": 4000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check differential pressure across filter element", "frequency_weeks": 1},
+        {"task_type": "REPLACE", "description": "Replace filter cartridge element", "frequency_weeks": 12}
+      ]
+    },
+    {
+      "component_type_id": "CL-BELT-CONVEYOR",
+      "component_type": "CONVEYOR_BELT",
+      "category": "BELTS",
+      "description": "Multi-ply fabric or steel cord reinforced rubber belt for bulk material transport. Primary material handling element in phosphate processing.",
+      "manufacturers": ["Continental", "Fenner Dunlop", "Bridgestone", "Goodyear"],
+      "common_models": ["Continental Forte", "Fenner Dunlop Ultra-X", "Bridgestone BRECOflex", "Goodyear Guardian HP"],
+      "typical_life_hours": 30000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "weibull_beta": 2.5, "weibull_eta_hours": 25000},
+        {"mechanism": "SEVERS", "cause": "IMPACT_SHOCK_LOADING", "weibull_beta": 1.2, "weibull_eta_hours": 40000},
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.0, "weibull_eta_hours": 35000},
+        {"mechanism": "BREAKS_FRACTURE_SEPARATES", "cause": "MECHANICAL_OVERLOAD", "weibull_beta": 1.3, "weibull_eta_hours": 50000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Walk belt line and inspect for damage, tracking, and splice condition", "frequency_weeks": 1},
+        {"task_type": "INSPECT", "description": "Measure belt cover thickness", "frequency_weeks": 12},
+        {"task_type": "INSPECT", "description": "Splice inspection using X-ray or rip detection scan", "frequency_weeks": 26}
+      ]
+    },
+    {
+      "component_type_id": "CL-BELT-V",
+      "component_type": "V_BELT",
+      "category": "BELTS",
+      "description": "V-belt or banded V-belt for fan, pump, and small equipment drives. Simple and economical power transmission element.",
+      "manufacturers": ["Gates", "Continental", "Optibelt", "Dunlop"],
+      "common_models": ["Gates Super HC", "Continental Conti-V", "Optibelt Red Power 3", "Dunlop Hi-Power"],
+      "typical_life_hours": 15000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "RELATIVE_MOVEMENT", "weibull_beta": 3.0, "weibull_eta_hours": 12000},
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.5, "weibull_eta_hours": 15000},
+        {"mechanism": "BREAKS_FRACTURE_SEPARATES", "cause": "MECHANICAL_OVERLOAD", "weibull_beta": 1.5, "weibull_eta_hours": 20000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check belt tension and condition", "frequency_weeks": 4},
+        {"task_type": "REPLACE", "description": "Replace V-belt set", "frequency_weeks": 78}
+      ]
+    },
+    {
+      "component_type_id": "CL-VALVE-GATE",
+      "component_type": "GATE_VALVE",
+      "category": "VALVES",
+      "description": "Full-bore gate valve for isolation service in slurry and water piping. Common throughout phosphate processing pipe networks.",
+      "manufacturers": ["Weir Minerals", "Flowserve", "KSB", "AVK"],
+      "common_models": ["Weir Isogate", "Flowserve Edward", "KSB SISTO", "AVK Series 36"],
+      "typical_life_hours": 40000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "weibull_beta": 2.5, "weibull_eta_hours": 35000},
+        {"mechanism": "CORRODES", "cause": "CORROSIVE_ENVIRONMENT", "weibull_beta": 2.0, "weibull_eta_hours": 30000},
+        {"mechanism": "IMMOBILISED", "cause": "CONTAMINATION", "weibull_beta": 1.2, "weibull_eta_hours": 20000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Stroke valve to verify operation and check for leakage", "frequency_weeks": 12},
+        {"task_type": "LUBRICATE", "description": "Lubricate valve stem and gland packing", "frequency_weeks": 12}
+      ]
+    },
+    {
+      "component_type_id": "CL-VALVE-BUTTERFLY",
+      "component_type": "BUTTERFLY_VALVE",
+      "category": "VALVES",
+      "description": "Quarter-turn butterfly valve for throttling and isolation service. Used in slurry, water, and reagent systems in phosphate processing.",
+      "manufacturers": ["Weir Minerals", "Metso Outotec (Neles)", "Flowserve (Limitorque)", "Bray"],
+      "common_models": ["Weir BDK", "Neles Jamesbury", "Flowserve Durco", "Bray Series 31"],
+      "typical_life_hours": 30000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "weibull_beta": 2.5, "weibull_eta_hours": 25000},
+        {"mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 1.8, "weibull_eta_hours": 20000},
+        {"mechanism": "CORRODES", "cause": "CORROSIVE_ENVIRONMENT", "weibull_beta": 2.0, "weibull_eta_hours": 25000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Stroke valve and check seat leakage", "frequency_weeks": 12},
+        {"task_type": "INSPECT", "description": "Check actuator operation and limit switches", "frequency_weeks": 26}
+      ]
+    },
+    {
+      "component_type_id": "CL-VALVE-CHECK",
+      "component_type": "CHECK_VALVE",
+      "category": "VALVES",
+      "description": "Non-return check valve for preventing backflow in pump discharge and process piping. Critical for protecting pumps from reverse flow.",
+      "manufacturers": ["Weir Minerals", "Flowserve", "KSB", "Crane"],
+      "common_models": ["Weir Isogate Check", "Flowserve Edward Check", "KSB BOA-RVK", "Crane Duo-Chek"],
+      "typical_life_hours": 30000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "IMPACT_SHOCK_LOADING", "weibull_beta": 2.5, "weibull_eta_hours": 25000},
+        {"mechanism": "IMMOBILISED", "cause": "CONTAMINATION", "weibull_beta": 1.2, "weibull_eta_hours": 15000},
+        {"mechanism": "CORRODES", "cause": "CORROSIVE_ENVIRONMENT", "weibull_beta": 2.0, "weibull_eta_hours": 30000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Verify check valve closes properly — no backflow", "frequency_weeks": 12},
+        {"task_type": "INSPECT", "description": "Inspect valve internals during planned shutdown", "frequency_weeks": 52}
+      ]
+    },
+    {
+      "component_type_id": "CL-VALVE-PINCH",
+      "component_type": "PINCH_VALVE",
+      "category": "VALVES",
+      "description": "Elastomeric sleeve pinch valve for slurry isolation and throttling. Ideal for highly abrasive phosphate slurry applications.",
+      "manufacturers": ["Weir Minerals", "Red Valve", "Flowrox", "AKO"],
+      "common_models": ["Weir Isogate WS", "Red Valve Series 5200", "Flowrox PVE", "AKO VMC"],
+      "typical_life_hours": 10000,
+      "failure_modes": [
+        {"mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "weibull_beta": 2.8, "weibull_eta_hours": 8000},
+        {"mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 2.0, "weibull_eta_hours": 9000},
+        {"mechanism": "DEGRADES", "cause": "AGE", "weibull_beta": 3.0, "weibull_eta_hours": 12000}
+      ],
+      "standard_tasks": [
+        {"task_type": "INSPECT", "description": "Check pinch valve sleeve condition and leakage", "frequency_weeks": 4},
+        {"task_type": "REPLACE", "description": "Replace pinch valve sleeve", "frequency_weeks": 52}
+      ]
+    },
+    {
+      "component_type_id": "CL-INSTR-PRESSURE",
+      "component_type": "PRESSURE_TRANSMITTER",
+      "category": "INSTRUMENTS",
+      "description": "Electronic pressure transmitter for process monitoring and control. 4-20mA or HART output for DCS/PLC integration.",
+      "manufacturers": ["Endress+Hauser", "Emerson (Rosemount)", "Siemens", "ABB"],
+      "common_models": ["Rosemount 3051", "E+H Cerabar PMP71", "Siemens Sitrans P", "ABB 2600T"],
+      "typical_life_hours": 80000,
+      "failure_modes": [
+        {"mechanism": "DRIFTS", "cause": "USE", "weibull_beta": 1.0, "weibull_eta_hours": 50000},
+        {"mechanism": "BLOCKS", "cause": "CONTAMINATION", "weibull_beta": 1.2, "weibull_eta_hours": 30000},
+        {"mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "weibull_beta": 1.5, "weibull_eta_hours": 60000}
+      ],
+      "standard_tasks": [
+        {"task_type": "CALIBRATE", "description": "Calibrate pressure transmitter against reference standard", "frequency_weeks": 52},
+        {"task_type": "INSPECT", "description": "Check impulse lines for blockage and leaks", "frequency_weeks": 12},
+        {"task_type": "CLEAN", "description": "Clean diaphragm and process connection", "frequency_weeks": 26}
+      ]
+    },
+    {
+      "component_type_id": "CL-INSTR-FLOW",
+      "component_type": "FLOW_METER",
+      "category": "INSTRUMENTS",
+      "description": "Electromagnetic or ultrasonic flow meter for slurry and process water measurement. Essential for process control in phosphate beneficiation.",
+      "manufacturers": ["Endress+Hauser", "Emerson (Rosemount)", "Krohne", "ABB"],
+      "common_models": ["E+H Promag W 400", "Rosemount 8750W", "Krohne Optiflux 2300", "ABB ProcessMaster"],
+      "typical_life_hours": 100000,
+      "failure_modes": [
+        {"mechanism": "DRIFTS", "cause": "USE", "weibull_beta": 1.0, "weibull_eta_hours": 70000},
+        {"mechanism": "DEGRADES", "cause": "CHEMICAL_ATTACK", "weibull_beta": 2.0, "weibull_eta_hours": 60000},
+        {"mechanism": "WEARS", "cause": "EXCESSIVE_FLUID_VELOCITY", "weibull_beta": 2.5, "weibull_eta_hours": 80000}
+      ],
+      "standard_tasks": [
+        {"task_type": "CALIBRATE", "description": "Verify flow meter accuracy against reference", "frequency_weeks": 52},
+        {"task_type": "INSPECT", "description": "Check electrode condition and liner wear", "frequency_weeks": 26},
+        {"task_type": "CLEAN", "description": "Clean electrode surfaces", "frequency_weeks": 26}
+      ]
+    },
+    {
+      "component_type_id": "CL-INSTR-TEMPERATURE",
+      "component_type": "TEMPERATURE_SENSOR",
+      "category": "INSTRUMENTS",
+      "description": "RTD or thermocouple temperature sensor with thermowell for process and equipment temperature monitoring.",
+      "manufacturers": ["Endress+Hauser", "Emerson (Rosemount)", "WIKA", "Jumo"],
+      "common_models": ["E+H iTHERM TM411", "Rosemount 0065", "WIKA TR10", "Jumo 902150"],
+      "typical_life_hours": 80000,
+      "failure_modes": [
+        {"mechanism": "DRIFTS", "cause": "USE", "weibull_beta": 1.0, "weibull_eta_hours": 60000},
+        {"mechanism": "OPEN_CIRCUIT", "cause": "ELECTRICAL_OVERLOAD", "weibull_beta": 1.2, "weibull_eta_hours": 70000},
+        {"mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "weibull_beta": 1.5, "weibull_eta_hours": 50000}
+      ],
+      "standard_tasks": [
+        {"task_type": "CALIBRATE", "description": "Calibrate temperature sensor against reference thermometer", "frequency_weeks": 52},
+        {"task_type": "INSPECT", "description": "Check thermowell for corrosion and erosion", "frequency_weeks": 26}
+      ]
+    },
+    {
+      "component_type_id": "CL-SENSOR-VIBRATION",
+      "component_type": "VIBRATION_SENSOR",
+      "category": "INSTRUMENTS",
+      "description": "Piezoelectric accelerometer or velocity sensor for continuous vibration monitoring of rotating equipment.",
+      "manufacturers": ["SKF", "Emerson (CSI)", "Bruel & Kjaer", "PCB Piezotronics"],
+      "common_models": ["SKF CMSS 2200", "Emerson CSI 9210", "B&K 4507", "PCB 622B01"],
+      "typical_life_hours": 60000,
+      "failure_modes": [
+        {"mechanism": "DRIFTS", "cause": "USE", "weibull_beta": 1.0, "weibull_eta_hours": 50000},
+        {"mechanism": "OPEN_CIRCUIT", "cause": "ELECTRICAL_OVERLOAD", "weibull_beta": 1.2, "weibull_eta_hours": 60000},
+        {"mechanism": "DEGRADES", "cause": "EXCESSIVE_TEMPERATURE", "weibull_beta": 1.5, "weibull_eta_hours": 40000}
+      ],
+      "standard_tasks": [
+        {"task_type": "CALIBRATE", "description": "Calibrate vibration sensor against reference source", "frequency_weeks": 52},
+        {"task_type": "INSPECT", "description": "Check sensor mounting, cable, and signal integrity", "frequency_weeks": 12}
+      ]
+    }
+  ]
+}

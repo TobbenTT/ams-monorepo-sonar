@@ -7,7 +7,7 @@ import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Eye, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Download, AlertCircle, Plus, XCircle, Ban,
-  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2
+  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2, Sparkles
 } from 'lucide-react';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
@@ -27,36 +27,65 @@ function PriorityLabel({ priority }) {
 
 /* ── BBP Constants ── */
 const PLANNING_GROUPS = [
-  { value: 'P01', label: 'P01 - Plant GP Dry Area' },
-  { value: 'P02', label: 'P02 - Plant GP Heap Leach' },
-  { value: 'P03', label: 'P03 - Plant GP Wet Area' },
-  { value: 'M01', label: 'M01 - Mine GP Drilling' },
-  { value: 'M02', label: 'M02 - Mine GP Loading' },
-  { value: 'M03', label: 'M03 - Mine GP Hauling' },
-  { value: 'M04', label: 'M04 - Mine GP Support Equipment' },
-  { value: 'M05', label: 'M05 - Mine GP Auxiliary Equipment' },
+  { value: 'P01', label: 'P01 - Planta Área Seca' },
+  { value: 'P02', label: 'P02 - Planta Heap Leach' },
+  { value: 'P03', label: 'P03 - Planta Área Húmeda' },
+  { value: 'M01', label: 'M01 - Mina Perforación' },
+  { value: 'M02', label: 'M02 - Mina Carguío' },
+  { value: 'M03', label: 'M03 - Mina Transporte' },
+  { value: 'M04', label: 'M04 - Mina Equipos de Apoyo' },
+  { value: 'M05', label: 'M05 - Mina Equipos Auxiliares' },
 ];
+// Every planning group has at minimum: Mechanical, Electrical, Instrumentation, Civil, Lubrication
 const WORK_CENTERS = [
-  { value: 'PASMEC01', label: 'Mechanical Dry Area', group: 'P01' },
-  { value: 'PASELE01', label: 'Electrical Dry Area', group: 'P01' },
-  { value: 'PASINS01', label: 'Instrumentation Dry Area', group: 'P01' },
-  { value: 'PASLUB01', label: 'Lubrication Dry Area', group: 'P01' },
-  { value: 'PARELE01', label: 'Electrical Heap Leach', group: 'P02' },
-  { value: 'PARINS01', label: 'Instrumentation Heap Leach', group: 'P02' },
-  { value: 'PAHMEC01', label: 'Mechanical Wet Area', group: 'P03' },
-  { value: 'PAHELE01', label: 'Electrical Wet Area', group: 'P03' },
-  { value: 'PAHINS01', label: 'Instrumentation Wet Area', group: 'P03' },
+  // P01 — Planta Área Seca
+  { value: 'PASMEC01', label: 'Mecánico Seca', group: 'P01' },
+  { value: 'PASELE01', label: 'Eléctrico Seca', group: 'P01' },
+  { value: 'PASINS01', label: 'Instrumentación Seca', group: 'P01' },
+  { value: 'PASCIV01', label: 'Civil Seca', group: 'P01' },
+  { value: 'PASLUB01', label: 'Lubricación Seca', group: 'P01' },
   { value: 'PSHSIN01', label: 'Synoptic', group: 'P01' },
   { value: 'PSHDCS01', label: 'DCS & Automation', group: 'P01' },
-  { value: 'MPCMEC01', label: 'Mechanical Drilling & Loading', group: 'M01' },
-  { value: 'MTAMEC01', label: 'Mechanical Hauling & Support', group: 'M03' },
-  { value: 'MPCELE01', label: 'Electrical Drilling & Loading', group: 'M01' },
-  { value: 'MTAELE01', label: 'Electrical Hauling & Support', group: 'M03' },
-  { value: 'MPREDI01', label: 'Predictive Mine', group: 'M01' },
-  { value: 'MEXTSOL1', label: 'Welding (External)', group: 'M04' },
-  { value: 'MEXTLAV1', label: 'Washing (External)', group: 'M04' },
-  { value: 'MEXTNEU1', label: 'Tires (External)', group: 'M04' },
-  { value: 'MAPELE01', label: 'Electrical Mine Support', group: 'M05' },
+  // P02 — Heap Leach
+  { value: 'PARMEC01', label: 'Mecánico Heap Leach', group: 'P02' },
+  { value: 'PARELE01', label: 'Eléctrico Heap Leach', group: 'P02' },
+  { value: 'PARINS01', label: 'Instrumentación Heap Leach', group: 'P02' },
+  { value: 'PARCIV01', label: 'Civil Heap Leach', group: 'P02' },
+  { value: 'PARLUB01', label: 'Lubricación Heap Leach', group: 'P02' },
+  // P03 — Planta Área Húmeda
+  { value: 'PAHMEC01', label: 'Mecánico Húmeda', group: 'P03' },
+  { value: 'PAHELE01', label: 'Eléctrico Húmeda', group: 'P03' },
+  { value: 'PAHINS01', label: 'Instrumentación Húmeda', group: 'P03' },
+  { value: 'PAHCIV01', label: 'Civil Húmeda', group: 'P03' },
+  { value: 'PAHLUB01', label: 'Lubricación Húmeda', group: 'P03' },
+  // M01 — Perforación
+  { value: 'MPCMEC01', label: 'Mecánico Perforación', group: 'M01' },
+  { value: 'MPCELE01', label: 'Eléctrico Perforación', group: 'M01' },
+  { value: 'MPCINS01', label: 'Instrumentación Perforación', group: 'M01' },
+  { value: 'MPCLUB01', label: 'Lubricación Perforación', group: 'M01' },
+  { value: 'MPREDI01', label: 'Predictivo Mina', group: 'M01' },
+  // M02 — Carguío
+  { value: 'MCAMEC01', label: 'Mecánico Carguío', group: 'M02' },
+  { value: 'MCAELE01', label: 'Eléctrico Carguío', group: 'M02' },
+  { value: 'MCAINS01', label: 'Instrumentación Carguío', group: 'M02' },
+  { value: 'MCALUB01', label: 'Lubricación Carguío', group: 'M02' },
+  // M03 — Transporte
+  { value: 'MTAMEC01', label: 'Mecánico Transporte', group: 'M03' },
+  { value: 'MTAELE01', label: 'Eléctrico Transporte', group: 'M03' },
+  { value: 'MTAINS01', label: 'Instrumentación Transporte', group: 'M03' },
+  { value: 'MTALUB01', label: 'Lubricación Transporte', group: 'M03' },
+  // M04 — Equipos de Apoyo
+  { value: 'MAPMEC01', label: 'Mecánico Apoyo', group: 'M04' },
+  { value: 'MAPELE01', label: 'Eléctrico Apoyo', group: 'M04' },
+  { value: 'MAPGRU01', label: 'Grúas y Puentes', group: 'M04' },
+  { value: 'MEXTSOL1', label: 'Soldadura (Externo)', group: 'M04' },
+  { value: 'MEXTLAV1', label: 'Lavado (Externo)', group: 'M04' },
+  { value: 'MEXTNEU1', label: 'Neumáticos (Externo)', group: 'M04' },
+  // M05 — Auxiliares
+  { value: 'MAUMEC01', label: 'Mecánico Auxiliar', group: 'M05' },
+  { value: 'MAUELE01', label: 'Eléctrico Auxiliar', group: 'M05' },
+  { value: 'MAUINS01', label: 'Instrumentación Auxiliar', group: 'M05' },
+  { value: 'MAUCIV01', label: 'Civil Auxiliar', group: 'M05' },
 ];
 const WAREHOUSES = [
   { value: 'WH-001', label: 'WH-001 - Main Warehouse Plant' },
@@ -109,6 +138,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [woStatusFilter, setWoStatusFilter] = useState("All");
   const [woPriorityFilter, setWoPriorityFilter] = useState("All");
   const [woTypeFilter, setWoTypeFilter] = useState("All");
+  // AI ranking state — populated when user clicks "Priorizar con IA"
+  const [aiScores, setAiScores] = useState({}); // { equipment_tag: { score, alerts, criticality, ... } }
+  const [sortByAI, setSortByAI] = useState(false);
+  const [filterSLARisk, setFilterSLARisk] = useState(false);
 
   const filteredWOs = useMemo(() => {
     let wos = managedWOs;
@@ -119,8 +152,25 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
     if (woStatusFilter !== "All") wos = wos.filter(wo => wo.status === woStatusFilter);
     if (woPriorityFilter !== "All") wos = wos.filter(wo => (wo.priority_code || wo.priority) === woPriorityFilter);
     if (woTypeFilter !== "All") wos = wos.filter(wo => wo.wo_type === woTypeFilter);
+    // SLA-at-risk filter
+    if (filterSLARisk) {
+      wos = wos.filter(wo => {
+        const r = aiScores[wo.equipment_tag];
+        return r && (r.alerts || []).includes('SLA_BREACH_RISK');
+      });
+    }
+    // AI sort — score descending (SLA risk bumped to top)
+    if (sortByAI && Object.keys(aiScores).length > 0) {
+      wos = [...wos].sort((a, b) => {
+        const ra = aiScores[a.equipment_tag] || { score: 0, alerts: [] };
+        const rb = aiScores[b.equipment_tag] || { score: 0, alerts: [] };
+        const slaA = ra.alerts?.includes('SLA_BREACH_RISK') ? 1000 : 0;
+        const slaB = rb.alerts?.includes('SLA_BREACH_RISK') ? 1000 : 0;
+        return (rb.score + slaB) - (ra.score + slaA);
+      });
+    }
     return wos;
-  }, [managedWOs, woSearch, woStatusFilter, woPriorityFilter, woTypeFilter]);
+  }, [managedWOs, woSearch, woStatusFilter, woPriorityFilter, woTypeFilter, filterSLARisk, sortByAI, aiScores]);
 
   const [execData, setExecData] = useState({ actual_hours: '', observations: '', materials_used: [] });
   const [closingWithAI, setClosingWithAI] = useState(false);
@@ -432,7 +482,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         upd = await api.completeManagedWO(WO_ID, { actual_hours: hours, execution_notes: execData.observations || '' });
       }
       if (upd) {
-        toast.success('Status updated: ' + ns);
+        const STATUS_LABEL = {
+          CREADO: 'Created', LIBERADO: 'Released', PLANIFICADO: 'Planned',
+          EN_PROGRAMACION: 'In Scheduling', PROGRAMADO: 'Scheduled', REPROGRAMADO: 'Rescheduled',
+          EN_EJECUCION: 'In Execution', COMPLETADO: 'Completed', CERRADO: 'Closed',
+          CANCELADO: 'Cancelled', PENDIENTE: 'Pending', APROBADO: 'Approved',
+        };
+        toast.success('Status updated: ' + (STATUS_LABEL[ns] || ns));
         setSelectedOT(upd);
         fetchData();
       } else {
@@ -460,12 +516,53 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         {isPlanner && (<>
           {/* +New Preventive WO removed per Jorge feedback #6 — WOs without aviso only created by strategy engine */}
           <button onClick={() => {
-            toast.success('AI analyzing backlog...');
+            toast.info('Analizando backlog con IA (Pareto + criticidad + SLA)…');
             api.agenticSmartBacklog({ plant_id: plant, strategy: 'risk_weighted' })
-              .then(() => { toast.success('Backlog prioritized'); fetchData(); })
+              .then(res => {
+                const ranked = res?.ranked_items || [];
+                // Build the scores map by equipment_tag so the table can display per-row score
+                const scoreMap = {};
+                ranked.forEach(r => {
+                  if (!r.equipment_tag) return;
+                  // Keep the highest-score entry if the same tag appears multiple times
+                  if (!scoreMap[r.equipment_tag] || scoreMap[r.equipment_tag].score < r.total_score) {
+                    scoreMap[r.equipment_tag] = {
+                      score: r.total_score || 0,
+                      alerts: r.alerts || [],
+                      criticality: r.criticality_class,
+                      sla_remaining: r.sla_remaining_hours,
+                    };
+                  }
+                });
+                setAiScores(scoreMap);
+                setSortByAI(true);  // auto-enable AI sort after ranking
+                const top = ranked.slice(0, 5);
+                const sla = (res?.sla_alerts || []).length;
+                if (top.length > 0) {
+                  toast.success(
+                    <div className="text-xs">
+                      <div className="font-bold mb-1">Top 5 OTs priorizadas (Pareto/criticidad)</div>
+                      {top.map((r, i) => (
+                        <div key={i} className="flex items-center gap-2 mt-0.5">
+                          <span className="font-mono font-bold text-purple-700">#{i+1}</span>
+                          <span className="font-mono">{r.equipment_tag || '—'}</span>
+                          <span className="text-[10px] bg-purple-100 text-purple-700 px-1 rounded">{r.criticality_class}</span>
+                          <span className="ml-auto font-semibold">{(r.total_score || 0).toFixed(0)}%</span>
+                        </div>
+                      ))}
+                      {sla > 0 && <div className="mt-2 text-red-600 font-semibold">⚠️ {sla} con SLA en riesgo</div>}
+                      <div className="mt-1 text-gray-400">Total ranqueado: {ranked.length} OTs</div>
+                    </div>,
+                    12000
+                  );
+                } else {
+                  toast.info('Sin OTs activas para priorizar');
+                }
+                fetchData();
+              })
               .catch(e => toast.error('Error: ' + (e.message || '')));
           }} className="ml-2 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1">
-            AI Prioritize
+            <Sparkles className="w-3 h-3" /> Priorizar con IA
           </button>
         </>)}
       </div>
@@ -497,18 +594,6 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'ots' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Work Orders ({managedWOs.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('backlog')}
-          className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'backlog' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-        >
-          Notifications ({workRequests.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('capacity')}
-          className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'capacity' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-        >
-          Capacidades
         </button>
       </div>
 
@@ -560,6 +645,25 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
               )}
             </div>
+
+            {/* AI ranking controls (visible once the user has run Priorizar con IA) */}
+            {Object.keys(aiScores).length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap px-1">
+                <span className="text-[10px] font-bold text-purple-600 uppercase">Ranking IA activo</span>
+                <button onClick={() => setSortByAI(s => !s)}
+                  className={`text-xs px-2 py-1 rounded border transition-colors ${sortByAI ? 'bg-purple-600 text-white border-purple-600' : 'border-purple-300 text-purple-700 hover:bg-purple-50'}`}>
+                  {sortByAI ? '✓ Ordenar por score' : 'Ordenar por score'}
+                </button>
+                <button onClick={() => setFilterSLARisk(s => !s)}
+                  className={`text-xs px-2 py-1 rounded border transition-colors ${filterSLARisk ? 'bg-red-600 text-white border-red-600' : 'border-red-300 text-red-700 hover:bg-red-50'}`}>
+                  {filterSLARisk ? '✓ Solo SLA en riesgo' : '⚠️ Solo SLA en riesgo'}
+                </button>
+                <button onClick={() => { setAiScores({}); setSortByAI(false); setFilterSLARisk(false); }}
+                  className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50">
+                  Limpiar ranking
+                </button>
+              </div>
+            )}
           </div>
           {wosLoading ? (
             <div className="flex items-center justify-center py-16 text-gray-400">
@@ -582,6 +686,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
+                    {Object.keys(aiScores).length > 0 && (
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-purple-600 uppercase tracking-wider" title="Score IA multi-criterio (criticidad + SLA + Pareto)">
+                        Score IA
+                      </th>
+                    )}
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Planned Date</th>
                   </tr>
                 </thead>
@@ -621,6 +730,21 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <td className="px-4 py-3">
                           <span className={`text-xs ${pColor[wo.priority_code||wo.priority] || 'text-gray-500'}`}>{wo.priority_code||wo.priority||'—'}</span>
                         </td>
+                        {Object.keys(aiScores).length > 0 && (() => {
+                          const r = aiScores[wo.equipment_tag];
+                          if (!r) return <td className="px-4 py-3"><span className="text-xs text-gray-300">—</span></td>;
+                          const scoreColor = r.score >= 70 ? 'bg-red-100 text-red-700' : r.score >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600';
+                          const isSLA = (r.alerts || []).includes('SLA_BREACH_RISK');
+                          return (
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${scoreColor}`}>{Math.round(r.score)}%</span>
+                                {isSLA && <span title="SLA en riesgo" className="text-[10px]">⚠️</span>}
+                                {(r.alerts || []).includes('CHRONIC_EQUIPMENT') && <span title="Equipo crónico" className="text-[10px]">🔁</span>}
+                              </div>
+                            </td>
+                          );
+                        })()}
                         <td className="px-4 py-3 text-xs text-gray-500">
                           {wo.planned_start ? new Date(wo.planned_start).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }) : '—'}
                         </td>
@@ -643,7 +767,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         </div>
       )}
 
-      {activeTab === 'backlog' && (
+      {/* DEAD CODE — tabs removed, blocks unreachable. Kept for reference only. Safe to delete in a future cleanup. */}
+      {false && activeTab === 'backlog' && (
         <div>
 
       {/* Title */}
@@ -992,7 +1117,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         const NEXT = {
           CREADO:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
           LIBERADO:[['PLANIFICADO','Mark Planned','bg-teal-600 text-white hover:bg-teal-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
-          PLANIFICADO:[['EN_PROGRAMACION','To Scheduling','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
+          PLANIFICADO:[['EN_PROGRAMACION','To Scheduling','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Close','bg-gray-500 text-white hover:bg-gray-600']],
           EN_PROGRAMACION:[['PROGRAMADO','Schedule','bg-purple-600 text-white hover:bg-purple-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
           PROGRAMADO:[['EN_EJECUCION','Start Execution','bg-amber-500 text-white hover:bg-amber-600'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
           REPROGRAMADO:[['PROGRAMADO','Reschedule','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
@@ -1008,14 +1133,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         const actions = NEXT[wo.status] || [];
         const ALL = ['CREADO','LIBERADO','PLANIFICADO','EN_PROGRAMACION','PROGRAMADO','EN_EJECUCION','CERRADO'];
 
+        // Execution flow now lives in the top-level Execution module (Bandeja de Cierre).
+        // The old 'ejecucion' sub-tab inside this modal was duplicating that flow — removed.
         const OT_TABS = [
           { id: 'resumen', label: 'Summary', icon: Info },
           { id: 'operaciones', label: 'Operations', icon: List },
-          { id: 'ejecucion', label: 'Execution', icon: Play, show: ['EN_EJECUCION','CERRADO','EN_PROGRESO'].includes(wo.status) },
           { id: 'materiales', label: 'Materials', icon: Package },
           { id: 'costos', label: 'Costs', icon: DollarSign },
           { id: 'historial', label: 'History', icon: MessageSquare },
-        ].filter(t => t.show === undefined || t.show);
+        ];
 
         const ops = wo.operations || [];
         const costCats = [
@@ -1027,8 +1153,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         const totalReal = costCats.reduce((s,c2) => s+c2.real, 0);
 
         return (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setSelectedOT(null); setModalFullscreen(false); }}>
-            <div className={`bg-white rounded-2xl shadow-xl flex flex-col transition-all duration-300 ${modalFullscreen ? "w-[95vw] max-w-7xl h-[92vh]" : "w-[90vw] max-w-5xl h-[85vh]"}`} onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 md:pl-[240px]" onClick={() => { setSelectedOT(null); setModalFullscreen(false); }}>
+            <div className={`bg-white rounded-2xl shadow-xl flex flex-col transition-all duration-300 ${modalFullscreen ? "w-full h-[94vh]" : "w-[90vw] max-w-5xl h-[85vh]"}`} onClick={e => e.stopPropagation()}>
 
               {/* HEADER */}
               <div className="border-b px-6 py-4 rounded-t-2xl">
@@ -1083,7 +1209,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       <p className="text-sm text-gray-800 mt-1 bg-gray-50 rounded-lg p-3">{wo.description||wo.failure_description||"No description"}</p>
                     </div>
                     <div className="grid grid-cols-4 gap-3">
-                      <div className="bg-blue-50 rounded-lg p-3 text-center"><div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Hrs</div><div className="text-lg font-bold text-blue-700">{wo.estimated_hours||"0"}h</div></div>
+                      <div className="bg-blue-50 rounded-lg p-3 text-center"><div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Hrs</div><div className="text-lg font-bold text-blue-700">{(() => {
+                        // Sum from operations (qty × hours); fall back to estimated_hours if no operations
+                        const opsHH = (editOps || []).reduce((s, o) => s + ((parseFloat(o.quantity) || 1) * (parseFloat(o.hours) || 0)), 0);
+                        return opsHH > 0 ? opsHH.toFixed(1) : (wo.estimated_hours || 0);
+                      })()}h</div></div>
                       <div className="bg-green-50 rounded-lg p-3 text-center"><div className="text-[10px] text-green-600 font-semibold uppercase">Actual Hrs</div><div className="text-lg font-bold text-green-700">{wo.actual_hours||execData.actual_hours||"0"}h</div></div>
                       <div className="bg-purple-50 rounded-lg p-3 text-center"><div className="text-[10px] text-purple-600 font-semibold uppercase">Planned Cost</div><div className="text-lg font-bold text-purple-700">${totalPlan.toFixed(0)}</div></div>
                       <div className="bg-amber-50 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-600 font-semibold uppercase">Actual Cost</div><div className="text-lg font-bold text-amber-700">${totalReal.toFixed(0)}</div></div>
@@ -1107,19 +1237,31 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <div className="text-sm font-mono font-semibold text-gray-800 mt-1">{wo.technical_location || wo.equipment_tag || '—'}</div>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3 border">
-                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Planning Group</div>
-                        <select value={wo.planning_group || ''} onChange={e => api.updateManagedWO(wo.wo_id, { planning_group: e.target.value }).then(() => { wo.planning_group = e.target.value; setSelectedOT({...wo}); }).catch(() => {})}
-                          className="text-sm font-semibold text-gray-800 mt-1 bg-transparent border-none p-0 w-full focus:ring-0">
-                          <option value="">—</option>
-                          {PLANNING_GROUPS.map(g => <option key={g.code} value={g.code}>{g.code} - {g.label}</option>)}
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Planning Group</div>
+                        <select value={wo.planning_group || ''}
+                          onChange={e => {
+                            const v = e.target.value;
+                            api.updateManagedWO(wo.wo_id, { planning_group: v, work_center: '' })
+                              .then(() => { wo.planning_group = v; wo.work_center = ''; setSelectedOT({...wo}); toast.success('Planning Group actualizado'); })
+                              .catch(err => toast.error('Error: ' + (err.message || 'no se pudo actualizar')));
+                          }}
+                          className="w-full text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer">
+                          <option value="">— Seleccionar —</option>
+                          {PLANNING_GROUPS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                         </select>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3 border">
-                        <div className="text-[10px] text-gray-500 font-semibold uppercase">Work Center</div>
-                        <select value={wo.work_center || ''} onChange={e => api.updateManagedWO(wo.wo_id, { work_center: e.target.value }).then(() => { wo.work_center = e.target.value; setSelectedOT({...wo}); }).catch(() => {})}
-                          className="text-sm font-semibold text-gray-800 mt-1 bg-transparent border-none p-0 w-full focus:ring-0">
-                          <option value="">—</option>
-                          {WORK_CENTERS.map(w => <option key={w.code} value={w.code}>{w.code} - {w.label}</option>)}
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Work Center {wo.planning_group ? `(${wo.planning_group})` : ''}</div>
+                        <select value={wo.work_center || ''} disabled={!wo.planning_group}
+                          onChange={e => {
+                            const v = e.target.value;
+                            api.updateManagedWO(wo.wo_id, { work_center: v })
+                              .then(() => { wo.work_center = v; setSelectedOT({...wo}); toast.success('Work Center actualizado'); })
+                              .catch(err => toast.error('Error: ' + (err.message || 'no se pudo actualizar')));
+                          }}
+                          className="w-full text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed">
+                          <option value="">{wo.planning_group ? '— Seleccionar —' : 'Selecciona Planning Group primero'}</option>
+                          {(wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : []).map(w => <option key={w.value} value={w.value}>{w.value} - {w.label}</option>)}
                         </select>
                       </div>
                     </div>
@@ -1129,13 +1271,28 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                         <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Start</div>
                         <input type="date" value={editDates.start ? editDates.start.slice(0, 10) : ''}
-                          onChange={e => setEditDates(d => ({...d, start: e.target.value}))}
+                          onChange={e => {
+                            const newStart = e.target.value;
+                            setEditDates(d => ({
+                              start: newStart,
+                              // If end is before new start, bump it to match
+                              end: d.end && d.end.slice(0, 10) < newStart ? newStart : d.end,
+                            }));
+                          }}
                           className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
                       </div>
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                      <div className={`rounded-lg p-3 border ${editDates.start && editDates.end && editDates.end.slice(0,10) < editDates.start.slice(0,10) ? 'bg-red-50 border-red-300' : 'bg-blue-50 border-blue-200'}`}>
                         <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned End</div>
                         <input type="date" value={editDates.end ? editDates.end.slice(0, 10) : ''}
-                          onChange={e => setEditDates(d => ({...d, end: e.target.value}))}
+                          min={editDates.start ? editDates.start.slice(0, 10) : undefined}
+                          onChange={e => {
+                            const newEnd = e.target.value;
+                            if (editDates.start && newEnd < editDates.start.slice(0, 10)) {
+                              toast.error('Planned End no puede ser anterior a Planned Start');
+                              return;
+                            }
+                            setEditDates(d => ({...d, end: newEnd}));
+                          }}
                           className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
                       </div>
                       <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
@@ -1672,9 +1829,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 )}
                                 {activeMatIdx === idx && matSearchLoading && <div className="absolute right-1 top-1.5 w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
                               </div>
-                              <input value={mat.description || ''} readOnly={!!(mat.code || mat.sapId)}
-                                onChange={e => { if (!(mat.code || mat.sapId)) { const n = [...editMats]; n[idx].description = e.target.value; setEditMats(n); } }}
-                                className={"flex-1 text-sm border rounded px-2 py-1 " + ((mat.code || mat.sapId) ? "bg-gray-50 text-gray-500 cursor-not-allowed border-gray-100" : "")} placeholder="Material description" />
+                              <input value={mat.description || ''}
+                                onFocus={() => { setActiveMatIdx(idx); if (mat.description) setMatSearchQuery(mat.description); }}
+                                onChange={e => {
+                                  const n = [...editMats]; n[idx].description = e.target.value; setEditMats(n);
+                                  setActiveMatIdx(idx); setMatSearchQuery(e.target.value);
+                                }}
+                                className="flex-1 text-sm border rounded px-2 py-1" placeholder="Buscar material por nombre o código…" />
                               <button onClick={() => setEditMats(prev => prev.filter((_,i) => i !== idx))}
                                 className="text-red-400 hover:text-red-600 text-xs px-1">x</button>
                             </div>
@@ -1871,7 +2032,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Notas / Alcance</label><textarea value={extForm.notes || ''} onChange={e => setExtForm(p => ({...p, notes: e.target.value}))} rows={2} placeholder="Detalles adicionales..." className="w-full text-sm border rounded-lg px-3 py-2 mt-1" /></div>
                     </div>
                     <div className="p-4 border-t flex gap-2 justify-end">
-                      <button type="button" onClick={() => setExtModal({ open: false, opIdx: -1, context: 'operation' })} className="px-4 py-2 text-xs border rounded-lg hover:bg-gray-50">Cancelar</button>
+                      <button type="button" onClick={() => setExtModal({ open: false, opIdx: -1, context: 'operation' })} className="px-4 py-2 text-xs border rounded-lg hover:bg-gray-50">{t('common.cancel') || 'Cancel'}</button>
                       <button type="button" onClick={() => {
                         const vendorName = extForm.vendor === 'OTHER' ? extForm.vendor_other : extForm.vendor;
                         if (extModal.context === 'material') {
@@ -1916,7 +2077,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         );
       })()}
 
-      {activeTab === 'capacity' && (
+      {/* DEAD CODE — 'capacity' tab removed (Jorge: "módulo antiguo a eliminar"). Unreachable. Safe to delete in future cleanup. */}
+      {false && activeTab === 'capacity' && (
         <CapacityEvaluation />
       )}
 

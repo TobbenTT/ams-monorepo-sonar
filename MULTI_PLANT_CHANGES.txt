@@ -1,0 +1,25 @@
+# Cambios para Multi-Planta (2026-04-06)
+
+## 1. Plantas creadas en DB
+- OCP-JFC1: Jorf Fertilizers Complex 1 (ya existía)
+- GOLDFIELDS-SN: Goldfields - Salares Norte (Atacama, Chile) — datos del Excel
+- FLUOR-ALFA: Fluor Alfa (TBD)
+
+## 2. Datos asignados
+- GOLDFIELDS-SN: 5796 nodos de jerarquía del Excel (01_equipment_hierarchy.xlsx)
+- OCP-JFC1: 254 nodos demo regenerados con SyntheticDataGenerator
+
+## 3. Código modificado
+- frontend/src/components/Header.jsx línea 109:
+  ANTES: const showFilters = loc.pathname === '/' || ...
+  AHORA: const showFilters = true;
+  → El dropdown de planta ahora aparece en TODAS las páginas
+
+## 4. Cómo cambiar de planta
+- El dropdown aparece arriba en el Header (ícono de fábrica)
+- Seleccionar OCP-JFC1 o GOLDFIELDS-SN
+- La selección se guarda en localStorage ('selected_plant')
+
+## 5. Si no aparece el selector al recargar
+- Abrir consola del browser (F12)
+- Ejecutar: localStorage.removeItem('selected_plant'); location.reload();

@@ -11,21 +11,21 @@ import {
 } from 'lucide-react';
 
 const STAGES = [
-  { id: 'IDENTIFIED', label: 'Identified', icon: Target, color: 'bg-red-500' },
-  { id: 'ANALYZING', label: 'Analyzing', icon: Search, color: 'bg-amber-500' },
-  { id: 'IMPLEMENTING', label: 'Implementing', icon: Play, color: 'bg-blue-500' },
-  { id: 'CONTROLLED', label: 'Controlled', icon: Shield, color: 'bg-emerald-500' },
-  { id: 'CLOSED', label: 'Closed', icon: CheckCircle, color: 'bg-gray-400' },
+  { id: 'IDENTIFIED', label: 'Identificada', icon: Target, color: 'bg-red-500' },
+  { id: 'ANALYZING', label: 'Analizando', icon: Search, color: 'bg-amber-500' },
+  { id: 'IMPLEMENTING', label: 'Implementando', icon: Play, color: 'bg-blue-500' },
+  { id: 'CONTROLLED', label: 'Controlada', icon: Shield, color: 'bg-emerald-500' },
+  { id: 'CLOSED', label: 'Cerrada', icon: CheckCircle, color: 'bg-gray-400' },
 ];
 
 const W5H2_KEYS = [
-  { key: 'what', label: 'What happened?', icon: '1', color: 'border-red-400 bg-red-50 dark:bg-red-900/10' },
-  { key: 'where', label: 'Where did it happen?', icon: '2', color: 'border-amber-400 bg-amber-50 dark:bg-amber-900/10' },
-  { key: 'when', label: 'When did it happen?', icon: '3', color: 'border-blue-400 bg-blue-50 dark:bg-blue-900/10' },
-  { key: 'who', label: 'Who was involved?', icon: '4', color: 'border-purple-400 bg-purple-50 dark:bg-purple-900/10' },
-  { key: 'why', label: 'Why did it happen?', icon: '5', color: 'border-orange-400 bg-orange-50 dark:bg-orange-900/10' },
-  { key: 'how', label: 'How did it happen?', icon: 'H1', color: 'border-teal-400 bg-teal-50 dark:bg-teal-900/10' },
-  { key: 'how_much', label: 'How much impact?', icon: 'H2', color: 'border-pink-400 bg-pink-50 dark:bg-pink-900/10' },
+  { key: 'what', label: '¿Qué pasó?', icon: '1', color: 'border-red-400 bg-red-50 dark:bg-red-900/10' },
+  { key: 'where', label: '¿Dónde pasó?', icon: '2', color: 'border-amber-400 bg-amber-50 dark:bg-amber-900/10' },
+  { key: 'when', label: '¿Cuándo pasó?', icon: '3', color: 'border-blue-400 bg-blue-50 dark:bg-blue-900/10' },
+  { key: 'who', label: '¿Quién estuvo involucrado?', icon: '4', color: 'border-purple-400 bg-purple-50 dark:bg-purple-900/10' },
+  { key: 'why', label: '¿Por qué pasó?', icon: '5', color: 'border-orange-400 bg-orange-50 dark:bg-orange-900/10' },
+  { key: 'how', label: '¿Cómo pasó?', icon: 'H1', color: 'border-teal-400 bg-teal-50 dark:bg-teal-900/10' },
+  { key: 'how_much', label: '¿Qué impacto tuvo?', icon: 'H2', color: 'border-pink-400 bg-pink-50 dark:bg-pink-900/10' },
 ];
 
 export default function RCA() {
@@ -157,13 +157,13 @@ export default function RCA() {
             <Search size={22} className="text-red-700 dark:text-red-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Root Cause Analysis</h1>
-            <p className="text-sm text-muted-foreground">Identify, analyze and eliminate failure root causes</p>
+            <h1 className="text-2xl font-bold text-foreground">Análisis de Causa Raíz</h1>
+            <p className="text-sm text-muted-foreground">Identifica, analiza y elimina las causas raíz de fallas</p>
           </div>
         </div>
         <button onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-semibold transition-colors">
-          <Plus size={16} /> New RCA
+          <Plus size={16} /> Nuevo RCA
         </button>
       </div>
 
@@ -219,7 +219,7 @@ export default function RCA() {
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search RCA events..."
+              <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Buscar eventos RCA…"
                 className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-red-500/30" />
             </div>
             {filterStage !== 'all' && (
@@ -230,8 +230,8 @@ export default function RCA() {
           {filtered.length === 0 ? (
             <div className="bg-card border border-border rounded-xl p-12 text-center">
               <Search size={40} className="text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-foreground font-semibold mb-1">No RCA events yet</p>
-              <p className="text-sm text-muted-foreground mb-4">Start an RCA from a critical failure above, or create one manually</p>
+              <p className="text-foreground font-semibold mb-1">Aún no hay eventos RCA</p>
+              <p className="text-sm text-muted-foreground mb-4">Inicia un RCA desde una falla crítica arriba, o crea uno manualmente</p>
               <button onClick={() => setShowCreate(true)}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700">
                 <Plus size={14} className="inline mr-1" /> Create First RCA
@@ -300,7 +300,7 @@ export default function RCA() {
           {/* 5W2H Analysis */}
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-foreground">5W + 2H Analysis</h3>
+              <h3 className="text-sm font-bold text-foreground">Análisis 5W + 2H</h3>
               <button onClick={handle5w2h} disabled={running5w2h}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">
                 {running5w2h ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
@@ -322,7 +322,7 @@ export default function RCA() {
                         setSelected(prev => ({ ...prev, five_w_two_h: { ...(prev.five_w_two_h || {}), [item.key]: newVal } }));
                       }}
                       onBlur={e => handleSave5w2h(item.key, e.target.value)}
-                      placeholder="Click to fill or use AI Auto-Fill..."
+                      placeholder="Click para completar o usa Auto-completar con IA…"
                       className="w-full text-sm bg-transparent border-0 focus:outline-none text-foreground resize-none min-h-[40px] placeholder:text-gray-400" rows={2} />
                   </div>
                 );
@@ -333,7 +333,7 @@ export default function RCA() {
           {/* Root causes */}
           {selected.root_cause_levels && Object.keys(selected.root_cause_levels).length > 0 && (
             <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="text-sm font-bold text-foreground mb-3">Root Cause Levels</h3>
+              <h3 className="text-sm font-bold text-foreground mb-3">Niveles de causa raíz</h3>
               <div className="space-y-2">
                 {Object.entries(selected.root_cause_levels).map(([level, cause]) => (
                   <div key={level} className="flex items-start gap-3 text-sm">
@@ -348,7 +348,7 @@ export default function RCA() {
           {/* CAPAs */}
           {(selected.corrective_actions || []).length > 0 && (
             <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="text-sm font-bold text-foreground mb-3">Corrective Actions (CAPA)</h3>
+              <h3 className="text-sm font-bold text-foreground mb-3">Acciones correctivas (CAPA)</h3>
               <div className="space-y-2">
                 {selected.corrective_actions.map((capa, i) => (
                   <div key={i} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2 text-sm">
@@ -384,7 +384,7 @@ export default function RCA() {
           <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-bold text-foreground">New Root Cause Analysis</h3>
+                <h3 className="text-lg font-bold text-foreground">Nuevo análisis de causa raíz</h3>
                 <p className="text-xs text-muted-foreground">Select a failure event or describe manually</p>
               </div>
               <button onClick={() => setShowCreate(false)} className="p-1 hover:bg-muted rounded-lg"><X size={18} /></button>
@@ -419,7 +419,7 @@ export default function RCA() {
             {/* Active WOs to pick from */}
             {recentFailures.length === 0 && (
               <div className="mb-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 rounded-lg p-3">
-                <p className="text-xs text-amber-700">No critical failures detected. You can describe the event manually below.</p>
+                <p className="text-xs text-amber-700">No se detectaron fallas críticas. Puedes describir el evento manualmente abajo.</p>
               </div>
             )}
 
@@ -435,7 +435,7 @@ export default function RCA() {
               <button onClick={() => handleCreate(createDesc, createEquip)} disabled={creating || !createDesc.trim()}
                 className="w-full py-2.5 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-40 flex items-center justify-center gap-2">
                 {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                Create RCA + AI Analysis
+                Crear RCA + análisis IA
               </button>
             </div>
           </div>

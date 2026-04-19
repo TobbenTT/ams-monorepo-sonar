@@ -23,7 +23,7 @@ TRANSITIONS = {
     "CANCELADO": [],
     # Legacy compat
     "PENDIENTE": ["LIBERADO", "PLANIFICADO", "CANCELADO"],
-    "APROBADO": ["LIBERADO", "PROGRAMADO", "EN_EJECUCION", "CANCELADO"],
+    "APROBADO": ["LIBERADO", "PLANIFICADO", "EN_PROGRAMACION", "PROGRAMADO", "EN_EJECUCION", "CANCELADO"],
     "EN_PROGRESO": ["COMPLETADO", "CERRADO", "REPROGRAMADO"],
 }
 
@@ -91,6 +91,11 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "actual_total_cost": wo.actual_total_cost,
         "is_fast_track": wo.is_fast_track,
         "shift": getattr(wo, "shift", "day") or "day",
+        "planning_group": getattr(wo, "planning_group", None),
+        "work_center": getattr(wo, "work_center", None),
+        "technical_location": getattr(wo, "technical_location", None),
+        "reservation_code": getattr(wo, "reservation_code", None),
+        "cancellation_reason": getattr(wo, "cancellation_reason", None),
         "created_at": wo.created_at.isoformat() if wo.created_at else None,
         "updated_at": wo.updated_at.isoformat() if wo.updated_at else None,
     }
@@ -342,6 +347,36 @@ def get_work_order(db: Session, wo_id: str) -> dict | None:
     return _to_dict(wo) if wo else None
 
 
+def _to_light_dict(wo: ManagedWorkOrderModel) -> dict:
+    """Slim projection for list views — ~300 bytes/WO instead of ~1.7KB.
+
+    Contains only the fields that the scheduling panel, planning list, and execution
+    inbox actually read. Any view needing operations/materials/history should fetch
+    the full WO via GET /{wo_id}.
+    """
+    return {
+        "wo_id": wo.wo_id,
+        "wo_number": wo.wo_number,
+        "plant_id": wo.plant_id,
+        "equipment_tag": wo.equipment_tag,
+        "description": wo.description,
+        "wo_type": wo.wo_type,
+        "priority_code": wo.priority_code,
+        "status": wo.status,
+        "estimated_hours": wo.estimated_hours,
+        "actual_hours": wo.actual_hours,
+        "planned_start": wo.planned_start.isoformat() if wo.planned_start else None,
+        "planned_end": wo.planned_end.isoformat() if wo.planned_end else None,
+        "assigned_workers": wo.assigned_workers or [],
+        "completion_pct": wo.completion_pct,
+        "is_fast_track": wo.is_fast_track,
+        "shift": getattr(wo, "shift", "day") or "day",
+        "planning_group": getattr(wo, "planning_group", None),
+        "work_center": getattr(wo, "work_center", None),
+        "created_at": wo.created_at.isoformat() if wo.created_at else None,
+    }
+
+
 def list_work_orders(
     db: Session,
     status: str | None = None,
@@ -351,6 +386,7 @@ def list_work_orders(
     limit: int = 200,
     offset: int = 0,
     fast_track: bool | None = None,
+    light: bool = False,
 ) -> list[dict]:
     q = db.query(ManagedWorkOrderModel)
     if status:
@@ -364,7 +400,7 @@ def list_work_orders(
     if fast_track is not None:
         q = q.filter(ManagedWorkOrderModel.is_fast_track == fast_track)
     items = q.order_by(ManagedWorkOrderModel.created_at.desc()).offset(offset).limit(limit).all()
-    return [_to_dict(wo) for wo in items]
+    return [_to_light_dict(wo) for wo in items] if light else [_to_dict(wo) for wo in items]
 
 
 def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
@@ -378,20 +414,22 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
     updatable = [
         "description", "wo_type", "priority_code", "estimated_hours",
         "operations", "materials", "tools", "documents", "labour_summary",
-        "planned_start", "planned_end", "risk_analysis", "budget_amount", "budget_approved",
+        "planned_start", "planned_end", "actual_start", "actual_end",
+        "risk_analysis", "budget_amount", "budget_approved",
         "labor_cost", "material_cost", "external_cost", "actual_total_cost", "actual_hours", "shift",
         "assigned_workers", "status", "planning_group", "work_center",
         "reservation_code", "cancellation_reason", "completion_pct", "execution_notes",
+        "start_location", "started_via",
     ]
     for key in updatable:
         if key in data:
             val = data[key]
-            if key in ("planned_start", "planned_end"):
+            if key in ("planned_start", "planned_end", "actual_start", "actual_end"):
                 if val is None or val == '' or val == 'null':
                     val = None
                 elif isinstance(val, str):
                     try:
-                        val = datetime.fromisoformat(val)
+                        val = datetime.fromisoformat(val.replace("Z", "+00:00"))
                     except ValueError:
                         val = None
             setattr(wo, key, val)
@@ -421,11 +459,17 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
     wo.updated_at = datetime.now()
 
     # ── Timestamp logging: record every status change ──
+    _LABEL = {
+        "CREADO": "Created", "LIBERADO": "Released", "PLANIFICADO": "Planned",
+        "EN_PROGRAMACION": "In Scheduling", "PROGRAMADO": "Scheduled", "REPROGRAMADO": "Rescheduled",
+        "EN_EJECUCION": "In Execution", "COMPLETADO": "Completed", "CERRADO": "Closed",
+        "CANCELADO": "Cancelled", "PENDIENTE": "Pending", "APROBADO": "Approved",
+    }
     notes = list(wo.execution_notes or [])
     notes.append({
         "timestamp": datetime.now().isoformat(),
         "user": user_id or "system",
-        "note": f"Status: {old_status} -> {target_status}",
+        "note": f"Status: {_LABEL.get(old_status, old_status)} → {_LABEL.get(target_status, target_status)}",
     })
     wo.execution_notes = notes
 
@@ -491,7 +535,11 @@ def _parse_date(val):
 
 
 def schedule_wo(db: Session, wo_id: str, user_id: str = "", assigned_workers: list | None = None, planned_start=None, planned_end=None, shift: str = None) -> dict | None:
-    """Programmer schedules -> PROGRAMADO."""
+    """Programmer schedules -> PROGRAMADO.
+
+    Only touches fields explicitly provided. None means "keep existing value"
+    (preserves assignments when reserving an already-drafted schedule).
+    """
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
     if wo and planned_start:
         wo.planned_start = _parse_date(planned_start)
@@ -499,7 +547,12 @@ def schedule_wo(db: Session, wo_id: str, user_id: str = "", assigned_workers: li
         wo.planned_end = _parse_date(planned_end)
     if wo and shift:
         wo.shift = shift
-    return _transition(db, wo_id, "PROGRAMADO", user_id, assigned_workers=assigned_workers)
+    # Only set assigned_workers if explicitly provided (not None). Passing None should
+    # preserve the existing assignments (e.g., when just confirming status).
+    kwargs = {}
+    if assigned_workers is not None:
+        kwargs["assigned_workers"] = assigned_workers
+    return _transition(db, wo_id, "PROGRAMADO", user_id, **kwargs)
 
 
 def reschedule_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:

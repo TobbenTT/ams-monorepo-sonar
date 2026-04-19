@@ -39,9 +39,50 @@ function parseKpi(val) {
   return { num: null, raw: String(val) };
 }
 
+// Pull plant currency from localStorage settings (same source as SettingsPage)
+function getPlantCurrency(plantId) {
+  try {
+    const s = JSON.parse(localStorage.getItem(`ocp_settings_${plantId}`) || localStorage.getItem('ocp_settings') || '{}');
+    const map = { mad: 'MAD', usd: 'USD', clp: 'CLP', eur: 'EUR', gbp: 'GBP' };
+    return map[(s.currency || 'usd').toLowerCase()] || 'USD';
+  } catch { return 'USD'; }
+}
+
+// KPI targets configurable per plant (Settings → Reliability Targets).
+// Fallbacks are conservative industry defaults; each plant overrides via Settings.
+const DEFAULT_TARGETS = {
+  availability: 95,      // %
+  mtbf: 300,             // days
+  mttr: 3.5,             // hours (lower is better)
+  mtbm: 60,              // days
+  scheduleCompliance: 90, // %
+  equipmentHealth: 95,   // %
+  backlogWeeks: 4,       // weeks
+  plannedWorkPct: 65,    // %
+  isoCompliance: 100,    // %
+};
+function getPlantTargets(plantId) {
+  try {
+    const s = JSON.parse(localStorage.getItem(`ocp_settings_${plantId}`) || localStorage.getItem('ocp_settings') || '{}');
+    // Read flat legacy fields (availabilityTarget, mtbfTarget, mttrTarget, plannedWorkTarget)
+    // and/or nested kpiTargets object for the new ones
+    const nested = s.kpiTargets || {};
+    return {
+      ...DEFAULT_TARGETS,
+      availability: Number(s.availabilityTarget) || DEFAULT_TARGETS.availability,
+      mtbf: Number(s.mtbfTarget) || DEFAULT_TARGETS.mtbf,
+      mttr: Number(s.mttrTarget) || DEFAULT_TARGETS.mttr,
+      plannedWorkPct: Number(s.plannedWorkTarget) || DEFAULT_TARGETS.plannedWorkPct,
+      ...nested,
+    };
+  } catch { return DEFAULT_TARGETS; }
+}
+
 export default function ExecutiveView({ selectedPlant, selectedTimeRange, selectedArea }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const CURRENCY = getPlantCurrency(selectedPlant);
+  const TARGETS = getPlantTargets(selectedPlant);
   const [activeTab, setActiveTab] = useState('mantenimiento');
   const [loading, setLoading] = useState(true);
   const [aiSummary, setAiSummary] = useState(null);
@@ -62,50 +103,67 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
     setLoading(true);
     setError(null);
 
-    // Convert time range label to ISO date strings for backend
     const { start, end } = getDateRange(selectedTimeRange);
     const startISO = start.toISOString();
     const endISO = end.toISOString();
 
-    Promise.all([
+    // ── Progressive loading: render as soon as the first critical payload lands.
+    // The UI stops showing "Loading…" when execData or wmKpis arrives (~300ms);
+    // secondary data (alerts, IA, staff) fills in later without blocking.
+    const critical = Promise.all([
       api.getExecutiveDashboard(selectedPlant, startISO, endISO).catch(() => null),
-      api.getAnalyticsPageData(selectedPlant, startISO, endISO).catch(() => null),
-      api.getDashboardAlerts(selectedPlant).catch(() => null),
-      api.listWorkRequests({ plant_id: selectedPlant }).catch(() => []),
       api.getWorkManagementKpis(selectedPlant, startISO, endISO).catch(() => null),
-      api.getImprovementActionsSummary({ plant_id: selectedPlant }).catch(() => null),
-      api.listImprovementActions({ plant_id: selectedPlant, limit: 10 }).catch(() => ({ items: [] })),
+    ]);
+    critical.then(([exec, wm]) => {
+      if (cancelled) return;
+      setExecData(exec); setWmKpis(wm);
+      setLoading(false);  // render the dashboard skeleton/headers now
+    });
+
+    // Secondary data — updates UI as each resolves, doesn't block first paint
+    api.getAnalyticsPageData(selectedPlant, startISO, endISO).then(d => !cancelled && setAnalyticsData(d)).catch(() => {});
+    api.getDashboardAlerts(selectedPlant).then(d => !cancelled && setAlertsData(d)).catch(() => {});
+    api.listWorkRequests({ plant_id: selectedPlant }).then(d => !cancelled && setWorkRequests(Array.isArray(d) ? d : [])).catch(() => {});
+    api.getImprovementActionsSummary({ plant_id: selectedPlant }).then(d => !cancelled && setIasSummary(d)).catch(() => {});
+    api.listImprovementActions({ plant_id: selectedPlant, limit: 10 }).then(d => !cancelled && setIasRecent((d?.items || []).slice(0, 5))).catch(() => {});
+    Promise.all([
       api.authListUsers().catch(() => []),
       api.listTechnicians({ plant_id: selectedPlant }).catch(() => []),
-    ])
-      .then(([exec, analytics, alerts, wrs, wm, iaSum, iaList, users, workforce]) => {
-        if (cancelled) return;
-        setExecData(exec);
-        setAnalyticsData(analytics);
-        setAlertsData(alerts);
-        setWorkRequests(Array.isArray(wrs) ? wrs : []);
-        setWmKpis(wm);
-        setIasSummary(iaSum);
-        setIasRecent((iaList?.items || []).slice(0, 5));
-        const userList = Array.isArray(users) ? users : [];
-        const wfList = Array.isArray(workforce) ? workforce : [];
-        const merged = [...userList];
-        wfList.forEach(w => {
-          if (!merged.find(u => u.user_id === w.worker_id)) {
-            merged.push({ user_id: w.worker_id, full_name: w.name, role: "tecnico", specialty: w.specialty, is_active: w.available });
-          }
-        });
-        setStaffData(merged);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.message || t('executive.failedToLoad'));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+    ]).then(([users, workforce]) => {
+      if (cancelled) return;
+      const userList = Array.isArray(users) ? users : [];
+      const wfList = Array.isArray(workforce) ? workforce : [];
+      const merged = [...userList];
+      wfList.forEach(w => {
+        if (!merged.find(u => u.user_id === w.worker_id)) {
+          merged.push({ user_id: w.worker_id, full_name: w.name, role: 'tecnico', specialty: w.specialty, is_active: w.available });
+        }
       });
+      setStaffData(merged);
+    }).catch(() => {});
 
     return () => { cancelled = true; };
   }, [selectedPlant, selectedTimeRange]);
+
+  // Auto-load AI blocks when plant changes (no manual click needed)
+  useEffect(() => {
+    if (!selectedPlant) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [pred, summary] = await Promise.all([
+          api.aiPredictFailures('').catch(() => ({ predictions: [] })),
+          api.getAISummary(7).catch(() => null),
+        ]);
+        if (cancelled) return;
+        setAiSummary(prev => ({
+          ...(summary || prev || {}),
+          predictions: pred?.predictions || [],
+        }));
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [selectedPlant]);
 
   // Filter work requests by time range (must be before early returns — Rules of Hooks)
   const filteredWRs = useMemo(() => filterByDateRange(workRequests, selectedTimeRange), [workRequests, selectedTimeRange]);
@@ -116,15 +174,19 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
     const active = staffData.filter(u => u.is_active !== false);
     const inactive = staffData.length - active.length;
     const byRole = {};
-    const byDiscipline = { mechanical: 0, electrical: 0, instrumentation: 0, staff: 0 };
+    const byDiscipline = { mechanical: 0, electrical: 0, instrumentation: 0, civil: 0, lubrication: 0, predictive: 0, other: 0, staff: 0 };
     active.forEach(u => {
       const role = u.role || 'tecnico';
       byRole[role] = (byRole[role] || 0) + 1;
       if (role === 'tecnico') {
         const spec = (u.specialty || u.discipline || '').toLowerCase();
-        if (spec.includes('elec')) byDiscipline.electrical++;
+        if (spec.includes('elec') || spec === 'ele') byDiscipline.electrical++;
         else if (spec.includes('inst')) byDiscipline.instrumentation++;
-        else byDiscipline.mechanical++;
+        else if (spec.includes('civ')) byDiscipline.civil++;
+        else if (spec.includes('lub')) byDiscipline.lubrication++;
+        else if (spec.includes('pred')) byDiscipline.predictive++;
+        else if (spec.includes('mec') || spec.includes('fit')) byDiscipline.mechanical++;
+        else byDiscipline.other++;
       } else {
         byDiscipline.staff++;
       }
@@ -341,7 +403,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 <div className="p-1.5 bg-red-600 rounded-lg">
                   <AlertCircle className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="font-bold text-red-900">AI Failure Prediction</h3>
+                <h3 className="font-bold text-red-900">Predicción de Fallas (IA)</h3>
               </div>
               <Button variant="outline" size="sm"
                 disabled={summaryLoading}
@@ -354,7 +416,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                   finally { setSummaryLoading(false); }
                 }}
                 className="border-red-300 text-red-700 hover:bg-red-100 gap-1">
-                <AlertCircle className="w-3 h-3" /> Analyze Equipment
+                {summaryLoading ? <><Loader2 className="w-3 h-3 animate-spin" /> Analizando…</> : <><AlertCircle className="w-3 h-3" /> {aiSummary?.predictions ? 'Reanalizar' : 'Analizar equipos'}</>}
               </Button>
             </div>
             {aiSummary?.predictions?.length > 0 ? (
@@ -381,13 +443,15 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                     </div>
                     <div className="text-right ml-4">
                       <div className="text-2xl font-bold" style={{color: p.risk_score >= 75 ? '#dc2626' : p.risk_score >= 50 ? '#ea580c' : p.risk_score >= 25 ? '#ca8a04' : '#16a34a'}}>{p.risk_score}%</div>
-                      <div className="text-[10px] text-gray-400">Risk Score</div>
+                      <div className="text-[10px] text-gray-400">Nivel de riesgo</div>
                     </div>
                   </div>
                 ))}
               </div>
+            ) : summaryLoading ? (
+              <div className="flex items-center gap-2 text-sm text-red-600"><Loader2 className="w-4 h-4 animate-spin" /> Calculando riesgos con IA…</div>
             ) : (
-              <p className="text-sm text-red-600">Click "Analyze Equipment" to predict failure probabilities.</p>
+              <p className="text-sm text-red-600">Click en "Analizar equipos" para calcular probabilidades de falla con IA.</p>
             )}
           </div>
 
@@ -398,7 +462,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 <div className="p-1.5 bg-violet-600 rounded-lg">
                   <TrendingUp className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="font-bold text-violet-900">AI Weekly Summary</h3>
+                <h3 className="font-bold text-violet-900">Resumen Semanal IA</h3>
               </div>
               <Button variant="outline" size="sm"
                 disabled={summaryLoading}
@@ -407,11 +471,13 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                   try {
                     const res = await api.getAISummary(7);
                     setAiSummary(res);
-                  } catch { setAiSummary({ summary: 'AI summary requires maintenance data. Create some work orders first.', stats: { total_wrs: 80, total_wos: 281, total_hh: 592 } }); }
+                  } catch {
+                    setAiSummary({ summary: 'No hay datos suficientes de mantenimiento para generar un resumen. Crea o cierra OTs primero.', stats: null });
+                  }
                   finally { setSummaryLoading(false); }
                 }}
                 className="border-violet-300 text-violet-700 hover:bg-violet-100 gap-1">
-                {summaryLoading ? <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</> : <><TrendingUp className="w-3 h-3" /> {aiSummary ? 'Refresh' : 'Generate'}</>}
+                {summaryLoading ? <><Loader2 className="w-3 h-3 animate-spin" /> Generando…</> : <><TrendingUp className="w-3 h-3" /> {aiSummary ? 'Actualizar' : 'Generar'}</>}
               </Button>
               {aiSummary && (
                 <Button variant="outline" size="sm"
@@ -517,7 +583,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                   })() }} />
               </div>
             ) : (
-              <p className="text-sm text-violet-600">Click "Generate" to get an AI summary of maintenance activity for the last 7 days.</p>
+              <p className="text-sm text-violet-600">Click en "Generar" para obtener un resumen IA de la actividad de mantenimiento de los últimos 7 días.</p>
             )}
           </div>
 
@@ -600,41 +666,41 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
             <KpiCard
               title={t('executive.availability')}
               value={pAvail.num != null ? pAvail.num : '—'}
-              target={95}
+              target={TARGETS.availability}
               trend="stable"
-              status={kpiStatus(pAvail.num, 95)}
+              status={kpiStatus(pAvail.num, TARGETS.availability)}
               unit={pAvail.num != null ? '%' : ''}
             />
             <KpiCard
               title={t('executive.mtbf')}
               value={pMtbf.num != null ? pMtbf.num : '—'}
-              target={300}
+              target={TARGETS.mtbf}
               trend="stable"
-              status={kpiStatus(pMtbf.num, 300)}
+              status={kpiStatus(pMtbf.num, TARGETS.mtbf)}
               unit={pMtbf.num != null ? ` ${t('executive.days')}` : ''}
             />
             <KpiCard
               title={t('executive.mttr')}
               value={pMttr.num != null ? pMttr.num : '—'}
-              target={3.5}
+              target={TARGETS.mttr}
               trend="stable"
-              status={kpiStatus(pMttr.num, 3.5, true)}
+              status={kpiStatus(pMttr.num, TARGETS.mttr, true)}
               unit={pMttr.num != null ? ` ${t('executive.hrs')}` : ''}
             />
             <KpiCard
               title="MTBM"
               value={pMtbm.num != null ? pMtbm.num : '—'}
-              target={60}
+              target={TARGETS.mtbm}
               trend="stable"
-              status={kpiStatus(pMtbm.num, 60)}
+              status={kpiStatus(pMtbm.num, TARGETS.mtbm)}
               unit={pMtbm.num != null ? ` ${t('executive.days')}` : ''}
             />
             <KpiCard
               title={t('executive.scheduleCompliance')}
               value={pSched.num != null ? pSched.num : '—'}
-              target={90}
+              target={TARGETS.scheduleCompliance}
               trend="stable"
-              status={kpiStatus(pSched.num, 90)}
+              status={kpiStatus(pSched.num, TARGETS.scheduleCompliance)}
               unit={pSched.num != null ? '%' : ''}
             />
           </div>
@@ -645,9 +711,9 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
             <KpiCard
               title={t('executive.equipmentHealth')}
               value={pEqHealth.num != null ? pEqHealth.num : '—'}
-              target={95}
+              target={TARGETS.equipmentHealth}
               trend="stable"
-              status={kpiStatus(pEqHealth.num, 95)}
+              status={kpiStatus(pEqHealth.num, TARGETS.equipmentHealth)}
               unit={pEqHealth.num != null ? '%' : ''}
               icon={DollarSign}
             />
@@ -657,7 +723,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
               target="—"
               trend="stable"
               status={wm.gasto_total > 0 ? 'good' : 'warning'}
-              unit={wm.gasto_total != null ? ' MAD' : ''}
+              unit={wm.gasto_total != null ? ' ' + CURRENCY : ''}
               icon={DollarSign}
             />
             <KpiCard
@@ -666,16 +732,16 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
               target="—"
               trend="stable"
               status={wm.costo_variance >= 0 ? 'good' : 'critical'}
-              unit={wm.costo_total != null ? ' MAD' : ''}
+              unit={wm.costo_total != null ? ' ' + CURRENCY : ''}
               icon={DollarSign}
             />
           </div>
           {wm.gasto_total > 0 && (
             <div className="mt-3 p-3 rounded-lg border bg-gray-50 flex items-center gap-6 text-sm">
-              <div><span className="text-gray-500">Variance:</span> <span className={wm.costo_variance >= 0 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold'}>{wm.costo_variance >= 0 ? '+' : ''}{wm.costo_variance?.toLocaleString()} MAD ({wm.costo_variance_pct}%)</span></div>
-              <div><span className="text-gray-500">Labor:</span> <span className="font-medium">{(wm.costo_labor || 0).toLocaleString()} MAD</span></div>
-              <div><span className="text-gray-500">Material:</span> <span className="font-medium">{(wm.costo_material || 0).toLocaleString()} MAD</span></div>
-              <div><span className="text-gray-500">External:</span> <span className="font-medium">{(wm.costo_external || 0).toLocaleString()} MAD</span></div>
+              <div><span className="text-gray-500">Variance:</span> <span className={wm.costo_variance >= 0 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold'}>{wm.costo_variance >= 0 ? '+' : ''}{wm.costo_variance?.toLocaleString()} {CURRENCY} ({wm.costo_variance_pct}%)</span></div>
+              <div><span className="text-gray-500">Labor:</span> <span className="font-medium">{(wm.costo_labor || 0).toLocaleString()} {CURRENCY}</span></div>
+              <div><span className="text-gray-500">Material:</span> <span className="font-medium">{(wm.costo_material || 0).toLocaleString()} {CURRENCY}</span></div>
+              <div><span className="text-gray-500">External:</span> <span className="font-medium">{(wm.costo_external || 0).toLocaleString()} {CURRENCY}</span></div>
             </div>
           )}
         </div>
@@ -685,25 +751,25 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
             <KpiCard
               title={t('executive.backlogAge')}
               value={pBacklog.num != null ? pBacklog.num : '—'}
-              target={t('executive.lessThanWeeks').replace('{n}', '4')}
+              target={t('executive.lessThanWeeks').replace('{n}', String(TARGETS.backlogWeeks))}
               trend="stable"
-              status={pBacklog.num != null ? (pBacklog.num < 672 ? 'good' : 'warning') : 'warning'}
+              status={pBacklog.num != null ? (pBacklog.num < TARGETS.backlogWeeks * 168 ? 'good' : 'warning') : 'warning'}
               unit={pBacklog.num != null ? ` ${t('executive.hrs')}` : ''}
             />
             <KpiCard
               title={t('executive.isoCompliance')}
               value={pIso.num != null ? pIso.num : '—'}
-              target={100}
+              target={TARGETS.isoCompliance}
               trend="stable"
-              status={kpiStatus(pIso.num, 100)}
+              status={kpiStatus(pIso.num, TARGETS.isoCompliance)}
               unit={pIso.num != null ? '%' : ''}
             />
             <KpiCard
               title={t('executive.plannedWork')}
               value={plannedPct != null ? plannedPct : '—'}
-              target={65}
+              target={TARGETS.plannedWorkPct}
               trend="stable"
-              status={kpiStatus(plannedPct, 65)}
+              status={kpiStatus(plannedPct, TARGETS.plannedWorkPct)}
               unit={plannedPct != null ? '%' : ''}
             />
           </div>
@@ -720,22 +786,24 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
     );
   };
 
-  // ── HSE Tab — keep structure, use alerts data ──
+  // ── HSE Tab — No HSE incident module yet, show honest empty state ──
   const HSETabContent = () => {
-    const critAlerts = alertsData?.total_active || 0;
-    // No specific HSE API, show empty states
     return (
       <div className="space-y-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
+          <Shield className="w-10 h-10 text-blue-400 mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-blue-900 mb-1">Módulo HSE pendiente de implementar</h3>
+          <p className="text-xs text-blue-700 max-w-md mx-auto">
+            Los indicadores de seguridad (incidentes, near misses, días sin incidente, capacitación)
+            requieren un módulo dedicado de reporte HSE que aún no está disponible en esta planta.
+          </p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard title={t('executive.activeAlerts')} value={critAlerts} target={0} trend="stable" status={critAlerts > 0 ? 'critical' : 'good'} icon={Shield} />
+          <KpiCard title={t('executive.activeAlerts')} value="—" target={0} trend="stable" status="warning" icon={Shield} />
           <KpiCard title={t('executive.nearMisses')} value="—" target={5} trend="stable" status="warning" icon={AlertCircle} />
           <KpiCard title={t('executive.daysWithoutIncident')} value="—" target={30} trend="stable" status="warning" icon={CheckCircle} />
           <KpiCard title={t('executive.safetyTrainingCompliance')} value="—" target="95%" trend="stable" status="warning" icon={Shield} />
         </div>
-        <Card className="p-6">
-          <h4 className="font-semibold text-gray-900 mb-4">{t('executive.hseTrend')}</h4>
-          <EmptyChart message={t('executive.hseTrendNoData')} />
-        </Card>
       </div>
     );
   };
@@ -937,6 +1005,56 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 </div>
               </Card>
             </div>
+
+            {/* Additional disciplines — Civil, Lubricación, Predictivo, Otros */}
+            {(staffMetrics.byDiscipline.civil + staffMetrics.byDiscipline.lubrication + staffMetrics.byDiscipline.predictive + staffMetrics.byDiscipline.other) > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="p-4 bg-white">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <Wrench className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-gray-900">{staffMetrics.byDiscipline.civil}</p>
+                      <p className="text-[10px] text-gray-500 uppercase">Civil</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 bg-white">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                      <Wrench className="w-4 h-4 text-teal-600" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-gray-900">{staffMetrics.byDiscipline.lubrication}</p>
+                      <p className="text-[10px] text-gray-500 uppercase">Lubricación</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 bg-white">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-gray-900">{staffMetrics.byDiscipline.predictive}</p>
+                      <p className="text-[10px] text-gray-500 uppercase">Predictivo</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 bg-white">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Users className="w-4 h-4 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-gray-900">{staffMetrics.byDiscipline.other}</p>
+                      <p className="text-[10px] text-gray-500 uppercase">Otros</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-6">
               {/* By Role */}

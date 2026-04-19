@@ -490,7 +490,10 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={CheckCircle} label="Approved By" value={item.approver_id || (["Approved","APROBADO","VALIDATED"].includes(item.status) ? "Supervisor" : "—")} />
           <DetailCard icon={Clock} label={t('workRequests.estimatedDuration')}>
             {editing ? (
-              <input type="text" value={editData.estimated_duration} onChange={e => setEditData(d => ({ ...d, estimated_duration: e.target.value }))}
+              <input type="number" min="0" step="0.5" inputMode="decimal"
+                value={editData.estimated_duration}
+                onChange={e => setEditData(d => ({ ...d, estimated_duration: e.target.value.replace(/[^\d.]/g, '') }))}
+                onKeyDown={e => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); }}
                 className="w-full text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" />
             ) : (
               <span className="text-sm font-medium text-foreground">{item.estimated_duration}h</span>
@@ -1277,23 +1280,14 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           try {
             const wo = await api.createWOFromWR({ work_request_id: id });
             setWrsWithOT(prev => new Set([...prev, id]));
-            toast.success('FAST TRACK: OT ' + (wo.wo_number || '') + ' creada — abriendo en Planning...');
-            if (onNavigateTab) onNavigateTab('planning', null, wo.wo_id || wo.wo_number);
+            toast.success('FAST TRACK: WO ' + (wo.wo_number || '') + ' created — available in Planning');
           } catch {
-            toast.success(t('workRequests.validatedNoOT') || 'Aviso aprobado. Error creating OT automática — créala manualmente.');
+            toast.success(t('workRequests.validatedNoOT') || 'Request approved. Error creating WO — create it manually.');
           }
         } else {
-          toast.success(
-            <span>
-              {t('workRequests.validatedBacklog') || 'Aviso aprobado y agregado al Backlog'}
-              {onNavigateTab && (
-                <button onClick={() => onNavigateTab('planning')} className="ml-2 underline font-semibold">
-                  → Ir a Planificación
-                </button>
-              )}
-            </span>,
-            8000
-          );
+          // Clean confirmation. The Planning tab badge counter already signals that
+          // new work is waiting — no need to push the user out of Identification flow.
+          toast.success(t('workRequests.validatedBacklog') || 'Aviso aprobado · listo en Planning');
         }
       })
       .catch(() => toast.error(t('workRequests.errorValidate') || 'Error validating'))
@@ -1883,23 +1877,23 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 size={24} className="text-red-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Eliminar Aviso</h3>
-            <p className="text-sm text-gray-500 mb-1">¿Estás seguro de eliminar este aviso de trabajo?</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{t('workRequests.deleteTitle') || 'Delete Request'}</h3>
+            <p className="text-sm text-gray-500 mb-1">{t('workRequests.confirmDelete') || 'Are you sure you want to delete this work request?'}</p>
             <p className="text-xs font-mono text-gray-400 mb-3">{deleteConfirm}</p>
             <div className="text-left mb-4">
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Motivo de eliminación *</label>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">{t('workRequests.deleteReason') || 'Reason for deletion *'}</label>
               <textarea value={deleteReason} onChange={e => setDeleteReason(e.target.value)}
-                rows={2} placeholder="Ej: Duplicado, Error de captura, Prueba..."
+                rows={2} placeholder={t('workRequests.deleteReasonPlaceholder') || 'e.g.: Duplicate, Capture error, Test...'}
                 className="w-full text-sm border border-gray-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-red-500/30 focus:border-red-500 resize-none" />
             </div>
             <div className="flex gap-3">
               <button onClick={() => setDeleteConfirm(null)}
                 className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">
-                Cancelar
+                {t('common.cancel') || 'Cancel'}
               </button>
               <button onClick={confirmDelete} disabled={!deleteReason.trim()}
                 className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                Sí, eliminar
+                {t('workRequests.confirmDeleteBtn') || 'Yes, delete'}
               </button>
             </div>
           </div>

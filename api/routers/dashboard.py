@@ -73,19 +73,44 @@ def _compute_kpis(db: Session, plant_id: str, start_date: Optional[datetime] = N
 
 
 def _compute_completions(db: Session, plant_id: str) -> dict:
-    """Compute module completion percentages from actual data."""
-    from api.database.models import FunctionModel, CriticalityAssessmentModel
-    try:
-        nodes = db.query(HierarchyNodeModel).count()
-        crits = db.query(CriticalityAssessmentModel).count()
-        funcs = db.query(FunctionModel).count()
-        wrs = db.query(WorkRequestModel).count()
-        programs = db.query(WeeklyProgramModel).count()
+    """Compute module completion (maturity) as percentages tied to real coverage ratios.
 
-        strategy = min(100, (crits * 5) + (funcs * 3)) if (crits > 0 or funcs > 0) else 0
-        planning = min(100, (programs * 10)) if programs > 0 else 0
-        field = min(100, (wrs * 2)) if wrs > 0 else 0
-        analytics = min(100, (crits * 5)) if crits > 0 else 0
+    - strategy: % of equipment nodes that have a criticality assessment
+    - planning: % of approved work requests that got a managed WO created (vs still in backlog)
+    - field: % of scheduled WOs actually closed (schedule adherence)
+    - analytics: % of critical equipment with at least one closure (history enabling MTBF/MTTR)
+    """
+    from api.database.models import (
+        FunctionModel, CriticalityAssessmentModel, ManagedWorkOrderModel,
+    )
+    def _safe_filter(q, model, plant_id_val):
+        """Apply plant_id filter only if the model has that column."""
+        if hasattr(model, "plant_id"):
+            return q.filter(model.plant_id == plant_id_val)
+        return q
+    try:
+        equip_total = _safe_filter(db.query(HierarchyNodeModel), HierarchyNodeModel, plant_id).count()
+        crit_total = _safe_filter(db.query(CriticalityAssessmentModel), CriticalityAssessmentModel, plant_id).count()
+        wrs_total = _safe_filter(db.query(WorkRequestModel), WorkRequestModel, plant_id).count()
+        wos_q_base = _safe_filter(db.query(ManagedWorkOrderModel), ManagedWorkOrderModel, plant_id)
+        wos_total = wos_q_base.count()
+        closed_wos = wos_q_base.filter(ManagedWorkOrderModel.status == "CERRADO").count()
+        in_flight = wos_q_base.filter(
+            ManagedWorkOrderModel.status.in_(["PROGRAMADO", "EN_EJECUCION", "COMPLETADO"]),
+        ).count()
+        nodes_with_history = _safe_filter(
+            db.query(ManagedWorkOrderModel.equipment_id), ManagedWorkOrderModel, plant_id,
+        ).filter(ManagedWorkOrderModel.status == "CERRADO").distinct().count()
+
+        # strategy: criticality coverage
+        strategy = round((crit_total / equip_total) * 100) if equip_total > 0 else 0
+        # planning: WR → WO conversion
+        planning = round(min(100, (wos_total / wrs_total) * 100)) if wrs_total > 0 else 0
+        # field: schedule adherence
+        denom = closed_wos + in_flight
+        field = round((closed_wos / denom) * 100) if denom > 0 else 0
+        # analytics: closure history coverage
+        analytics = round(min(100, (nodes_with_history / max(crit_total, 1)) * 100)) if crit_total > 0 else 0
     except Exception as e:
         logger.warning("Error computing module completions for %s: %s", plant_id, e)
         strategy, planning, field, analytics = 0, 0, 0, 0

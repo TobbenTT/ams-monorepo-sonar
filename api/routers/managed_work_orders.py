@@ -134,9 +134,10 @@ def list_work_orders(
     fast_track: bool | None = None,
     limit: int = 200,
     offset: int = 0,
+    light: bool = False,  # when True, returns only the fields needed by lists (≈70% smaller payload)
     db: Session = Depends(get_db),
 ):
-    return managed_wo_service.list_work_orders(db, status, plant_id, wo_type, priority, limit, offset, fast_track=fast_track)
+    return managed_wo_service.list_work_orders(db, status, plant_id, wo_type, priority, limit, offset, fast_track=fast_track, light=light)
 
 
 @router.get("/stats")

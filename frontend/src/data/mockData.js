@@ -1,5 +1,5 @@
 // ============================================================
-// MAGEAM — Color Utility Functions
+// AMS Platform — Color Utility Functions
 // ============================================================
 
 export const criticalityColor = (level) => {

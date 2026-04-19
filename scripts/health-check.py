@@ -76,7 +76,7 @@ if token:
     plant_id = plants[0]["plant_id"] if plants else "GOLDFIELDS-SN"
     for name, path in [
         ("Dashboard KPIs", f"/dashboard/kpi-summary/{plant_id}"),
-        ("Analytics Page", f"/analytics/page-data/{plant_id}?start=2026-01-01&end=2026-12-31"),
+        ("Analytics Page", f"/analytics/page-data/{plant_id}"),
         ("Reports Generate", "/reporting/generate-report?report_type=operational"),
     ]:
         try:

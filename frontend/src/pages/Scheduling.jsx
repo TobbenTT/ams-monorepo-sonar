@@ -11,7 +11,7 @@ import {
   Calendar, Clock, Users, CheckCircle, Circle, Play, Loader2,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Inbox, Camera, Sparkles, Send, X,
   FileText, Wrench, AlertTriangle, Filter, Eye, BarChart3,
-  Package, Upload, Lock, ArrowRight, Search, GripVertical, Trash2
+  Package, Upload, Lock, ArrowRight, Search, GripVertical, Trash2, CheckCircle2, Plus
 } from 'lucide-react';
 
 const TYPE_META = {
@@ -87,12 +87,21 @@ function getCapacitySettings() {
       schedulingPct: s.schedulingPercent || 80,
       productivityPct: s.productivityFactor || 90,
       weekStartDay: s.weekStartDay ?? 1,
+      dayShiftCount: s.dayShiftCount ?? null,   // explicit day-shift staffing (Jorge)
+      nightShiftCount: s.nightShiftCount ?? null, // explicit night-shift staffing
     };
-  } catch { return { effectiveHours: 10, schedulingPct: 80, productivityPct: 90 }; }
+  } catch { return { effectiveHours: 10, schedulingPct: 80, productivityPct: 90, dayShiftCount: null, nightShiftCount: null }; }
 }
 const CAP = getCapacitySettings();
 const PROGRAMMABLE_HH_PER_DAY = CAP.effectiveHours * (CAP.schedulingPct / 100) * (CAP.productivityPct / 100);
 const HOURS_PER_WEEK = PROGRAMMABLE_HH_PER_DAY * 5;
+
+// Classify a technician as 'day' or 'night' based on their workforce shift field
+function techShift(tech) {
+  const s = (tech?.shift || '').toUpperCase();
+  if (s === 'NIGHT' || s === 'NOCHE') return 'night';
+  return 'day'; // DAY, MORNING, AFTERNOON, empty → treat as day
+}
 
 function getWeekStart(d) {
   const cap = getCapacitySettings();
@@ -419,18 +428,24 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
 }
 
 /* ───── Weekly Calendar View (drag-and-drop scheduling grid) ───── */
-function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange }) {
+function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onUnscheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange, onRefresh }) {
   const toast = useToast();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewRange, setViewRange] = useState(1);
   const [viewBy, setViewBy] = useState('technician'); // 'technician' | 'wo'
   const [expandedWOs, setExpandedWOs] = useState(new Set());
   const [search, setSearch] = useState('');
+  // Multi-select priority filter (Prometheus style): default P3+P4 on, P1/P2 off
+  const [prioFilter, setPrioFilter] = useState({ P1: false, P2: false, P3: true, P4: true });
+  const [filterGroup, setFilterGroup] = useState('all');
+  const [sortBy, setSortBy] = useState('priority'); // 'priority' | 'hours_desc' | 'hours_asc' | 'number'
   const [showShifts, setShowShifts] = useState(true);
   const [includeWeekends, setIncludeWeekends] = useState(true);
   const [dragWO, setDragWO] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
   const [hoverWO, setHoverWO] = useState(null);
+  const [reserveConfirm, setReserveConfirm] = useState(null); // { drafts, alreadyReserved } | null
+  const [reserving, setReserving] = useState(false);
 
   const days = useMemo(() => {
     const result = [];
@@ -497,29 +512,64 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   const dailyTotals = useMemo(() => {
     const totals = {};
     days.forEach(d => { totals[d.str] = 0; });
+    const dayStrs = days.map(d => d.str);
+    const dailyCap = PROGRAMMABLE_HH_PER_DAY; // per-tech daily cap (for spreading long WOs)
     scheduledWOs.forEach(wo => {
       const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
-      if (start && totals[start] !== undefined) totals[start] += wo.estimated_hours || 0;
+      const woHours = wo.estimated_hours || 0;
+      if (!start || totals[start] === undefined || woHours === 0) return;
+      const idx = dayStrs.indexOf(start);
+      if (idx < 0) return;
+      // Long WOs spread across days (visual "continuation")
+      if (woHours > dailyCap) {
+        let remaining = woHours;
+        for (let d = idx; d < dayStrs.length && remaining > 0; d++) {
+          const chunk = Math.min(remaining, dailyCap);
+          totals[dayStrs[d]] = (totals[dayStrs[d]] || 0) + chunk;
+          remaining -= chunk;
+        }
+      } else {
+        totals[start] += woHours;
+      }
     });
     return totals;
   }, [scheduledWOs, days]);
 
+  // Groups available in the current WO list (for the filter dropdown)
+  const availableGroups = useMemo(() => {
+    const set = new Set();
+    releasedWOs.forEach(wo => { if (wo.planning_group) set.add(wo.planning_group); });
+    return Array.from(set).sort();
+  }, [releasedWOs]);
+
   const filteredReleased = useMemo(() => {
-    // Sort by priority (P1 first = highest impact)
-    let list = [...releasedWOs].sort((a, b) => {
-      const order = { P1: 0, P2: 1, P3: 2, P4: 3 };
-      return (order[a.priority_code] ?? 9) - (order[b.priority_code] ?? 9);
-    });
+    let list = [...releasedWOs];
+    // Priority filter — multi-select, like Prometheus (each priority togglable)
+    const activePrios = Object.entries(prioFilter).filter(([, v]) => v).map(([k]) => k);
+    if (activePrios.length > 0 && activePrios.length < 4) {
+      list = list.filter(wo => activePrios.includes(wo.priority_code));
+    }
+    // Planning group filter
+    if (filterGroup !== 'all') list = list.filter(wo => wo.planning_group === filterGroup);
+    // Search
     if (search) {
-      const q = search.toLowerCase();
+      const q = search.toLowerCase().replace(/[\s\-]+/g, '');
       list = list.filter(wo =>
-        (wo.wo_number || '').toLowerCase().includes(q) ||
-        (wo.equipment_tag || '').toLowerCase().includes(q) ||
-        (wo.description || '').toLowerCase().includes(q)
+        (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q) ||
+        (wo.equipment_tag || '').toLowerCase().includes(search.toLowerCase()) ||
+        (wo.description || '').toLowerCase().includes(search.toLowerCase())
       );
     }
+    // Sort
+    const order = { P1: 0, P2: 1, P3: 2, P4: 3 };
+    if (sortBy === 'priority') list.sort((a, b) => (order[a.priority_code] ?? 9) - (order[b.priority_code] ?? 9));
+    else if (sortBy === 'hours_desc') list.sort((a, b) => (parseFloat(b.estimated_hours) || 0) - (parseFloat(a.estimated_hours) || 0));
+    else if (sortBy === 'hours_asc') list.sort((a, b) => (parseFloat(a.estimated_hours) || 0) - (parseFloat(b.estimated_hours) || 0));
+    else if (sortBy === 'number') list.sort((a, b) => (a.wo_number || '').localeCompare(b.wo_number || ''));
+    else if (sortBy === 'recent') list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    else if (sortBy === 'oldest') list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     return list;
-  }, [releasedWOs, search]);
+  }, [releasedWOs, search, prioFilter, filterGroup, sortBy]);
 
   const weekEnd = days[days.length - 1]?.date || weekStart;
   const weekNum = getISOWeek(weekStart);
@@ -536,27 +586,92 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
 
   return (
     <div className="flex gap-4" style={{ minHeight: 500 }}>
-      {/* ── Left Panel: OTs to Schedule ── */}
+      {/* ── Left Panel: OTs to Schedule — also drop target to unschedule ── */}
       <div className="w-72 min-w-[288px] flex flex-col">
-        <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-          <div className="px-4 py-3 border-b border-border">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-foreground text-sm">OTs to Schedule</h3>
-              <span className="text-xs font-bold bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{releasedWOs.length}</span>
+        <div
+          className={`bg-card border rounded-xl overflow-hidden flex flex-col transition-all ${dragWO && (dragWO.status === 'PROGRAMADO' || dragWO.planned_start) ? 'border-red-400 border-2 ring-2 ring-red-200 dark:ring-red-900/30 bg-red-50/30 dark:bg-red-900/10' : 'border-border'}`}
+          style={{ maxHeight: 'calc(100vh - 300px)' }}
+          onDragOver={e => {
+            if (dragWO && (dragWO.status === 'PROGRAMADO' || dragWO.planned_start)) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+            }
+          }}
+          onDrop={e => {
+            e.preventDefault();
+            if (dragWO && (dragWO.status === 'PROGRAMADO' || dragWO.planned_start)) {
+              onUnscheduleWO?.(dragWO);
+            }
+            setDragWO(null);
+            setDropTarget(null);
+          }}>
+          <div className="px-3 py-3 border-b border-border space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-foreground text-sm">OTs a Programar</h3>
+              <span className="text-xs font-bold bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
+                {filteredReleased.length}{filteredReleased.length !== releasedWOs.length ? ` / ${releasedWOs.length}` : ''}
+              </span>
             </div>
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('scheduling.searchOT') || 'Search OT...'}
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar OT, equipo, descripción…"
                 className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
+            </div>
+            {/* Priority chips — multi-select (like Prometheus) */}
+            <div className="flex items-center gap-1 text-[10px] font-semibold">
+              <span className="text-muted-foreground mr-0.5">Prio:</span>
+              {[
+                { id: 'P1', color: 'bg-red-500 text-white border-red-600' },
+                { id: 'P2', color: 'bg-orange-500 text-white border-orange-600' },
+                { id: 'P3', color: 'bg-blue-500 text-white border-blue-600' },
+                { id: 'P4', color: 'bg-gray-400 text-white border-gray-500' },
+              ].map(p => (
+                <button key={p.id}
+                  onClick={() => setPrioFilter(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
+                  className={`px-2 py-0.5 rounded border transition-all ${prioFilter[p.id] ? p.color + ' shadow-sm' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                  title={prioFilter[p.id] ? `Ocultar ${p.id}` : `Mostrar ${p.id}`}>
+                  {p.id}
+                </button>
+              ))}
+              <button onClick={() => setPrioFilter({ P1: true, P2: true, P3: true, P4: true })}
+                className="ml-1 text-[9px] text-muted-foreground hover:text-foreground underline" title="Mostrar todas">
+                todas
+              </button>
+            </div>
+            {/* Group + Sort */}
+            <div className="grid grid-cols-2 gap-1">
+              <select value={filterGroup} onChange={e => setFilterGroup(e.target.value)}
+                className="text-xs border border-border rounded-md px-1.5 py-1 bg-background" title="Filtrar por grupo de planificación">
+                <option value="all">Todos los grupos</option>
+                {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                className="text-xs border border-border rounded-md px-1.5 py-1 bg-background" title="Ordenar por">
+                <option value="priority">Por prioridad</option>
+                <option value="recent">Más recientes</option>
+                <option value="oldest">Más antiguas</option>
+                <option value="hours_desc">Más HH primero</option>
+                <option value="hours_asc">Menos HH primero</option>
+                <option value="number">Por número OT</option>
+              </select>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-border">
+            {dragWO && (dragWO.status === 'PROGRAMADO' || dragWO.planned_start) && (
+              <div className="p-4 text-center bg-red-50 dark:bg-red-900/10 border-b border-red-200 text-red-700 text-xs font-semibold">
+                🗑️ Suelta aquí para desprogramar {dragWO.wo_number}
+              </div>
+            )}
             {filteredReleased.map(wo => {
               const typeMeta = TYPE_META[wo.wo_type] || TYPE_META.PM02;
               return (
                 <div key={wo.wo_id} draggable onDragStart={() => handleDragStart(wo)} onDragEnd={handleDragEnd}
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '0 80px' }}
                   className="p-3 hover:bg-muted/50 cursor-grab active:cursor-grabbing transition-colors">
                   <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded text-white ${wo.priority_code === 'P1' ? 'bg-red-500' : wo.priority_code === 'P2' ? 'bg-orange-500' : wo.priority_code === 'P3' ? 'bg-blue-500' : 'bg-gray-400'}`}>
+                      {wo.priority_code || 'P4'}
+                    </span>
                     <span className="font-mono text-xs font-bold text-foreground">{wo.wo_number}</span>
                     <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded border ${typeMeta.bg}`}>{wo.wo_type}</span>
                   </div>
@@ -619,24 +734,27 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
               </button>
             ))}
             <button onClick={async () => {
-                // Reserve: change all scheduled WOs in this week from EN_PROGRAMACION to PROGRAMADO
+                // Step 2 of 2-step flow: open styled confirmation modal
                 const weekMon = weekStart;
                 const weekSunStr = toDateStr(addDays(weekMon, 6));
                 const weekMonStr = toDateStr(weekMon);
-                const weekWOs = scheduledWOs.filter(wo => {
+                const inWeek = (wo) => {
                   const s = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
                   return s && s >= weekMonStr && s <= weekSunStr;
-                });
-                if (weekWOs.length === 0) { toast.info('No WOs scheduled this week'); return; }
-                let reserved = 0;
-                for (const wo of weekWOs) {
-                  try { await api.updateManagedWO(wo.wo_id, { status: 'PROGRAMADO' }); reserved++; } catch {}
+                };
+                const drafts = scheduledWOs.filter(wo => wo.status === 'EN_PROGRAMACION' && inWeek(wo));
+                const alreadyReserved = scheduledWOs.filter(wo => wo.status === 'PROGRAMADO' && inWeek(wo)).length;
+                if (drafts.length === 0) {
+                  toast.info(alreadyReserved > 0
+                    ? `✓ Semana ya reservada · ${alreadyReserved} OTs en PROGRAMADO`
+                    : 'No hay OTs en esta semana para reservar');
+                  return;
                 }
-                if (reserved > 0) toast.success(`${reserved} WOs reserved as PROGRAMADO`);
-                onWeekChange?.(weekStart);
+                setReserveConfirm({ drafts, alreadyReserved });
               }}
-              className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors">
-              <Lock size={14} /> Reserve Week
+              className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"
+              title="Bloquea las OTs programadas esta semana como PROGRAMADO y reserva sus HH">
+              <Lock size={14} /> Reservar Semana
             </button>
             {canPublish && (
               <button onClick={onPublish} disabled={publishing}
@@ -658,6 +776,31 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
           </div>
           <span className={`text-sm font-semibold whitespace-nowrap ${loadPct > 100 ? 'text-red-600 animate-pulse' : loadPct > 80 ? 'text-amber-600' : 'text-foreground'}`}>Load: {loadPct}% {loadPct > 100 ? '⚠️ OVERLOADED' : ''}</span>
         </div>
+
+        {/* Shift staffing breakdown + Semáforo legend */}
+        {(() => {
+          const dayTechs = technicians.filter(t => {
+            const s = (t.shift || '').toUpperCase();
+            return !s || s === 'DAY' || s === 'MORNING' || s === 'AFTERNOON';
+          }).length;
+          const nightTechs = technicians.filter(t => {
+            const s = (t.shift || '').toUpperCase();
+            return s === 'NIGHT' || s === 'NOCHE';
+          }).length;
+          return (
+            <div className="flex items-center gap-4 flex-wrap text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                ☀️ <strong className="text-amber-700 dark:text-amber-300">{dayTechs}</strong> día
+              </span>
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800">
+                🌙 <strong className="text-indigo-700 dark:text-indigo-300">{nightTechs}</strong> noche
+              </span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"/> 🟡 Queda HH</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"/> 🟢 95-100%</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"/> 🔴 Sobrecapacidad</span>
+            </div>
+          );
+        })()}
 
         {/* Calendar grid */}
         {viewBy === 'wo' ? (
@@ -730,7 +873,8 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                       </tbody>
                     );
                   })}
-              </table>
+                </tbody>
+                </table>
             </div>
           </div>
         ) : technicians.length > 0 ? (
@@ -761,9 +905,19 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                     const badge = SPEC_BADGE[tech.specialty] || { label: (tech.specialty || '?').slice(0, 4).toUpperCase(), bg: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' };
                     const hours = techHours[tech.worker_id] || 0;
                     return (
-                      <tr key={tech.worker_id} className="border-t border-border hover:bg-muted/10 transition-colors">
+                      <tr key={tech.worker_id}
+                        style={{ contentVisibility: 'auto', containIntrinsicSize: '0 70px' }}
+                        className="border-t border-border hover:bg-muted/10 transition-colors">
                         <td className="px-3 py-2.5 border-r border-border align-top">
-                          <div className="font-semibold text-sm text-foreground">{tech.name}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-sm text-foreground">{tech.name}</span>
+                            {(() => {
+                              const s = (tech.shift || '').toUpperCase();
+                              if (s === 'NIGHT' || s === 'NOCHE') return <span title="Turno noche" className="text-[10px]">🌙</span>;
+                              if (s === 'DAY' || s === 'MORNING' || s === 'AFTERNOON' || !s) return <span title="Turno día" className="text-[10px]">☀️</span>;
+                              return null;
+                            })()}
+                          </div>
                           <div className="flex items-center gap-1.5 mt-1">
                             <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded ${badge.bg}`}>{badge.label}</span>
                             <span className={`text-xs font-semibold ${hours > HOURS_PER_WEEK ? 'text-red-600' : hours > HOURS_PER_WEEK * 0.8 ? 'text-amber-600' : 'text-muted-foreground'}`}>{Math.round(hours)}h / {HOURS_PER_WEEK}h {hours > HOURS_PER_WEEK ? '⚠️' : ''}</span>
@@ -786,16 +940,41 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                   onDrop={e => { e.preventDefault(); if (dragWO) { const techLoad = techHours[tech.worker_id] || 0; if (techLoad >= HOURS_PER_WEEK) { toast.error('⛔ ' + tech.name + ' is at ' + Math.round(techLoad) + 'h/' + Math.round(HOURS_PER_WEEK) + 'h — OVER CAPACITY. Cannot schedule more work.'); setDragWO(null); setDropTarget(null); return; } onScheduleWO(dragWO, tech, d.date, shift.id); } setDragWO(null); setDropTarget(null); }}>
                                   {cellWOs.map(wo => {
                                     const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+                                    const isDraft = wo.status === 'EN_PROGRAMACION';
+                                    const isReserved = wo.status === 'PROGRAMADO';
+                                    const ops = wo.operations || [];
+                                    const isExp = expandedWOs.has(wo.wo_id);
                                     return (
                                       <div key={wo.wo_id}
-                                        draggable
+                                        draggable={!isReserved}
                                         onMouseEnter={() => setHoverWO(wo)}
                                         onMouseLeave={() => setHoverWO(null)}
-                                        onDragStart={e => { e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
-                                        className={`mb-1 p-1 rounded text-xs border cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400 ${woType.bg} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
-                                        <div className="font-bold truncate text-[0.65rem]">{wo.wo_number} {wo._continuation ? `(${wo._dayNum}/${wo._totalDays})` : ''}</div>
+                                        onDragStart={e => { if (isReserved) { e.preventDefault(); return; } e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
+                                        title={isReserved ? 'Reservada — desbloquea con Clear Assignments' : isDraft ? 'Borrador — arrástrala o reserva la semana' : ''}
+                                        className={`mb-1 p-1 rounded text-xs border ${isReserved ? 'cursor-not-allowed ring-1 ring-emerald-400' : 'cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400'} ${isDraft ? 'border-dashed border-2' : ''} ${woType.bg} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
+                                        <div className="flex items-center gap-0.5">
+                                          <span className="font-bold truncate text-[0.65rem] flex-1">{wo.wo_number} {wo._continuation ? `(${wo._dayNum}/${wo._totalDays})` : ''}</span>
+                                          {ops.length > 0 && !wo._continuation && (
+                                            <button onClick={e => { e.stopPropagation(); setExpandedWOs(prev => { const n = new Set(prev); n.has(wo.wo_id) ? n.delete(wo.wo_id) : n.add(wo.wo_id); return n; }); }}
+                                              className="text-[0.55rem] opacity-60 hover:opacity-100" title={`${ops.length} operaciones`}>
+                                              {isExp ? '▾' : '▸'}
+                                            </button>
+                                          )}
+                                        </div>
                                         <div className="truncate text-[0.6rem]">{wo.equipment_tag}</div>
-                                        <div className="text-[0.55rem] mt-0.5">{wo._continuation ? 'cont.' : wo.estimated_hours + 'h'}</div>
+                                        <div className="text-[0.55rem] mt-0.5">{wo._continuation ? 'cont.' : wo.estimated_hours + 'h'}{ops.length > 0 && !wo._continuation ? ` · ${ops.length} ops` : ''}</div>
+                                        {isExp && ops.length > 0 && !wo._continuation && (
+                                          <div className="mt-1 pt-1 border-t border-black/10 space-y-0.5">
+                                            {ops.slice(0, 5).map((op, oi) => (
+                                              <div key={oi} className="text-[0.5rem] flex items-center gap-1 leading-tight">
+                                                <span className="opacity-50 font-mono">#{oi + 1}</span>
+                                                <span className="truncate flex-1">{(op.description || op.task || '').substring(0, 20)}</span>
+                                                <span className="opacity-80 font-semibold">{((op.quantity || 1) * (op.hours || 0)).toFixed(1)}HH</span>
+                                              </div>
+                                            ))}
+                                            {ops.length > 5 && <div className="text-[0.5rem] opacity-50">+{ops.length - 5} más</div>}
+                                          </div>
+                                        )}
                                       </div>
                                     );
                                   })}
@@ -854,14 +1033,19 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                     {days.map(d => {
                       const total = dailyTotals[d.str] || 0;
                       const maxDaily = technicians.length * PROGRAMMABLE_HH_PER_DAY;
-                      const pct = maxDaily > 0 ? Math.min((total / maxDaily) * 100, 100) : 0;
-                      const barColor = pct > 100 ? 'bg-red-500' : pct > 85 ? 'bg-amber-500' : pct > 0 ? 'bg-emerald-500' : '';
-                      const textColor = pct > 100 ? 'text-red-600 font-extrabold' : pct > 85 ? 'text-amber-600' : 'text-foreground';
+                      const pct = maxDaily > 0 ? (total / maxDaily) * 100 : 0;
+                      // Semáforo (Jorge): rojo >100 (sobrecapacidad), verde 95-100 (cerca del límite), ámbar <95 (queda HH)
+                      const barColor = pct > 100 ? 'bg-red-500' : pct >= 95 ? 'bg-emerald-500' : pct > 0 ? 'bg-amber-500' : '';
+                      const textColor = pct > 100 ? 'text-red-600 font-extrabold' : pct >= 95 ? 'text-emerald-600 font-bold' : pct > 0 ? 'text-amber-600' : 'text-foreground';
+                      const icon = pct > 100 ? '🔴' : pct >= 95 ? '🟢' : pct > 0 ? '🟡' : '';
                       return (
-                        <td key={d.str} colSpan={showShifts ? 2 : 1} className={`px-2 py-2.5 border-r border-border last:border-r-0 ${pct > 100 ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
-                          <div className={`text-sm font-bold mb-1 ${textColor}`}>{Math.round(total)}h {pct > 100 ? '⚠️' : ''}</div>
-                          <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                        <td key={d.str} colSpan={showShifts ? 2 : 1}
+                          className={`px-2 py-2.5 border-r border-border last:border-r-0 ${pct > 100 ? 'bg-red-50 dark:bg-red-900/10' : pct >= 95 ? 'bg-emerald-50 dark:bg-emerald-900/10' : ''}`}
+                          title={`${Math.round(total)}h de ${Math.round(maxDaily)}h (${Math.round(pct)}%)`}>
+                          <div className={`text-sm mb-1 ${textColor}`}>{icon} {Math.round(total)}h <span className="text-[10px] font-normal opacity-70">/ {Math.round(maxDaily)}h</span></div>
+                          <div className="h-2.5 bg-muted rounded-full overflow-hidden relative">
                             <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                            {pct > 100 && <div className="absolute top-0 right-0 h-full bg-red-700 animate-pulse" style={{ width: `${Math.min(50, pct - 100)}%` }} />}
                           </div>
                         </td>
                       );
@@ -896,6 +1080,72 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             {(hoverWO.assigned_workers || []).length > 0 && (
               <><span className="text-muted-foreground">Workers:</span><span>{hoverWO.assigned_workers.map(w => w.name).join(', ')}</span></>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Reserve Week Confirmation Modal — styled replacement for browser confirm() */}
+      {reserveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !reserving && setReserveConfirm(null)} />
+          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="p-6 text-center border-b border-border">
+              <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Lock size={24} className="text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">Reservar Semana</h3>
+              <p className="text-sm text-muted-foreground mt-1">{weekLabel}</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-extrabold text-purple-700 dark:text-purple-300">{reserveConfirm.drafts.length}</div>
+                  <div className="text-[11px] font-semibold text-purple-600 uppercase tracking-wide mt-1">Borradores</div>
+                  <div className="text-[10px] text-muted-foreground">pasarán a PROGRAMADO</div>
+                </div>
+                <div className={`${reserveConfirm.alreadyReserved > 0 ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-muted/30'} rounded-xl p-3 text-center`}>
+                  <div className={`text-2xl font-extrabold ${reserveConfirm.alreadyReserved > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'}`}>{reserveConfirm.alreadyReserved}</div>
+                  <div className={`text-[11px] font-semibold uppercase tracking-wide mt-1 ${reserveConfirm.alreadyReserved > 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>Ya reservadas</div>
+                  <div className="text-[10px] text-muted-foreground">sin cambios</div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200 flex gap-2">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                <div>
+                  Las OTs reservadas <strong>bloquean sus HH</strong> en el programa y no podrán moverse. Para cambiarlas después, usa <em>Clear Assignments</em>.
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-border flex gap-3 bg-muted/20">
+              <button onClick={() => setReserveConfirm(null)} disabled={reserving}
+                className="flex-1 py-2.5 text-sm font-semibold border border-border rounded-xl text-foreground hover:bg-muted disabled:opacity-50 transition-colors">
+                Cancelar
+              </button>
+              <button disabled={reserving} onClick={async () => {
+                setReserving(true);
+                const drafts = reserveConfirm.drafts;
+                const reserveResults = await Promise.allSettled(
+                  drafts.map(wo => api.scheduleManagedWO(wo.wo_id, { status: 'PROGRAMADO' }))
+                );
+                const reserved = reserveResults.filter(r => r.status === 'fulfilled').length;
+                const failed = drafts.length - reserved;
+                if (reserved > 0 && failed === 0) toast.success(`✓ ${reserved} OTs reservadas · HH bloqueadas`);
+                else if (reserved > 0) toast.success(`${reserved} reservadas · ${failed} fallaron`);
+                else toast.error('No se pudo reservar ninguna OT');
+                setReserving(false);
+                setReserveConfirm(null);
+                onWeekChange?.(weekStart);
+                // Force full reload to show reserved OTs with updated status
+                onRefresh?.();
+              }}
+                className="flex-1 py-2.5 text-sm font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+                {reserving ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
+                {reserving ? 'Reservando...' : 'Reservar'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -950,8 +1200,8 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
   if (filterPrio !== 'all') filtered = filtered.filter(wo => wo.priority_code === filterPrio);
   if (filterType !== 'all') filtered = filtered.filter(wo => wo.wo_type === filterType);
   if (searchGantt) {
-    const q = searchGantt.toLowerCase();
-    filtered = filtered.filter(wo => (wo.wo_number || '').toLowerCase().includes(q) || (wo.equipment_tag || '').toLowerCase().includes(q) || (wo.description || '').toLowerCase().includes(q));
+    const q = searchGantt.toLowerCase().replace(/[\s\-]+/g, '');
+    filtered = filtered.filter(wo => (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q) || (wo.equipment_tag || '').toLowerCase().includes(searchGantt.toLowerCase()) || (wo.description || '').toLowerCase().includes(searchGantt.toLowerCase()));
   }
   if (sortBy === 'priority') filtered.sort((a, b) => (a.priority_code || 'P4').localeCompare(b.priority_code || 'P4'));
   else if (sortBy === 'date') filtered.sort((a, b) => new Date(a.planned_start || 0) - new Date(b.planned_start || 0));
@@ -1224,8 +1474,8 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
     let list = allWOs;
     if (filterStatus !== 'all') list = list.filter(wo => wo.status === filterStatus);
     if (searchMC) {
-      const q = searchMC.toLowerCase();
-      list = list.filter(wo => (wo.wo_number || '').toLowerCase().includes(q) || (wo.equipment_tag || '').toLowerCase().includes(q));
+      const q = searchMC.toLowerCase().replace(/[\s\-]+/g, '');
+      list = list.filter(wo => (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q) || (wo.equipment_tag || '').toLowerCase().includes(searchMC.toLowerCase()));
     }
     return list;
   }, [allWOs, filterStatus, searchMC]);
@@ -1763,7 +2013,13 @@ function MaterialsTab({ programId, t, plantId }) {
         {filtered.slice(matPage * MAT_PAGE_SIZE, (matPage + 1) * MAT_PAGE_SIZE).map(pkg => {
           const isExpanded = expandedWO.has(pkg.wo_id);
           const hasMats = pkg.materials && pkg.materials.length > 0;
-          const progress = pkg.total_items > 0 ? Math.round((pkg.collected_items / pkg.total_items) * 100) : 0;
+          // Collection = picked/completed or already at site/delivered. Staging (EN_AREA_ESPERA)
+          // is picked but not yet at the work site — counted as "collected" since it's available.
+          // Delivered = actually delivered to the job.
+          const deliveredItems = (pkg.materials || []).filter(m => m.collection_status === 'ENTREGADO').length;
+          const collectedOnly = pkg.total_items > 0 ? Math.round((pkg.collected_items / pkg.total_items) * 100) : 0;
+          const deliveredPct = pkg.total_items > 0 ? Math.round((deliveredItems / pkg.total_items) * 100) : 0;
+          const progress = collectedOnly;
           const statusMeta = pkg.status === 'ENTREGADO' ? { bg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300', icon: '🚚' }
             : pkg.status === 'EN_PROCESO' ? { bg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', icon: '🔄' }
             : pkg.status === 'NO_MATERIALS' ? { bg: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400', icon: '—' }
@@ -1857,6 +2113,165 @@ function MaterialsTab({ programId, t, plantId }) {
   );
 }
 
+function SupportEquipmentTab({ plantId, t }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name: '', equipment_type: 'MOBILE_CRANE', capacity_tons: '', is_rented: false });
+  const toast = useToast();
+
+  const EQ_TYPES = [
+    { value: 'OVERHEAD_CRANE', label: 'Puente grúa' },
+    { value: 'MOBILE_CRANE', label: 'Grúa móvil' },
+    { value: 'FORKLIFT', label: 'Grúa horquilla' },
+    { value: 'MANLIFT', label: 'Brazo elevador' },
+    { value: 'TOOL', label: 'Herramienta especial' },
+  ];
+  const TYPE_LABEL = Object.fromEntries(EQ_TYPES.map(e => [e.value, e.label]));
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api.listSupportEquipment(plantId);
+      setItems(Array.isArray(res) ? res : []);
+    } catch { setItems([]); }
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [plantId]);
+
+  const addEquipment = async () => {
+    if (!form.name.trim()) { toast.error('Nombre requerido'); return; }
+    setSaving(true);
+    try {
+      await api.createSupportEquipment({
+        plant_id: plantId,
+        name: form.name.trim(),
+        equipment_type: form.equipment_type,
+        capacity_tons: form.capacity_tons ? Number(form.capacity_tons) : null,
+        is_rented: form.is_rented,
+        available: true,
+      });
+      toast.success('Equipo agregado');
+      setForm({ name: '', equipment_type: 'MOBILE_CRANE', capacity_tons: '', is_rented: false });
+      load();
+    } catch { toast.error('Error agregando equipo'); }
+    setSaving(false);
+  };
+
+  const toggleAvailable = async (eq) => {
+    const reason = !eq.available ? '' : (window.prompt('Razón de bloqueo (mantención / falla / …)') || 'Fuera de servicio');
+    try {
+      await api.updateSupportEquipment(eq.equipment_id, {
+        available: !eq.available,
+        out_of_service_reason: !eq.available ? null : reason,
+      });
+      toast.success(eq.available ? '🔒 Equipo bloqueado' : '✅ Equipo habilitado');
+      load();
+    } catch { toast.error('Error'); }
+  };
+
+  const toggleRented = async (eq) => {
+    try {
+      await api.updateSupportEquipment(eq.equipment_id, { is_rented: !eq.is_rented });
+      load();
+    } catch { toast.error('Error'); }
+  };
+
+  const availableCount = items.filter(i => i.available).length;
+  const blockedCount = items.filter(i => !i.available).length;
+  const rentedCount = items.filter(i => i.is_rented).length;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="bg-card border border-border rounded-xl p-3 text-center">
+          <div className="text-2xl font-extrabold text-foreground">{items.length}</div>
+          <div className="text-xs text-muted-foreground">Total</div>
+        </div>
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-xl p-3 text-center">
+          <div className="text-2xl font-extrabold text-emerald-700">{availableCount}</div>
+          <div className="text-xs text-emerald-600">Disponibles</div>
+        </div>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-3 text-center">
+          <div className="text-2xl font-extrabold text-red-700">{blockedCount}</div>
+          <div className="text-xs text-red-600">Fuera de servicio</div>
+        </div>
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-3 text-center">
+          <div className="text-2xl font-extrabold text-blue-700">{rentedCount}</div>
+          <div className="text-xs text-blue-600">Arrendados</div>
+        </div>
+      </div>
+
+      {/* Add new */}
+      <div className="bg-card border border-border rounded-xl p-4">
+        <h3 className="text-sm font-bold text-foreground mb-3">Agregar equipo / herramienta</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+          <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+            placeholder="Nombre (ej. Grúa móvil N°3)"
+            className="text-sm border border-border rounded-lg px-3 py-2 bg-background md:col-span-2" />
+          <select value={form.equipment_type} onChange={e => setForm({ ...form, equipment_type: e.target.value })}
+            className="text-sm border border-border rounded-lg px-3 py-2 bg-background">
+            {EQ_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+          <input type="number" value={form.capacity_tons} onChange={e => setForm({ ...form, capacity_tons: e.target.value })}
+            placeholder="Tonelaje" className="text-sm border border-border rounded-lg px-3 py-2 bg-background" />
+          <label className="flex items-center gap-2 text-xs text-muted-foreground px-2">
+            <input type="checkbox" checked={form.is_rented} onChange={e => setForm({ ...form, is_rented: e.target.checked })} className="accent-blue-600" />
+            Arrendado
+          </label>
+        </div>
+        <button onClick={addEquipment} disabled={saving}
+          className="mt-3 px-4 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5">
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+          Agregar
+        </button>
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <div className="bg-card border border-border rounded-xl p-12 text-center">
+          <Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-600" />
+        </div>
+      ) : items.length === 0 ? (
+        <div className="bg-card border border-border rounded-xl p-12 text-center">
+          <Wrench size={40} className="text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-muted-foreground">No hay equipos de apoyo registrados para esta planta</p>
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="divide-y divide-border/50">
+            {items.map(eq => (
+              <div key={eq.equipment_id} className={`flex items-center gap-3 p-3 ${!eq.available ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}>
+                <div className={`w-2.5 h-2.5 rounded-full ${eq.available ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-foreground">{eq.name}</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{TYPE_LABEL[eq.equipment_type] || eq.equipment_type}</span>
+                    {eq.capacity_tons && <span className="text-[10px] text-muted-foreground">{eq.capacity_tons}t</span>}
+                    {eq.is_rented && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Arrendado</span>}
+                  </div>
+                  {!eq.available && eq.out_of_service_reason && (
+                    <p className="text-xs text-red-600 mt-0.5">🔒 {eq.out_of_service_reason}</p>
+                  )}
+                </div>
+                <button onClick={() => toggleRented(eq)}
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${eq.is_rented ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-border text-muted-foreground hover:bg-muted'}`}>
+                  {eq.is_rented ? 'Arrendado' : 'Propio'}
+                </button>
+                <button onClick={() => toggleAvailable(eq)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${eq.available ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/20'}`}>
+                  {eq.available ? 'Bloquear' : 'Habilitar'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function KpiCard({ icon: Icon, color, label, value, sub, highlight }) {
   return (
     <div className={`bg-card rounded-xl border p-4 ${highlight ? 'border-amber-200 dark:border-amber-700' : 'border-border'}`}>
@@ -1891,6 +2306,11 @@ export default function Scheduling() {
   const [generating, setGenerating] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [capacityLimit, setCapacityLimit] = useState(85); // % max capacity for auto-level
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiInstructions, setAiInstructions] = useState('');
+  const [aiDraftPlan, setAiDraftPlan] = useState(null);
+  const [blockedEquipment, setBlockedEquipment] = useState([]);
   const [publishing, setPublishing] = useState(false);
   const [aiScheduling, setAiScheduling] = useState(false);
   const [viewedWeekStart, setViewedWeekStart] = useState(() => getMonday(new Date()));
@@ -1924,16 +2344,17 @@ export default function Scheduling() {
     try {
       // Then load WOs sequentially to avoid overwhelming the backend
       const [created, planned, released, enProg, scheduled, executing] = await Promise.all([
-        api.listManagedWOs({ status: 'CREADO', plant_id: plant }).catch(() => []),
-        api.listManagedWOs({ status: 'PLANIFICADO', plant_id: plant }).catch(() => []),
-        api.listManagedWOs({ status: 'LIBERADO', plant_id: plant }).catch(() => []),
-        api.listManagedWOs({ status: 'EN_PROGRAMACION', plant_id: plant }).catch(() => []),
-        api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant }).catch(() => []),
-        api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant }).catch(() => []),
+        api.listManagedWOs({ status: 'CREADO', plant_id: plant, light: true }).catch(() => []),
+        api.listManagedWOs({ status: 'PLANIFICADO', plant_id: plant, light: true }).catch(() => []),
+        api.listManagedWOs({ status: 'LIBERADO', plant_id: plant, light: true }).catch(() => []),
+        api.listManagedWOs({ status: 'EN_PROGRAMACION', plant_id: plant, light: true }).catch(() => []),
+        api.listManagedWOs({ status: 'PROGRAMADO', plant_id: plant, light: true }).catch(() => []),
+        api.listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant, light: true }).catch(() => []),
       ]);
       const arr = v => Array.isArray(v) ? v : [];
-      setReleasedWOs([...arr(created), ...arr(planned), ...arr(released), ...arr(enProg)]);
-      setScheduledWOs([...arr(scheduled), ...arr(executing)]);
+      // 2-step flow (Jose): EN_PROGRAMACION = borrador en calendario, PROGRAMADO = reservado/bloqueado
+      setReleasedWOs([...arr(created), ...arr(planned), ...arr(released)]);
+      setScheduledWOs([...arr(enProg), ...arr(scheduled), ...arr(executing)]);
     } catch {}
   };
 
@@ -1983,6 +2404,15 @@ export default function Scheduling() {
 
   useEffect(() => { loadPrograms(); loadCalendarData(); }, [plant]);
 
+  // Track blocked support equipment to warn planner during Auto-Level
+  useEffect(() => {
+    if (!plant) return;
+    api.listSupportEquipment(plant).then(list => {
+      const blocked = (Array.isArray(list) ? list : []).filter(e => !e.available);
+      setBlockedEquipment(blocked);
+    }).catch(() => setBlockedEquipment([]));
+  }, [plant]);
+
   // Real-time updates via WebSocket — debounced, disabled when modal is open
   const wsTimerRef = useRef(null);
   useWebSocket(plant, useCallback((msg) => {
@@ -1995,37 +2425,72 @@ export default function Scheduling() {
   }, [showAIModal, aiScheduling, showClearConfirm, clearing]));
   useEffect(() => { loadGantt(); }, [plant, ganttWeeks]);
 
+  const handleUnscheduleWO = async (wo) => {
+    // Optimistic UI: immediately move it out of scheduled, into released
+    const prevScheduled = scheduledWOs;
+    const prevReleased = releasedWOs;
+    const cleared = { ...wo, assigned_workers: [], planned_start: null, planned_end: null, status: 'PLANIFICADO' };
+    setScheduledWOs(prev => prev.filter(w => w.wo_id !== wo.wo_id));
+    setReleasedWOs(prev => [cleared, ...prev.filter(w => w.wo_id !== wo.wo_id)]);
+    try {
+      await api.updateManagedWO(wo.wo_id, {
+        assigned_workers: [],
+        planned_start: '',
+        planned_end: '',
+        status: 'PLANIFICADO',
+      });
+      toast.success(`↩️ ${wo.wo_number} desprogramada`);
+      // Refresh from backend to stay in sync
+      await loadCalendarData();
+      loadGantt();
+    } catch (err) {
+      // Rollback optimistic update
+      setScheduledWOs(prevScheduled);
+      setReleasedWOs(prevReleased);
+      toast.error(`Error desprogramando ${wo.wo_number}: ${err.message || ''}`);
+    }
+  };
+
   const handleScheduleWO = (wo, tech, dayDate, shift = 'day') => {
-    api.scheduleManagedWO(wo.wo_id, {
+    // 2-step flow: drag-drop = borrador (EN_PROGRAMACION). Reservar Semana lo confirma a PROGRAMADO.
+    const prevScheduled = scheduledWOs;
+    const prevReleased = releasedWOs;
+    const scheduled = {
+      ...wo,
+      assigned_workers: [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }],
+      planned_start: toDateStr(dayDate),
+      planned_end: toDateStr(dayDate),
+      shift,
+      status: 'EN_PROGRAMACION',
+    };
+    setReleasedWOs(prev => prev.filter(w => w.wo_id !== wo.wo_id));
+    setScheduledWOs(prev => [...prev.filter(w => w.wo_id !== wo.wo_id), scheduled]);
+    api.updateManagedWO(wo.wo_id, {
       assigned_workers: [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }],
       planned_start: toDateStr(dayDate),
       planned_end: toDateStr(dayDate),
       shift: shift,
+      status: 'EN_PROGRAMACION',
     })
       .then(() => {
-        toast.success(`${wo.wo_number} → ${tech.name}`);
+        toast.success(`${wo.wo_number} → ${tech.name} · borrador`);
         loadCalendarData();
       })
-      .catch(() => toast.error(`Error scheduling ${wo.wo_number}`));
+      .catch(() => {
+        setScheduledWOs(prevScheduled);
+        setReleasedWOs(prevReleased);
+        toast.error(`Error scheduling ${wo.wo_number}`);
+      });
   };
 
-  const [capacityLimit, setCapacityLimit] = useState(85); // % max capacity for auto-level
-  const [showAIModal, setShowAIModal] = useState(false);
-  const [aiInstructions, setAiInstructions] = useState('');
-  const [aiPreview, setAiPreview] = useState(null);
-
-  const handleAISchedule = async () => {
-    setAiScheduling(true);
-    setAiResult(null);
-    try {
-      const toSchedule = [...(releasedWOs || [])];
-      const techs = technicians || [];
-
-      if (toSchedule.length === 0) {
-        toast.info('No WOs to schedule');
-        setAiScheduling(false);
-        return;
-      }
+  // Pure computation — builds a draft plan without persisting anything.
+  const computeAIPlan = () => {
+    // Only WOs in a schedulable state: LIBERADO, PLANIFICADO, EN_PROGRAMACION, REPROGRAMADO, APROBADO
+    // (CREADO must be released first; backend rejects direct CREADO → PROGRAMADO transition)
+    const SCHEDULABLE = new Set(['LIBERADO', 'PLANIFICADO', 'EN_PROGRAMACION', 'REPROGRAMADO', 'APROBADO']);
+    const toSchedule = (releasedWOs || []).filter(wo => SCHEDULABLE.has(wo.status));
+    const techs = technicians || [];
+    if (toSchedule.length === 0) return null;
 
       const viewedMonday = viewedWeekStart || getMonday(new Date());
       const numDays = 7;
@@ -2036,9 +2501,14 @@ export default function Scheduling() {
         weekDays.push(day.toISOString().slice(0, 10));
       }
 
+      // Working-days mask: 0=Mon … 6=Sun. Exclude weekends unless instructions request them
+      // (this mirrors standard 5-day work week; shift-based schedules can drag manually).
+      const instructions = aiInstructions.toLowerCase();
+      const includeWeekendInPlan = /sabado|sábado|domingo|weekend|fin de semana|7x7|7 dias|todos los dias/.test(instructions);
+      const workDayMask = [true, true, true, true, true, includeWeekendInPlan, includeWeekendInPlan]; // Mon-Sun
+
       // Sort by priority (P1 first) + apply AI instructions for priority override
       const prioOrder = { P1: 0, P2: 1, P3: 2, P4: 3 };
-      const instructions = aiInstructions.toLowerCase();
       toSchedule.sort((a, b) => {
         // If instructions mention specific WO, boost it to top
         const aBoost = instructions.includes((a.wo_number || '').toLowerCase()) ? -10 : 0;
@@ -2049,8 +2519,17 @@ export default function Scheduling() {
         return (prioOrder[a.priority_code] || 3) + aBoost + aEquipBoost - ((prioOrder[b.priority_code] || 3) + bBoost + bEquipBoost);
       });
 
-      // Capacity-constrained auto-level
-      const maxHHPerDay = techs.length * PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100);
+      // Capacity-constrained auto-level.
+      // If Settings has explicit dayShiftCount/nightShiftCount (Jorge's requirement),
+      // use those to cap per-shift capacity. Otherwise fall back to the actual roster split.
+      const dayTechCount = (CAP.dayShiftCount != null && CAP.dayShiftCount !== '')
+        ? Number(CAP.dayShiftCount)
+        : techs.filter(t => techShift(t) === 'day').length;
+      const nightTechCount = (CAP.nightShiftCount != null && CAP.nightShiftCount !== '')
+        ? Number(CAP.nightShiftCount)
+        : techs.filter(t => techShift(t) === 'night').length;
+      const effectiveTechs = Math.max(1, dayTechCount + nightTechCount);
+      const maxHHPerDay = effectiveTechs * PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100);
       const dayLoad = [0, 0, 0, 0, 0, 0, 0]; // 7 days
       // Apply "keep X light" instructions — reduce capacity for that day
       const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -2060,6 +2539,33 @@ export default function Scheduling() {
       const techDayLoad = {};
       techs.forEach(t => { techDayLoad[t.worker_id] = new Array(numDays).fill(0); });
 
+      // ── Seed existing scheduled WOs so we don't overlap/exceed capacity ──
+      // Distribute long WOs across multiple days (same as the placement logic).
+      const weekStartStr = weekDays[0];
+      const weekEndStr = weekDays[numDays - 1];
+      const seedDailyCap = PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100);
+      (scheduledWOs || []).forEach(wo => {
+        const s = wo.planned_start ? (typeof wo.planned_start === 'string' ? wo.planned_start.slice(0, 10) : toDateStr(new Date(wo.planned_start))) : null;
+        if (!s || s < weekStartStr || s > weekEndStr) return;
+        const idx = weekDays.indexOf(s);
+        if (idx < 0) return;
+        const woHours = parseFloat(wo.estimated_hours) || 0;
+        const workerId = (wo.assigned_workers || [])[0]?.worker_id;
+        // Long WOs are distributed day-by-day (they appear as "continuation" in the UI)
+        if (woHours > seedDailyCap) {
+          let remaining = woHours;
+          for (let d = idx; d < numDays && remaining > 0; d++) {
+            const chunk = Math.min(remaining, seedDailyCap);
+            dayLoad[d] += chunk;
+            if (workerId && techDayLoad[workerId]) techDayLoad[workerId][d] += chunk;
+            remaining -= chunk;
+          }
+        } else {
+          dayLoad[idx] += woHours;
+          if (workerId && techDayLoad[workerId]) techDayLoad[workerId][idx] += woHours;
+        }
+      });
+
       let scheduled = 0;
       let deferred = 0;
       const assignments = [];
@@ -2068,16 +2574,17 @@ export default function Scheduling() {
         const prio = wo.priority_code || 'P3';
         const hours = parseFloat(wo.estimated_hours) || 4;
 
-        // Find best day respecting capacity limit + AI instructions
+        // Find best day respecting capacity limit + work-day mask + AI instructions
         let bestDay = -1;
-        const allDays = Array.from({ length: numDays }, (_, i) => i);
+        const workDays = Array.from({ length: numDays }, (_, i) => i).filter(i => workDayMask[i]);
         if (prio === 'P1') {
-          bestDay = 0;
+          bestDay = workDays[0] ?? 0;
         } else if (prio === 'P2') {
-          bestDay = allDays.slice(0, 3).find(d => dayLoad[d] + hours <= maxHHPerDay * (lightDays[d] || 1));
-          if (bestDay === undefined) bestDay = allDays.slice(0, 3).reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b);
+          const firstHalf = workDays.slice(0, Math.ceil(workDays.length / 2));
+          bestDay = firstHalf.find(d => dayLoad[d] + hours <= maxHHPerDay * (lightDays[d] || 1));
+          if (bestDay === undefined) bestDay = firstHalf.reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b, firstHalf[0]);
         } else {
-          const candidates = allDays.filter(d => dayLoad[d] + hours <= maxHHPerDay * (lightDays[d] || 1));
+          const candidates = workDays.filter(d => dayLoad[d] + hours <= maxHHPerDay * (lightDays[d] || 1));
           if (candidates.length > 0) {
             bestDay = prio === 'P4' ? candidates[candidates.length - 1] : candidates.reduce((a, b) => dayLoad[a] <= dayLoad[b] ? a : b);
           }
@@ -2088,58 +2595,157 @@ export default function Scheduling() {
           continue; // Skip — would exceed capacity limit
         }
 
-        dayLoad[bestDay] += hours;
-
-        // Match technician by specialty and daily load
+        // Match technician — 3 tiers: (1) specialty+capacity, (2) any tech+capacity, (3) defer
         const woSpec = (wo.work_center || wo.specialty || '').toUpperCase();
-        let bestTech = null;
+        const perTechDailyCap = PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100);
+        // Weekly cap = daily × number of actual workdays (not 7) — matches the "36h/36h" UI indicator
+        const workdaysInWeek = workDayMask.filter(Boolean).length;
+        const perTechWeeklyCap = perTechDailyCap * workdaysInWeek;
 
-        // First try: match specialty + least loaded on that day
-        const specMatch = techs.filter(t => {
+        const hasSpecMatch = (t) => {
           const tSpec = (t.specialty || '').toUpperCase();
           return tSpec && woSpec && (tSpec.includes(woSpec.slice(0, 3)) || woSpec.includes(tSpec.slice(0, 3)));
-        });
-        const pool = specMatch.length > 0 ? specMatch : techs;
-        if (pool.length > 0) {
-          bestTech = pool.reduce((a, b) => {
-            const aLoad = techDayLoad[a.worker_id]?.[bestDay] || 0;
-            const bLoad = techDayLoad[b.worker_id]?.[bestDay] || 0;
-            return aLoad <= bLoad ? a : b;
-          });
-        }
-
-        if (bestTech && techDayLoad[bestTech.worker_id]) {
-          techDayLoad[bestTech.worker_id][bestDay] += hours;
-        }
-
-        try {
-          const updateData = {
-            planned_start: weekDays[bestDay],
-            planned_end: weekDays[bestDay],
-            status: 'PROGRAMADO',
-          };
-          if (bestTech) {
-            updateData.assigned_workers = [{ worker_id: bestTech.worker_id || bestTech.user_id, name: bestTech.name || bestTech.full_name, specialty: bestTech.specialty || '' }];
+        };
+        // For WOs longer than a single day's capacity, we don't require the full
+        // hours to fit in one day — they'll span multiple days visually (continuation).
+        // We only enforce that the tech isn't already saturated this week.
+        const isLongWO = hours > perTechDailyCap;
+        const hasRoom = (t, day) => {
+          const dayLoadT = techDayLoad[t.worker_id]?.[day] || 0;
+          const weekLoadT = (techDayLoad[t.worker_id] || []).reduce((s, v) => s + v, 0);
+          // Weekly cap is ALWAYS enforced — no tech should exceed their weekly capacity
+          if (weekLoadT + hours > perTechWeeklyCap) return false;
+          if (isLongWO) {
+            // Long WOs span days: require start day has some room, weekly cap already checked
+            return dayLoadT < perTechDailyCap;
           }
-          await api.scheduleManagedWO(wo.wo_id, updateData);
-          scheduled++;
-          assignments.push({ wo_number: wo.wo_number, worker_name: bestTech?.name || 'Unassigned', day: weekDays[bestDay], reason: `${prio} ${hours}h` });
-        } catch {}
+          return dayLoadT + hours <= perTechDailyCap;
+        };
+
+        // Try each day in order: bestDay first, then rest (only working days)
+        const dayOrder = [bestDay, ...workDays.filter(d => d !== bestDay)];
+        let bestTech = null;
+        let chosenDay = -1;
+        outer: for (const tier of ['spec', 'all']) {
+          for (const day of dayOrder) {
+            // Day must have real room for these hours (no pre-reservation pollution)
+            if (dayLoad[day] + hours > maxHHPerDay * (lightDays[day] || 1)) continue;
+            const candidates = techs.filter(t => hasRoom(t, day) && (tier === 'all' || hasSpecMatch(t)));
+            if (candidates.length > 0) {
+              bestTech = candidates.reduce((a, b) => {
+                const aWk = (techDayLoad[a.worker_id] || []).reduce((s, v) => s + v, 0);
+                const bWk = (techDayLoad[b.worker_id] || []).reduce((s, v) => s + v, 0);
+                if (aWk !== bWk) return aWk <= bWk ? a : b;
+                const aDay = techDayLoad[a.worker_id]?.[day] || 0;
+                const bDay = techDayLoad[b.worker_id]?.[day] || 0;
+                return aDay <= bDay ? a : b;
+              });
+              chosenDay = day;
+              break outer;
+            }
+          }
+        }
+
+        if (!bestTech || chosenDay < 0) {
+          deferred++;
+          continue;
+        }
+        bestDay = chosenDay;
+        // NOW commit the hours — distribute across days for long WOs so no single day is double-counted.
+        // A 48h WO with 7.2h/day cap spans ~7 days at 6.86h/day each, not 48h on one day.
+        if (isLongWO) {
+          let remaining = hours;
+          const daysNeeded = Math.ceil(hours / perTechDailyCap);
+          // Distribute evenly across consecutive working days starting at bestDay
+          let placed = 0;
+          for (let d = bestDay; d < numDays && placed < daysNeeded && remaining > 0; d++) {
+            if (!workDayMask[d]) continue;
+            const chunk = Math.min(remaining, perTechDailyCap);
+            dayLoad[d] += chunk;
+            if (techDayLoad[bestTech.worker_id]) techDayLoad[bestTech.worker_id][d] += chunk;
+            remaining -= chunk;
+            placed++;
+          }
+        } else {
+          dayLoad[bestDay] += hours;
+          if (techDayLoad[bestTech.worker_id]) {
+            techDayLoad[bestTech.worker_id][bestDay] += hours;
+          }
+        }
+
+        scheduled++;
+        assignments.push({
+          wo_id: wo.wo_id,
+          wo_number: wo.wo_number,
+          worker_id: bestTech?.worker_id || bestTech?.user_id || null,
+          worker_name: bestTech?.name || bestTech?.full_name || 'Unassigned',
+          worker_specialty: bestTech?.specialty || '',
+          day: weekDays[bestDay],
+          hours,
+          priority: prio,
+          reason: `${prio} ${hours}h`,
+        });
       }
 
-      // Create weekly program + execution tasks
-      const weekNum = getISOWeek(viewedMonday);
-      const year = viewedMonday.getFullYear();
+      const weekLabel = `${weekDays[0]} to ${weekDays[4]}`;
+      const peakLoad = maxHHPerDay > 0 ? Math.round((Math.max(...dayLoad) / maxHHPerDay) * 100) : 0;
+      return {
+        assignments,
+        scheduled,
+        deferred,
+        peakLoad,
+        weekLabel,
+        viewedMonday,
+        dayLoad,
+        maxHHPerDay,
+      };
+  };
+
+  // Persists the draft plan returned by computeAIPlan.
+  const applyAIPlan = async (plan) => {
+    if (!plan) return;
+    setAiScheduling(true);
+    setAiResult(null);
+    let ok = 0, failed = 0;
+    const failures = [];
+    try {
+      // Parallel batches of 10 for speed, but track each result
+      const BATCH = 10;
+      for (let i = 0; i < plan.assignments.length; i += BATCH) {
+        const batch = plan.assignments.slice(i, i + BATCH);
+        const results = await Promise.allSettled(batch.map(a => {
+          // Auto-Level produces DRAFT (EN_PROGRAMACION). Planner must Reservar Semana to commit.
+          const updateData = {
+            planned_start: a.day,
+            planned_end: a.day,
+            status: 'EN_PROGRAMACION',
+          };
+          if (a.worker_id) {
+            updateData.assigned_workers = [{ worker_id: a.worker_id, name: a.worker_name, specialty: a.worker_specialty || '' }];
+          }
+          return api.updateManagedWO(a.wo_id, updateData);
+        }));
+        results.forEach((r, idx) => {
+          if (r.status === 'fulfilled') ok++;
+          else { failed++; failures.push({ wo: batch[idx].wo_number, err: r.reason?.message || 'unknown' }); }
+        });
+      }
+
+      const weekNum = getISOWeek(plan.viewedMonday);
+      const year = plan.viewedMonday.getFullYear();
       try { await api.createProgram({ plant_id: plant, week_number: weekNum, year }); } catch {}
       try { await api.autoGenerateTasks(plant); } catch {}
 
-      const weekLabel = `${weekDays[0]} to ${weekDays[4]}`;
-      const loadPctFinal = maxHHPerDay > 0 ? Math.round((Math.max(...dayLoad) / maxHHPerDay) * 100) : 0;
-      const msg = `✓ ${scheduled} WOs auto-leveled for ${weekLabel} at ${capacityLimit}% capacity${deferred > 0 ? ` (${deferred} deferred — over capacity)` : ''} · Peak load: ${loadPctFinal}%`;
-      toast.success(msg);
-      setAiResult({ assignments, message: msg });
-      // Force reload with small delay to ensure backend has processed all changes
-      setTimeout(() => { loadCalendarData(); loadPrograms(); loadGantt(); }, 500);
+      const msg = failed === 0
+        ? `✓ ${ok} OTs programadas · Peak ${plan.peakLoad}% · ${plan.deferred > 0 ? `${plan.deferred} diferidas` : 'todas dentro de capacidad'}`
+        : `⚠️ ${ok} de ${plan.assignments.length} programadas · ${failed} fallaron${plan.deferred > 0 ? ` · ${plan.deferred} diferidas` : ''}`;
+      if (failed === 0) toast.success(msg);
+      else {
+        toast.error(msg);
+        console.warn('Auto-Level failures:', failures);
+      }
+      setAiResult({ assignments: plan.assignments.slice(0, ok), message: msg, failed, failures });
+      setTimeout(() => { loadCalendarData(); loadPrograms(); loadGantt(); }, 300);
     } catch (e) {
       toast.error('Auto-level error: ' + (e.message || ''));
     } finally {
@@ -2204,6 +2810,7 @@ export default function Scheduling() {
     { id: 'masschange', icon: Wrench, label: 'Mass Change' },
     { id: 'hh', icon: Users, label: t('scheduling.hhBalance') },
     { id: 'materials', icon: Package, label: t('scheduling.materials') },
+    { id: 'equipment', icon: Wrench, label: 'Equipos de Apoyo' },
   ];
 
   return (
@@ -2303,6 +2910,8 @@ export default function Scheduling() {
           scheduledWOs={scheduledWOs}
           t={t}
           onScheduleWO={handleScheduleWO}
+          onUnscheduleWO={handleUnscheduleWO}
+          onRefresh={() => { loadCalendarData(); loadPrograms(); loadGantt(); }}
           onPublish={handlePublish}
           publishing={publishing}
           canPublish={canPublish}
@@ -2327,6 +2936,9 @@ export default function Scheduling() {
       {tab === 'materials' && (
         <MaterialsTab programId={activeProgramId} t={t} plantId={plant} />
       )}
+      {tab === 'equipment' && (
+        <SupportEquipmentTab plantId={plant} t={t} />
+      )}
 
       {/* Modals */}
       {detailOrder && (
@@ -2337,51 +2949,244 @@ export default function Scheduling() {
         <OCRClosureModal order={closureOrder} t={t} onClose={() => setClosureOrder(null)} onSubmit={handleClosureSubmit} />
       )}
       {/* AI Auto-Level Modal */}
-      {showAIModal && (
+      {showAIModal && (() => {
+        const wos = releasedWOs || [];
+        const prioCount = wos.reduce((a, w) => { const p = w.priority_code || 'P4'; a[p] = (a[p] || 0) + 1; return a; }, {});
+        const specHours = wos.reduce((a, w) => {
+          const s = (w.work_center || w.specialty || 'OTRA').toUpperCase().slice(0, 4);
+          a[s] = (a[s] || 0) + (parseFloat(w.estimated_hours) || 4);
+          return a;
+        }, {});
+        const totalHours = Object.values(specHours).reduce((a, b) => a + b, 0);
+        const weekCapacity = technicians.length * PROGRAMMABLE_HH_PER_DAY * 7 * (capacityLimit / 100);
+        const fitPct = weekCapacity > 0 ? Math.round((totalHours / weekCapacity) * 100) : 0;
+        const wontFit = Math.max(0, totalHours - weekCapacity);
+        const wontFitWOs = weekCapacity > 0 && totalHours > weekCapacity ? Math.round(wos.length * (wontFit / totalHours)) : 0;
+        const PRIO_COLORS = { P1: 'bg-red-100 text-red-700', P2: 'bg-orange-100 text-orange-700', P3: 'bg-blue-100 text-blue-700', P4: 'bg-gray-100 text-gray-600' };
+        const CHIPS = [
+          { label: 'Priorizar P1/P2', text: 'Priorizar todas las OTs P1 y P2 al inicio de la semana.' },
+          { label: 'Viernes liviano', text: 'Dejar el viernes liviano para atender imprevistos.' },
+          { label: 'Distribuir Lun-Mié', text: 'Distribuir el trabajo mecánico pesado entre Lunes y Miércoles.' },
+          { label: 'Noche ligero', text: 'Mantener la carga del turno noche baja; dotación reducida.' },
+          { label: 'Respetar especialidad', text: 'Asignar solo a técnicos cuya especialidad coincida con la OT.' },
+          { label: 'Incluir fin de semana', text: 'Incluir sábado y domingo en la programación (turnos 7x7).' },
+        ];
+        const addChip = (txt) => setAiInstructions(prev => prev ? (prev.trim() + ' ' + txt) : txt);
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !aiScheduling && setShowAIModal(false)} />
-          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles size={24} className="text-purple-600" />
+          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <Sparkles size={18} className="text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold">Auto-Level con IA</h3>
+                <p className="text-xs text-gray-500">
+                  {wos.length} OTs · {technicians.length} técnicos · {totalHours.toFixed(0)}h totales
+                  {(CAP.dayShiftCount != null || CAP.nightShiftCount != null) && (
+                    <span className="ml-1 text-purple-600">(☀️ {CAP.dayShiftCount ?? '—'} día · 🌙 {CAP.nightShiftCount ?? '—'} noche)</span>
+                  )}
+                </p>
+              </div>
+              <span className={`text-xs font-bold px-2 py-1 rounded-lg ${fitPct > 100 ? 'bg-red-100 text-red-700' : fitPct > 85 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                {fitPct}% carga
+              </span>
             </div>
-            <h3 className="text-lg font-bold text-center mb-1">AI Auto-Level Schedule</h3>
-            <p className="text-sm text-gray-500 text-center mb-4">
-              {releasedWOs.length} WOs to schedule at {capacityLimit}% capacity with {technicians.length} technicians
-            </p>
-            <div className="space-y-3">
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {/* Pre-analysis — priority breakdown */}
               <div>
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 block">Instructions for AI (optional)</label>
+                <div className="text-[10px] font-bold text-gray-500 uppercase mb-1.5">Por prioridad</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {['P1', 'P2', 'P3', 'P4'].map(p => prioCount[p] > 0 && (
+                    <span key={p} className={`text-xs font-semibold px-2 py-1 rounded ${PRIO_COLORS[p]}`}>
+                      {p}: {prioCount[p]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Specialty capacity bars */}
+              <div>
+                <div className="text-[10px] font-bold text-gray-500 uppercase mb-1.5">Carga por especialidad vs capacidad semanal</div>
+                <div className="space-y-1">
+                  {Object.entries(specHours).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([spec, h]) => {
+                    const techsOfSpec = technicians.filter(t => (t.specialty || '').toUpperCase().startsWith(spec.slice(0, 3))).length || 1;
+                    const cap = techsOfSpec * PROGRAMMABLE_HH_PER_DAY * 7 * (capacityLimit / 100);
+                    const pct = cap > 0 ? Math.min(150, (h / cap) * 100) : 0;
+                    const over = pct > 100;
+                    return (
+                      <div key={spec} className="flex items-center gap-2 text-xs">
+                        <span className="w-12 font-mono font-bold text-gray-700 dark:text-gray-300">{spec}</span>
+                        <div className="flex-1 h-3 bg-gray-100 dark:bg-gray-800 rounded overflow-hidden relative">
+                          <div className={`h-full ${over ? 'bg-red-500' : pct > 85 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                          {over && <div className="absolute right-0 top-0 h-full bg-red-700" style={{ width: `${Math.min(50, pct - 100)}%` }} />}
+                        </div>
+                        <span className={`w-20 text-right tabular-nums ${over ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
+                          {h.toFixed(0)}h / {cap.toFixed(0)}h
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Capacity slider */}
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <label className="font-bold text-gray-500 uppercase text-[10px]">Capacidad máxima</label>
+                  <span className="font-bold text-purple-700">{capacityLimit}% · {Math.round(PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100))}h/persona/día</span>
+                </div>
+                <input type="range" min={60} max={100} step={5} value={capacityLimit}
+                  onChange={e => setCapacityLimit(Number(e.target.value))}
+                  className="w-full accent-purple-600" />
+                <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                  <span>60%</span><span>70%</span><span>80%</span><span>90%</span><span>100%</span>
+                </div>
+              </div>
+
+              {/* Blocked equipment warning */}
+              {blockedEquipment.length > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-300 dark:border-amber-700 rounded-lg p-3 flex gap-2 text-xs">
+                  <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-amber-800 dark:text-amber-200">
+                    <div className="font-semibold mb-0.5">{blockedEquipment.length} equipo{blockedEquipment.length > 1 ? 's' : ''} de apoyo fuera de servicio</div>
+                    <div className="flex flex-wrap gap-1 mb-1">
+                      {blockedEquipment.slice(0, 5).map(eq => (
+                        <span key={eq.equipment_id} className="bg-white/60 dark:bg-amber-950/40 border border-amber-300 rounded px-1.5 py-0.5">
+                          🔒 {eq.name}{eq.out_of_service_reason ? ` · ${eq.out_of_service_reason}` : ''}
+                        </span>
+                      ))}
+                      {blockedEquipment.length > 5 && <span className="opacity-70">+{blockedEquipment.length - 5} más</span>}
+                    </div>
+                    <div className="text-[10px] opacity-80">El Auto-Level no considera equipos de apoyo. Revisa manualmente si alguna OT los requiere.</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick instruction chips */}
+              <div>
+                <div className="text-[10px] font-bold text-gray-500 uppercase mb-1.5">Instrucciones rápidas</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {CHIPS.map(c => (
+                    <button key={c.label} type="button" onClick={() => addChip(c.text)}
+                      className="text-xs px-2.5 py-1 rounded-full border border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 hover:bg-purple-100 transition-colors">
+                      + {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Free-text instructions */}
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Contexto adicional (opcional)</label>
                 <textarea value={aiInstructions} onChange={e => setAiInstructions(e.target.value)}
-                  placeholder="e.g. Prioritize OT-2026-00031, spread mechanical work across Mon-Wed, keep Friday light for emergencies..."
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 min-h-[80px] bg-background text-foreground" />
+                  placeholder='Ej: "Prioriza OT-2026-00031", "adelantar paradas en equipo 1210EF0014"...'
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 min-h-[70px] bg-background text-foreground" />
               </div>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-purple-700 dark:text-purple-300">{capacityLimit}%</div>
-                  <div className="text-purple-500">Max capacity</div>
+
+              {/* Plan preview */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-xs space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">Preview del plan</span>
+                  {wontFitWOs > 0 && (
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded">
+                      ~{wontFitWOs} OTs no entrarán
+                    </span>
+                  )}
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-blue-700 dark:text-blue-300">{Math.round(PROGRAMMABLE_HH_PER_DAY)}h</div>
-                  <div className="text-blue-500">Per person/day</div>
-                </div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {wos.length} OTs → {technicians.length} técnicos al {capacityLimit}% · {Math.round(PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100))}h/persona/día
+                </p>
+                <p className="text-gray-500 text-[11px]">El plan se mostrará para tu aprobación antes de aplicarse.</p>
               </div>
             </div>
-            {/* Preview info */}
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-xs text-gray-600 dark:text-gray-300">
-              <p className="font-semibold mb-1">Plan preview:</p>
-              <p>{(releasedWOs || []).length} WOs will be distributed across {technicians.length} technicians</p>
-              <p>Max {capacityLimit}% capacity = {Math.round(PROGRAMMABLE_HH_PER_DAY * (capacityLimit/100))}h/person/day</p>
-              {aiInstructions && <p className="mt-1 text-purple-600 dark:text-purple-400">Instructions: "{aiInstructions}"</p>}
-            </div>
-            <div className="flex gap-3 mt-4">
+
+            <div className="p-4 border-t flex gap-3">
               <button onClick={() => { setShowAIModal(false); setAiInstructions(''); setAiResult(null); }}
                 className="flex-1 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 dark:text-foreground hover:bg-gray-50 dark:hover:bg-muted">
-                Cancel
+                Cancelar
               </button>
-              <button onClick={() => { setShowAIModal(false); handleAISchedule(); }} disabled={aiScheduling || (releasedWOs || []).length === 0}
+              <button onClick={() => {
+                  const plan = computeAIPlan();
+                  if (!plan || plan.assignments.length === 0) {
+                    toast.info('Ninguna OT pudo programarse con la capacidad actual');
+                    return;
+                  }
+                  setAiDraftPlan(plan);
+                  setShowAIModal(false);
+                }} disabled={aiScheduling || wos.length === 0}
                 className="flex-1 py-2.5 text-sm font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-40 flex items-center justify-center gap-2">
-                {aiScheduling ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                Apply Plan
+                <Sparkles size={14} />
+                Generar Plan
+              </button>
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+      )}
+
+      {/* AI Draft Plan Review Modal — shown BEFORE applying anything */}
+      {aiDraftPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !aiScheduling && setAiDraftPlan(null)} />
+          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <Sparkles size={18} className="text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Plan borrador — Revisa antes de aplicar</h3>
+                  <p className="text-xs text-gray-500">{aiDraftPlan.weekLabel} · Peak {aiDraftPlan.peakLoad}%</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-emerald-700">{aiDraftPlan.scheduled}</div>
+                  <div className="text-emerald-600">Programadas</div>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-amber-700">{aiDraftPlan.deferred}</div>
+                  <div className="text-amber-600">Diferidas (sobre capacidad)</div>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-purple-700">{aiDraftPlan.peakLoad}%</div>
+                  <div className="text-purple-600">Carga pico</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Asignaciones propuestas ({aiDraftPlan.assignments.length})</div>
+              <div className="space-y-1">
+                {aiDraftPlan.assignments.map((a, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${a.priority === 'P1' ? 'bg-red-100 text-red-700' : a.priority === 'P2' ? 'bg-orange-100 text-orange-700' : a.priority === 'P3' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>{a.priority}</span>
+                    <span className="font-mono font-bold text-purple-700 min-w-[120px]">{a.wo_number}</span>
+                    <span className="text-gray-400">→</span>
+                    <span className="flex-1 text-gray-700 dark:text-gray-300">{a.worker_name}</span>
+                    <span className="text-xs text-gray-500">{a.day}</span>
+                    <span className="text-xs font-semibold text-gray-600">{a.hours}h</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-4 border-t flex gap-3">
+              <button onClick={() => setAiDraftPlan(null)} disabled={aiScheduling}
+                className="flex-1 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                Descartar
+              </button>
+              <button onClick={() => { setShowAIModal(true); setAiDraftPlan(null); }} disabled={aiScheduling}
+                className="flex-1 py-2.5 text-sm font-semibold border border-purple-300 rounded-xl text-purple-700 hover:bg-purple-50 disabled:opacity-50">
+                Ajustar contexto
+              </button>
+              <button onClick={async () => { const plan = aiDraftPlan; setAiDraftPlan(null); await applyAIPlan(plan); setAiInstructions(''); }}
+                disabled={aiScheduling}
+                className="flex-1 py-2.5 text-sm font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-40 flex items-center justify-center gap-2">
+                {aiScheduling ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                Aceptar plan
               </button>
             </div>
           </div>

@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MagEAM - Maintenance Maturity Scorecard</title>
+<style>
+:root {
+  --bg-primary: #0d0d1a;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --accent: #0f3460;
+  --highlight: #e94560;
+  --success: #00b4d8;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0b8;
+  --text-muted: #606078;
+  --border: #2a2a4a;
+  --level1: #e94560;
+  --level2: #ff6b35;
+  --level3: #f1c40f;
+  --level4: #2ecc71;
+  --level5: #00b4d8;
+  --radius: 8px;
+  --gap: 16px;
+  --transition: 0.25s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 16px;
+  min-height: 100vh;
+}
+.container { max-width: 960px; margin: 0 auto; padding: 0 var(--gap); }
+.hero {
+  text-align: center;
+  padding: 64px var(--gap) 48px;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 50%, var(--bg-primary) 100%);
+  border-bottom: 1px solid var(--border);
+}
+.hero-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.hero h1 { font-size: clamp(26px, 4.5vw, 38px); font-weight: 700; margin-bottom: 8px; color: #fff; }
+.hero .subtitle { font-size: clamp(13px, 2.3vw, 16px); color: var(--success); margin-bottom: 20px; font-weight: 600; }
+.hero .intro { max-width: 680px; margin: 0 auto; color: var(--text-secondary); font-size: 15px; }
+.phase-section { padding: 40px 0; }
+.phase-section h2 { text-align: center; font-size: 22px; margin-bottom: 8px; }
+.phase-section .phase-hint { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+.phase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.phase-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+  user-select: none;
+}
+.phase-card:hover { border-color: var(--success); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,180,216,0.15); }
+.phase-card.selected { border-color: var(--success); background: var(--bg-tertiary); box-shadow: 0 0 0 3px rgba(0,180,216,0.25); }
+.phase-card .icon { font-size: 30px; margin-bottom: 6px; }
+.phase-card .name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.phase-card .desc { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+.phase-badge { text-align: center; margin-top: 20px; min-height: 36px; }
+.phase-badge span { display: inline-block; background: var(--accent); color: var(--success); padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+.project-info { padding: 0 0 32px; }
+.collapsible-header { display: flex; align-items: center; justify-content: space-between; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; cursor: pointer; user-select: none; transition: background var(--transition); }
+.collapsible-header:hover { background: var(--bg-tertiary); }
+.collapsible-header h3 { font-size: 15px; font-weight: 600; }
+.collapsible-header .arrow { transition: transform var(--transition); font-size: 12px; color: var(--text-muted); }
+.collapsible-header.open .arrow { transform: rotate(180deg); }
+.collapsible-body { display: none; background: var(--bg-secondary); border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); padding: 16px; }
+.collapsible-body.open { display: block; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+.form-group input { width: 100%; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); font-size: 14px; outline: none; transition: border-color var(--transition); }
+.form-group input:focus { border-color: var(--success); }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+.sticky-bar { position: sticky; top: 0; z-index: 100; background: var(--bg-primary); border-bottom: 1px solid var(--border); padding: 10px var(--gap); display: none; }
+.sticky-bar.visible { display: block; }
+.sticky-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.progress-track { flex: 1; min-width: 120px; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--success); border-radius: 4px; transition: width var(--transition); width: 0%; }
+.progress-text { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.progress-score { font-size: 13px; font-weight: 700; color: var(--success); white-space: nowrap; }
+.btn-calculate { padding: 8px 20px; background: var(--highlight); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity var(--transition); white-space: nowrap; }
+.btn-calculate:hover { opacity: 0.85; }
+.btn-calculate:disabled { opacity: 0.4; cursor: not-allowed; }
+.assessment-section { padding-bottom: 40px; display: none; }
+.assessment-section.visible { display: block; }
+.discipline-accordion { margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.disc-header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: var(--bg-secondary); cursor: pointer; user-select: none; transition: background var(--transition); }
+.disc-header:hover { background: var(--bg-tertiary); }
+.disc-header .disc-icon { font-size: 22px; flex-shrink: 0; }
+.disc-header .disc-name { font-weight: 700; font-size: 15px; flex: 1; }
+.disc-header .disc-weight { font-size: 12px; color: var(--text-muted); background: var(--bg-primary); padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+.disc-header .disc-score-badge { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 10px; background: var(--bg-primary); color: var(--text-muted); flex-shrink: 0; min-width: 42px; text-align: center; }
+.disc-header .disc-score-badge.scored { color: var(--success); }
+.disc-header .disc-arrow { font-size: 12px; color: var(--text-muted); transition: transform var(--transition); flex-shrink: 0; }
+.disc-header.open .disc-arrow { transform: rotate(180deg); }
+.disc-body { display: none; background: var(--bg-primary); padding: 16px; }
+.disc-body.open { display: block; }
+.criterion { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.criterion:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+.criterion-text { font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.5; }
+.criterion-number { color: var(--text-muted); font-weight: 700; margin-right: 6px; }
+.score-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+.score-btn { flex: 1; min-width: 52px; height: 36px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); border-radius: 6px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all var(--transition); display: flex; align-items: center; justify-content: center; }
+.score-btn:hover { border-color: var(--success); color: var(--text-primary); }
+.score-btn.active { border-color: var(--success); background: var(--success); color: #0d0d1a; }
+.score-labels { display: flex; gap: 6px; margin-top: 6px; }
+.score-labels span { flex: 1; min-width: 52px; font-size: 11px; color: var(--text-secondary); text-align: center; line-height: 1.25; font-weight: 600; }
+@media (max-width: 480px) { .score-btn { min-width: 44px; height: 34px; font-size: 14px; } .score-labels span { min-width: 44px; font-size: 9px; } }
+
+/* ---- SCALE EXPLAINER (collapsible) ---- */
+.scale-block { margin: 0 0 24px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg-secondary); }
+.scale-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; cursor: pointer; user-select: none; transition: background var(--transition); background: var(--bg-tertiary); }
+.scale-header:hover { background: var(--accent); }
+.scale-header h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.scale-header .hint { font-size: 11px; color: var(--text-muted); margin-left: 12px; }
+.scale-header .arrow { font-size: 12px; color: var(--text-muted); transition: transform var(--transition); }
+.scale-header.open .arrow { transform: rotate(180deg); }
+.scale-body { display: none; padding: 20px 18px; border-top: 1px solid var(--border); }
+.scale-body.open { display: block; }
+.scale-intro { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.55; }
+.scale-advice { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+.scale-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.scale-level-card { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px; border-left-width: 4px; }
+.scale-level-card .lvl-num { font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.scale-level-card .lvl-name { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.scale-level-card .lvl-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+@media (max-width: 600px) { .scale-levels { grid-template-columns: 1fr 1fr; } }
+.results-section { display: none; padding: 40px 0 60px; }
+.results-section.visible { display: block; }
+.result-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; text-align: center; margin-bottom: 32px; }
+.result-score { font-size: 72px; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+.result-label { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+.result-interp { font-size: 15px; color: var(--text-secondary); max-width: 700px; margin: 0 auto; line-height: 1.7; text-align: left; }
+.radar-container { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 32px; }
+.radar-container h3 { text-align: center; font-size: 18px; margin-bottom: 16px; }
+.radar-svg-wrap { display: flex; justify-content: center; overflow: visible; }
+.radar-svg-wrap svg { max-width: 100%; height: auto; }
+.radar-legend { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-top: 14px; font-size: 12px; color: var(--text-secondary); }
+.radar-legend .item { display: flex; align-items: center; gap: 8px; }
+.radar-legend .swatch { width: 24px; height: 0; border-top-width: 2px; border-top-style: solid; }
+.radar-legend .swatch.dashed { border-top-style: dashed; border-top-width: 2px; }
+.breakdown { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 32px; overflow-x: auto; }
+.breakdown h3 { font-size: 18px; margin-bottom: 16px; }
+.breakdown table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.breakdown th { text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.breakdown td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.breakdown tr:last-child td { border-bottom: none; }
+.bar-cell { min-width: 120px; }
+.bar-track { height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }
+.bar-track .bar-fill { height: 100%; border-radius: 4px; transition: width var(--transition); }
+.gap-section { margin-bottom: 32px; }
+.gap-section h3 { font-size: 18px; margin-bottom: 16px; }
+.gap-card { background: var(--bg-secondary); border-left: 4px solid var(--highlight); border-radius: 0 var(--radius) var(--radius) 0; padding: 20px; margin-bottom: 12px; }
+.gap-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.gap-card-header .gap-name { font-weight: 700; font-size: 15px; }
+.gap-card-header .gap-score { font-weight: 700; padding: 3px 10px; border-radius: 10px; font-size: 13px; }
+.gap-risk { font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; font-style: italic; }
+.gap-actions { list-style: none; margin-bottom: 8px; }
+.gap-actions li { font-size: 13px; color: var(--text-secondary); padding: 3px 0 3px 18px; position: relative; }
+.gap-actions li::before { content: "\25B6"; position: absolute; left: 0; color: var(--highlight); font-size: 9px; top: 6px; }
+.gap-ref { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.no-gaps { background: var(--bg-secondary); border-left: 4px solid var(--level4); border-radius: 0 var(--radius) var(--radius) 0; padding: 20px; color: var(--level4); font-weight: 600; font-size: 15px; }
+.actions-bar { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 32px; }
+.btn { padding: 10px 24px; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity var(--transition); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--success); color: #0d0d1a; }
+.btn-secondary { background: var(--accent); color: var(--text-primary); }
+.btn-danger { background: rgba(233,69,96,0.2); color: var(--highlight); border: 1px solid var(--highlight); }
+.cta-block { background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--accent) 100%); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; text-align: center; margin-bottom: 24px; }
+.cta-block h3 { font-size: 20px; margin-bottom: 8px; color: #fff; }
+.cta-block p { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; }
+.cta-block .btn-cta { display: inline-block; padding: 14px 36px; background: var(--highlight); color: #fff; border-radius: var(--radius); font-size: 16px; font-weight: 700; text-decoration: none; transition: opacity var(--transition); }
+.cta-block .btn-cta:hover { opacity: 0.85; }
+.footer-ref { text-align: center; color: var(--text-muted); font-size: 13px; padding: 24px 0; border-top: 1px solid var(--border); }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.visible { display: flex; }
+.modal-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; max-width: 420px; width: 90%; text-align: center; }
+.modal-box h3 { margin-bottom: 12px; font-size: 18px; }
+.modal-box p { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 12px; justify-content: center; }
+.modal-actions .btn { min-width: 100px; justify-content: center; }
+@media print {
+  body { background: #fff; color: #111; font-size: 11pt; }
+  .sticky-bar, .phase-section, .project-info, .assessment-section, .actions-bar, .cta-block, .modal-overlay { display: none !important; }
+  .hero { background: #fff; border-bottom-color: #ccc; padding: 24px 0; }
+  .hero h1 { color: #111; font-size: 24pt; }
+  .hero .subtitle { color: #333; }
+  .hero .intro { color: #555; }
+  .hero-badge { background: #eee; color: #333; }
+  .results-section { display: block !important; padding-top: 0; }
+  .result-card, .radar-container, .breakdown, .gap-card, .no-gaps { background: #fff; border-color: #ccc; break-inside: avoid; }
+  .result-score { color: #111 !important; }
+  .result-label { color: #333 !important; }
+  .result-interp { color: #444; }
+  .breakdown th { color: #666; border-bottom-color: #ccc; }
+  .breakdown td { color: #333; border-bottom-color: #eee; }
+  .gap-risk { color: #555; }
+  .gap-actions li { color: #444; }
+  .gap-ref { color: #666; }
+  .footer-ref { color: #888; border-top-color: #ccc; }
+  .container { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+<!-- NAV VSC -->
+<nav style="background:#0a1628;border-bottom:1px solid #2A3F5F;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:9999;">
+  <a href="https://www.mageam.com/" style="color:#10b981;font-weight:700;text-decoration:none;font-size:14px;">MagEAM</a>
+  <div style="display:flex;gap:20px;">
+    <a href="https://www.mageam.com/" style="color:#A0A8B4;text-decoration:none;font-size:13px;">MagEAM</a>
+    <a href="/or-readiness-scorecard.html" style="color:#A0A8B4;text-decoration:none;font-size:13px;">Diagnóstico OR</a>
+    <a href="/ams-assessment-tool-ES.html" style="color:#A0A8B4;text-decoration:none;font-size:13px;">Diagnóstico AMS</a>
+  </div>
+</nav>
+<!-- /NAV VSC -->
+<section class="hero" id="hero">
+  <div class="container">
+    <div class="hero-badge">Diagnostic Tool</div>
+    <h1>Asset Management & Maintenance Maturity Scorecard</h1>
+    <p class="subtitle">Asset Management & Maintenance - by ValueStrategy Consulting</p>
+    <p class="intro">Evaluate the maturity of your asset management and maintenance function across the asset lifecycle - from project to stable operations. 150 structured questions. Results in under 15 minutes.</p>
+  </div>
+</section>
+<div class="sticky-bar" id="stickyBar">
+  <div class="sticky-inner">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-text" id="progressText">0 / 30 criteria scored</span>
+    <span class="progress-score" id="progressScore"></span>
+    <button class="btn-calculate" id="btnCalculate" disabled onclick="calculateResults()">Calculate Results</button>
+  </div>
+</div>
+<section class="phase-section" id="phaseSection">
+  <div class="container">
+    <h2>Select the asset lifecycle phase</h2>
+    <p class="phase-hint">This determines which criteria are evaluated</p>
+    <div class="phase-grid" id="phaseGrid"></div>
+    <div class="phase-badge" id="phaseBadge"></div>
+  </div>
+</section>
+<div class="container">
+  <section class="project-info" id="projectInfo" style="display:none;">
+    <div class="collapsible-header" id="infoToggle" onclick="toggleInfo()">
+      <h3>Project Information (optional)</h3>
+      <span class="arrow">&#9660;</span>
+    </div>
+    <div class="collapsible-body" id="infoBody">
+      <div class="form-row">
+        <div class="form-group"><label for="companyName">Company</label><input type="text" id="companyName" autocomplete="off"></div>
+        <div class="form-group"><label for="assetName">Asset / Project</label><input type="text" id="assetName" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="assessDate">Assessment date</label><input type="date" id="assessDate"></div>
+        <div class="form-group"><label for="assessor">Assessor</label><input type="text" id="assessor" autocomplete="off"></div>
+      </div>
+    </div>
+  </section>
+  <section class="scale-block" id="scaleBlock" style="display:none;">
+    <div class="scale-header" id="scaleHeader" onclick="toggleScale()">
+      <h3>How to score? (Scale 1 to 5) <span class="hint">Click to expand / collapse</span></h3>
+      <span class="arrow">&#9660;</span>
+    </div>
+    <div class="scale-body" id="scaleBody">
+      <p class="scale-intro">For each question, assign a score from 1 to 5 that reflects the CURRENT state of your operation, based on verifiable evidence (documents, CMMS data, audits). Do not score what you think should be in place; score what is actually implemented. If unsure, use the lower level.</p>
+      <p class="scale-advice">Guidelines: (1) Be honest - the value of this diagnostic comes from your objectivity. (2) Answer one phase at a time. (3) Keep evidence notes to back up each score. (4) If a question does not apply to your context, leave it blank.</p>
+      <div class="scale-levels" id="scaleLevels"></div>
+    </div>
+  </section>
+  <section class="assessment-section" id="assessmentSection"></section>
+</div>
+<div class="container">
+  <section class="results-section" id="resultsSection">
+    <div class="result-card" id="resultCard"></div>
+    <div class="radar-container" id="radarContainer">
+      <h3>Radar by Dimension</h3>
+      <div class="radar-svg-wrap" id="radarWrap"></div>
+    </div>
+    <div class="breakdown" id="breakdownTable"></div>
+    <div class="gap-section" id="gapSection"></div>
+    <div class="actions-bar" id="actionsBar">
+      <button class="btn btn-primary" onclick="downloadCSV()">&#128196; Download CSV</button>
+      <button class="btn btn-secondary" onclick="window.print()">&#128424; Print Report</button>
+      <button class="btn btn-danger" onclick="resetAssessment()">&#9888; Reset Assessment</button>
+    </div>
+    <div class="cta-block">
+      <h3>Need to close your asset management gaps?</h3>
+      <p>Schedule a meeting with an asset management specialist to discuss your results and build a prioritized action plan.</p>
+      <a href="https://calendly.com/valuestrategyconsulting" target="_blank" rel="noopener" class="btn-cta">Schedule a meeting</a>
+    </div>
+    <div class="footer-ref">Based on ValueStrategy Consulting's Asset Management framework - aligned with IAM, ISO 55001 and SAM+</div>
+  </section>
+</div>
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <h3>Change phase?</h3>
+    <p>Changing the phase will reset all scores. Continue?</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="confirmPhaseChange()">Yes, reset</button>
+      <button class="btn btn-secondary" onclick="cancelPhaseChange()">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+var DATA = {"PHASES": [{"id": "proyecto", "name": "Project / Design", "desc": "Concept, FEED and early EPC. Definition of philosophies and strategies.", "icon": "📐"}, {"id": "commissioning", "name": "Construction and Commissioning", "desc": "EPC and pre-start. Master data, CMMS loading, PM builds, initial training.", "icon": "🔧"}, {"id": "rampup", "name": "Ramp-up", "desc": "Operational stabilization. PM reality-check, backlog, early-life failures.", "icon": "🚀"}, {"id": "estable", "name": "Stable operations", "desc": "Mature reliability. Optimization, benchmarks, consolidated asset management.", "icon": "⚙"}, {"id": "mejora", "name": "Continuous improvement and renewal", "desc": "Systematic RCA, major modifications, decommissioning, replacement.", "icon": "🔄"}], "DIMENSIONS": [{"id": 1, "name": "Leadership and asset management policy", "weight": 10, "icon": "🎯", "ref": "IAM #27 + ISO 55001 §5"}, {"id": 2, "name": "Strategy and planning (SAMP and objectives)", "weight": 10, "icon": "🗺", "ref": "IAM #1-5 + ISO 55001 §6"}, {"id": 3, "name": "Investment decision-making and lifecycle value", "weight": 10, "icon": "💰", "ref": "IAM #6-8 + SAM+ Group 2"}, {"id": 4, "name": "Reliability engineering and RCM", "weight": 12, "icon": "🔧", "ref": "IAM #16 + RCM SAE JA1011"}, {"id": 5, "name": "Maintenance execution (PM, CBM, planning)", "weight": 12, "icon": "🛠", "ref": "IAM #15 + SAM+ Group 3"}, {"id": 6, "name": "Shutdown and turnaround management", "weight": 8, "icon": "🚧", "ref": "IAM #10, #19"}, {"id": 7, "name": "Data, systems (CMMS/ERP) and information", "weight": 10, "icon": "💾", "ref": "IAM #22-25 + ISO 55001 §7.5"}, {"id": 8, "name": "Materials, spare parts and supply chain", "weight": 8, "icon": "📦", "ref": "IAM #26 + PAS 55 4.4.2"}, {"id": 9, "name": "Organization, competence and culture", "weight": 10, "icon": "👥", "ref": "IAM #28-30 + ISO 55001 §7.2-7.3"}, {"id": 10, "name": "Risk, performance, HSE and continuous improvement", "weight": 10, "icon": "🛡", "ref": "IAM #31-37 + ISO 55001 §9-10"}], "LEVELS": [{"id": 1, "min": 1.0, "max": 1.9, "name": "Innocent", "desc": "The need for systematic asset management is not recognized. Reactive approach, no plan.", "color": "#e94560"}, {"id": 2, "min": 2.0, "max": 2.5, "name": "Aware", "desc": "The need is identified but without a structured plan. Intention without implementation.", "color": "#ff6b35"}, {"id": 3, "min": 2.6, "max": 3.2, "name": "Developing", "desc": "Partial implementation. Processes documented locally, still largely reactive.", "color": "#f1c40f"}, {"id": 4, "min": 3.3, "max": 4.0, "name": "Competent", "desc": "Asset management system documented, embedded and measured. ISO 55001 conformance zone.", "color": "#2ecc71"}, {"id": 5, "min": 4.1, "max": 5.0, "name": "Excellent", "desc": "Systematic continuous improvement. Best-in-class benchmark. Maximum lifecycle value.", "color": "#00b4d8"}], "CRITERIA": {"proyecto": {"1": ["Asset management strategy is documented with objectives, scope and alignment to the project business plan", "An AM executive sponsor is identified and asset management governance is defined for the project", "Asset management policy is drafted, approved and communicated to key stakeholders"], "2": ["A preliminary Strategic Asset Management Plan (SAMP) is aligned with project objectives", "Availability, reliability and maintenance cost targets for the asset are defined and quantified", "Asset criticality criteria are established and categorization has started"], "3": ["The project business case includes maintenance OPEX and Total Cost of Ownership (TCO) over 10+ years", "Equipment selection decisions consider maintainability, obsolescence and after-sales support", "A Lifecycle Cost (LCC) evaluation exists for the main design options"], "4": ["Maintenance philosophy is documented (reactive / preventive / predictive / proactive)", "RCM/FMECA analysis scope is defined for the project's critical systems", "Design criteria for maintainability, accessibility and interchangeability are included in specifications"], "5": ["A plan exists to develop maintenance procedures (SOPs) and work standards", "Maintenance planning and scheduling philosophy is defined (horizon, backlog, compliance)", "Condition monitoring (CBM) philosophy and technologies to deploy are identified"], "6": ["Major turnaround (TAM / shutdown) strategy is integrated into the project plan from design", "Preliminary shutdown intervals and scopes are defined based on asset criticality", "Access, scaffolding and layout requirements for future shutdowns are considered in design"], "7": ["The CMMS/EAM platform is selected with clear criteria and aligned with the corporate ERP", "Asset information strategy (taxonomy, hierarchy, ISO 14224 nomenclature) is defined", "Master data deliverables from EPC to operations are specified in contracts"], "8": ["Spare parts philosophy (capital, commissioning, operational) is documented with sizing criteria", "Warehouse strategy, location, cataloguing and inventory management systems are defined", "Long lead-time items are identified and their procurement is integrated into the project schedule"], "9": ["Maintenance and operations organizational model is defined (insource / outsource / hybrid)", "Key positions (Reliability Manager, Planner, Supervisor, RCM Engineer) are identified", "Training and competence plan for the maintenance workforce is drafted"], "10": ["Project risk register includes specific reliability and maintainability risks", "Baseline asset management and maintenance KPIs are defined (availability, MTBF, MTTR, PM compliance)", "HSE strategy for operations and maintenance phase is integrated into design"]}, "commissioning": {"1": ["AM leadership actively participates in commissioning steering and approves handovers", "AM KPIs and objectives are visible on project-to-operations reporting dashboards", "Transition of asset custody from EPC to operations has a formal signed protocol"], "2": ["Year-one Asset Management Plan (AMP) is published with monthly objectives", "The SAMP has been updated with actual commissioning information (real assets, master list)", "Alignment between maintenance plan and production ramp-up curve is confirmed"], "3": ["Early-improvement investment decisions are backed by LCC impact analysis", "CAPEX vs OPEX tracking of the project is integrated with the operations financial system", "Initial maintenance costs are being captured and compared against the base-case budget"], "4": ["RCM/FMECA analyses are complete for critical assets and derived tasks are loaded in CMMS", "Maintenance standards and frequencies are validated against OEM recommendations and operational context", "A register of expected failure modes exists with mitigation plans for early-life failures"], "5": ["All PM routines are created in CMMS with procedures, resources and materials linked", "CBM technology (vibration, thermography, oil analysis, ultrasound) is installed and calibrated", "Planners and schedulers are trained and the weekly planning horizon is operational"], "6": ["Master shutdown plan for the first 2 years is published and resourced", "First shutdown scopes are scoped with risk and criticality analysis", "The scope freezing process (T-180, T-90, T-30) is defined and communicated"], "7": ["All asset master data is loaded in CMMS/EAM (tags, hierarchy, attributes, BOM)", "CMMS↔ERP↔DCS integrations are tested and running in production mode", "Technical documentation (as-built drawings, OEM manuals, datasheets) is digitized and accessible from CMMS"], "8": ["Capital and commissioning spare parts inventory is received, catalogued and warehoused", "Min/max and reorder points are calculated and loaded for critical items", "Framework contracts with strategic suppliers are signed for ramp-up supply"], "9": ["Key maintenance and reliability positions are filled with on-site personnel", "Technical and safety training program is complete for O&M personnel", "Competence matrices are defined and initial assessments are complete"], "10": ["AM KPIs are operational in the reporting system and owners are assigned", "The operational risk register includes risks identified during commissioning", "Critical HSE processes (PTW, LOTO, confined spaces, working at heights) are audited and operational"]}, "rampup": {"1": ["Weekly ramp-up steering includes AM KPI review and strategy adjustment decisions", "Reliability issue escalations have a formal protocol and accountable executives", "AM policy is being applied in real decisions (not just on paper)"], "2": ["The AM plan is adjusted monthly based on actual asset performance", "Asset availability targets are being met at least at 85% of the target", "Alignment with production ramp-up curve is reported without critical deviations"], "3": ["Actual maintenance costs are compared against budget and deviations are explained", "Repair, replace or refurbish decisions are made with documented economic analysis", "Lessons learned from commissioning are generating changes in the AM plan"], "4": ["Root Cause Analyses (RCA) are systematic for all significant failures", "RCA recommendations are being implemented and their effectiveness is monitored", "PM intervals are being recalibrated based on actual asset behavior"], "5": ["Weekly PM compliance is sustained above 85%", "Corrective maintenance backlog is controlled within plan-defined limits", "CBM technologies are generating early alerts that translate into planned actions"], "6": ["The first planned shutdown was executed within planned time, cost and scope", "Shutdown KPIs (actual vs plan, discoveries, rework) are documented and analyzed", "Lessons learned from the first shutdown feed the plan for the next one"], "7": ["Actual operating data (times, costs, failures) is captured in CMMS without significant gaps", "Asset performance dashboards consolidate data in real or near-real time", "CMMS data quality is audited and gaps are systematically corrected"], "8": ["Critical spare part stock-outs are below 2% and documented with root cause", "Replenishment times with strategic suppliers meet contractual SLAs", "Spare parts inventory turnover is monitored and optimized"], "9": ["O&M personnel retention exceeds 90% during ramp-up (controlled turnover)", "Technical on-the-job coaching program is active and documented", "The competence matrix is updated with actual ramp-up assessments"], "10": ["HSE incidents related to maintenance tasks are investigated with a formal protocol", "AM KPIs are reviewed monthly and generate documented improvement actions", "Internal maintenance audit findings are closed within the agreed timeframe"]}, "estable": {"1": ["AM leadership is part of the executive committee and reports results aligned with the business plan", "AM policy is reviewed annually and updated based on contextual changes", "Asset management culture is present in operator, maintainer and supervisor routines"], "2": ["The SAMP is fully deployed, with objectives cascaded down to team level", "AM plans are horizontally integrated (production, maintenance, materials, HSE)", "Performance against plan is formally reported at least quarterly to the steering committee"], "3": ["Major replacement or refurbishment decisions use robust lifecycle analysis (NPV, TCO)", "Sustaining CAPEX is optimized with value and risk-based prioritization", "Unit maintenance costs are benchmarking-ready against industry references"], "4": ["The reliability program is optimized with a living FMECA updated by actual behavior", "Weibull and opportunity-cost analyses feed PM interval decisions", "Bad actors are proactively identified and have ownership-based elimination plans"], "5": ["PM/CM ratio exceeds 70/30 (most work is planned and preventive)", "Weekly work order compliance is >90% with variance explained", "CBM is integrated with CMMS and automatically triggers work orders on anomalies"], "6": ["Major shutdowns are consistently executed within 95% of planned time and cost", "Shutdown scope is optimized with condition analysis and never added after the freeze", "Shutdown KPIs (post-shutdown OEE, rework, HSE) are within the benchmark top quartile"], "7": ["CMMS/EAM is the source of truth for AM decisions and its data is reliable >95%", "Asset performance reports are auto-generated and support daily decisions", "Information management strategy complies with ISO 55001 §7.5 and is audited annually"], "8": ["Spare parts inventory is right-sized with documented savings vs baseline", "Obsolete and slow-moving items are managed with a formal disposition policy", "O&M supply chain is resilient against disruptions (alternate sourcing, buffers)"], "9": ["The technical career development program is active and builds an internal promotion pipeline", "Knowledge management (lessons learned, living procedures) is institutionalized", "O&M contracting is managed with SLAs, KPIs and formal performance reviews"], "10": ["Continuous improvement generates >3% annual unit maintenance cost reduction", "AM KPIs are benchmarked against the industry top quartile and gaps have action plans", "The asset management system passes internal and external audits with no critical findings"]}, "mejora": {"1": ["Leadership actively promotes AM innovation (new technologies, agents, advanced analytics)", "AM transformation has a 3-5 year roadmap approved by the board", "AM policy reflects commitment to sustainable development (ESG) and decarbonization"], "2": ["The SAMP has a 10+ year horizon aligned with the asset renewal plan", "Future demand scenarios are modeled and feed the AM capacity plan", "The strategy considers technological obsolescence and legacy asset replacement plan"], "3": ["Major overhaul, replacement and decommissioning decisions follow a formal stage-gate protocol", "10-year CAPEX/OPEX balance is optimized with probabilistic analysis", "End-of-life assets are decommissioned with a transition and knowledge-capture plan"], "4": ["System reliability is modeled with stochastic analysis (RAM, Monte Carlo)", "The reliability program integrates machine-learning-based prognostics where there is a value case", "Reliability analyses drive investment decisions on modifications and upgrades"], "5": ["PM routines are continuously optimized with CBM and prognostic data (predictive → prescriptive)", "Major asset modifications (upgrades, revamps) follow the full MoC cycle", "Maintenance execution incorporates automation (robots, drones, agents) where valuable"], "6": ["The 5-10 year shutdown plan is aligned with the investment and asset replacement plan", "Shutdown scope includes planned modifications under MoC framework with benefits capture", "Shutdowns operate as an optimized portfolio program (sequencing, shared resources)"], "7": ["The asset data lake combines CMMS, historian, CBM and ERP for advanced analytics", "Digital twin models exist for the most critical assets", "Information strategy supports in-house AI and agent use cases in AM"], "8": ["Spare parts strategy considers 3D printing, circular economy and remanufacturing", "Inventory decisions are optimized with advanced analytics and risk models", "Strategic supplier relationships evolve into innovation partnerships"], "9": ["The AM organization has emerging roles (Data Scientist, Reliability Architect, Digital Champion)", "The continuous improvement culture is self-sustained and recognized by employees", "Knowledge transfer between worker generations is institutionalized (mentoring, digital capture)"], "10": ["The asset management system is ISO 55001 certified and the certification is maintained", "AM KPIs are sustained top quartile and the organization appears in public industry benchmarks", "Continuous improvement delivers >5% annual savings with partial reinvestment in innovation"]}}, "DIAGNOSTICS": {"1": {"risk": "No visible asset management leadership or policy. Decisions are tactical, reactive, and disconnected from the business plan. The asset management system is not auditable.", "actions": ["Formalize an AM executive sponsor and publish an asset management policy aligned with ISO 55001", "Establish an AM steering committee with monthly cadence and visible KPIs", "Cascade AM objectives from the business plan down to field supervisor level"], "ref": "IAM #27 · ISO 55001 §5"}, "2": {"risk": "No Strategic Asset Management Plan (SAMP) exists. Availability and cost targets are not quantified or aligned with the production curve. Asset under-performance risk is high.", "actions": ["Develop the SAMP with a 3-10 year horizon and quantified availability, reliability and cost targets", "Define asset criticality criteria and complete portfolio categorization", "Cascade objectives down to team level and report monthly"], "ref": "IAM #1-5 · SAM+ Group 1"}, "3": {"risk": "Asset investment decisions do not consider lifecycle value. CAPEX and OPEX are managed in silos. The asset business case underestimates total cost of ownership.", "actions": ["Make LCC/TCO analysis mandatory for major CAPEX and overhaul decisions", "Integrate CAPEX/OPEX tracking in a single financial dashboard with TCO view", "Define formal replace/repair/refurbish criteria with mandatory documentation"], "ref": "IAM #6-8 · SAM+ Group 2"}, "4": {"risk": "No systematic reliability engineering. RCM/FMECA are absent or outdated. Failure modes are not anticipated and bad actors are not eliminated. Maintenance is mostly reactive.", "actions": ["Launch an RCM program for critical assets following SAE JA1011", "Establish a systematic RCA process for significant failures with recommendation tracking", "Create a living FMECA that updates with actual asset behavior data"], "ref": "IAM #16 · SAE JA1011"}, "5": {"risk": "Maintenance execution is reactive. PM compliance is low, backlog grows, and CBM is not generating value. Planning hours are wasted on rework and emergencies.", "actions": ["Stabilize PM compliance above 85% weekly with a solid planning horizon", "Implement a formal scheduling process with weekly freezing and backlog control", "Integrate CBM technologies (vibration, thermography, oils) with CMMS to trigger automatic work orders"], "ref": "IAM #15 · SAM+ Group 3"}, "6": {"risk": "Major shutdowns run over time and budget. Scope is added late, resources are insufficient, and post-shutdown rework is high. Every shutdown is an improvised event.", "actions": ["Implement a formal shutdown management process with stage-gates (T-180, T-90, T-30, T-0)", "Enforce rigorous scope control with freezing and mandatory justification for late additions", "Capture shutdown KPIs (actual vs plan, rework, HSE) and feed lessons learned to the next cycle"], "ref": "IAM #10, #19"}, "7": {"risk": "CMMS/EAM is not the source of truth. Master data has gaps, integrations fail, and reports are unreliable. AM decisions rely on Excel and institutional memory.", "actions": ["Audit CMMS data quality and establish a remediation plan with owner and cadence", "Secure CMMS↔ERP↔DCS integrations and validate end-to-end flows", "Implement ISO 14224 taxonomy and a consistent asset hierarchy across the entire operation"], "ref": "IAM #22-25 · ISO 55001 §7.5"}, "8": {"risk": "Spare parts policy is reactive. Frequent stock-outs of critical items, excess slow-moving inventory, and no criticality or turnover analysis. Downtime costs exceed inventory costs.", "actions": ["Complete a spare parts criticality analysis and define min/max based on actual consumption and lead time", "Implement a formal cataloguing process and eliminate duplicates in the materials master", "Sign framework contracts with strategic suppliers with lead-time SLAs"], "ref": "IAM #26 · PAS 55 4.4.2"}, "9": {"risk": "The AM organization has competence gaps, high turnover, and vacant key positions. Knowledge resides in a few individuals without documentary backup. Contractors are managed without metrics.", "actions": ["Define the critical competence matrix and complete current personnel assessments", "Establish a retention, career development and knowledge capture plan", "Implement SLAs and performance KPIs for O&M contractors with formal reviews"], "ref": "IAM #28-30 · ISO 55001 §7.2-7.3"}, "10": {"risk": "AM KPIs are not reported consistently. The risk register is static, HSE incidents linked to maintenance are not investigated, and continuous improvement is occasional.", "actions": ["Deploy an AM KPI dashboard with monthly cadence and clear ownership", "Update the risk register dynamically and review at the steering committee", "Formalize the HSE incident investigation process with action closure tracking"], "ref": "IAM #31-37 · ISO 55001 §9-10"}}, "BRAND": {"product": "MagEAM", "toolName": "Asset Management & Maintenance Maturity Scorecard", "subtitle": "Asset Management & Maintenance - by ValueStrategy Consulting", "cta": "Schedule a meeting with an AMS specialist", "ctaUrl": "https://calendly.com/valuestrategyconsulting", "footer": "Based on ValueStrategy Consulting's Asset Management framework - aligned with IAM, ISO 55001 and SAM+", "company": "ValueStrategy Consulting"}};
+var STRINGS = {"badge": "Diagnostic Tool", "hero_intro": "Evaluate the maturity of your asset management and maintenance function across the asset lifecycle - from project to stable operations. 150 structured questions. Results in under 15 minutes.", "phase_title": "Select the asset lifecycle phase", "phase_hint": "This determines which criteria are evaluated", "info_title": "Project Information (optional)", "company": "Company", "asset": "Asset / Project", "date": "Assessment date", "assessor": "Assessor", "progress_text": "criteria scored", "btn_calculate": "Calculate Results", "results_title": "Results", "radar_title": "Radar by Dimension", "breakdown_title": "Breakdown by Dimension", "gap_title": "Priority Gaps", "no_gaps": "No critical gaps. Your operation is aligned with asset management standards.", "btn_csv": "Download CSV", "btn_print": "Print Report", "btn_reset": "Reset Assessment", "cta_title": "Need to close your asset management gaps?", "cta_desc": "Schedule a meeting with an asset management specialist to discuss your results and build a prioritized action plan.", "cta_btn": "Schedule a meeting", "modal_title": "Change phase?", "modal_body": "Changing the phase will reset all scores. Continue?", "modal_yes": "Yes, reset", "modal_cancel": "Cancel", "tbl_num": "#", "tbl_dim": "Dimension", "tbl_weight": "Weight", "tbl_score": "Score", "tbl_contrib": "Contribution", "tbl_level": "Level", "risk_label": "Risk:", "actions_label": "Priority actions:", "ref_label": "Reference:", "score_not_scored": "Not scored", "scale_block_title": "How to score? (Scale 1 to 5)", "scale_block_hint": "Click to expand / collapse", "scale_block_intro": "For each question, assign a score from 1 to 5 that reflects the CURRENT state of your operation, based on verifiable evidence (documents, CMMS data, audits). Do not score what you think should be in place; score what is actually implemented. If unsure, use the lower level.", "scale_block_advice": "Guidelines: (1) Be honest - the value of this diagnostic comes from your objectivity. (2) Answer one phase at a time. (3) Keep evidence notes to back up each score. (4) If a question does not apply to your context, leave it blank.", "score_labels": ["Innocent", "Aware", "Developing", "Competent", "Excellent"], "legend_good": "Good practice", "legend_best": "Best practice"};
+var STORAGE_KEY = "ams_assessment_v1_en";
+
+var state = {
+  phase: null,
+  pendingPhase: null,
+  scores: {},
+  openDisc: null,
+  project: { company: "", asset: "", date: "", assessor: "" }
+};
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+function loadState() {
+  try {
+    var s = localStorage.getItem(STORAGE_KEY);
+    if (s) { state = Object.assign(state, JSON.parse(s)); }
+  } catch(e) {}
+}
+
+function $(id) { return document.getElementById(id); }
+
+function renderPhases() {
+  var grid = $("phaseGrid");
+  grid.innerHTML = "";
+  DATA.PHASES.forEach(function(p) {
+    var card = document.createElement("div");
+    card.className = "phase-card" + (state.phase === p.id ? " selected" : "");
+    card.innerHTML = '<div class="icon">' + p.icon + '</div>' +
+                     '<div class="name">' + p.name + '</div>' +
+                     '<div class="desc">' + p.desc + '</div>';
+    card.onclick = function() { selectPhase(p.id); };
+    grid.appendChild(card);
+  });
+  updatePhaseBadge();
+}
+function updatePhaseBadge() {
+  var badge = $("phaseBadge");
+  if (state.phase) {
+    var p = DATA.PHASES.find(function(x) { return x.id === state.phase; });
+    badge.innerHTML = '<span>' + p.icon + ' ' + p.name + '</span>';
+  } else { badge.innerHTML = ""; }
+}
+function selectPhase(id) {
+  if (state.phase === id) return;
+  if (state.phase && Object.keys(state.scores).length > 0) {
+    state.pendingPhase = id;
+    $("confirmModal").classList.add("visible");
+    return;
+  }
+  applyPhase(id);
+}
+function confirmPhaseChange() {
+  $("confirmModal").classList.remove("visible");
+  state.scores = {};
+  applyPhase(state.pendingPhase);
+  state.pendingPhase = null;
+}
+function cancelPhaseChange() {
+  $("confirmModal").classList.remove("visible");
+  state.pendingPhase = null;
+}
+function applyPhase(id) {
+  state.phase = id;
+  $("projectInfo").style.display = "block";
+  $("scaleBlock").style.display = "block";
+  renderScaleBlock();
+  renderPhases();
+  renderAssessment();
+  saveState();
+}
+function toggleScale() {
+  $("scaleHeader").classList.toggle("open");
+  $("scaleBody").classList.toggle("open");
+}
+function renderScaleBlock() {
+  var wrap = $("scaleLevels");
+  if (!wrap) return;
+  var html = "";
+  DATA.LEVELS.forEach(function(lv) {
+    html += '<div class="scale-level-card" style="border-left-color:' + lv.color + '">' +
+            '<div class="lvl-num" style="color:' + lv.color + '">' + lv.id + '</div>' +
+            '<div class="lvl-name" style="color:' + lv.color + '">' + lv.name + '</div>' +
+            '<div class="lvl-desc">' + lv.desc + '</div></div>';
+  });
+  wrap.innerHTML = html;
+}
+function toggleInfo() {
+  $("infoToggle").classList.toggle("open");
+  $("infoBody").classList.toggle("open");
+}
+function bindProjectInputs() {
+  ["companyName","assetName","assessDate","assessor"].forEach(function(id) {
+    var el = $(id);
+    if (!el) return;
+    var key = id === "companyName" ? "company" : (id === "assetName" ? "asset" : (id === "assessDate" ? "date" : "assessor"));
+    el.value = state.project[key] || "";
+    el.oninput = function() { state.project[key] = el.value; saveState(); };
+  });
+}
+function renderAssessment() {
+  var sec = $("assessmentSection");
+  sec.classList.add("visible");
+  sec.innerHTML = "";
+  DATA.DIMENSIONS.forEach(function(d) {
+    var acc = document.createElement("div");
+    acc.className = "discipline-accordion";
+    var header = document.createElement("div");
+    header.className = "disc-header" + (state.openDisc === d.id ? " open" : "");
+    header.innerHTML =
+      '<span class="disc-icon">' + d.icon + '</span>' +
+      '<span class="disc-name">' + d.id + '. ' + d.name + '</span>' +
+      '<span class="disc-weight">' + d.weight + '%</span>' +
+      '<span class="disc-score-badge" id="badge-' + d.id + '">-</span>' +
+      '<span class="disc-arrow">&#9660;</span>';
+    header.onclick = function() { toggleDisc(d.id); };
+    var body = document.createElement("div");
+    body.className = "disc-body" + (state.openDisc === d.id ? " open" : "");
+    body.id = "body-" + d.id;
+    var crits = DATA.CRITERIA[state.phase][d.id];
+    crits.forEach(function(crit, idx) {
+      var c = document.createElement("div");
+      c.className = "criterion";
+      var key = state.phase + "_" + d.id + "_" + (idx + 1);
+      var current = state.scores[key];
+      var btnsHtml = "";
+      for (var s = 1; s <= 5; s++) {
+        var lbl = STRINGS.score_labels[s - 1];
+        btnsHtml += '<button class="score-btn' + (current === s ? " active" : "") +
+                    '" title="' + s + ' - ' + lbl + '" onclick="setScore(\'' + key + '\', ' + s + ', ' + d.id + ')">' + s + '</button>';
+      }
+      var lblsHtml = "";
+      STRINGS.score_labels.forEach(function(l) { lblsHtml += '<span>' + l + '</span>'; });
+      c.innerHTML = '<div class="criterion-text"><span class="criterion-number">' + (idx + 1) + '.</span>' + crit + '</div>' +
+                    '<div class="score-buttons">' + btnsHtml + '</div>' +
+                    '<div class="score-labels">' + lblsHtml + '</div>';
+      body.appendChild(c);
+    });
+    acc.appendChild(header);
+    acc.appendChild(body);
+    sec.appendChild(acc);
+    updateDiscBadge(d.id);
+  });
+  updateProgress();
+  $("stickyBar").classList.add("visible");
+  bindProjectInputs();
+}
+function toggleDisc(id) {
+  if (state.openDisc === id) state.openDisc = null;
+  else state.openDisc = id;
+  renderAssessment();
+}
+function setScore(key, val, discId) {
+  state.scores[key] = val;
+  saveState();
+  var buttons = document.querySelectorAll('[onclick*="' + key + '"]');
+  buttons.forEach(function(b) { b.classList.remove("active"); });
+  var parts = key.split("_");
+  var clicked = document.querySelector('[onclick="setScore(\'' + key + '\', ' + val + ', ' + discId + ')"]');
+  if (clicked) clicked.classList.add("active");
+  updateDiscBadge(discId);
+  updateProgress();
+}
+function updateDiscBadge(discId) {
+  var sum = 0, count = 0;
+  for (var i = 1; i <= 3; i++) {
+    var k = state.phase + "_" + discId + "_" + i;
+    if (state.scores[k]) { sum += state.scores[k]; count++; }
+  }
+  var badge = $("badge-" + discId);
+  if (!badge) return;
+  if (count === 0) { badge.textContent = "-"; badge.classList.remove("scored"); }
+  else { badge.textContent = (sum / count).toFixed(1); badge.classList.add("scored"); }
+}
+function updateProgress() {
+  var total = DATA.DIMENSIONS.length * 3;
+  var done = Object.keys(state.scores).filter(function(k) { return k.indexOf(state.phase + "_") === 0; }).length;
+  var pct = Math.round((done / total) * 100);
+  $("progressFill").style.width = pct + "%";
+  $("progressText").textContent = done + " / " + total + " " + STRINGS.progress_text;
+  $("btnCalculate").disabled = done < total;
+  if (done === total) {
+    $("progressScore").textContent = computeWeighted().toFixed(2);
+  } else {
+    $("progressScore").textContent = "";
+  }
+}
+function computeWeighted() {
+  var num = 0, den = 0;
+  DATA.DIMENSIONS.forEach(function(d) {
+    var sum = 0, count = 0;
+    for (var i = 1; i <= 3; i++) {
+      var k = state.phase + "_" + d.id + "_" + i;
+      if (state.scores[k]) { sum += state.scores[k]; count++; }
+    }
+    if (count === 3) {
+      var avg = sum / count;
+      num += avg * d.weight;
+      den += d.weight;
+    }
+  });
+  return den === 0 ? 0 : num / den;
+}
+function getLevel(score) {
+  for (var i = DATA.LEVELS.length - 1; i >= 0; i--) {
+    if (score >= DATA.LEVELS[i].min) return DATA.LEVELS[i];
+  }
+  return DATA.LEVELS[0];
+}
+function calculateResults() {
+  renderResults();
+  window.scrollTo({ top: $("resultsSection").offsetTop - 20, behavior: "smooth" });
+}
+function renderResults() {
+  var score = computeWeighted();
+  var level = getLevel(score);
+  var discData = DATA.DIMENSIONS.map(function(d) {
+    var sum = 0, count = 0;
+    for (var i = 1; i <= 3; i++) {
+      var k = state.phase + "_" + d.id + "_" + i;
+      if (state.scores[k]) { sum += state.scores[k]; count++; }
+    }
+    return { id: d.id, name: d.name, weight: d.weight, score: count ? sum / count : 0 };
+  });
+  var card = $("resultCard");
+  card.innerHTML =
+    '<div class="result-score" style="color:' + level.color + '">' + score.toFixed(2) + '</div>' +
+    '<div class="result-label" style="color:' + level.color + '">' + level.name + '</div>' +
+    '<div class="result-interp">' + level.desc + '</div>';
+  $("resultsSection").classList.add("visible");
+  renderRadar(discData);
+  renderBreakdown(discData);
+  renderGaps(discData);
+}
+function renderRadar(discData) {
+  var size = 500, cx = size/2, cy = size/2, rad = 180;
+  var n = discData.length;
+  function polar(a, r) { return { x: cx + r*Math.cos(a), y: cy + r*Math.sin(a) }; }
+  var svg = '<svg viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '">';
+  // Grid rings (rings 3 and 5 are reference lines)
+  for (var i = 1; i <= 5; i++) {
+    var r = (rad * i) / 5;
+    var pts = [];
+    for (var j = 0; j < n; j++) {
+      var a = (2*Math.PI*j)/n - Math.PI/2;
+      var p = polar(a, r);
+      pts.push(p.x + "," + p.y);
+    }
+    var stroke = "#2a2a4a", sw = "1", extra = "";
+    if (i === 3) { stroke = "#f1c40f"; sw = "2"; extra = ' stroke-dasharray="6 4"'; }
+    else if (i === 5) { stroke = "#2ecc71"; sw = "2"; }
+    svg += '<polygon points="' + pts.join(" ") + '" fill="none" stroke="' + stroke + '" stroke-width="' + sw + '"' + extra + '/>';
+  }
+  // Axes
+  for (var j = 0; j < n; j++) {
+    var a = (2*Math.PI*j)/n - Math.PI/2;
+    var p = polar(a, rad);
+    svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p.x + '" y2="' + p.y + '" stroke="#2a2a4a" stroke-width="1"/>';
+  }
+  // Data polygon
+  var pts = [];
+  for (var j = 0; j < n; j++) {
+    var a = (2*Math.PI*j)/n - Math.PI/2;
+    var p = polar(a, (rad * discData[j].score) / 5);
+    pts.push(p.x + "," + p.y);
+  }
+  svg += '<polygon points="' + pts.join(" ") + '" fill="rgba(0,180,216,0.25)" stroke="#00b4d8" stroke-width="2"/>';
+  // Points
+  for (var j = 0; j < n; j++) {
+    var a = (2*Math.PI*j)/n - Math.PI/2;
+    var p = polar(a, (rad * discData[j].score) / 5);
+    svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="4" fill="#00b4d8"/>';
+  }
+  // Labels
+  for (var j = 0; j < n; j++) {
+    var a = (2*Math.PI*j)/n - Math.PI/2;
+    var p = polar(a, rad + 24);
+    var anchor = Math.abs(Math.cos(a)) < 0.1 ? "middle" : (Math.cos(a) > 0 ? "start" : "end");
+    svg += '<text x="' + p.x + '" y="' + p.y + '" fill="#a0a0b8" font-size="11" text-anchor="' + anchor + '" dominant-baseline="middle">D' + discData[j].id + '</text>';
+  }
+  svg += '</svg>';
+  var legend = '<div class="radar-legend">' +
+               '<div class="item"><span class="swatch dashed" style="border-top-color:#f1c40f"></span>' + STRINGS.legend_good + ' (3)</div>' +
+               '<div class="item"><span class="swatch" style="border-top-color:#2ecc71"></span>' + STRINGS.legend_best + ' (5)</div>' +
+               '</div>';
+  $("radarWrap").innerHTML = svg + legend;
+}
+function renderBreakdown(discData) {
+  var html = '<h3>' + STRINGS.breakdown_title + '</h3><table><thead><tr>' +
+             '<th>' + STRINGS.tbl_num + '</th><th>' + STRINGS.tbl_dim + '</th><th>' + STRINGS.tbl_weight + '</th>' +
+             '<th>' + STRINGS.tbl_score + '</th><th class="bar-cell"></th><th>' + STRINGS.tbl_level + '</th></tr></thead><tbody>';
+  discData.forEach(function(d) {
+    var level = getLevel(d.score);
+    var pct = (d.score / 5) * 100;
+    html += '<tr><td>' + d.id + '</td><td>' + d.name + '</td><td>' + d.weight + '%</td>' +
+            '<td><strong>' + d.score.toFixed(2) + '</strong></td>' +
+            '<td class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + level.color + '"></div></div></td>' +
+            '<td style="color:' + level.color + ';font-weight:700;font-size:12px">' + level.name + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  $("breakdownTable").innerHTML = html;
+}
+function renderGaps(discData) {
+  var gaps = discData.filter(function(d) { return d.score < 3.0 && d.score > 0; }).sort(function(a,b) { return a.score - b.score; });
+  var sec = $("gapSection");
+  if (gaps.length === 0) {
+    sec.innerHTML = '<h3>' + STRINGS.gap_title + '</h3><div class="no-gaps">' + STRINGS.no_gaps + '</div>';
+    return;
+  }
+  var html = '<h3>' + STRINGS.gap_title + '</h3>';
+  gaps.forEach(function(g) {
+    var diag = DATA.DIAGNOSTICS[g.id];
+    var level = getLevel(g.score);
+    html += '<div class="gap-card">' +
+            '<div class="gap-card-header"><span class="gap-name">' + g.name + '</span>' +
+            '<span class="gap-score" style="background:' + level.color + ';color:#0d0d1a">' + g.score.toFixed(2) + '</span></div>' +
+            '<div class="gap-risk"><strong>' + STRINGS.risk_label + '</strong> ' + diag.risk + '</div>' +
+            '<div><strong style="font-size:13px;color:var(--text-primary)">' + STRINGS.actions_label + '</strong>' +
+            '<ul class="gap-actions">';
+    diag.actions.forEach(function(a) { html += '<li>' + a + '</li>'; });
+    html += '</ul></div><div class="gap-ref">' + STRINGS.ref_label + ' ' + diag.ref + '</div></div>';
+  });
+  sec.innerHTML = html;
+}
+function downloadCSV() {
+  var rows = [["Dimension", "Question", "Score"]];
+  DATA.DIMENSIONS.forEach(function(d) {
+    var crits = DATA.CRITERIA[state.phase][d.id];
+    crits.forEach(function(c, i) {
+      var k = state.phase + "_" + d.id + "_" + (i + 1);
+      rows.push([d.name, c, state.scores[k] || ""]);
+    });
+  });
+  var csv = rows.map(function(r) { return r.map(function(x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(","); }).join("\n");
+  var blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "ams_assessment_" + state.phase + ".csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function resetAssessment() {
+  if (!confirm(STRINGS.modal_body)) return;
+  state.scores = {};
+  state.phase = null;
+  state.openDisc = null;
+  saveState();
+  $("resultsSection").classList.remove("visible");
+  $("assessmentSection").classList.remove("visible");
+  $("projectInfo").style.display = "none";
+  $("scaleBlock").style.display = "none";
+  $("stickyBar").classList.remove("visible");
+  renderPhases();
+}
+function init() {
+  loadState();
+  renderPhases();
+  if (state.phase) {
+    $("projectInfo").style.display = "block";
+    $("scaleBlock").style.display = "block";
+    renderScaleBlock();
+    renderAssessment();
+  }
+}
+init();
+</script>
+</body>
+</html>

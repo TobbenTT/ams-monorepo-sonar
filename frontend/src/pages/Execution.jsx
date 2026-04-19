@@ -39,6 +39,10 @@ export default function Execution() {
   const [closureNotes, setClosureNotes] = useState('');
   const [closing, setClosing] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [batchSelected, setBatchSelected] = useState(new Set());
+  const [batchHours, setBatchHours] = useState({});
+  const [batchClosing, setBatchClosing] = useState(false);
+  const [batchFilter, setBatchFilter] = useState('');
 
   const loadData = async () => {
     setLoading(true);
@@ -78,13 +82,38 @@ export default function Execution() {
     return { exec: exec.length, prog: prog.length, completed: completedWOs.length, closed: closedWOs.length, totalPlannedHH, totalActualHH, fastTrack: fastTrack.length };
   }, [activeWOs, completedWOs, closedWOs]);
 
-  // Start execution
-  const handleStart = async (wo) => {
+  // Get geolocation — returns {lat, lng} or null
+  const getGeo = () => new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+      () => resolve(null),
+      { timeout: 5000, maximumAge: 60000 }
+    );
+  });
+
+  // Start execution — captures start timestamp + geolocation (when from QR)
+  const handleStart = async (wo, opts = {}) => {
+    // Optimistic update so user sees status change immediately
+    setActiveWOs(prev => prev.map(w => w.wo_id === wo.wo_id ? { ...w, status: 'EN_EJECUCION' } : w));
     try {
-      await updateManagedWO(wo.wo_id, { status: 'EN_EJECUCION' });
-      toast.success(wo.wo_number + ' started');
+      const startedAt = new Date().toISOString();
+      const payload = { status: 'EN_EJECUCION', actual_start: startedAt };
+      if (opts.fromQR) {
+        const geo = await getGeo();
+        if (geo) {
+          payload.start_location = { lat: geo.lat, lng: geo.lng, accuracy: geo.accuracy };
+        }
+        payload.started_via = 'qr_scan';
+      }
+      await updateManagedWO(wo.wo_id, payload);
+      toast.success(wo.wo_number + ' started' + (opts.fromQR ? ' · 📍 ubicación registrada' : ''));
       loadData();
-    } catch (e) { toast.error(e.message); }
+    } catch (e) {
+      // Rollback on failure
+      setActiveWOs(prev => prev.map(w => w.wo_id === wo.wo_id ? { ...w, status: wo.status } : w));
+      toast.error(e.message);
+    }
   };
 
   // Update progress
@@ -108,7 +137,53 @@ export default function Execution() {
     } catch (e) { toast.error(e.message); }
   };
 
-  // Close WO
+  // Batch close — "Bandeja de Ejecución": cierra varias OTs de una vez sin modal por OT
+  const handleBatchClose = async () => {
+    const ids = Array.from(batchSelected);
+    if (ids.length === 0) { toast.info('Selecciona al menos una OT'); return; }
+    if (!window.confirm(`¿Cerrar ${ids.length} OTs? Esta acción es final — no se puede deshacer.`)) return;
+    setBatchClosing(true);
+    let ok = 0, fail = 0;
+    for (const wo_id of ids) {
+      const wo = completedWOs.find(w => w.wo_id === wo_id);
+      if (!wo) { fail++; continue; }
+      const hours = parseFloat(batchHours[wo_id]) || wo.actual_hours || wo.estimated_hours || 0;
+      try {
+        await updateManagedWO(wo_id, {
+          actual_hours: hours,
+          labor_cost: hours * LABOR_RATE,
+          actual_total_cost: hours * LABOR_RATE,
+          completion_pct: 100,
+        });
+        await closeManagedWO(wo_id);
+        ok++;
+      } catch { fail++; }
+    }
+    toast.success(`✓ ${ok} OTs cerradas${fail > 0 ? ` · ${fail} fallaron` : ''}`);
+    setBatchSelected(new Set());
+    setBatchHours({});
+    setBatchClosing(false);
+    loadData();
+  };
+
+  const toggleBatchSelect = (wo_id) => {
+    setBatchSelected(prev => {
+      const n = new Set(prev);
+      n.has(wo_id) ? n.delete(wo_id) : n.add(wo_id);
+      return n;
+    });
+  };
+
+  const toggleBatchAll = (visible) => {
+    setBatchSelected(prev => {
+      const allIds = visible.map(w => w.wo_id);
+      const hasAll = allIds.every(id => prev.has(id));
+      if (hasAll) { const n = new Set(prev); allIds.forEach(id => n.delete(id)); return n; }
+      return new Set([...prev, ...allIds]);
+    });
+  };
+
+  // Close WO (single)
   const handleClose = async () => {
     if (!closureWO) return;
     setClosing(true);
@@ -129,9 +204,9 @@ export default function Execution() {
   };
 
   const VIEWS = [
-    { id: 'today', label: 'Today', icon: Zap, count: activeWOs.length },
-    { id: 'close', label: 'Close', icon: CheckCircle, count: completedWOs.length },
-    { id: 'summary', label: 'Summary', icon: BarChart2, count: closedWOs.length },
+    { id: 'today', label: 'Hoy', icon: Zap, count: activeWOs.length },
+    { id: 'close', label: 'Bandeja de Cierre', icon: CheckCircle, count: completedWOs.length },
+    { id: 'summary', label: 'Resumen', icon: BarChart2, count: closedWOs.length },
   ];
 
   if (loading) return (
@@ -340,32 +415,93 @@ export default function Execution() {
       )}
 
       {/* ═══ CLOSE VIEW ═══ */}
-      {view === 'close' && (
-        <div className="space-y-3">
-          {completedWOs.length === 0 ? (
-            <div className="bg-card border border-border rounded-xl p-12 text-center">
-              <FileText size={40} className="text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-muted-foreground">No completed WOs pending closure</p>
-            </div>
-          ) : (
-            completedWOs.map(wo => (
-              <div key={wo.wo_id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
-                <div className={`text-[10px] font-bold px-1.5 py-1 rounded ${PRIO_STYLE[wo.priority_code] || PRIO_STYLE.P3}`}>{wo.priority_code}</div>
-                <div className="flex-1 min-w-0">
-                  <span className="font-mono text-sm font-bold text-foreground">{wo.wo_number}</span>
-                  <p className="text-xs text-muted-foreground truncate">{wo.equipment_tag} - {wo.description?.substring(0, 40)}</p>
-                </div>
-                <div className="text-xs text-muted-foreground">{wo.actual_hours || wo.estimated_hours || 0}h</div>
-                <div className="text-xs font-bold text-emerald-600">${((wo.actual_hours || wo.estimated_hours || 0) * LABOR_RATE).toFixed(0)}</div>
-                <button onClick={() => { setClosureWO(wo); setClosureHours(String(wo.actual_hours || wo.estimated_hours || '')); }}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-                  <FileText size={14} /> Close WO
-                </button>
+      {view === 'close' && (() => {
+        const q = batchFilter.trim().toLowerCase().replace(/[\s\-]+/g, '');
+        const visibleWOs = q
+          ? completedWOs.filter(wo =>
+              (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q) ||
+              (wo.equipment_tag || '').toLowerCase().includes(batchFilter.toLowerCase()) ||
+              (wo.description || '').toLowerCase().includes(batchFilter.toLowerCase()))
+          : completedWOs;
+        const allSelected = visibleWOs.length > 0 && visibleWOs.every(w => batchSelected.has(w.wo_id));
+        const selHours = Array.from(batchSelected).reduce((s, id) => {
+          const wo = completedWOs.find(w => w.wo_id === id);
+          return s + (parseFloat(batchHours[id]) || wo?.actual_hours || wo?.estimated_hours || 0);
+        }, 0);
+        const selCost = selHours * LABOR_RATE;
+        return (
+          <div className="space-y-3">
+            {/* Bandeja header: filter + batch actions */}
+            <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-[220px]">
+                <input value={batchFilter} onChange={e => setBatchFilter(e.target.value)}
+                  placeholder="Filtrar por OT, equipo, descripción…"
+                  className="w-full text-sm border border-border rounded-lg px-3 py-1.5 bg-background" />
               </div>
-            ))
-          )}
-        </div>
-      )}
+              <div className="text-xs text-muted-foreground flex items-center gap-3">
+                <span>{visibleWOs.length} OTs</span>
+                {batchSelected.size > 0 && (
+                  <>
+                    <span className="font-bold text-emerald-700">{batchSelected.size} seleccionadas</span>
+                    <span>{selHours.toFixed(1)}h · ${selCost.toFixed(0)}</span>
+                  </>
+                )}
+              </div>
+              <button onClick={() => toggleBatchAll(visibleWOs)}
+                disabled={visibleWOs.length === 0}
+                className="text-xs px-3 py-1.5 border border-border rounded-lg hover:bg-muted disabled:opacity-40">
+                {allSelected ? 'Deseleccionar' : 'Seleccionar todas'}
+              </button>
+              <button onClick={handleBatchClose} disabled={batchSelected.size === 0 || batchClosing}
+                className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-40">
+                {batchClosing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                Cerrar {batchSelected.size > 0 ? batchSelected.size : ''} seleccionadas
+              </button>
+            </div>
+
+            {visibleWOs.length === 0 ? (
+              <div className="bg-card border border-border rounded-xl p-12 text-center">
+                <FileText size={40} className="text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-muted-foreground">{completedWOs.length === 0 ? 'No hay OTs completadas pendientes de cierre' : 'Ninguna OT coincide con el filtro'}</p>
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="divide-y divide-border/50">
+                  {visibleWOs.map(wo => {
+                    const isSel = batchSelected.has(wo.wo_id);
+                    const hoursVal = batchHours[wo.wo_id] ?? (wo.actual_hours || wo.estimated_hours || '');
+                    const cost = (parseFloat(hoursVal) || 0) * LABOR_RATE;
+                    return (
+                      <div key={wo.wo_id} className={`flex items-center gap-3 p-3 transition-colors ${isSel ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'hover:bg-muted/20'}`}>
+                        <input type="checkbox" checked={isSel} onChange={() => toggleBatchSelect(wo.wo_id)}
+                          className="w-4 h-4 accent-emerald-600 cursor-pointer" />
+                        <div className={`text-[10px] font-bold px-1.5 py-1 rounded ${PRIO_STYLE[wo.priority_code] || PRIO_STYLE.P3}`}>{wo.priority_code}</div>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-mono text-sm font-bold text-foreground">{wo.wo_number}</span>
+                          <p className="text-xs text-muted-foreground truncate">{wo.equipment_tag} · {wo.description?.substring(0, 60)}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="0" step="0.5" value={hoursVal}
+                            onChange={e => setBatchHours(prev => ({ ...prev, [wo.wo_id]: e.target.value }))}
+                            className="w-16 text-xs text-right border border-border rounded px-2 py-1 bg-background"
+                            placeholder="HH" />
+                          <span className="text-[10px] text-muted-foreground">h</span>
+                        </div>
+                        <div className="text-xs font-bold text-emerald-600 w-16 text-right">${cost.toFixed(0)}</div>
+                        <button onClick={() => { setClosureWO(wo); setClosureHours(String(hoursVal)); }}
+                          className="text-xs px-2.5 py-1.5 text-muted-foreground border border-border rounded-lg hover:bg-muted"
+                          title="Cerrar con notas detalladas">
+                          <FileText size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ═══ SUMMARY VIEW ═══ */}
       {view === 'summary' && (
@@ -418,16 +554,32 @@ export default function Execution() {
             onClose={() => setShowQR(false)}
             onScan={(code) => {
               setShowQR(false);
-              // Find WO by equipment tag or WO number
-              const match = activeWOs.find(wo =>
-                (wo.equipment_tag || '').toLowerCase().includes(code.toLowerCase()) ||
-                (wo.wo_number || '').toLowerCase().includes(code.toLowerCase())
+              const q = code.toLowerCase().replace(/[\s\-]+/g, '');
+              // Search both scheduled (PROGRAMADO) and active (EN_EJECUCION) WOs
+              const searchIn = [...activeWOs];
+              const matchByNumber = searchIn.find(wo =>
+                (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q)
               );
-              if (match) {
-                toast.success('Found: ' + match.wo_number + ' — Starting execution');
-                handleStart(match);
+              const matchByTag = !matchByNumber && searchIn.filter(wo =>
+                (wo.equipment_tag || '').toLowerCase().includes(code.toLowerCase())
+              );
+              if (matchByNumber) {
+                if (matchByNumber.status === 'EN_EJECUCION') {
+                  toast.info(`${matchByNumber.wo_number} ya está en ejecución`);
+                  setExpandedWO(matchByNumber.wo_id);
+                } else {
+                  toast.success(`${matchByNumber.wo_number} · ${matchByNumber.equipment_tag} — iniciando ejecución`);
+                  handleStart(matchByNumber, { fromQR: true });
+                }
+              } else if (matchByTag && matchByTag.length === 1) {
+                const wo = matchByTag[0];
+                toast.success(`${wo.wo_number} encontrada por equipo ${code} — iniciando`);
+                handleStart(wo, { fromQR: true });
+              } else if (matchByTag && matchByTag.length > 1) {
+                toast.info(`${matchByTag.length} OTs para equipo ${code}. Selecciona manualmente.`);
+                setView('today');
               } else {
-                toast.error('No active WO found for: ' + code);
+                toast.error('No se encontró OT activa para: ' + code);
               }
             }}
           />

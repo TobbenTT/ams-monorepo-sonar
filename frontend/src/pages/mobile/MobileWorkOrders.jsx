@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
     Filter, Search, Clock, PlayCircle, PauseCircle, CheckCircle2,
-    AlertCircle, Circle, UserPlus, X,
+    AlertCircle, Circle, UserPlus, X, QrCode,
 } from 'lucide-react';
 import * as api from '../../api';
+const QRScanner = lazy(() => import('../../components/QRScanner'));
 
 const STATUS_CONFIG = {
     DRAFT:              { label: 'Creada',       color: '#94A3B8', bg: '#F1F5F9',  step: 1 },
@@ -57,6 +58,7 @@ export default function MobileWorkOrders() {
     const { mobileRole, plant } = useOutletContext();
     const navigate = useNavigate();
     const [tasks, setTasks] = useState([]);
+    const [showQR, setShowQR] = useState(false);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
@@ -447,6 +449,34 @@ export default function MobileWorkOrders() {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* Floating QR button */}
+            <button onClick={() => setShowQR(true)}
+                className="fixed bottom-20 right-5 w-14 h-14 rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/40 flex items-center justify-center hover:bg-emerald-700 active:scale-95 transition-all z-40"
+                title="Escanear QR">
+                <QrCode size={26} />
+            </button>
+
+            {showQR && (
+                <Suspense fallback={null}>
+                    <QRScanner
+                        onClose={() => setShowQR(false)}
+                        onScan={(code) => {
+                            setShowQR(false);
+                            const q = code.toLowerCase().replace(/[\s\-]+/g, '');
+                            const match = tasks.find(t =>
+                                (t.woId || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q) ||
+                                (t.equipment || '').toLowerCase().includes(code.toLowerCase())
+                            );
+                            if (match) {
+                                navigate(`/mobile/task/${match.id}`);
+                            } else {
+                                alert('No se encontró OT ni equipo para: ' + code);
+                            }
+                        }}
+                    />
+                </Suspense>
             )}
         </div>
     );

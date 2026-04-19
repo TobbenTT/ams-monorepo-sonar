@@ -1,0 +1,444 @@
+David
+Claro, pero mejor, háganme ustedes como si yo fuera un cliente un showcase de la plataforma. Oye, mira, usted viene aquí, va aquí, no sé cuántos, tal. No sé, a ver, dale.
+Gonzalo
+Ahí David, te lo dejo a ti porque yo estaba recién viéndola, si bien yo hice la interfaz en la primera parte, yo trabajé en el front-end, David le hizo la integración y la validación, la estábamos revisando recién, pero por eso quería que la vieras tú.
+David
+David, una cosa, David, tú empezaste el lunes pasado, ¿verdad? El 16, ¿o no. 
+Francisco Finanzas GF
+Sí, el 16.
+David
+El 16, vale. Dale.
+Francisco Finanzas GF
+¿Previsas cuando ves la pantalla.
+David
+Sí, ya se ve, sí.
+Francisco Finanzas GF
+Dentro de la intra, ya está subido para que lo puedan ir probando, aquí en los proyectos. Ahí se ponen las personas que están encima. ¿Al abrirlo le vas a aparecer el login.
+David
+Bien.
+Francisco Finanzas GF
+Y ahí están los usuarios de la demo, usted lo aplique y puede ir cambiando.
+David
+Vale, perfecto.
+Francisco Finanzas GF
+Pues aquí está la vista principal, el forennel.
+David
+Vale.
+Francisco Finanzas GF
+Con el dashboard con todas sus funcionalidades en un 80% también la posibilidad de tomar captura.
+Gonzalo
+Eso de acuerdo al perfil entiendo David que se va ajustando de acuerdo al perfil, si el técnico el técnico va a ver la información de la captura en campo ¿cierto. 
+Francisco Finanzas GF
+Ahí está el todo como administrador que tiene todo, esto no lo ves que estoy bien, que se cree operador el servidor como técnico, claro, buenísimo ¿Cuáles pueden ser las opciones. 
+David
+Vamos a ver como técnico, vamos a ver como técnico primero, vamos a ver como técnico y vamos a poner un input y vamos a ver como el flujo del dato, ¿qué pasa con eso. 
+Francisco Finanzas GF
+Aquí estamos como técnicos, ¿qué pongo. 
+David
+Mira, te dicto yo ahí un segundo, a ver qué voy a decir. Hay una fuga en el sello mecánico de la bomba bajo molino del molino M02. Es crítico, habría que intervenir cuanto antes y necesitaremos el repuesto. Yo creo que sí que hay repuesto en la bodega.
+Francisco Finanzas GF
+¿Me has mandado un mensaje. 
+David
+Ahí está, te lo envié. Stack o cualquiera. No, nada, como si yo he dicho eso.
+Francisco Finanzas GF
+¿Este TAC o no. 
+David
+No pongas TAC, no pongas TAC. No, no, añadir fotos, tienes que quitarle que puedas añadir fotos, tienen que. poder sacarlas directamente para prevenir que carguen fotos antiguas y así.
+Gonzalo
+Ah ya, la foto directa, no que cargue otro cualquier fondo.
+Francisco Finanzas GF
+Como no hay equipo identificado.
+David
+A ver. A ver, a ver qué dice. Claro, ahí que. Vaya, véanlo tanto Gonzalo, ¿vale? Ahí debería. Interpretar primero, y yo he dicho de alguna manera y he dicho un TAC, he dicho la BOMBA, a ver, M02, no dicen M02 he dicho nada, hay una fuga en el sello mecánico de la BOMBA bajo MOLINO del MOLINO MMMM2, MOLINO MM2.
+David
+O sea, esta puede ser, creo que claro, depende de qué tan buena sea la transcripción del audio, en base a qué modelo utilicemos, podrá ser mejor o peor. Pero vale, pero independiente, debería intentar analizar, oye, preguntarse, ha dicho algún TAC, qué referencia, qué área es, a qué, a qué área pertenece. Y ahí habría que pasarle un, por ejemplo. La jerarquía de planta que tenemos David en los Excels que se generaron, ahí habría que tomar eso como oye, punto de búsqueda, identifico algún área para esta BOMBA o algo así.
+David
+En fin, creo que podría ir por ahí, pero bueno, en un principio vale, equipo, nada, and the fan, spare parts, CKF, bidding, copying element o ring set, clasificación low. Bueno, yo he dicho que era crítico, ¿no? Yo creo que sí.
+Francisco Finanzas GF
+Yo.
+David
+He dicho, he escrito, es crítico, entonces la clasificación de prioridad no la está tomando. 
+Francisco Finanzas GF
+No, no, pero nos parece en el texto que invierto.
+David
+En el texto, sí, yo he puesto, sí, pone ahí, es crítico. Claro, hay que pensar, hay que ver. De todas maneras, esto todos son temas ya de empezar a meterse en la en el refinamiento, obviamente de que funcione confiable, ¿no? Y ver de qué manera manejamos esos. Quiero decir, ¿qué está pasando cuando yo tiro esto? ¿Hay alguna skill de análisis de esto que te estoy diciendo yo? Oye, con la transcripción pasa por estas preguntas.
+David
+Primero identifica un asset en base a este listado de assets que tenemos en la jerarquía, tal. Segundo, sabes, se entiende, no. Segundo, criticidad, a ver, nombra criticidad y tal y cual. Mira, es la criticidad, la evaluamos así de esta manera. Ahora no lo tenemos el criterio de la criticidad de un de un word request, que yo sepa, como tendría que ver ahora mismo en alguno de los procedimientos, si es que lo tenemos, vale de cómo priorizar.
+David
+Y tal, pero de todas maneras ha dicho que era crítico, entonces debería haber haber seleccionado crítico. Bueno, prosigamos entonces resultados, luego qué dice 1 segundo, si te vas a resultados de ella, el paso anterior o no se puede ir a marcha atrás. Sí, vale, vuelve a pegarle otra vez y a ver qué pasa y digo como puedes, vale, aquí lo que está faltando, vale, espera. ¿Te acuerdas que había un listado de campos que había que revisar, que era qué tarea se tiene que hacer, qué recursos se requieren, el modo de falla?
+David
+¿Recuerdan que yo les envié un código que había generado con Gemini que se veía un poco penca en diseño, pero era lo que necesitábamos completar? ¿Se acuerdan? Eso habría que asegurar que todos esos campos. Vale, puede ser que no se hayan completado en la transcripción porque el huevón no lo ha dicho, pero se tiene que dar la posibilidad de que manualmente lo pongan o seleccionen el modo de falla del listado de modos de falla que tenemos definidos y demás.
+David
+Vale, si quieren esta parte la podemos revisar en otro momento o lo que sea, sigamos.
+Gonzalo
+Ahí entonces José, en esta parte como efectivamente interpreta la IA primero que nada estructurarla para que interprete correctamente toda la estructura, el audio o el texto con las fotos y otro punto también importante lo que dices tú entonces, que si los campos no lo identifican ya sea con el input de las imágenes o el texto que también esté disponible para agregar el contexto.
+David
+O sea, siempre tiene que ser la misma estructura, no como que cambia, siempre la misma estructura en tres pasos, Primero, asset, ¿dónde está ubicado? Segundo, descripción de la falla, el síntoma, el no sé qué, la gravedad. Y tercero, ¿qué se requiere? Reparar, cambiar y no sé qué. También agrega por ahí Gonzalo, cuando recién yo voy a hacer una primera captura, que en ese sitio donde está escrito, por ejemplo, la típica cómo es que no está escrito en el texto, pero que se ve.
+David
+De fondo, como un ejemplo de lo que podría ser que se que ponga ahí donde pone describe, describe, describe the observation of problem. Un ejemplo, asegúrate de unos bullets. Por ejemplo, asegúrate de identificar el TAC y el nombre del equipo, el síntoma de la falla. ¿Qué falla crees que tiene, si requiere repuestos o no, si es urgente o no? ¿Sabes?
+David
+Y cualquier detalle que pueda ayudar al planificador, algo así, ¿sabes? Ya, sigamos.
+Francisco Finanzas GF
+Ya esto pasamos a la validación humana.
+David
+Claro, que dice validación humana, prioridad, a ver.
+Francisco Finanzas GF
+Prioridad confirmada, da modo de fallo, repuesto verificado en almacén personal disponible.
+David
+Vale, en lugar de esto, aquí lo tendría que acabar de hacerte. Es que yo no sé. Yo creo que en el momento que le das al botón ya es el resultado de la IA. Ahí mismo tú tienes que editar básicamente cada cada uno de los campos, el tag, en no sé qué, si requiere repuestos, si es en con el equipo detenido operando. Yo creo que falta que sobra un paso aquí está sobrando un paso. Debería ser como el detalle de todo yo lo que ya se ingresó, así como hasta todo esto, en el momento que le das al resultado de la IA ya te tendría que aparecer la primera ventana de qué equipo es.
+David
+Siguiente, vas validando datos con la posibilidad de cambiar esos campos porque, por ejemplo, en el anterior no puedes editar todavía ese campo, es como que está ahí machacado, es como que la IA te lo ha dado, pero no lo puedes editar, se tendría que poder editar. ¿Se entiende, no. 
+Gonzalo
+En ese sentido, José, entonces acá debería ser captura, validación y confirmación, y la parte de validación ya viene procesado por la IA y uno ya va ajustando también de forma manual lo que corresponda.
+David
+Claro, captura, validación y esa validación es entre una validación y agregar más datos. Tú se me está, se me está ocurriendo, por ejemplo, en el paso anterior, ¿no? Que hemos identificado un supuesto repuesto, es el código adecuado. ¿Oya, y qué tal si hay una especie como de un botón ahí para agregar un repuesto y ese repuesto? Porque ya te digo yo que los técnicos tienen su cuadernillo, me explico, van con su cuadernito tal, tienen anotado, aunque sea en papel, a boli, a lápiz, el número del repuesto de las cosas que tienen que hacer, ya te digo yo entonces.
+David
+Podría haber un botón en el cuando cuando se completa el análisis ya identifica un potencial repuesto, el viejo lo puede revisar, incluso decir no es ese sello, déjame que lo busco y que tenga un buscador que se conecte directamente con el listado de del bit of material de los equipos, sabes, incluso incluso con el dato de. De la si hay repuesto, no hay repuesto en bodega, se entiende, no aunque sea del principal.
+David
+Y hoy ya ahí ya el planificador, joder, si la han traído el principal, pues los chiquititos del de la tuerca, el no sé qué tal como del pack que complementa, pues si están separados en código, porque a veces son kits, kits, el kit de no sé qué, que tiene una serie de componentes ahí.
+Gonzalo
+Es importante, José, destacar que en esa lógica de negocio y la disponibilidad, ese nivel de detalle tiene que estar asociado y lo tenemos que revisar porque en las otras visualizaciones todo ese nivel de detalle internamente está, está aquí en la aplicación, pero claro.
+David
+No está conectado con esto.
+Gonzalo
+Tiene esa información y traerla, está, no está disponible.
+David
+Yo les comentaba, David te comentaba, esta parte de la captura no está tan trabajada como aplicación, yo como que le trabajé bastante más la otra. ¿Sabes. 
+Gonzalo
+Vamos a tomar esa como referencia y la vamos a buscar entonces.
+David
+Ya, sigamos, pero bueno, ya se han tomado los comentarios, yo estoy igual grabando aquí y les paso luego la transcripción, ¿vale? Sigamos. Ya, entonces. 
+Francisco Finanzas GF
+Para completar la variación, se da permiso. Ya dice el número de generación.
+David
+Box request, ok, perfecto.
+Francisco Finanzas GF
+Esta es la solicitud de trabajos que hay.
+David
+¿De qué? Pero espera, de estamos ahora mismo como un, como un operador, no, claro, entonces aquí estaría bueno que yo pueda ver, ver mis solicitudes, ver todas las solicitudes y ya la raja si de repente hay un botón ahí que dice, oya, comprueba si es que exista alguna duplicidad de mis solicitudes respecto a otras.
+David
+Porque igual estoy creando una solicitud que ya existe. Ah, claro. Vale, ya que se ve todo el colectivo.
+Francisco Finanzas GF
+Es que igual es para cada uno, porque viene la planta en la que trabaja.
+David
+Claro, sí, sí, pero a lo que voy yo, claro, mis solicitudes, yo como Pepito Pérez, las de todos los de mi equipo, tanto operadores como otros inspectores de diferentes turnos, ¿vale? Porque puede ser que ya se levantó el tema en el turno anterior, David, pero yo igual no lo sabía. ¿Sabes. 
+Gonzalo
+Entonces ahí deberías, por parte del técnico, entonces podría existir una ventana de verificación, por ejemplo, donde se filtre por equipo, entonces diga, ah, este equipo tiene problemas, voy, filtro y ve todas las solicitudes de ese equipo, entonces dice, ah, aquí hay una.
+David
+Claro, mira, de hecho, ¿sabes dónde se debería conectar? Antes de enviar, ahí tendría que hacer una especie de engine, una búsqueda de solicitudes pendientes abiertas, y decirte, antes de enviar, hemos encontrado esta otra solicitud que tiene toda la pinta, o sea, es muy parecida a la que aparentemente tienes tú. Y antes de avanzar, poder abrir esa solicitud literalmente y ver la misma información no levantada en otra solicitud, como en qué equipo, incluso fotografía las fotografías anexas, si es que las subió el anterior, como para decir puta, es lo mismo.
+David
+Ya lo levantaron los colegas del turno anterior, ¿sabes. 
+Francisco Finanzas GF
+Ya sigamos, la última penúltima opción es la que. ¿A quién. 
+David
+Ya, y este para qué sería aquí entonces, a ver, confiabilidad, esto es un técnico, esta es la vista de un técnico, ya, y entonces ve la jerarquía ahí al lado, vale, vale, bueno, mira esto sabes que podría ser bueno para ellos, para. me parece la verdad que bastante bueno, porque tú le puedes dar al buscar, no? el nodo, y claro, es como si no saben el tag, al tiro, Se lo podrían buscar ahí como por nombre y les trae la metadata asociada al equipo, modos de falla.
+David
+A ver, criticidad, criticidad, a misión, critical, high impact. Ves, por ejemplo, misión, critical o k, a ver, company, plant, not the type, company, plant. A ver, ponte en cualquier un equipo, un equipo cualquiera, clic en alguno.
+Francisco Finanzas GF
+En cualquiera, pero ahí encima de uno, ahí que se ve.
+David
+Sí, claro, estamos en el motor y dice criticidad a motor, el código level plant criticidad no tiene FMK FM A ver FM A Task History. Vale, bueno, ahí no se ve gran cosa, pero primer punto que me gusta es que teniéndolo ahí al lado, el usuario. Podría, aunque sea nuevo, más o menos indagar y saber hasta el propio tag que es, sabes, se me está ocurriendo.
+David
+Ojo, se me está ocurriendo. Imagínate, el flujo podría ser también que partan desde la jerarquía, buscan el equipo y ahí le dan al botón de crear Work request en ese equipo y como que ya le prepopule. cierta data, ya al menos ya tiene el tag, el nombre del equipo y le puede agregar luego algo más. Luego ahí de repente agregarle el audio extra, ¿se entiende? Es como una vía como, o sea, es como que se me ocurre que no limitarle al usuario en por dónde llegar, cada uno luego que experimente por dónde quiere llegar, ¿sabes. 
+Gonzalo
+De eso también podría existir, José, no sé si tú crees, una lista predefinida, por ejemplo, de problema. O sea, de que aparte de redactar o sacar fotos de una lista desplegable, por ejemplo, problemas de filtración, ruptura de equipo, que eso ya está definido.
+David
+Es que eso ya está definido, Gonzalo, ya hay un listado de modos de falla preseteados que son los únicos válidos. No se puede permitir ningún.
+Gonzalo
+No, pero te lo digo acá, que el usuario los presete también aparte el texto y la imagen, también ese como ese modo de falla. entiende? porque ahora hoy en día sobre el texto y unas imágenes.
+David
+Ya, pero descríbeme ¿cómo sería la experiencia de usuario? a ver, ¿cómo sería.
+Gonzalo
+El usuario ingresa, identifica el problema, ingresa, selecciona acá dentro de un equipo, lo busca y después también aparte de seleccionar el equipo luego selecciona el tipo de error o problema que está generando que está predefinido entonces lo selecciona y después viene la carga del texto o el audio, Describiendo la situación y adjunta las imágenes. Sí, o sea, todo eso analizar ahí.
+David
+Vale, perfecto, sí, o sea, claro, es vale lo mismo, estoy de acuerdo. O sea, puede ser que no tenga que el usuario de repente. Esta es una hipótesis, que la gente mediante el audio va a estar más cómodo. Igual le prefieren ir ir completando, ¿sabes? Puede ser. Pero una descripción de lo que están viendo hace falta, porque también uno, es decir, yo como operador puedo pensar que sé qué modo de falla es y no es ni ahí.
+David
+Entonces yo tengo que describir lo que estoy viendo sí o sí. Eso sí, vale, ya qué más. Bueno, entonces esta es la vista del operador, vale. 
+Francisco Finanzas GF
+Con la edición del perfil, la del planificador.
+David
+Ya, adherencia. Tenemos aquí KPI de 93% adherencia, habría que ver qué es concreto del plan, me imagino, ¿no.
+Francisco Finanzas GF
+Ahí pueden ver.
+David
+Capturas de campo, 24, pendientes de validación, backlog total, equipos operativos, tiempo de planificación, medio, más o menos podría ser eso. Acciones rápidas, a ver qué pone ahí. Nueva captura, revisión de revisión de solicitudes. Claro, se va a resolver, se va a dar solicitudes ya y ahí acción. ¿Se puede hacer algo. 
+Francisco Finanzas GF
+No en las solicitudes, no, sí, aprobarla o negarla.
+David
+Vale, eso tendría que pasar, que tú al darle se te abre toda la ventana con todos los datos. que es la misma datos que ha validado previamente el usuario, donde también se ve el carrusel.
+Gonzalo
+Es esa que pone el ojito, esa es la que mostró con mayor detalle en la imagen.
+David
+Exacto, en lugar de tan chiquitito, toda la datos que habíamos hablado, sí, vale. Ver backlog es lo mismo, no? O no? Total, 10 horas, horas pendientes, horas estimadas. B1 requiere acción ya uno. Obviamente cuando a pendiente de aprobación pendiente. ¿Eso qué es? ¿El uno será pendiente de aprobación? Sí, ¿no.
+Francisco Finanzas GF
+Sí.
+David
+En espera de. Ah, mira, ves, eso está bueno. En espera de antigüedad, siete días. En espera de parada mayor sería. Shutdown. Parada programada. Vale, parada programada. espera de paradas sin materiales, sin personal, sin materiales, ¿vale? Grupo, planta, horas estimadas. Ah, quedar bien.
+David
+Ya. Vale, bien. Sería bueno que lo puedas como filtrar también por las paradas y lo mismo, darle al botón y ver el detalle entero del backlog. A todo esto, una cosa bueno, pero que son cosas que se ajustarán una vez que ya se ha aprobado, la work request ya entra a backlog y es una tarea oficialmente que está en el backlog y tiene que generarse una orden de trabajo y planificar, o sea, programarse.
+David
+Pero ya no es una work request, vale, una vez que ya se ha aprobado, deja de ser una work request. No sé si está así, me imagino que sí, pero por si acaso, vale, ya vale, que más. Ya a ver, a ver, entonces sube, sube arriba, que lo vea todo. Tienes ahí, puedes filtrar por semanas, no semana 8, semana tanto, semana 8, horas planificadas, tantos, horas ejecutadas, vale, ya perfecto, adherencia 93, órdenes de trabajo, muy bien, sí, adherencia del programa 93, sí, orden de trabajo abajo 8.
+David
+Claro, ahí tú tendrías que poder, nuevamente lo mismo, clicar en cada orden de trabajo y ver como más los detalles.
+Gonzalo
+Acá arriba está la orden de trabajo.
+David
+Una cosa que no hemos tratado. Bueno, tampoco pensaba yo que íbamos a ir tan rápido. Entonces, una cosa que no hemos tratado es, una vez que se ejecuta la orden de trabajo, ¿vale? ¿Cómo es la manera de cerrarlo? Normalmente, que ahí también hay otro problema, porque a veces no las cierran o lo que sea. Eso, literalmente viene el técnico de terreno, llega a la oficina con sus papelitos, se sienta ahí el pobre hombre lleno de grasa, o si no, tiene algún administrativo técnico por ahí y le dices: "Oye, ya, cierra las órdenes de trabajo en el sistema".
+David
+Se va a SAP y empieza a ver qué dice aquí, y empieza a tipear y no sé qué. Que sería muy pro ver qué tan confiable es. Igual que sacamos foto de una de una falla y nos interpreta, sacamos una foto vale de lo que es el papel escrito de momento, porque luego a futuro podría ser que ese papel ya no es papel si no es digital, sino que se van, que se van directamente con el móvil y lo cierran desde el móvil, ¿sabes?
+David
+Pero podría ser 2, una. O que esa orden de trabajo existe en la plataforma esta que estamos haciendo. De hecho, me gusta que exista también una vez que esa una vez que el planificador le ha asignado una tarea a un técnico, le entra en el inbox de work orders en esta misma plataforma y ahí. Esa es la plataforma, o sea, se va a llevar el papel seguramente tal, pero luego, ¿cómo la cierra?
+David
+La puede cerrar sacándole una foto a su propio papel. Vale, viendo qué tal, qué tan precisa es la interpretación de su letra con el con lo que ha capturado en pantalla la foto y lo que ha levantado como work order completa en el propio móvil cualquier ajuste que no sea correcto. y manda una solicitud de cierre de work request y ahí ya sé que haría falta conectarse con SAP.
+David
+¿Me han seguido el tema? Sí. A ver, Gonzalo, coméntalo a ver para que veamos.
+Gonzalo
+Ahí me quedó una duda José con la parte final, porque si se le asigna después que se le asigna al, al técnico, una tarea debería aparecer todo ese registro en su menú, en su visualización, por lo tanto el técnico debería estar atento a la asignación de tareas dentro de la aplicación.
+David
+Bueno, a ver, tampoco es que ahora van a cambiar completamente todo, ya hay un flujo de trabajo, ya hay un jefe de equipo que le dice: oye Pepito, tú vas a estar hoy haciendo esto, toma las hojas, vale, hoy en día ¿qué pasa? Bueno, hoy seguís con la el trabajo de ayer o hoy un nuevo trabajo toma papel, a ver qué hay que hacer el mantenimiento. No sé qué vale, eso ya pasa hoy, vale, a las 8:00 de la mañana os juntan. Bueno, chicos, hoy vamos a hacer esto, mira cada uno tú a esto, ir ahí a la oficina que y pilléis el instructivo de trabajo, lo que sea, y firmáis ahí, lo que sea, vale, eso ya va a pasar.
+David
+Entonces el viejito solo tiene que hacer. que saber que ahora para cerrar tiene una plataforma que le va a ayudar mucho mejor en el cierre. ¿Por qué? Porque va a poner el papel en la mesa, le va a sacar una foto con la plataforma, lo va a escanear con la IA y le va a autocompletar en un 60% sabes y al completarlo en un 60% lo completa completamente y le da al botón de enviar y ahí.
+David
+Ahí es donde ya es el primer, ahí es el primer que te digo, la primera integración que necesitamos con SAP. Ahí debería debería actualizar mediante una transacción de SAP el cierre de la orden de trabajo. Vale, ahí hay una primera transacción que hay que ver, vale. Pero eso es explicable, ¿sabes?
+David
+Podríamos, aunque no, aunque no lo tengamos, ese flujo lo deberíamos poder mostrar showcase al cliente y decir, mira, aquí le das transacción de SAP de cerrar WO, workorder in SAP. Pum, ya sigamos. Ya hemos dicho que estas workorders. El planificador las podría abrir y ver un poco como más en detalle y tal, fecha de fecha, o sea, si ya se completó, cuando se completó, qué técnicos estaban, si se si se utilizaron repuestos, cuando se cerró la orden de trabajo, vale, y si está abierta, pues lo mismo, los mismos detalles de cuando es para cuando está programada, etcétera.
+David
+¿Ya qué más de un asistente con ella? Ya, hola, soy el asistente de mail.
+Francisco Finanzas GF
+Ahí se puede venir.
+David
+Sí. Vale, dale ahí, que va lo crítico, a ver. Vale, bueno, está muy bien, esto tiene buena pinta, va muy muy bien. Va muy bien. Va muy bien esto. Ya, perfecto.
+Francisco Finanzas GF
+La planificación.
+David
+Ya. vale aquí por ejemplo aquí esto todavía no está conectado con la metadata o la data sintética que tenemos actualmente porque antes he visto que había había en el fondo esto es awaiting materials backlog ya teníamos el backlog aquí no se ve tan de momento sí vale la.
+Francisco Finanzas GF
+Jerarquía también de nuevo ya por ahí lo veo porque va aumentando los rangos, mapa de crisis de criticidad. A ver, a ver, pero.
+David
+Es cómo, espera, es que hay que pensar en el flujo, ¿vale? es esto, esto, yo estoy aquí, estoy a nivel, a ver, puedo cambiar en lugar de planta, cómo selecciono un equipo? Ahí abajo tienes. Seleccionas un equipo, vale, dale a una cualquiera, X. Sube, sube, sube, porfa, sube un poquito. Has seleccionado un equipo, vale? Y esos puntos de arriba, que son, que veo uno o dos, no sé cuántos puntos.
+David
+Son todos los equipos de la planta? Sí, vale, entonces no está ligado a una cosa con el de arriba, ¿no. 
+Gonzalo
+No, este también es que en la zona de base, José, por ejemplo, arriba hay una lista desplegable y eso debería ser de acuerdo al equipo para que haga el análisis.
+David
+Y también, también asegúrense de que esa tabla, por ejemplo, de matriz está en base a la matriz que tenemos en el sistema, ¿sabes? En algún skill, por ejemplo, de criticidad de activos hay una matriz. De hecho, hay 2 matrices, es lo que les lo que les decía aquella vez de hay que ver cómo lo hacemos que haga la criticidad de uno o de otro. Vale, bueno, pero da igual, si sigamos, ya entiendo, esto es aquí se debería poder ver la criticidad.
+David
+A ver, si le das a Run Assessment, ¿qué pasa. 
+Francisco Finanzas GF
+Pico, muy picacho de acá.
+Gonzalo
+Ranking de criticidad de todos los activos, vale, y de hecho, de acuerdo a eso, arriba está la barra de la probabilidad de ocurrencia, de acuerdo a la probabilidad de ocurrencia, también afecta a modificar la estructura.
+David
+Bueno, hay que darle una vuelta, pero a ver, la idea es, los activos tienen una criticidad que es estática, que es inherente al proceso, vale, entonces. Una cosa es la criticidad del equipo y otra es la salud del equipo. La criticidad del equipo es inherente al proceso. El molino es por en sí, se hace una vez el análisis de criticidad y ese es el que es, no varía. Es un análisis que se hace una vez mediante una metodología y ya no varía esto que está haciendo ahora, por ejemplo, David, de poner más menos.
+David
+Esto, esa funcionalidad no debería existir de yo empezar a cambiar aquí allá. Es más, eso lo tendría que hacer, lo tendría que correr el agente utilizando la skill del análisis de criticidad de activos, sabes cada. Por eso estaba preguntando qué pasa con ese botón. Ese botón debería lanzar la tool o la función o la llamada a que el agente de confiabilidad haga el estudio y el análisis de confiabilidad. Vale, ahora abro, abro, abro la cajita a que.
+David
+En algún lado de la plataforma del software hay un tema de como de asset health, como una alguna skill de analizar la salud de un activo. Claro, ahí sí que ya entra entre la criticidad, las fallas que ha tenido, la no quiero decir pérdida en confiabilidad, qué sé yo, una serie de cosas, no backlog que tenga asociado, que no se haya ejecutado. Todavía no tenemos la métrica o la fórmula, pero tendríamos que definir cómo vamos a definir la salud.
+David
+Yo estoy seguro que la que la skill ya lo dice, lo que pasa es que no hemos tenido tiempo material para meternos, pero se entiende la diferencia, ¿no? Una cosa y la otra.
+Francisco Finanzas GF
+Sí.
+David
+Vale. Vale, ¿qué más? Entonces, aquí es el assessment, tal. 
+Gonzalo
+A nivel esquema tiene que solucionar el equipo y hacer el análisis.
+Francisco Finanzas GF
+Sí, está haciendo el análisis.
+David
+A ver, quietecito, ahí 1 segundo, es un filtro Cellular Mode Billing, vale, aquí que está faltando, por ejemplo, vale, aquí primero lo que está faltando es en la jerarquía mismo de la planta, vamos a la jerarquía 1 segundo, a la jerarquía abajo, ahí eso, vale, yo aquí veo una jerarquía, vale, yo podría, debería poder, igual que igual que lo que has hecho antes. Debería poder filtrar, pero ver todo el árbol de un equipo, por ejemplo, Molly Osak X o filtro tal y luego que a ver, dale, por ejemplo, a mira, dale ahí a Flotation System como el cuarto ahí que está ahí, Flotation, Flotation System, dale click, click, vale, Flotation Cell, dale, vale, Agitator.
+David
+impeller shaft. Air system, pone Air system. Ábrelo todo, vale. Overflow System, vale. Abre todo la estructura también. Vale, eso se supone que es la jerarquía de planta de una celda, vale. Yo aquí tendría que poder crear un nuevo ítem dentro de la estructura, por ejemplo, y renombrarlo. Vale. Vale, y de hecho, y la opción de crear de cero o buscar en librería, vale, incluso si lo traigo en la librería ya como completo, tal y como está de base en la librería, y si no, como crear con IA el componente, el componente completo, es decir, imagínate que es un motor.
+David
+Que al tiro me traiga el digamos que con la IA me haga la jerarquía. A ver y a ver lo que yo el otro día decía, vamos a tener una, unas, unas librerías arriba, no existentes, y luego yo voy a empezar a construirme mi planta. Ya hay un agente, el de reliability. Con una skill de crear jerarquía de planta.
+David
+Vale, entonces debería. Oye, yo en algún lado le tengo que dar contexto de este proyecto. ¿Qué es? Si ya tengo un listado de activos, por ejemplo, eso seguro lo tengo. Desordenado, llámalo como tú quieras, pero un listado de activos tiene que haber ya. De la ingeniería. Le cargo tal cual, me debería crear la primera versión de una jerarquía de planta y yo podría. Iterar que les he dicho antes, con la guía agéntica esta siempre hay una oportunidad de mejorar.
+David
+No todo es como lo llaman, como hay un término para cuando decimos que, por ejemplo, un código de Python es como es una fórmula X, la aplica 100%. No hay variabilidad, siempre va a ser exacto, siempre no. Pero un agente con skills como piensa, pues puede encontrar soluciones. No es A más B más C dividido entre cuatro al cuadrado.
+David
+Todo no es no es una fórmula mágica. Entonces tú podrías generar una primera revisión de la jerarquía y relanzar otra vez el agente y el agente ya tiene. Ya tiene una skill, por ejemplo, en la que se le dice: Oye, si te encuentras que ya existe, no sé, en este caso una jerarquía, identifica oportunidades, revisa dónde podría mejorar, ¿sabes?
+David
+Y antes de hacerlo todo, proponle al proponle al usuario y ya le estamos como medio metiendo a la plataforma ese soporte agéntico en el que el usuario va. Codeworking o cómo era Byteworking, Byteworking, Byteworking con la herramienta. Oye, sabes qué corre una segunda interacción, busca oportunidades de no sé qué tal cual, medio prontéandole un poquito, ya sabes, y ya ese es el ese es el superpoder de convertir.
+David
+Llevar el working con esa potencialidad de ir ir dándole cierto feedback, no simplemente a través de puros botones, que es o A o B, en la que realmente ya estás trabajando en un en una plataforma relativamente guiada, pero lo suficientemente flexible para que tú te adaptes y encuentres la forma de. Los flujos de trabajo para llegar a los resultados, ¿se entiende?
+David
+No va a haber funcionalidades que van a ser estocástico, creo que es que es como creo que es estocástico, que es como es lo que es A más B, tú no pienses más y puedo mejorar, es A más B, no A más B menos C prima, que tal si te ha parecido que podría ser mejor porque el objetivo. Es optimizar costos, no, A más B. Entonces, algunas cosas van a ser estocástico, te diría, como por ejemplo la asignación de materiales.
+David
+No es un código similar, es el material el que es, sabes, como mucho puedes decir, oye, no encuentro ese material, Pero estoy encontrando estos similares. ¿Será alguno de estos? ¿Será que te has confundido? Pero no es como se me ha ocurrido que podríamos mejorarlo si te cambiamos de material. No vale, pero en muchos casos sí que va a ser. Entonces, volviendo al tema inicial, jerarquía, yo puedo partir de tener una jerarquía de planta ya o a correr un una especie de darle al botón o correr un prompt.
+David
+Para que mejore un poco, vea oportunidades de cómo podría mejorar la jerarquía, que no la no lo no lo ejecute todavía, pero que me muestre. No sé, podríamos agregar estos ítems a este subsistema, podríamos crear este subsistema, vale, podría luego yo manualmente agregarle un subsistema, un equipo nuevo de cero o lo que sea. Vale, y de aquí yo debería poder ya ver algún botón de.
+David
+Verla, ver el FM A, por ejemplo, que ya lo veo ahí, veo el FM A que pone ahí, no, si te vas al FM A, vale, ahí no aquí tendría que haber un botón de crear FM A, vale, y entonces le haría como estoy al nivel del equipo, me crearía un FM A al nivel de él y vería como componentes agitator motor todos los hijos. Agitator, motor, impeller, shaft, sabes, y María literalmente.
+David
+Para esos componentes vería la falla función, la función, la falla funcional, el modo de falla categorizado por las 79 combinaciones que tenemos y la y la definición de la estrategia de mantenimiento. ¿Todo eso, sabes? Mira, yo creo que va súper bien. Vale, mira, ese FM A y ese FMEA es lo mismo, vale, entonces hay que dejar solo uno a ver qué pasa ahí.
+David
+Pucha, ¿qué es esto? A ver, a ver, ¿y el FM A qué es? ¿Qué es lo que hay en el FM A? Vale, ahí está, seleccionas un equipo, load, vale, ves aquí lo que le está faltando es el componente, vale. El failure mode en realidad es una combinación de qué falla el mecanismo y la causa. En realidad ahí sería failure mode.
+David
+En lugar de failure mode sería what en inglés, no what qué what mechanism cost. La combinación de esos 3 es el failure mode, sabes en muchas ocasiones. Ojo, el failure, el what ahí donde pone failure mode es casi que el mismo componente en sí. Pero otras veces no. Imagínate, el componente es una. es una caja de conexiones, ¿vale?
+David
+Puede ser la caja de conexiones, que tiene conexiones, tiene otras cosas, esa caja. Tiene una tapa también, ¿vale? Tiene los pernos de la tapa, ¿sí o no? Pero el componente, como componente de la jerarquía, sería caja de conexiones, imagínate. Y en el "qué" Vaya, dirías conexión o conexiones o tapa, conexiones o caja, caja plástica. Me explico como diferentes elementos de la caja, porque hay un límite.
+David
+No podemos hacer del componente, del componente y una jerarquía de 20 niveles. No paramos a un nivel, al nivel en el que le hacemos mantenimiento y en este caso es la caja de componentes, caja de conexiones, vale. Pero bueno, vale, qué es lo que pasa, qué es lo que te salta, David, que estás cerrando constante, vale, análisis de modos de falla, fallo no falla, pero bueno, efectos y criticidad, 2 registros críticos, 2 altos, 2 no sé qué.
+David
+Vale, a ver, valores promedio de todos los registros CMA. A ver, seguridad, operación. Bueno, hay que dar una vuelta, pero también podría, o sea, podría servir, vale, o sea, puedes filtrar por equipos y te dicen los modos de falla, categoría. Vale, y estrategia RCM, a ver, el árbol completo.
+David
+Vale, yo creo que eso, por ejemplo, eso no debería estar ahí. Eso el agente debería hacerlo literal, nada más. Se da cuenta que es que pone ahí: contexto operacional, análisis de criticidad, FMK, árbol de decisiones, plan plan de mantenimiento. ¿Cómo se supone que es eso? Por ejemplo, el 123.
+Francisco Finanzas GF
+Estos son los pasos en los.
+Gonzalo
+Que vamos, o sea, los pasos que van del claro del RSM, pero uno de los pasos está asociado efectivamente al trabajo del planificador para llegar al plan de mantenimiento.
+David
+No, pero no es así, no es así el tema, esto no es así, esto es ahí está diciendo proceso, las 5 fases, contexto operacional, vale, eso supongamos que en el apartadito solo en el apartado de confiabilidad que pone jerarquía. Es decir, qué equipo, siguiente punto de jerarquía. Deberíamos tener funciones, vale, las funciones de cada equipo y componente, vale, y de ahí y desde cada uno de cada uno de esos pasos, jerarquía, funciones, análisis de criticidad, estrategia de mantenimiento.
+David
+Amplio, no FM A, FMK, estrategia de RCM. Todo es lo mismo, prácticamente vale. De hecho, tendría para entenderlo mejor, deberíamos que juntarnos si hubiera alguna skill en concreto para ver lo que estoy hablando, vale, y la documentación que tenemos a como referencia en la plataforma y tal, vale, pero sería pasos, jerarquía, funciones.
+David
+Análisis de criticidad, estrategia de mantenimiento que combina el FM A, el FMK y tal, que alguna de estas vistas que estamos viendo, como por ejemplo la que tenía en FMK con un radar y tal, nos sirve como dashboard para entender cosas. Okay, pero no es que sean diferentes en la metodología, vale, es lo mismo, solo que lo estamos visualizando de una manera diferente. Vale, estrategia de mantenimiento. Asignación de tareas, aquí no veo lo de las tareas, por ejemplo, sí que se ve en la jerarquía, pero no lo veo aquí.
+David
+El apartado de tareas con tareas, recursos para asignarle spare parts y todo eso, sabes siguiente paso, construcción de los paquetes de trabajo, vale, es decir, con esta mano de obra, no esa parte. Falta, lo estoy viendo, el tema de la definición de las tareas, el límite aceptable, váyanse al Excel, a los Excel que se entregó.
+David
+Ahí viene un poco la data, vale de lo que habría que verse aquí, pero está el límite aceptable, que si la tarea la ejecutas con el equipo parado, detenido o operando, vale, y luego le asignas mano de obra. ¿Quién va a ejecutar esa tarea? Un eléctrico, un instrumentista, un mecánico, un lurificador, vale. ¿Ya y qué? ¿Y requiero repuestos o alguna herramienta especial? Todo eso vas como planificando ya, pero no es la misma planificación.
+David
+Ojo, Gonzalo, que la planificación que veníamos viendo antes. Vale, no es la misma planificación porque la planificación de arriba vale y la y la programación son un es gestión de. De backlog por un lado, planificación de Word request, es decir, solicitudes de correctivos para que sean que sean planificados. Vale, es decir, viene alguien, dice, oye, hay una un error.
+David
+Bueno, vale, lo de aquí abajo que estoy diciendo de asignación de recursos y eso es la parte en la que de manera de manera proactiva yo desarrollo un plan de mantenimiento. ¿Sabes? Pero desde el punto de vista de análisis, de confiabilidad, de haber estudiado.
+Gonzalo
+No, claro. ¿Se entiende? Es totalmente difícil.
+David
+Es completamente diferente, completamente. Es otro ámbito del trabajo. Es como más estratégico de analizar las fallas y entonces yo preparo un plan de mantenimiento y otra cosa es la gestión de ese plan de las diferentes órdenes de servicio de trabajo. Tengo los PMs, que son los preventivos, que son esos preventivos. Previamente alguien los tuvo que construir. Que lo que te estoy diciendo ahora mismo de la estrategia están los está el plan preventivo.
+David
+Que es la PM cero 3 en SAP está el plan correctivo planificado, que son todas esas work request que se han convertido en backlog y yo en algún momento les he puesto una, las he, las he planificado. Planificar significa asignar recursos, personas, quién lo va a ejecutar, qué repuestos, qué no sé qué eso es planificar y luego las he programado, le he puesto una fecha. Vale, esas son las PM cero 2, levantan algo que no es tan crítico y yo me gestiono el backlog y veo dónde, aquí y allá las planifico, las planifico sí o no y las programo, le pongo una fecha.
+David
+Esas son las PM cero 2 y las PM cero uno son correctivos no planificados, es decir, son urgencias, hay que hacerlo. Hay que hacerlo sí o sí, o sea, no se entiende, no, entonces son correctivos no planificados. Tuvimos que intervenir qué tipo de órdenes de servicio, la PM cero uno, y así separamos lo que fue reactivo de lo que fue correctivo, pero al menos planificado y de lo que fue preventivo.
+David
+Entonces, todo lo preventivo en algún momento lo hemos definido y eso es. En ese paquete de abajo que pone confiabilidad, jerarquía, tal, hay falta, falta la definición de la tarea, el empaquetado de los paquetes y el módulo para generar las cargas a SAP.
+Gonzalo
+Vale, eso lo tenemos que ver en el otro perfil, que puede ser que esté mercado.
+David
+Es que no, es que falta un perfil aquí, ahí falta un perfil, falta el perfil del de confiabilidad, a ver. Vale, claro, entonces, claro, es que estamos ya. Oye, por cierto, está hueón, está la raja todo esto. De verdad que es apasionante ver lo que podemos llegar a construir.
+Gonzalo
+Está buenísimo, hay muchas más otras ventanas, otras secciones, módulos, que están muy buenos, por eso cambiamos. Cuando revisamos con David vimos el que hizo Stitch, que no estaba mal, y vimos el de Sigma y dijimos, no, mucho más completo.
+David
+Pucha, se podrían ver, sabes qué se podrían ver algún videíto de estos que está cargado del software que era súper penca, ese que les mostré que yo les expresaba mi frustración de cuántas horas pasé delante de ese software. Y si bien en cuanto a estilo es un poco caca, pero en cuanto a contenido de lo que requiere visualizarse. Y un poco como el orden está bastante bien.
+David
+Y luego, por otro lado, si se van a en AntiGravity y abren la carpeta del proyecto, les puedo mostrar dónde. Ya lo vimos en su día. Hay un documento en Markdown que contiene todos los parámetros que debería tener cada, digamos, como apartado, jerarquía, funciones a detalle, vale. Y que está, que yo diría que está al 100% en los propios Excel, así que los propios Excel son buenos y les puedes subir.
+David
+Oye, mira este Excel, que es el de definición de tareas, son todos los campos que yo de alguna manera bonita debería poder acceder a ese módulo, a ese módulo. Lo mismo con estrategia de mantenimiento. ¿Ves todo esto? Esto debería estar ahí. Oye, pero súper bien, muy bien.
+Gonzalo
+Mira, le puedo mostrar el Dash del ejecutivo antes de cerrar. La parte en sí. Pero el final, el de abajo, el de abajo. El de abajo.
+David
+No, no.
+Gonzalo
+Mira, justo estábamos hablando lo de los.
+David
+PM-01, PM-02 estaba ahí también. Ya, a ver. Adherencia al programa. Misclassification. Ah, mira, Misclassification, eso hay que ver qué significa, pero entiendo que es, oye, que hemos clasificado mal la. habría que ver qué significa en realidad. OEE, disponibilidad de la planta, MTBF, del SAC, tiempo planificado, ya, tendencia, adherencia, OEE, pilares de magia.
+Gonzalo
+Está buenísimo.
+David
+Lo del costo por y los costos por área, flota de equipos activos, criticidades en marcha. Si ahí se le podríamos, ahí sería súper bueno que entras ahí clac y te viene ahí de una todo un reporte de desde el punto de vista de planificación y desde confiabilidad con KPIs de planificación y de confiabilidad, no sé.
+David
+¿Cómo se ha desempeñado este equipo en confiabilidad, MTTR, MTTF, en planificación? ¿Cuánto tardamos normalmente en planificar? ¿Qué tipo de órdenes, porcentaje, tanto correctivas, versus preventivas? Mira, aquí la persona técnica que venga va a poder ayudar mucho también, ¿sabes?, guiando y así. Word request. A ver, estos son reportes y luego reportes.
+David
+No, hueones, la cagó. La cagó porque está OTTEL, está súper bien. Y estamos ya listos para mostrarle al cliente un poco para dónde va. Habría que ponerlo en inglés, sí. La data también, entonces eso. Se.
+Francisco Finanzas GF
+Perdía la funcionería del idioma. Mutó mucho.
+David
+Ah, sí. ¿Pero se veía esta misma data interna, todo esto en inglés. 
+Francisco Finanzas GF
+Sí, tenía los tres idiomas, pero mucho tanto que para 10 secciones.
+David
+Ya. ¿Ves ahí? Háganme caso, háganme caso, el tema de la planificación y poder seguir siguiendo un poco y poder volver y tal, eso les puede ayudar. Pero bueno, o sea, todos nos las tenemos que pegar en algún. en algún momento, o sea, nadie sabe ni más ni menos, o sea.
+Gonzalo
+Pero la verdad es aprender.
+David
+Sí, sí. Oye, pero bien, ¿no? David, ¿qué te parece esta plataforma. 
+Francisco Finanzas GF
+¿Bien.
+David
+Sí, ¿no.
+Francisco Finanzas GF
+¿Faltan las conexiones finales? ¿Que no está todo conectado. 
+David
+Sí.
+Francisco Finanzas GF
+Aquí esto da lo mismo.
+Gonzalo
+José, sinceramente yo creo que vamos súper bien, vamos avanzando súper rápido y de forma paralela ya tenemos una herramienta que si bien falta pulirla, tenemos algo concreto, tenemos una estructura sólida y de forma paralela trabajando en la plataforma que es como interna, que estamos integrando todos, estamos revisando también con David, porque también ahí está centralizada toda la información que para las personas nuevas también va a ser mucho más fácil, así que yo creo que esta semana avanzamos harto, súper bien, creo que, En comparación de todo lo que hemos ido avanzando, obviamente, con el tiempo en la anterior, yo creo que avanzamos bastante.
+David
+Sí, sí. Sí, total.
+Gonzalo
+Para el otro José, hay una planillita que te envié, que yo te la iba a pedir a ti, pero al final la hice yo. Si la puedes ver, mira, te la mandé al chat.
+David
+Porque toda esa información. En el chat. Privado, digamos.
+Gonzalo
+¿Perdón.
+David
+¿En el chat de qué? ¿Dónde. 
+Gonzalo
+No en el Teams, te envié un Teams que es detalle de todos los sistemas, el tema de las suscripciones, los valores, todo, entonces esa información también es buena tenerla, o sea está ya para subirla a la herramienta, no la que he venido a subir una a una porque quería completarla, te la iba a enviar a ti, de hecho te lo dije ayer pero al final no la envié yo, o sea la completé casi toda yo para. Sí, perfecto para que la revises y la validamos y la subamos porque como con David también estamos en forma para allá trabajando la otra herramienta en la intranet y dejar todo actualizado todos los sistemas porque así también las personas que lleguen pueden ver todas las herramientas que utilizamos en la descripción completa y también lleva un control de costo, un control de la suscripción, los tiempos, las renovaciones, lo más probable es que parten algunas, así que si es importante si las vas a agregar también las subamos y lo otro que estábamos trabajando con David, la parte de los.
+Gonzalo
+de las metodologías porque también creo que es importante que estas personas, los nuevos integrantes lleguen y vean las metodologías que estamos utilizando y tengan un poquito más de detalle y otro punto importante es lo que estuvimos viendo con Magda hace un tiempo atrás sobre el flujo del proceso porque Motop ahora en ningún momento lo habíamos visto como relevante dentro de la estructura entonces ya el flujo es distinto.
+David
+Sí, sí, no, nos falta, nos falta, mira la semana que viene va a ser una semana de, Bueno, intentemos que David se mantenga productivo a su a su ritmo, pero no va a ser como esta. Esta semana ha sido brutal porque ustedes han avanzado y yo he avanzado muchísimo también en otras cosas. Entonces ha sido brutal, pero la semana que viene es como cuenta, o sea, incluso Magda que vuelva a subirse a en qué estamos.
+David
+¿Y qué estamos haciendo? Hay que lanzar cuanto antes el tema del sistema operativo. Porque va a venir Magda y va a decir, oye, pero qué, está actualizado el Kanban y las tareas y quién tiene qué y qué cosa y tal. Y nos va a callampear ahí, un poquito. Nos va a decir, oye, qué pasa. Obviamente que no a malas, pero. Necesitamos empezar a tener como nuestro kanban ya en el sistema operacional, no, pero ojalá conectado y con IA, pero también hay que tener paciencia porque hemos estado con muchos frentes abiertos y nada y nada que decir.
+David
+Pero yo te diría que ese es el siguiente punto o brecha que a cerrar cuanto antes en cuanto tengamos esto en inglés y operando un poco así parecido. Tomando los inputs que les he dado yo ahora mismo, que les enviaré la transcripción, se la dejo ahí por ahí, estamos y ya esperamos a presentar al cliente, formalizar un poco y nos dedicamos a cerrar el sistema operativo interno, ¿sabes?
+David
+Y a echar a andar también la el primer test así fue fuerte del sistema de o R, el otro. Para mí ese es el orden de cosas de lo que se viene. David que complete la primera versión, en inglés funcional, tomando los comentarios que le he pasado, habiendo revisado todos los Excels de las fuentes de datos que deberían verse y visualizarse tal. Para que yo ya luego genere, y ahí lo dejamos, no seguimos avanzando.
+David
+Ahí yo ya presento al cliente, le muestro, formalizo o igual no, igual no es que formalice el 100%, pero primero como presentar y luego ya darle a la plataforma alimentada por IA con este second brain utilizando el 'Getting things done', la gtdy literalmente empezar a capturar al vuelo. Los "to-dos" levantados cada uno.
+David
+"Oye, tenemos que ver esto, que no se me olvide" y no hace falta ni esperar a una reunión conmigo, la puedes tirar ya. Y luego con sesiones de uno al otro, comunicarnos: "Oye, esto, lo otro y tal y cual". Ver luego los tableros, que se convierte en proyecto, que no, eso todavía no lo visualizamos, pero es como cuando vayamos dando pasos, vamos a ir viendo. el camino, ¿sabes? Listo, ya pues nada, pues muchas gracias, buena pinta todo, súper súper bien.
+David
+¿Este color verde es de OCP o no. 
+Gonzalo
+No. El color verde lo predefinido en Stitch y acá en Figma.
+Francisco Finanzas GF
+Yo creo que he venido de su proyecto original.
+David
+Exacto. Que yo creo que el OCP es rojo, a ver. Claro, está bien, es el color verde, es el color verde. Sí, oye, metémoslo, metámosle un logo de 12p, que esta gente ya ve el logo y ya con el logo de más. No, bien, muy bien, súper, súper bien.
+David
+del felicito, así que a disfrutar del fin de semana, yo ya me voy a poner aquí a hacer maleta y prepararme todo.
+Gonzalo
+Oye José, esa planificación que tu tienes la próxima semana, tu vas a Marcos, ¿cierto. 
+David
+No, ¿cómo a Marcos? Si me voy a India, a India. ¿Pero cómo? Pero si hablamos hace dos días que me iba para India, ¿o no. 
+Gonzalo
+Bueno, hablamos que te viajas, pero voy a confundirnos al destino.
+David
+¡Ah! ¿No sabías dónde ibas? Sí, sí, me voy a India, me voy a India.
+Gonzalo
+¿Vas a buscar a Magda. 
+David
+Sí, claro, hombre, si no, no vuelve.
+Gonzalo
+A mí, por eso no lo habíamos hablado. No, no, que va, que va a viajar.
+David
+No, Magda estaba ahí full. Bueno, ahí les contará y tal, pero. ha tenido una súper bonita experiencia ahí, ha estado haciendo yoga así full y muy, muy bien, muy bien. Hay como una especie de retiro, literalmente le ha servido para desconectar de todo lo que venía, la intensidad del pasado, para ahora retomar ya como fresca. Así que no, y me voy. Bueno, yo trabajaré las próximas dos semanas, en general, como más o menos media jornada o así, por.
+Gonzalo
+¿Va a estar allá, en la India. 
+David
+Sí, voy a estar 10 días. Pero bueno, que sin moverme mucho, vamos a estar en un hotel ahí por los Himalayas ahí donde vive el Dalai Lama donde vive el Dalai Lama estaréis durmiendo a 200 metros del Dalai Lama con los monjes, budistas, hablando con él, hablando.
+Gonzalo
+Me recuerda mucho por el libro que leí como que me viene toda la mente porque ese libro habla mucho de los monjes, de cómo se, Cómo vivía, las cosas que hacía. 
+David
+Sí, a que antes no les he contado, que eso, que ayer me consumieron, bueno, de madrugada, en algún momento se consumieron todos los tokens. Igual me sorprendió, porque dije yo, ¿en qué momento ha pasado de, qué sé yo, 91 a no tener nada? Yo, puta, ya casi.
+Gonzalo
+¿Estaba usando Barco o no, David? Pues sí.
+David
+Ah, ¿así está utilizando algún token de. De cloud code bien, me alegro, David, bien, estoy feliz de compartir con contigo esos tokens. Vale, pues ahora entiendo todo, pero pues tengo una sorpresa, yo no sé qué pasó, pero de repente, o tu la David, ¿tu le has dado algún botón de, por ejemplo, de que extender tokens o algo? No, nada, no vale, porque yo creo que han tenido alguna falla.
+David
+Algo así. Yo he visto que hay gente que ha reclamado y tal y de repente yo ya me había consumido. Nos habíamos consumido los tokens de mira desde las 7:00 de la mañana de esta mañana. Algo ha pasado porque era hasta el próximo martes consumir todo. Pues no sé, ha llegado al 100% y se ha reiniciado, sabes, en lugar de. decir, bueno, pues no puedes utilizar hasta el martes de la semana que viene, o a lo sumo, compra extra tokens utilizando la API, que es muy caro, porque entonces es como pagar puro API en lugar de la suscripción.
+David
+Pero en la mañana veo y ya hemos consumido 20 por ciento, ¿sabes? del 100 por ciento en poco. Estamos, a ver, estamos avanzando porque estamos consumiendo aquí tokens. en plan locura también, ¿sabes? Pero a lo que voy yo es que algo ha pasado, que yo creo que Antropic ha dicho "ya, como no sabemos muy bien qué ha pasado, les reiniciamos, les reseteamos a todos los usos de tokens" o algo así, no sé qué ha pasado.
+Gonzalo
+Tengo una duda con eso, José, porque tu estuve viendo toda la facturación con el documento del envío y hay un cobro que se te hizo el 12 y el 17. O sea, se hizo como un reverso el 12 y se cobraron menos de los 180 quizás de pagó.
+David
+Es que sí, sí, pero es que hay que ver, vamos a ver si se regulariza. Yo empecé con una suscripción de 20, a los dos días pasé a una de tipo 90 y a los días a 180, porque empecé a utilizar así como un animal, pero viendo el, o sea, realmente como la entrega y dije no, no, aquí. Yo no voy a estar esperando una semana para tener tokens y como que me fue pidiendo el trabajo, me fue pidiendo más tokens y al final qué pasó, que yo pagué una primera una suscripción de 20 anual de 20, de 20 mensual, vale, entonces pagué de una ya como un año a 20, 20, 200,
+David
+40, ponte tu, ¿vale? Luego pasé al siguiente, al max, 5x, que era como 90 o así. Entonces ahí como que se hizo un ajuste y luego pasa el otro. Por eso, por eso tu has visto como tres pagós por ahí, pero de diferentes valores y eso.
+Gonzalo
+Y lo otro, José, que dice que la suscripción se va a renovar automáticamente el 17 de marzo, a lo mejor se renovó antes.
+David
+no, no, no. no, el 17 de marzo se renueva, claro, porque el 17 de marzo es cuando si yo empecé el 17 de febrero, pues el 17 de marzo se renueva. Es mensual, es mensual.
+Gonzalo
+Sí, listo, eso era.

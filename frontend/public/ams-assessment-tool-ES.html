@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MagEAM - Scorecard de Madurez de Mantenimiento</title>
+<style>
+:root {
+  --bg-primary: #0d0d1a;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --accent: #0f3460;
+  --highlight: #e94560;
+  --success: #00b4d8;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0b8;
+  --text-muted: #606078;
+  --border: #2a2a4a;
+  --level1: #e94560;
+  --level2: #ff6b35;
+  --level3: #f1c40f;
+  --level4: #2ecc71;
+  --level5: #00b4d8;
+  --radius: 8px;
+  --gap: 16px;
+  --transition: 0.25s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 16px;
+  min-height: 100vh;
+}
+.container { max-width: 960px; margin: 0 auto; padding: 0 var(--gap); }
+.hero {
+  text-align: center;
+  padding: 64px var(--gap) 48px;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 50%, var(--bg-primary) 100%);
+  border-bottom: 1px solid var(--border);
+}
+.hero-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.hero h1 { font-size: clamp(26px, 4.5vw, 38px); font-weight: 700; margin-bottom: 8px; color: #fff; }
+.hero .subtitle { font-size: clamp(13px, 2.3vw, 16px); color: var(--success); margin-bottom: 20px; font-weight: 600; }
+.hero .intro { max-width: 680px; margin: 0 auto; color: var(--text-secondary); font-size: 15px; }
+.phase-section { padding: 40px 0; }
+.phase-section h2 { text-align: center; font-size: 22px; margin-bottom: 8px; }
+.phase-section .phase-hint { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+.phase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.phase-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+  user-select: none;
+}
+.phase-card:hover { border-color: var(--success); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,180,216,0.15); }
+.phase-card.selected { border-color: var(--success); background: var(--bg-tertiary); box-shadow: 0 0 0 3px rgba(0,180,216,0.25); }
+.phase-card .icon { font-size: 30px; margin-bottom: 6px; }
+.phase-card .name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.phase-card .desc { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+.phase-badge { text-align: center; margin-top: 20px; min-height: 36px; }
+.phase-badge span { display: inline-block; background: var(--accent); color: var(--success); padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+.project-info { padding: 0 0 32px; }
+.collapsible-header { display: flex; align-items: center; justify-content: space-between; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; cursor: pointer; user-select: none; transition: background var(--transition); }
+.collapsible-header:hover { background: var(--bg-tertiary); }
+.collapsible-header h3 { font-size: 15px; font-weight: 600; }
+.collapsible-header .arrow { transition: transform var(--transition); font-size: 12px; color: var(--text-muted); }
+.collapsible-header.open .arrow { transform: rotate(180deg); }
+.collapsible-body { display: none; background: var(--bg-secondary); border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); padding: 16px; }
+.collapsible-body.open { display: block; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+.form-group input { width: 100%; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); font-size: 14px; outline: none; transition: border-color var(--transition); }
+.form-group input:focus { border-color: var(--success); }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+.sticky-bar { position: sticky; top: 0; z-index: 100; background: var(--bg-primary); border-bottom: 1px solid var(--border); padding: 10px var(--gap); display: none; }
+.sticky-bar.visible { display: block; }
+.sticky-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.progress-track { flex: 1; min-width: 120px; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--success); border-radius: 4px; transition: width var(--transition); width: 0%; }
+.progress-text { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.progress-score { font-size: 13px; font-weight: 700; color: var(--success); white-space: nowrap; }
+.btn-calculate { padding: 8px 20px; background: var(--highlight); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity var(--transition); white-space: nowrap; }
+.btn-calculate:hover { opacity: 0.85; }
+.btn-calculate:disabled { opacity: 0.4; cursor: not-allowed; }
+.assessment-section { padding-bottom: 40px; display: none; }
+.assessment-section.visible { display: block; }
+.discipline-accordion { margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.disc-header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: var(--bg-secondary); cursor: pointer; user-select: none; transition: background var(--transition); }
+.disc-header:hover { background: var(--bg-tertiary); }
+.disc-header .disc-icon { font-size: 22px; flex-shrink: 0; }
+.disc-header .disc-name { font-weight: 700; font-size: 15px; flex: 1; }
+.disc-header .disc-weight { font-size: 12px; color: var(--text-muted); background: var(--bg-primary); padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+.disc-header .disc-score-badge { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 10px; background: var(--bg-primary); color: var(--text-muted); flex-shrink: 0; min-width: 42px; text-align: center; }
+.disc-header .disc-score-badge.scored { color: var(--success); }
+.disc-header .disc-arrow { font-size: 12px; color: var(--text-muted); transition: transform var(--transition); flex-shrink: 0; }
+.disc-header.open .disc-arrow { transform: rotate(180deg); }
+.disc-body { display: none; background: var(--bg-primary); padding: 16px; }
+.disc-body.open { display: block; }
+.criterion { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.criterion:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+.criterion-text { font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.5; }
+.criterion-number { color: var(--text-muted); font-weight: 700; margin-right: 6px; }
+.score-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+.score-btn { flex: 1; min-width: 52px; height: 36px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); border-radius: 6px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all var(--transition); display: flex; align-items: center; justify-content: center; }
+.score-btn:hover { border-color: var(--success); color: var(--text-primary); }
+.score-btn.active { border-color: var(--success); background: var(--success); color: #0d0d1a; }
+.score-labels { display: flex; gap: 6px; margin-top: 6px; }
+.score-labels span { flex: 1; min-width: 52px; font-size: 11px; color: var(--text-secondary); text-align: center; line-height: 1.25; font-weight: 600; }
+@media (max-width: 480px) { .score-btn { min-width: 44px; height: 34px; font-size: 14px; } .score-labels span { min-width: 44px; font-size: 9px; } }
+
+/* ---- SCALE EXPLAINER (collapsible) ---- */
+.scale-block { margin: 0 0 24px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg-secondary); }
+.scale-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; cursor: pointer; user-select: none; transition: background var(--transition); background: var(--bg-tertiary); }
+.scale-header:hover { background: var(--accent); }
+.scale-header h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.scale-header .hint { font-size: 11px; color: var(--text-muted); margin-left: 12px; }
+.scale-header .arrow { font-size: 12px; color: var(--text-muted); transition: transform var(--transition); }
+.scale-header.open .arrow { transform: rotate(180deg); }
+.scale-body { display: none; padding: 20px 18px; border-top: 1px solid var(--border); }
+.scale-body.open { display: block; }
+.scale-intro { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.55; }
+.scale-advice { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+.scale-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.scale-level-card { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px; border-left-width: 4px; }
+.scale-level-card .lvl-num { font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.scale-level-card .lvl-name { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.scale-level-card .lvl-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+@media (max-width: 600px) { .scale-levels { grid-template-columns: 1fr 1fr; } }
+.results-section { display: none; padding: 40px 0 60px; }
+.results-section.visible { display: block; }
+.result-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; text-align: center; margin-bottom: 32px; }
+.result-score { font-size: 72px; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+.result-label { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+.result-interp { font-size: 15px; color: var(--text-secondary); max-width: 700px; margin: 0 auto; line-height: 1.7; text-align: left; }
+.radar-container { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 32px; }
+.radar-container h3 { text-align: center; font-size: 18px; margin-bottom: 16px; }
+.radar-svg-wrap { display: flex; justify-content: center; overflow: visible; }
+.radar-svg-wrap svg { max-width: 100%; height: auto; }
+.radar-legend { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-top: 14px; font-size: 12px; color: var(--text-secondary); }
+.radar-legend .item { display: flex; align-items: center; gap: 8px; }
+.radar-legend .swatch { width: 24px; height: 0; border-top-width: 2px; border-top-style: solid; }
+.radar-legend .swatch.dashed { border-top-style: dashed; border-top-width: 2px; }
+.breakdown { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 32px; overflow-x: auto; }
+.breakdown h3 { font-size: 18px; margin-bottom: 16px; }
+.breakdown table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.breakdown th { text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.breakdown td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.breakdown tr:last-child td { border-bottom: none; }
+.bar-cell { min-width: 120px; }
+.bar-track { height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }
+.bar-track .bar-fill { height: 100%; border-radius: 4px; transition: width var(--transition); }
+.gap-section { margin-bottom: 32px; }
+.gap-section h3 { font-size: 18px; margin-bottom: 16px; }
+.gap-card { background: var(--bg-secondary); border-left: 4px solid var(--highlight); border-radius: 0 var(--radius) var(--radius) 0; padding: 20px; margin-bottom: 12px; }
+.gap-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.gap-card-header .gap-name { font-weight: 700; font-size: 15px; }
+.gap-card-header .gap-score { font-weight: 700; padding: 3px 10px; border-radius: 10px; font-size: 13px; }
+.gap-risk { font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; font-style: italic; }
+.gap-actions { list-style: none; margin-bottom: 8px; }
+.gap-actions li { font-size: 13px; color: var(--text-secondary); padding: 3px 0 3px 18px; position: relative; }
+.gap-actions li::before { content: "\25B6"; position: absolute; left: 0; color: var(--highlight); font-size: 9px; top: 6px; }
+.gap-ref { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.no-gaps { background: var(--bg-secondary); border-left: 4px solid var(--level4); border-radius: 0 var(--radius) var(--radius) 0; padding: 20px; color: var(--level4); font-weight: 600; font-size: 15px; }
+.actions-bar { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 32px; }
+.btn { padding: 10px 24px; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity var(--transition); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--success); color: #0d0d1a; }
+.btn-secondary { background: var(--accent); color: var(--text-primary); }
+.btn-danger { background: rgba(233,69,96,0.2); color: var(--highlight); border: 1px solid var(--highlight); }
+.cta-block { background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--accent) 100%); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; text-align: center; margin-bottom: 24px; }
+.cta-block h3 { font-size: 20px; margin-bottom: 8px; color: #fff; }
+.cta-block p { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; }
+.cta-block .btn-cta { display: inline-block; padding: 14px 36px; background: var(--highlight); color: #fff; border-radius: var(--radius); font-size: 16px; font-weight: 700; text-decoration: none; transition: opacity var(--transition); }
+.cta-block .btn-cta:hover { opacity: 0.85; }
+.footer-ref { text-align: center; color: var(--text-muted); font-size: 13px; padding: 24px 0; border-top: 1px solid var(--border); }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.visible { display: flex; }
+.modal-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; max-width: 420px; width: 90%; text-align: center; }
+.modal-box h3 { margin-bottom: 12px; font-size: 18px; }
+.modal-box p { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 12px; justify-content: center; }
+.modal-actions .btn { min-width: 100px; justify-content: center; }
+@media print {
+  body { background: #fff; color: #111; font-size: 11pt; }
+  .sticky-bar, .phase-section, .project-info, .assessment-section, .actions-bar, .cta-block, .modal-overlay { display: none !important; }
+  .hero { background: #fff; border-bottom-color: #ccc; padding: 24px 0; }
+  .hero h1 { color: #111; font-size: 24pt; }
+  .hero .subtitle { color: #333; }
+  .hero .intro { color: #555; }
+  .hero-badge { background: #eee; color: #333; }
+  .results-section { display: block !important; padding-top: 0; }
+  .result-card, .radar-container, .breakdown, .gap-card, .no-gaps { background: #fff; border-color: #ccc; break-inside: avoid; }
+  .result-score { color: #111 !important; }
+  .result-label { color: #333 !important; }
+  .result-interp { color: #444; }
+  .breakdown th { color: #666; border-bottom-color: #ccc; }
+  .breakdown td { color: #333; border-bottom-color: #eee; }
+  .gap-risk { color: #555; }
+  .gap-actions li { color: #444; }
+  .gap-ref { color: #666; }
+  .footer-ref { color: #888; border-top-color: #ccc; }
+  .container { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+<!-- NAV VSC -->
+<nav style="background:#0a1628;border-bottom:1px solid #2A3F5F;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:9999;">
+  <a href="https://www.mageam.com/" style="color:#10b981;font-weight:700;text-decoration:none;font-size:14px;">MagEAM</a>
+  <div style="display:flex;gap:20px;">
+    <a href="https://www.mageam.com/" style="color:#A0A8B4;text-decoration:none;font-size:13px;">MagEAM</a>
+    <a href="/or-readiness-scorecard.html" style="color:#A0A8B4;text-decoration:none;font-size:13px;">Diagnóstico OR</a>
+    <a href="/ams-assessment-tool-ES.html" style="color:#A0A8B4;text-decoration:none;font-size:13px;">Diagnóstico AMS</a>
+  </div>
+</nav>
+<!-- /NAV VSC -->
+<section class="hero" id="hero">
+  <div class="container">
+    <div class="hero-badge">Herramienta de Diagnóstico</div>
+    <h1>Scorecard de Madurez en Gestión de Activos y Mantenimiento</h1>
+    <p class="subtitle">Gestión de Activos y Mantenimiento - por ValueStrategy Consulting</p>
+    <p class="intro">Evalúe la madurez de la gestión de activos y mantenimiento de su operación a lo largo del ciclo de vida del activo - desde proyecto hasta operación estable. 150 preguntas estructuradas. Resultados en menos de 15 minutos.</p>
+  </div>
+</section>
+<div class="sticky-bar" id="stickyBar">
+  <div class="sticky-inner">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-text" id="progressText">0 / 30 criterios evaluados</span>
+    <span class="progress-score" id="progressScore"></span>
+    <button class="btn-calculate" id="btnCalculate" disabled onclick="calculateResults()">Calcular Resultados</button>
+  </div>
+</div>
+<section class="phase-section" id="phaseSection">
+  <div class="container">
+    <h2>Seleccione la fase del ciclo de vida del activo</h2>
+    <p class="phase-hint">Esto determina qué criterios se evalúan</p>
+    <div class="phase-grid" id="phaseGrid"></div>
+    <div class="phase-badge" id="phaseBadge"></div>
+  </div>
+</section>
+<div class="container">
+  <section class="project-info" id="projectInfo" style="display:none;">
+    <div class="collapsible-header" id="infoToggle" onclick="toggleInfo()">
+      <h3>Información del Proyecto (opcional)</h3>
+      <span class="arrow">&#9660;</span>
+    </div>
+    <div class="collapsible-body" id="infoBody">
+      <div class="form-row">
+        <div class="form-group"><label for="companyName">Empresa</label><input type="text" id="companyName" autocomplete="off"></div>
+        <div class="form-group"><label for="assetName">Activo / Proyecto</label><input type="text" id="assetName" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="assessDate">Fecha de evaluación</label><input type="date" id="assessDate"></div>
+        <div class="form-group"><label for="assessor">Evaluador</label><input type="text" id="assessor" autocomplete="off"></div>
+      </div>
+    </div>
+  </section>
+  <section class="scale-block" id="scaleBlock" style="display:none;">
+    <div class="scale-header" id="scaleHeader" onclick="toggleScale()">
+      <h3>¿Cómo evaluar? (Escala 1 a 5) <span class="hint">Haga clic para expandir / colapsar</span></h3>
+      <span class="arrow">&#9660;</span>
+    </div>
+    <div class="scale-body" id="scaleBody">
+      <p class="scale-intro">Para cada pregunta, asigne un puntaje del 1 al 5 que refleje el estado ACTUAL de su operación, basándose en evidencia verificable (documentos, datos del CMMS, auditorías). No puntúe lo que cree que debería estar: puntúe lo que realmente está implementado. Si no está seguro, use el nivel inferior.</p>
+      <p class="scale-advice">Recomendaciones: (1) Sea honesto - el valor de este diagnóstico nace de su objetividad. (2) Responda por fase, una a la vez. (3) Añada evidencia en sus notas personales para respaldar cada puntaje. (4) Si una pregunta no aplica a su contexto, déjela en blanco.</p>
+      <div class="scale-levels" id="scaleLevels"></div>
+    </div>
+  </section>
+  <section class="assessment-section" id="assessmentSection"></section>
+</div>
+<div class="container">
+  <section class="results-section" id="resultsSection">
+    <div class="result-card" id="resultCard"></div>
+    <div class="radar-container" id="radarContainer">
+      <h3>Radar por Dimensión</h3>
+      <div class="radar-svg-wrap" id="radarWrap"></div>
+    </div>
+    <div class="breakdown" id="breakdownTable"></div>
+    <div class="gap-section" id="gapSection"></div>
+    <div class="actions-bar" id="actionsBar">
+      <button class="btn btn-primary" onclick="downloadCSV()">&#128196; Descargar CSV</button>
+      <button class="btn btn-secondary" onclick="window.print()">&#128424; Imprimir Reporte</button>
+      <button class="btn btn-danger" onclick="resetAssessment()">&#9888; Reiniciar Evaluación</button>
+    </div>
+    <div class="cta-block">
+      <h3>¿Necesita cerrar las brechas de gestión de activos?</h3>
+      <p>Agende una reunión con un especialista en gestión de activos para discutir sus resultados y definir un plan de acción priorizado.</p>
+      <a href="https://calendly.com/valuestrategyconsulting" target="_blank" rel="noopener" class="btn-cta">Agenda una reunión conmigo</a>
+    </div>
+    <div class="footer-ref">Basado en el framework de Gestión de Activos de ValueStrategy Consulting - alineado con IAM, ISO 55001 y SAM+</div>
+  </section>
+</div>
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <h3>¿Cambiar fase?</h3>
+    <p>Cambiar la fase reiniciará todos los puntajes. ¿Continuar?</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="confirmPhaseChange()">Sí, reiniciar</button>
+      <button class="btn btn-secondary" onclick="cancelPhaseChange()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<script>
+var DATA = {"PHASES": [{"id": "proyecto", "name": "Proyecto / Diseño", "desc": "Etapa conceptual, FEED y EPC temprano. Definición de filosofías y estrategias.", "icon": "📐"}, {"id": "commissioning", "name": "Construcción y Commissioning", "desc": "EPC y pre-arranque. Data maestra, carga CMMS, PM builds, training inicial.", "icon": "🔧"}, {"id": "rampup", "name": "Ramp-up", "desc": "Estabilización operativa. Reality-check del PM, backlog, early-life failures.", "icon": "🚀"}, {"id": "estable", "name": "Operación estable", "desc": "Confiabilidad madura. Optimización, benchmarks, gestión de activos consolidada.", "icon": "⚙"}, {"id": "mejora", "name": "Mejora continua y renovación", "desc": "RCA sistemático, modificaciones mayores, decomisionamiento, reemplazo.", "icon": "🔄"}], "DIMENSIONS": [{"id": 1, "name": "Liderazgo y política de activos", "weight": 10, "icon": "🎯", "ref": "IAM #27 + ISO 55001 §5"}, {"id": 2, "name": "Estrategia y planificación (SAMP y objetivos)", "weight": 10, "icon": "🗺", "ref": "IAM #1-5 + ISO 55001 §6"}, {"id": 3, "name": "Decisión de inversión y valor de ciclo de vida", "weight": 10, "icon": "💰", "ref": "IAM #6-8 + SAM+ Group 2"}, {"id": 4, "name": "Ingeniería de confiabilidad y RCM", "weight": 12, "icon": "🔧", "ref": "IAM #16 + RCM SAE JA1011"}, {"id": 5, "name": "Ejecución del mantenimiento (PM, CBM, planning)", "weight": 12, "icon": "🛠", "ref": "IAM #15 + SAM+ Group 3"}, {"id": 6, "name": "Gestión de paradas y shutdowns", "weight": 8, "icon": "🚧", "ref": "IAM #10, #19"}, {"id": 7, "name": "Datos, sistemas (CMMS/ERP) e información", "weight": 10, "icon": "💾", "ref": "IAM #22-25 + ISO 55001 §7.5"}, {"id": 8, "name": "Materiales, repuestos y cadena de suministro", "weight": 8, "icon": "📦", "ref": "IAM #26 + PAS 55 4.4.2"}, {"id": 9, "name": "Organización, competencias y cultura", "weight": 10, "icon": "👥", "ref": "IAM #28-30 + ISO 55001 §7.2-7.3"}, {"id": 10, "name": "Riesgo, desempeño, HSE y mejora continua", "weight": 10, "icon": "🛡", "ref": "IAM #31-37 + ISO 55001 §9-10"}], "LEVELS": [{"id": 1, "min": 1.0, "max": 1.9, "name": "Inocencia", "desc": "No se reconoce la necesidad de gestionar activos sistemáticamente. Enfoque reactivo, sin plan.", "color": "#e94560"}, {"id": 2, "min": 2.0, "max": 2.5, "name": "Consciente", "desc": "Se identifica la necesidad pero sin plan estructurado. Intención sin implementación.", "color": "#ff6b35"}, {"id": 3, "min": 2.6, "max": 3.2, "name": "En desarrollo", "desc": "Implementación parcial. Procesos documentados localmente, aún reactivo en gran medida.", "color": "#f1c40f"}, {"id": 4, "min": 3.3, "max": 4.0, "name": "Competente", "desc": "Sistema de gestión de activos documentado, embebido y medido. Zona de conformidad ISO 55001.", "color": "#2ecc71"}, {"id": 5, "min": 4.1, "max": 5.0, "name": "Excelencia", "desc": "Mejora continua sistemática. Benchmark best-in-class. Máximo valor a lo largo del ciclo de vida.", "color": "#00b4d8"}], "CRITERIA": {"proyecto": {"1": ["La estrategia de gestión de activos está documentada con objetivos, alcance y alineamiento al plan de negocio del proyecto", "Existe un sponsor ejecutivo de AM y se ha definido la gobernanza de gestión de activos para el proyecto", "La política de gestión de activos está redactada, aprobada y comunicada a los stakeholders clave"], "2": ["Existe un Plan Estratégico de Gestión de Activos (SAMP) preliminar alineado con los objetivos del proyecto", "Los objetivos de disponibilidad, confiabilidad y costo de mantenimiento del activo están definidos y cuantificados", "Se han establecido los criterios de criticidad de activos y se ha iniciado su categorización"], "3": ["El caso de negocio del proyecto incluye OPEX de mantenimiento y costo total de propiedad (TCO) a 10+ años", "Las decisiones de selección de equipos consideran la mantenibilidad, obsolescencia y soporte post-venta", "Existe una evaluación de valor de ciclo de vida (LCC) para las opciones de diseño principales"], "4": ["La filosofía de mantenimiento está documentada (reactivo / preventivo / predictivo / proactivo)", "El alcance de análisis RCM/FMECA está definido para los sistemas críticos del proyecto", "Los criterios de diseño para mantenibilidad, accesibilidad e intercambiabilidad están incluidos en las especificaciones"], "5": ["Existe un plan de desarrollo de procedimientos de mantenimiento (SOPs) y estándares de trabajo", "La filosofía de planificación y programación del mantenimiento está definida (horizon, backlog, compliance)", "La filosofía de monitoreo de condición (CBM) y las tecnologías a desplegar están identificadas"], "6": ["La estrategia de paradas mayores (TAM / shutdowns) está integrada en el plan del proyecto desde el diseño", "Los intervalos y alcances preliminares de shutdowns están definidos con base en la criticidad de activos", "Los requisitos de acceso, andamios y layout para futuras paradas están considerados en el diseño"], "7": ["La plataforma CMMS/EAM está seleccionada con criterios claros y alineada con el ERP corporativo", "La estrategia de información de activos (taxonomía, jerarquía, nomenclatura ISO 14224) está definida", "Los entregables de data maestra desde EPC hacia operaciones están especificados en los contratos"], "8": ["La filosofía de repuestos (capital, commissioning, operacional) está documentada con criterios de dimensionamiento", "La estrategia de warehouse, ubicación, catalogación y sistemas de gestión de inventario está definida", "Los ítems de largo lead-time están identificados y su compra está integrada al cronograma del proyecto"], "9": ["El modelo organizacional de mantenimiento y operación está definido (insource / outsource / híbrido)", "Las posiciones clave (Gerente de Confiabilidad, Planner, Supervisor, Ingeniero RCM) están identificadas", "El plan de capacitación y competencias para la fuerza laboral de mantenimiento está esbozado"], "10": ["El registro de riesgos del proyecto incluye riesgos específicos de confiabilidad y mantenibilidad", "Los KPIs de gestión de activos y mantenimiento del caso base están definidos (availability, MTBF, MTTR, PM compliance)", "La estrategia HSE para la fase de operación y mantenimiento está integrada al diseño"]}, "commissioning": {"1": ["El liderazgo de gestión de activos participa activamente en el steering del commissioning y aprueba los handovers", "Los KPIs y objetivos de AM son visibles en los tableros de reporte del proyecto hacia operaciones", "La transición de responsabilidad de activos de EPC hacia operaciones tiene un protocolo formal firmado"], "2": ["El Plan de Gestión de Activos (AMP) del primer año está publicado con objetivos mensuales", "El SAMP se ha actualizado con la información real del commissioning (activos reales, lista maestra)", "La alineación entre el plan de mantenimiento y la curva de ramp-up de producción está confirmada"], "3": ["Las decisiones de inversión en mejoras tempranas están respaldadas por análisis de impacto en LCC", "El tracking del CAPEX vs OPEX del proyecto está integrado con el sistema financiero de operaciones", "Los costos iniciales de mantenimiento están siendo capturados y comparados con el presupuesto del caso base"], "4": ["Los análisis RCM/FMECA están completos para los activos críticos y las tareas derivadas están cargadas en el CMMS", "Los estándares y frecuencias de mantenimiento están validados contra las recomendaciones OEM y el contexto operacional", "Existe un registro de modos de falla esperados con planes de mitigación para early-life failures"], "5": ["Todas las rutinas PM están creadas en el CMMS con procedimientos, recursos y materiales asociados", "La tecnología de CBM (vibraciones, termografía, análisis de aceite, ultrasonido) está instalada y calibrada", "Los planners y programadores están entrenados y el horizonte de planificación semanal está operativo"], "6": ["El plan maestro de paradas y shutdowns de los primeros 2 años está publicado y con recursos asignados", "Los alcances de las primeras paradas están scoped con análisis de riesgo y criticidad", "El proceso de freezing de scope (T-180, T-90, T-30) está definido y comunicado"], "7": ["Toda la data maestra de activos está cargada en el CMMS/EAM (tags, jerarquía, atributos, BOM)", "Las integraciones CMMS↔ERP↔DCS están probadas y operando en modo producción", "La documentación técnica (planos as-built, manuales OEM, hojas técnicas) está digitalizada y accesible desde el CMMS"], "8": ["El inventario de repuestos capital y de commissioning está recibido, catalogado y ubicado en warehouse", "El mínimo/máximo y los puntos de reorden están calculados y cargados para los ítems críticos", "Los contratos marco con proveedores estratégicos están firmados para suministro durante ramp-up"], "9": ["Las posiciones clave de mantenimiento y confiabilidad están cubiertas con personal en sitio", "El programa de capacitación técnica y de seguridad está completo para el personal de O&M", "Las matrices de competencias están definidas y las evaluaciones iniciales están completas"], "10": ["Los KPIs de AM están operativos en el sistema de reporte y los dueños están asignados", "El registro de riesgos operacionales incluye los riesgos identificados durante commissioning", "Los procesos HSE críticos (PTW, LOTO, espacios confinados, trabajos en altura) están auditados y operativos"]}, "rampup": {"1": ["El steering semanal de ramp-up incluye revisión de KPIs de AM y decisiones de ajuste de estrategia", "Las escaladas de issues de confiabilidad tienen un protocolo formal y ejecutivos responsables", "La política de AM se está aplicando en decisiones reales (no solo en documento)"], "2": ["El plan de AM se ajusta mensualmente con base en desempeño real del activo", "Los objetivos de disponibilidad del activo se están cumpliendo al menos al 85% del target", "La alineación con la curva de ramp-up de producción se está reportando sin desviaciones críticas"], "3": ["Los costos reales de mantenimiento se comparan contra el presupuesto y las desviaciones se explican", "Las decisiones de reparación, reemplazo o refurbishment se toman con análisis económico documentado", "Las lecciones aprendidas del commissioning están generando cambios en el plan de AM"], "4": ["Los análisis de causa raíz (RCA) son sistemáticos para todas las fallas significativas", "Las recomendaciones de RCA están siendo implementadas y su efectividad es monitoreada", "Los intervalos de PM se están recalibrando con base en el comportamiento real del activo"], "5": ["El PM compliance está por encima del 85% semanal de manera sostenida", "El backlog de mantenimiento correctivo está controlado dentro de los límites definidos por el plan", "Las tecnologías de CBM están generando alertas anticipadas que se traducen en acciones planificadas"], "6": ["La primera parada programada se ejecutó dentro del tiempo, costo y alcance planificados", "Los KPIs de shutdown (actual vs plan, descubrimientos, rework) están documentados y analizados", "Las lecciones aprendidas de la primera parada alimentan el plan de la siguiente"], "7": ["La data operativa real (tiempos, costos, fallas) se está capturando en el CMMS sin gaps significativos", "Los dashboards de desempeño de activos están consolidando datos en tiempo real o cercano", "La calidad de la data del CMMS es auditada y las brechas se corrigen sistemáticamente"], "8": ["Los stock-outs de repuestos críticos son menores al 2% y se documentan con causa raíz", "Los tiempos de reposición con proveedores estratégicos cumplen los SLAs contractuales", "La rotación del inventario de repuestos está siendo monitoreada y optimizada"], "9": ["La retención del personal de O&M supera el 90% durante el ramp-up (turnover controlado)", "El programa de coaching técnico en terreno (on-the-job training) está activo y documentado", "La matriz de competencias se actualiza con las evaluaciones reales del ramp-up"], "10": ["Los incidentes HSE relacionados con tareas de mantenimiento se investigan con protocolo formal", "Los KPIs de AM se revisan mensualmente y generan acciones de mejora documentadas", "Los hallazgos de auditorías internas de mantenimiento se están cerrando dentro del plazo"]}, "estable": {"1": ["El liderazgo de AM forma parte del comité ejecutivo y reporta resultados alineados al plan de negocio", "La política de AM es revisada anualmente y actualizada con base en cambios del contexto", "La cultura de gestión de activos está presente en rutinas de operadores, mantenedores y supervisores"], "2": ["El SAMP está plenamente desplegado, con objetivos en cascada hasta el nivel de equipo de trabajo", "Los planes de AM están integrados horizontalmente (producción, mantenimiento, materiales, HSE)", "El desempeño contra el plan se reporta formalmente al menos trimestralmente al comité directivo"], "3": ["Las decisiones de reemplazo o refurbishment mayor se toman con análisis de ciclo de vida robusto (VPN, TCO)", "El CAPEX de sostenimiento está optimizado con priorización basada en valor y riesgo", "Los costos unitarios de mantenimiento son benchmarking-ready contra referencias de la industria"], "4": ["El programa de confiabilidad está optimizado con FMECA viva actualizada por el comportamiento real", "Los análisis Weibull y de costo-oportunidad alimentan las decisiones de intervalos de PM", "Los bad actors se identifican proactivamente y tienen planes de eliminación con ownership"], "5": ["El ratio PM/CM supera 70/30 (mayoría del trabajo es planificado y preventivo)", "El work order compliance semanal es >90% con variance explicada", "El CBM está integrado con el CMMS y dispara work orders automáticamente ante anomalías"], "6": ["Las paradas mayores se ejecutan consistentemente dentro del 95% del tiempo y costo planificados", "El scope de paradas se optimiza con análisis de condición y nunca se añade scope después del freeze", "Los KPIs de shutdowns (OEE post-parada, rework, HSE) están dentro del top cuartil del benchmark"], "7": ["El CMMS/EAM es la fuente de verdad para decisiones de AM y su data es confiable >95%", "Los reportes de desempeño de activos se generan automáticamente y soportan decisiones diarias", "La estrategia de information management cumple con ISO 55001 §7.5 y se audita anualmente"], "8": ["El inventario de repuestos está optimizado (right-sized) con ahorros documentados vs línea base", "El obsoletos y el slow-moving se gestionan con política formal de disposición", "La cadena de suministro de O&M es resiliente ante disrupciones (alternate sourcing, buffers)"], "9": ["El programa de desarrollo de carrera técnica está activo y genera pipeline de promoción interno", "La gestión del conocimiento (lessons learned, procedimientos vivos) está institucionalizada", "El contratismo de O&M se gestiona con SLAs, KPIs y performance reviews formales"], "10": ["La mejora continua genera >3% anual de reducción de costo unitario de mantenimiento", "Los KPIs de AM se benchmarkean contra el top cuartil de la industria y los gaps tienen plan", "El sistema de gestión de activos pasa auditorías internas y externas sin hallazgos críticos"]}, "mejora": {"1": ["El liderazgo promueve activamente la innovación en AM (nuevas tecnologías, agentes, analítica avanzada)", "La transformación de AM tiene una hoja de ruta de 3-5 años aprobada por el directorio", "La política de AM refleja el compromiso con desarrollo sostenible (ESG) y descarbonización"], "2": ["El SAMP tiene un horizonte de 10+ años alineado con el plan de renovación del activo", "Los escenarios de demanda futura se modelan y alimentan el plan de capacidad de AM", "La estrategia considera obsolescencia tecnológica y plan de reemplazo de activos legacy"], "3": ["Las decisiones de major overhaul, replacement y decommissioning siguen un protocolo formal con stage-gates", "El balance CAPEX/OPEX en horizonte de 10 años está optimizado con análisis probabilístico", "Los activos al final de vida útil se decomisionan con un plan de transición y captura de conocimiento"], "4": ["La confiabilidad del sistema se modela con análisis estocástico (RAM, Monte Carlo)", "El programa de confiabilidad integra prognóstico basado en machine learning donde hay caso de valor", "Los análisis de confiabilidad guían decisiones de inversión en modificaciones y mejoras"], "5": ["Las rutinas PM se optimizan continuamente con data de CBM y prognóstico (predictive → prescriptive)", "Las modificaciones mayores a activos (upgrades, revamps) siguen el ciclo MoC completo", "La ejecución de mantenimiento incorpora automatización (robots, drones, agentes) donde hay valor"], "6": ["El plan de paradas de 5-10 años está alineado con el plan de inversiones y reemplazo de activos", "El scope de paradas incluye modificaciones planificadas en el marco MoC y con captura de beneficios", "Las paradas operan como un programa optimizado de portafolio (secuenciación, recursos compartidos)"], "7": ["El data lake de activos combina CMMS, historian, CBM y ERP para analítica avanzada", "Existen modelos de gemelos digitales para los activos más críticos", "La estrategia de información soporta casos de uso de IA y agentes in-house en AM"], "8": ["La estrategia de repuestos considera impresión 3D, economía circular y remanufactura", "Las decisiones de inventario se optimizan con analítica avanzada y modelos de riesgo", "La relación con proveedores estratégicos evoluciona a partnerships de innovación"], "9": ["La organización de AM tiene roles emergentes (Data Scientist, Reliability Architect, Digital Champion)", "La cultura de mejora continua es autosostenida y reconocida por los empleados", "El knowledge transfer entre generaciones de trabajadores está institucionalizado (mentoring, digital capture)"], "10": ["El sistema de gestión de activos está certificado ISO 55001 y la certificación se mantiene", "Los KPIs de AM son top cuartil sostenido y la organización aparece en benchmarks públicos de industria", "La mejora continua entrega >5% anual de ahorro con reinversión parcial en innovación"]}}, "DIAGNOSTICS": {"1": {"risk": "Sin liderazgo ni política de gestión de activos visible. Las decisiones son tácticas, reactivas y desalineadas del plan de negocio. El sistema de gestión de activos no es auditable.", "actions": ["Formalizar un sponsor ejecutivo de AM y publicar una política de gestión de activos alineada con ISO 55001", "Establecer un comité directivo de AM con cadencia mensual y KPIs visibles", "Cascadear objetivos de AM desde el plan de negocio hasta el nivel de supervisor de terreno"], "ref": "IAM #27 · ISO 55001 §5"}, "2": {"risk": "No existe un Plan Estratégico de Gestión de Activos (SAMP). Los objetivos de disponibilidad y costo no están cuantificados ni alineados con la curva de producción. El riesgo de subperformance del activo es alto.", "actions": ["Desarrollar el SAMP con horizonte 3-10 años y objetivos cuantificados de disponibilidad, confiabilidad y costo", "Definir criterios de criticidad de activos y completar la categorización del portafolio", "Cascadear objetivos hasta nivel de equipo de trabajo y reportar mensualmente"], "ref": "IAM #1-5 · SAM+ Group 1"}, "3": {"risk": "Las decisiones de inversión en activos no consideran valor de ciclo de vida. CAPEX y OPEX se gestionan en silos. El caso de negocio del activo subestima el costo total de propiedad.", "actions": ["Implementar análisis LCC/TCO obligatorio para decisiones mayores de CAPEX y overhaul", "Integrar el tracking CAPEX/OPEX en un solo tablero financiero con vista de TCO", "Definir criterios formales de reemplazar/reparar/refurbish con documentación obligatoria"], "ref": "IAM #6-8 · SAM+ Group 2"}, "4": {"risk": "Sin ingeniería de confiabilidad sistemática. Los RCM/FMECA no existen o están desactualizados. Los modos de falla no se anticipan y los bad actors no se eliminan. El mantenimiento es mayormente reactivo.", "actions": ["Iniciar un programa de RCM para los activos críticos siguiendo SAE JA1011", "Establecer un proceso de RCA sistemático para fallas significativas con seguimiento de recomendaciones", "Crear una FMECA viva que se actualice con data real de comportamiento del activo"], "ref": "IAM #16 · SAE JA1011"}, "5": {"risk": "La ejecución del mantenimiento es reactiva. El PM compliance es bajo, el backlog crece y el CBM no está generando valor. Las horas de planificación se desperdician en rework y urgencias.", "actions": ["Estabilizar el PM compliance sobre 85% semanal con un horizonte de planificación sólido", "Implementar un proceso formal de scheduling con freezing semanal y control de backlog", "Integrar las tecnologías CBM (vibraciones, termografía, aceites) con el CMMS para disparar work orders automáticas"], "ref": "IAM #15 · SAM+ Group 3"}, "6": {"risk": "Las paradas mayores se ejecutan fuera de tiempo y costo. Los scope se añaden tardíamente, los recursos son insuficientes y el rework post-parada es elevado. Cada shutdown es un evento improvisado.", "actions": ["Implementar un proceso formal de gestión de paradas con stage-gates (T-180, T-90, T-30, T-0)", "Aplicar control de scope riguroso con freezing y justificación obligatoria de adiciones tardías", "Capturar KPIs de shutdowns (actual vs plan, rework, HSE) y alimentar lessons learned al siguiente ciclo"], "ref": "IAM #10, #19"}, "7": {"risk": "El CMMS/EAM no es la fuente de verdad. La data maestra tiene gaps, las integraciones fallan y los reportes no son confiables. Las decisiones de AM se basan en Excel y memoria institucional.", "actions": ["Auditar la calidad de data del CMMS y establecer un plan de corrección con owner y cadencia", "Asegurar las integraciones CMMS↔ERP↔DCS y validar flujos end-to-end", "Implementar taxonomía ISO 14224 y jerarquía de activos consistente a lo largo de toda la operación"], "ref": "IAM #22-25 · ISO 55001 §7.5"}, "8": {"risk": "La política de repuestos es reactiva. Hay stock-outs frecuentes de críticos, inventario excesivo de slow-moving, y ningún análisis de criticidad ni rotación. Los costos de indisponibilidad superan al costo de inventario.", "actions": ["Completar un análisis de criticidad de repuestos y definir mínimo/máximo basados en consumo real y lead time", "Implementar un proceso formal de cataloging y eliminar duplicados en el master de materiales", "Firmar contratos marco con proveedores estratégicos con SLAs de lead time"], "ref": "IAM #26 · PAS 55 4.4.2"}, "9": {"risk": "La organización de AM tiene brechas de competencias, alta rotación y posiciones clave vacantes. El conocimiento reside en pocas personas sin respaldo documental. El contratismo se gestiona sin métricas.", "actions": ["Definir la matriz de competencias crítica y completar las evaluaciones del personal actual", "Establecer un plan de retención, desarrollo de carrera y knowledge capture", "Implementar SLAs y KPIs de desempeño para contratistas de O&M con revisiones formales"], "ref": "IAM #28-30 · ISO 55001 §7.2-7.3"}, "10": {"risk": "Los KPIs de AM no se reportan consistentemente. El registro de riesgos es estático, los incidentes HSE relacionados con mantenimiento no se investigan y la mejora continua es ocasional.", "actions": ["Desplegar un tablero de KPIs de AM con cadencia mensual y ownership claro", "Actualizar el registro de riesgos dinámicamente y revisar en el comité directivo", "Formalizar el proceso de investigación de incidentes HSE con seguimiento de cierre de acciones"], "ref": "IAM #31-37 · ISO 55001 §9-10"}}, "BRAND": {"product": "MagEAM", "toolName": "Scorecard de Madurez en Gestión de Activos y Mantenimiento", "subtitle": "Gestión de Activos y Mantenimiento - por ValueStrategy Consulting", "cta": "Agenda una reunión conmigo", "ctaUrl": "https://calendly.com/valuestrategyconsulting", "footer": "Basado en el framework de Gestión de Activos de ValueStrategy Consulting - alineado con IAM, ISO 55001 y SAM+", "company": "ValueStrategy Consulting"}};
+var STRINGS = {"badge": "Herramienta de Diagnóstico", "hero_intro": "Evalúe la madurez de la gestión de activos y mantenimiento de su operación a lo largo del ciclo de vida del activo - desde proyecto hasta operación estable. 150 preguntas estructuradas. Resultados en menos de 15 minutos.", "phase_title": "Seleccione la fase del ciclo de vida del activo", "phase_hint": "Esto determina qué criterios se evalúan", "info_title": "Información del Proyecto (opcional)", "company": "Empresa", "asset": "Activo / Proyecto", "date": "Fecha de evaluación", "assessor": "Evaluador", "progress_text": "criterios evaluados", "btn_calculate": "Calcular Resultados", "results_title": "Resultados", "radar_title": "Radar por Dimensión", "breakdown_title": "Desglose por Dimensión", "gap_title": "Brechas Prioritarias", "no_gaps": "Sin brechas críticas. Su operación está alineada con estándares de gestión de activos.", "btn_csv": "Descargar CSV", "btn_print": "Imprimir Reporte", "btn_reset": "Reiniciar Evaluación", "cta_title": "¿Necesita cerrar las brechas de gestión de activos?", "cta_desc": "Agende una reunión con un especialista en gestión de activos para discutir sus resultados y definir un plan de acción priorizado.", "cta_btn": "Agenda una reunión conmigo", "modal_title": "¿Cambiar fase?", "modal_body": "Cambiar la fase reiniciará todos los puntajes. ¿Continuar?", "modal_yes": "Sí, reiniciar", "modal_cancel": "Cancelar", "tbl_num": "#", "tbl_dim": "Dimensión", "tbl_weight": "Peso", "tbl_score": "Puntaje", "tbl_contrib": "Contribución", "tbl_level": "Nivel", "risk_label": "Riesgo:", "actions_label": "Acciones prioritarias:", "ref_label": "Referencia:", "score_not_scored": "No evaluado", "scale_block_title": "¿Cómo evaluar? (Escala 1 a 5)", "scale_block_hint": "Haga clic para expandir / colapsar", "scale_block_intro": "Para cada pregunta, asigne un puntaje del 1 al 5 que refleje el estado ACTUAL de su operación, basándose en evidencia verificable (documentos, datos del CMMS, auditorías). No puntúe lo que cree que debería estar: puntúe lo que realmente está implementado. Si no está seguro, use el nivel inferior.", "scale_block_advice": "Recomendaciones: (1) Sea honesto - el valor de este diagnóstico nace de su objetividad. (2) Responda por fase, una a la vez. (3) Añada evidencia en sus notas personales para respaldar cada puntaje. (4) Si una pregunta no aplica a su contexto, déjela en blanco.", "score_labels": ["Inocencia", "Consciente", "En desarrollo", "Competente", "Excelencia"], "legend_good": "Buena práctica", "legend_best": "La mejor práctica"};
+var STORAGE_KEY = "ams_assessment_v1_es";
+
+var state = {
+  phase: null,
+  pendingPhase: null,
+  scores: {},
+  openDisc: null,
+  project: { company: "", asset: "", date: "", assessor: "" }
+};
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+function loadState() {
+  try {
+    var s = localStorage.getItem(STORAGE_KEY);
+    if (s) { state = Object.assign(state, JSON.parse(s)); }
+  } catch(e) {}
+}
+
+function $(id) { return document.getElementById(id); }
+
+function renderPhases() {
+  var grid = $("phaseGrid");
+  grid.innerHTML = "";
+  DATA.PHASES.forEach(function(p) {
+    var card = document.createElement("div");
+    card.className = "phase-card" + (state.phase === p.id ? " selected" : "");
+    card.innerHTML = '<div class="icon">' + p.icon + '</div>' +
+                     '<div class="name">' + p.name + '</div>' +
+                     '<div class="desc">' + p.desc + '</div>';
+    card.onclick = function() { selectPhase(p.id); };
+    grid.appendChild(card);
+  });
+  updatePhaseBadge();
+}
+function updatePhaseBadge() {
+  var badge = $("phaseBadge");
+  if (state.phase) {
+    var p = DATA.PHASES.find(function(x) { return x.id === state.phase; });
+    badge.innerHTML = '<span>' + p.icon + ' ' + p.name + '</span>';
+  } else { badge.innerHTML = ""; }
+}
+function selectPhase(id) {
+  if (state.phase === id) return;
+  if (state.phase && Object.keys(state.scores).length > 0) {
+    state.pendingPhase = id;
+    $("confirmModal").classList.add("visible");
+    return;
+  }
+  applyPhase(id);
+}
+function confirmPhaseChange() {
+  $("confirmModal").classList.remove("visible");
+  state.scores = {};
+  applyPhase(state.pendingPhase);
+  state.pendingPhase = null;
+}
+function cancelPhaseChange() {
+  $("confirmModal").classList.remove("visible");
+  state.pendingPhase = null;
+}
+function applyPhase(id) {
+  state.phase = id;
+  $("projectInfo").style.display = "block";
+  $("scaleBlock").style.display = "block";
+  renderScaleBlock();
+  renderPhases();
+  renderAssessment();
+  saveState();
+}
+function toggleScale() {
+  $("scaleHeader").classList.toggle("open");
+  $("scaleBody").classList.toggle("open");
+}
+function renderScaleBlock() {
+  var wrap = $("scaleLevels");
+  if (!wrap) return;
+  var html = "";
+  DATA.LEVELS.forEach(function(lv) {
+    html += '<div class="scale-level-card" style="border-left-color:' + lv.color + '">' +
+            '<div class="lvl-num" style="color:' + lv.color + '">' + lv.id + '</div>' +
+            '<div class="lvl-name" style="color:' + lv.color + '">' + lv.name + '</div>' +
+            '<div class="lvl-desc">' + lv.desc + '</div></div>';
+  });
+  wrap.innerHTML = html;
+}
+function toggleInfo() {
+  $("infoToggle").classList.toggle("open");
+  $("infoBody").classList.toggle("open");
+}
+function bindProjectInputs() {
+  ["companyName","assetName","assessDate","assessor"].forEach(function(id) {
+    var el = $(id);
+    if (!el) return;
+    var key = id === "companyName" ? "company" : (id === "assetName" ? "asset" : (id === "assessDate" ? "date" : "assessor"));
+    el.value = state.project[key] || "";
+    el.oninput = function() { state.project[key] = el.value; saveState(); };
+  });
+}
+function renderAssessment() {
+  var sec = $("assessmentSection");
+  sec.classList.add("visible");
+  sec.innerHTML = "";
+  DATA.DIMENSIONS.forEach(function(d) {
+    var acc = document.createElement("div");
+    acc.className = "discipline-accordion";
+    var header = document.createElement("div");
+    header.className = "disc-header" + (state.openDisc === d.id ? " open" : "");
+    header.innerHTML =
+      '<span class="disc-icon">' + d.icon + '</span>' +
+      '<span class="disc-name">' + d.id + '. ' + d.name + '</span>' +
+      '<span class="disc-weight">' + d.weight + '%</span>' +
+      '<span class="disc-score-badge" id="badge-' + d.id + '">-</span>' +
+      '<span class="disc-arrow">&#9660;</span>';
+    header.onclick = function() { toggleDisc(d.id); };
+    var body = document.createElement("div");
+    body.className = "disc-body" + (state.openDisc === d.id ? " open" : "");
+    body.id = "body-" + d.id;
+    var crits = DATA.CRITERIA[state.phase][d.id];
+    crits.forEach(function(crit, idx) {
+      var c = document.createElement("div");
+      c.className = "criterion";
+      var key = state.phase + "_" + d.id + "_" + (idx + 1);
+      var current = state.scores[key];
+      var btnsHtml = "";
+      for (var s = 1; s <= 5; s++) {
+        var lbl = STRINGS.score_labels[s - 1];
+        btnsHtml += '<button class="score-btn' + (current === s ? " active" : "") +
+                    '" title="' + s + ' - ' + lbl + '" onclick="setScore(\'' + key + '\', ' + s + ', ' + d.id + ')">' + s + '</button>';
+      }
+      var lblsHtml = "";
+      STRINGS.score_labels.forEach(function(l) { lblsHtml += '<span>' + l + '</span>'; });
+      c.innerHTML = '<div class="criterion-text"><span class="criterion-number">' + (idx + 1) + '.</span>' + crit + '</div>' +
+                    '<div class="score-buttons">' + btnsHtml + '</div>' +
+                    '<div class="score-labels">' + lblsHtml + '</div>';
+      body.appendChild(c);
+    });
+    acc.appendChild(header);
+    acc.appendChild(body);
+    sec.appendChild(acc);
+    updateDiscBadge(d.id);
+  });
+  updateProgress();
+  $("stickyBar").classList.add("visible");
+  bindProjectInputs();
+}
+function toggleDisc(id) {
+  if (state.openDisc === id) state.openDisc = null;
+  else state.openDisc = id;
+  renderAssessment();
+}
+function setScore(key, val, discId) {
+  state.scores[key] = val;
+  saveState();
+  var buttons = document.querySelectorAll('[onclick*="' + key + '"]');
+  buttons.forEach(function(b) { b.classList.remove("active"); });
+  var parts = key.split("_");
+  var clicked = document.querySelector('[onclick="setScore(\'' + key + '\', ' + val + ', ' + discId + ')"]');
+  if (clicked) clicked.classList.add("active");
+  updateDiscBadge(discId);
+  updateProgress();
+}
+function updateDiscBadge(discId) {
+  var sum = 0, count = 0;
+  for (var i = 1; i <= 3; i++) {
+    var k = state.phase + "_" + discId + "_" + i;
+    if (state.scores[k]) { sum += state.scores[k]; count++; }
+  }
+  var badge = $("badge-" + discId);
+  if (!badge) return;
+  if (count === 0) { badge.textContent = "-"; badge.classList.remove("scored"); }
+  else { badge.textContent = (sum / count).toFixed(1); badge.classList.add("scored"); }
+}
+function updateProgress() {
+  var total = DATA.DIMENSIONS.length * 3;
+  var done = Object.keys(state.scores).filter(function(k) { return k.indexOf(state.phase + "_") === 0; }).length;
+  var pct = Math.round((done / total) * 100);
+  $("progressFill").style.width = pct + "%";
+  $("progressText").textContent = done + " / " + total + " " + STRINGS.progress_text;
+  $("btnCalculate").disabled = done < total;
+  if (done === total) {
+    $("progressScore").textContent = computeWeighted().toFixed(2);
+  } else {
+    $("progressScore").textContent = "";
+  }
+}
+function computeWeighted() {
+  var num = 0, den = 0;
+  DATA.DIMENSIONS.forEach(function(d) {
+    var sum = 0, count = 0;
+    for (var i = 1; i <= 3; i++) {
+      var k = state.phase + "_" + d.id + "_" + i;
+      if (state.scores[k]) { sum += state.scores[k]; count++; }
+    }
+    if (count === 3) {
+      var avg = sum / count;
+      num += avg * d.weight;
+      den += d.weight;
+    }
+  });
+  return den === 0 ? 0 : num / den;
+}
+function getLevel(score) {
+  for (var i = DATA.LEVELS.length - 1; i >= 0; i--) {
+    if (score >= DATA.LEVELS[i].min) return DATA.LEVELS[i];
+  }
+  return DATA.LEVELS[0];
+}
+function calculateResults() {
+  renderResults();
+  window.scrollTo({ top: $("resultsSection").offsetTop - 20, behavior: "smooth" });
+}
+function renderResults() {
+  var score = computeWeighted();
+  var level = getLevel(score);
+  var discData = DATA.DIMENSIONS.map(function(d) {
+    var sum = 0, count = 0;
+    for (var i = 1; i <= 3; i++) {
+      var k = state.phase + "_" + d.id + "_" + i;
+      if (state.scores[k]) { sum += state.scores[k]; count++; }
+    }
+    return { id: d.id, name: d.name, weight: d.weight, score: count ? sum / count : 0 };
+  });
+  var card = $("resultCard");
+  card.innerHTML =
+    '<div class="result-score" style="color:' + level.color + '">' + score.toFixed(2) + '</div>' +
+    '<div class="result-label" style="color:' + level.color + '">' + level.name + '</div>' +
+    '<div class="result-interp">' + level.desc + '</div>';
+  $("resultsSection").classList.add("visible");
+  renderRadar(discData);
+  renderBreakdown(discData);
+  renderGaps(discData);
+}
+function renderRadar(discData) {
+  var size = 500, cx = size/2, cy = size/2, rad = 180;
+  var n = discData.length;
+  function polar(a, r) { return { x: cx + r*Math.cos(a), y: cy + r*Math.sin(a) }; }
+  var svg = '<svg viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '">';
+  // Grid rings (rings 3 and 5 are reference lines)
+  for (var i = 1; i <= 5; i++) {
+    var r = (rad * i) / 5;
+    var pts = [];
+    for (var j = 0; j < n; j++) {
+      var a = (2*Math.PI*j)/n - Math.PI/2;
+      var p = polar(a, r);
+      pts.push(p.x + "," + p.y);
+    }
+    var stroke = "#2a2a4a", sw = "1", extra = "";
+    if (i === 3) { stroke = "#f1c40f"; sw = "2"; extra = ' stroke-dasharray="6 4"'; }
+    else if (i === 5) { stroke = "#2ecc71"; sw = "2"; }
+    svg += '<polygon points="' + pts.join(" ") + '" fill="none" stroke="' + stroke + '" stroke-width="' + sw + '"' + extra + '/>';
+  }
+  // Axes
+  for (var j = 0; j < n; j++) {
+    var a = (2*Math.PI*j)/n - Math.PI/2;
+    var p = polar(a, rad);
+    svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p.x + '" y2="' + p.y + '" stroke="#2a2a4a" stroke-width="1"/>';
+  }
+  // Data polygon
+  var pts = [];
+  for (var j = 0; j < n; j++) {
+    var a = (2*Math.PI*j)/n - Math.PI/2;
+    var p = polar(a, (rad * discData[j].score) / 5);
+    pts.push(p.x + "," + p.y);
+  }
+  svg += '<polygon points="' + pts.join(" ") + '" fill="rgba(0,180,216,0.25)" stroke="#00b4d8" stroke-width="2"/>';
+  // Points
+  for (var j = 0; j < n; j++) {
+    var a = (2*Math.PI*j)/n - Math.PI/2;
+    var p = polar(a, (rad * discData[j].score) / 5);
+    svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="4" fill="#00b4d8"/>';
+  }
+  // Labels
+  for (var j = 0; j < n; j++) {
+    var a = (2*Math.PI*j)/n - Math.PI/2;
+    var p = polar(a, rad + 24);
+    var anchor = Math.abs(Math.cos(a)) < 0.1 ? "middle" : (Math.cos(a) > 0 ? "start" : "end");
+    svg += '<text x="' + p.x + '" y="' + p.y + '" fill="#a0a0b8" font-size="11" text-anchor="' + anchor + '" dominant-baseline="middle">D' + discData[j].id + '</text>';
+  }
+  svg += '</svg>';
+  var legend = '<div class="radar-legend">' +
+               '<div class="item"><span class="swatch dashed" style="border-top-color:#f1c40f"></span>' + STRINGS.legend_good + ' (3)</div>' +
+               '<div class="item"><span class="swatch" style="border-top-color:#2ecc71"></span>' + STRINGS.legend_best + ' (5)</div>' +
+               '</div>';
+  $("radarWrap").innerHTML = svg + legend;
+}
+function renderBreakdown(discData) {
+  var html = '<h3>' + STRINGS.breakdown_title + '</h3><table><thead><tr>' +
+             '<th>' + STRINGS.tbl_num + '</th><th>' + STRINGS.tbl_dim + '</th><th>' + STRINGS.tbl_weight + '</th>' +
+             '<th>' + STRINGS.tbl_score + '</th><th class="bar-cell"></th><th>' + STRINGS.tbl_level + '</th></tr></thead><tbody>';
+  discData.forEach(function(d) {
+    var level = getLevel(d.score);
+    var pct = (d.score / 5) * 100;
+    html += '<tr><td>' + d.id + '</td><td>' + d.name + '</td><td>' + d.weight + '%</td>' +
+            '<td><strong>' + d.score.toFixed(2) + '</strong></td>' +
+            '<td class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + level.color + '"></div></div></td>' +
+            '<td style="color:' + level.color + ';font-weight:700;font-size:12px">' + level.name + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  $("breakdownTable").innerHTML = html;
+}
+function renderGaps(discData) {
+  var gaps = discData.filter(function(d) { return d.score < 3.0 && d.score > 0; }).sort(function(a,b) { return a.score - b.score; });
+  var sec = $("gapSection");
+  if (gaps.length === 0) {
+    sec.innerHTML = '<h3>' + STRINGS.gap_title + '</h3><div class="no-gaps">' + STRINGS.no_gaps + '</div>';
+    return;
+  }
+  var html = '<h3>' + STRINGS.gap_title + '</h3>';
+  gaps.forEach(function(g) {
+    var diag = DATA.DIAGNOSTICS[g.id];
+    var level = getLevel(g.score);
+    html += '<div class="gap-card">' +
+            '<div class="gap-card-header"><span class="gap-name">' + g.name + '</span>' +
+            '<span class="gap-score" style="background:' + level.color + ';color:#0d0d1a">' + g.score.toFixed(2) + '</span></div>' +
+            '<div class="gap-risk"><strong>' + STRINGS.risk_label + '</strong> ' + diag.risk + '</div>' +
+            '<div><strong style="font-size:13px;color:var(--text-primary)">' + STRINGS.actions_label + '</strong>' +
+            '<ul class="gap-actions">';
+    diag.actions.forEach(function(a) { html += '<li>' + a + '</li>'; });
+    html += '</ul></div><div class="gap-ref">' + STRINGS.ref_label + ' ' + diag.ref + '</div></div>';
+  });
+  sec.innerHTML = html;
+}
+function downloadCSV() {
+  var rows = [["Dimension", "Question", "Score"]];
+  DATA.DIMENSIONS.forEach(function(d) {
+    var crits = DATA.CRITERIA[state.phase][d.id];
+    crits.forEach(function(c, i) {
+      var k = state.phase + "_" + d.id + "_" + (i + 1);
+      rows.push([d.name, c, state.scores[k] || ""]);
+    });
+  });
+  var csv = rows.map(function(r) { return r.map(function(x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(","); }).join("\n");
+  var blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "ams_assessment_" + state.phase + ".csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function resetAssessment() {
+  if (!confirm(STRINGS.modal_body)) return;
+  state.scores = {};
+  state.phase = null;
+  state.openDisc = null;
+  saveState();
+  $("resultsSection").classList.remove("visible");
+  $("assessmentSection").classList.remove("visible");
+  $("projectInfo").style.display = "none";
+  $("scaleBlock").style.display = "none";
+  $("stickyBar").classList.remove("visible");
+  renderPhases();
+}
+function init() {
+  loadState();
+  renderPhases();
+  if (state.phase) {
+    $("projectInfo").style.display = "block";
+    $("scaleBlock").style.display = "block";
+    renderScaleBlock();
+    renderAssessment();
+  }
+}
+init();
+</script>
+</body>
+</html>

@@ -58,10 +58,11 @@ export default function QRScanner({ onScan, onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg font-bold flex items-center gap-2"><QrCode size={20} /> Scan Equipment QR</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-white text-lg font-bold flex items-center gap-2"><QrCode size={20} /> Escanear QR del equipo</h3>
           <button onClick={onClose} className="text-white/70 hover:text-white"><X size={24} /></button>
         </div>
+        <p className="text-white/60 text-xs mb-3">Apunta al código QR del equipo. Se iniciará la OT y se registrará tu ubicación.</p>
 
         {supported && !error ? (
           <div className="relative rounded-xl overflow-hidden bg-black aspect-square mb-4">
@@ -82,12 +83,13 @@ export default function QRScanner({ onScan, onClose }) {
 
         <div className="flex gap-2">
           <input type="text" value={manualCode} onChange={e => setManualCode(e.target.value)}
-            placeholder="Enter equipment TAG manually..."
+            onKeyDown={e => e.key === 'Enter' && manualCode.trim() && onScan(manualCode.trim())}
+            placeholder="OT-2026-XXXX o TAG del equipo"
             className="flex-1 bg-gray-800 text-white rounded-lg px-4 py-3 text-sm border border-gray-700 focus:outline-none focus:border-emerald-500" />
           <button onClick={() => manualCode.trim() && onScan(manualCode.trim())}
             disabled={!manualCode.trim()}
             className="px-4 py-3 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40">
-            Go
+            Buscar
           </button>
         </div>
       </div>

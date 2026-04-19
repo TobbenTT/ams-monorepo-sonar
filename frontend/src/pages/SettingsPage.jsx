@@ -461,62 +461,100 @@ export default function SettingsPage() {
                 <Input id="plannedWorkTarget" type="number" value={settings.plannedWorkTarget} onChange={(e) => updateSetting('plannedWorkTarget', Number(e.target.value))} className="mt-1" />
               </div>
               <div>
-                <Label htmlFor="laborRate">Internal Labor Rate (ZMANT001) $/h</Label>
+                <Label htmlFor="mtbmTarget">MTBM objetivo (días)</Label>
+                <Input id="mtbmTarget" type="number" value={(settings.kpiTargets?.mtbm) ?? 60} onChange={(e) => updateSetting('kpiTargets', { ...(settings.kpiTargets || {}), mtbm: Number(e.target.value) })} className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="scheduleComplianceTarget">Schedule Compliance objetivo (%)</Label>
+                <Input id="scheduleComplianceTarget" type="number" min="0" max="100" value={(settings.kpiTargets?.scheduleCompliance) ?? 90} onChange={(e) => updateSetting('kpiTargets', { ...(settings.kpiTargets || {}), scheduleCompliance: Number(e.target.value) })} className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="equipmentHealthTarget">Equipment Health objetivo (%)</Label>
+                <Input id="equipmentHealthTarget" type="number" min="0" max="100" value={(settings.kpiTargets?.equipmentHealth) ?? 95} onChange={(e) => updateSetting('kpiTargets', { ...(settings.kpiTargets || {}), equipmentHealth: Number(e.target.value) })} className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="backlogWeeksTarget">Backlog máximo (semanas)</Label>
+                <Input id="backlogWeeksTarget" type="number" min="1" value={(settings.kpiTargets?.backlogWeeks) ?? 4} onChange={(e) => updateSetting('kpiTargets', { ...(settings.kpiTargets || {}), backlogWeeks: Number(e.target.value) })} className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="isoComplianceTarget">ISO Compliance objetivo (%)</Label>
+                <Input id="isoComplianceTarget" type="number" min="0" max="100" value={(settings.kpiTargets?.isoCompliance) ?? 100} onChange={(e) => updateSetting('kpiTargets', { ...(settings.kpiTargets || {}), isoCompliance: Number(e.target.value) })} className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="laborRate">Tarifa mano de obra interna (ZMANT001) $/h</Label>
                 <Input id="laborRate" type="number" value={settings.laborRate} onChange={(e) => updateSetting('laborRate', Number(e.target.value))} className="mt-1" />
-                <p className="text-xs text-gray-500 mt-1">Fixed hourly rate for internal labor. Used in SAP Cost Control.</p>
+                <p className="text-xs text-gray-500 mt-1">Tarifa horaria fija para mano de obra interna. Se usa en el control de costos SAP.</p>
               </div>
             </div>
+            <p className="text-xs text-gray-500 mt-4">
+              ℹ️ Estos objetivos se usan para calcular el estado (verde/amarillo/rojo) de los KPIs en el Dashboard. Cada planta puede configurar los suyos.
+            </p>
           </Card>
 
           {/* Scheduling Capacity Config */}
           <Card className="p-6">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <SettingsIcon className="w-5 h-5 text-indigo-600" />
-              Scheduling Capacity Configuration
+              Configuración de capacidad del programa
             </h3>
-            <p className="text-xs text-gray-500 mb-4">Configure work capacity parameters for the scheduling board. These values determine how many hours can be programmed per day.</p>
+            <p className="text-xs text-gray-500 mb-4">Parámetros de capacidad que alimentan el tablero de programación. Definen cuántas horas pueden programarse por día y por técnico.</p>
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <Label>Nominal Hours per Shift</Label>
+                <Label>Horas nominales por turno</Label>
                 <Input type="number" value={settings.nominalHoursPerShift} onChange={e => updateSetting('nominalHoursPerShift', Number(e.target.value))} className="mt-1" />
-                <p className="text-xs text-gray-400 mt-1">Total shift duration (e.g. 12h, 8h)</p>
+                <p className="text-xs text-gray-400 mt-1">Duración total del turno (ej. 12h, 8h)</p>
               </div>
               <div>
-                <Label>Effective Hours per Shift</Label>
+                <Label>Horas efectivas por turno</Label>
                 <Input type="number" value={settings.effectiveHoursPerShift} onChange={e => updateSetting('effectiveHoursPerShift', Number(e.target.value))} className="mt-1" />
-                <p className="text-xs text-gray-400 mt-1">After subtracting lunch, meetings, etc.</p>
+                <p className="text-xs text-gray-400 mt-1">Tras descontar almuerzo, reuniones, etc.</p>
               </div>
               <div>
-                <Label>Scheduling % (Programmable)</Label>
+                <Label>% programable</Label>
                 <Input type="number" min="50" max="100" value={settings.schedulingPercent} onChange={e => updateSetting('schedulingPercent', Number(e.target.value))} className="mt-1" />
-                <p className="text-xs text-gray-400 mt-1">% of effective hours for planned work. Rest reserved for corrective/emergencies.</p>
+                <p className="text-xs text-gray-400 mt-1">% de horas efectivas para trabajo planeado. El resto se reserva para correctivos/imprevistos.</p>
               </div>
               <div>
-                <Label>Productivity Factor %</Label>
+                <Label>Factor de productividad %</Label>
                 <Input type="number" min="50" max="100" value={settings.productivityFactor} onChange={e => updateSetting('productivityFactor', Number(e.target.value))} className="mt-1" />
-                <p className="text-xs text-gray-400 mt-1">Accounts for travel time, setup, etc.</p>
+                <p className="text-xs text-gray-400 mt-1">Considera traslados, alistamiento y tiempos muertos.</p>
               </div>
               <div>
-                <Label>Shift Type</Label>
+                <Label>Patrón de turnos</Label>
                 <select value={settings.shiftType} onChange={e => updateSetting('shiftType', e.target.value)}
                   className="mt-1 w-full border rounded-md px-3 py-2 text-sm">
-                  <option value="day_night">Day / Night (12h shifts)</option>
-                  <option value="abc_8h">ABC Rotation (8h shifts)</option>
+                  <option value="day_night">Día / Noche (turnos 12h)</option>
+                  <option value="abc_8h">Rotación ABC (turnos 8h)</option>
+                  <option value="7x7">7x7 (7 días ON / 7 OFF)</option>
+                  <option value="4x4">4x4 (4 días ON / 4 OFF)</option>
+                  <option value="5x2">5x2 (semana estándar)</option>
+                  <option value="14x14">14x14 (minería remota)</option>
                 </select>
+                <p className="text-xs text-gray-400 mt-1">Define la rotación de personal en faena</p>
               </div>
               <div>
-                <Label>Week Start Day</Label>
+                <Label>Dotación día (técnicos)</Label>
+                <Input type="number" min="0" value={settings.dayShiftCount ?? ''} onChange={e => updateSetting('dayShiftCount', Number(e.target.value))} className="mt-1" placeholder="Ej: 10" />
+                <p className="text-xs text-gray-400 mt-1">Nº total de técnicos en turno día</p>
+              </div>
+              <div>
+                <Label>Dotación noche (técnicos)</Label>
+                <Input type="number" min="0" value={settings.nightShiftCount ?? ''} onChange={e => updateSetting('nightShiftCount', Number(e.target.value))} className="mt-1" placeholder="Ej: 2" />
+                <p className="text-xs text-gray-400 mt-1">Nº técnicos en turno noche (habitualmente menor)</p>
+              </div>
+              <div>
+                <Label>Inicio de semana</Label>
                 <select value={settings.weekStartDay} onChange={e => updateSetting('weekStartDay', Number(e.target.value))}
                   className="mt-1 w-full border rounded-md px-3 py-2 text-sm">
-                  <option value={1}>Monday (standard)</option>
-                  <option value={0}>Sunday</option>
-                  <option value={3}>Wednesday (mining)</option>
-                  <option value={6}>Saturday</option>
+                  <option value={1}>Lunes (estándar)</option>
+                  <option value={0}>Domingo</option>
+                  <option value={3}>Miércoles (minería)</option>
+                  <option value={6}>Sábado</option>
                 </select>
-                <p className="text-xs text-gray-400 mt-1">Some mines use Wed-Tue cycles</p>
+                <p className="text-xs text-gray-400 mt-1">Algunas minas usan ciclos Mié-Mar</p>
               </div>
               <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                <div className="text-xs font-bold text-indigo-600 uppercase mb-1">Programmable HH per Person per Day</div>
+                <div className="text-xs font-bold text-indigo-600 uppercase mb-1">HH programables por persona / día</div>
                 <div className="text-2xl font-extrabold text-indigo-800">
                   {((settings.effectiveHoursPerShift || 10) * (settings.schedulingPercent || 80) / 100 * (settings.productivityFactor || 90) / 100).toFixed(1)}h
                 </div>

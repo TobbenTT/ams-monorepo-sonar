@@ -7,7 +7,7 @@ import {
   FileText, Download, Calendar, CheckCircle, Clock, Loader2,
   BarChart3, TrendingUp, FileSpreadsheet, RefreshCw,
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+// xlsx is dynamically imported in downloadExcel() to keep the 277KB lib out of the initial bundle
 
 const REPORTS = [
   { id: 'weekly', title: 'Weekly Maintenance Report', desc: 'WOs completed, HH summary, pending backlog, material status', icon: FileText, freq: 'Weekly', color: 'bg-blue-500' },
@@ -28,7 +28,8 @@ export default function ReportsPage() {
     api.getAnalyticsPageData(plantId).then(setKpis).catch(() => {});
   }, [plantId]);
 
-  const downloadExcel = (sheets, filename) => {
+  const downloadExcel = async (sheets, filename) => {
+    const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
     sheets.forEach(s => {
       const ws = XLSX.utils.json_to_sheet(s.data);

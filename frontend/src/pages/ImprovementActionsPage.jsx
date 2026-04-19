@@ -10,18 +10,18 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
 const PRIO = {
-  CRITICAL: { label: 'Critical', color: 'bg-red-500 text-white' },
-  HIGH: { label: 'High', color: 'bg-orange-500 text-white' },
-  MEDIUM: { label: 'Medium', color: 'bg-amber-100 text-amber-700' },
-  LOW: { label: 'Low', color: 'bg-gray-100 text-gray-600' },
+  CRITICAL: { label: 'Crítica', color: 'bg-red-500 text-white' },
+  HIGH: { label: 'Alta', color: 'bg-orange-500 text-white' },
+  MEDIUM: { label: 'Media', color: 'bg-amber-100 text-amber-700' },
+  LOW: { label: 'Baja', color: 'bg-gray-100 text-gray-600' },
 };
 
 const STATUS = {
-  OPEN: { label: 'Open', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  IN_PROGRESS: { label: 'In Progress', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  COMPLETED: { label: 'Completed', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  VERIFIED: { label: 'Verified', color: 'bg-green-100 text-green-700 border-green-200' },
-  CANCELLED: { label: 'Cancelled', color: 'bg-gray-100 text-gray-500 border-gray-200' },
+  OPEN: { label: 'Abierta', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+  IN_PROGRESS: { label: 'En progreso', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  COMPLETED: { label: 'Completada', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  VERIFIED: { label: 'Verificada', color: 'bg-green-100 text-green-700 border-green-200' },
+  CANCELLED: { label: 'Cancelada', color: 'bg-gray-100 text-gray-500 border-gray-200' },
 };
 
 const SOURCE = {
@@ -136,13 +136,13 @@ export default function ImprovementActionsPage() {
             <Target size={22} className="text-emerald-700 dark:text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Improvement Actions</h1>
-            <p className="text-sm text-muted-foreground">Track and close reliability improvement actions</p>
+            <h1 className="text-2xl font-bold text-foreground">Acciones de mejora</h1>
+            <p className="text-sm text-muted-foreground">Gestiona y cierra acciones de confiabilidad</p>
           </div>
         </div>
         <button onClick={() => { setEditingAction(null); setForm({ title: '', description: '', priority: 'MEDIUM', assigned_to: '', target_date: '', source_type: 'MANUAL', equipment_tag: '' }); setModalOpen(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-semibold transition-colors">
-          <Plus size={16} /> New Action
+          <Plus size={16} /> Nueva acción
         </button>
       </div>
 
@@ -150,10 +150,10 @@ export default function ImprovementActionsPage() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: 'Total', value: kpis.total, icon: Target, color: 'text-gray-700 bg-gray-50 border-gray-200', filter: 'all' },
-          { label: 'Open', value: kpis.open, icon: Clock, color: 'text-yellow-700 bg-yellow-50 border-yellow-200', filter: 'OPEN' },
-          { label: 'In Progress', value: kpis.inProgress, icon: ArrowRight, color: 'text-blue-700 bg-blue-50 border-blue-200', filter: 'IN_PROGRESS' },
-          { label: 'Overdue', value: kpis.overdue, icon: AlertTriangle, color: 'text-red-700 bg-red-50 border-red-200', filter: 'overdue' },
-          { label: 'Completed', value: kpis.completed, icon: CheckCircle, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', filter: 'COMPLETED' },
+          { label: 'Abiertas', value: kpis.open, icon: Clock, color: 'text-yellow-700 bg-yellow-50 border-yellow-200', filter: 'OPEN' },
+          { label: 'En progreso', value: kpis.inProgress, icon: ArrowRight, color: 'text-blue-700 bg-blue-50 border-blue-200', filter: 'IN_PROGRESS' },
+          { label: 'Vencidas', value: kpis.overdue, icon: AlertTriangle, color: 'text-red-700 bg-red-50 border-red-200', filter: 'overdue' },
+          { label: 'Completadas', value: kpis.completed, icon: CheckCircle, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', filter: 'COMPLETED' },
         ].map(k => (
           <button key={k.label} onClick={() => setFilterStatus(filterStatus === k.filter ? 'all' : k.filter)}
             className={`rounded-xl border-2 p-4 text-left transition-all hover:shadow-md ${filterStatus === k.filter ? 'ring-2 ring-blue-500 shadow-md' : ''} ${k.color}`}>
@@ -167,7 +167,7 @@ export default function ImprovementActionsPage() {
       {/* Search */}
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search actions, equipment, assignee..."
+        <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Buscar acciones, equipo, responsable…"
           className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
       </div>
 
@@ -175,8 +175,8 @@ export default function ImprovementActionsPage() {
       {filtered.length === 0 ? (
         <div className="bg-card border border-border rounded-xl p-12 text-center">
           <Target size={40} className="text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-foreground font-semibold mb-1">No improvement actions</p>
-          <p className="text-sm text-muted-foreground">Create actions from RCA findings or manually</p>
+          <p className="text-foreground font-semibold mb-1">Sin acciones de mejora</p>
+          <p className="text-sm text-muted-foreground">Crea acciones desde hallazgos de RCA o manualmente</p>
         </div>
       ) : (
         <div className="space-y-2">

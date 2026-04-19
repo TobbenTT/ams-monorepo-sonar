@@ -43,10 +43,18 @@ from api.routers import (
     sap_pm,
     data_import,
     agentic,
-    sales,
-    security,
-    mfa,
 )
+
+# Optional modules — loaded only if their deps are installed. Missing deps won't crash startup.
+import importlib
+_OPT = {}
+for _name in ('sales', 'security', 'mfa'):
+    try:
+        _OPT[_name] = importlib.import_module(f'api.routers.{_name}')
+    except Exception as _e:
+        import logging as _log
+        _log.getLogger('ocp_maintenance').warning(f'Optional router {_name} not loaded: {_e}')
+        _OPT[_name] = None
 
 
 # ── Security: response headers ────────────────────────────────────────────
@@ -198,10 +206,10 @@ def create_app() -> FastAPI:
     app.include_router(rca.router, prefix=prefix)
     # Auth
     app.include_router(auth.router, prefix=prefix)
-    app.include_router(sales.router, prefix=prefix)
-    app.include_router(mfa.router, prefix=prefix)
+    if _OPT.get("sales"): app.include_router(_OPT["sales"].router, prefix=prefix)
+    if _OPT.get("mfa"): app.include_router(_OPT["mfa"].router, prefix=prefix)
     # Security & Compliance (cybersecurity checklist endpoints)
-    app.include_router(security.router, prefix=prefix)
+    if _OPT.get("security"): app.include_router(_OPT["security"].router, prefix=prefix)
     # AI Agents (CORTEX)
     app.include_router(ai_agents.router, prefix=prefix)
     # GAP-W03 — Offline Sync

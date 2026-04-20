@@ -231,7 +231,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       setEditOps(selectedOT.operations || []);
       setEditMats(selectedOT.materials || []);
       setEditBudget({ labor: selectedOT.planned_labor || '', material: selectedOT.planned_material || '', external: selectedOT.planned_external || '' });
-      setEditDates({ start: selectedOT.planned_start || '', end: selectedOT.planned_end || '' });
+      // Jorge (2026-04-20): Week Number debe aparecer desde el primer momento.
+      // Si la OT todavía no tiene planned_start, tomamos hoy como default.
+      const defaultStart = new Date().toISOString().slice(0, 10);
+      setEditDates({
+        start: selectedOT.planned_start || defaultStart,
+        end: selectedOT.planned_end || '',
+      });
     }
   }, [selectedOT?.wo_id]);
 

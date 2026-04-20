@@ -56,7 +56,31 @@ _CHRONIC_FAILURE_THRESHOLD = 3
 # Main entry point
 # ---------------------------------------------------------------------------
 
-def prioritize_backlog(db: Session, plant_id: str | None = None) -> dict:
+def _resolve_weights(custom: dict | None) -> dict:
+    """Merge custom weights with defaults. Falls back if invalid."""
+    if not custom:
+        return WEIGHTS
+    merged = dict(WEIGHTS)
+    for k, v in custom.items():
+        if k in merged:
+            try:
+                fv = float(v)
+                if fv >= 0:
+                    merged[k] = fv
+            except (TypeError, ValueError):
+                continue
+    total = sum(merged.values())
+    if total <= 0:
+        return WEIGHTS
+    # Normalize so contributions always scale to 0-100
+    return {k: v / total for k, v in merged.items()}
+
+
+def prioritize_backlog(
+    db: Session,
+    plant_id: str | None = None,
+    weights: dict | None = None,
+) -> dict:
     """Score and rank the active backlog using multi-criteria weights.
 
     Parameters
@@ -65,12 +89,19 @@ def prioritize_backlog(db: Session, plant_id: str | None = None) -> dict:
         SQLAlchemy database session.
     plant_id : str, optional
         Reserved for future plant-level filtering.
+    weights : dict, optional
+        Custom weight overrides per criterion (criticality, health_score,
+        sla_proximity, failure_frequency, cost_of_deferral, safety_impact).
+        Non-provided keys fall back to defaults; all weights are normalized
+        so contributions always sum to the item's total score.
 
     Returns
     -------
     dict
-        ranked_items, sla_alerts, grouping_suggestions, and stats.
+        ranked_items (incl. 6-factor contributions breakdown), sla_alerts,
+        grouping_suggestions, stats, and the weights actually applied.
     """
+    W = _resolve_weights(weights)
 
     # -- 1. Load active backlog items ------------------------------------
     items = (
@@ -134,18 +165,15 @@ def prioritize_backlog(db: Session, plant_id: str | None = None) -> dict:
         # Safety (no FMEA consequence data at backlog level)
         s_safety = 0.3
 
-        total_score = round(
-            (
-                WEIGHTS["criticality"] * s_crit
-                + WEIGHTS["health_score"] * s_health
-                + WEIGHTS["sla_proximity"] * s_sla
-                + WEIGHTS["failure_frequency"] * s_freq
-                + WEIGHTS["cost_of_deferral"] * s_cost
-                + WEIGHTS["safety_impact"] * s_safety
-            )
-            * 100,
-            2,
-        )
+        contributions = {
+            "criticality":       round(W["criticality"]       * s_crit   * 100, 2),
+            "health_score":      round(W["health_score"]      * s_health * 100, 2),
+            "sla_proximity":     round(W["sla_proximity"]     * s_sla    * 100, 2),
+            "failure_frequency": round(W["failure_frequency"] * s_freq   * 100, 2),
+            "cost_of_deferral":  round(W["cost_of_deferral"]  * s_cost   * 100, 2),
+            "safety_impact":     round(W["safety_impact"]     * s_safety * 100, 2),
+        }
+        total_score = round(sum(contributions.values()), 2)
 
         # Alerts
         alerts: list[str] = []
@@ -171,6 +199,15 @@ def prioritize_backlog(db: Session, plant_id: str | None = None) -> dict:
                 "failure_count_12m": failure_count,
                 "sla_remaining_hours": round(sla_remaining, 1) if sla_remaining is not None else None,
                 "alerts": alerts,
+                "contributions": contributions,
+                "raw_factors": {
+                    "criticality":       round(s_crit   * 100, 1),
+                    "health_score":      round(s_health * 100, 1),
+                    "sla_proximity":     round(s_sla    * 100, 1),
+                    "failure_frequency": round(s_freq   * 100, 1),
+                    "cost_of_deferral":  round(s_cost   * 100, 1),
+                    "safety_impact":     round(s_safety * 100, 1),
+                },
             }
         )
 
@@ -191,6 +228,7 @@ def prioritize_backlog(db: Session, plant_id: str | None = None) -> dict:
         "sla_alerts": sla_alerts,
         "grouping_suggestions": grouping_suggestions,
         "stats": stats,
+        "weights_applied": {k: round(v * 100, 2) for k, v in W.items()},
     }
 
 
@@ -647,4 +685,5 @@ def _empty_result() -> dict:
             "avg_age_days": 0.0,
             "total_estimated_hours": 0.0,
         },
+        "weights_applied": {k: round(v * 100, 2) for k, v in WEIGHTS.items()},
     }

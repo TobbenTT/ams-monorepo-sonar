@@ -37,6 +37,15 @@ class VoiceCaptureRequest(BaseModel):
 class SmartBacklogRequest(BaseModel):
     """Input for SmartBacklog — intelligent backlog prioritization."""
     plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    weights: dict[str, float] | None = Field(
+        default=None,
+        description=(
+            "Optional per-criterion weight overrides. Keys: criticality, "
+            "health_score, sla_proximity, failure_frequency, cost_of_deferral, "
+            "safety_impact. Missing keys fall back to defaults; all weights "
+            "are normalized so they sum to 1."
+        ),
+    )
 
 
 class EquipmentDoctorRequest(BaseModel):
@@ -410,7 +419,7 @@ def smart_backlog(
     from api.services.agentic_base_service import execute_solution
 
     def _run(db, execution_id, input_params):
-        return prioritize_backlog(db=db, plant_id=data.plant_id)
+        return prioritize_backlog(db=db, plant_id=data.plant_id, weights=data.weights)
 
     return execute_solution(
         db=db,
@@ -420,6 +429,28 @@ def smart_backlog(
         input_params=data.model_dump(),
         fn=_run,
     )
+
+@router.get("/agentic/smart-backlog/alerts")
+def smart_backlog_alerts(
+    plant_id: str = "OCP-JFC1",
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """SmartBacklog alerts — items at SLA breach risk or on chronic equipment.
+
+    Runs the scorer and returns only the alert-triggering subset, sorted by
+    score descending. Lightweight view for SLA risk dashboards.
+    """
+    from api.services.agentic_smart_backlog_service import prioritize_backlog
+
+    result = prioritize_backlog(db=db, plant_id=plant_id)
+    alerted = [r for r in result.get("ranked_items", []) if r.get("alerts")]
+    return {
+        "plant_id": plant_id,
+        "total_alerts": len(alerted),
+        "items": alerted,
+    }
+
 
 @router.post("/agentic/safety-checklist")
 def safety_checklist(

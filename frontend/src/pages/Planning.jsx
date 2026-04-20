@@ -531,6 +531,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       alerts: r.alerts || [],
                       criticality: r.criticality_class,
                       sla_remaining: r.sla_remaining_hours,
+                      contributions: r.contributions || null,
+                      raw_factors: r.raw_factors || null,
                     };
                   }
                 });
@@ -735,10 +737,26 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           if (!r) return <td className="px-4 py-3"><span className="text-xs text-gray-300">—</span></td>;
                           const scoreColor = r.score >= 70 ? 'bg-red-100 text-red-700' : r.score >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600';
                           const isSLA = (r.alerts || []).includes('SLA_BREACH_RISK');
+                          const c = r.contributions;
+                          const tipLines = c ? [
+                            `Criticidad equipo:  ${c.criticality?.toFixed?.(1) ?? c.criticality}`,
+                            `Health score:       ${c.health_score?.toFixed?.(1) ?? c.health_score}`,
+                            `Proximidad SLA:     ${c.sla_proximity?.toFixed?.(1) ?? c.sla_proximity}`,
+                            `Frecuencia falla:   ${c.failure_frequency?.toFixed?.(1) ?? c.failure_frequency}`,
+                            `Costo diferir:      ${c.cost_of_deferral?.toFixed?.(1) ?? c.cost_of_deferral}`,
+                            `Seguridad:          ${c.safety_impact?.toFixed?.(1) ?? c.safety_impact}`,
+                            `─────────────`,
+                            `Total:              ${Math.round(r.score)}`,
+                          ].join('\n') : `Score: ${Math.round(r.score)}`;
                           return (
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1.5">
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${scoreColor}`}>{Math.round(r.score)}%</span>
+                                <span
+                                  title={tipLines}
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded cursor-help ${scoreColor}`}
+                                >
+                                  {Math.round(r.score)}%
+                                </span>
                                 {isSLA && <span title="SLA en riesgo" className="text-[10px]">⚠️</span>}
                                 {(r.alerts || []).includes('CHRONIC_EQUIPMENT') && <span title="Equipo crónico" className="text-[10px]">🔁</span>}
                               </div>

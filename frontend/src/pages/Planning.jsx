@@ -1430,8 +1430,43 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-gray-800">Operations / Work Steps</h3>
-                      <button type="button" onClick={() => setEditOps(prev => [...prev, { type: 'INT', description: '', specialty: 'Mechanical', quantity: 1, hours: 4 }])}
-                        className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">+ Add</button>
+                      <div className="flex items-center gap-2">
+                        {/* Jorge (2026-04-20): cada paso debe ser una operación propia.
+                            Si alguna op tiene "1. ... 2. ... 3. ..." en la descripción,
+                            el botón Split la parte en N operaciones independientes,
+                            una por paso. */}
+                        {editOps.some(o => /\n?\s*\d+\.\s/.test(o.description || '')) && (
+                          <button type="button"
+                            onClick={() => {
+                              const next = [];
+                              editOps.forEach(op => {
+                                const raw = (op.description || '').trim();
+                                const steps = [];
+                                for (let n = 1; n <= 30; n++) {
+                                  const s = raw.indexOf(`${n}. `);
+                                  if (s === -1) break;
+                                  const nx = raw.indexOf(`${n + 1}. `, s + 1);
+                                  const text = raw.substring(s, nx > -1 ? nx : undefined).replace(/^\d+\.\s*/, '').trim();
+                                  if (text) steps.push(text);
+                                }
+                                if (steps.length <= 1) {
+                                  next.push(op);
+                                } else {
+                                  const perStepHours = op.hours ? +(op.hours / steps.length).toFixed(2) : 0;
+                                  steps.forEach(s => next.push({ ...op, description: s, hours: perStepHours }));
+                                }
+                              });
+                              setEditOps(next);
+                              toast.success(`Dividido en ${next.length} operaciones`);
+                            }}
+                            className="text-xs px-2.5 py-1 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-medium"
+                            title="Separar los pasos numerados en operaciones independientes">
+                            Split steps
+                          </button>
+                        )}
+                        <button type="button" onClick={() => setEditOps(prev => [...prev, { type: 'INT', description: '', specialty: 'Mechanical', quantity: 1, hours: 4 }])}
+                          className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">+ Add</button>
+                      </div>
                     </div>
                     {editOps.length === 0 ? (
                       <div className="text-center py-6 text-gray-400">

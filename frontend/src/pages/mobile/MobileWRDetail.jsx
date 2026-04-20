@@ -31,19 +31,35 @@ const STATUS_META = {
     DRAFT: { label: 'Borrador', color: '#94A3B8', step: 0 },
     PENDING_VALIDATION: { label: 'En Revisión', color: '#3B82F6', step: 1 },
     VALIDATED: { label: 'Validado', color: '#10B981', step: 2 },
-    APPROVED: { label: 'Approved', color: '#10B981', step: 2 },
+    APPROVED: { label: 'Aprobado', color: '#10B981', step: 2 },
     ACTIVE: { label: 'Activo', color: '#F59E0B', step: 3 },
-    IN_PROGRESS: { label: 'En Progress', color: '#F59E0B', step: 3 },
+    IN_PROGRESS: { label: 'En Ejecución', color: '#F59E0B', step: 3 },
     ASSIGNED: { label: 'Asignado', color: '#8B5CF6', step: 3 },
     SCHEDULED: { label: 'Programado', color: '#8B5CF6', step: 3 },
-    COMPLETED: { label: 'Completed', color: '#047857', step: 4 },
+    COMPLETED: { label: 'Completado', color: '#047857', step: 4 },
     CLOSED: { label: 'Cerrado', color: '#6366F1', step: 4 },
-    REJECTED: { label: 'Rejected', color: '#EF4444', step: -1 },
+    REJECTED: { label: 'Rechazado', color: '#EF4444', step: -1 },
     CANCELLED: { label: 'Cancelado', color: '#6B7280', step: -1 },
 };
 
-const FLOW_STEPS = ['Creado', 'Revisión', 'Approved', 'Ejecución', 'Cerrado'];
+const FLOW_STEPS = ['Creado', 'Revisión', 'Aprobado', 'Ejecución', 'Cerrado'];
 const PLANT_CONDITION_LABELS = { operating: 'Operando', stopped: 'Detenida', partial: 'Parcial' };
+
+// Impact-score band → { emoji, bg, text, border }. ≥70 rojo, 50-69 naranja, 30-49 amarillo, <30 verde.
+function impactBand(score) {
+    if (score == null) return null;
+    if (score >= 70) return { emoji: '🔴', bg: '#FEE2E2', text: '#991B1B', border: '#FCA5A5' };
+    if (score >= 50) return { emoji: '🟠', bg: '#FED7AA', text: '#9A3412', border: '#FDBA74' };
+    if (score >= 30) return { emoji: '🟡', bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' };
+    return { emoji: '🟢', bg: '#D1FAE5', text: '#065F46', border: '#6EE7B7' };
+}
+
+const IMPACT_ALERT_CHIPS = {
+    SLA_BREACH_RISK:   { emoji: '⚠️', label: 'SLA en riesgo' },
+    CHRONIC_EQUIPMENT: { emoji: '🔁', label: 'Equipo crónico' },
+    SAFETY_FLAG:       { emoji: '🛡️', label: 'Seguridad' },
+    AGING:             { emoji: '📅', label: 'Envejecida' },
+};
 
 function derivePriority(wr) {
     const p = wr.priority || wr.ai_classification?.priority_suggested || '';
@@ -146,6 +162,8 @@ export default function MobileWRDetail() {
     const [selectedWorkers, setSelectedWorkers] = useState([]);
     const [editing, setEditing] = useState(false);
     const [editData, setEditData] = useState({});
+    // Real multi-criteria impact score (replaces hardcoded HIGH/MEDIUM). { total_score, impact_label, alerts }
+    const [impactScore, setImpactScore] = useState(null);
 
     const loadWr = () => {
         setLoading(true);
@@ -156,6 +174,17 @@ export default function MobileWRDetail() {
     };
 
     useEffect(() => { loadWr(); }, [id]);
+
+    // Fetch real impact score (normalizer maps request_id → id on desktop; here we use the url param).
+    useEffect(() => {
+        if (!id) return;
+        let cancelled = false;
+        setImpactScore(null);
+        api.getWorkRequestImpactScore(id)
+            .then(r => { if (!cancelled) setImpactScore(r); })
+            .catch(() => { /* endpoint may 404 for some WR states — fail silent */ });
+        return () => { cancelled = true; };
+    }, [id]);
 
     // Parse old-format text for legacy WRs
     const parsed = useMemo(() => {
@@ -353,7 +382,7 @@ export default function MobileWRDetail() {
                             )}
                         </div>
                         <p className="text-xs font-mono truncate" style={{ color: '#64748B' }}>
-                            {(wr.request_id || '').slice(0, 16)}
+                            {wr.request_id || ''}
                         </p>
                     </div>
                     {canApprove && !editing && (
@@ -391,6 +420,50 @@ export default function MobileWRDetail() {
                         })}
                     </div>
                 </div>
+
+                {/* Production Impact — real multi-criteria score (no breakdown in mobile) */}
+                {impactScore && (() => {
+                    const score = Math.round(impactScore.total_score);
+                    const band = impactBand(score);
+                    if (!band) return null;
+                    return (
+                        <div className="rounded-2xl p-4 border-2" style={{ backgroundColor: band.bg, borderColor: band.border }}>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: band.text, opacity: 0.8 }}>
+                                        Impacto en Producción
+                                    </div>
+                                    <div className="text-base font-bold mt-0.5" style={{ color: band.text }}>
+                                        {impactScore.impact_label || '—'}
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-3xl font-bold leading-none" style={{ color: band.text }}>
+                                        {band.emoji} {score}
+                                    </div>
+                                    <div className="text-[10px] mt-1" style={{ color: band.text, opacity: 0.7 }}>/ 100</div>
+                                </div>
+                            </div>
+                            {impactScore.alerts?.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-1.5">
+                                    {impactScore.alerts.map(a => {
+                                        const cfg = IMPACT_ALERT_CHIPS[a];
+                                        if (!cfg) return null;
+                                        return (
+                                            <span
+                                                key={a}
+                                                className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/70"
+                                                style={{ color: band.text }}
+                                            >
+                                                {cfg.emoji} {cfg.label}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
 
                 {/* Description */}
                 <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: editing ? '#818CF8' : '#E2E8F0' }}>
@@ -592,7 +665,7 @@ export default function MobileWRDetail() {
                                 <div className="flex items-center gap-3 px-1">
                                     <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#F59E0B' }} />
                                     <div className="flex-1">
-                                        <div className="text-xs" style={{ color: '#64748B' }}>Priority</div>
+                                        <div className="text-xs" style={{ color: '#64748B' }}>Prioridad</div>
                                         <select
                                             value={editData.priority || 'P3'}
                                             onChange={(e) => setEditData(prev => ({ ...prev, priority: e.target.value }))}
@@ -734,7 +807,7 @@ export default function MobileWRDetail() {
                     <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-4 border-2" style={{ borderColor: '#FCA5A5' }}>
                         <div className="flex items-center gap-2 mb-2">
                             <XCircle className="w-5 h-5" style={{ color: '#EF4444' }} />
-                            <span className="text-sm font-bold" style={{ color: '#991B1B' }}>Aviso Rejected</span>
+                            <span className="text-sm font-bold" style={{ color: '#991B1B' }}>Aviso Rechazado</span>
                         </div>
                         {wr.validation?.modifications?.reason && (
                             <p className="text-sm" style={{ color: '#7C2D12' }}>{wr.validation.modifications.reason}</p>
@@ -747,7 +820,7 @@ export default function MobileWRDetail() {
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border-2" style={{ borderColor: '#86EFAC' }}>
                         <div className="flex items-center gap-2 mb-3">
                             <CheckCircle2 className="w-5 h-5" style={{ color: '#16A34A' }} />
-                            <span className="text-sm font-bold" style={{ color: '#166534' }}>Aviso Approved</span>
+                            <span className="text-sm font-bold" style={{ color: '#166534' }}>Aviso Aprobado</span>
                         </div>
                         {!showAssignPanel ? (
                             <div className="space-y-2">

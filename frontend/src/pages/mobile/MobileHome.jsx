@@ -61,6 +61,7 @@ function mapChecklistToTask(cl) {
 
     return {
         id: cl.checklist_id,
+        workPackageId: cl.work_package_id || null,
         woId,
         equipment: cl.equipment_tag || 'Sin equipo',
         equipmentName: cl.equipment_name || cl.work_package_name || '',
@@ -73,6 +74,15 @@ function mapChecklistToTask(cl) {
         createdAt: cl.created_at,
         startedAt: cl.started_at,
     };
+}
+
+// Impact-score band. ≥70 rojo, 50-69 naranja, 30-49 amarillo, <30 verde.
+function taskScoreBand(score) {
+    if (score == null) return null;
+    if (score >= 70) return { emoji: '🔴', bg: '#FEE2E2', text: '#991B1B' };
+    if (score >= 50) return { emoji: '🟠', bg: '#FED7AA', text: '#9A3412' };
+    if (score >= 30) return { emoji: '🟡', bg: '#FEF3C7', text: '#92400E' };
+    return { emoji: '🟢', bg: '#D1FAE5', text: '#065F46' };
 }
 
 export default function MobileHome() {
@@ -88,6 +98,7 @@ function MaintainerHome({ plant }) {
     const [workRequests, setWorkRequests] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [scores, setScores] = useState({}); // keyed by work_package_id
 
     useEffect(() => {
         Promise.all([
@@ -100,6 +111,26 @@ function MaintainerHome({ plant }) {
             setTasks((Array.isArray(clList) ? clList : []).map(mapChecklistToTask));
         }).finally(() => setLoading(false));
     }, [plant]);
+
+    // Fetch impact scores for visible tasks (cached by work_package_id).
+    useEffect(() => {
+        const pending = tasks.map(t => t.workPackageId).filter(id => id && !(id in scores));
+        if (pending.length === 0) return;
+        let cancelled = false;
+        Promise.allSettled(pending.map(id => api.getManagedWOImpactScore(id).then(r => [id, r])))
+            .then(results => {
+                if (cancelled) return;
+                const next = {};
+                for (const r of results) {
+                    if (r.status === 'fulfilled' && r.value?.[1]) {
+                        const [id, data] = r.value;
+                        next[id] = { total_score: data.total_score, impact_label: data.impact_label };
+                    }
+                }
+                if (Object.keys(next).length) setScores(prev => ({ ...prev, ...next }));
+            });
+        return () => { cancelled = true; };
+    }, [tasks]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const rejected = workRequests.filter(wr => wr.status === 'REJECTED');
     const inProgress = tasks.filter(t => t.status === 'IN_PROGRESS');
@@ -122,7 +153,7 @@ function MaintainerHome({ plant }) {
             {/* Rejected WRs */}
             {rejected.length > 0 && (
                 <div>
-                    <SectionHeader icon={XCircle} iconColor="#F59E0B" title={`Avisos Rejecteds (${rejected.length})`} />
+                    <SectionHeader icon={XCircle} iconColor="#F59E0B" title={`Avisos Rechazados (${rejected.length})`} />
                     <div className="space-y-3">
                         {rejected.map(wr => (
                             <WRRejectedCard key={wr.request_id || wr.id} wr={wr} onAction={() => navigate('/m/avisos')} />
@@ -136,11 +167,11 @@ function MaintainerHome({ plant }) {
                 <div>
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#10B981' }} />
-                        <h2 className="text-sm font-bold" style={{ color: '#0F172A' }}>En Progress ({inProgress.length})</h2>
+                        <h2 className="text-sm font-bold" style={{ color: '#0F172A' }}>En Ejecución ({inProgress.length})</h2>
                     </div>
                     <div className="space-y-3">
                         {inProgress.map(task => (
-                            <TaskInProgressCard key={task.id} task={task} onContinue={() => navigate(`/m/tarea/${task.id}`)} />
+                            <TaskInProgressCard key={task.id} task={task} score={scores[task.workPackageId]} onContinue={() => navigate(`/m/tarea/${task.id}`)} />
                         ))}
                     </div>
                 </div>
@@ -148,12 +179,12 @@ function MaintainerHome({ plant }) {
 
             {/* Assigned Today */}
             <div>
-                <SectionHeader title={`Assigned (${assigned.length})`} />
+                <SectionHeader title={`Asignadas (${assigned.length})`} />
                 <div className="space-y-3">
                     {assigned.length === 0 ? (
-                        <EmptyState text="No tasks asignadas" />
+                        <EmptyState text="Sin tareas asignadas" />
                     ) : assigned.map(task => (
-                        <TaskAssignedCard key={task.id} task={task} onStart={() => navigate(`/m/tarea/${task.id}`)} />
+                        <TaskAssignedCard key={task.id} task={task} score={scores[task.workPackageId]} onStart={() => navigate(`/m/tarea/${task.id}`)} />
                     ))}
                 </div>
             </div>
@@ -164,7 +195,7 @@ function MaintainerHome({ plant }) {
                     <SectionHeader icon={AlertCircle} iconColor="#EF4444" title={`Atrasadas (${delayed.length})`} />
                     <div className="space-y-3">
                         {delayed.map(task => (
-                            <TaskDelayedCard key={task.id} task={task} onStart={() => navigate(`/m/tarea/${task.id}`)} />
+                            <TaskDelayedCard key={task.id} task={task} score={scores[task.workPackageId]} onStart={() => navigate(`/m/tarea/${task.id}`)} />
                         ))}
                     </div>
                 </div>
@@ -439,7 +470,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                         <div className="text-sm font-bold" style={{ color: '#0F172A' }}>
                             {isApprove ? 'Approve Aviso' : 'Reject Aviso'}
                         </div>
-                        <div className="text-xs" style={{ color: '#64748B' }}>{tag} — {(wr.request_id || '').slice(0, 10)}</div>
+                        <div className="text-xs" style={{ color: '#64748B' }}>{tag} — {wr.request_id || ''}</div>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
                         <X className="w-5 h-5" style={{ color: '#64748B' }} />
@@ -516,7 +547,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                                     <div key={i} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: '#F8FAFC' }}>
                                         <div className="flex-1 min-w-0">
                                             <div className="text-xs font-medium truncate" style={{ color: '#0F172A' }}>
-                                                {(h.request_id || '').slice(0, 10)}
+                                                {h.request_id || ''}
                                             </div>
                                             <div className="text-[10px]" style={{ color: '#64748B' }}>
                                                 {h.created_at ? new Date(h.created_at).toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''}
@@ -543,7 +574,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                             value={comment}
                             onChange={e => setComment(e.target.value)}
                             placeholder={isApprove
-                                ? 'Ej: Approved, programar para siguiente semana...'
+                                ? 'Ej: Aprobado, programar para siguiente semana...'
                                 : 'Ej: Falta información del equipo, contactar técnico...'
                             }
                             className="w-full h-24 p-3 rounded-xl border text-sm resize-none outline-none"
@@ -640,7 +671,7 @@ function WRRejectedCard({ wr, onAction }) {
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{(wr.request_id || wr.id || '').slice(0, 12)}</span>
+                        <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{wr.request_id || wr.id || ''}</span>
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FED7AA', color: '#9A3412' }}>RECHAZADA</span>
                     </div>
                     <div className="text-sm font-bold mb-1" style={{ color: '#0F172A' }}>{tag}</div>
@@ -661,12 +692,22 @@ function WRRejectedCard({ wr, onAction }) {
     );
 }
 
-function TaskInProgressCard({ task, onContinue }) {
+function TaskInProgressCard({ task, score, onContinue }) {
+    const band = score ? taskScoreBand(Math.round(score.total_score)) : null;
     return (
         <div className="bg-white rounded-2xl p-4 border-2" style={{ borderColor: '#10B981' }}>
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                    <div className="text-xs font-semibold mb-1" style={{ color: '#64748B' }}>{task.woId}</div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{task.woId}</span>
+                        {band && (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: band.bg, color: band.text }}
+                                title={score.impact_label || 'Impact score'}>
+                                {band.emoji} {Math.round(score.total_score)}
+                            </span>
+                        )}
+                    </div>
                     <div className="text-sm font-bold mb-1" style={{ color: '#0F172A' }}>{task.equipment}</div>
                     <div className="text-sm mb-2" style={{ color: '#475569' }}>{task.equipmentName}</div>
                 </div>
@@ -697,12 +738,22 @@ function TaskInProgressCard({ task, onContinue }) {
     );
 }
 
-function TaskAssignedCard({ task, onStart }) {
+function TaskAssignedCard({ task, score, onStart }) {
+    const band = score ? taskScoreBand(Math.round(score.total_score)) : null;
     return (
         <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                    <div className="text-xs font-semibold mb-1" style={{ color: '#64748B' }}>{task.woId}</div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{task.woId}</span>
+                        {band && (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: band.bg, color: band.text }}
+                                title={score.impact_label || 'Impact score'}>
+                                {band.emoji} {Math.round(score.total_score)}
+                            </span>
+                        )}
+                    </div>
                     <div className="text-sm font-bold mb-1" style={{ color: '#0F172A' }}>{task.equipment}</div>
                     <div className="text-sm mb-2" style={{ color: '#475569' }}>{task.equipmentName}</div>
                 </div>
@@ -725,16 +776,24 @@ function TaskAssignedCard({ task, onStart }) {
     );
 }
 
-function TaskDelayedCard({ task, onStart }) {
+function TaskDelayedCard({ task, score, onStart }) {
     const hoursDelayed = task.createdAt
         ? `${Math.round((Date.now() - new Date(task.createdAt).getTime()) / 36e5)}h`
         : '?';
+    const band = score ? taskScoreBand(Math.round(score.total_score)) : null;
     return (
         <div className="bg-white rounded-2xl p-4 border-2" style={{ borderColor: '#FCA5A5' }}>
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{task.woId}</span>
+                        {band && (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: band.bg, color: band.text }}
+                                title={score.impact_label || 'Impact score'}>
+                                {band.emoji} {Math.round(score.total_score)}
+                            </span>
+                        )}
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}>
                             Atrasada {hoursDelayed}
                         </span>
@@ -745,7 +804,7 @@ function TaskDelayedCard({ task, onStart }) {
                 <PriorityBadge priority={task.priority} />
             </div>
             <button onClick={onStart} className="w-full rounded-xl py-3 text-sm font-semibold transition-all active:scale-95" style={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}>
-                Iniciar Urgent
+                Iniciar Urgente
             </button>
         </div>
     );
@@ -769,7 +828,7 @@ function PendingWRCard({ wr, onApprove, onReject, onTap }) {
                 <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{(wr.request_id || wr.id || '').slice(0, 12)}</span>
+                            <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{wr.request_id || wr.id || ''}</span>
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>PENDIENTE</span>
                             <SLABadge priority={priority} createdAt={wr.created_at} slaDeadline={wr.sla_deadline} />
                         </div>

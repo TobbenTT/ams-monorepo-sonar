@@ -12,7 +12,7 @@ const STATUS_ORDER = ['DRAFT', 'PENDING_VALIDATION', 'VALIDATED', 'APPROVED', 'A
 const PIPELINE_STEPS = [
     { key: 'draft', statuses: ['DRAFT'], label: 'Borrador', color: '#94A3B8', bg: '#F1F5F9' },
     { key: 'pending', statuses: ['PENDING_VALIDATION'], label: 'Revisión', color: '#F59E0B', bg: '#FFFBEB' },
-    { key: 'validated', statuses: ['VALIDATED', 'APPROVED'], label: 'Approved', color: '#10B981', bg: '#ECFDF5' },
+    { key: 'validated', statuses: ['VALIDATED', 'APPROVED'], label: 'Aprobado', color: '#10B981', bg: '#ECFDF5' },
     { key: 'assigned', statuses: ['ASSIGNED'], label: 'Asignado', color: '#8B5CF6', bg: '#F5F3FF' },
     { key: 'execution', statuses: ['IN_PROGRESS'], label: 'Ejecución', color: '#3B82F6', bg: '#EFF6FF' },
     { key: 'done', statuses: ['COMPLETED'], label: 'Cerrado', color: '#047857', bg: '#ECFDF5' },
@@ -385,7 +385,7 @@ export default function MobileDashboard() {
                                 className="text-xs font-semibold flex items-center gap-1"
                                 style={{ color: '#047857' }}
                             >
-                                Ver WRs <ChevronRight className="w-3 h-3" />
+                                Ver Avisos <ChevronRight className="w-3 h-3" />
                             </button>
                         </div>
                         <div className="space-y-2">
@@ -423,7 +423,7 @@ export default function MobileDashboard() {
                 <div className="grid grid-cols-2 gap-3">
                     <QuickAction
                         icon={FileText}
-                        label="Work Requests"
+                        label="Avisos"
                         count={pendingAction}
                         countLabel="pendientes"
                         color="#F59E0B"
@@ -514,11 +514,16 @@ const STATUS_LABELS = {
     DRAFT: 'Borrador',
     PENDING_VALIDATION: 'Revisión',
     VALIDATED: 'Validado',
-    APPROVED: 'Approved',
+    APPROVED: 'Aprobado',
     ASSIGNED: 'Asignado',
-    IN_PROGRESS: 'En Progress',
-    COMPLETED: 'Completed',
-    REJECTED: 'Rejected',
+    IN_PROGRESS: 'En Ejecución',
+    COMPLETED: 'Completado',
+    REJECTED: 'Rechazado',
+    OT_CREADA: 'OT Creada',
+    PENDING: 'Pendiente',
+    PAUSED: 'Pausada',
+    CLOSED: 'Cerrado',
+    CANCELLED: 'Cancelado',
 };
 
 function StatusDot({ status }) {

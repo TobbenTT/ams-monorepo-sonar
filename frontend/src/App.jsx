@@ -106,7 +106,6 @@ export default function App() {
                     </ErrorBoundary>
                 </main>
                 <MobileBottomNav mobileRole={mobileRole} />
-                <FeedbackWidget />
             </div>
         );
     }

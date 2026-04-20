@@ -166,7 +166,7 @@ export default function MobileTaskExecution() {
                             {status === 'running' ? (
                                 <>
                                     <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#10B981' }} />
-                                    <span className="text-sm font-semibold" style={{ color: '#10B981' }}>En Progress</span>
+                                    <span className="text-sm font-semibold" style={{ color: '#10B981' }}>En Ejecución</span>
                                 </>
                             ) : (
                                 <>

@@ -41,6 +41,7 @@ function mapChecklistToWO(cl) {
 
     return {
         id: cl.checklist_id,
+        workPackageId: cl.work_package_id || null,
         woId,
         equipment: cl.equipment_tag || 'Sin equipo',
         equipmentName: cl.equipment_name || cl.work_package_name || '',
@@ -54,6 +55,22 @@ function mapChecklistToWO(cl) {
     };
 }
 
+// Impact-score band → { emoji, bg, text }. ≥70 rojo, 50-69 naranja, 30-49 amarillo, <30 verde.
+function scoreBand(score) {
+    if (score == null) return null;
+    if (score >= 70) return { emoji: '🔴', bg: '#FEE2E2', text: '#991B1B' };
+    if (score >= 50) return { emoji: '🟠', bg: '#FED7AA', text: '#9A3412' };
+    if (score >= 30) return { emoji: '🟡', bg: '#FEF3C7', text: '#92400E' };
+    return { emoji: '🟢', bg: '#D1FAE5', text: '#065F46' };
+}
+
+const ALERT_CHIPS = {
+    SLA_BREACH_RISK:   { emoji: '⚠️', label: 'SLA' },
+    CHRONIC_EQUIPMENT: { emoji: '🔁', label: 'Crónico' },
+    SAFETY_FLAG:       { emoji: '🛡️', label: 'Seguridad' },
+    AGING:             { emoji: '📅', label: 'Envejecida' },
+};
+
 export default function MobileWorkOrders() {
     const { mobileRole, plant } = useOutletContext();
     const navigate = useNavigate();
@@ -63,6 +80,8 @@ export default function MobileWorkOrders() {
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [actionLoading, setActionLoading] = useState(null);
+    // Impact scores keyed by work_package_id (= wo_id). { total_score, impact_label, alerts }
+    const [scores, setScores] = useState({});
     // Assign modal
     const [assignTarget, setAssignTarget] = useState(null);
     const [assignName, setAssignName] = useState('');
@@ -77,6 +96,32 @@ export default function MobileWorkOrders() {
             .catch(() => setTasks([]))
             .finally(() => setLoading(false));
     }, [plant]);
+
+    // Fetch impact scores for visible WOs (client-cached, ~100-300ms each — parallel).
+    useEffect(() => {
+        const pending = tasks
+            .map(t => t.workPackageId)
+            .filter(id => id && !(id in scores));
+        if (pending.length === 0) return;
+        let cancelled = false;
+        Promise.allSettled(pending.map(id => api.getManagedWOImpactScore(id).then(r => [id, r])))
+            .then(results => {
+                if (cancelled) return;
+                const next = {};
+                for (const r of results) {
+                    if (r.status === 'fulfilled' && r.value?.[1]) {
+                        const [id, data] = r.value;
+                        next[id] = {
+                            total_score: data.total_score,
+                            impact_label: data.impact_label,
+                            alerts: data.alerts || [],
+                        };
+                    }
+                }
+                if (Object.keys(next).length) setScores(prev => ({ ...prev, ...next }));
+            });
+        return () => { cancelled = true; };
+    }, [tasks]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Load technicians for assign modal
     useEffect(() => {
@@ -128,14 +173,14 @@ export default function MobileWorkOrders() {
         ? [
             { value: 'all', label: 'Todas' },
             { value: 'unassigned', label: 'Sin Asignar' },
-            { value: 'ASSIGNED', label: 'Assigned' },
-            { value: 'IN_PROGRESS', label: 'En Progress' },
+            { value: 'ASSIGNED', label: 'Asignadas' },
+            { value: 'IN_PROGRESS', label: 'En Ejecución' },
             { value: 'delayed', label: 'Atrasadas' },
         ]
         : [
             { value: 'all', label: 'Todas' },
-            { value: 'ASSIGNED', label: 'Assigned' },
-            { value: 'IN_PROGRESS', label: 'En Progress' },
+            { value: 'ASSIGNED', label: 'Asignadas' },
+            { value: 'IN_PROGRESS', label: 'En Ejecución' },
             { value: 'delayed', label: 'Atrasadas' },
         ];
 
@@ -173,7 +218,7 @@ export default function MobileWorkOrders() {
             {/* HEADER */}
             <div className="bg-white border-b p-4 sticky top-0 z-10" style={{ borderColor: '#E2E8F0' }}>
                 <h1 className="text-xl font-bold mb-4" style={{ color: '#0F172A' }}>
-                    {mobileRole === 'supervisor' ? 'Gestión de Tareas' : 'My Tasks'}
+                    {mobileRole === 'supervisor' ? 'Gestión de Tareas' : 'Mis Tareas'}
                 </h1>
 
                 {/* SEARCH */}
@@ -183,7 +228,7 @@ export default function MobileWorkOrders() {
                         type="text"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        placeholder="Search by WO, equipment or TAG..."
+                        placeholder="Buscar por OT, equipo o TAG..."
                         className="w-full pl-10 pr-4 py-3 rounded-xl border text-sm outline-none"
                         style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
                     />
@@ -220,7 +265,7 @@ export default function MobileWorkOrders() {
             <div className="p-4 space-y-3">
                 {filtered.length === 0 && (
                     <div className="bg-white rounded-2xl p-6 border text-center" style={{ borderColor: '#E2E8F0' }}>
-                        <div className="text-sm" style={{ color: '#94A3B8' }}>No tasks{filter !== 'all' ? ' con este filtro' : ''}</div>
+                        <div className="text-sm" style={{ color: '#94A3B8' }}>Sin tareas{filter !== 'all' ? ' con este filtro' : ''}</div>
                     </div>
                 )}
 
@@ -228,6 +273,8 @@ export default function MobileWorkOrders() {
                     const statusCfg = sc(wo.status);
                     const priorityColors = pc(wo.priority);
                     const isLoading = actionLoading === wo.id;
+                    const score = wo.workPackageId ? scores[wo.workPackageId] : null;
+                    const band = score ? scoreBand(Math.round(score.total_score)) : null;
 
                     return (
                         <div
@@ -241,8 +288,30 @@ export default function MobileWorkOrders() {
                             {/* Header */}
                             <div className="flex items-start justify-between mb-3">
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                                         <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{wo.woId}</span>
+                                        {band && (
+                                            <span
+                                                className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                                                style={{ backgroundColor: band.bg, color: band.text }}
+                                                title={score.impact_label || 'Impact score'}
+                                            >
+                                                {band.emoji} {Math.round(score.total_score)}
+                                            </span>
+                                        )}
+                                        {score?.alerts?.map(a => {
+                                            const cfg = ALERT_CHIPS[a];
+                                            if (!cfg) return null;
+                                            return (
+                                                <span
+                                                    key={a}
+                                                    className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                                                    style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}
+                                                >
+                                                    {cfg.emoji} {cfg.label}
+                                                </span>
+                                            );
+                                        })}
                                         {wo.delayed && (
                                             <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}>
                                                 <AlertCircle className="w-3 h-3" />
@@ -445,7 +514,7 @@ export default function MobileWorkOrders() {
                             className="w-full py-3 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-50"
                             style={{ backgroundColor: '#047857', color: '#FFFFFF' }}
                         >
-                            {actionLoading ? 'Asignando...' : 'Confirm Asignación'}
+                            {actionLoading ? 'Asignando...' : 'Confirmar Asignación'}
                         </button>
                     </div>
                 </div>

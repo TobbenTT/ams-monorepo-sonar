@@ -456,7 +456,7 @@ export default function MobileCreateWR() {
                     {wrId && (
                         <div className="px-5 py-3 rounded-2xl mb-6" style={{ backgroundColor: '#ECFDF5', border: '2px solid #10B981' }}>
                             <div className="text-xs font-semibold mb-1" style={{ color: '#64748B' }}>ID</div>
-                            <div className="text-lg font-bold font-mono" style={{ color: '#047857' }}>{wrId.slice(0, 12)}</div>
+                            <div className="text-lg font-bold font-mono" style={{ color: '#047857' }}>{wrId}</div>
                         </div>
                     )}
                     <div className="flex gap-3 w-full">
@@ -465,7 +465,7 @@ export default function MobileCreateWR() {
                             className="flex-1 py-3 rounded-2xl text-sm font-bold border-2"
                             style={{ borderColor: '#E2E8F0', color: '#0F172A' }}
                         >
-                            Ver WRs
+                            Ver Avisos
                         </button>
                         <button
                             onClick={resetForm}
@@ -492,7 +492,7 @@ export default function MobileCreateWR() {
                         <ArrowLeft className="w-5 h-5" style={{ color: '#64748B' }} />
                     </button>
                     <div>
-                        <h1 className="text-lg font-bold" style={{ color: '#0F172A' }}>Create Notification</h1>
+                        <h1 className="text-lg font-bold" style={{ color: '#0F172A' }}>Crear Aviso</h1>
                         <p className="text-xs" style={{ color: '#64748B' }}>Documenta hallazgos y necesidades</p>
                     </div>
                 </div>
@@ -588,7 +588,7 @@ export default function MobileCreateWR() {
                                 value={equipSearch}
                                 onChange={(e) => { setEquipSearch(e.target.value); setShowEquipSearch(true); }}
                                 onFocus={() => equipSearch.length >= 2 && setShowEquipSearch(true)}
-                                placeholder="Search by TAG (e.g. P-1201A)..."
+                                placeholder="Buscar por TAG (ej. P-1201A)..."
                                 className="w-full pl-10 pr-4 py-3 rounded-xl border text-sm outline-none"
                                 style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
                             />
@@ -1072,7 +1072,7 @@ export default function MobileCreateWR() {
                                         <div className="relative">
                                             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: '#94A3B8' }} />
                                             <input
-                                                type="text" placeholder="Search material..." value={mat.sapId}
+                                                type="text" placeholder="Buscar material..." value={mat.sapId}
                                                 onChange={(e) => { updateMaterial(i, 'sapId', e.target.value); setActiveMatSapIdx(i); }}
                                                 onFocus={() => setActiveMatSapIdx(i)}
                                                 onBlur={() => setTimeout(() => setActiveMatSapIdx(-1), 150)}

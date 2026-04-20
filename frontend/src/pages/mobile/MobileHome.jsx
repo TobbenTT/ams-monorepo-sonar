@@ -424,6 +424,9 @@ function SupervisorHome({ plant }) {
                 </button>
             </div>
 
+            {/* Shift Handover (SF-355) */}
+            <ShiftHandoverButton plant={plant} />
+
             {/* Approval Modal */}
             {approvalModal && (
                 <ApprovalModal
@@ -433,6 +436,99 @@ function SupervisorHome({ plant }) {
                     onDone={() => { setApprovalModal(null); reload(); }}
                 />
             )}
+        </div>
+    );
+}
+
+// ─── SHIFT HANDOVER BUTTON + MODAL (SF-355) ─────────────────────────────────
+function ShiftHandoverButton({ plant }) {
+    const [open, setOpen] = useState(null); // null | 'loading' | data | error
+
+    const generate = async () => {
+        setOpen('loading');
+        const nowHour = new Date().getHours();
+        const shiftType = nowHour >= 7 && nowHour < 19 ? 'MORNING' : 'NIGHT';
+        try {
+            const res = await api.generateShiftHandover({
+                plant_id: plant,
+                shift_type: shiftType,
+            });
+            setOpen(res?.result || res);
+        } catch (e) {
+            setOpen({ error: e?.message || 'Error' });
+        }
+    };
+
+    return (
+        <>
+            <button
+                onClick={generate}
+                className="w-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl p-4 transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+                <ClipboardCheck className="w-5 h-5" />
+                <span className="text-sm font-semibold">Generar Handover de Turno</span>
+            </button>
+            {open && (
+                <div className="fixed inset-0 z-[200] flex items-end justify-center">
+                    <div className="absolute inset-0 bg-black/60" onClick={() => open !== 'loading' && setOpen(null)} />
+                    <div className="relative bg-white rounded-t-3xl w-full max-w-lg max-h-[88vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b px-4 py-4 flex items-center justify-between">
+                            <div className="font-bold text-slate-900">Handover de Turno</div>
+                            {open !== 'loading' && (
+                                <button onClick={() => setOpen(null)} className="p-2 rounded-full hover:bg-gray-100">
+                                    <X className="w-5 h-5 text-slate-500" />
+                                </button>
+                            )}
+                        </div>
+                        <div className="p-4">
+                            {open === 'loading' ? (
+                                <div className="py-12 text-center text-slate-500 text-sm">Compilando resumen del turno…</div>
+                            ) : open.error ? (
+                                <div className="text-red-600 text-sm">{open.error}</div>
+                            ) : (
+                                <HandoverSections data={open} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
+
+function HandoverSections({ data }) {
+    const secs = [
+        ['summary', 'Resumen'],
+        ['immediate_attention', 'Atención Inmediata'],
+        ['completed', 'Completadas'],
+        ['in_progress', 'En Progreso'],
+        ['safety_notifications', 'Seguridad'],
+        ['pending_materials', 'Materiales Pendientes'],
+        ['sla_critical', 'SLA Crítico'],
+        ['notes', 'Notas'],
+    ];
+    return (
+        <div className="space-y-4 text-sm">
+            {secs.map(([k, title]) => {
+                const v = data?.[k] ?? data?.sections?.[k];
+                if (v == null || (Array.isArray(v) && v.length === 0)) return null;
+                return (
+                    <div key={k}>
+                        <div className="text-xs font-bold tracking-wide text-slate-500 mb-1.5 uppercase">{title}</div>
+                        {typeof v === 'string' ? (
+                            <div className="text-slate-800 whitespace-pre-wrap">{v}</div>
+                        ) : Array.isArray(v) ? (
+                            <ul className="space-y-1 list-disc pl-5 text-slate-700">
+                                {v.slice(0, 10).map((item, i) => (
+                                    <li key={i}>{typeof item === 'string' ? item : (item.description || item.equipment_tag || item.wo_id || JSON.stringify(item).slice(0, 120))}</li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <pre className="text-[11px] bg-slate-50 p-2 rounded overflow-x-auto">{JSON.stringify(v, null, 2).slice(0, 600)}</pre>
+                        )}
+                    </div>
+                );
+            })}
         </div>
     );
 }

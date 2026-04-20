@@ -82,6 +82,9 @@ def _run_column_migrations():
         ("weekly_programs", "published_by", "VARCHAR(50)", None),
         ("weekly_programs", "material_status", "TEXT", None),  # JSON
         ("weekly_programs", "hh_balance", "TEXT", None),  # JSON
+        # Jorge (2026-04-20): historial de reservas. La reservation_code escalar
+        # queda como "última/activa"; reservation_codes es el array completo.
+        ("managed_work_orders", "reservation_codes", "TEXT", None),  # JSON list[str]
     ]
 
     with engine.begin() as conn:

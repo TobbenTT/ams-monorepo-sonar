@@ -1951,23 +1951,46 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         await saveOTChanges();
                         const code = 'RES-' + String(Date.now()).slice(-6);
                         const woId = selectedOT?.wo_id;
-                        if (woId) {
-                          try {
-                            await api.updateManagedWO(woId, { reservation_code: code });
-                            toast.success('Material reservation created: ' + code);
-                          } catch { toast.success('Reservation: ' + code); }
-                        }
+                        if (!woId) return;
+                        // Jorge (2026-04-20): si la OT ya fue liberada (LIBERADO en adelante)
+                        // y ya existe una reserva, la siguiente crea una SEGUNDA reserva
+                        // independiente. Antes de LIBERADO, se actualiza la primera.
+                        const postRelease = !['CREADO','PENDIENTE'].includes(selectedOT.status) && !!selectedOT.reservation_code;
+                        const prev = Array.isArray(selectedOT.reservation_codes) ? selectedOT.reservation_codes : (selectedOT.reservation_code ? [selectedOT.reservation_code] : []);
+                        const nextList = postRelease ? [...prev, code] : (prev.length === 0 ? [code] : [...prev.slice(0, -1), code]);
+                        try {
+                          await api.updateManagedWO(woId, { reservation_code: code, reservation_codes: nextList });
+                          setSelectedOT({ ...selectedOT, reservation_code: code, reservation_codes: nextList });
+                          toast.success(postRelease
+                            ? `Segunda reserva creada: ${code} (la primera sigue activa)`
+                            : `Reserva creada: ${code}`);
+                        } catch { toast.success('Reserva: ' + code); }
                       }} disabled={savingOT || editMats.length === 0}
                         className="flex-1 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
                         Create Reservation
                       </button>
                     </div>
-                    {selectedOT?.reservation_code && (
-                      <div className="mt-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 flex items-center justify-between">
-                        <span className="text-xs text-indigo-600">Reservation:</span>
-                        <span className="font-mono font-bold text-indigo-800">{selectedOT.reservation_code}</span>
-                      </div>
-                    )}
+                    {/* Historial de reservas — Jorge 2026-04-20 */}
+                    {(() => {
+                      const list = Array.isArray(selectedOT?.reservation_codes) && selectedOT.reservation_codes.length > 0
+                        ? selectedOT.reservation_codes
+                        : (selectedOT?.reservation_code ? [selectedOT.reservation_code] : []);
+                      if (list.length === 0) return null;
+                      return (
+                        <div className="mt-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
+                          <div className="text-[10px] text-indigo-600 font-semibold uppercase mb-1">
+                            Reservas ({list.length}) {list.length > 1 && '— todas activas en bodega'}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {list.map((c, i) => (
+                              <span key={i} className="font-mono text-xs font-bold text-indigo-800 bg-white border border-indigo-200 px-1.5 py-0.5 rounded">
+                                #{i + 1} {c}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 

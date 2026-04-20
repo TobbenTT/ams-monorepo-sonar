@@ -55,6 +55,9 @@ class WOUpdateRequest(BaseModel):
     assigned_workers: list | None = None
     planning_group: str | None = None
     work_center: str | None = None
+    reservation_code: str | None = None       # Jorge 2026-04-20: última/activa
+    reservation_codes: list | None = None      # Jorge 2026-04-20: historial
+    cancellation_reason: str | None = None
 
 
 class WOScheduleRequest(BaseModel):

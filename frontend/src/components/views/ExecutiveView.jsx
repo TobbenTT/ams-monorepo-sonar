@@ -358,6 +358,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
               >
                 🔁 Crónicas
               </button>
+              <AgentQuickActions plant={selectedPlant} />
               <p className="text-sm text-blue-700">
                 {totalActive > 0 ? t('executive.rootCauseActiveAlerts').replace('{count}', totalActive) : t('executive.rootCauseNoAlerts')}
               </p>
@@ -1173,6 +1174,46 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
         <TabsContent value="hse"><HSETabContent /></TabsContent>
         <TabsContent value="mejora-continua"><MejoraContinuaTabContent /></TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// SF-352..370 — Barra de quick-actions para los agentes IA-AGENTIC T2/T3.
+function AgentQuickActions({ plant }) {
+  const call = async (fn, label) => {
+    try {
+      const res = await fn({ plant_id: plant });
+      const r = res?.output_result || res?.result || res;
+      const summary = r?.summary || r?.status || r?.message || JSON.stringify(r).slice(0, 400);
+      alert(`${label}\n\n${summary}`);
+    } catch (e) { alert(`${label} — Error: ${e.message || ''}`); }
+  };
+  const actions = [
+    { label: 'Digital Twin', fn: api.agenticDigitalTwin, tag: 'SF-364', emoji: '🖥️' },
+    { label: 'Predictive Health', fn: api.agenticPredictiveHealth, tag: 'SF-361', emoji: '🔮' },
+    { label: 'Spare Parts Forecast', fn: api.agenticSparePartsForecast, tag: 'SF-366', emoji: '📦' },
+    { label: 'Contractor Performance', fn: api.agenticContractorPerformance, tag: 'SF-367', emoji: '👷' },
+    { label: 'Energy Monitor', fn: api.agenticEnergyMonitor, tag: 'SF-368', emoji: '⚡' },
+    { label: 'Multi-Site Benchmark', fn: api.agenticMultiSiteBenchmark, tag: 'SF-369', emoji: '🏭' },
+    { label: 'Auto-RCA', fn: api.agenticAutoRCA, tag: 'SF-370', emoji: '🔍' },
+    { label: 'Compliance', fn: api.agenticComplianceWatchdog, tag: 'SF-363', emoji: '✅' },
+    { label: 'Knowledge Curator', fn: api.agenticKnowledgeCurator, tag: 'SF-365', emoji: '📚' },
+    { label: 'Post-Learning', fn: api.agenticPostLearning, tag: 'SF-358', emoji: '🎓' },
+    { label: 'Defect Tracker', fn: api.agenticDefectTracker, tag: 'SF-360', emoji: '🛠️' },
+    { label: 'SAP Sync', fn: api.agenticSapSync, tag: 'SF-356', emoji: '🔗' },
+  ];
+  return (
+    <div className="ml-2 flex flex-wrap gap-1">
+      {actions.map(a => (
+        <button
+          key={a.tag}
+          onClick={() => call(a.fn, `${a.emoji} ${a.label} (${a.tag})`)}
+          className="text-[10px] px-2 py-1 bg-slate-600 text-white rounded hover:bg-slate-700"
+          title={`${a.label} (${a.tag})`}
+        >
+          {a.emoji} {a.label}
+        </button>
+      ))}
     </div>
   );
 }

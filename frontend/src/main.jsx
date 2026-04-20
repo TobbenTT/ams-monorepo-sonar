@@ -40,6 +40,7 @@ const AnalyticsPage = lazyRetry(() => import('./pages/AnalyticsPage'));
 const ReportsPage = lazyRetry(() => import('./pages/ReportsPage'));
 const TeamPage = lazyRetry(() => import('./pages/TeamPage'));
 const SettingsPage = lazyRetry(() => import('./pages/SettingsPage'));
+const SchedulerPreview = lazyRetry(() => import('./pages/SchedulerPreview'));
 
 // ── Existing Pages (secondary routes) ─────────────────────────
 const Login = lazyRetry(() => import('./pages/Login'));
@@ -129,6 +130,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="reports" element={<S><ReportsPage /></S>} />
                                     <Route path="team" element={<P roles={['admin', 'manager', 'planner']}><S><TeamPage /></S></P>} />
                                     <Route path="settings" element={<S><SettingsPage /></S>} />
+                                    <Route path="scheduler-preview" element={<S><SchedulerPreview /></S>} />
                                     <Route path="feedback-admin" element={<S><FeedbackAdmin /></S>} />
                                     <Route path="execution" element={<P roles={['admin', 'planner', 'tecnico']}><S><Execution /></S></P>} />
                                     <Route path="post-maintenance" element={<P roles={PLAN}><S><PostMaintenance /></S></P>} />

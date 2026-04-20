@@ -54,6 +54,8 @@ export default function SettingsPage() {
     laborRate: 35,
     plannedWorkTarget: 80,
     // Scheduling capacity config
+    mineType: 'plant',               // plant | open_pit | underground (Jorge 2026-04-20)
+    shiftStartHour: 8,               // Inicio del turno día (ej: 7, 8)
     nominalHoursPerShift: 12,
     effectiveHoursPerShift: 10,
     schedulingPercent: 80,
@@ -500,6 +502,35 @@ export default function SettingsPage() {
             </h3>
             <p className="text-xs text-gray-500 mb-4">Parámetros de capacidad que alimentan el tablero de programación. Definen cuántas horas pueden programarse por día y por técnico.</p>
             <div className="grid grid-cols-2 gap-6">
+              {/* Jorge (2026-04-20): tipo de faena para configurar turnos por defecto */}
+              <div>
+                <Label>Tipo de faena</Label>
+                <select value={settings.mineType || 'plant'} onChange={e => {
+                  const v = e.target.value;
+                  updateSetting('mineType', v);
+                  // Sugerir configuración estándar
+                  if (v === 'underground') {
+                    updateSetting('shiftType', 'abc_8h');
+                    updateSetting('nominalHoursPerShift', 8);
+                  } else {
+                    updateSetting('shiftType', 'day_night');
+                    updateSetting('nominalHoursPerShift', 12);
+                  }
+                }}
+                  className="mt-1 w-full border rounded-md px-3 py-2 text-sm">
+                  <option value="plant">Planta</option>
+                  <option value="open_pit">Mina Rajo Abierto</option>
+                  <option value="underground">Mina Subterránea (3 turnos 8h por ley)</option>
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Cambia el patrón de turnos por defecto</p>
+              </div>
+              <div>
+                <Label>Hora de inicio turno día</Label>
+                <Input type="number" min="0" max="23" value={settings.shiftStartHour ?? 8}
+                  onChange={e => updateSetting('shiftStartHour', Number(e.target.value))}
+                  className="mt-1" />
+                <p className="text-xs text-gray-400 mt-1">Ej: 7 (7–19), 8 (8–20)</p>
+              </div>
               <div>
                 <Label>Horas nominales por turno</Label>
                 <Input type="number" value={settings.nominalHoursPerShift} onChange={e => updateSetting('nominalHoursPerShift', Number(e.target.value))} className="mt-1" />

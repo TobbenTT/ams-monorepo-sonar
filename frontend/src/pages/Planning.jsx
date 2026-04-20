@@ -1203,7 +1203,25 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       <span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded">{TLBL[wo.wo_type]||wo.wo_type||""}</span>
                       {wo.is_fast_track && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">FAST TRACK</span>}
                     </div>
-                    <p className="text-sm text-gray-500 mt-0.5">{wo.equipment_tag||"No equipment"} {wo.priority_code ? "\• "+wo.priority_code : ""}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {wo.equipment_tag||"No equipment"} {wo.priority_code ? "\• "+wo.priority_code : ""}
+                      {/* Jorge (2026-04-20): link clickeable OT → aviso origen */}
+                      {wo.work_request_id && (
+                        <>
+                          <span className="mx-2 text-gray-300">•</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/work-requests', { state: { openWrId: wo.work_request_id } });
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-800 underline font-mono"
+                            title="Ver aviso de origen"
+                          >
+                            ← {wo.work_request_id}
+                          </button>
+                        </>
+                      )}
+                    </p>
                   </div>
                   {/* Jorge (2026-04-20): un solo botón Save para toda la OT, en el header.
                       Reemplaza los botones Save por tab (operaciones/materiales). */}

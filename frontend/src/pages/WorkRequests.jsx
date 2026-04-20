@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
@@ -1135,6 +1135,7 @@ const PAGE_SIZE = 25;
 export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenWrId, onClearAutoOpen, viewMode, isActive, selectedTimeRange } = {}) {
   const [scope, setScope] = useState('all');
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const defaultQueue = user?.role === 'manager' ? 'supervisor' : user?.role === 'planner' ? 'planner' : 'all';
   const [priorityQueue, setPriorityQueue] = useState(defaultQueue); // 'all' | 'supervisor' (P1/P2) | 'planner' (P3/P4)
@@ -1169,6 +1170,16 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       if (found) { fetchAndOpenDetail(found); onClearAutoOpen?.(); }
     }
   }, [autoOpenWrId, requests]);
+  // Jorge (2026-04-20): abrir aviso al llegar desde OT con state.openWrId
+  useEffect(() => {
+    const id = location?.state?.openWrId;
+    if (!id || requests.length === 0) return;
+    const found = requests.find(r => r.id === id || r.request_id === id);
+    if (found) {
+      fetchAndOpenDetail(found);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location?.state?.openWrId, requests]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showDuplicates, setShowDuplicates] = useState([]);
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState('created_at');

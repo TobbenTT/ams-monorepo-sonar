@@ -688,6 +688,33 @@ def material_readiness(
         fn=_run,
     )
 
+@router.get("/agentic/material-readiness/report/{program_id}")
+def material_readiness_report(
+    program_id: str,
+    plant_id: str = "OCP-JFC1",
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Material readiness report for a weekly program.
+
+    Iterates the program's backlog items, checks materials per item and
+    returns a consolidated readiness summary for the scheduling UI.
+    """
+    from api.services.agentic_material_service import check_batch_materials
+    from api.services import scheduling_service
+    try:
+        prog = scheduling_service.get_program(db, program_id)
+    except Exception:
+        prog = None
+    batch = check_batch_materials(db=db, plant_id=plant_id) or {}
+    return {
+        "program_id": program_id,
+        "plant_id": plant_id,
+        "program_found": bool(prog),
+        **batch,
+    }
+
+
 # ── RCM Advisor ──────────────────────────────────────────────────────────
 
 @router.post("/agentic/rcm-advisor")
@@ -926,21 +953,193 @@ def shutdown_optimizer(
         fn=_run,
     )
 
-# ── Compliance Watchdog ──────────────────────────────────────────────────
+class PlantIdOnlyRequest(BaseModel):
+    """Shared schema for agents that only need a plant_id."""
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
 
-# ── Digital Twin ─────────────────────────────────────────────────────────
 
-# ── Knowledge Curator ────────────────────────────────────────────────────
+# ── Compliance Watchdog (SF-363) ─────────────────────────────────────────
 
-# ── Spare Parts Forecast ─────────────────────────────────────────────────
+@router.post("/agentic/compliance-watchdog")
+def compliance_watchdog(
+    data: PlantIdOnlyRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Compliance Watchdog — RBI inspections, KPI gates, regulatory gaps."""
+    from api.services.agentic_compliance_service import check_compliance
+    from api.services.agentic_base_service import execute_solution
 
-# ── Contractor Performance ───────────────────────────────────────────────
+    def _run(_db, _eid, _p):
+        return check_compliance(db=_db, plant_id=data.plant_id)
 
-# ── Energy Monitor ───────────────────────────────────────────────────────
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db, solution_type="COMPLIANCE_WATCHDOG", triggered_by=uid,
+        plant_id=data.plant_id, input_params=data.model_dump(), fn=_run,
+    )
 
-# ── Multi-Site Benchmark ─────────────────────────────────────────────────
 
-# ── Auto-RCA ─────────────────────────────────────────────────────────────
+# ── Digital Twin (SF-364) ─────────────────────────────────────────────────
+
+@router.post("/agentic/digital-twin")
+def digital_twin(
+    data: PlantIdOnlyRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Digital Twin — plant-wide health snapshot for the twin dashboard."""
+    from api.services.agentic_digital_twin_service import get_plant_digital_twin
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _p):
+        return get_plant_digital_twin(db=_db, plant_id=data.plant_id)
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db, solution_type="DIGITAL_TWIN", triggered_by=uid,
+        plant_id=data.plant_id, input_params=data.model_dump(), fn=_run,
+    )
+
+
+# ── Knowledge Curator (SF-365) ───────────────────────────────────────────
+
+@router.post("/agentic/knowledge-curator")
+def knowledge_curator(
+    data: PlantIdOnlyRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Knowledge Curator — extracts tribal knowledge from closed OTs/RCAs."""
+    from api.services.agentic_knowledge_service import curate_knowledge
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _p):
+        return curate_knowledge(db=_db, plant_id=data.plant_id)
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db, solution_type="KNOWLEDGE_CURATOR", triggered_by=uid,
+        plant_id=data.plant_id, input_params=data.model_dump(), fn=_run,
+    )
+
+
+# ── Spare Parts Forecast (SF-366) ────────────────────────────────────────
+
+@router.post("/agentic/spare-parts-forecast")
+def spare_parts_forecast(
+    data: PlantIdOnlyRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Spare Parts Forecast — demand forecasting from consumption history."""
+    from api.services.agentic_spare_parts_forecast_service import forecast_spare_parts
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _p):
+        return forecast_spare_parts(db=_db, plant_id=data.plant_id)
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db, solution_type="SPARE_PARTS_FORECAST", triggered_by=uid,
+        plant_id=data.plant_id, input_params=data.model_dump(), fn=_run,
+    )
+
+
+# ── Contractor Performance (SF-367) ──────────────────────────────────────
+
+@router.post("/agentic/contractor-performance")
+def contractor_performance(
+    data: PlantIdOnlyRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Contractor Performance — adherence, quality, utilization by contractor."""
+    from api.services.agentic_contractor_benchmark_service import analyze_contractor_performance
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _p):
+        return analyze_contractor_performance(db=_db, plant_id=data.plant_id)
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db, solution_type="CONTRACTOR_PERFORMANCE", triggered_by=uid,
+        plant_id=data.plant_id, input_params=data.model_dump(), fn=_run,
+    )
+
+
+# ── Energy Monitor (SF-368) ──────────────────────────────────────────────
+
+@router.post("/agentic/energy-monitor")
+def energy_monitor(
+    data: PlantIdOnlyRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Energy Monitor — flags energy-related degradation via digital twin data.
+    Uses the twin's energy-tag health subset as the efficiency indicator."""
+    from api.services.agentic_digital_twin_service import get_plant_digital_twin
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _p):
+        twin = get_plant_digital_twin(db=_db, plant_id=data.plant_id)
+        energy_view = {
+            "plant_id": data.plant_id,
+            "energy_assets": twin.get("energy_assets") or twin.get("by_category", {}).get("energy"),
+            "alerts": [a for a in (twin.get("alerts") or []) if "energy" in str(a).lower()],
+            "summary": twin.get("summary"),
+        }
+        return energy_view
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db, solution_type="ENERGY_MONITOR", triggered_by=uid,
+        plant_id=data.plant_id, input_params=data.model_dump(), fn=_run,
+    )
+
+
+# ── Multi-Site Benchmark (SF-369) ────────────────────────────────────────
+
+@router.post("/agentic/multi-site-benchmark")
+def multi_site_benchmark(
+    data: PlantIdOnlyRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Multi-Site Benchmark — compares plant KPIs across all plants."""
+    from api.services.agentic_contractor_benchmark_service import benchmark_plants
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _p):
+        return benchmark_plants(db=_db)
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db, solution_type="MULTI_SITE_BENCHMARK", triggered_by=uid,
+        plant_id=data.plant_id, input_params=data.model_dump(), fn=_run,
+    )
+
+
+# ── Auto-RCA (SF-370) ────────────────────────────────────────────────────
+
+@router.post("/agentic/auto-rca")
+def auto_rca(
+    data: PlantIdOnlyRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Auto-RCA — scans closed WOs matching RCA criteria and initiates records."""
+    from api.services.agentic_rca_initiator_service import scan_closed_wo_for_rca
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _p):
+        return scan_closed_wo_for_rca(db=_db, plant_id=data.plant_id)
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db, solution_type="AUTO_RCA", triggered_by=uid,
+        plant_id=data.plant_id, input_params=data.model_dump(), fn=_run,
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════

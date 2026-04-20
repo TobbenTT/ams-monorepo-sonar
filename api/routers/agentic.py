@@ -958,6 +958,61 @@ class PlantIdOnlyRequest(BaseModel):
     plant_id: str = Field(default="OCP-JFC1", max_length=50)
 
 
+class DuplicateCheckRequest(BaseModel):
+    """SF-213 — duplicate WR detection before creating a new one."""
+    description: str = Field(..., max_length=4000)
+    equipment_tag: str | None = Field(default=None, max_length=50)
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    lookback_days: int = Field(default=14, ge=1, le=60)
+    threshold: float = Field(default=0.55, ge=0.1, le=0.99)
+
+
+@router.post("/agentic/duplicate-check")
+def duplicate_check(
+    data: DuplicateCheckRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """SF-213 — look for likely duplicate WRs before creation."""
+    from api.services.agentic_duplicate_check_service import check_duplicates
+    return check_duplicates(
+        db=db,
+        description=data.description,
+        equipment_tag=data.equipment_tag,
+        plant_id=data.plant_id,
+        lookback_days=data.lookback_days,
+        threshold=data.threshold,
+    )
+
+
+# ── WR Router auto-fill passthrough (SF-212) ─────────────────────────────
+
+@router.post("/agentic/planner-autofill")
+def planner_autofill(
+    data: WORouterRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """SF-212 — planner clicks 'IA' to auto-fill operations + materials from
+    similar historical OTs. Thin wrapper over route_work_request() that
+    returns suggested resources/materials/duration for the WR."""
+    from api.services.agentic_wo_router_service import route_work_request
+    from api.services.agentic_base_service import execute_solution
+
+    def _run(_db, _eid, _p):
+        return route_work_request(
+            db=_db,
+            work_request_id=data.work_request_id,
+            plant_id=data.plant_id,
+        )
+
+    uid = user.get("user_id", "unknown") if isinstance(user, dict) else getattr(user, "user_id", "unknown")
+    return execute_solution(
+        db=db, solution_type="PLANNER_AUTOFILL", triggered_by=uid,
+        plant_id=data.plant_id, input_params=data.model_dump(), fn=_run,
+    )
+
+
 # ── Compliance Watchdog (SF-363) ─────────────────────────────────────────
 
 @router.post("/agentic/compliance-watchdog")

@@ -652,6 +652,8 @@ export const agenticContractorPerformance = (d) => post('/agentic/contractor-per
 export const agenticEnergyMonitor = (d) => post('/agentic/energy-monitor', d);
 export const agenticMultiSiteBenchmark = (d) => post('/agentic/multi-site-benchmark', d);
 export const agenticAutoRCA = (d) => post('/agentic/auto-rca', d);
+export const agenticDuplicateCheck = (d) => post('/agentic/duplicate-check', d);
+export const agenticPlannerAutofill = (d) => post('/agentic/planner-autofill', d);
 export const adviseRCMStrategy = (d) => post('/agentic/rcm-advisor', d);
 export const voiceCapture = (d) => post('/agentic/voice-capture', d);
 export const smartBacklog = (d) => post('/agentic/smart-backlog', d || {});

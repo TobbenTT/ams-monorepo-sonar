@@ -967,7 +967,7 @@ ${materials.length ? `<div class="section">
                   {t('workRequests.validateRequest')}
                 </button>
                 <button
-                  onClick={() => { onReject(item.id); onClose(); }}
+                  onClick={() => onReject(item.id)}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                 >
                   <XCircle size={16} />
@@ -993,7 +993,7 @@ ${materials.length ? `<div class="section">
                   Create WO
                 </button>
                 <button
-                  onClick={() => { onReject(item.id); onClose(); }}
+                  onClick={() => onReject(item.id)}
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-red-50 text-red-700 border border-red-200 text-sm font-semibold hover:bg-red-100 transition-colors"
                 >
                   <XCircle size={16} />
@@ -1385,7 +1385,15 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
     api.validateWorkRequest(id, { action: 'REJECT', rejection_reason: rejectReason })
       .then(() => toast.success('Notification rejected'))
       .catch(() => toast.error('Error rejecting'))
-      .finally(() => { setRejectModal(null); setRejectReason(''); onRefreshCounts?.(); refreshList(); });
+      .finally(() => {
+        // Jorge (2026-04-20): al rechazar, cerrar también el detalle del aviso.
+        // El Cancel del modal de rechazo ya solo cierra el modal, no el detalle.
+        setRejectModal(null);
+        setRejectReason('');
+        setSelected(null);
+        onRefreshCounts?.();
+        refreshList();
+      });
   }
 
   function handleReopen(id) {

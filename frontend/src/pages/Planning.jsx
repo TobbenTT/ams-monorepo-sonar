@@ -1150,18 +1150,19 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           APROBADO:{label:'Released',color:'bg-blue-100 text-blue-700'},
           EN_PROGRESO:{label:'In Execution',color:'bg-amber-100 text-amber-700'},
         };
+        // Jorge (2026-04-20): sacar status CANCELADO de la OT. La cancelación sólo
+        // existe en la WR antes de crear OT; una vez creada, sólo avanza en la cadena.
         const NEXT = {
-          CREADO:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
-          LIBERADO:[['PLANIFICADO','Mark Planned','bg-teal-600 text-white hover:bg-teal-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
-          PLANIFICADO:[['EN_PROGRAMACION','To Scheduling','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Close','bg-gray-500 text-white hover:bg-gray-600']],
-          EN_PROGRAMACION:[['PROGRAMADO','Schedule','bg-purple-600 text-white hover:bg-purple-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
-          PROGRAMADO:[['EN_EJECUCION','Start Execution','bg-amber-500 text-white hover:bg-amber-600'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
-          REPROGRAMADO:[['PROGRAMADO','Reschedule','bg-indigo-600 text-white hover:bg-indigo-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
+          CREADO:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700']],
+          LIBERADO:[['PLANIFICADO','Mark Planned','bg-teal-600 text-white hover:bg-teal-700']],
+          PLANIFICADO:[['EN_PROGRAMACION','To Scheduling','bg-indigo-600 text-white hover:bg-indigo-700']],
+          EN_PROGRAMACION:[['PROGRAMADO','Schedule','bg-purple-600 text-white hover:bg-purple-700']],
+          PROGRAMADO:[['EN_EJECUCION','Start Execution','bg-amber-500 text-white hover:bg-amber-600'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600']],
+          REPROGRAMADO:[['PROGRAMADO','Reschedule','bg-indigo-600 text-white hover:bg-indigo-700']],
           EN_EJECUCION:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600']],
           CERRADO:[],
-          CANCELADO:[],
-          PENDIENTE:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
-          APROBADO:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700'],['CANCELADO','Cancel','bg-red-600 text-white hover:bg-red-700']],
+          PENDIENTE:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700']],
+          APROBADO:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700']],
           EN_PROGRESO:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700']],
         };
         const TLBL = {PM01:'PM01',PM02:'PM02',PM03:'PM03',PM05:'PM05'};
@@ -2106,6 +2107,14 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   )) : (
                     <span className="text-xs text-gray-400 italic">Final status</span>
                   )}
+                  {/* Jorge (2026-04-20): botón Close explícito para cerrar la ventana
+                      sin confundirlo con la cancelación de la OT (que ya no existe). */}
+                  <button
+                    onClick={() => setSelectedOT(null)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             </div>

@@ -1205,6 +1205,17 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     </div>
                     <p className="text-sm text-gray-500 mt-0.5">{wo.equipment_tag||"No equipment"} {wo.priority_code ? "\• "+wo.priority_code : ""}</p>
                   </div>
+                  {/* Jorge (2026-04-20): un solo botón Save para toda la OT, en el header.
+                      Reemplaza los botones Save por tab (operaciones/materiales). */}
+                  <button
+                    onClick={saveOTChanges}
+                    disabled={savingOT}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 mr-1"
+                    title="Guardar todos los cambios de la OT"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    {savingOT ? 'Saving…' : 'Save OT'}
+                  </button>
                   <button onClick={() => setModalFullscreen(f => !f)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title={modalFullscreen ? 'Minimize' : 'Maximize'}>
                     {modalFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                   </button>
@@ -1627,10 +1638,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         </div>
                       </div>
                     )}
-                    <button type="button" onClick={saveOTChanges} disabled={savingOT}
-                      className="w-full mt-2 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
-                      {savingOT ? 'Saving...' : 'Save All Changes'}
-                    </button>
+                    {/* Save por-tab removido — Jorge 2026-04-20: un solo Save en el header. */}
                   </div>
                 )}
 
@@ -1895,10 +1903,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>
                     )}
                     <div className="flex gap-2 mt-2">
-                      <button onClick={saveOTChanges} disabled={savingOT}
-                        className="flex-1 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
-                        {savingOT ? 'Saving...' : 'Save Materials'}
-                      </button>
+                      {/* Save por-tab removido — Jorge 2026-04-20: un solo Save en el header. */}
                       <button onClick={async () => {
                         await saveOTChanges();
                         const code = 'RES-' + String(Date.now()).slice(-6);

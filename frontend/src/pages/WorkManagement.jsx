@@ -39,6 +39,21 @@ export default function WorkManagement() {
     if (urlTab && urlTab !== activeTab) setActiveTabState(urlTab);
   }, []);
 
+  // Jorge (2026-04-20): abrir un aviso directamente desde ?openWr=WR-XXX
+  // (usado por el link ← WR-... del OT modal cuando abre en nueva pestaña).
+  useEffect(() => {
+    const openWr = searchParams.get('openWr');
+    if (openWr) {
+      setActiveTabState('identification');
+      setAutoOpenWrId(openWr);
+      // Limpiar el param para que el refresh manual no vuelva a autorepetir
+      const next = new URLSearchParams(searchParams);
+      next.delete('openWr');
+      next.set('tab', 'identification');
+      setSearchParams(next, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // viewMode change does NOT switch tabs — user stays on current tab
   const [phaseCounts, setPhaseCounts] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);

@@ -1255,12 +1255,14 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate('/work-requests', { state: { openWrId: wo.work_request_id } });
+                              // Abrir en nueva pestaña para no perder el tab Planning
+                              // ni el OT modal actual al volver.
+                              window.open(`/work-management?tab=identification&openWr=${encodeURIComponent(wo.work_request_id)}`, '_blank', 'noopener,noreferrer');
                             }}
                             className="text-xs text-blue-600 hover:text-blue-800 underline font-mono"
-                            title="Ver aviso de origen"
+                            title="Ver aviso de origen (nueva pestaña)"
                           >
-                            ← {wo.work_request_id}
+                            ← {wo.work_request_id} ↗
                           </button>
                         </>
                       )}

@@ -2868,6 +2868,50 @@ export default function Scheduling() {
               </button>
             </div>
             <button
+              onClick={async () => {
+                const now = new Date();
+                const weekNumber = (() => {
+                  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+                  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+                  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                })();
+                toast.info(`Generando programa semana ${weekNumber}/${now.getFullYear()} desde backlog…`);
+                try {
+                  const res = await api.agenticAutoSchedule({
+                    plant_id: plant,
+                    week_number: weekNumber,
+                    year: now.getFullYear(),
+                    include_preventive: true,
+                    respect_shutdowns: true,
+                  });
+                  const r = res?.result || res;
+                  const conflicts = r?.conflicts_count ?? (r?.conflicts || []).length ?? 0;
+                  const items = r?.program?.total_items || r?.gantt?.length || 0;
+                  if (!r?.program_id) {
+                    toast.info(r?.summary || 'Sin items para programar esta semana');
+                  } else {
+                    toast.success(
+                      <div className="text-xs">
+                        <div className="font-bold mb-1">Programa DRAFT generado</div>
+                        <div>ID: <span className="font-mono">{r.program_id}</span></div>
+                        <div>{items} OTs programadas · {conflicts} conflictos</div>
+                        {r.ai_recommendations && <div className="mt-1 text-amber-600">⚠️ IA detectó sobrecarga — ver recomendaciones</div>}
+                      </div>,
+                      10000
+                    );
+                  }
+                } catch (e) {
+                  toast.error('Error generando programa: ' + (e.message || ''));
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
+              title="Generar programa semanal desde backlog (SF-344)"
+            >
+              <Sparkles size={16} />
+              Auto-Schedule
+            </button>
+            <button
               onClick={() => setShowClearConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
             >

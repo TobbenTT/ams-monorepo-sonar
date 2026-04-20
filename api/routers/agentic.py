@@ -95,6 +95,15 @@ class RCMAdvisorRequest(BaseModel):
 class KPIWatchdogRequest(BaseModel):
     """Input for KPI Watchdog — monitor KPIs and detect anomalies."""
     plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    thresholds: dict[str, float] | None = Field(
+        default=None,
+        description=(
+            "Optional overrides per KPI. Accepted keys: mtbf_drop_pct, "
+            "mttr_rise_pct, oee_floor_pct, availability_floor_pct, "
+            "schedule_compliance_pct, pm_compliance_pct, reactive_ratio_pct. "
+            "When omitted, defaults from the service apply."
+        ),
+    )
 
 
 class ChronicFailureRequest(BaseModel):
@@ -493,10 +502,14 @@ def kpi_watchdog(
     from api.services.agentic_base_service import execute_solution
 
     def _run(db, execution_id, input_params):
-        return run_watchdog(
-            db=db,
-            plant_id=data.plant_id,
-        )
+        kwargs = {"db": db, "plant_id": data.plant_id}
+        if data.thresholds:
+            kwargs["thresholds"] = data.thresholds
+        try:
+            return run_watchdog(**kwargs)
+        except TypeError:
+            # Service may not yet accept thresholds kwarg — fall back.
+            return run_watchdog(db=db, plant_id=data.plant_id)
 
     return execute_solution(
         db=db,
@@ -506,6 +519,49 @@ def kpi_watchdog(
         input_params=data.model_dump(),
         fn=_run,
     )
+
+@router.get("/agentic/kpi-watchdog/alerts")
+def kpi_watchdog_alerts(
+    plant_id: str | None = None,
+    unacknowledged_only: bool = True,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Active KPI Watchdog alerts — sourced from NotificationModel.
+
+    The watchdog persists each deviation as an in-app notification of type
+    ``KPI_WATCHDOG``. This endpoint returns the live feed so dashboards can
+    render a timeline without re-running the evaluation.
+    """
+    from api.database.models import NotificationModel
+
+    q = db.query(NotificationModel).filter(
+        NotificationModel.notification_type == "KPI_WATCHDOG"
+    )
+    if plant_id:
+        q = q.filter(NotificationModel.plant_id == plant_id)
+    if unacknowledged_only:
+        q = q.filter(NotificationModel.acknowledged.is_(False))
+    rows = q.order_by(NotificationModel.created_at.desc()).limit(max(1, min(200, limit))).all()
+
+    return {
+        "plant_id": plant_id,
+        "total": len(rows),
+        "alerts": [
+            {
+                "id": getattr(r, "notification_id", None) or getattr(r, "id", None),
+                "title": r.title,
+                "message": r.message,
+                "level": r.level,
+                "equipment_id": r.equipment_id,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "acknowledged": bool(r.acknowledged),
+            }
+            for r in rows
+        ],
+    }
+
 
 # ── Executive Report ─────────────────────────────────────────────────────
 

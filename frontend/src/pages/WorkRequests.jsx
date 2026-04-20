@@ -974,7 +974,7 @@ ${materials.length ? `<div class="section">
                   {t('common.reject')}
                 </button>
                 <button
-                  onClick={() => { if (window.confirm('Cancel this WR? Status will change to CANCELLED.')) { onCancel(item.id); onClose(); } }}
+                  onClick={() => { if (window.confirm('Cancel this WR? Status will change to CANCELLED.')) onCancel(item.id); }}
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
@@ -1000,7 +1000,7 @@ ${materials.length ? `<div class="section">
                   Reject
                 </button>
                 <button
-                  onClick={() => { if (window.confirm('Cancel this WR? Status will change to CANCELLED.')) { onCancel(item.id); onClose(); } }}
+                  onClick={() => { if (window.confirm('Cancel this WR? Status will change to CANCELLED.')) onCancel(item.id); }}
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
@@ -1418,7 +1418,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CANCELADO' } : r)));
     api.cancelWorkRequest(id)
       .then(() => toast.success(t('workRequests.cancelled') || 'Notification cancelled'))
-      .finally(() => onRefreshCounts?.())
+      .finally(() => { setSelected(null); onRefreshCounts?.(); })
       .catch(() => toast.error(t('workRequests.errorCancel') || 'Error cancelling'));
   }
 

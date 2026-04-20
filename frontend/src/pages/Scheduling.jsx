@@ -596,6 +596,82 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     setDropTarget(null);
   };
 
+  // ─── Capacity by Work Center (inline helper) ───────────────────────────
+  // Jorge (2026-04-20): idea del prototipo de Ayudas/Diseño aplicada al
+  // Weekly Schedule existente. Semáforo HH/día por puesto de trabajo.
+  const capacityByWC = useMemo(() => {
+    const groups = {};
+    for (const t of technicians) {
+      const spec = (t.specialty || 'OTRO').toUpperCase();
+      if (!groups[spec]) groups[spec] = { key: spec, techIds: new Set(), count: 0 };
+      if (t.worker_id && !groups[spec].techIds.has(t.worker_id)) {
+        groups[spec].techIds.add(t.worker_id);
+        groups[spec].count += 1;
+      }
+    }
+    return Object.values(groups).map(g => {
+      const nominalPerDay = g.count * CAP.effectiveHours * (CAP.productivityPct / 100);
+      const perDay = days.map(d => {
+        let hh = 0;
+        for (const key in grid) {
+          if (!key.startsWith('')) continue;
+          const parts = key.split(':');
+          const workerId = parts[0];
+          const dayStr = parts[1];
+          if (dayStr !== d.str) continue;
+          if (!g.techIds.has(workerId)) continue;
+          const list = grid[key] || [];
+          for (const w of list) {
+            if (w._continuation) continue;
+            const spanDays = Math.max(1, Math.ceil((w.estimated_hours || 0) / Math.max(1, PROGRAMMABLE_HH_PER_DAY)));
+            hh += (w.estimated_hours || 0) / spanDays / Math.max(1, (w.assigned_workers || []).length || 1);
+          }
+        }
+        return Math.round(hh);
+      });
+      return { ...g, techIds: [...g.techIds], nominalPerDay: Math.max(1, Math.round(nominalPerDay)), perDay };
+    }).sort((a, b) => b.count - a.count);
+  }, [technicians, grid, days, CAP, PROGRAMMABLE_HH_PER_DAY]);
+
+  const SPEC_ACCENT = {
+    MECANICO: 'bg-emerald-100 text-emerald-700',
+    ELECTRICO: 'bg-amber-100 text-amber-700',
+    INSTRUMENTACION: 'bg-sky-100 text-sky-700',
+    SOLDADOR: 'bg-rose-100 text-rose-700',
+    LUB: 'bg-indigo-100 text-indigo-700',
+  };
+  const SPEC_LABEL = {
+    MECANICO: 'Mechanical',
+    ELECTRICO: 'Electrical',
+    INSTRUMENTACION: 'Instrumentation',
+    SOLDADOR: 'Welder',
+    LUB: 'Lubrication',
+  };
+
+  // Materials readiness from real scheduled WOs
+  const materialsRows = useMemo(() => {
+    return scheduledWOs.slice(0, 20).map(wo => {
+      const mats = wo.materials || [];
+      const resCodes = Array.isArray(wo.reservation_codes) && wo.reservation_codes.length
+        ? wo.reservation_codes
+        : (wo.reservation_code ? [wo.reservation_code] : []);
+      let status = 'blocked';
+      if (mats.length === 0 && resCodes.length === 0) status = 'partial';
+      else if (resCodes.length > 0) status = 'ready';
+      else if (mats.length > 0) status = 'partial';
+      return {
+        wo_id: wo.wo_id,
+        wo_number: wo.wo_number,
+        equipment_tag: wo.equipment_tag,
+        status,
+        reservations: resCodes,
+        items_count: mats.length,
+      };
+    });
+  }, [scheduledWOs]);
+
+  const [showMaterialsRail, setShowMaterialsRail] = useState(false);
+
   return (
     <div className="flex gap-4" style={{ minHeight: 500 }}>
       {/* ── Left Panel: OTs to Schedule — also drop target to unschedule ── */}
@@ -708,6 +784,68 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         <div className="bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-sm font-medium px-4 py-2 rounded-lg">
           Draft — not visible to technicians yet
         </div>
+
+        {/* Capacity by Work Center — Jorge 2026-04-20.
+            Semáforo HH/día por puesto de trabajo arriba de la grilla. */}
+        {capacityByWC.length > 0 && (
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="px-4 pt-3 pb-2 flex items-end justify-between">
+              <div>
+                <h3 className="text-[13px] font-bold text-foreground tracking-tight">Capacity by Work Center</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Consumed HH vs nominal per day · derived from roster × effective shift length</p>
+              </div>
+              <div className="flex items-center gap-3 text-[10.5px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> &lt; 80%</span>
+                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> 80–100%</span>
+                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> &gt; 100%</span>
+              </div>
+            </div>
+            <div className="grid border-t border-border" style={{ gridTemplateColumns: `180px repeat(${days.length}, minmax(72px, 1fr))` }}>
+              <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Work Center</div>
+              {days.map(d => (
+                <div key={d.str} className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-baseline gap-1.5 border-l border-border/60">
+                  <span className="text-foreground">{d.label.slice(0,3)}</span>
+                  <span className="text-muted-foreground/70 normal-case font-medium">{d.dateLabel}</span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-border">
+              {capacityByWC.map(wc => {
+                const accent = SPEC_ACCENT[wc.key] || 'bg-slate-100 text-slate-700';
+                const label = SPEC_LABEL[wc.key] || wc.key;
+                return (
+                  <div key={wc.key} className="grid border-b border-border/60 last:border-b-0 hover:bg-muted/30" style={{ gridTemplateColumns: `180px repeat(${days.length}, minmax(72px, 1fr))` }}>
+                    <div className="px-3 py-2 flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${accent}`}>{wc.key.slice(0,4)}</span>
+                      <div className="leading-tight min-w-0">
+                        <div className="text-[11.5px] font-semibold text-foreground truncate">{label}</div>
+                        <div className="text-[10px] text-muted-foreground">{wc.count} techs · nom {wc.nominalPerDay}h/d</div>
+                      </div>
+                    </div>
+                    {wc.perDay.map((hh, i) => {
+                      const pct = Math.round((hh / wc.nominalPerDay) * 100);
+                      const tone = pct > 100 ? 'red' : pct >= 80 ? 'amber' : 'green';
+                      const fill = tone === 'red' ? 'bg-rose-500' : tone === 'amber' ? 'bg-amber-500' : 'bg-emerald-500';
+                      const bg = tone === 'red' ? 'bg-rose-100' : tone === 'amber' ? 'bg-amber-100' : 'bg-emerald-100';
+                      const textC = tone === 'red' ? 'text-rose-700' : tone === 'amber' ? 'text-amber-700' : 'text-emerald-700';
+                      return (
+                        <div key={i} className="px-2 py-2 border-l border-border/40">
+                          <div className="flex items-baseline justify-between">
+                            <span className={`text-[10.5px] font-semibold tabular-nums ${textC}`}>{pct}%</span>
+                            <span className="text-[10px] tabular-nums text-muted-foreground">{hh}/{wc.nominalPerDay}</span>
+                          </div>
+                          <div className={`mt-1 h-1.5 w-full rounded-full ${bg} overflow-hidden`}>
+                            <div className={`h-full ${fill} rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Week navigator + controls */}
         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1184,6 +1322,73 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Right Panel: Materials Readiness — Jorge 2026-04-20 ── */}
+      {showMaterialsRail ? (
+        <aside className="w-[280px] min-w-[280px] flex flex-col">
+          <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+            <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/30">
+              <div>
+                <h3 className="text-[13px] font-bold text-foreground flex items-center gap-1.5">
+                  <Package size={14} className="text-emerald-600" /> Materials Readiness
+                </h3>
+                <p className="text-[10.5px] text-muted-foreground">Live from SAP MM reservations</p>
+              </div>
+              <button onClick={() => setShowMaterialsRail(false)} className="p-1 rounded-md hover:bg-muted text-muted-foreground" title="Collapse">
+                <ChevronRight size={14} />
+              </button>
+            </div>
+            <div className="px-3 py-2 grid grid-cols-3 gap-1.5 border-b border-border">
+              {['ready','partial','blocked'].map(s => {
+                const n = materialsRows.filter(m => m.status === s).length;
+                const cfg = s === 'ready' ? { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-100' }
+                          : s === 'partial' ? { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-100' }
+                          : { bg: 'bg-rose-50', text: 'text-rose-700', ring: 'ring-rose-100' };
+                return (
+                  <div key={s} className={`rounded-lg ${cfg.bg} ring-1 ${cfg.ring} px-2 py-1.5 text-center`}>
+                    <div className={`text-[9.5px] font-semibold uppercase tracking-wider ${cfg.text}`}>{s === 'ready' ? 'Ready' : s === 'partial' ? 'Partial' : 'Blocked'}</div>
+                    <div className={`text-[17px] font-bold tabular-nums leading-none mt-0.5 ${cfg.text}`}>{n}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {materialsRows.length === 0 ? (
+                <div className="p-6 text-center text-xs text-muted-foreground">No scheduled WOs</div>
+              ) : materialsRows.map(m => {
+                const cfg = m.status === 'ready' ? { dot: 'bg-emerald-500', ring: 'ring-emerald-100', label: 'Ready', txt: 'text-emerald-700' }
+                          : m.status === 'partial' ? { dot: 'bg-amber-500', ring: 'ring-amber-100', label: 'Partial', txt: 'text-amber-700' }
+                          : { dot: 'bg-rose-500', ring: 'ring-rose-100', label: 'Blocked', txt: 'text-rose-700' };
+                return (
+                  <div key={m.wo_id} className="px-3 py-2 border-b border-border/60 hover:bg-muted/30">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={`w-2 h-2 rounded-full ${cfg.dot} ring-4 ${cfg.ring} shrink-0`} />
+                      <span className="font-mono text-[10.5px] text-muted-foreground">{m.wo_number}</span>
+                      <span className={`text-[10px] font-semibold ${cfg.txt} ml-auto`}>{cfg.label}</span>
+                    </div>
+                    <div className="text-[11.5px] font-medium text-foreground leading-snug truncate">{m.equipment_tag || '—'}</div>
+                    <div className="mt-0.5 flex items-center justify-between text-[10px]">
+                      <span className="font-mono text-muted-foreground/80 truncate">
+                        {m.reservations.length > 0 ? m.reservations[0] : 'no reservation'}
+                        {m.reservations.length > 1 && <span className="ml-1 text-[9px] text-muted-foreground/60">+{m.reservations.length - 1}</span>}
+                      </span>
+                      <span className="tabular-nums text-muted-foreground font-semibold">{m.items_count} items</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+      ) : (
+        <button
+          onClick={() => setShowMaterialsRail(true)}
+          className="self-start mt-8 p-2 bg-card border border-border rounded-l-xl hover:bg-muted text-muted-foreground"
+          title="Materials Readiness"
+        >
+          <Package size={16} />
+        </button>
       )}
     </div>
   );

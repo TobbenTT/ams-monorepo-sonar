@@ -1874,13 +1874,21 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 )}
                                 {activeMatIdx === idx && matSearchLoading && <div className="absolute right-1 top-1.5 w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
                               </div>
-                              <input value={mat.description || ''}
-                                onFocus={() => { setActiveMatIdx(idx); if (mat.description) setMatSearchQuery(mat.description); }}
-                                onChange={e => {
-                                  const n = [...editMats]; n[idx].description = e.target.value; setEditMats(n);
-                                  setActiveMatIdx(idx); setMatSearchQuery(e.target.value);
-                                }}
-                                className="flex-1 text-sm border rounded px-2 py-1" placeholder="Buscar material por nombre o código…" />
+                              {/* Jorge (2026-04-20): el texto del material nunca es editable
+                                  una vez seleccionado (es la descripción del catálogo). Solo la
+                                  cantidad cambia. Se permite tipear sólo si todavía no hay código. */}
+                              {(mat.code || mat.sapId || mat.sap_id) ? (
+                                <input value={mat.description || ''} readOnly
+                                  className="flex-1 text-sm border border-gray-100 bg-gray-50 text-gray-700 rounded px-2 py-1 cursor-not-allowed" />
+                              ) : (
+                                <input value={mat.description || ''}
+                                  onFocus={() => { setActiveMatIdx(idx); if (mat.description) setMatSearchQuery(mat.description); }}
+                                  onChange={e => {
+                                    const n = [...editMats]; n[idx].description = e.target.value; setEditMats(n);
+                                    setActiveMatIdx(idx); setMatSearchQuery(e.target.value);
+                                  }}
+                                  className="flex-1 text-sm border rounded px-2 py-1" placeholder="Buscar material por nombre o código…" />
+                              )}
                               <button onClick={() => setEditMats(prev => prev.filter((_,i) => i !== idx))}
                                 className="text-red-400 hover:text-red-600 text-xs px-1">x</button>
                             </div>

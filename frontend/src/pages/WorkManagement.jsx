@@ -40,16 +40,24 @@ export default function WorkManagement() {
   }, []);
 
   // Jorge (2026-04-20): abrir un aviso directamente desde ?openWr=WR-XXX
-  // (usado por el link ← WR-... del OT modal cuando abre en nueva pestaña).
+  // y una OT directamente desde ?openWo=OT-XXX (navegación bidireccional
+  // WR ↔ OT, ambos abren en nueva pestaña para no perder el contexto).
   useEffect(() => {
     const openWr = searchParams.get('openWr');
+    const openWo = searchParams.get('openWo');
     if (openWr) {
       setActiveTabState('identification');
       setAutoOpenWrId(openWr);
-      // Limpiar el param para que el refresh manual no vuelva a autorepetir
       const next = new URLSearchParams(searchParams);
       next.delete('openWr');
       next.set('tab', 'identification');
+      setSearchParams(next, { replace: true });
+    } else if (openWo) {
+      setActiveTabState('planning');
+      setAutoOpenWoId(openWo);
+      const next = new URLSearchParams(searchParams);
+      next.delete('openWo');
+      next.set('tab', 'planning');
       setSearchParams(next, { replace: true });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

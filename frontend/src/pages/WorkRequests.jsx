@@ -574,7 +574,24 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Tag} label="Work Class" value={item.work_class} />
           )}
           {item.wo_number && (
-            <DetailCard icon={Wrench} label="OT Vinculada" value={item.wo_number} />
+            <div className="bg-white dark:bg-card rounded-xl border border-border px-3 py-2.5 flex items-center gap-2">
+              <Wrench className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">OT Vinculada</p>
+                {/* Jorge (2026-04-20): link bidireccional — desde el aviso se puede
+                    saltar a la OT. Abre en nueva pestaña para no perder el detalle. */}
+                <button
+                  onClick={() => window.open(
+                    `/work-management?tab=planning&openWo=${encodeURIComponent(item.wo_number)}`,
+                    '_blank', 'noopener,noreferrer'
+                  )}
+                  className="text-sm font-bold text-emerald-700 hover:text-emerald-900 underline font-mono"
+                  title="Ver OT vinculada (nueva pestaña)"
+                >
+                  {item.wo_number} ↗
+                </button>
+              </div>
+            </div>
           )}
           {item.assigned_to_name && (
             <DetailCard icon={Users} label="Asignado a" value={item.assigned_to_name} />

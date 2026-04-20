@@ -131,6 +131,33 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [otActionLoading, setOtActionLoading] = useState(null);
   const [selectedWR, setSelectedWR] = useState(null); // inline detail modal
   const [selectedOT, setSelectedOT] = useState(null);
+  // Jorge (2026-04-20): ventanas de OT minimizables en paralelo.
+  // minimizedOTs = lista de {wo_id, wo_number, status, equipment_tag, wo} restauradas luego.
+  const [minimizedOTs, setMinimizedOTs] = useState([]);
+  const minimizeCurrentOT = () => {
+    if (!selectedOT) return;
+    setMinimizedOTs(prev => {
+      if (prev.some(o => o.wo_id === selectedOT.wo_id)) return prev;
+      return [...prev, selectedOT];
+    });
+    setSelectedOT(null);
+  };
+  const restoreMinimizedOT = (woId) => {
+    const target = minimizedOTs.find(o => o.wo_id === woId);
+    if (!target) return;
+    // Si hay una OT abierta, la mandamos a minimizadas antes de restaurar la otra.
+    setMinimizedOTs(prev => {
+      const without = prev.filter(o => o.wo_id !== woId);
+      if (selectedOT && !without.some(o => o.wo_id === selectedOT.wo_id)) {
+        return [...without, selectedOT];
+      }
+      return without;
+    });
+    setSelectedOT(target);
+  };
+  const closeMinimizedOT = (woId) => {
+    setMinimizedOTs(prev => prev.filter(o => o.wo_id !== woId));
+  };
   const [otModalTab, setOtModalTab] = useState('resumen');
   const [modalFullscreen, setModalFullscreen] = useState(true);
   const [editOps, setEditOps] = useState([]);
@@ -1250,9 +1277,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     <Save className="w-3.5 h-3.5" />
                     {savingOT ? 'Saving…' : 'Save OT'}
                   </button>
-                  <button onClick={() => setModalFullscreen(f => !f)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title={modalFullscreen ? 'Minimize' : 'Maximize'}>
+                  {/* Maximize/resize pequeño ↔ full-screen */}
+                  <button onClick={() => setModalFullscreen(f => !f)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title={modalFullscreen ? 'Resize' : 'Maximize'}>
                     {modalFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                   </button>
+                  {/* Jorge (2026-04-20): minimizar envía la OT a la taskbar
+                      manteniendo su estado para poder abrir otra OT en paralelo. */}
+                  <button onClick={minimizeCurrentOT}
+                    className="px-2 py-1 hover:bg-gray-100 rounded-lg text-gray-500 text-lg font-bold leading-none"
+                    title="Minimizar a la barra (conservar estado)">_</button>
                   <button onClick={() => setSelectedOT(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
                 </div>
                 <div className="flex gap-1 mt-3 -mb-4">
@@ -2225,6 +2258,25 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       {/* DEAD CODE — 'capacity' tab removed (Jorge: "módulo antiguo a eliminar"). Unreachable. Safe to delete in future cleanup. */}
       {false && activeTab === 'capacity' && (
         <CapacityEvaluation />
+      )}
+
+      {/* Jorge (2026-04-20): Taskbar de OTs minimizadas — permite tener
+          múltiples OTs en paralelo, cada una preserva su estado. */}
+      {minimizedOTs.length > 0 && (
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur border border-gray-200 rounded-full shadow-lg px-2 py-1.5 flex items-center gap-1.5 max-w-[92vw] overflow-x-auto">
+          <span className="text-[10px] uppercase text-gray-400 font-semibold px-2 whitespace-nowrap">OTs abiertas:</span>
+          {minimizedOTs.map(ot => (
+            <div key={ot.wo_id} className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded-full px-2 py-1 hover:bg-blue-100 cursor-pointer"
+              onClick={() => restoreMinimizedOT(ot.wo_id)}
+              title={`${ot.wo_number} · ${ot.equipment_tag || ''} · ${ot.status}`}>
+              <span className="text-xs font-mono font-bold text-blue-800">{ot.wo_number}</span>
+              <span className="text-[10px] text-blue-600 hidden sm:inline">{ot.equipment_tag || '—'}</span>
+              <button onClick={e => { e.stopPropagation(); closeMinimizedOT(ot.wo_id); }}
+                className="ml-1 text-blue-400 hover:text-red-500 text-xs leading-none"
+                title="Descartar cambios y cerrar">×</button>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Cancel WO Confirmation Modal */}

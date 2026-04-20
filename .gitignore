@@ -7,6 +7,14 @@
 .env.*
 *.env
 
+# -------------------- SQLite transient files --------------------
+*.db-journal
+*.db-wal
+*.db-shm
+
+# -------------------- Personal notes (local only) --------------------
+Ideas/
+
 # -------------------- Certificates & Keys --------------------
 *.pem
 *.key

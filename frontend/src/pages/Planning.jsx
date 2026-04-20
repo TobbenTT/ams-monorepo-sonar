@@ -1266,27 +1266,30 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       )}
                     </p>
                   </div>
-                  {/* Jorge (2026-04-20): un solo botón Save para toda la OT, en el header.
-                      Reemplaza los botones Save por tab (operaciones/materiales). */}
-                  <button
-                    onClick={saveOTChanges}
-                    disabled={savingOT}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 mr-1"
-                    title="Guardar todos los cambios de la OT"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    {savingOT ? 'Saving…' : 'Save OT'}
-                  </button>
-                  {/* Maximize/resize pequeño ↔ full-screen */}
-                  <button onClick={() => setModalFullscreen(f => !f)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title={modalFullscreen ? 'Resize' : 'Maximize'}>
-                    {modalFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                  </button>
-                  {/* Jorge (2026-04-20): minimizar envía la OT a la taskbar
-                      manteniendo su estado para poder abrir otra OT en paralelo. */}
-                  <button onClick={minimizeCurrentOT}
-                    className="px-2 py-1 hover:bg-gray-100 rounded-lg text-gray-500 text-lg font-bold leading-none"
-                    title="Minimizar a la barra (conservar estado)">_</button>
-                  <button onClick={() => setSelectedOT(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+                  {/* Controles del modal agrupados a la derecha */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={saveOTChanges}
+                      disabled={savingOT}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5"
+                      title="Guardar todos los cambios de la OT"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      {savingOT ? 'Saving…' : 'Save OT'}
+                    </button>
+                    <div className="w-px h-6 bg-gray-200 mx-1" />
+                    <button onClick={() => setModalFullscreen(f => !f)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500" title={modalFullscreen ? 'Resize' : 'Maximize'}>
+                      {modalFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                    </button>
+                    <button onClick={minimizeCurrentOT}
+                      className="px-2 py-0 h-8 hover:bg-gray-100 rounded-lg text-gray-500 text-xl font-bold leading-none flex items-center justify-center"
+                      title="Minimizar a la barra (conservar estado)">_</button>
+                    <button onClick={() => setSelectedOT(null)}
+                      className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-200 transition-colors"
+                      title="Cerrar">
+                      <X className="w-5 h-5" strokeWidth={2.5} />
+                    </button>
+                  </div>
                 </div>
                 <div className="flex gap-1 mt-3 -mb-4">
                   {OT_TABS.map(tab => (

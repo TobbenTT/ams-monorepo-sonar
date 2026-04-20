@@ -648,6 +648,28 @@ ${materials.length ? `<div class="section">
           </div>
         )}
 
+        {/* Rejection Reason — visible si el aviso está rechazado (Jorge pidió
+            poder leer el motivo sin entrar a la auditoría). */}
+        {['RECHAZADO', 'REJECTED'].includes(item.status) && (
+          <div className="px-6 pb-4">
+            <div className="rounded-xl border-2 border-red-200 bg-red-50 px-4 py-3">
+              <div className="flex items-center gap-2 mb-1">
+                <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <p className="text-xs font-bold uppercase tracking-wide text-red-700">Rejection Reason</p>
+              </div>
+              <p className="text-sm text-red-900 leading-relaxed whitespace-pre-wrap">
+                {item.rejection_reason || item.validation?.rejection_reason || <span className="italic text-red-500">No reason recorded</span>}
+              </p>
+              {(item.rejected_by || item.approver_id) && (
+                <p className="text-[11px] text-red-600 mt-2">
+                  Rejected by {item.rejected_by || item.approver_id}
+                  {item.rejected_at || item.approved_at ? ` · ${new Date(item.rejected_at || item.approved_at).toLocaleString()}` : ''}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Failure Description */}
         <div className="px-6 pb-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t('workRequests.failureDesc')}</p>

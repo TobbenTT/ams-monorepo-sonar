@@ -289,10 +289,11 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
   useEffect(() => {
     setImpactScore(null);
     setShowScoreBreakdown(false);
-    const rid = item.request_id || item.wr_id;
+    // normalizeWR() maps request_id → id, so the normalized item has .id (not .request_id)
+    const rid = item.id || item._raw?.request_id || item.request_id;
     if (!rid) return;
     api.getWorkRequestImpactScore(rid).then(setImpactScore).catch(() => setImpactScore(null));
-  }, [item.request_id, item.wr_id]);
+  }, [item.id]);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const CHECKLIST_COUNT = 4;
   const allChecked = checkedItems.size >= CHECKLIST_COUNT;

@@ -521,6 +521,118 @@ def score_managed_wo(db: Session, wo_id: str) -> dict | None:
 
 
 # ---------------------------------------------------------------------------
+# Work Request scoring (for WR detail modal — same 6-factor math, WR inputs)
+# ---------------------------------------------------------------------------
+
+def score_work_request(db: Session, request_id: str) -> dict | None:
+    """Compute multi-criteria impact score for a Work Request.
+
+    Same 6 factors as score_managed_wo() so the number is comparable across
+    WR → OT transitions. Uses WR fields (priority_code, sla_deadline,
+    ai_classification.estimated_duration_hours) instead of WO fields.
+    """
+    wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not wr:
+        return None
+
+    tag = wr.equipment_tag or ""
+    now = datetime.now()
+
+    tag_to_node = _build_tag_to_node(db, [tag]) if tag else {}
+    node = tag_to_node.get(tag)
+    node_to_criticality = _build_node_to_criticality(db, [node.node_id]) if node else {}
+    crit_assessment = node_to_criticality.get(node.node_id) if node else None
+    crit_label = _resolve_criticality_label(node, crit_assessment)
+    s_crit = CRITICALITY_SCORES.get(crit_label.upper(), 0.4) if crit_label else 0.4
+
+    tag_to_health = _build_tag_to_health(db, [tag]) if tag else {}
+    health = tag_to_health.get(tag)
+    composite = health.composite_score if health else None
+    s_health = (100 - composite) / 100.0 if composite is not None else 0.5
+
+    # SLA: prefer explicit deadline, fallback to priority window from created_at
+    sla_total = SLA_HOURS_MAP.get(wr.priority_code, 720)
+    sla_remaining = None
+    if wr.sla_deadline:
+        sla_remaining = max(0.0, (wr.sla_deadline - now).total_seconds() / 3600.0)
+    elif wr.created_at:
+        elapsed = (now - wr.created_at).total_seconds() / 3600.0
+        sla_remaining = max(0.0, sla_total - elapsed)
+    s_sla = max(0.0, min(1.0, 1.0 - (sla_remaining / sla_total))) if sla_remaining is not None else 0.5
+
+    tag_to_failure_count = _build_failure_counts(db, [tag]) if tag else {}
+    failure_count = tag_to_failure_count.get(tag, 0)
+    s_freq = min(1.0, failure_count / 10.0)
+
+    est_hours = 0.0
+    if wr.ai_classification and isinstance(wr.ai_classification, dict):
+        try:
+            est_hours = float(wr.ai_classification.get("estimated_duration_hours") or 0.0)
+        except (TypeError, ValueError):
+            est_hours = 0.0
+    s_cost = min(1.0, est_hours / 40.0)
+
+    # Safety: bump for emergency priorities (P1/P2) or if WR has safety flags
+    safety_flags = False
+    if wr.ai_classification and isinstance(wr.ai_classification, dict):
+        safety_flags = bool(wr.ai_classification.get("safety_flags"))
+    s_safety = 0.7 if (wr.priority_code in ("P1", "P2") or safety_flags) else 0.3
+
+    contributions = {
+        "criticality":       round(WEIGHTS["criticality"]       * s_crit   * 100, 1),
+        "health_score":      round(WEIGHTS["health_score"]      * s_health * 100, 1),
+        "sla_proximity":     round(WEIGHTS["sla_proximity"]     * s_sla    * 100, 1),
+        "failure_frequency": round(WEIGHTS["failure_frequency"] * s_freq   * 100, 1),
+        "cost_of_deferral":  round(WEIGHTS["cost_of_deferral"]  * s_cost   * 100, 1),
+        "safety_impact":     round(WEIGHTS["safety_impact"]     * s_safety * 100, 1),
+    }
+    total_score = round(sum(contributions.values()), 1)
+
+    alerts: list[str] = []
+    if sla_remaining is not None and sla_remaining < sla_total * _SLA_BREACH_THRESHOLD:
+        alerts.append("SLA_BREACH_RISK")
+    if failure_count >= _CHRONIC_FAILURE_THRESHOLD:
+        alerts.append("CHRONIC_EQUIPMENT")
+    if safety_flags:
+        alerts.append("SAFETY_FLAG")
+
+    if total_score >= 70:
+        impact_label = "CRITICAL"
+    elif total_score >= 50:
+        impact_label = "HIGH"
+    elif total_score >= 30:
+        impact_label = "MEDIUM"
+    else:
+        impact_label = "LOW"
+
+    return {
+        "request_id": request_id,
+        "total_score": total_score,
+        "impact_label": impact_label,
+        "weights": {k: round(v * 100, 1) for k, v in WEIGHTS.items()},
+        "raw_factors": {
+            "criticality":       round(s_crit * 100, 1),
+            "health_score":      round(s_health * 100, 1),
+            "sla_proximity":     round(s_sla * 100, 1),
+            "failure_frequency": round(s_freq * 100, 1),
+            "cost_of_deferral":  round(s_cost * 100, 1),
+            "safety_impact":     round(s_safety * 100, 1),
+        },
+        "contributions": contributions,
+        "context": {
+            "criticality_class": crit_label or "UNKNOWN",
+            "health_composite": composite if composite is not None else None,
+            "sla_total_hours": sla_total,
+            "sla_remaining_hours": round(sla_remaining, 1) if sla_remaining is not None else None,
+            "failure_count_12m": failure_count,
+            "estimated_hours": est_hours,
+            "safety_flags": safety_flags,
+        },
+        "alerts": alerts,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Empty result helper
 # ---------------------------------------------------------------------------
 

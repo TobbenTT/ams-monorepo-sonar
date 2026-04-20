@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
   Wrench, Tag, MapPin, Gauge, Package, Calendar, FileText, Trash2, Zap,
-  Save, Download, X
+  Save, Download, X, Info
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';
@@ -284,6 +284,15 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
   // Editable state (supervisor can edit before approving)
   const [editing, setEditing] = useState(false);
   const [dupIdx, setDupIdx] = useState(0);
+  const [impactScore, setImpactScore] = useState(null);
+  const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
+  useEffect(() => {
+    setImpactScore(null);
+    setShowScoreBreakdown(false);
+    const rid = item.request_id || item.wr_id;
+    if (!rid) return;
+    api.getWorkRequestImpactScore(rid).then(setImpactScore).catch(() => setImpactScore(null));
+  }, [item.request_id, item.wr_id]);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const CHECKLIST_COUNT = 4;
   const allChecked = checkedItems.size >= CHECKLIST_COUNT;
@@ -505,11 +514,23 @@ ${materials.length ? `<div class="section">
                 className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none">
                 {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(v => <option key={v} value={v}>{impactLabels[v]}</option>)}
               </select>
-            ) : (
-              <span className={`text-xs font-bold px-2 py-0.5 rounded ${IMPACT_COLOR[item.production_impact] ?? 'bg-muted text-muted-foreground'}`}>
-                {impactLabels[item.production_impact] ?? item.production_impact}
-              </span>
-            )}
+            ) : (() => {
+              // Prefer real multi-criteria score when available
+              const label = impactScore?.impact_label || item.production_impact;
+              const score = impactScore?.total_score;
+              return (
+                <button
+                  type="button"
+                  onClick={() => impactScore && setShowScoreBreakdown(s => !s)}
+                  disabled={!impactScore}
+                  className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded ${IMPACT_COLOR[label] ?? 'bg-muted text-muted-foreground'} ${impactScore ? 'hover:ring-2 hover:ring-primary/30 cursor-pointer' : 'cursor-default'}`}
+                  title={impactScore ? 'Click para ver cómo se calcula' : 'Loading...'}>
+                  {impactLabels[label] ?? label}
+                  {score != null && <span className="ml-1 opacity-70">· {Math.round(score)}</span>}
+                  {impactScore && <Info size={10} className="opacity-60" />}
+                </button>
+              );
+            })()}
           </DetailCard>
           <DetailCard icon={AlertTriangle} label={t('workRequests.priorityLabel')}>
             {editing ? (
@@ -561,6 +582,62 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Clock} label="SLA Deadline" value={new Date(item.sla_deadline).toLocaleDateString()} />
           )}
         </div>
+
+        {/* Impact Score Breakdown (collapsible, shown below grid) */}
+        {showScoreBreakdown && impactScore && (
+          <div className="mx-6 mb-4 p-4 rounded-lg border border-border bg-muted/30">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-semibold text-foreground">¿Cómo se calcula? (100 = mayor impacto)</div>
+              <button onClick={() => setShowScoreBreakdown(false)} className="text-muted-foreground hover:text-foreground">
+                <X size={14} />
+              </button>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              {[
+                { key: 'criticality',       label: 'Criticidad equipo',    ctx: impactScore.context.criticality_class },
+                { key: 'health_score',      label: 'Health score',         ctx: impactScore.context.health_composite != null ? `${Math.round(impactScore.context.health_composite)}/100` : 'sin data' },
+                { key: 'sla_proximity',     label: 'Proximidad SLA',       ctx: impactScore.context.sla_remaining_hours != null ? `${Math.round(impactScore.context.sla_remaining_hours)}h / ${impactScore.context.sla_total_hours}h` : 'sin SLA' },
+                { key: 'failure_frequency', label: 'Fallas últimos 12m',   ctx: `${impactScore.context.failure_count_12m} correctivas` },
+                { key: 'cost_of_deferral',  label: 'Costo de postergar',   ctx: `${impactScore.context.estimated_hours}h estimadas` },
+                { key: 'safety_impact',     label: 'Impacto de seguridad', ctx: impactScore.context.safety_flags ? 'flag' : (item.priority_requested === 'P1' || item.priority_requested === 'P2' ? 'fast-track' : 'estándar') },
+              ].map(row => {
+                const weight = impactScore.weights[row.key];
+                const contribution = impactScore.contributions[row.key];
+                const barPct = Math.min(100, (contribution / weight) * 100);
+                return (
+                  <div key={row.key} className="flex items-center gap-2">
+                    <div className="w-36 text-foreground/80 truncate" title={row.label}>{row.label}</div>
+                    <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
+                      <div className="h-full bg-emerald-500" style={{ width: `${barPct}%` }}></div>
+                    </div>
+                    <div className="w-28 text-right text-muted-foreground text-[10px]">{row.ctx}</div>
+                    <div className="w-16 text-right font-mono">
+                      <span className="font-semibold text-foreground">{contribution}</span>
+                      <span className="text-muted-foreground"> / {weight}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-border">
+                <div className="w-36 font-semibold">Total</div>
+                <div className="flex-1" />
+                <div className="w-44 text-right font-mono font-bold">{impactScore.total_score} / 100 · {impactLabels[impactScore.impact_label] ?? impactScore.impact_label}</div>
+              </div>
+            </div>
+            {impactScore.alerts.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {impactScore.alerts.map(a => (
+                  <span key={a} className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-300 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700">
+                    {a === 'SLA_BREACH_RISK' ? '⚠️ SLA en riesgo' : a === 'CHRONIC_EQUIPMENT' ? '🔁 Equipo crónico' : a === 'SAFETY_FLAG' ? '🛡️ Seguridad' : a}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="text-[10px] text-muted-foreground mt-2 italic">
+              Pesos: criticidad 25% · health 20% · SLA 20% · frecuencia 15% · costo 10% · seguridad 10%
+            </div>
+          </div>
+        )}
 
         {/* WO Title */}
         {item.wo_title && (

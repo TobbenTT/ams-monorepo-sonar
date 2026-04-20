@@ -190,6 +190,7 @@ export const deleteCapture = (id) => del(`/capture/${id}`);
 // ── Work Requests ──
 export const listWorkRequests = (p) => get('/work-requests/', p);
 export const getWorkRequest = (id) => get(`/work-requests/${id}`);
+export const getWorkRequestImpactScore = (id) => get(`/work-requests/${id}/impact-score`);
 export const validateWorkRequest = (id, d) => put(`/work-requests/${id}/validate`, d);
 export const approveWorkRequest = (id, d) => put(`/work-requests/${id}/approve`, d);
 export const rejectWorkRequest = (id, d) => put(`/work-requests/${id}/reject`, d);

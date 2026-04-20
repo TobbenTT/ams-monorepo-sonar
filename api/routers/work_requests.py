@@ -275,6 +275,17 @@ def ai_predict_before_catch_all(equipment_tag: str = "", db: Session = Depends(g
     return ai_predict_failures(equipment_tag=equipment_tag, db=db, user=user)
 
 
+@router.get("/{request_id}/impact-score")
+def get_wr_impact_score(request_id: str, db: Session = Depends(get_db)):
+    """Multi-criteria impact score for a Work Request (replaces the hardcoded
+    HIGH/MEDIUM lookup). Same 6 factors as the OT impact-score endpoint."""
+    from api.services.agentic_smart_backlog_service import score_work_request
+    result = score_work_request(db, request_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Work request not found")
+    return result
+
+
 @router.get("/{request_id}")
 def get_work_request(request_id: str, db: Session = Depends(get_db)):
     from api.database.models import FieldCaptureModel

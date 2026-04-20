@@ -1438,24 +1438,39 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 )}
                                 <div className="hidden">
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <select value={op.specialty || 'Mechanical'} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
-                                    className="text-xs border rounded px-2 py-1">
-                                    {['Mechanical','Electrical','Instrument Tech','Welder','Lubrication','Crane Operator','Scaffolder','Boilermaker','Other'].map(s => <option key={s} value={s}>{s}</option>)}
-                                  </select>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  {/* Jorge (2026-04-20): especialidad = puesto de trabajo de mantenedor
+                                      (WORK_CENTERS filtrados por planning_group, códigos P/M). */}
                                   <div className="flex items-center gap-1">
-                                    <label className="text-[10px] text-gray-500">Qty:</label>
+                                    <label className="text-[10px] text-gray-500">Especialidad:</label>
+                                    <select value={op.specialty || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
+                                      className="text-xs border rounded px-2 py-1 max-w-[180px]">
+                                      <option value="">— Seleccionar —</option>
+                                      {(wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : WORK_CENTERS).map(w => (
+                                        <option key={w.value} value={w.value}>{w.value} — {w.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-[10px] text-gray-500">Cantidad:</label>
                                     <input type="number" min="1" value={op.quantity || 1} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], quantity: parseInt(e.target.value)||1}; setEditOps(n); }}
                                       className="w-12 text-xs border rounded px-1 py-1 text-center" />
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <label className="text-[10px] text-gray-500">Hours:</label>
+                                    <label className="text-[10px] text-gray-500">Duración (h):</label>
                                     <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
                                       className="w-14 text-xs border rounded px-1 py-1 text-center" />
                                   </div>
                                   <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs font-bold text-emerald-700 whitespace-nowrap">
-                                    {((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH
+                                    HH: {((op.quantity || 1) * (op.hours || 0)).toFixed(1)}
                                   </div>
+                                  {/* Jorge (2026-04-20): operaciones en paralelo vs serie. */}
+                                  <label className="flex items-center gap-1 text-[10px] text-gray-600 cursor-pointer ml-auto">
+                                    <input type="checkbox" checked={!!op.parallel}
+                                      onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], parallel: e.target.checked}; setEditOps(n); }}
+                                      className="w-3 h-3" />
+                                    En paralelo
+                                  </label>
                                 </div>
                               </div>
                             )}
@@ -1464,16 +1479,30 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         })}
                       </div>
                     )}
-                    {/* Total HH summary */}
-                    {editOps.length > 0 && (
-                      <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2 border">
-                        <span className="text-xs text-gray-500">{editOps.length} operations</span>
-                        <div className="flex items-center gap-4">
-                          <span className="text-xs text-gray-500">Total Hours: <strong className="text-gray-800">{editOps.reduce((s, o) => s + (o.hours || 0), 0).toFixed(1)}h</strong></span>
-                          <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">Total HH: {editOps.reduce((s, o) => s + (o.quantity || 1) * (o.hours || 0), 0).toFixed(1)}</span>
+                    {/* Total HH + Duración summary — Jorge 2026-04-20:
+                        HH siempre suma (hombre-hora). Duración depende de paralelo/serie:
+                        las en serie se suman, las en paralelo se toma la máxima del bloque. */}
+                    {editOps.length > 0 && (() => {
+                      const totalHH = editOps.reduce((s, o) => s + (o.quantity || 1) * (o.hours || 0), 0);
+                      const serieHours = editOps.filter(o => !o.parallel).reduce((s, o) => s + (o.hours || 0), 0);
+                      const parallelHours = editOps.filter(o => o.parallel).reduce((m, o) => Math.max(m, o.hours || 0), 0);
+                      const totalDuration = serieHours + parallelHours;
+                      const parallelCount = editOps.filter(o => o.parallel).length;
+                      return (
+                        <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2 border flex-wrap gap-2">
+                          <span className="text-xs text-gray-500">
+                            {editOps.length} operaciones{parallelCount > 0 && ` · ${parallelCount} en paralelo`}
+                          </span>
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <span className="text-xs text-gray-500">
+                              Duración: <strong className="text-gray-800">{totalDuration.toFixed(1)}h</strong>
+                              {parallelCount > 0 && <span className="text-[10px] text-gray-400 ml-1">(serie + max paralelo)</span>}
+                            </span>
+                            <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">Total HH: {totalHH.toFixed(1)}</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                     {/* External Vendor Modal rendered outside tabs */}
                     {false && (
                       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setExtModal({ open: false, opIdx: -1 })}>

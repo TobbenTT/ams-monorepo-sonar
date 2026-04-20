@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
   Wrench, Tag, MapPin, Gauge, Package, Calendar, FileText, Trash2, Zap,
-  Save, Download, X, Info
+  Save, Download, X, Info, ArrowRight
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';
@@ -279,7 +279,11 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
   const canClose = item.status === 'COMPLETED';
   const isSupervisor = ['admin', 'manager'].includes(userRole);
   const isPlanner = userRole === 'planner';
-  const canEdit = (isSupervisor || isPlanner) && !['COMPLETED', 'CLOSED', 'CANCELLED', 'REJECTED', 'CERRADO', 'CANCELADO', 'RECHAZADO'].includes(item.status);
+  // Jorge (2026-04-20): un aviso rechazado debe poder editarse para corregir
+  // lo observado y volver a lanzarlo — el reject es "devolver", no "cerrar".
+  // Se permite Edit también en RECHAZADO / REJECTED.
+  const canEdit = (isSupervisor || isPlanner) && !['COMPLETED', 'CLOSED', 'CANCELLED', 'CERRADO', 'CANCELADO'].includes(item.status);
+  const isRejected = ['RECHAZADO', 'REJECTED'].includes(item.status);
 
   // Editable state (supervisor can edit before approving)
   const [editing, setEditing] = useState(false);
@@ -981,8 +985,34 @@ ${materials.length ? `<div class="section">
         )}
 
         {/* Action Buttons */}
-        {(isPending || isValidated || canStart || canComplete || canClose || editing) && (
+        {(isPending || isValidated || canStart || canComplete || canClose || editing || isRejected) && (
           <div className="px-6 py-4 border-t border-border flex flex-wrap gap-3 sticky bottom-0 bg-card rounded-b-2xl">
+            {/* Jorge (2026-04-20): desde RECHAZADO el supervisor corrige y
+                vuelve a lanzar (reopenWorkRequest deja status en PENDIENTE
+                para que el planificador lo vuelva a revisar). */}
+            {isRejected && !editing && (
+              <>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-colors"
+                >
+                  <Save size={16} />
+                  Corregir
+                </button>
+                <button
+                  onClick={() => {
+                    if (!window.confirm('Re-enviar este aviso al planificador?')) return;
+                    api.reopenWorkRequest(item.id)
+                      .then(() => { onClose(); })
+                      .catch(e => alert('Error: ' + (e.message || '')));
+                  }}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  <ArrowRight size={16} />
+                  Re-enviar al planificador
+                </button>
+              </>
+            )}
             {/* Save button (standalone — save without approving) */}
             {editing && (
               <button

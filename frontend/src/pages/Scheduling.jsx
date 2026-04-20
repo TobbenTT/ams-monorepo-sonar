@@ -555,8 +555,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   }, [releasedWOs]);
 
   const filteredReleased = useMemo(() => {
-    let list = [...releasedWOs];
-    // Priority filter — multi-select, like Prometheus (each priority togglable)
+    // Jorge (2026-04-20): en el tablero sólo deben aparecer OTs programables.
+    // Una OT en CREADO/DRAFT todavía no fue liberada — no puede entrar a
+    // la grilla de programación.
+    let list = releasedWOs.filter(wo => {
+      const s = (wo.status || '').toUpperCase();
+      return s !== 'CREADO' && s !== 'DRAFT' && s !== 'PENDIENTE';
+    });
+    // Priority filter — multi-select (each priority togglable)
     const activePrios = Object.entries(prioFilter).filter(([, v]) => v).map(([k]) => k);
     if (activePrios.length > 0 && activePrios.length < 4) {
       list = list.filter(wo => activePrios.includes(wo.priority_code));
@@ -752,8 +758,20 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             )}
             {filteredReleased.map(wo => {
               const typeMeta = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+              // Jorge (2026-04-20 tarde): hover tiene que mostrar el título
+              // de cabecera (description) y HH para poder decidir sin abrir.
+              const hoverTitle = [
+                `OT: ${wo.wo_number}`,
+                wo.description ? `Actividad: ${wo.description}` : null,
+                wo.equipment_tag ? `Equipo: ${wo.equipment_tag}` : null,
+                wo.priority_code ? `Prioridad: ${wo.priority_code}` : null,
+                wo.estimated_hours ? `HH estimados: ${wo.estimated_hours}` : null,
+                wo.work_center ? `Puesto trabajo: ${wo.work_center}` : null,
+                wo.planning_group ? `Grupo: ${wo.planning_group}` : null,
+              ].filter(Boolean).join('\n');
               return (
                 <div key={wo.wo_id} draggable onDragStart={() => handleDragStart(wo)} onDragEnd={handleDragEnd}
+                  title={hoverTitle}
                   style={{ contentVisibility: 'auto', containIntrinsicSize: '0 80px' }}
                   className="p-3 hover:bg-muted/50 cursor-grab active:cursor-grabbing transition-colors">
                   <div className="flex items-center gap-2 mb-1">
@@ -763,8 +781,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                     <span className="font-mono text-xs font-bold text-foreground">{wo.wo_number}</span>
                     <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded border ${typeMeta.bg}`}>{wo.wo_type}</span>
                   </div>
-                  <p className="text-sm text-foreground truncate">{wo.equipment_tag || wo.description}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{wo.estimated_hours || 0}h estimated</p>
+                  {/* Título de cabecera visible siempre (no solo tag/descripción corta) */}
+                  <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">{wo.description || wo.equipment_tag || '—'}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-muted-foreground font-mono">{wo.equipment_tag || ''}</span>
+                    <span className="text-xs font-semibold text-foreground tabular-nums">{wo.estimated_hours || 0} HH</span>
+                  </div>
                 </div>
               );
             })}

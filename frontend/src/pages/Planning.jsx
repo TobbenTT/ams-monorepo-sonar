@@ -1329,12 +1329,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       <p className="text-sm text-gray-800 mt-1 bg-gray-50 rounded-lg p-3">{wo.description||wo.failure_description||"No description"}</p>
                     </div>
                     <div className="grid grid-cols-4 gap-3">
-                      <div className="bg-blue-50 rounded-lg p-3 text-center"><div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Hrs</div><div className="text-lg font-bold text-blue-700">{(() => {
-                        // Sum from operations (qty × hours); fall back to estimated_hours if no operations
+                      <div className="bg-blue-50 rounded-lg p-3 text-center"><div className="text-[10px] text-blue-600 font-semibold uppercase">Planned HH</div><div className="text-lg font-bold text-blue-700">{(() => {
+                        // HH = Σ(quantity × duration) — hombre-hora planificada (Jorge 2026-04-20)
                         const opsHH = (editOps || []).reduce((s, o) => s + ((parseFloat(o.quantity) || 1) * (parseFloat(o.hours) || 0)), 0);
                         return opsHH > 0 ? opsHH.toFixed(1) : (wo.estimated_hours || 0);
-                      })()}h</div></div>
-                      <div className="bg-green-50 rounded-lg p-3 text-center"><div className="text-[10px] text-green-600 font-semibold uppercase">Actual Hrs</div><div className="text-lg font-bold text-green-700">{wo.actual_hours||execData.actual_hours||"0"}h</div></div>
+                      })()}</div></div>
+                      <div className="bg-green-50 rounded-lg p-3 text-center"><div className="text-[10px] text-green-600 font-semibold uppercase">Actual HH</div><div className="text-lg font-bold text-green-700">{wo.actual_hours||execData.actual_hours||"0"}</div></div>
                       <div className="bg-purple-50 rounded-lg p-3 text-center"><div className="text-[10px] text-purple-600 font-semibold uppercase">Planned Cost</div><div className="text-lg font-bold text-purple-700">${totalPlan.toFixed(0)}</div></div>
                       <div className="bg-amber-50 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-600 font-semibold uppercase">Actual Cost</div><div className="text-lg font-bold text-amber-700">${totalReal.toFixed(0)}</div></div>
                     </div>

@@ -34,4 +34,8 @@ USER appuser
 EXPOSE 8000
 
 # Start server (tables created via lifespan, seed via POST /api/v1/admin/seed)
-CMD ["gunicorn", "api.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120"]
+# Single worker is required because WebSocket state (ws_manager) is in-process.
+# Going multi-worker would need Redis pub/sub so broadcasts reach all clients,
+# regardless of which worker they landed on. For ~10 concurrent users uvicorn
+# async single-worker is fine — swap to Redis pub/sub if concurrency grows.
+CMD ["gunicorn", "api.main:app", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120"]

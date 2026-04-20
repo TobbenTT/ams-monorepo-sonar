@@ -115,6 +115,57 @@ export default function EquipmentChat() {
         setContextSummary(null);
     };
 
+    // SF-345 EquipmentDoctor — structured diagnosis with confidence + WR suggestion.
+    const handleDiagnose = async () => {
+        const symptoms = input.trim();
+        if (!symptoms || !selectedTag || loading) return;
+        setMessages(prev => [...prev, { role: 'user', content: `🩺 Diagnóstico: ${symptoms}` }]);
+        setInput('');
+        setLoading(true);
+        try {
+            const res = await api.equipmentDoctor({
+                equipment_tag: selectedTag,
+                symptom_description: symptoms,
+                include_wr_suggestion: true,
+            });
+            const data = res?.result || res;
+            const diag = data?.diagnosis || {};
+            const confidence = typeof diag.confidence === 'number'
+                ? Math.round(diag.confidence * 100)
+                : null;
+            const steps = Array.isArray(diag.verification_steps) ? diag.verification_steps : [];
+            const wrSug = data?.wr_suggestion;
+
+            const lines = [];
+            lines.push(`**Diagnóstico:** ${diag.diagnosis || '—'}`);
+            if (confidence != null) lines.push(`**Confianza:** ${confidence}%${confidence >= 85 ? ' ✅' : ' ⚠️ refiná síntomas'}`);
+            if (diag.failure_mode) lines.push(`**Modo de falla:** ${diag.failure_mode}`);
+            if (diag.failure_category) lines.push(`**Categoría:** ${diag.failure_category}`);
+            if (diag.priority) lines.push(`**Prioridad sugerida:** ${diag.priority}`);
+            if (steps.length) {
+                lines.push('**Pasos de verificación:**');
+                steps.forEach((s, i) => lines.push(`  ${i + 1}. ${s}`));
+            }
+            if (diag.corrective_action) lines.push(`**Acción correctiva:** ${diag.corrective_action}`);
+            if (wrSug) {
+                lines.push('\n**WR sugerida:**');
+                if (wrSug.priority_code) lines.push(`  Prioridad: ${wrSug.priority_code}`);
+                if (wrSug.estimated_duration_hours) lines.push(`  Duración: ${wrSug.estimated_duration_hours}h`);
+                if (Array.isArray(wrSug.suggested_materials) && wrSug.suggested_materials.length) {
+                    lines.push(`  Materiales: ${wrSug.suggested_materials.map(m => m.description || m.sap_id || m).join(', ')}`);
+                }
+            }
+            setMessages(prev => [...prev, { role: 'assistant', content: lines.join('\n') }]);
+        } catch (err) {
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `Error en diagnóstico: ${err.response?.data?.detail || err.message}`,
+            }]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-4">
             {/* Header */}
@@ -299,6 +350,14 @@ export default function EquipmentChat() {
                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
                         disabled={loading || !selectedTag}
                     />
+                    <button
+                        onClick={handleDiagnose}
+                        disabled={loading || !input.trim() || !selectedTag}
+                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                        title="Diagnóstico estructurado con IA (SF-345)"
+                    >
+                        🩺 Diagnosticar
+                    </button>
                     <button
                         onClick={() => handleSend()}
                         disabled={loading || !input.trim() || !selectedTag}

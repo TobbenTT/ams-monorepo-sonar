@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     PlayCircle, PauseCircle, CheckCircle2, Circle, FileText,
     Wrench, Camera, AlertCircle, Clock, ChevronLeft, ChevronRight,
+    Shield, X, Loader2,
 } from 'lucide-react';
 import * as api from '../../api';
 
@@ -33,6 +34,28 @@ export default function MobileTaskExecution() {
     const [items, setItems] = useState([]);
     const [elapsed, setElapsed] = useState(0);
     const timerRef = useRef(null);
+    const [safetyModal, setSafetyModal] = useState(null); // null | 'loading' | data
+    const [safetyError, setSafetyError] = useState(null);
+
+    // SF-349 — AI safety checklist
+    const generateSafetyChecklist = async () => {
+        if (!checklist) return;
+        setSafetyModal('loading');
+        setSafetyError(null);
+        try {
+            const res = await api.generateSafetyChecklist({
+                wo_id: checklist.work_package_id || null,
+                equipment_tag: checklist.equipment_tag || '',
+                task_type: checklist.task_type || 'Correctivo',
+                plant_id: checklist.plant_id || 'OCP-JFC1',
+            });
+            const data = res?.result || res;
+            setSafetyModal(data);
+        } catch (e) {
+            setSafetyError(e?.message || 'No se pudo generar el checklist');
+            setSafetyModal(null);
+        }
+    };
 
     // Fetch checklist
     useEffect(() => {
@@ -212,6 +235,22 @@ export default function MobileTaskExecution() {
             <div className="p-4 space-y-4">
                 {activeTab === 'checklist' && (
                     <>
+                        {/* Safety AI Checklist button (SF-349) */}
+                        <button
+                            onClick={generateSafetyChecklist}
+                            className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white active:scale-95 transition-all"
+                            style={{ backgroundColor: '#DC2626' }}
+                        >
+                            <Shield className="w-5 h-5" />
+                            Generar Checklist de Seguridad IA
+                        </button>
+                        {safetyError && (
+                            <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs flex items-start gap-2">
+                                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                <span>{safetyError}</span>
+                            </div>
+                        )}
+
                         {/* Checklist Items */}
                         <div className="space-y-2">
                             {items.map(item => (
@@ -399,6 +438,78 @@ export default function MobileTaskExecution() {
                     </button>
                 </div>
             </div>
+
+            {/* SF-349 — Safety Checklist Modal */}
+            {safetyModal && (
+                <div className="fixed inset-0 z-[200] flex items-end justify-center">
+                    <div className="absolute inset-0 bg-black/60" onClick={() => safetyModal !== 'loading' && setSafetyModal(null)} />
+                    <div className="relative bg-white rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b px-4 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Shield className="w-5 h-5 text-red-600" />
+                                <div className="text-sm font-bold text-slate-900">Checklist de Seguridad IA</div>
+                            </div>
+                            {safetyModal !== 'loading' && (
+                                <button onClick={() => setSafetyModal(null)} className="p-2 rounded-full hover:bg-gray-100">
+                                    <X className="w-5 h-5 text-slate-500" />
+                                </button>
+                            )}
+                        </div>
+                        <div className="p-4 space-y-4">
+                            {safetyModal === 'loading' ? (
+                                <div className="flex items-center justify-center py-12 text-slate-500 gap-2">
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Generando checklist contextual…
+                                </div>
+                            ) : (
+                                <SafetyChecklistSections data={safetyModal} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function SafetyChecklistSections({ data }) {
+    const sections = [
+        { key: 'altitude_ppe', title: 'EPP Altitud (4500 msnm)', color: '#F59E0B' },
+        { key: 'altitude_risks', title: 'Riesgos de altitud', color: '#DC2626' },
+        { key: 'general_safety', title: 'Seguridad general', color: '#0EA5E9' },
+        { key: 'loto_items', title: 'LOTO específico', color: '#DC2626' },
+        { key: 'task_specific', title: 'Específico de la tarea', color: '#7C3AED' },
+    ];
+    return (
+        <div className="space-y-4">
+            {sections.map(s => {
+                const items = data?.[s.key] || data?.sections?.[s.key];
+                if (!items || (Array.isArray(items) && items.length === 0)) return null;
+                return (
+                    <div key={s.key}>
+                        <div className="text-xs font-bold mb-2 tracking-wide" style={{ color: s.color }}>
+                            {s.title.toUpperCase()}
+                        </div>
+                        <ul className="space-y-1.5">
+                            {(Array.isArray(items) ? items : []).map((it, i) => {
+                                const text = typeof it === 'string' ? it : (it.description || it.text || '');
+                                const mandatory = typeof it === 'object' && it.mandatory;
+                                return (
+                                    <li key={i} className="flex items-start gap-2 text-sm">
+                                        <Circle className="w-4 h-4 mt-0.5 flex-shrink-0 text-slate-400" />
+                                        <span className={mandatory ? 'font-medium text-slate-900' : 'text-slate-700'}>
+                                            {text}{mandatory && <span className="text-red-600"> *</span>}
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                );
+            })}
+            {data?.summary && (
+                <div className="pt-3 border-t text-xs text-slate-500">{data.summary}</div>
+            )}
         </div>
     );
 }

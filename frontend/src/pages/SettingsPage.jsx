@@ -31,6 +31,7 @@ function loadSettings(plantId) {
 
 function saveSettings(s, plantId) {
   localStorage.setItem(settingsKeyFor(plantId), JSON.stringify(s));
+  try { window.dispatchEvent(new CustomEvent('ocp-settings-changed', { detail: { plantId } })); } catch {}
 }
 
 export default function SettingsPage() {

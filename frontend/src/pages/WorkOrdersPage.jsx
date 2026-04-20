@@ -65,6 +65,9 @@ export default function WorkOrdersPage() {
   // Managed Work Orders (Jorge Phase 2)
   const [managedWOs, setManagedWOs] = useState([]);
   const [woTab, setWoTab] = useState('ots'); // 'ots' | 'wrs'
+  const [statusFilter, setStatusFilter] = useState(null); // null = all, else status code
+  const [impactScore, setImpactScore] = useState(null);
+  const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
   const [showCreateOTModal, setShowCreateOTModal] = useState(false);
   const [approvedWRs, setApprovedWRs] = useState([]);
   const [creatingOT, setCreatingOT] = useState(false);
@@ -569,15 +572,26 @@ export default function WorkOrdersPage() {
   };
 
   // ── OT Status helpers ──
+  // Canonical backend statuses are Spanish (CREADO, PLANIFICADO, PROGRAMADO, ...).
+  // Keep English aliases for legacy rows that slipped into the DB.
   const OT_STATUS_COLORS = {
+    CREADO: 'bg-yellow-100 text-yellow-700',
+    LIBERADO: 'bg-blue-100 text-blue-700',
+    PLANIFICADO: 'bg-teal-100 text-teal-700',
+    EN_PROGRAMACION: 'bg-indigo-100 text-indigo-700',
+    PROGRAMADO: 'bg-purple-100 text-purple-700',
+    REPROGRAMADO: 'bg-orange-100 text-orange-700',
+    EN_EJECUCION: 'bg-amber-100 text-amber-700',
+    COMPLETADO: 'bg-emerald-100 text-emerald-700',
+    CERRADO: 'bg-green-100 text-green-700',
+    CANCELADO: 'bg-gray-300 text-gray-600',
+    // Legacy EN aliases
     CREATED: 'bg-yellow-100 text-yellow-700',
     PLANNED: 'bg-blue-100 text-blue-700',
     SCHEDULED: 'bg-indigo-100 text-indigo-700',
     RESCHEDULED: 'bg-orange-100 text-orange-700',
-    EN_EJECUCION: 'bg-amber-100 text-amber-700',
     CLOSED: 'bg-green-100 text-green-700',
     CANCELLED: 'bg-gray-300 text-gray-600',
-    // Legacy compat
     PENDIENTE: 'bg-yellow-100 text-yellow-700',
     APROBADO: 'bg-blue-100 text-blue-700',
     EN_PROGRESO: 'bg-amber-100 text-amber-700',
@@ -585,19 +599,38 @@ export default function WorkOrdersPage() {
   };
 
   const OT_NEXT_ACTION = {
+    CREADO: { label: 'Liberar', action: 'release', icon: ArrowRight },
+    LIBERADO: { label: 'Planificar', action: 'plan', icon: ArrowRight },
+    PLANIFICADO: { label: 'A Programación', action: 'toProgramming', icon: ClipboardCheck },
+    EN_PROGRAMACION: { label: 'Reservar', action: 'schedule', icon: Lock },
+    PROGRAMADO: { label: 'Start Execution', action: 'start', icon: Play },
+    REPROGRAMADO: { label: 'Reprogramar', action: 'schedule', icon: ClipboardCheck },
+    EN_EJECUCION: { label: 'Close', action: 'close', icon: CheckCircle },
+    // Legacy EN aliases
     CREATED: { label: 'Planificar', action: 'plan', icon: ArrowRight },
     PLANNED: { label: 'Programar', action: 'schedule', icon: ClipboardCheck },
     SCHEDULED: { label: 'Start Execution', action: 'start', icon: Play },
     RESCHEDULED: { label: 'Reprogramar', action: 'schedule', icon: ClipboardCheck },
-    EN_EJECUCION: { label: 'Close', action: 'complete', icon: CheckCircle },
-    // Legacy compat
     PENDIENTE: { label: 'Planificar', action: 'plan', icon: ArrowRight },
     APROBADO: { label: 'Iniciar', action: 'start', icon: Play },
-    EN_PROGRESO: { label: 'Close', action: 'complete', icon: CheckCircle },
+    EN_PROGRESO: { label: 'Close', action: 'close', icon: CheckCircle },
   };
 
   const handleOTTransition = async (wo, actionName) => {
     try {
+      // toProgramming = generic update to EN_PROGRAMACION (no dedicated endpoint)
+      if (actionName === 'toProgramming') {
+        await api.updateManagedWO(wo.wo_id, { status: 'EN_PROGRAMACION' });
+        reloadData();
+        return;
+      }
+      if (actionName === 'schedule' && wo.status === 'EN_PROGRAMACION') {
+        if (!wo.planned_start || !(wo.assigned_workers || []).length) {
+          toast.error('La OT necesita fecha y técnico asignado antes de reservar');
+          return;
+        }
+        if (!window.confirm(`¿Reservar ${wo.wo_number}? Bloquea HH y pasa a PROGRAMADO.`)) return;
+      }
       const fn = {
         plan: api.planManagedWO,
         release: api.releaseManagedWO,
@@ -671,6 +704,10 @@ export default function WorkOrdersPage() {
   const openOTDetail = async (ot) => {
     setSelectedOT(ot);
     setOtDetailTab('resumen');
+    setImpactScore(null);
+    setShowScoreBreakdown(false);
+    // Fetch real multi-criteria impact score (replaces priority-based lookup)
+    api.getManagedWOImpactScore(ot.wo_id).then(setImpactScore).catch(() => setImpactScore(null));
     let ops = Array.isArray(ot.operations) ? ot.operations.map((op, i) => ({ ...op, _id: i, op_type: op.op_type || 'INT', quantity: op.quantity || 1, duration: op.duration || op.estimated_hours || op.planned_hours || 1, planned_hours: op.planned_hours || ((op.quantity || 1) * (op.duration || op.estimated_hours || 1)) })) : [];
 
     // If operations are empty and WO has a parent WR, load suggested_actions from WR
@@ -1001,15 +1038,28 @@ export default function WorkOrdersPage() {
       {/* ═══ TACTICAL VIEW: OTs + WRs Tabbed ═══ */}
       {viewMode === 'tactical' && (<>
 
-      {/* OT Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {['CREATED','PLANNED','SCHEDULED','RESCHEDULED','EN_EJECUCION','CLOSED','CANCELLED'].map(st => (
-          <Card key={st} className={`p-3 bg-white cursor-pointer border-2 transition-all ${woTab === 'ots' ? 'hover:border-emerald-300' : ''}`}
-            onClick={() => setWoTab('ots')}>
-            <div className="text-xs text-gray-500 truncate">{st.replace(/_/g, ' ')}</div>
-            <div className="text-xl font-bold text-gray-900">{otStats[st] || 0}</div>
-          </Card>
-        ))}
+      {/* OT Summary Cards — click to filter */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        {[
+          { key: null, label: 'All' },
+          { key: 'CREADO', label: 'Created' },
+          { key: 'PLANIFICADO', label: 'Planned' },
+          { key: 'EN_PROGRAMACION', label: 'In Scheduling' },
+          { key: 'PROGRAMADO', label: 'Scheduled' },
+          { key: 'EN_EJECUCION', label: 'In Execution' },
+          { key: 'CERRADO', label: 'Closed' },
+          { key: 'CANCELADO', label: 'Cancelled' },
+        ].map(({ key, label }) => {
+          const count = key === null ? managedWOs.length : (otStats[key] || 0);
+          const active = statusFilter === key;
+          return (
+            <Card key={key || 'all'} className={`p-3 bg-white cursor-pointer border-2 transition-all ${active ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-transparent hover:border-emerald-300'}`}
+              onClick={() => { setWoTab('ots'); setStatusFilter(key); }}>
+              <div className="text-xs text-gray-500 truncate">{label}</div>
+              <div className="text-xl font-bold text-gray-900">{count}</div>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Tab Switcher */}
@@ -1056,7 +1106,7 @@ export default function WorkOrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[...managedWOs].sort((a, b) => {
+                  {[...managedWOs].filter(wo => !statusFilter || wo.status === statusFilter).sort((a, b) => {
                     // Fast track OTs first, then by creation date
                     if (a.is_fast_track && !b.is_fast_track) return -1;
                     if (!a.is_fast_track && b.is_fast_track) return 1;
@@ -1918,36 +1968,96 @@ export default function WorkOrdersPage() {
               {/* ─── TAB: RESUMEN ─── */}
               {otDetailTab === 'resumen' && (
                 <div className="space-y-4">
-                  {/* Productive Impact Banner */}
-                  <div className={`rounded-xl p-4 border-2 flex items-center justify-between ${
-                    selectedOT.priority_code === 'P1' ? 'bg-red-50 border-red-300' :
-                    selectedOT.priority_code === 'P2' ? 'bg-orange-50 border-orange-300' :
-                    selectedOT.priority_code === 'P3' ? 'bg-yellow-50 border-yellow-300' :
-                    'bg-green-50 border-green-300'
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold text-white ${
-                        selectedOT.priority_code === 'P1' ? 'bg-red-600' :
-                        selectedOT.priority_code === 'P2' ? 'bg-orange-500' :
-                        selectedOT.priority_code === 'P3' ? 'bg-yellow-500' :
-                        'bg-green-500'
-                      }`}>
-                        {selectedOT.priority_code === 'P1' ? '!' : selectedOT.priority_code === 'P2' ? '!!' : selectedOT.priority_code === 'P3' ? '-' : '\u2713'}
+                  {/* Productive Impact Banner — multi-criteria score w/ breakdown */}
+                  {(() => {
+                    // Use real score when available, fallback to priority mapping
+                    const realLabel = impactScore?.impact_label;
+                    const realScore = impactScore?.total_score;
+                    const label = realLabel || (selectedOT.priority_code === 'P1' ? 'CRITICO' : selectedOT.priority_code === 'P2' ? 'ALTO' : selectedOT.priority_code === 'P3' ? 'MEDIO' : 'BAJO');
+                    const score = realScore ?? (selectedOT.priority_code === 'P1' ? 95 : selectedOT.priority_code === 'P2' ? 75 : selectedOT.priority_code === 'P3' ? 45 : 20);
+                    const band = label === 'CRITICO' ? 'red' : label === 'ALTO' ? 'orange' : label === 'MEDIO' ? 'yellow' : 'green';
+                    const bgBorder = { red: 'bg-red-50 border-red-300', orange: 'bg-orange-50 border-orange-300', yellow: 'bg-yellow-50 border-yellow-300', green: 'bg-green-50 border-green-300' }[band];
+                    const circleBg = { red: 'bg-red-600', orange: 'bg-orange-500', yellow: 'bg-yellow-500', green: 'bg-green-500' }[band];
+                    const textColor = { red: 'text-red-600', orange: 'text-orange-600', yellow: 'text-yellow-600', green: 'text-green-600' }[band];
+                    const icon = label === 'CRITICO' ? '!' : label === 'ALTO' ? '!!' : label === 'MEDIO' ? '-' : '\u2713';
+                    return (
+                      <div className={`rounded-xl border-2 ${bgBorder}`}>
+                        <div className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold text-white ${circleBg}`}>{icon}</div>
+                            <div>
+                              <div className="text-xs text-gray-500 uppercase font-semibold">Production Impact</div>
+                              <div className="text-lg font-bold">{label}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <span className="text-xs text-gray-500">Score Criticidad</span>
+                              {impactScore && (
+                                <button onClick={() => setShowScoreBreakdown(s => !s)}
+                                  className="text-gray-400 hover:text-gray-700 transition-colors"
+                                  title="Ver cómo se calcula">
+                                  <Info className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                            <div className={`text-3xl font-bold ${textColor}`}>{Math.round(score)}</div>
+                            {!impactScore && <div className="text-[10px] text-gray-400">Loading…</div>}
+                          </div>
+                        </div>
+                        {showScoreBreakdown && impactScore && (
+                          <div className="px-4 pb-4 border-t border-gray-200 pt-3 bg-white/40 rounded-b-xl">
+                            <div className="text-xs font-semibold text-gray-700 mb-2">¿Cómo se calcula? (100 = peor)</div>
+                            <div className="space-y-1.5 text-xs">
+                              {[
+                                { key: 'criticality',       label: 'Criticidad equipo',    ctx: impactScore.context.criticality_class },
+                                { key: 'health_score',      label: 'Health score',         ctx: impactScore.context.health_composite != null ? `${Math.round(impactScore.context.health_composite)}/100` : 'sin data' },
+                                { key: 'sla_proximity',     label: 'Proximidad SLA',       ctx: impactScore.context.sla_remaining_hours != null ? `${Math.round(impactScore.context.sla_remaining_hours)}h restantes / ${impactScore.context.sla_total_hours}h` : 'sin SLA' },
+                                { key: 'failure_frequency', label: 'Fallas últimos 12m',   ctx: `${impactScore.context.failure_count_12m} correctivas` },
+                                { key: 'cost_of_deferral',  label: 'Costo de postergar',   ctx: `${impactScore.context.estimated_hours}h estimadas` },
+                                { key: 'safety_impact',     label: 'Impacto de seguridad', ctx: selectedOT.priority_code === 'P1' || selectedOT.priority_code === 'P2' ? 'fast-track' : 'estándar' },
+                              ].map(row => {
+                                const weight = impactScore.weights[row.key];
+                                const contribution = impactScore.contributions[row.key];
+                                const raw = impactScore.raw_factors[row.key];
+                                const barPct = Math.min(100, (contribution / weight) * 100);
+                                return (
+                                  <div key={row.key} className="flex items-center gap-2">
+                                    <div className="w-36 text-gray-700 truncate" title={row.label}>{row.label}</div>
+                                    <div className="flex-1 h-2 bg-gray-200 rounded overflow-hidden">
+                                      <div className="h-full bg-emerald-500" style={{ width: `${barPct}%` }}></div>
+                                    </div>
+                                    <div className="w-20 text-right text-gray-500 text-[10px]">{row.ctx}</div>
+                                    <div className="w-16 text-right font-mono">
+                                      <span className="font-semibold text-gray-900">{contribution}</span>
+                                      <span className="text-gray-400"> / {weight}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-gray-200">
+                                <div className="w-36 text-gray-700 font-semibold">Total</div>
+                                <div className="flex-1" />
+                                <div className="w-36 text-right font-mono font-bold text-gray-900">{impactScore.total_score} / 100</div>
+                              </div>
+                            </div>
+                            {impactScore.alerts.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {impactScore.alerts.map(a => (
+                                  <span key={a} className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-300">
+                                    {a === 'SLA_BREACH_RISK' ? '⚠️ SLA en riesgo' : a === 'CHRONIC_EQUIPMENT' ? '🔁 Equipo crónico' : a === 'AGING' ? '📅 Envejecida' : a}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="text-[10px] text-gray-500 mt-2 italic">
+                              Pesos: criticidad 25% · health 20% · SLA 20% · frecuencia 15% · costo 10% · seguridad 10%
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <div className="text-xs text-gray-500 uppercase font-semibold">Production Impact</div>
-                        <div className="text-lg font-bold">{selectedOT.priority_code === 'P1' ? 'CRITICO' : selectedOT.priority_code === 'P2' ? 'ALTO' : selectedOT.priority_code === 'P3' ? 'MEDIO' : 'BAJO'}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-gray-500">Score Criticidad</div>
-                      <div className={`text-3xl font-bold ${
-                        selectedOT.priority_code === 'P1' ? 'text-red-600' :
-                        selectedOT.priority_code === 'P2' ? 'text-orange-600' :
-                        selectedOT.priority_code === 'P3' ? 'text-yellow-600' : 'text-green-600'
-                      }`}>{selectedOT.priority_code === 'P1' ? '95' : selectedOT.priority_code === 'P2' ? '75' : selectedOT.priority_code === 'P3' ? '45' : '20'}</div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Progress bar */}
                   <div>

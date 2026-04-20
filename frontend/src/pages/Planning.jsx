@@ -7,7 +7,7 @@ import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Eye, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Download, AlertCircle, Plus, XCircle, Ban,
-  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2, Sparkles
+  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2, Sparkles, Lock
 } from 'lucide-react';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
@@ -749,13 +749,31 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           {wo.planned_start ? new Date(wo.planned_start).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }) : '—'}
                         </td>
                         <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
-                          <button onClick={async () => {
-                            if (!confirm(`¿Delete ${wo.wo_number}?`)) return;
-                            try { await api.deleteManagedWO(wo.wo_id); toast.success('WO deleted'); fetchData(); }
-                            catch(e) { toast.error('Error deleting'); }
-                          }} className="p-1 text-gray-300 hover:text-red-500 rounded transition-colors" title="Delete WO">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {wo.status === 'EN_PROGRAMACION' && (
+                              <button onClick={async () => {
+                                if (!wo.planned_start || !(wo.assigned_workers || []).length) {
+                                  toast.error('La OT necesita fecha y técnico asignado antes de reservar');
+                                  return;
+                                }
+                                if (!confirm(`¿Reservar ${wo.wo_number}? Bloquea HH y pasa a PROGRAMADO.`)) return;
+                                try {
+                                  const upd = await api.scheduleManagedWO(wo.wo_id, { status: 'PROGRAMADO' });
+                                  toast.success(`${wo.wo_number} reservada`);
+                                  fetchData();
+                                } catch (e) { toast.error('Error al reservar'); }
+                              }} className="p-1 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors" title="Reservar HH (pasa a PROGRAMADO)">
+                                <Lock className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button onClick={async () => {
+                              if (!confirm(`¿Delete ${wo.wo_number}?`)) return;
+                              try { await api.deleteManagedWO(wo.wo_id); toast.success('WO deleted'); fetchData(); }
+                              catch(e) { toast.error('Error deleting'); }
+                            }} className="p-1 text-gray-300 hover:text-red-500 rounded transition-colors" title="Delete WO">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

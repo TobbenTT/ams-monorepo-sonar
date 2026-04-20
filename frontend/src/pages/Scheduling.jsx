@@ -92,9 +92,20 @@ function getCapacitySettings() {
     };
   } catch { return { effectiveHours: 10, schedulingPct: 80, productivityPct: 90, dayShiftCount: null, nightShiftCount: null }; }
 }
-const CAP = getCapacitySettings();
-const PROGRAMMABLE_HH_PER_DAY = CAP.effectiveHours * (CAP.schedulingPct / 100) * (CAP.productivityPct / 100);
-const HOURS_PER_WEEK = PROGRAMMABLE_HH_PER_DAY * 5;
+function useCapacitySettings() {
+  const [cap, setCap] = useState(getCapacitySettings);
+  useEffect(() => {
+    const onChange = () => setCap(getCapacitySettings());
+    window.addEventListener('storage', onChange);
+    window.addEventListener('ocp-settings-changed', onChange);
+    return () => {
+      window.removeEventListener('storage', onChange);
+      window.removeEventListener('ocp-settings-changed', onChange);
+    };
+  }, []);
+  const programmableHHPerDay = cap.effectiveHours * (cap.schedulingPct / 100) * (cap.productivityPct / 100);
+  return { CAP: cap, PROGRAMMABLE_HH_PER_DAY: programmableHHPerDay, HOURS_PER_WEEK: programmableHHPerDay * 5 };
+}
 
 // Classify a technician as 'day' or 'night' based on their workforce shift field
 function techShift(tech) {
@@ -429,6 +440,7 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
 
 /* ───── Weekly Calendar View (drag-and-drop scheduling grid) ───── */
 function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onUnscheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange, onRefresh }) {
+  const { CAP, PROGRAMMABLE_HH_PER_DAY, HOURS_PER_WEEK } = useCapacitySettings();
   const toast = useToast();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewRange, setViewRange] = useState(1);
@@ -2299,6 +2311,7 @@ export default function Scheduling() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const toast = useToast();
+  const { CAP, PROGRAMMABLE_HH_PER_DAY } = useCapacitySettings();
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(user?.role === 'tecnico' ? 'inbox' : 'schedule');
   const [detailOrder, setDetailOrder] = useState(null);

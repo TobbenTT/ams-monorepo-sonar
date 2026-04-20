@@ -211,6 +211,7 @@ export const getCriticalityScore = (wrId) => get(`/work-requests/${wrId}/critica
 // ── Managed Work Orders (Jorge Phase 2 — OT lifecycle) ──
 export const listManagedWOs = (p) => get('/managed-work-orders/', p);
 export const getManagedWO = (id) => get(`/managed-work-orders/${id}`);
+export const getManagedWOImpactScore = (id) => get(`/managed-work-orders/${id}/impact-score`);
 export const createManagedWO = (d) => post('/managed-work-orders/', d);
 export const createWOFromWR = (d) => post('/managed-work-orders/from-wr', d);
 export const updateManagedWO = (id, d) => put(`/managed-work-orders/${id}`, d);

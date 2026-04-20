@@ -145,6 +145,18 @@ def get_stats(plant_id: str | None = None, db: Session = Depends(get_db)):
     return managed_wo_service.get_stats(db, plant_id)
 
 
+@router.get("/{wo_id}/impact-score")
+def get_impact_score(wo_id: str, db: Session = Depends(get_db)):
+    """Multi-criteria impact score for a single WO (replaces the priority-lookup
+    hardcode in the OT detail modal). Returns the same 6-factor breakdown
+    that the backlog ranker uses so users can see *why* a WO scores what it does."""
+    from api.services.agentic_smart_backlog_service import score_managed_wo
+    result = score_managed_wo(db, wo_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Work order not found")
+    return result
+
+
 @router.get("/{wo_id}")
 def get_work_order(wo_id: str, plant_id: str | None = None, user=Depends(get_current_user), db: Session = Depends(get_db)):
     result = managed_wo_service.get_work_order(db, wo_id)

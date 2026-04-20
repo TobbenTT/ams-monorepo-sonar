@@ -413,6 +413,114 @@ def _build_stats(ranked_items: list[dict]) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Single WO scoring (for OT detail modal — replaces hardcoded priority lookup)
+# ---------------------------------------------------------------------------
+
+def score_managed_wo(db: Session, wo_id: str) -> dict | None:
+    """Compute multi-criteria impact score for a single managed WO.
+
+    Uses the same weights as prioritize_backlog() so the number shown in the
+    OT detail modal matches what the backlog ranker produces. Returns a
+    breakdown so the UI can explain "why 75?".
+    """
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return None
+
+    tag = wo.equipment_tag or ""
+    now = datetime.now()
+
+    # Reuse the same bulk helpers — they accept lists and handle empty cases
+    tag_to_node = _build_tag_to_node(db, [tag]) if tag else {}
+    node = tag_to_node.get(tag)
+    node_to_criticality = _build_node_to_criticality(db, [node.node_id]) if node else {}
+    crit_assessment = node_to_criticality.get(node.node_id) if node else None
+    crit_label = _resolve_criticality_label(node, crit_assessment)
+    s_crit = CRITICALITY_SCORES.get(crit_label.upper(), 0.4) if crit_label else 0.4
+
+    tag_to_health = _build_tag_to_health(db, [tag]) if tag else {}
+    health = tag_to_health.get(tag)
+    composite = health.composite_score if health else None
+    s_health = (100 - composite) / 100.0 if composite is not None else 0.5
+
+    # SLA proximity from priority + created_at (WO has no sla_deadline field)
+    sla_total = SLA_HOURS_MAP.get(wo.priority_code, 720)
+    if wo.created_at:
+        elapsed = (now - wo.created_at).total_seconds() / 3600.0
+        sla_remaining = max(0.0, sla_total - elapsed)
+        s_sla = max(0.0, min(1.0, 1.0 - (sla_remaining / sla_total)))
+    else:
+        sla_remaining = None
+        s_sla = 0.5
+
+    tag_to_failure_count = _build_failure_counts(db, [tag]) if tag else {}
+    failure_count = tag_to_failure_count.get(tag, 0)
+    s_freq = min(1.0, failure_count / 10.0)
+
+    est_hours = wo.estimated_hours or 0.0
+    s_cost = min(1.0, est_hours / 40.0)
+
+    # Safety: bump when fast-track (P1/P2) since those typically flag safety/production stops
+    s_safety = 0.7 if wo.priority_code in ("P1", "P2") else 0.3
+
+    contributions = {
+        "criticality":       round(WEIGHTS["criticality"]       * s_crit   * 100, 1),
+        "health_score":      round(WEIGHTS["health_score"]      * s_health * 100, 1),
+        "sla_proximity":     round(WEIGHTS["sla_proximity"]     * s_sla    * 100, 1),
+        "failure_frequency": round(WEIGHTS["failure_frequency"] * s_freq   * 100, 1),
+        "cost_of_deferral":  round(WEIGHTS["cost_of_deferral"]  * s_cost   * 100, 1),
+        "safety_impact":     round(WEIGHTS["safety_impact"]     * s_safety * 100, 1),
+    }
+    total_score = round(sum(contributions.values()), 1)
+
+    alerts: list[str] = []
+    if sla_remaining is not None and sla_remaining < sla_total * _SLA_BREACH_THRESHOLD:
+        alerts.append("SLA_BREACH_RISK")
+    if failure_count >= _CHRONIC_FAILURE_THRESHOLD:
+        alerts.append("CHRONIC_EQUIPMENT")
+
+    age_days = max(0, (now - wo.created_at).days) if wo.created_at else 0
+    if age_days > _AGING_THRESHOLD_DAYS:
+        alerts.append("AGING")
+
+    # Map score to label (matches the bands used by the existing modal)
+    if total_score >= 70:
+        impact_label = "CRITICO"
+    elif total_score >= 50:
+        impact_label = "ALTO"
+    elif total_score >= 30:
+        impact_label = "MEDIO"
+    else:
+        impact_label = "BAJO"
+
+    return {
+        "wo_id": wo_id,
+        "total_score": total_score,
+        "impact_label": impact_label,
+        "weights": {k: round(v * 100, 1) for k, v in WEIGHTS.items()},
+        "raw_factors": {
+            "criticality":       round(s_crit * 100, 1),
+            "health_score":      round(s_health * 100, 1),
+            "sla_proximity":     round(s_sla * 100, 1),
+            "failure_frequency": round(s_freq * 100, 1),
+            "cost_of_deferral":  round(s_cost * 100, 1),
+            "safety_impact":     round(s_safety * 100, 1),
+        },
+        "contributions": contributions,
+        "context": {
+            "criticality_class": crit_label or "UNKNOWN",
+            "health_composite": composite if composite is not None else None,
+            "sla_total_hours": sla_total,
+            "sla_remaining_hours": round(sla_remaining, 1) if sla_remaining is not None else None,
+            "failure_count_12m": failure_count,
+            "estimated_hours": est_hours,
+            "age_days": age_days,
+        },
+        "alerts": alerts,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Empty result helper
 # ---------------------------------------------------------------------------
 

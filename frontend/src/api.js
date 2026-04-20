@@ -1,5 +1,34 @@
 /* API Client — MAGEAM MVP */
+import { enqueueMutation } from './offlineStore';
+
 const BASE = '/api/v1';
+
+/**
+ * Endpoint patterns that are safe to queue when offline.
+ * The technician in the field mainly needs these: start/complete/close WOs,
+ * notes, progress, photo captures, close-verify, WR creation.
+ * Anything else (auth, admin, search) fails fast if offline.
+ */
+const OFFLINE_QUEUEABLE_PATTERNS = [
+  /^\/managed-work-orders\/[^\/]+\/start$/,
+  /^\/managed-work-orders\/[^\/]+\/complete$/,
+  /^\/managed-work-orders\/[^\/]+\/close$/,
+  /^\/managed-work-orders\/[^\/]+\/progress$/,
+  /^\/managed-work-orders\/[^\/]+\/notes$/,
+  /^\/managed-work-orders\/[^\/]+$/,          // PUT update (e.g., actual_hours)
+  /^\/capture\//,                              // field captures (photos, voice)
+  /^\/work-requests\/?$/,                      // POST create WR
+  /^\/work-requests\/[^\/]+\/validate$/,
+];
+
+function isQueueablePath(method, path) {
+  if (method === 'GET') return false;
+  return OFFLINE_QUEUEABLE_PATTERNS.some(rx => rx.test(path));
+}
+
+/** Event bus for offline queue events (used by UI indicator). */
+export const offlineEvents = new EventTarget();
+function emitQueued(entry) { offlineEvents.dispatchEvent(new CustomEvent('queued', { detail: entry })); }
 
 /** Get currently selected plant from localStorage */
 function getSelectedPlant() {
@@ -69,7 +98,28 @@ async function request(method, path, data, params) {
   const opts = { method, headers: authHeaders() };
   if (data !== undefined && method !== 'GET') opts.body = JSON.stringify(data);
 
-  let r = await fetch(url, opts);
+  // Offline queue: mutation endpoints the field tech uses get stored for later
+  // replay instead of failing. Other mutations fail fast so UX reflects reality.
+  if (!navigator.onLine && isQueueablePath(method, path)) {
+    const entry = { method, path, data: data ?? null, params: params ?? null };
+    await enqueueMutation(entry);
+    emitQueued(entry);
+    return { __queued__: true, __queued_at__: Date.now(), ...entry };
+  }
+
+  let r;
+  try {
+    r = await fetch(url, opts);
+  } catch (networkErr) {
+    // Network failure while supposedly online — queue if applicable, else rethrow
+    if (isQueueablePath(method, path)) {
+      const entry = { method, path, data: data ?? null, params: params ?? null };
+      await enqueueMutation(entry);
+      emitQueued(entry);
+      return { __queued__: true, __queued_at__: Date.now(), ...entry };
+    }
+    throw networkErr;
+  }
 
   if (r.status === 401 && getToken()) {
     const newToken = await tryRefresh();

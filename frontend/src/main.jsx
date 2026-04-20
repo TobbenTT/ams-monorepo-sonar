@@ -8,7 +8,11 @@ import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { LoadingSpinner } from './components/Shared';
+import { installOfflineSync } from './offlineSync';
 import './styles/index.css';
+
+// Install offline queue drainer — triggered on 'online' event + periodic checks.
+installOfflineSync();
 
 // Wrapper: if a lazy chunk fails (stale deploy), auto-reload once
 function lazyRetry(importFn) {

@@ -5,7 +5,7 @@
  */
 
 const DB_NAME = 'ocp-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const STORES = {
     workOrders: 'work_orders',
@@ -13,6 +13,8 @@ const STORES = {
     equipment: 'equipment',
     pendingCaptures: 'pending_captures',
     cache: 'api_cache',
+    pendingMutations: 'pending_mutations',  // generic offline queue (v2)
+    failedMutations: 'failed_mutations',    // mutations that conflicted on sync (v2)
 };
 
 function openDB() {
@@ -30,6 +32,10 @@ function openDB() {
                 db.createObjectStore(STORES.pendingCaptures, { keyPath: 'local_id', autoIncrement: true });
             if (!db.objectStoreNames.contains(STORES.cache))
                 db.createObjectStore(STORES.cache, { keyPath: 'url' });
+            if (!db.objectStoreNames.contains(STORES.pendingMutations))
+                db.createObjectStore(STORES.pendingMutations, { keyPath: 'id', autoIncrement: true });
+            if (!db.objectStoreNames.contains(STORES.failedMutations))
+                db.createObjectStore(STORES.failedMutations, { keyPath: 'id', autoIncrement: true });
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
@@ -188,6 +194,91 @@ export async function syncPendingCaptures(submitFn) {
 /** Check if we're online */
 export function isOnline() {
     return navigator.onLine;
+}
+
+// ── Pending mutations queue (generic POST/PUT/DELETE) ──────────────────────
+
+/** Enqueue a mutation to be replayed when connectivity returns. */
+export async function enqueueMutation(entry) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORES.pendingMutations, 'readwrite');
+        const store = transaction.objectStore(STORES.pendingMutations);
+        const req = store.add({ ...entry, _created_at: Date.now(), attempts: 0 });
+        req.onsuccess = () => resolve(req.result);
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+
+/** List pending mutations in insertion order (FIFO via auto-increment id). */
+export async function listPendingMutations() {
+    const all = await getAll(STORES.pendingMutations);
+    return all.sort((a, b) => (a.id || 0) - (b.id || 0));
+}
+
+/** Count pending mutations (cheap). */
+export async function countPendingMutations() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORES.pendingMutations, 'readonly');
+        const store = transaction.objectStore(STORES.pendingMutations);
+        const req = store.count();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+/** Remove a pending mutation after successful sync. */
+export async function removePendingMutation(id) {
+    return deleteItem(STORES.pendingMutations, id);
+}
+
+/** Move a pending mutation to the failed bucket (conflict or permanent server error). */
+export async function moveToFailed(mutation, errorInfo) {
+    await enqueueFailed({ ...mutation, error: errorInfo, _failed_at: Date.now() });
+    await removePendingMutation(mutation.id);
+}
+
+async function enqueueFailed(entry) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORES.failedMutations, 'readwrite');
+        const store = transaction.objectStore(STORES.failedMutations);
+        // Remove the incoming id so IndexedDB auto-generates a new one in the failed store
+        const { id, ...rest } = entry;
+        const req = store.add(rest);
+        req.onsuccess = () => resolve(req.result);
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+
+/** List failed mutations (for UI review). */
+export async function listFailedMutations() {
+    return getAll(STORES.failedMutations);
+}
+
+/** Discard a failed mutation (user acknowledged). */
+export async function discardFailedMutation(id) {
+    return deleteItem(STORES.failedMutations, id);
+}
+
+/** Increment retry counter for a pending mutation (transient error, will retry later). */
+export async function bumpAttempts(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORES.pendingMutations, 'readwrite');
+        const store = transaction.objectStore(STORES.pendingMutations);
+        const getReq = store.get(id);
+        getReq.onsuccess = () => {
+            const item = getReq.result;
+            if (!item) { resolve(null); return; }
+            item.attempts = (item.attempts || 0) + 1;
+            item._last_attempt_at = Date.now();
+            store.put(item);
+        };
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+    });
 }
 
 export { STORES };

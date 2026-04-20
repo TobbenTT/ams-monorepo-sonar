@@ -7,6 +7,7 @@ import MobileBottomNav from './components/MobileBottomNav';
 import ErrorBoundary from './components/ErrorBoundary';
 import UpdateBanner from './components/UpdateBanner';
 import FeedbackWidget from './components/FeedbackWidget';
+import OfflineSyncToasts from './components/OfflineSyncToasts';
 import { lazy, Suspense } from 'react';
 const GuidedTour = lazy(() => import('./components/GuidedTour'));
 import ProjectSelector from './pages/ProjectSelector';
@@ -135,6 +136,7 @@ export default function App() {
                 </main>
             </div>
             <FeedbackWidget />
+            <OfflineSyncToasts />
             <Suspense fallback={null}><GuidedTour /></Suspense>
         </div>
     );

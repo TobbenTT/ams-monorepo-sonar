@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { Home, ClipboardList, Plus, FileText, BarChart3 } from 'lucide-react';
+import OfflineIndicator from './OfflineIndicator';
 
 const NAV_ITEMS = {
     maintainer: [
@@ -20,6 +21,11 @@ export default function MobileBottomNav({ mobileRole }) {
     const items = NAV_ITEMS[mobileRole] || NAV_ITEMS.maintainer;
 
     return (
+        <>
+        {/* Offline/sync chip floats top-right so the technician always sees status */}
+        <div className="fixed top-2 right-2 z-[60] pointer-events-auto" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+            <OfflineIndicator />
+        </div>
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50" style={{ borderColor: '#E2E8F0', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
             <div className="px-2 py-2">
                 <div className="flex items-center justify-around">
@@ -45,5 +51,6 @@ export default function MobileBottomNav({ mobileRole }) {
                 </div>
             </div>
         </nav>
+        </>
     );
 }

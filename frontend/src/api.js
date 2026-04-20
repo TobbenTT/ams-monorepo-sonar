@@ -612,6 +612,27 @@ export const agenticStatus = () => get('/agentic/status');
 export const equipmentDoctor = (d) => post('/agentic/equipment-doctor', d);
 export const generateSafetyChecklist = (d) => post('/agentic/safety-checklist', d);
 export const generateExecutiveReport = (d) => post('/agentic/executive-report', d);
+export async function downloadExecutiveReportPPTX({ plant_id = 'OCP-JFC1', period = 'monthly' } = {}) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${BASE}/agentic/executive-report/pptx`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ plant_id, period }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `executive_report_${plant_id}_${period}_${new Date().toISOString().slice(0, 10)}.pptx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
 export const generateShiftHandover = (d) => post('/agentic/shift-handover', d);
 export const adviseRCMStrategy = (d) => post('/agentic/rcm-advisor', d);
 export const voiceCapture = (d) => post('/agentic/voice-capture', d);

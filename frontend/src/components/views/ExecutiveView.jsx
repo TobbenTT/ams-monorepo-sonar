@@ -311,6 +311,19 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
               }} className="text-[10px] px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
                 Run Watchdog
               </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await api.downloadExecutiveReportPPTX({ plant_id: selectedPlant, period: 'monthly' });
+                  } catch (e) {
+                    alert('Error generando PPTX: ' + (e.message || ''));
+                  }
+                }}
+                className="ml-2 text-[10px] px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                title="Generar reporte ejecutivo mensual (PPTX)"
+              >
+                📊 Reporte PPTX
+              </button>
               <p className="text-sm text-blue-700">
                 {totalActive > 0 ? t('executive.rootCauseActiveAlerts').replace('{count}', totalActive) : t('executive.rootCauseNoAlerts')}
               </p>

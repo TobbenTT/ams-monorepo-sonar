@@ -3,9 +3,10 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
     Clock, AlertCircle, PlayCircle, CheckCircle2, Users,
     ClipboardCheck, XCircle, ChevronRight, X, History,
-    Calendar, BarChart3, Timer, Archive,
+    Calendar, BarChart3, Timer, Archive, Mic,
 } from 'lucide-react';
 import * as api from '../../api';
+import SmartCaptureModal from '../../components/SmartCaptureModal';
 
 const PRIORITY_COLORS = {
     P1: { bg: '#FEE2E2', text: '#991B1B' },
@@ -99,6 +100,7 @@ function MaintainerHome({ plant }) {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [scores, setScores] = useState({}); // keyed by work_package_id
+    const [smartCapture, setSmartCapture] = useState(false);
 
     useEffect(() => {
         Promise.all([
@@ -199,6 +201,25 @@ function MaintainerHome({ plant }) {
                         ))}
                     </div>
                 </div>
+            )}
+
+            {/* Smart Capture FAB (SF-343) */}
+            <button
+                onClick={() => setSmartCapture(true)}
+                className="fixed bottom-20 right-4 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg text-white text-sm font-semibold active:scale-95 transition-all"
+                style={{ backgroundColor: '#047857' }}
+                aria-label="Captura Inteligente"
+            >
+                <Mic className="w-5 h-5" />
+                Captura IA
+            </button>
+
+            {smartCapture && (
+                <SmartCaptureModal
+                    plantId={plant}
+                    technicianId="MOBILE"
+                    onClose={() => setSmartCapture(false)}
+                />
             )}
         </div>
     );

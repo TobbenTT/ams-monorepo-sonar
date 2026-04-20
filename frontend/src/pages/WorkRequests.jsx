@@ -941,15 +941,51 @@ ${materials.length ? `<div class="section">
           </div>
         )}
 
-        {/* Support Equipment — independent section */}
-        {item.support_equipment?.length > 0 && (
+        {/* Support Equipment — independent section.
+            Jorge (2026-04-20 tarde): el supervisor tiene que poder AGREGAR
+            equipos de apoyo que falten, no sólo ver los que identificó el
+            mantenedor. Igual que materiales y recursos. */}
+        {(item.support_equipment?.length > 0 || editing || canEdit) && (
           <div className="px-6 pb-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Support Equipment</p>
-            <div className="flex flex-wrap gap-1.5">
-              {(Array.isArray(item.support_equipment) ? item.support_equipment : []).map((eq, i) => (
-                <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full font-medium">{typeof eq === 'string' ? eq : eq.name || eq.tag || ''}</span>
-              ))}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Support Equipment</p>
+              {(editing || canEdit) && (
+                <button
+                  onClick={() => {
+                    if (!editing) setEditing(true);
+                    const name = window.prompt('Nombre o tag del equipo de apoyo:');
+                    if (!name || !name.trim()) return;
+                    setEditData(d => ({ ...d, support_equipment: [...(d.support_equipment || []), name.trim()] }));
+                  }}
+                  className="text-[10px] font-semibold px-2 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-1"
+                >
+                  + Add Equipment
+                </button>
+              )}
             </div>
+            {editing ? (
+              <div className="flex flex-wrap gap-1.5">
+                {(Array.isArray(editData.support_equipment) ? editData.support_equipment : []).map((eq, i) => (
+                  <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1">
+                    {typeof eq === 'string' ? eq : eq.name || eq.tag || ''}
+                    <button onClick={() => setEditData(d => ({ ...d, support_equipment: (d.support_equipment || []).filter((_, j) => j !== i) }))}
+                      className="text-purple-400 hover:text-red-500">&times;</button>
+                  </span>
+                ))}
+                {(!editData.support_equipment || editData.support_equipment.length === 0) && (
+                  <span className="text-[11px] italic text-muted-foreground">Sin equipos de apoyo cargados</span>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {(Array.isArray(item.support_equipment) ? item.support_equipment : []).map((eq, i) => (
+                  <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full font-medium">{typeof eq === 'string' ? eq : eq.name || eq.tag || ''}</span>
+                ))}
+                {(!item.support_equipment || item.support_equipment.length === 0) && (
+                  <span className="text-[11px] italic text-muted-foreground">Sin equipos de apoyo</span>
+                )}
+              </div>
+            )}
           </div>
         )}
 

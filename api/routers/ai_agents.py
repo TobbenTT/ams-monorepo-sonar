@@ -35,9 +35,16 @@ log = logging.getLogger(__name__)
 
 
 class SuggestFailureRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     description: str
     equipment_tag: str | None = None
     equipment_name: str | None = None
+    # Jorge (2026-04-20): la IA respeta condición y prioridad como input.
+    # Si equipment_condition == 'operating', las acciones NO deben empezar
+    # por detener/bloquear el equipo — eso lo hace operaciones, no
+    # mantenimiento. Sí bloquear LOTO cuando ya está detenido.
+    equipment_condition: str | None = None  # operating | stopped
+    priority_hint: str | None = None        # P1 | P2 | P3 | P4
 
 router = APIRouter(
     prefix="/ai",
@@ -616,9 +623,29 @@ def suggest_failure_fields(data: SuggestFailureRequest, _user=Depends(get_curren
         import anthropic
         client = anthropic.Anthropic(api_key=key)
         equip_ctx = f"Equipo: {data.equipment_tag} ({data.equipment_name})" if data.equipment_tag else ""
+        # Jorge (2026-04-20): hints de condición y prioridad. Fuerzan a que
+        # la primera acción NUNCA sea "detener equipo" cuando operating, y
+        # que las recomendaciones se alineen con la prioridad.
+        cond = (data.equipment_condition or '').lower()
+        cond_line = ''
+        if cond == 'operating':
+            cond_line = (
+                "\nEl equipo ESTÁ OPERANDO. IMPORTANTE: la primera acción NO "
+                "debe ser detener el equipo ni coordinar con operaciones — "
+                "asume que ese paso lo hace operaciones aparte. Las acciones "
+                "deben partir por INSPECCIÓN o, si requiere intervención "
+                "directa, desde el BLOQUEO/LOTO del equipo (ya detenido por "
+                "operaciones)."
+            )
+        elif cond == 'stopped':
+            cond_line = (
+                "\nEl equipo está DETENIDO. Las acciones deben partir por "
+                "BLOQUEO LOTO, no por 'detener'."
+            )
+        prio_line = f"\nPrioridad indicada por el solicitante: {data.priority_hint}." if data.priority_hint else ''
         prompt = f"""Eres un experto en mantenimiento industrial SAP PM.
 Un técnico describió esta falla: "{data.description}"
-{equip_ctx}
+{equip_ctx}{cond_line}{prio_line}
 
 Clasifica la falla eligiendo EXACTAMENTE uno de los valores listados abajo.
 

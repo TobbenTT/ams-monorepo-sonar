@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { CritBadge, LoadingSpinner } from '../components/Shared';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -475,29 +475,49 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     return result;
   }, [weekStart, viewRange, includeWeekends]);
 
-  // Build assignment grid: "workerId:dateStr" -> [wo, ...]
+  // Build assignment grid: "workerId:dateStr[:shift]" -> [wo, ...]
+  // Jorge (2026-04-20 tarde): si la OT dura más que un turno, no saltar
+  // directo al día siguiente — primero consumir la noche del mismo día.
+  // Ej: 15h con turno de 12h → 12h día + 3h noche (mismo día).
   const grid = useMemo(() => {
     const g = {};
     const daySet = new Set(days.map(d => d.str));
+    const shiftHours = Math.max(1, CAP.effectiveHours || PROGRAMMABLE_HH_PER_DAY);
     scheduledWOs.forEach(wo => {
       const startDate = wo.planned_start ? new Date(wo.planned_start) : null;
       if (!startDate) return;
-      const shift = wo.shift || 'day';
+      const startShift = (wo.shift || 'day').toLowerCase();
       const hours = wo.estimated_hours || 0;
-      const spanDays = Math.max(1, Math.ceil(hours / PROGRAMMABLE_HH_PER_DAY));
-      (wo.assigned_workers || []).forEach(w => {
-        for (let d = 0; d < spanDays; d++) {
-          const dayStr = toDateStr(addDays(startDate, d));
-          if (!daySet.has(dayStr)) continue;
-          const key = showShifts ? `${w.worker_id}:${dayStr}:${shift}` : `${w.worker_id}:${dayStr}`;
-          if (!g[key]) g[key] = [];
-          if (d === 0) g[key].push(wo);
-          else g[key].push({ ...wo, _continuation: true, _dayNum: d + 1, _totalDays: spanDays });
+      // Generate sequential (day, shift) slots — starting at the WO's shift
+      // and flipping day↔night on the same date before advancing a day.
+      const slots = [];
+      if (showShifts) {
+        const need = Math.max(1, Math.ceil(hours / shiftHours));
+        let curDate = new Date(startDate);
+        let curShift = startShift === 'night' ? 'night' : 'day';
+        for (let i = 0; i < need; i++) {
+          slots.push({ date: new Date(curDate), shift: curShift });
+          // flip shift; if wrapping day→night→day, advance a day
+          if (curShift === 'day') curShift = 'night';
+          else { curShift = 'day'; curDate = addDays(curDate, 1); }
         }
+      } else {
+        const need = Math.max(1, Math.ceil(hours / PROGRAMMABLE_HH_PER_DAY));
+        for (let i = 0; i < need; i++) slots.push({ date: addDays(startDate, i), shift: startShift });
+      }
+      (wo.assigned_workers || []).forEach(w => {
+        slots.forEach((slot, idx) => {
+          const dayStr = toDateStr(slot.date);
+          if (!daySet.has(dayStr)) return;
+          const key = showShifts ? `${w.worker_id}:${dayStr}:${slot.shift}` : `${w.worker_id}:${dayStr}`;
+          if (!g[key]) g[key] = [];
+          if (idx === 0) g[key].push(wo);
+          else g[key].push({ ...wo, _continuation: true, _dayNum: idx + 1, _totalDays: slots.length });
+        });
       });
     });
     return g;
-  }, [scheduledWOs, showShifts, days]);
+  }, [scheduledWOs, showShifts, days, CAP.effectiveHours, PROGRAMMABLE_HH_PER_DAY]);
 
   // Per-technician total hours in view
   const techHours = useMemo(() => {
@@ -677,6 +697,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   }, [scheduledWOs]);
 
   const [showMaterialsRail, setShowMaterialsRail] = useState(false);
+  const [expandedWCs, setExpandedWCs] = useState({}); // click → show tech names per work center
 
   return (
     <div className="flex gap-4" style={{ minHeight: 500 }}>
@@ -758,22 +779,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             )}
             {filteredReleased.map(wo => {
               const typeMeta = TYPE_META[wo.wo_type] || TYPE_META.PM02;
-              // Jorge (2026-04-20 tarde): hover tiene que mostrar el título
-              // de cabecera (description) y HH para poder decidir sin abrir.
-              const hoverTitle = [
-                `OT: ${wo.wo_number}`,
-                wo.description ? `Actividad: ${wo.description}` : null,
-                wo.equipment_tag ? `Equipo: ${wo.equipment_tag}` : null,
-                wo.priority_code ? `Prioridad: ${wo.priority_code}` : null,
-                wo.estimated_hours ? `HH estimados: ${wo.estimated_hours}` : null,
-                wo.work_center ? `Puesto trabajo: ${wo.work_center}` : null,
-                wo.planning_group ? `Grupo: ${wo.planning_group}` : null,
-              ].filter(Boolean).join('\n');
+              // Jorge (2026-04-20 tarde): card flotante al hover (no title HTML)
+              // con título cabecera + HH + resumen para decidir sin abrir.
               return (
                 <div key={wo.wo_id} draggable onDragStart={() => handleDragStart(wo)} onDragEnd={handleDragEnd}
-                  title={hoverTitle}
+                  onMouseEnter={() => setHoverWO(wo)}
+                  onMouseLeave={() => setHoverWO(null)}
                   style={{ contentVisibility: 'auto', containIntrinsicSize: '0 80px' }}
-                  className="p-3 hover:bg-muted/50 cursor-grab active:cursor-grabbing transition-colors">
+                  className="relative p-3 hover:bg-muted/50 cursor-grab active:cursor-grabbing transition-colors">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded text-white ${wo.priority_code === 'P1' ? 'bg-red-500' : wo.priority_code === 'P2' ? 'bg-orange-500' : wo.priority_code === 'P3' ? 'bg-blue-500' : 'bg-gray-400'}`}>
                       {wo.priority_code || 'P4'}
@@ -787,6 +800,29 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                     <span className="text-xs text-muted-foreground font-mono">{wo.equipment_tag || ''}</span>
                     <span className="text-xs font-semibold text-foreground tabular-nums">{wo.estimated_hours || 0} HH</span>
                   </div>
+                  {/* Floating hover card — muestra todo el contexto sin abrir modal */}
+                  {hoverWO?.wo_id === wo.wo_id && (
+                    <div className="absolute z-30 left-full top-0 ml-2 w-72 bg-white dark:bg-card border-2 border-emerald-500 rounded-xl shadow-xl p-3 pointer-events-none">
+                      <div className="flex items-center gap-2 mb-2 border-b border-border pb-2">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded text-white ${wo.priority_code === 'P1' ? 'bg-red-500' : wo.priority_code === 'P2' ? 'bg-orange-500' : wo.priority_code === 'P3' ? 'bg-blue-500' : 'bg-gray-400'}`}>{wo.priority_code || 'P4'}</span>
+                        <span className="font-mono text-xs font-bold text-foreground">{wo.wo_number}</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${typeMeta.bg}`}>{wo.wo_type}</span>
+                      </div>
+                      <div className="text-sm font-semibold text-foreground leading-snug mb-2">{wo.description || '—'}</div>
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        {wo.equipment_tag && (<><div className="text-muted-foreground">Equipo</div><div className="text-foreground font-mono text-right truncate">{wo.equipment_tag}</div></>)}
+                        {wo.estimated_hours != null && (<><div className="text-muted-foreground">HH estimados</div><div className="text-foreground font-semibold tabular-nums text-right">{wo.estimated_hours}</div></>)}
+                        {wo.planning_group && (<><div className="text-muted-foreground">Grupo</div><div className="text-foreground text-right">{wo.planning_group}</div></>)}
+                        {wo.work_center && (<><div className="text-muted-foreground">Puesto trabajo</div><div className="text-foreground text-right">{wo.work_center}</div></>)}
+                        {wo.sla_deadline && (<><div className="text-muted-foreground">SLA</div><div className="text-foreground text-right">{new Date(wo.sla_deadline).toLocaleDateString()}</div></>)}
+                      </div>
+                      {Array.isArray(wo.operations) && wo.operations.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-border text-[10.5px] text-muted-foreground">
+                          <span className="font-semibold text-foreground">{wo.operations.length}</span> operaciones planificadas
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -835,9 +871,15 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
               {capacityByWC.map(wc => {
                 const accent = SPEC_ACCENT[wc.key] || 'bg-slate-100 text-slate-700';
                 const label = SPEC_LABEL[wc.key] || wc.key;
+                const isExp = !!expandedWCs[wc.key];
+                const wcTechs = technicians.filter(t => (t.specialty || 'OTRO').toUpperCase() === wc.key);
                 return (
-                  <div key={wc.key} className="grid border-b border-border/60 last:border-b-0 hover:bg-muted/30" style={{ gridTemplateColumns: `180px repeat(${days.length}, minmax(72px, 1fr))` }}>
+                <React.Fragment key={wc.key}>
+                  <div className="grid border-b border-border/60 last:border-b-0 hover:bg-muted/30 cursor-pointer"
+                    onClick={() => setExpandedWCs(s => ({ ...s, [wc.key]: !s[wc.key] }))}
+                    style={{ gridTemplateColumns: `180px repeat(${days.length}, minmax(72px, 1fr))` }}>
                     <div className="px-3 py-2 flex items-center gap-2">
+                      {isExp ? <ChevronDown size={12} className="text-muted-foreground" /> : <ChevronRight size={12} className="text-muted-foreground" />}
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${accent}`}>{wc.key.slice(0,4)}</span>
                       <div className="leading-tight min-w-0">
                         <div className="text-[11.5px] font-semibold text-foreground truncate">{label}</div>
@@ -863,6 +905,31 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                       );
                     })}
                   </div>
+                  {/* Expandible — Jorge 2026-04-20 tarde: click en el puesto
+                      despliega los nombres de técnicos que pertenecen. */}
+                  {isExp && (
+                    <div className="bg-muted/20 border-b border-border/40 px-6 py-2">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        Técnicos ({wcTechs.length})
+                      </div>
+                      {wcTechs.length === 0 ? (
+                        <div className="text-[11px] text-muted-foreground italic">Sin técnicos registrados en este puesto</div>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {wcTechs.map(t => (
+                            <span key={t.worker_id} className="inline-flex items-center gap-1 bg-white dark:bg-card border border-border rounded-md px-1.5 py-0.5 text-[10.5px]">
+                              <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 text-[9px] font-bold flex items-center justify-center">
+                                {(t.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+                              </span>
+                              <span className="font-medium text-foreground">{t.name || t.worker_id}</span>
+                              <span className="text-[9px] font-mono text-muted-foreground">{t.shift || ''}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </React.Fragment>
                 );
               })}
             </div>

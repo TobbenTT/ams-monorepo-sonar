@@ -87,6 +87,16 @@ const WORK_CENTERS = [
   { value: 'MAUINS01', label: 'Instrumentación Auxiliar', group: 'M05' },
   { value: 'MAUCIV01', label: 'Civil Auxiliar', group: 'M05' },
 ];
+// Jorge (2026-04-20): Puesto de trabajo RESPONSABLE (supervisores) — distinto
+// del puesto de trabajo de mantenedores (WORK_CENTERS). Códigos parten con S.
+// Se deriva automáticamente de WORK_CENTERS reemplazando el prefijo (P/M) por S.
+// La lista real vendrá del backend; esta derivación cubre el caso mientras tanto.
+const RESPONSIBLE_WORK_CENTERS = WORK_CENTERS.map(w => ({
+  value: 'S' + w.value.slice(1),
+  label: 'Supervisor ' + w.label,
+  group: w.group,
+}));
+
 const WAREHOUSES = [
   { value: 'WH-001', label: 'WH-001 - Main Warehouse Plant' },
   { value: 'WH-002', label: 'WH-002 - Wet Area Storage' },
@@ -1317,17 +1327,18 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         </select>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3 border">
-                        <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Work Center {wo.planning_group ? `(${wo.planning_group})` : ''}</div>
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Puesto Trabajo Responsable {wo.planning_group ? `(${wo.planning_group})` : ''}</div>
                         <select value={wo.work_center || ''} disabled={!wo.planning_group}
                           onChange={e => {
                             const v = e.target.value;
                             api.updateManagedWO(wo.wo_id, { work_center: v })
-                              .then(() => { wo.work_center = v; setSelectedOT({...wo}); toast.success('Work Center actualizado'); })
+                              .then(() => { wo.work_center = v; setSelectedOT({...wo}); toast.success('Puesto Trabajo Responsable actualizado'); })
                               .catch(err => toast.error('Error: ' + (err.message || 'no se pudo actualizar')));
                           }}
                           className="w-full text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed">
                           <option value="">{wo.planning_group ? '— Seleccionar —' : 'Selecciona Planning Group primero'}</option>
-                          {(wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : []).map(w => <option key={w.value} value={w.value}>{w.value} - {w.label}</option>)}
+                          {/* Jorge (2026-04-20): aquí van SUPERVISORES (S-prefix), no mantenedores. */}
+                          {(wo.planning_group ? RESPONSIBLE_WORK_CENTERS.filter(w => w.group === wo.planning_group) : []).map(w => <option key={w.value} value={w.value}>{w.value} - {w.label}</option>)}
                         </select>
                       </div>
                     </div>

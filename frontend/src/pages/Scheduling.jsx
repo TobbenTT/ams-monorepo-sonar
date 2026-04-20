@@ -726,6 +726,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'technician' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
                 👷 Technicians
               </button>
+              {/* Jorge (2026-04-20): vista por Puesto de Trabajo estilo Prometheus
+                  — agrupa técnicos por especialidad (Mecánico/Eléctrico/Instr/...) */}
+              <button onClick={() => setViewBy('resource')}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'resource' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
+                🧰 Recursos
+              </button>
               <button onClick={() => setViewBy('wo')}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'wo' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
                 🔧 Work Orders
@@ -913,9 +919,27 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                   </tr>
                 </thead>
                 <tbody>
-                  {technicians.map(tech => {
+                  {(() => {
+                    // Jorge (2026-04-20): vista Recursos estilo Prometheus.
+                    // Agrega técnicos por puesto de trabajo (specialty), suma HH
+                    // por grupo/día y presenta una fila por puesto, consumido/nominal.
+                    if (viewBy !== 'resource') return technicians;
+                    const groups = {};
+                    for (const t of technicians) {
+                      const key = (t.specialty || 'SIN ESPECIALIDAD').toUpperCase();
+                      if (!groups[key]) groups[key] = { worker_id: 'RES-' + key, name: key, specialty: key, members: [], _aggregated: true };
+                      groups[key].members.push(t);
+                    }
+                    return Object.values(groups).map(g => ({
+                      ...g,
+                      _tech_ids: g.members.map(m => m.worker_id),
+                      _count: g.members.length,
+                    }));
+                  })().map(tech => {
                     const badge = SPEC_BADGE[tech.specialty] || { label: (tech.specialty || '?').slice(0, 4).toUpperCase(), bg: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' };
-                    const hours = techHours[tech.worker_id] || 0;
+                    const hours = tech._aggregated
+                      ? (tech._tech_ids || []).reduce((s, id) => s + (techHours[id] || 0), 0)
+                      : (techHours[tech.worker_id] || 0);
                     return (
                       <tr key={tech.worker_id}
                         style={{ contentVisibility: 'auto', containIntrinsicSize: '0 70px' }}

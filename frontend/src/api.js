@@ -634,6 +634,16 @@ export async function downloadExecutiveReportPPTX({ plant_id = 'OCP-JFC1', perio
     URL.revokeObjectURL(url);
 }
 export const generateShiftHandover = (d) => post('/agentic/shift-handover', d);
+export const agenticChronicFailures = (d) => post('/agentic/chronic-failures', d);
+export const chronicFailuresActive = (plantId) => get(`/agentic/chronic-failures/active${plantId ? `?plant_id=${encodeURIComponent(plantId)}` : ''}`);
+export const agenticMaterialReadiness = (d) => post('/agentic/material-readiness', d);
+export const agenticRouteWR = (d) => post('/agentic/route-wr', d);
+export const agenticSapSync = (d) => post('/agentic/sap-sync', d);
+export const agenticBudgetSentinel = (d) => post('/agentic/budget-sentinel', d);
+export const agenticPostLearning = (d) => post('/agentic/post-learning', d);
+export const agenticDefectTracker = (d) => post('/agentic/defect-tracker', d);
+export const agenticPredictiveHealth = (d) => post('/agentic/predictive-health', d);
+export const agenticShutdownOptimizer = (d) => post('/agentic/shutdown-optimizer', d);
 export const adviseRCMStrategy = (d) => post('/agentic/rcm-advisor', d);
 export const voiceCapture = (d) => post('/agentic/voice-capture', d);
 export const smartBacklog = (d) => post('/agentic/smart-backlog', d || {});

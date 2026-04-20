@@ -642,6 +642,26 @@ def chronic_failures(
         fn=_run,
     )
 
+@router.get("/agentic/chronic-failures/active")
+def chronic_failures_active(
+    plant_id: str = "OCP-JFC1",
+    lookback_months: int = 12,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Active chronic failures — thin wrapper that runs the detector and
+    returns the current active list. Keeps dashboards from having to POST."""
+    from api.services.agentic_chronic_failure_service import detect_chronic_failures
+    result = detect_chronic_failures(db=db, plant_id=plant_id, lookback_months=lookback_months)
+    active = result.get("chronic_failures") or result.get("findings") or []
+    return {
+        "plant_id": plant_id,
+        "total": len(active),
+        "lookback_months": lookback_months,
+        "items": active,
+    }
+
+
 # ── Material Readiness ───────────────────────────────────────────────────
 
 @router.post("/agentic/material-readiness")

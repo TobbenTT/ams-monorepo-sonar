@@ -1149,6 +1149,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [selected, setSelected] = useState(null);
   const [rejectModal, setRejectModal] = useState(null); // { id, title }
   const [rejectReason, setRejectReason] = useState('');
+  const [otCreatedModal, setOtCreatedModal] = useState(null); // { woNumber, woId } — SF-355 Jorge
   const [dismissedDups, setDismissedDups] = useState([]);
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -1423,17 +1424,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       .then(async () => {
         try {
           const wo = await api.createWOFromWR({ work_request_id: id });
-          toast.success(
-            <span>
-              OT {wo.wo_number || ''} creada desde aviso
-              {onNavigateTab && (
-                <button onClick={() => onNavigateTab('planning', null, wo.wo_number || wo.wo_id)} className="ml-2 underline font-semibold">
-                  → Ir a Work Orders
-                </button>
-              )}
-            </span>,
-            8000
-          );
+          // Jorge (2026-04-20): mismo estilo que el modal centrado de creación de aviso.
+          setOtCreatedModal({ woNumber: wo.wo_number || '', woId: wo.wo_id || null });
+          setSelected(null);
         } catch {
           toast.success(t('workRequests.approvedNoOT') || 'Aviso aprobado. Error creating OT — créala manualmente desde Work Orders.');
         }
@@ -2090,6 +2083,35 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           </div>
         );
       })()}
+      {/* SF-355 — OT Created Modal (centrado, estilo aviso creado) */}
+      {otCreatedModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOtCreatedModal(null)} />
+          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Work Order creada</h3>
+            <p className="text-sm text-gray-500 mb-1">Número OT:</p>
+            <p className="text-lg font-mono font-bold text-emerald-700 mb-6">{otCreatedModal.woNumber}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setOtCreatedModal(null)}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
+                Cerrar
+              </button>
+              <button onClick={() => {
+                const target = otCreatedModal.woNumber || otCreatedModal.woId;
+                setOtCreatedModal(null);
+                if (onNavigateTab && target) onNavigateTab('planning', null, target);
+              }}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700">
+                Ver OT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reject Modal */}
       {rejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

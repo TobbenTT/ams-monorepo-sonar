@@ -3506,41 +3506,62 @@ export default function Scheduling() {
           : p === 'P3' ? 'bg-blue-500 text-white'
           : 'bg-gray-400 text-white';
         return (
-          <div className="sticky bottom-0 left-0 right-0 z-30 -mx-4 md:-mx-6 mt-3 border-t border-border bg-white/95 dark:bg-card/95 backdrop-blur shadow-[0_-4px_12px_rgba(0,0,0,0.05)] overflow-hidden"
+          <div className="sticky bottom-3 left-0 right-0 z-30 mt-4 px-3"
             style={{ animation: 'slideUp 220ms ease-out both' }}>
-            <div className="flex items-center gap-3 px-4 py-2.5 min-w-0">
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                  <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">{unscheduled.length}</span>
+            <div className="mx-auto max-w-full rounded-2xl bg-slate-900 dark:bg-slate-950 text-slate-100 shadow-2xl ring-1 ring-white/5 overflow-hidden">
+              <div className="flex items-stretch gap-2 pl-4 pr-1.5 py-1.5 min-w-0">
+                <div className="flex items-center gap-2 shrink-0 pr-3 border-r border-white/10">
+                  <div>
+                    <div className="text-[11px] font-bold leading-tight">Open</div>
+                    <div className="text-[11px] font-bold leading-tight">WOs</div>
+                  </div>
+                  <span className="text-lg font-bold tabular-nums text-white">{unscheduled.length}</span>
                 </div>
-                <div className="text-[11px] leading-tight">
-                  <div className="font-bold text-foreground">Open WOs</div>
-                  <div className="text-muted-foreground">Sin programar</div>
+                <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto scrollbar-thin py-0.5">
+                  {unscheduled.slice(0, 12).map((wo) => {
+                    const opsCount = Array.isArray(wo.operations) ? wo.operations.length : 0;
+                    const badgeTone = wo.priority_code === 'P1' ? 'bg-red-500/90 text-white'
+                      : wo.priority_code === 'P2' ? 'bg-amber-400/90 text-slate-900'
+                      : wo.priority_code === 'P3' ? 'bg-sky-400/90 text-slate-900'
+                      : 'bg-slate-500/80 text-white';
+                    const hasWarn = wo.priority_code === 'P1' && !wo.planned_start;
+                    return (
+                      <button key={wo.wo_id}
+                        onClick={() => setDetailOrder(wo)}
+                        className="shrink-0 relative inline-flex items-center gap-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 ring-1 ring-white/5 px-3 py-1.5 transition-colors text-left"
+                        title={`${wo.wo_number} · ${wo.description || ''}`}>
+                        <span className={`inline-flex items-center gap-1 text-[9.5px] font-bold px-1.5 py-0.5 rounded-full ${badgeTone}`}>
+                          <span className="w-1 h-1 rounded-full bg-current opacity-80" />
+                          {wo.priority_code || 'P4'}
+                        </span>
+                        <div className="min-w-0 leading-tight">
+                          <div className="text-[10px] font-mono text-slate-400">{wo.wo_number}</div>
+                          <div className="text-[11.5px] font-semibold text-slate-50 truncate max-w-[160px]">
+                            {(wo.description || wo.equipment_tag || '').slice(0, 28)}
+                          </div>
+                        </div>
+                        {opsCount > 0 && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-slate-900">
+                            {opsCount}
+                          </span>
+                        )}
+                        {hasWarn && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-slate-900">!</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                  {unscheduled.length > 12 && (
+                    <span className="shrink-0 text-[10.5px] text-slate-400 px-2">+{unscheduled.length - 12}</span>
+                  )}
                 </div>
+                <button
+                  onClick={() => setDetailOrder(next)}
+                  className="shrink-0 inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 text-[11px] font-black px-3.5 rounded-xl shadow-lg transition-colors self-stretch">
+                  <Plus size={13} strokeWidth={3} />
+                  <span className="leading-tight text-[11px]">Open<br/>WO</span>
+                </button>
               </div>
-              <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto scrollbar-thin py-1">
-                {unscheduled.slice(0, 12).map((wo, i) => (
-                  <button key={wo.wo_id}
-                    onClick={() => setDetailOrder(wo)}
-                    className={`shrink-0 inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg border transition-all ${i === 0 ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 ring-1 ring-emerald-200' : 'border-border hover:bg-muted'}`}
-                    title={`${wo.wo_number} · ${wo.description || ''}`}>
-                    <span className={`text-[9px] font-bold px-1 py-0.5 rounded ${prioTone(wo.priority_code)}`}>{wo.priority_code || 'P4'}</span>
-                    <span className="font-mono font-semibold text-foreground">{wo.wo_number}</span>
-                    <span className="text-muted-foreground truncate max-w-[140px]">{(wo.description || '').slice(0, 28)}</span>
-                    {i === 0 && <span className="text-[9px] text-emerald-700 font-semibold ml-0.5">· siguiente</span>}
-                  </button>
-                ))}
-                {unscheduled.length > 12 && (
-                  <span className="shrink-0 text-[10.5px] text-muted-foreground px-2">+{unscheduled.length - 12}</span>
-                )}
-              </div>
-              <button
-                onClick={() => setDetailOrder(next)}
-                className="shrink-0 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition-colors">
-                <span className="text-[10px] font-semibold opacity-80 uppercase tracking-wider">Open</span>
-                <span className="text-base leading-none">WO</span>
-                <ChevronRight size={14} />
-              </button>
             </div>
           </div>
         );

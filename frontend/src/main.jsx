@@ -40,6 +40,7 @@ const AnalyticsPage = lazyRetry(() => import('./pages/AnalyticsPage'));
 const ReportsPage = lazyRetry(() => import('./pages/ReportsPage'));
 const TeamPage = lazyRetry(() => import('./pages/TeamPage'));
 const SettingsPage = lazyRetry(() => import('./pages/SettingsPage'));
+const PresentationMode = lazyRetry(() => import('./pages/PresentationMode'));
 
 // ── Existing Pages (secondary routes) ─────────────────────────
 const Login = lazyRetry(() => import('./pages/Login'));
@@ -135,6 +136,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="data-import" element={<P roles={MGMT}><S><DataImport /></S></P>} />
                                     <Route path="user-guide" element={<S><UserGuidePage /></S>} />
                                     <Route path="audit-log" element={<P roles={MGMT}><S><AuditLogPage /></S></P>} />
+                                    <Route path="present" element={<S><PresentationMode /></S>} />
 
                                     {/* ── Mobile routes ── */}
                                     <Route path="m/tareas" element={<S><MobileWorkOrders /></S>} />

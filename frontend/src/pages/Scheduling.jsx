@@ -926,7 +926,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
               // Jorge (2026-04-20 tarde): card flotante al hover (no title HTML)
               // con título cabecera + HH + resumen para decidir sin abrir.
               return (
-                <div key={wo.wo_id} draggable onDragStart={() => handleDragStart(wo)} onDragEnd={handleDragEnd}
+                <div key={wo.wo_id} draggable
+                  onDragStart={e => { e.stopPropagation(); if (e.dataTransfer) e.dataTransfer.setData('text/plain', wo.wo_id); handleDragStart(wo); }}
+                  onDragEnd={handleDragEnd}
                   onMouseEnter={() => setHoverWO(wo)}
                   onMouseLeave={() => setHoverWO(null)}
                   onClick={() => onOpenDetail && onOpenDetail(wo)}

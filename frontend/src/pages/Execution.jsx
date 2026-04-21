@@ -14,6 +14,78 @@ import {
   updateManagedWOProgress, verifyCloseManagedWO,
 } from '../api';
 
+// Fase 7 Jorge 2026-04-21 — grabar nota de voz en el cierre + transcribir.
+// Usa MediaRecorder + endpoint /media/transcribe (whisper) ya existente.
+function AudioDictateButton({ onText }) {
+  const [recording, setRecording] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const recRef = useState({ current: null })[0];
+
+  const start = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const chunks = [];
+      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setBusy(true);
+        try {
+          const res = await import('../api').then(m => m.transcribeAudio(blob, 'es'));
+          const txt = res?.text || res?.transcript || '';
+          if (txt) onText(txt.trim());
+        } catch (e) {
+          alert('Error al transcribir: ' + (e.message || ''));
+        } finally {
+          setBusy(false);
+        }
+      };
+      recRef.current = mr;
+      mr.start();
+      setRecording(true);
+    } catch (e) {
+      alert('No se pudo activar el micrófono: ' + (e.message || ''));
+    }
+  };
+  const stop = () => {
+    if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop();
+    setRecording(false);
+  };
+
+  if (busy) {
+    return <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"><Loader2 size={11} className="animate-spin" /> Transcribiendo…</span>;
+  }
+  return (
+    <button type="button" onClick={recording ? stop : start}
+      className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded ${recording ? 'bg-rose-600 text-white animate-pulse' : 'bg-muted text-foreground hover:bg-muted/70'}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${recording ? 'bg-white' : 'bg-rose-500'}`} />
+      {recording ? 'Detener' : 'Grabar nota'}
+    </button>
+  );
+}
+
+// Auto-clasifica las observaciones en 3 buckets. Heurística simple keyword —
+// cuando metamos un agente dedicado el clasificador se reemplaza.
+function ClosureClassify({ notes }) {
+  if (!notes || notes.length < 20) return null;
+  const low = notes.toLowerCase();
+  const repuestos = /(repuesto|pieza|stock|codigo|código|sap|bodega|material|filtro|rodamiento|sello|junta|correa)/.test(low);
+  const estrategia = /(estrategia|frecuencia|preventivo|plan|intervalo|ciclo|predictivo|vibraci|termograf)/.test(low);
+  const procesos = /(procedimiento|proceso|lockout|seguridad|permiso|herramienta|accesorio|traslad|tiempo)/.test(low);
+  const tags = [];
+  if (repuestos) tags.push({ k: 'Repuestos', c: 'bg-sky-100 text-sky-800' });
+  if (estrategia) tags.push({ k: 'Oport. estrategia', c: 'bg-purple-100 text-purple-800' });
+  if (procesos) tags.push({ k: 'Oport. procesos', c: 'bg-amber-100 text-amber-800' });
+  if (tags.length === 0) return null;
+  return (
+    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+      <span className="text-[9px] font-semibold uppercase text-muted-foreground">Clasificado:</span>
+      {tags.map(t => <span key={t.k} className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${t.c}`}>{t.k}</span>)}
+    </div>
+  );
+}
+
 function getLaborRate() {
   try { return JSON.parse(localStorage.getItem('ocp_settings') || '{}').laborRate || 50; } catch { return 50; }
 }
@@ -756,12 +828,16 @@ export default function Execution() {
                 </div>
               )}
 
-              {/* Observations */}
+              {/* Observations + audio — Fase 7 Jorge 2026-04-21 */}
               <div>
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 block">Observaciones</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Observaciones</label>
+                  <AudioDictateButton onText={(t) => setClosureNotes(prev => (prev ? prev + '\n' : '') + t)} />
+                </div>
                 <textarea value={closureNotes} onChange={e => setClosureNotes(e.target.value)}
                   className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30 min-h-[60px]"
-                  placeholder="Desvíos, hallazgos, seguimiento..." />
+                  placeholder="Desvíos, hallazgos, seguimiento... (o grabá audio con el botón)" />
+                <ClosureClassify notes={closureNotes} />
               </div>
 
               {/* Signature block — legal trace */}

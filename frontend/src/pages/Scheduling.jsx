@@ -275,48 +275,126 @@ function OCRClosureModal({ order, t, onClose, onSubmit }) {
 
 /* ───── Work Order Detail Modal ───── */
 function WODetailModal({ order, t, onClose, onClosureClick }) {
-  const deviation = order.duration_actual - order.duration_planned;
-  const hasDeviation = order.duration_actual > 0 && deviation !== 0;
-  const typeMeta = TYPE_META[order.type] || TYPE_META.PM02;
+  // Handle both shapes: inbox `order` (id, type, description, equipment, ...) and
+  // managed WO (wo_id, wo_number, wo_type, description, equipment_tag, ...).
+  const isManaged = !!order.wo_id || !!order.wo_number;
+  const woId = order.wo_id || order.id;
+  const woNum = order.wo_number || order.id;
+  const woType = order.wo_type || order.type || 'PM02';
+  const description = order.description || '—';
+  const equipment = order.equipment_tag || order.equipment || '—';
+  const priority = order.priority_code || order.priority || 'P4';
+  const status = order.status || 'PENDIENTE';
+  const plannedHours = order.estimated_hours ?? order.duration_planned ?? 0;
+  const actualHours = order.actual_hours ?? order.duration_actual ?? 0;
+  const techs = Array.isArray(order.assigned_workers)
+    ? order.assigned_workers.map(w => w.name || w.worker_id).filter(Boolean)
+    : (Array.isArray(order.technicians) ? order.technicians : []);
+  const ops = Array.isArray(order.operations) ? order.operations : [];
+  const materials = Array.isArray(order.materials) ? order.materials : [];
+  const deviation = actualHours - plannedHours;
+  const hasDeviation = actualHours > 0 && deviation !== 0;
+  const typeMeta = TYPE_META[woType] || TYPE_META.PM02;
+  const prioTone = priority === 'P1' ? 'bg-red-500 text-white'
+    : priority === 'P2' ? 'bg-orange-500 text-white'
+    : priority === 'P3' ? 'bg-blue-500 text-white'
+    : 'bg-gray-400 text-white';
+  const specToneLocal = (specRaw) => {
+    const s = (specRaw || '').toUpperCase();
+    const hit = Object.entries(SPEC_BADGE).find(([k]) => s.startsWith(k.slice(0, 3)) || k.startsWith(s.slice(0, 3)));
+    return hit ? hit[1] : { label: (s || '—').slice(0,4), bg: 'bg-slate-100 text-slate-700' };
+  };
+  const navigate = (globalThis.__mageamNav || null);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="p-5 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-sm font-bold text-foreground">{order.id}</span>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded border ${typeMeta.bg}`}>{typeMeta.label}</span>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+        <div className="p-5 border-b border-border flex items-center gap-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className="font-mono text-sm font-bold text-foreground">{woNum}</span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${prioTone}`}>{priority}</span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${typeMeta.bg}`}>{typeMeta.label || woType}</span>
+          <div className="flex-1" />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Cerrar">
             <X size={18} className="text-muted-foreground" />
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <h3 className="text-lg font-bold text-foreground">{order.description}</h3>
+          <h3 className="text-lg font-bold text-foreground leading-tight">{description}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <DetailCard label={t('scheduling.equipment')} value={order.equipment} />
-            <DetailCard label={t('scheduling.priority')} value={order.priority} />
-            <DetailCard label={t('scheduling.status')} value={t(`scheduling.status_${order.status}`) || order.status} />
-            <DetailCard label={t('scheduling.plannedHours')} value={`${order.duration_planned}h`} />
-            {order.duration_actual > 0 && (
-              <DetailCard label={t('scheduling.actualHours')} value={
-                <span className="flex items-center gap-1">
-                  {order.duration_actual}h
+            <DetailCard label="Equipo" value={equipment} />
+            <DetailCard label="Estado" value={status} />
+            <DetailCard label="HH planeadas" value={`${plannedHours}h`} />
+            {actualHours > 0 && (
+              <DetailCard label="HH reales" value={
+                <span className="flex items-center gap-1">{actualHours}h
                   {hasDeviation && (
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${deviation > 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}`}>
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${deviation > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
                       {deviation > 0 ? '+' : ''}{deviation.toFixed(1)}h
                     </span>
                   )}
                 </span>
               } />
             )}
-            <DetailCard label={t('scheduling.technicians')} value={order.technicians?.join(', ')} />
+            {order.planning_group && <DetailCard label="Grupo planeamiento" value={order.planning_group} />}
+            {order.work_center && <DetailCard label="Puesto trabajo" value={order.work_center} />}
+            {techs.length > 0 && <DetailCard label="Técnicos" value={techs.join(', ')} />}
+            {order.reservation_code && <DetailCard label="Reserva" value={<span className="font-mono">{order.reservation_code}</span>} />}
           </div>
-          {order.status !== 'COMPLETED' && order.status !== 'CLOSED' && (
-            <button onClick={() => onClosureClick(order)} className="w-full py-2.5 bg-[#1B5E20] hover:bg-[#2E7D32] text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
-              <Camera size={16} /> {t('scheduling.closeWithOCR')}
-            </button>
+
+          {ops.length > 0 && (
+            <div>
+              <div className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">Operaciones · {ops.length}</div>
+              <div className="border border-border rounded-lg divide-y divide-border/60">
+                {ops.slice(0, 12).map((op, i) => {
+                  const opSpec = specToneLocal(op.specialty || op.work_center || order.work_center);
+                  const hh = (parseFloat(op.hours) || 0);
+                  const qty = parseInt(op.quantity) || 1;
+                  return (
+                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-[12px]">
+                      <span className="font-mono text-[10px] text-muted-foreground w-10 shrink-0">{String((i + 1) * 10).padStart(4, '0')}</span>
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${opSpec.bg}`}>{opSpec.label}</span>
+                      <span className="flex-1 truncate text-foreground">{op.description || op.task || '—'}</span>
+                      <span className="text-muted-foreground tabular-nums text-[11px] shrink-0">{hh}h<span className="opacity-60"> × {qty}</span></span>
+                    </div>
+                  );
+                })}
+                {ops.length > 12 && <div className="px-3 py-1.5 text-[11px] text-muted-foreground">+{ops.length - 12} más</div>}
+              </div>
+            </div>
           )}
+
+          {materials.length > 0 && (
+            <div>
+              <div className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">Materiales · {materials.length}</div>
+              <div className="border border-border rounded-lg divide-y divide-border/60 text-[12px]">
+                {materials.slice(0, 8).map((m, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-1.5">
+                    <span className="font-mono text-[10px] text-muted-foreground w-24 shrink-0 truncate">{m.code || m.sap_id || '—'}</span>
+                    <span className="flex-1 truncate">{m.description || '—'}</span>
+                    <span className="tabular-nums text-muted-foreground">{m.quantity || 0} {m.uom || ''}</span>
+                  </div>
+                ))}
+                {materials.length > 8 && <div className="px-3 py-1.5 text-[11px] text-muted-foreground">+{materials.length - 8} más</div>}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            {isManaged && (
+              <button
+                onClick={() => { try { window.open(`/work-management?tab=planning&openWo=${woId}`, '_blank'); } catch {} }}
+                className="flex-1 py-2.5 border border-border rounded-xl font-semibold text-sm hover:bg-muted flex items-center justify-center gap-2">
+                Abrir en Work Management
+                <ArrowUpRight size={14} />
+              </button>
+            )}
+            {onClosureClick && status !== 'COMPLETED' && status !== 'CLOSED' && status !== 'CERRADO' && (
+              <button onClick={() => onClosureClick(order)} className="flex-1 py-2.5 bg-[#1B5E20] hover:bg-[#2E7D32] text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
+                <Camera size={16} /> Close with OCR
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

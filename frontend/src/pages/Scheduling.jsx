@@ -11,7 +11,7 @@ import {
   Calendar, Clock, Users, CheckCircle, Circle, Play, Loader2,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Inbox, Camera, Sparkles, Send, X,
   FileText, Wrench, AlertTriangle, Filter, Eye, BarChart3,
-  Package, Upload, Lock, ArrowRight, Search, GripVertical, Trash2, CheckCircle2, Plus
+  Package, Upload, Lock, ArrowRight, ArrowUpRight, Search, GripVertical, Trash2, CheckCircle2, Plus
 } from 'lucide-react';
 
 const TYPE_META = {
@@ -1244,36 +1244,38 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                     const isReserved = wo.status === 'PROGRAMADO';
                                     const ops = wo.operations || [];
                                     const isExp = expandedWOs.has(wo.wo_id);
+                                    const toggleExpand = (e) => {
+                                      e.stopPropagation();
+                                      setExpandedWOs(prev => { const n = new Set(prev); n.has(wo.wo_id) ? n.delete(wo.wo_id) : n.add(wo.wo_id); return n; });
+                                    };
                                     return (
-                                      <div key={wo.wo_id}
-                                        draggable={!isReserved}
-                                        onMouseEnter={() => setHoverWO(wo)}
-                                        onMouseLeave={() => setHoverWO(null)}
-                                        onDragStart={e => { if (isReserved) { e.preventDefault(); return; } e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
-                                        title={isReserved ? 'Reservada — desbloquea con Clear Assignments' : isDraft ? 'Borrador — arrástrala o reserva la semana' : ''}
-                                        className={`mb-1 p-1 rounded text-xs border ${isReserved ? 'cursor-not-allowed ring-1 ring-emerald-400' : 'cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400'} ${isDraft ? 'border-dashed border-2' : ''} ${woType.bg} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
-                                        <div className="flex items-center gap-0.5">
-                                          <span className="font-bold truncate text-[0.65rem] flex-1">{wo.wo_number} {wo._continuation ? `(${wo._dayNum}/${wo._totalDays})` : ''}</span>
-                                          {ops.length > 0 && !wo._continuation && (
-                                            <button onClick={e => { e.stopPropagation(); setExpandedWOs(prev => { const n = new Set(prev); n.has(wo.wo_id) ? n.delete(wo.wo_id) : n.add(wo.wo_id); return n; }); }}
-                                              className="text-[0.55rem] opacity-60 hover:opacity-100" title={`${ops.length} operaciones`}>
-                                              {isExp ? '▾' : '▸'}
-                                            </button>
-                                          )}
-                                        </div>
-                                        <div className="truncate text-[0.6rem]">{wo.equipment_tag}</div>
-                                        <div className="text-[0.55rem] mt-0.5">{wo._continuation ? 'cont.' : wo.estimated_hours + 'h'}{ops.length > 0 && !wo._continuation ? ` · ${ops.length} ops` : ''}</div>
-                                        {isExp && ops.length > 0 && !wo._continuation && (
-                                          <div className="mt-1 pt-1 border-t border-black/10 space-y-0.5">
-                                            {ops.slice(0, 5).map((op, oi) => (
-                                              <div key={oi} className="text-[0.5rem] flex items-center gap-1 leading-tight">
-                                                <span className="opacity-50 font-mono">#{oi + 1}</span>
-                                                <span className="truncate flex-1">{(op.description || op.task || '').substring(0, 20)}</span>
-                                                <span className="opacity-80 font-semibold">{((op.quantity || 1) * (op.hours || 0)).toFixed(1)}HH</span>
-                                              </div>
-                                            ))}
-                                            {ops.length > 5 && <div className="text-[0.5rem] opacity-50">+{ops.length - 5} más</div>}
+                                      <div key={wo.wo_id} className="relative mb-1">
+                                        <div
+                                          draggable={!isReserved}
+                                          onMouseEnter={() => setHoverWO(wo)}
+                                          onMouseLeave={() => setHoverWO(null)}
+                                          onClick={e => { if (!wo._continuation && ops.length > 0) toggleExpand(e); }}
+                                          onDragStart={e => { if (isReserved) { e.preventDefault(); return; } e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
+                                          title={isReserved ? 'Reservada — desbloquea con Clear Assignments' : isDraft ? 'Borrador — arrástrala o reserva la semana' : ops.length > 0 ? 'Click para ver operaciones' : ''}
+                                          className={`p-1 rounded text-xs border ${isReserved ? 'cursor-not-allowed ring-1 ring-emerald-400' : 'cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400'} ${isDraft ? 'border-dashed border-2' : ''} ${woType.bg} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
+                                          <div className="flex items-center gap-0.5">
+                                            <span className="font-bold truncate text-[0.65rem] flex-1">{wo.wo_number} {wo._continuation ? `(${wo._dayNum}/${wo._totalDays})` : ''}</span>
+                                            {ops.length > 0 && !wo._continuation && (
+                                              <span className="text-[0.55rem] opacity-60" title={`${ops.length} operaciones`}>{isExp ? '▾' : '▸'}</span>
+                                            )}
                                           </div>
+                                          <div className="truncate text-[0.6rem]">{wo.equipment_tag}</div>
+                                          <div className="text-[0.55rem] mt-0.5">{wo._continuation ? 'cont.' : wo.estimated_hours + 'h'}{ops.length > 0 && !wo._continuation ? ` · ${ops.length} ops` : ''}</div>
+                                        </div>
+                                        {/* Floating rich card — matches Jorge mockup. Requested-By: Jorge Cabezas. */}
+                                        {isExp && ops.length > 0 && !wo._continuation && (
+                                          <ExpandedWOCard
+                                            wo={wo}
+                                            ops={ops}
+                                            shift={shift}
+                                            onClose={toggleExpand}
+                                            onOpen={() => { setExpandedWOs(prev => { const n = new Set(prev); n.delete(wo.wo_id); return n; }); if (onOpenDetail) onOpenDetail(wo); }}
+                                          />
                                         )}
                                       </div>
                                     );
@@ -2645,6 +2647,85 @@ function SupportEquipmentTab({ plantId, t }) {
   );
 }
 
+// Rich expanded OT card — click-to-expand overlay styled after Jorge's mockup.
+// Positioned absolute over its cell so it can overflow to show full operation
+// list, materials status and an "Open WO" shortcut. Requested-By: Jorge Cabezas.
+function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
+  const specTone = (specRaw) => {
+    const s = (specRaw || '').toUpperCase();
+    const hit = Object.entries(SPEC_BADGE).find(([k]) => s.startsWith(k.slice(0, 3)) || k.startsWith(s.slice(0, 3)));
+    return hit ? hit[1] : { label: (s || '—').slice(0,4), bg: 'bg-slate-100 text-slate-700' };
+  };
+  const woSpec = specTone(wo.work_center || wo.specialty);
+  const prioTone = wo.priority_code === 'P1' ? 'bg-red-500 text-white'
+    : wo.priority_code === 'P2' ? 'bg-orange-500 text-white'
+    : wo.priority_code === 'P3' ? 'bg-blue-500 text-white'
+    : 'bg-gray-400 text-white';
+  const timeRange = shift?.id === 'night' ? '19:00–07:00' : '07:00–19:00';
+  const crewSize = Array.isArray(wo.assigned_workers) ? wo.assigned_workers.length : 0;
+  const matsReady = Array.isArray(wo.materials) && wo.materials.length > 0 && wo.materials.every(m => (m?.status || 'ready').toLowerCase() === 'ready' || m?.ready);
+  return (
+    <div
+      onClick={e => e.stopPropagation()}
+      className="absolute top-0 left-0 z-40 w-[340px] rounded-xl border border-emerald-400 dark:border-emerald-600 bg-white dark:bg-card shadow-2xl ring-4 ring-emerald-500/15 overflow-hidden"
+      style={{ animation: 'fadeIn 140ms ease-out both' }}>
+      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border bg-white dark:bg-card">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        <span className="font-mono font-bold text-[11.5px] text-foreground">{wo.wo_number}</span>
+        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${prioTone}`}>{wo.priority_code || 'P4'}</span>
+        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${woSpec.bg}`}>{woSpec.label}</span>
+        <div className="flex-1" />
+        <button onClick={onClose} className="p-0.5 rounded hover:bg-muted" title="Cerrar"><X size={12} /></button>
+      </div>
+      <div className="px-3 pt-2.5 pb-2">
+        <div className="font-bold text-foreground text-[13px] leading-tight mb-1.5">{wo.description || wo.equipment_tag}</div>
+        <div className="flex items-center gap-3 text-[10.5px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><Clock size={11} /> {timeRange}</span>
+          <span className="inline-flex items-center gap-1 font-semibold text-foreground">{wo.estimated_hours || 0}h</span>
+          {crewSize > 0 && <span className="inline-flex items-center gap-1"><Users size={11} /> {crewSize} crew</span>}
+        </div>
+      </div>
+      <div className="px-3 pb-2.5">
+        <div className="text-[9.5px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">Operations · {ops.length}</div>
+        <div className="space-y-1">
+          {ops.slice(0, 8).map((op, i) => {
+            const opSpec = specTone(op.specialty || op.work_center || wo.work_center);
+            const hh = (parseFloat(op.hours) || 0);
+            const qty = parseInt(op.quantity) || 1;
+            return (
+              <div key={i} className="flex items-center gap-2 text-[11px]">
+                <span className="font-mono text-[9.5px] text-muted-foreground w-8 shrink-0">{String((i + 1) * 10).padStart(4, '0')}</span>
+                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${opSpec.bg}`}>{opSpec.label}</span>
+                <span className="flex-1 truncate text-foreground">{op.description || op.task || '—'}</span>
+                <span className="text-muted-foreground tabular-nums text-[10px] shrink-0">{hh}h<span className="opacity-60"> × {qty}</span></span>
+              </div>
+            );
+          })}
+          {ops.length > 8 && <div className="text-[10px] text-muted-foreground pl-10">+{ops.length - 8} más</div>}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-border bg-muted/40">
+        {matsReady ? (
+          <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-emerald-700 dark:text-emerald-400">
+            <Package size={11} /> Materials ready {wo.reservation_code ? <span className="font-mono text-muted-foreground ml-0.5">{wo.reservation_code}</span> : null}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-amber-700 dark:text-amber-400">
+            <Package size={11} /> Materials pending
+          </span>
+        )}
+        <div className="flex-1" />
+        <button
+          onClick={(e) => { e.stopPropagation(); onOpen(); }}
+          className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-colors">
+          Open WO
+          <ArrowUpRight size={11} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function KpiCard({ icon: Icon, color, label, value, sub, highlight }) {
   return (
     <div className={`bg-card rounded-xl border p-4 ${highlight ? 'border-amber-200 dark:border-amber-700' : 'border-border'}`}>
@@ -3386,6 +3467,7 @@ export default function Scheduling() {
           canPublish={canPublish}
           onWeekChange={setViewedWeekStart}
           onAutoLevel={() => setShowAIModal(true)}
+          onOpenDetail={setDetailOrder}
         />
       )}
       {tab === 'gantt' && (

@@ -439,7 +439,7 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
 }
 
 /* ───── Weekly Calendar View (drag-and-drop scheduling grid) ───── */
-function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onUnscheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange, onRefresh }) {
+function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onUnscheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange, onRefresh, onAutoLevel }) {
   const { CAP, PROGRAMMABLE_HH_PER_DAY, HOURS_PER_WEEK } = useCapacitySettings();
   const toast = useToast();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
@@ -455,6 +455,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   const [includeWeekends, setIncludeWeekends] = useState(true);
   const [dragWO, setDragWO] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
+  // Over-capacity popover anchored to a (workCenterKey, dayIndex) cell in the
+  // Capacity by Work Center panel. Surfaces Auto-balance / Dismiss actions.
+  const [capacityAlert, setCapacityAlert] = useState(null);
   const [hoverWO, setHoverWO] = useState(null);
   const [reserveConfirm, setReserveConfirm] = useState(null); // { drafts, alreadyReserved } | null
   const [reserving, setReserving] = useState(false);
@@ -892,15 +895,49 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                       const fill = tone === 'red' ? 'bg-rose-500' : tone === 'amber' ? 'bg-amber-500' : 'bg-emerald-500';
                       const bg = tone === 'red' ? 'bg-rose-100' : tone === 'amber' ? 'bg-amber-100' : 'bg-emerald-100';
                       const textC = tone === 'red' ? 'text-rose-700' : tone === 'amber' ? 'text-amber-700' : 'text-emerald-700';
+                      const over = pct > 100;
+                      const isOpen = capacityAlert && capacityAlert.wc === wc.key && capacityAlert.idx === i;
                       return (
-                        <div key={i} className="px-2 py-2 border-l border-border/40">
+                        <div key={i}
+                          onClick={e => { if (!over) return; e.stopPropagation(); setCapacityAlert(isOpen ? null : { wc: wc.key, idx: i, pct, hh, nominal: wc.nominalPerDay, day: days[i]?.label || '' }); }}
+                          className={`relative px-2 py-2 border-l border-border/40 transition-colors ${over ? 'cursor-pointer hover:bg-rose-50/40' : ''} ${isOpen ? 'bg-rose-50/60 ring-1 ring-rose-300' : ''}`}>
                           <div className="flex items-baseline justify-between">
-                            <span className={`text-[10.5px] font-semibold tabular-nums ${textC}`}>{pct}%</span>
+                            <span className={`text-[10.5px] font-semibold tabular-nums ${textC} ${over ? 'animate-pulse' : ''}`}>{pct}%</span>
                             <span className="text-[10px] tabular-nums text-muted-foreground">{hh}/{wc.nominalPerDay}</span>
                           </div>
                           <div className={`mt-1 h-1.5 w-full rounded-full ${bg} overflow-hidden`}>
-                            <div className={`h-full ${fill} rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                            <div className={`h-full ${fill} rounded-full transition-all duration-300`} style={{ width: `${Math.min(pct, 100)}%` }} />
                           </div>
+                          {isOpen && (
+                            <div className="absolute z-30 top-full left-1/2 mt-2 w-[260px] origin-top"
+                              style={{ animation: 'fadeInUp 180ms ease-out both' }}
+                              onClick={e => e.stopPropagation()}>
+                              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-white dark:bg-card border-l border-t border-rose-200" />
+                              <div className="relative bg-white dark:bg-card border border-rose-200 dark:border-rose-800 rounded-xl shadow-xl p-3">
+                                <div className="flex items-start gap-2 mb-2">
+                                  <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-[12px] font-bold text-foreground">Over capacity — {pct}%</div>
+                                    <div className="text-[10.5px] text-muted-foreground mt-0.5 leading-snug">
+                                      Redistribute {Math.max(0, hh - wc.nominalPerDay)} HH, or extend shift. {wc.key.slice(0,4)} on {days[i]?.label || '—'}.
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2 mt-2">
+                                  <button
+                                    onClick={() => { setCapacityAlert(null); if (onAutoLevel) onAutoLevel(); }}
+                                    className="flex-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white transition-colors">
+                                    Auto-balance
+                                  </button>
+                                  <button
+                                    onClick={() => setCapacityAlert(null)}
+                                    className="text-[11px] font-medium px-2.5 py-1.5 rounded-md border border-border hover:bg-muted transition-colors">
+                                    Dismiss
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1241,9 +1278,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                       </div>
                                     );
                                   })}
-                                  {cellWOs.length === 0 && isTarget && (
-                                    <div className="h-10 border-2 border-dashed border-[#1B5E20] rounded flex items-center justify-center bg-[#1B5E20]/5">
-                                      <span className="text-[0.6rem] font-medium text-[#1B5E20]">Drop</span>
+                                  {isTarget && (
+                                    <div className="mt-1 border-2 border-dashed border-emerald-500 rounded-md bg-emerald-50/70 dark:bg-emerald-900/20 px-2 py-1.5 flex items-center gap-1.5"
+                                      style={{ animation: 'dropPulse 1.2s ease-in-out infinite' }}>
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                      <span className="text-[0.6rem] font-semibold text-emerald-800 dark:text-emerald-300 truncate">
+                                        drop — {d.label.slice(0,3)} {shift.id === 'night' ? '19:00–07:00' : '07:00–19:00'}
+                                      </span>
                                     </div>
                                   )}
                                 </td>
@@ -1275,8 +1316,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                 );
                               })}
                               {cellWOs.length === 0 && isTarget && (
-                                <div className="h-14 border-2 border-dashed border-[#1B5E20] rounded flex items-center justify-center bg-[#1B5E20]/5">
-                                  <span className="text-xs font-medium text-[#1B5E20]">Drop here</span>
+                                <div className="h-14 border-2 border-dashed border-emerald-500 rounded-md flex items-center justify-center bg-emerald-50/70 dark:bg-emerald-900/20 gap-1.5"
+                                  style={{ animation: 'dropPulse 1.2s ease-in-out infinite' }}>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">drop — {d.label.slice(0,3)}</span>
                                 </div>
                               )}
                               {cellWOs.length === 0 && isDragging && !isTarget && (
@@ -3291,6 +3334,7 @@ export default function Scheduling() {
           publishing={publishing}
           canPublish={canPublish}
           onWeekChange={setViewedWeekStart}
+          onAutoLevel={() => setShowAIModal(true)}
         />
       )}
       {tab === 'gantt' && (

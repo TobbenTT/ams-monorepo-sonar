@@ -498,6 +498,8 @@ input, select, textarea { font-family: var(--font-sans); font-size: 0.93rem; }
 .confirm-dialog p { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; }
 .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes dropPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 50% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); } }
 
 /* ══════════════════════════════════════════════════════════════
    PAGINATION

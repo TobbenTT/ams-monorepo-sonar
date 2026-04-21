@@ -788,8 +788,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 <div key={wo.wo_id} draggable onDragStart={() => handleDragStart(wo)} onDragEnd={handleDragEnd}
                   onMouseEnter={() => setHoverWO(wo)}
                   onMouseLeave={() => setHoverWO(null)}
+                  onClick={() => onOpenDetail && onOpenDetail(wo)}
                   style={{ contentVisibility: 'auto', containIntrinsicSize: '0 80px' }}
-                  className="relative p-3 hover:bg-muted/50 cursor-grab active:cursor-grabbing transition-colors">
+                  title="Click para ver detalle · Arrastrar para programar"
+                  className="relative p-3 hover:bg-muted/50 cursor-pointer active:cursor-grabbing transition-colors">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded text-white ${wo.priority_code === 'P1' ? 'bg-red-500' : wo.priority_code === 'P2' ? 'bg-orange-500' : wo.priority_code === 'P3' ? 'bg-blue-500' : 'bg-gray-400'}`}>
                       {wo.priority_code || 'P4'}

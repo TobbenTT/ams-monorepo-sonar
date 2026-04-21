@@ -69,3 +69,41 @@ def reoptimize_assignments(data: dict, db: Session = Depends(get_db)):
 def get_summary(data: dict, db: Session = Depends(get_db)):
     """Generate supervisor-friendly summary from AssignmentSummary data."""
     return assignment_service.get_assignment_summary(db, data)
+
+
+# ── Fase 3 Jorge 2026-04-21 — edit técnico (especialidad, turno, pattern, skills)
+@router.patch("/technicians/{worker_id}")
+def update_technician(
+    worker_id: str,
+    data: dict,
+    db: Session = Depends(get_db),
+):
+    """Update a technician's profile fields. Safe partial update — only
+    fields present in the body are touched."""
+    from api.database.models import WorkforceModel
+    w = db.query(WorkforceModel).filter(WorkforceModel.worker_id == worker_id).first()
+    if not w:
+        raise HTTPException(status_code=404, detail="Technician not found")
+    ALLOWED = {
+        "name", "specialty", "shift", "shift_pattern", "shift_cycle_start",
+        "skills", "certifications", "available", "absence_reason",
+        "absence_until", "competency_level", "years_experience",
+        "equipment_expertise", "safety_training_current", "competencies",
+    }
+    for k, v in data.items():
+        if k in ALLOWED:
+            setattr(w, k, v)
+    db.commit()
+    db.refresh(w)
+    return {
+        "worker_id": w.worker_id,
+        "name": w.name,
+        "specialty": w.specialty,
+        "shift": w.shift,
+        "shift_pattern": getattr(w, "shift_pattern", None),
+        "shift_cycle_start": getattr(w, "shift_cycle_start", None),
+        "skills": getattr(w, "skills", None) or [],
+        "certifications": w.certifications or [],
+        "available": w.available,
+        "years_experience": w.years_experience,
+    }

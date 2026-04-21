@@ -66,9 +66,15 @@ def get_technician_profiles(
     result = []
     for w in workers:
         try:
-            result.append(_db_worker_to_profile(w).model_dump(mode="json"))
+            d = _db_worker_to_profile(w).model_dump(mode="json")
         except Exception:
-            result.append({"worker_id": w.worker_id, "name": w.name, "specialty": w.specialty or "", "shift": w.shift or "", "available": w.available})
+            d = {"worker_id": w.worker_id, "name": w.name, "specialty": w.specialty or "", "shift": w.shift or "", "available": w.available}
+        # Jorge 2026-04-21 — expose shift_pattern + skills for the team table
+        # and the weekly board off-shift filtering.
+        d["shift_pattern"] = getattr(w, "shift_pattern", None)
+        d["shift_cycle_start"] = getattr(w, "shift_cycle_start", None)
+        d["skills"] = getattr(w, "skills", None) or []
+        result.append(d)
     return result
 
 

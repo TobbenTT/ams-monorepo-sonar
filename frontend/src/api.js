@@ -290,6 +290,23 @@ export const listContractorCrews = (contractorId) => get(`/contractors/${contrac
 export const createContractorCrew = (contractorId, data) => post(`/contractors/${contractorId}/crews`, data);
 export const listAllCrews = (plantId) => get('/contractors/crews/all', { plant_id: plantId });
 
+// Fase 3 Jorge 2026-04-21 — editar perfil de técnico (especialidad, turno, pattern, skills)
+export const listTechnicians = (params) => get('/assignments/technicians', params);
+export async function updateTechnician(workerId, data) {
+  const token = getToken();
+  const url = `${BASE}/assignments/technicians/${workerId}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 // Ops KPI dashboard (real SQL on managed_work_orders)
 export const getOpsSummary = (plantId) => get('/analytics-dash/summary', { plant_id: plantId });
 export const getOpsMtbfTimeseries = (plantId, months = 6) => get('/analytics-dash/mtbf-mttr/timeseries', { plant_id: plantId, months });

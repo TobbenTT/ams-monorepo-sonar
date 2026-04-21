@@ -109,6 +109,27 @@ function useCapacitySettings() {
   return { CAP: cap, PROGRAMMABLE_HH_PER_DAY: programmableHHPerShift, PROGRAMMABLE_HH_PER_SHIFT: programmableHHPerShift, HOURS_PER_WEEK: programmableHHPerShift * 5 };
 }
 
+// Fase 3 Jorge 2026-04-21 — verificar si un técnico está ON-SHIFT según su patrón.
+// Evita mostrar 5x2 en sáb/dom, 7x7 en sus 7 días de descanso, etc.
+function isTechOnShift(tech, date) {
+  const pattern = (tech?.shift_pattern || '').toLowerCase();
+  if (!pattern || pattern === 'continuous' || pattern === 'abc_8h') return true;
+  const dow = date.getDay(); // 0 dom .. 6 sab
+  if (pattern === '5x2') return dow >= 1 && dow <= 5;
+  if (pattern === '4x3') return dow >= 1 && dow <= 4;
+  if (pattern === '7x7' || pattern === '14x14') {
+    const start = tech.shift_cycle_start ? new Date(tech.shift_cycle_start) : null;
+    if (!start || isNaN(start.getTime())) return true; // no ciclo → mostrar
+    const MS_DAY = 86400000;
+    const days = Math.floor((date.getTime() - start.getTime()) / MS_DAY);
+    const cycle = pattern === '7x7' ? 14 : 28;
+    const on = pattern === '7x7' ? 7 : 14;
+    const pos = ((days % cycle) + cycle) % cycle;
+    return pos < on;
+  }
+  return true;
+}
+
 // Classify a technician as 'day' or 'night' based on their workforce shift field
 function techShift(tech) {
   const s = (tech?.shift || '').toUpperCase();
@@ -538,6 +559,32 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   // Over-capacity popover anchored to a (workCenterKey, dayIndex) cell in the
   // Capacity by Work Center panel. Surfaces Auto-balance / Dismiss actions.
   const [capacityAlert, setCapacityAlert] = useState(null);
+
+  // Fase 4 Jorge 2026-04-21 — auto-scroll cuando arrastrás cerca del borde
+  // de la ventana. Antes, si la OT estaba arriba en la lista y el tablero
+  // estaba scrolleado abajo, se perdía la visual y no se podía soltar.
+  useEffect(() => {
+    if (!dragWO) return;
+    let raf = null;
+    const EDGE = 80;
+    const STEP = 14;
+    const onMove = (e) => {
+      const y = e.clientY;
+      const vh = window.innerHeight;
+      const delta = y < EDGE ? -STEP : y > vh - EDGE ? STEP : 0;
+      if (!delta) return;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        window.scrollBy({ top: delta, behavior: 'auto' });
+        raf = null;
+      });
+    };
+    window.addEventListener('dragover', onMove);
+    return () => {
+      window.removeEventListener('dragover', onMove);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [dragWO]);
   const [hoverWO, setHoverWO] = useState(null);
   const [reserveConfirm, setReserveConfirm] = useState(null); // { drafts, alreadyReserved } | null
   const [reserving, setReserving] = useState(false);
@@ -1321,12 +1368,24 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                         </td>
                         {days.map(d => {
                           const isDragging = !!dragWO;
+                          // Fase 3: técnico fuera de su patrón de turno este día.
+                          const offShift = !isTechOnShift(tech, d.date);
                           if (showShifts) {
                             return SHIFTS.map(shift => {
                               const cellKey = `${tech.worker_id}:${d.str}:${shift.id}`;
                               const cellWOs = grid[cellKey] || [];
                               const isTarget = dropTarget === cellKey && dragWO;
                               const shiftBg = shift.id === 'night' ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : '';
+                              if (offShift) {
+                                return (
+                                  <td key={`${d.str}-${shift.id}`}
+                                    className="px-1 py-1 border-r border-border/50 align-top bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.03)_4px,rgba(0,0,0,0.03)_8px)] dark:bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(255,255,255,0.04)_4px,rgba(255,255,255,0.04)_8px)]"
+                                    style={{ minHeight: 70, minWidth: 120 }}
+                                    title={`Off-shift (${tech.shift_pattern || 'patrón no definido'})`}>
+                                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-semibold text-center mt-4">OFF</div>
+                                  </td>
+                                );
+                              }
                               return (
                                 <td key={`${d.str}-${shift.id}`}
                                   className={`px-1 py-1 border-r border-border/50 align-top transition-colors ${d.isWeekend ? 'bg-gray-50 dark:bg-gray-800/30' : ''} ${shiftBg} ${isTarget ? 'bg-[#1B5E20]/10' : isDragging && cellWOs.length === 0 ? 'bg-emerald-50/30 dark:bg-emerald-900/5' : ''}`}

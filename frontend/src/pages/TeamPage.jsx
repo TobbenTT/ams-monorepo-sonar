@@ -37,6 +37,164 @@ function getInitials(member) {
     .slice(0, 2);
 }
 
+const SPECIALTIES = ['MECANICO', 'ELECTRICO', 'INSTRUMENTISTA', 'SOLDADOR', 'LUBRICADOR', 'CIVIL', 'PREDICTIVO', 'FITTER', 'OTRO'];
+const SHIFT_PATTERNS = [
+  { v: '5x2', label: '5x2 (Lun–Vie)' },
+  { v: '4x3', label: '4x3 (Lun–Jue)' },
+  { v: '7x7', label: '7x7 (minería)' },
+  { v: '14x14', label: '14x14 (minería remota)' },
+  { v: 'continuous', label: 'Continuo (todos los días)' },
+  { v: 'abc_8h', label: 'Rotación ABC 8h (subterránea)' },
+];
+const SHIFTS = [
+  { v: 'day', label: 'Día ☀️' },
+  { v: 'night', label: 'Noche 🌙' },
+  { v: 'rotating', label: 'Rotativo' },
+];
+const COMMON_SKILLS = ['Soldadura', 'Alta tensión', 'Neumática', 'Hidráulica', 'Altura', 'Espacio confinado', 'Grúa horquilla', 'PLC/DCS', 'Vibraciones', 'Termografía'];
+
+function TechFields({ member, onSaved }) {
+  const workerId = member.worker_id || member.user_id;
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    specialty: member.specialty || '',
+    shift: member.shift || '',
+    shift_pattern: member.shift_pattern || '',
+    shift_cycle_start: member.shift_cycle_start || '',
+    skills: Array.isArray(member.skills) ? member.skills : [],
+  });
+  useEffect(() => {
+    setForm({
+      specialty: member.specialty || '',
+      shift: member.shift || '',
+      shift_pattern: member.shift_pattern || '',
+      shift_cycle_start: member.shift_cycle_start || '',
+      skills: Array.isArray(member.skills) ? member.skills : [],
+    });
+    setEditing(false);
+  }, [member.worker_id, member.user_id]);
+
+  const toggleSkill = (s) => {
+    setForm(f => ({
+      ...f,
+      skills: f.skills.includes(s) ? f.skills.filter(x => x !== s) : [...f.skills, s],
+    }));
+  };
+
+  const save = async () => {
+    if (!workerId) return;
+    setSaving(true);
+    try {
+      const updated = await api.updateTechnician(workerId, form);
+      onSaved && onSaved(updated);
+      setEditing(false);
+    } catch (e) {
+      alert('Error: ' + (e.message || 'no se pudo guardar'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-t pt-4 mt-2">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-semibold text-gray-700">Técnico · especialidad / turno / skills</p>
+        {!editing && (
+          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+            <Pencil className="w-3 h-3 mr-1" /> Editar
+          </Button>
+        )}
+      </div>
+      {!editing ? (
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p className="text-gray-500 text-xs">Especialidad</p>
+            <p className="font-medium">{form.specialty || '—'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Turno</p>
+            <p className="font-medium">{form.shift || '—'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Patrón</p>
+            <p className="font-medium">{form.shift_pattern || '—'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Inicio ciclo</p>
+            <p className="font-medium">{form.shift_cycle_start || '—'}</p>
+          </div>
+          <div className="col-span-2">
+            <p className="text-gray-500 text-xs mb-1">Skills / certificaciones</p>
+            {form.skills.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {form.skills.map(s => <Badge key={s} className="bg-indigo-100 text-indigo-700">{s}</Badge>)}
+              </div>
+            ) : <p className="text-gray-400 italic text-xs">Sin skills definidas</p>}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-500">Especialidad</label>
+              <select value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })}
+                className="w-full border rounded px-2 py-1.5 mt-0.5">
+                <option value="">—</option>
+                {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Turno</label>
+              <select value={form.shift} onChange={e => setForm({ ...form, shift: e.target.value })}
+                className="w-full border rounded px-2 py-1.5 mt-0.5">
+                <option value="">—</option>
+                {SHIFTS.map(s => <option key={s.v} value={s.v}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Patrón</label>
+              <select value={form.shift_pattern} onChange={e => setForm({ ...form, shift_pattern: e.target.value })}
+                className="w-full border rounded px-2 py-1.5 mt-0.5">
+                <option value="">—</option>
+                {SHIFT_PATTERNS.map(p => <option key={p.v} value={p.v}>{p.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Inicio ciclo (para 7x7/14x14)</label>
+              <input type="date" value={form.shift_cycle_start} onChange={e => setForm({ ...form, shift_cycle_start: e.target.value })}
+                className="w-full border rounded px-2 py-1.5 mt-0.5" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Skills / certificaciones</label>
+            <div className="flex flex-wrap gap-1.5">
+              {COMMON_SKILLS.map(s => {
+                const on = form.skills.includes(s);
+                return (
+                  <button key={s} type="button" onClick={() => toggleSkill(s)}
+                    className={`text-[11px] px-2 py-1 rounded border transition-colors ${on ? 'bg-indigo-600 text-white border-indigo-600' : 'border-border text-muted-foreground hover:bg-muted'}`}>
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 flex-1" onClick={save} disabled={saving}>
+              {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+              Guardar
+            </Button>
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditing(false)}>
+              <X className="w-3 h-3 mr-1" /> Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TeamPage() {
   const { t, lang } = useLanguage();
   const toast = useToast();
@@ -45,6 +203,20 @@ export default function TeamPage() {
     const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Fase 3 Jorge 2026-04-21 — toggle vista + filtros team
+  const [teamView, setTeamView] = useState('cards');
+  const [teamFilter, setTeamFilter] = useState('');
+  const [teamSpecFilter, setTeamSpecFilter] = useState('');
+  const filteredTeam = team.filter(m => {
+    if (teamSpecFilter && (m.specialty || '').toUpperCase() !== teamSpecFilter.toUpperCase()) return false;
+    if (!teamFilter) return true;
+    const q = teamFilter.toLowerCase();
+    const hay = [
+      m.full_name, m.username, m.email, m.specialty, m.shift, m.shift_pattern,
+      ...(Array.isArray(m.skills) ? m.skills : []),
+    ].filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q);
+  });
 
   // Profile dialog
   const [profileMember, setProfileMember] = useState(null);
@@ -91,6 +263,7 @@ export default function TeamPage() {
       const userNames = new Set(userList.map(u => (u.full_name || u.username || '').toLowerCase()));
       const extraTechs = techList.filter(t => !userNames.has((t.name || '').toLowerCase())).map(t => ({
         user_id: t.worker_id,
+        worker_id: t.worker_id,
         username: t.name?.toLowerCase().replace(/\s+/g, '.') || t.worker_id,
         full_name: t.name,
         email: '',
@@ -99,6 +272,9 @@ export default function TeamPage() {
         is_active: t.available !== false,
         specialty: t.specialty,
         shift: t.shift,
+        shift_pattern: t.shift_pattern,
+        shift_cycle_start: t.shift_cycle_start,
+        skills: t.skills || [],
         _source: 'workforce',
       }));
       setTeam([...userList, ...extraTechs]);
@@ -350,6 +526,28 @@ export default function TeamPage() {
       )}
 
       {/* Member Cards */}
+      {/* Fase 3 Jorge 2026-04-21 — toggle vista tabla / cards + filtros */}
+      <div className="flex items-center gap-3 flex-wrap mb-3">
+        <div className="flex items-center rounded-lg border border-border overflow-hidden">
+          <button onClick={() => setTeamView('cards')}
+            className={`px-3 py-1.5 text-xs font-semibold ${teamView === 'cards' ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}>
+            Tarjetas
+          </button>
+          <button onClick={() => setTeamView('table')}
+            className={`px-3 py-1.5 text-xs font-semibold ${teamView === 'table' ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}>
+            Tabla
+          </button>
+        </div>
+        <input type="text" value={teamFilter} onChange={e => setTeamFilter(e.target.value)}
+          placeholder="Filtrar por nombre / especialidad / turno / skill…"
+          className="flex-1 min-w-[240px] max-w-md text-sm border border-border rounded-lg px-3 py-1.5 bg-background" />
+        <select value={teamSpecFilter} onChange={e => setTeamSpecFilter(e.target.value)}
+          className="text-xs border border-border rounded-lg px-2 py-1.5 bg-background">
+          <option value="">Todas las especialidades</option>
+          {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
       {team.length === 0 ? (
         <Card className="p-12">
           <div className="flex flex-col items-center justify-center text-gray-400 gap-3">
@@ -358,9 +556,71 @@ export default function TeamPage() {
             <p className="text-sm">{t('team.noMembersHint')}</p>
           </div>
         </Card>
+      ) : teamView === 'table' ? (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left px-3 py-2 font-semibold">Nombre</th>
+                  <th className="text-left px-3 py-2 font-semibold">Rol</th>
+                  <th className="text-left px-3 py-2 font-semibold">Especialidad</th>
+                  <th className="text-left px-3 py-2 font-semibold">Turno</th>
+                  <th className="text-left px-3 py-2 font-semibold">Patrón</th>
+                  <th className="text-left px-3 py-2 font-semibold">Skills</th>
+                  <th className="text-left px-3 py-2 font-semibold">Estado</th>
+                  <th className="text-right px-3 py-2 font-semibold">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTeam.map(m => (
+                  <tr key={m.user_id} className="border-t border-border/60 hover:bg-muted/20">
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
+                          {getInitials(m)}
+                        </div>
+                        <span className="font-medium">{m.full_name || m.username}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <Badge className={`${ROLE_COLORS[m.role] || 'bg-gray-100 text-gray-800'} text-[10px]`}>
+                        {m.role ? roleLabel(m.role) : '—'}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">{m.specialty || '—'}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">{m.shift || '—'}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground font-mono">{m.shift_pattern || '—'}</td>
+                    <td className="px-3 py-2">
+                      {Array.isArray(m.skills) && m.skills.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {m.skills.slice(0, 3).map(s => <Badge key={s} className="bg-indigo-100 text-indigo-700 text-[9px]">{s}</Badge>)}
+                          {m.skills.length > 3 && <span className="text-[10px] text-muted-foreground">+{m.skills.length - 3}</span>}
+                        </div>
+                      ) : <span className="text-xs text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-3 py-2">
+                      <Badge className={m.is_active ? 'bg-green-100 text-green-800 text-[10px]' : 'bg-red-100 text-red-800 text-[10px]'}>
+                        {m.is_active ? 'Activo' : 'Inactivo'}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <Button size="sm" variant="outline" onClick={() => openProfile(m)}>
+                        <Pencil className="w-3 h-3 mr-1" /> Editar
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {filteredTeam.length === 0 && (
+                  <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground italic">Sin resultados</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {team.map((member) => (
+          {filteredTeam.map((member) => (
             <Card key={member.user_id} className="p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -544,6 +804,18 @@ export default function TeamPage() {
                       </Badge>
                     )}
                   </div>
+
+                  {/* Fase 3 Jorge 2026-04-21 — técnico: especialidad + turno + pattern + skills.
+                      Solo para miembros que existen en workforce (tienen worker_id). */}
+                  {(profileMember._source === 'workforce' || profileMember.role === 'tecnico') && (
+                    <TechFields
+                      member={profileMember}
+                      onSaved={(updated) => {
+                        setProfileMember({ ...profileMember, ...updated });
+                        setTeam(prev => prev.map(m => (m.worker_id || m.user_id) === (profileMember.worker_id || profileMember.user_id) ? { ...m, ...updated } : m));
+                      }}
+                    />
+                  )}
                 </>
               )}
             </div>

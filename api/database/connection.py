@@ -91,6 +91,10 @@ def _run_column_migrations():
         ("managed_work_orders", "closure_notes", "VARCHAR(500)", None),
         # Group C #8 — optional contractor crew assignment
         ("managed_work_orders", "contractor_crew_id", "VARCHAR(50)", None),
+        # Fase 3 Jorge 2026-04-21 — shift pattern + skills per técnico
+        ("workforce", "shift_pattern", "VARCHAR(16)", None),
+        ("workforce", "shift_cycle_start", "VARCHAR(20)", None),
+        ("workforce", "skills", "TEXT", None),
     ]
 
     with engine.begin() as conn:

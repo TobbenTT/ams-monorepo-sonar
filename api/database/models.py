@@ -665,6 +665,15 @@ class WorkforceModel(Base):
     competencies: Mapped[list | None] = mapped_column(JSON, nullable=True)
     absence_reason: Mapped[str | None] = mapped_column(String(100), nullable=True)  # vacation, course, sick, etc.
     absence_until: Mapped[str | None] = mapped_column(String(20), nullable=True)  # date string
+    # Jorge 2026-04-21 — shift pattern drives the weekly board visibility.
+    # Values: "5x2", "4x3", "7x7", "14x14", "continuous", "abc_8h".
+    shift_pattern: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # ISO date from which the on/off cycle starts. Needed for 7x7 / 14x14
+    # where the tech is only on-shift half the calendar.
+    shift_cycle_start: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Free-form skills/certifications used by auto-level to pick the right person
+    # (e.g. ["soldadura", "alta tensión", "neumática", "hidráulica"]).
+    skills: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
 
 # ── Support Equipment (Cranes, Heavy Equipment) ─────────────────────

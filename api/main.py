@@ -153,8 +153,15 @@ def create_app() -> FastAPI:
 
     @app.middleware("http")
     async def ws_flush_middleware(request: Request, call_next):
-        response = await call_next(request)
-        # Flush any queued WS notifications after response
+        # Capture the originating tab's client id so any WS broadcasts
+        # queued during this request can be tagged and filtered out by
+        # the originating tab (see frontend wsSingleton.js echo suppression).
+        from api.services.ws_client_context import set_client_id, reset_client_id
+        token = set_client_id(request.headers.get("x-client-id"))
+        try:
+            response = await call_next(request)
+        finally:
+            reset_client_id(token)
         try:
             await flush_notifications()
         except Exception:
@@ -172,7 +179,7 @@ def create_app() -> FastAPI:
         allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-API-Key"],
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-API-Key", "X-Client-Id"],
     )
 
     # Security middleware stack
@@ -327,10 +334,29 @@ def create_app() -> FastAPI:
 
     @app.websocket("/ws/{plant_id}")
     async def websocket_endpoint(websocket: WebSocket, plant_id: str = "global"):
-        await manager.connect(websocket, plant_id)
+        # client_id is a per-tab identifier sent by the frontend so the server
+        # can tag broadcasts and the originating tab can ignore its own echo.
+        # user_id is used for presence (detect shared-account sessions).
+        qp = websocket.query_params
+        client_id = qp.get("client_id")
+        user_id = qp.get("user_id")
+        await manager.connect(websocket, plant_id, client_id=client_id, user_id=user_id)
+        # Announce presence if this user already has another live session.
+        try:
+            if user_id:
+                count = manager.presence_for_user(user_id)
+                if count > 1:
+                    import json as _json
+                    await websocket.send_text(_json.dumps({
+                        "event": "presence.shared_account",
+                        "data": {"user_id": user_id, "sessions": count},
+                        "plant_id": plant_id,
+                        "origin_client_id": None,
+                    }))
+        except Exception:
+            pass
         try:
             while True:
-                # Keep connection alive, client can send pings
                 data = await websocket.receive_text()
                 if data == "ping":
                     await websocket.send_text("pong")

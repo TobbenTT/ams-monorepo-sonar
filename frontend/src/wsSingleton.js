@@ -1,19 +1,49 @@
 /**
  * Singleton WebSocket connection per plant.
  *
- * Problem: WorkManagement.jsx keeps 5 tabs mounted (display:none) so the
- * previous per-component useWebSocket was spawning 5+ WS connections per user.
- * That floods the backend and triggers reconnect loops.
- *
- * Solution: one connection per plantId, shared by all subscribers via pub/sub.
- * The WS closes only when plantId changes (or full tab close).
+ * - One physical WS per plantId, shared by subscribers via pub/sub.
+ * - Each browser tab has a stable `client_id` kept in sessionStorage.
+ *   The server tags every broadcast with `origin_client_id` so we can
+ *   drop our own echo (prevents edit-in-progress from being clobbered
+ *   by its own write when two tabs share the same account).
+ * - `user_id` is sent so the server can detect shared-account sessions
+ *   and emit a `presence.shared_account` event.
  */
 
-const connections = new Map(); // plantId -> { ws, subscribers:Set<fn>, reconnectTimer, pingInterval }
+const connections = new Map();
+
+function getClientId() {
+    try {
+        let id = sessionStorage.getItem('ws_client_id');
+        if (!id) {
+            id = 'c_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+            sessionStorage.setItem('ws_client_id', id);
+        }
+        return id;
+    } catch {
+        return 'c_' + Math.random().toString(36).slice(2, 10);
+    }
+}
+
+function getUserId() {
+    try {
+        const raw = localStorage.getItem('user') || localStorage.getItem('currentUser');
+        if (!raw) return '';
+        const u = JSON.parse(raw);
+        return String(u?.id ?? u?.user_id ?? u?.username ?? '');
+    } catch {
+        return '';
+    }
+}
+
+export const CLIENT_ID = getClientId();
 
 function buildUrl(plantId) {
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${window.location.host}/ws/${plantId}`;
+    const params = new URLSearchParams({ client_id: CLIENT_ID });
+    const uid = getUserId();
+    if (uid) params.set('user_id', uid);
+    return `${proto}//${window.location.host}/ws/${plantId}?${params.toString()}`;
 }
 
 function openConnection(plantId) {
@@ -41,7 +71,9 @@ function openConnection(plantId) {
             if (evt.data === 'pong') return;
             let msg;
             try { msg = JSON.parse(evt.data); } catch { return; }
-            // Snapshot subscribers so a handler that unsubscribes mid-loop doesn't break iteration
+            // Echo suppression: if this event was caused by THIS tab's own mutation,
+            // skip it — our local state is already updated optimistically.
+            if (msg && msg.origin_client_id && msg.origin_client_id === CLIENT_ID) return;
             const subs = Array.from(state.subscribers);
             for (const fn of subs) {
                 try { fn(msg); } catch { /* handler errors shouldn't kill the socket */ }
@@ -77,7 +109,6 @@ function openConnection(plantId) {
     return state;
 }
 
-/** Subscribe to WS messages for a plant. Returns an unsubscribe fn. */
 export function subscribe(plantId, onMessage) {
     if (!plantId || typeof onMessage !== 'function') return () => { };
     let state = connections.get(plantId);
@@ -86,14 +117,9 @@ export function subscribe(plantId, onMessage) {
         connections.set(plantId, state);
     }
     state.subscribers.add(onMessage);
-    return () => {
-        state.subscribers.delete(onMessage);
-        // We intentionally DON'T close the socket when subscribers drop to 0;
-        // pages mount/unmount all the time and reconnect churn is worse than an idle socket.
-    };
+    return () => { state.subscribers.delete(onMessage); };
 }
 
-/** Close a plant's connection (e.g., on plant change or logout). */
 export function closeConnection(plantId) {
     const state = connections.get(plantId);
     if (!state) return;
@@ -101,7 +127,6 @@ export function closeConnection(plantId) {
     connections.delete(plantId);
 }
 
-/** Close all connections (logout, unload). */
 export function closeAllConnections() {
     for (const [plantId] of connections) closeConnection(plantId);
 }

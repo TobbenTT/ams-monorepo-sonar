@@ -45,6 +45,12 @@ function authHeaders() {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const apiKey = localStorage.getItem('api_key');
   if (apiKey) headers['X-API-Key'] = apiKey;
+  // Per-tab client id so the server can tag WS broadcasts and the
+  // originating tab can skip its own echo (see wsSingleton.js).
+  try {
+    const cid = sessionStorage.getItem('ws_client_id');
+    if (cid) headers['X-Client-Id'] = cid;
+  } catch { /* ignore storage errors */ }
   return headers;
 }
 

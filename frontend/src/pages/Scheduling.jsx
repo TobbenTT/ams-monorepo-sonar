@@ -3501,7 +3501,6 @@ export default function Scheduling() {
         </div>
         );
       })()}
-      )}
 
       {/* AI Draft Plan Review Modal — shown BEFORE applying anything */}
       {aiDraftPlan && (

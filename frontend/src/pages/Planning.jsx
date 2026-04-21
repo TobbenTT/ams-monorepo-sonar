@@ -232,7 +232,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
   const selectMaterial = (mat, idx) => {
     const n = [...editMats];
-    n[idx] = { ...n[idx], sapId: mat.sapId, description: mat.description, unit: mat.unit || 'PZ' };
+    // Keep code/sapId in sync so the readonly UI locks the description field.
+    n[idx] = {
+      ...n[idx],
+      sapId: mat.sapId,
+      sap_id: mat.sapId,
+      code: mat.sapId,
+      description: mat.description,
+      unit: mat.unit || 'PZ',
+    };
     setEditMats(n);
     setMatSearchQuery('');
     setMatSearchResults([]);
@@ -305,7 +313,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         material_cost: calculatedCosts.materialCost || parseFloat(editBudget.material) || 0,
         external_cost: calculatedCosts.externalCost || parseFloat(editBudget.external) || 0,
         actual_total_cost: calculatedCosts.total || 0,
-        estimated_hours: calculatedCosts.laborHours || undefined,
+        // Keep WO-level estimated_hours in sync with sum of ops × qty. Without
+        // this, editing operations to 0h left estimated_hours stale (81h at top
+        // vs 0h in rows). Send explicit value even if 0 so backend overrides.
+        estimated_hours: calculatedCosts.laborHours,
         planned_start: editDates.start || null,
         planned_end: editDates.end || null,
       });
@@ -1466,6 +1477,25 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             Split steps
                           </button>
                         )}
+                        {/* Repartir HH: toma estimated_hours de la OT y lo distribuye
+                            equitativamente entre ops con 0h (o todas si shift-click). */}
+                        {editOps.length > 0 && (() => {
+                          const zeroOps = editOps.filter(o => (parseFloat(o.hours) || 0) === 0).length;
+                          const baseHH = parseFloat(selectedOT?.estimated_hours) || 0;
+                          if (baseHH === 0 || zeroOps === 0) return null;
+                          return (
+                            <button type="button"
+                              onClick={() => {
+                                const per = baseHH / zeroOps;
+                                setEditOps(prev => prev.map(o => (parseFloat(o.hours) || 0) === 0 ? { ...o, hours: Math.round(per * 4) / 4 } : o));
+                                toast.success(`Repartidas ${baseHH}h entre ${zeroOps} operaciones (${(baseHH/zeroOps).toFixed(1)}h c/u)`);
+                              }}
+                              className="text-xs px-2.5 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
+                              title={`Repartir ${baseHH}h estimadas entre ${zeroOps} op con 0h`}>
+                              Repartir HH
+                            </button>
+                          );
+                        })()}
                         <button type="button" onClick={() => setEditOps(prev => [...prev, { type: 'INT', description: '', specialty: 'Mechanical', quantity: 1, hours: 4 }])}
                           className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">+ Add</button>
                       </div>
@@ -1987,10 +2017,27 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <p className="text-sm">No materials</p>
                         <p className="text-xs">Click "+ Add" para agregar repuestos</p>
                       </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {editMats.map((mat, idx) => (
-                          <div key={idx} className="rounded-lg border border-gray-200 p-3">
+                    ) : (() => {
+                      // Split materials by reservation status — reserved items
+                      // (carry a reservation_code) are shown first with emerald
+                      // background; unreserved go below with a divider.
+                      const reservedIdx = [];
+                      const pendingIdx = [];
+                      editMats.forEach((m, i) => {
+                        if (m.reservation_code) reservedIdx.push(i);
+                        else pendingIdx.push(i);
+                      });
+                      const renderRow = (idx) => {
+                        const mat = editMats[idx];
+                        const isReserved = !!mat.reservation_code;
+                        return (
+                        <div key={idx} className={`rounded-lg border p-3 ${isReserved ? 'border-emerald-300 bg-emerald-50/60' : 'border-gray-200'}`}>
+                          {isReserved && (
+                            <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              Reservado · <span className="font-mono normal-case">{mat.reservation_code}</span>
+                            </div>
+                          )}
                             <div className="flex items-center gap-2 mb-2">
                               <div className="relative">
                                 <input value={mat.code || mat.sapId || mat.sap_id || ''}
@@ -2044,30 +2091,56 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        );
+                      };
+                      return (
+                        <div className="space-y-2">
+                          {reservedIdx.length > 0 && (
+                            <div className="space-y-2">
+                              {reservedIdx.map(i => renderRow(i))}
+                            </div>
+                          )}
+                          {reservedIdx.length > 0 && pendingIdx.length > 0 && (
+                            <div className="flex items-center gap-2 my-3">
+                              <div className="flex-1 h-px bg-gray-200" />
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Sin reservar · {pendingIdx.length}</span>
+                              <div className="flex-1 h-px bg-gray-200" />
+                            </div>
+                          )}
+                          {pendingIdx.length > 0 && (
+                            <div className="space-y-2">
+                              {pendingIdx.map(i => renderRow(i))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="flex gap-2 mt-2">
                       {/* Save por-tab removido — Jorge 2026-04-20: un solo Save en el header. */}
                       <button onClick={async () => {
-                        await saveOTChanges();
                         const code = 'RES-' + String(Date.now()).slice(-6);
                         const woId = selectedOT?.wo_id;
                         if (!woId) return;
-                        // Jorge (2026-04-20): si la OT ya fue liberada (LIBERADO en adelante)
-                        // y ya existe una reserva, la siguiente crea una SEGUNDA reserva
-                        // independiente. Antes de LIBERADO, se actualiza la primera.
+                        // Tag only materials that are NOT yet reserved — those get
+                        // stamped with the new code so the UI splits them into the
+                        // emerald "reserved" bucket on the next render.
+                        const stamped = editMats.map(m => m.reservation_code ? m : { ...m, reservation_code: code });
+                        const toReserve = editMats.filter(m => !m.reservation_code).length;
+                        if (toReserve === 0) { toast.info('No hay materiales sin reservar'); return; }
+                        setEditMats(stamped);
+                        // Persist stamped materials + reservation code via saveOTChanges
+                        // (uses editMats from state, so wait next tick).
+                        await new Promise(r => setTimeout(r, 0));
+                        await saveOTChanges();
                         const postRelease = !['CREADO','PENDIENTE'].includes(selectedOT.status) && !!selectedOT.reservation_code;
                         const prev = Array.isArray(selectedOT.reservation_codes) ? selectedOT.reservation_codes : (selectedOT.reservation_code ? [selectedOT.reservation_code] : []);
                         const nextList = postRelease ? [...prev, code] : (prev.length === 0 ? [code] : [...prev.slice(0, -1), code]);
                         try {
-                          await api.updateManagedWO(woId, { reservation_code: code, reservation_codes: nextList });
-                          setSelectedOT({ ...selectedOT, reservation_code: code, reservation_codes: nextList });
-                          toast.success(postRelease
-                            ? `Segunda reserva creada: ${code} (la primera sigue activa)`
-                            : `Reserva creada: ${code}`);
+                          await api.updateManagedWO(woId, { reservation_code: code, reservation_codes: nextList, materials: stamped });
+                          setSelectedOT({ ...selectedOT, reservation_code: code, reservation_codes: nextList, materials: stamped });
+                          toast.success(`Reserva ${code}: ${toReserve} material${toReserve > 1 ? 'es' : ''}${postRelease ? ' (segunda reserva)' : ''}`);
                         } catch { toast.success('Reserva: ' + code); }
-                      }} disabled={savingOT || editMats.length === 0}
+                      }} disabled={savingOT || editMats.length === 0 || editMats.every(m => !!m.reservation_code)}
                         className="flex-1 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
                         Create Reservation
                       </button>

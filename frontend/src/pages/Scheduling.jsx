@@ -1254,7 +1254,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                           draggable={!isReserved}
                                           onMouseEnter={() => setHoverWO(wo)}
                                           onMouseLeave={() => setHoverWO(null)}
-                                          onClick={e => { if (!wo._continuation && ops.length > 0) toggleExpand(e); }}
+                                          onClick={e => { if (!wo._continuation) toggleExpand(e); }}
                                           onDragStart={e => { if (isReserved) { e.preventDefault(); return; } e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
                                           title={isReserved ? 'Reservada — desbloquea con Clear Assignments' : isDraft ? 'Borrador — arrástrala o reserva la semana' : ops.length > 0 ? 'Click para ver operaciones' : ''}
                                           className={`p-1 rounded text-xs border ${isReserved ? 'cursor-not-allowed ring-1 ring-emerald-400' : 'cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400'} ${isDraft ? 'border-dashed border-2' : ''} ${woType.bg} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
@@ -1268,7 +1268,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                           <div className="text-[0.55rem] mt-0.5">{wo._continuation ? 'cont.' : wo.estimated_hours + 'h'}{ops.length > 0 && !wo._continuation ? ` · ${ops.length} ops` : ''}</div>
                                         </div>
                                         {/* Floating rich card — matches Jorge mockup. Requested-By: Jorge Cabezas. */}
-                                        {isExp && ops.length > 0 && !wo._continuation && (
+                                        {isExp && !wo._continuation && (
                                           <ExpandedWOCard
                                             wo={wo}
                                             ops={ops}
@@ -2687,6 +2687,9 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
       </div>
       <div className="px-3 pb-2.5">
         <div className="text-[9.5px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">Operations · {ops.length}</div>
+        {ops.length === 0 && (
+          <div className="text-[11px] text-muted-foreground italic py-1">Sin operaciones definidas — abrí el detalle para agregarlas.</div>
+        )}
         <div className="space-y-1">
           {ops.slice(0, 8).map((op, i) => {
             const opSpec = specTone(op.specialty || op.work_center || wo.work_center);

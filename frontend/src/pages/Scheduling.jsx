@@ -3410,6 +3410,60 @@ export default function Scheduling() {
         <SupportEquipmentTab plantId={plant} t={t} />
       )}
 
+      {/* Open WOs bottom bar — inspirado en mockup Jorge: cola de prioridad
+          siempre visible sobre el Scheduling tab. Requested-By: Jorge Cabezas. */}
+      {tab === 'schedule' && releasedWOs && releasedWOs.length > 0 && (() => {
+        const PRIO_ORDER = { P1: 0, P2: 1, P3: 2, P4: 3 };
+        const unscheduled = [...releasedWOs]
+          .filter(w => !w.planned_start || w.status === 'LIBERADO' || w.status === 'PLANIFICADO')
+          .sort((a, b) => (PRIO_ORDER[a.priority_code] ?? 4) - (PRIO_ORDER[b.priority_code] ?? 4));
+        if (unscheduled.length === 0) return null;
+        const next = unscheduled[0];
+        const prioTone = (p) => p === 'P1' ? 'bg-red-500 text-white'
+          : p === 'P2' ? 'bg-orange-500 text-white'
+          : p === 'P3' ? 'bg-blue-500 text-white'
+          : 'bg-gray-400 text-white';
+        return (
+          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-white/95 dark:bg-card/95 backdrop-blur shadow-[0_-4px_12px_rgba(0,0,0,0.05)]"
+            style={{ animation: 'slideUp 220ms ease-out both' }}>
+            <div className="flex items-center gap-3 px-4 py-2.5 max-w-full">
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                  <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">{unscheduled.length}</span>
+                </div>
+                <div className="text-[11px] leading-tight">
+                  <div className="font-bold text-foreground">Open WOs</div>
+                  <div className="text-muted-foreground">Sin programar</div>
+                </div>
+              </div>
+              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto scrollbar-thin py-1">
+                {unscheduled.slice(0, 12).map((wo, i) => (
+                  <button key={wo.wo_id}
+                    onClick={() => setDetailOrder(wo)}
+                    className={`shrink-0 inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg border transition-all ${i === 0 ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 ring-1 ring-emerald-200' : 'border-border hover:bg-muted'}`}
+                    title={`${wo.wo_number} · ${wo.description || ''}`}>
+                    <span className={`text-[9px] font-bold px-1 py-0.5 rounded ${prioTone(wo.priority_code)}`}>{wo.priority_code || 'P4'}</span>
+                    <span className="font-mono font-semibold text-foreground">{wo.wo_number}</span>
+                    <span className="text-muted-foreground truncate max-w-[140px]">{(wo.description || '').slice(0, 28)}</span>
+                    {i === 0 && <span className="text-[9px] text-emerald-700 font-semibold ml-0.5">· siguiente</span>}
+                  </button>
+                ))}
+                {unscheduled.length > 12 && (
+                  <span className="shrink-0 text-[10.5px] text-muted-foreground px-2">+{unscheduled.length - 12}</span>
+                )}
+              </div>
+              <button
+                onClick={() => setDetailOrder(next)}
+                className="shrink-0 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition-colors">
+                <span className="text-[10px] font-semibold opacity-80 uppercase tracking-wider">Open</span>
+                <span className="text-base leading-none">WO</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Modals */}
       {detailOrder && (
         <WODetailModal order={detailOrder} t={t} onClose={() => setDetailOrder(null)}

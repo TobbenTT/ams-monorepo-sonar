@@ -2943,8 +2943,50 @@ export default function Scheduling() {
       let scheduled = 0;
       let deferred = 0;
       const assignments = [];
+      const deferredSupport = []; // WOs skipped because required support equipment is blocked
+
+      // Group A #7 — Support equipment constraint.
+      // Blocked tags (from state): if a WO requires one of these, defer it.
+      // Per-day bookings: unique equipment types (MOBILE_CRANE, BRIDGE_CRANE) can
+      // only be booked by one WO per day. Soft check by substring match on name.
+      const blockedNames = new Set((blockedEquipment || []).map(e => (e.name || '').toLowerCase()));
+      const UNIQUE_TYPES = ['MOBILE_CRANE', 'BRIDGE_CRANE', 'SCAFFOLDING'];
+      const perDayBookings = Array.from({ length: numDays }, () => new Set());
+      const requiresBlocked = (wo) => {
+        const reqs = Array.isArray(wo.support_equipment) ? wo.support_equipment : [];
+        for (const r of reqs) {
+          const name = ((r && (r.tag || r.name)) || '').toLowerCase();
+          if (!name) continue;
+          for (const b of blockedNames) if (b && (name.includes(b) || b.includes(name))) return name;
+        }
+        return null;
+      };
+      const isDayBookableForSupport = (wo, day) => {
+        const reqs = Array.isArray(wo.support_equipment) ? wo.support_equipment : [];
+        for (const r of reqs) {
+          const name = ((r && (r.tag || r.name)) || '').toLowerCase();
+          const type = ((r && r.type) || '').toUpperCase();
+          if (UNIQUE_TYPES.includes(type) && perDayBookings[day].has(type + ':' + name)) return false;
+        }
+        return true;
+      };
+      const bookSupportForDay = (wo, day) => {
+        const reqs = Array.isArray(wo.support_equipment) ? wo.support_equipment : [];
+        for (const r of reqs) {
+          const name = ((r && (r.tag || r.name)) || '').toLowerCase();
+          const type = ((r && r.type) || '').toUpperCase();
+          if (UNIQUE_TYPES.includes(type)) perDayBookings[day].add(type + ':' + name);
+        }
+      };
 
       for (const wo of toSchedule) {
+        // Hard-block: required equipment is out of service. Defer with reason.
+        const blockedName = requiresBlocked(wo);
+        if (blockedName) {
+          deferred++;
+          deferredSupport.push({ wo_number: wo.wo_number, reason: 'Equipo de apoyo fuera de servicio: ' + blockedName });
+          continue;
+        }
         const prio = wo.priority_code || 'P3';
         const hours = parseFloat(wo.estimated_hours) || 4;
 
@@ -3004,6 +3046,9 @@ export default function Scheduling() {
           for (const day of dayOrder) {
             // Day must have real room for these hours (no pre-reservation pollution)
             if (dayLoad[day] + hours > maxHHPerDay * (lightDays[day] || 1)) continue;
+            // Group A #7: if this WO needs unique support equipment already booked
+            // that day, skip — try next day.
+            if (!isDayBookableForSupport(wo, day)) continue;
             const candidates = techs.filter(t => hasRoom(t, day) && (tier === 'all' || hasSpecMatch(t)));
             if (candidates.length > 0) {
               bestTech = candidates.reduce((a, b) => {
@@ -3047,6 +3092,10 @@ export default function Scheduling() {
           }
         }
 
+        // Group A #7: reserve the support equipment for this day so other
+        // WOs with the same unique requirement get pushed to another day.
+        bookSupportForDay(wo, bestDay);
+
         scheduled++;
         assignments.push({
           wo_id: wo.wo_id,
@@ -3058,6 +3107,7 @@ export default function Scheduling() {
           hours,
           priority: prio,
           reason: `${prio} ${hours}h`,
+          support_equipment: Array.isArray(wo.support_equipment) ? wo.support_equipment.map(r => r.tag || r.name).filter(Boolean) : [],
         });
       }
 
@@ -3067,6 +3117,7 @@ export default function Scheduling() {
         assignments,
         scheduled,
         deferred,
+        deferredSupport, // Group A #7 — surface support-equipment conflicts
         peakLoad,
         weekLabel,
         viewedMonday,
@@ -3479,7 +3530,7 @@ export default function Scheduling() {
                       ))}
                       {blockedEquipment.length > 5 && <span className="opacity-70">+{blockedEquipment.length - 5} más</span>}
                     </div>
-                    <div className="text-[10px] opacity-80">El Auto-Level no considera equipos de apoyo. Revisa manualmente si alguna OT los requiere.</div>
+                    <div className="text-[10px] opacity-80">El Auto-Level diferirá OTs que requieran equipos fuera de servicio y distribuirá OTs con grúa/scaffolding en días distintos (máx 1/día).</div>
                   </div>
                 </div>
               )}
@@ -3577,6 +3628,20 @@ export default function Scheduling() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-6">
+              {/* Group A #7 — equipment blockers before the assignments list */}
+              {Array.isArray(aiDraftPlan.deferredSupport) && aiDraftPlan.deferredSupport.length > 0 && (
+                <div className="mb-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg px-3 py-2.5 text-xs">
+                  <div className="font-bold text-rose-800 dark:text-rose-300 mb-1">
+                    {aiDraftPlan.deferredSupport.length} OT{aiDraftPlan.deferredSupport.length > 1 ? 's' : ''} diferida{aiDraftPlan.deferredSupport.length > 1 ? 's' : ''} por equipo de apoyo
+                  </div>
+                  <div className="space-y-0.5 text-rose-700 dark:text-rose-300">
+                    {aiDraftPlan.deferredSupport.slice(0, 8).map((d, i) => (
+                      <div key={i}>• <span className="font-mono font-semibold">{d.wo_number}</span> — {d.reason}</div>
+                    ))}
+                    {aiDraftPlan.deferredSupport.length > 8 && <div className="opacity-70">+{aiDraftPlan.deferredSupport.length - 8} más</div>}
+                  </div>
+                </div>
+              )}
               <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Asignaciones propuestas ({aiDraftPlan.assignments.length})</div>
               <div className="space-y-1">
                 {aiDraftPlan.assignments.map((a, i) => (

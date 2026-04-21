@@ -3424,9 +3424,9 @@ export default function Scheduling() {
           : p === 'P3' ? 'bg-blue-500 text-white'
           : 'bg-gray-400 text-white';
         return (
-          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-white/95 dark:bg-card/95 backdrop-blur shadow-[0_-4px_12px_rgba(0,0,0,0.05)]"
+          <div className="sticky bottom-0 left-0 right-0 z-30 -mx-4 md:-mx-6 mt-3 border-t border-border bg-white/95 dark:bg-card/95 backdrop-blur shadow-[0_-4px_12px_rgba(0,0,0,0.05)] overflow-hidden"
             style={{ animation: 'slideUp 220ms ease-out both' }}>
-            <div className="flex items-center gap-3 px-4 py-2.5 max-w-full">
+            <div className="flex items-center gap-3 px-4 py-2.5 min-w-0">
               <div className="flex items-center gap-2 shrink-0">
                 <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                   <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">{unscheduled.length}</span>
@@ -3436,7 +3436,7 @@ export default function Scheduling() {
                   <div className="text-muted-foreground">Sin programar</div>
                 </div>
               </div>
-              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto scrollbar-thin py-1">
+              <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto scrollbar-thin py-1">
                 {unscheduled.slice(0, 12).map((wo, i) => (
                   <button key={wo.wo_id}
                     onClick={() => setDetailOrder(wo)}

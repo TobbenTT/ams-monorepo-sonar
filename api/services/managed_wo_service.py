@@ -423,6 +423,28 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
         "reservation_code", "cancellation_reason", "completion_pct", "execution_notes",
         "start_location", "started_via",
     ]
+    # Group B #2 — capture per-field diff for audit trail. Only track scalar
+    # fields (JSON blobs are noisy; we log a single "changed" marker).
+    _AUDITED_FIELDS = (
+        "description", "wo_type", "priority_code", "estimated_hours",
+        "planned_start", "planned_end", "actual_start", "actual_end",
+        "actual_hours", "shift", "status", "planning_group", "work_center",
+        "budget_amount", "budget_approved", "labor_cost", "material_cost",
+        "external_cost", "actual_total_cost", "completion_pct",
+        "reservation_code", "cancellation_reason",
+    )
+    _changes = {}
+    for key in _AUDITED_FIELDS:
+        if key in data:
+            old = getattr(wo, key, None)
+            if hasattr(old, "isoformat"):
+                old = old.isoformat()
+            new = data[key]
+            if hasattr(new, "isoformat"):
+                new = new.isoformat()
+            if old != new:
+                _changes[key] = {"from": old, "to": new}
+
     for key in updatable:
         if key in data:
             val = data[key]
@@ -440,7 +462,11 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
         wo.work_class = "NO_PROGRAMADO" if data["priority_code"] in ("P1", "P2") else "PROGRAMADO"
 
     wo.updated_at = datetime.now()
-    log_action(db, "managed_work_order", wo_id, "UPDATE", user=data.get("updated_by", "system"))
+    _user = data.get("updated_by", "system")
+    if _changes:
+        log_action(db, "managed_work_order", wo_id, "UPDATE", payload={"changes": _changes}, user=_user)
+    else:
+        log_action(db, "managed_work_order", wo_id, "UPDATE", user=_user)
     db.commit()
     db.refresh(wo)
     queue_notify("wo_updated", {"wo_id": wo_id, "wo_number": wo.wo_number, "status": wo.status}, wo.plant_id)

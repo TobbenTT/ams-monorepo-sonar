@@ -279,6 +279,7 @@ export const rescheduleManagedWO = (id) => put(`/managed-work-orders/${id}/resch
 export const startManagedWO = (id) => put(`/managed-work-orders/${id}/start`);
 export const completeManagedWO = (id, d) => put(`/managed-work-orders/${id}/complete`, d);
 export const closeManagedWO = (id, body) => put(`/managed-work-orders/${id}/close`, body || {});
+export const getManagedWOHistory = (id) => get(`/managed-work-orders/${id}/history`);
 export const cancelManagedWO = (id) => put(`/managed-work-orders/${id}/cancel`);
 export const addManagedWONote = (id, d) => post(`/managed-work-orders/${id}/notes`, d);
 export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id}/progress`, d);

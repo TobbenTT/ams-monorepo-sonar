@@ -201,6 +201,8 @@ def update_work_order(
     for field in ['planned_start', 'planned_end', 'assigned_workers']:
         if raw.get(field) == '' or raw.get(field) == []:
             update_data[field] = None
+    # Group B #2 — pass authenticated user for audit trail attribution
+    update_data.setdefault("updated_by", getattr(user, "user_id", "system"))
     result = managed_wo_service.update_work_order(db, wo_id, update_data)
     if not result:
         raise HTTPException(status_code=400, detail="WO not found or not editable (must be PENDIENTE/APROBADO)")
@@ -310,6 +312,43 @@ def close_work_order(
     if not result:
         raise HTTPException(status_code=400, detail="Cannot close — WO not found, invalid status, or missing signature")
     return result
+
+
+@router.get("/{wo_id}/history")
+def get_wo_history(
+    wo_id: str,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return full change history for a WO — combines audit_log diffs with
+    execution_notes (status transitions + user notes). Newest first."""
+    from api.database.models import AuditLogModel, ManagedWorkOrderModel as _M
+    wo = db.query(_M).filter(_M.wo_id == wo_id).first()
+    if not wo:
+        raise HTTPException(status_code=404, detail="WO not found")
+    entries = []
+    logs = db.query(AuditLogModel).filter(
+        AuditLogModel.entity_type == "managed_work_order",
+        AuditLogModel.entity_id == wo_id,
+    ).order_by(AuditLogModel.timestamp.desc()).limit(500).all()
+    for lg in logs:
+        entries.append({
+            "timestamp": lg.timestamp.isoformat() if lg.timestamp else None,
+            "user": lg.user or "system",
+            "action": lg.action,
+            "changes": (lg.payload or {}).get("changes") if lg.payload else None,
+            "source": "audit",
+        })
+    for n in (wo.execution_notes or []):
+        entries.append({
+            "timestamp": n.get("timestamp"),
+            "user": n.get("user") or "system",
+            "action": "NOTE",
+            "note": n.get("note"),
+            "source": "note",
+        })
+    entries.sort(key=lambda e: e.get("timestamp") or "", reverse=True)
+    return {"wo_id": wo_id, "wo_number": wo.wo_number, "entries": entries}
 
 
 @router.post("/{wo_id}/notes")

@@ -2881,6 +2881,35 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
           {ops.length > 8 && <div className="text-[10px] text-muted-foreground pl-10">+{ops.length - 8} más</div>}
         </div>
       </div>
+      {/* Fase 6 Jorge 2026-04-21 — materiales y costos en el rich card */}
+      {Array.isArray(wo.materials) && wo.materials.length > 0 && (
+        <div className="px-3 pb-2">
+          <div className="text-[9.5px] font-bold tracking-wider uppercase text-muted-foreground mb-1">Materiales · {wo.materials.length}</div>
+          <div className="space-y-0.5">
+            {wo.materials.slice(0, 5).map((m, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-[10.5px]">
+                <span className="font-mono text-[9.5px] text-muted-foreground w-16 shrink-0 truncate">{m.code || m.sap_id || '—'}</span>
+                <span className="flex-1 truncate">{m.description || '—'}</span>
+                <span className="tabular-nums text-muted-foreground shrink-0">{m.quantity || 0} {m.unit || ''}</span>
+              </div>
+            ))}
+            {wo.materials.length > 5 && <div className="text-[10px] text-muted-foreground">+{wo.materials.length - 5} más</div>}
+          </div>
+        </div>
+      )}
+      {(wo.budget_amount || wo.actual_total_cost) && (
+        <div className="px-3 pb-2 grid grid-cols-3 gap-1 text-[10px]">
+          <div><span className="text-muted-foreground block text-[9px]">Presupuesto</span><span className="font-semibold text-foreground">${Math.round(wo.budget_amount || 0).toLocaleString()}</span></div>
+          <div><span className="text-muted-foreground block text-[9px]">Real</span><span className="font-semibold text-foreground">${Math.round(wo.actual_total_cost || 0).toLocaleString()}</span></div>
+          <div><span className="text-muted-foreground block text-[9px]">Var</span>
+            {wo.budget_amount > 0 && (
+              <span className={`font-bold ${(wo.actual_total_cost || 0) > wo.budget_amount ? 'text-rose-700' : 'text-emerald-700'}`}>
+                {Math.round((((wo.actual_total_cost || 0) - wo.budget_amount) / wo.budget_amount) * 100)}%
+              </span>
+            )}
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-2 px-3 py-2 border-t border-border bg-muted/40">
         {matsReady ? (
           <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-emerald-700 dark:text-emerald-400">

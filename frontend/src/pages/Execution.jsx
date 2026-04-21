@@ -234,8 +234,12 @@ export default function Execution() {
     setClosing(false);
   };
 
+  // Fase Jorge 2026-04-21 — vista Fallas separa las OTs PM03 (correctivo
+  // de falla, P1/P2) que llegan directo al supervisor bypass-planning.
+  const failureWOs = activeWOs.filter(w => (w.wo_type === 'PM03') || (w.priority_code === 'P1' || w.priority_code === 'P2'));
   const VIEWS = [
     { id: 'today', label: 'Hoy', icon: Zap, count: activeWOs.length },
+    { id: 'failures', label: '🔥 Fallas', icon: AlertTriangle, count: failureWOs.length },
     { id: 'close', label: 'Bandeja de Cierre', icon: CheckCircle, count: completedWOs.length },
     { id: 'summary', label: 'Resumen', icon: BarChart2, count: closedWOs.length },
   ];
@@ -298,6 +302,69 @@ export default function Execution() {
           </button>
         ))}
       </div>
+
+      {/* ═══ FAILURES VIEW (PM03 / P1-P2) — Jorge 2026-04-21 ═══ */}
+      {view === 'failures' && (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/40 dark:bg-red-900/10 p-3">
+            <div className="flex items-center gap-2 text-red-800 dark:text-red-300 font-bold text-sm mb-1">
+              <AlertTriangle size={14} /> OTs PM03 · Fallas correctivas
+            </div>
+            <p className="text-[11px] text-red-700 dark:text-red-200">
+              Las OTs de prioridad P1 (menos de 24h) y P2 (1-7 días) vienen directo del WR sin pasar por planificación.
+              Atendelas priorizando P1 y cerralas firmando al final.
+            </p>
+          </div>
+          {failureWOs.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <CheckCircle size={40} className="text-emerald-400/40 mx-auto mb-3" />
+              <p className="text-muted-foreground">Sin fallas activas 🎉</p>
+            </div>
+          ) : (
+            failureWOs.map(wo => {
+              const isExec = wo.status === 'EN_EJECUCION';
+              const ops = wo.operations || [];
+              return (
+                <div key={wo.wo_id} className="bg-card border-2 border-red-300 dark:border-red-700 rounded-xl p-4 shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className={`text-[10px] font-bold px-1.5 py-1 rounded ${PRIO_STYLE[wo.priority_code] || PRIO_STYLE.P3}`}>
+                      {wo.priority_code}
+                    </div>
+                    <span className="font-mono text-sm font-bold">{wo.wo_number}</span>
+                    <span className="text-[10px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded">PM03</span>
+                    <span className="text-xs text-muted-foreground">{wo.equipment_tag}</span>
+                    <span className="ml-auto text-[10px] font-semibold text-muted-foreground">{wo.status}</span>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground mt-2">{wo.description}</p>
+                  <div className="flex items-center gap-3 text-[10.5px] text-muted-foreground mt-1">
+                    <span>{wo.estimated_hours || 0}h plan</span>
+                    <span>{ops.length} operaciones</span>
+                    {wo.planning_group && <span className="font-mono">{wo.planning_group}</span>}
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    {!isExec && (
+                      <button onClick={() => handleStart(wo)}
+                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1">
+                        <Play size={12} /> Iniciar ejecución
+                      </button>
+                    )}
+                    {isExec && (
+                      <button onClick={() => openClosure(wo)}
+                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1">
+                        <FileText size={12} /> Cerrar y firmar
+                      </button>
+                    )}
+                    <button onClick={() => { try { window.open(`/work-management?tab=planning&openWo=${wo.wo_id}`, '_blank'); } catch {} }}
+                      className="px-3 py-2 border border-border text-xs font-semibold rounded-lg hover:bg-muted flex items-center gap-1">
+                      <ArrowRight size={12} /> Detalle
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
 
       {/* ═══ TODAY VIEW ═══ */}
       {view === 'today' && (

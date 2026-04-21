@@ -2047,7 +2047,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 {activeMatIdx === idx && matSearchResults.length > 0 && (
                                   <div className="absolute z-50 top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
                                     {matSearchResults.map((r, ri) => (
-                                      <button key={ri} type="button" onClick={() => selectMaterial(r, idx)}
+                                      <button key={ri} type="button"
+                                        onMouseDown={(e) => { e.preventDefault(); selectMaterial(r, idx); }}
                                         className="w-full text-left px-3 py-2 hover:bg-blue-50 text-xs border-b border-gray-50 flex items-center gap-2">
                                         <span className="font-mono text-blue-700 font-semibold">{r.sapId}</span>
                                         <span className="text-gray-600 truncate">{r.description}</span>

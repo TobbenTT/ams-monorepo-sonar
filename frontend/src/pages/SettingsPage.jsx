@@ -508,15 +508,21 @@ export default function SettingsPage() {
                 <select value={settings.mineType || 'plant'} onChange={e => {
                   const v = e.target.value;
                   updateSetting('mineType', v);
-                  // Sugerir configuración estándar
+                  // Jorge 2026-04-21 doc Observaciones — auto-carga nominales
+                  // Y efectivas según tipo de faena (no solo nominales).
                   if (v === 'underground') {
                     updateSetting('shiftType', 'abc_8h');
                     updateSetting('nominalHoursPerShift', 8);
-                    // Jorge 2026-04-21: efectivas no pueden superar nominales
-                    if ((settings.effectiveHoursPerShift || 0) > 8) updateSetting('effectiveHoursPerShift', 8);
-                  } else {
+                    updateSetting('effectiveHoursPerShift', 7); // 8h - 1h breaks
+                  } else if (v === 'open_pit') {
                     updateSetting('shiftType', 'day_night');
                     updateSetting('nominalHoursPerShift', 12);
+                    updateSetting('effectiveHoursPerShift', 10); // 12h - traslados/colación
+                  } else {
+                    // plant
+                    updateSetting('shiftType', 'day_night');
+                    updateSetting('nominalHoursPerShift', 12);
+                    updateSetting('effectiveHoursPerShift', 10);
                   }
                 }}
                   className="mt-1 w-full border rounded-md px-3 py-2 text-sm">

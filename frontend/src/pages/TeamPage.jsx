@@ -52,6 +52,7 @@ const SHIFTS = [
   { v: 'rotating', label: 'Rotativo' },
 ];
 const COMMON_SKILLS = ['Soldadura', 'Alta tensión', 'Neumática', 'Hidráulica', 'Altura', 'Espacio confinado', 'Grúa horquilla', 'PLC/DCS', 'Vibraciones', 'Termografía'];
+const COMMON_CERTS = ['SEC Clase A', 'SEC Clase B', 'SEC Clase C', 'SEC Clase D', 'Trabajo en Altura', 'Espacio Confinado', 'LOTO', 'Operador Grúa', 'Primeros Auxilios', 'NFPA 70E'];
 
 function TechFields({ member, onSaved }) {
   const workerId = member.worker_id || member.user_id;
@@ -63,6 +64,7 @@ function TechFields({ member, onSaved }) {
     shift_pattern: member.shift_pattern || '',
     shift_cycle_start: member.shift_cycle_start || '',
     skills: Array.isArray(member.skills) ? member.skills : [],
+    certifications: Array.isArray(member.certifications) ? member.certifications : [],
   });
   useEffect(() => {
     setForm({
@@ -71,6 +73,7 @@ function TechFields({ member, onSaved }) {
       shift_pattern: member.shift_pattern || '',
       shift_cycle_start: member.shift_cycle_start || '',
       skills: Array.isArray(member.skills) ? member.skills : [],
+      certifications: Array.isArray(member.certifications) ? member.certifications : [],
     });
     setEditing(false);
   }, [member.worker_id, member.user_id]);
@@ -79,6 +82,12 @@ function TechFields({ member, onSaved }) {
     setForm(f => ({
       ...f,
       skills: f.skills.includes(s) ? f.skills.filter(x => x !== s) : [...f.skills, s],
+    }));
+  };
+  const toggleCert = (c) => {
+    setForm(f => ({
+      ...f,
+      certifications: f.certifications.includes(c) ? f.certifications.filter(x => x !== c) : [...f.certifications, c],
     }));
   };
 
@@ -125,12 +134,20 @@ function TechFields({ member, onSaved }) {
             <p className="font-medium">{form.shift_cycle_start || '—'}</p>
           </div>
           <div className="col-span-2">
-            <p className="text-gray-500 text-xs mb-1">Skills / certificaciones</p>
+            <p className="text-gray-500 text-xs mb-1">Conocimientos</p>
             {form.skills.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {form.skills.map(s => <Badge key={s} className="bg-indigo-100 text-indigo-700">{s}</Badge>)}
               </div>
-            ) : <p className="text-gray-400 italic text-xs">Sin skills definidas</p>}
+            ) : <p className="text-gray-400 italic text-xs">Sin conocimientos definidos</p>}
+          </div>
+          <div className="col-span-2">
+            <p className="text-gray-500 text-xs mb-1">Certificaciones</p>
+            {form.certifications.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {form.certifications.map(c => <Badge key={c} className="bg-amber-100 text-amber-700">{c}</Badge>)}
+              </div>
+            ) : <p className="text-gray-400 italic text-xs">Sin certificaciones</p>}
           </div>
         </div>
       ) : (
@@ -167,7 +184,7 @@ function TechFields({ member, onSaved }) {
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Skills / certificaciones</label>
+            <label className="text-xs text-gray-500 block mb-1">Conocimientos</label>
             <div className="flex flex-wrap gap-1.5">
               {COMMON_SKILLS.map(s => {
                 const on = form.skills.includes(s);
@@ -175,6 +192,20 @@ function TechFields({ member, onSaved }) {
                   <button key={s} type="button" onClick={() => toggleSkill(s)}
                     className={`text-[11px] px-2 py-1 rounded border transition-colors ${on ? 'bg-indigo-600 text-white border-indigo-600' : 'border-border text-muted-foreground hover:bg-muted'}`}>
                     {s}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Certificaciones</label>
+            <div className="flex flex-wrap gap-1.5">
+              {COMMON_CERTS.map(c => {
+                const on = form.certifications.includes(c);
+                return (
+                  <button key={c} type="button" onClick={() => toggleCert(c)}
+                    className={`text-[11px] px-2 py-1 rounded border transition-colors ${on ? 'bg-amber-600 text-white border-amber-600' : 'border-border text-muted-foreground hover:bg-muted'}`}>
+                    {c}
                   </button>
                 );
               })}

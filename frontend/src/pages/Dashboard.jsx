@@ -23,15 +23,7 @@ export default function Dashboard() {
     const View = viewMode === 'executive' ? ExecutiveView : TacticalOperationsView;
     return (
         <Suspense fallback={<DashboardFallback />}>
-            <div className="p-6 pb-0 flex items-center justify-between">
-                <div className="flex-1"><WelcomeCard /></div>
-            </div>
-            <div className="px-6 flex justify-end -mb-2">
-                <a href="/present" className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg shadow"
-                   title="Modo presentación pantalla completa">
-                    📺 Modo Presentación
-                </a>
-            </div>
+            <div className="p-6 pb-0"><WelcomeCard /></div>
             <View
                 selectedPlant={plant}
                 selectedTimeRange={selectedTimeRange}

@@ -79,6 +79,8 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "released_at": wo.released_at.isoformat() if wo.released_at else None,
         "closed_by": wo.closed_by,
         "closed_at": wo.closed_at.isoformat() if wo.closed_at else None,
+        "closed_by_signature": getattr(wo, "closed_by_signature", None),
+        "closure_notes": getattr(wo, "closure_notes", None),
         "assigned_workers": wo.assigned_workers or [],
         "completion_pct": wo.completion_pct,
         "execution_notes": wo.execution_notes or [],
@@ -501,6 +503,14 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
     # Extra kwargs
     if "assigned_workers" in kwargs:
         wo.assigned_workers = kwargs["assigned_workers"]
+    if "closed_by_signature" in kwargs:
+        wo.closed_by_signature = kwargs["closed_by_signature"]
+    if "closed_by_pin_hash" in kwargs:
+        wo.closed_by_pin_hash = kwargs["closed_by_pin_hash"]
+    if "closure_notes" in kwargs:
+        wo.closure_notes = kwargs["closure_notes"]
+    if "operations" in kwargs:
+        wo.operations = kwargs["operations"]
 
     _create_notification(db, wo, old_status, target_status, user_id)
     log_action(db, "managed_work_order", wo_id, target_status, user=user_id or "system")
@@ -591,8 +601,39 @@ def complete_wo(db: Session, wo_id: str, user_id: str = "", actual_hours: float 
     return _transition(db, wo_id, "CERRADO", user_id, actual_hours=actual_hours)
 
 
-def close_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
-    return _transition(db, wo_id, "CERRADO", user_id)
+def close_wo(
+    db: Session,
+    wo_id: str,
+    user_id: str = "",
+    signature: str | None = None,
+    pin: str | None = None,
+    notes: str | None = None,
+    actual_hours: float | None = None,
+    operations: list | None = None,
+) -> dict | None:
+    """Close a WO with supervisor signature. Signature is mandatory.
+
+    Operations (optional) is the plan-vs-actual capture: a list of ops with
+    `actual_hours` per step. When provided, overwrites `actual_hours` with
+    the sum of op actuals for KPI consistency.
+    """
+    if not signature or not signature.strip():
+        return None
+    import hashlib
+    pin_hash = hashlib.sha256((pin or "").encode()).hexdigest()[:16] if pin else None
+    kwargs = {
+        "closed_by_signature": signature.strip()[:120],
+        "closed_by_pin_hash": pin_hash,
+        "closure_notes": (notes or "").strip()[:500] or None,
+    }
+    if operations is not None:
+        kwargs["operations"] = operations
+        # Recompute actual_hours from ops if caller didn't give an explicit total
+        if actual_hours is None:
+            actual_hours = sum(float(op.get("actual_hours") or 0) for op in operations)
+    if actual_hours is not None:
+        kwargs["actual_hours"] = actual_hours
+    return _transition(db, wo_id, "CERRADO", user_id, **kwargs)
 
 
 def add_note(db: Session, wo_id: str, user_id: str, note: str) -> dict | None:

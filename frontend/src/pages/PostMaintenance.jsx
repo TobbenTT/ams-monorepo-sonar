@@ -41,9 +41,11 @@ export default function PostMaintenance() {
   }
 
   async function handleTechnicalClose(woId) {
+    const signature = window.prompt('Firma del supervisor (requerida para cierre técnico):');
+    if (!signature || !signature.trim()) { toast.error('Firma obligatoria'); return; }
     setClosingWO(woId);
     try {
-      await closeManagedWO(woId);
+      await closeManagedWO(woId, { signature: signature.trim() });
       toast.success('Cierre tecnico completado — Contadores SAP reiniciados');
       loadCompletedWOs();
     } catch (e) {

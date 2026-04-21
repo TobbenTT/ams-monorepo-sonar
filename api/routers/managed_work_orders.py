@@ -73,6 +73,17 @@ class WOCompleteRequest(BaseModel):
     actual_hours: float = 0
 
 
+class WOCloseRequest(BaseModel):
+    """Closure payload: supervisor signature is mandatory; optional PIN, notes
+    and per-operation actuals (plan-vs-actual capture)."""
+    model_config = {"extra": "ignore"}
+    signature: str = Field(min_length=2, max_length=120)
+    pin: str | None = None
+    notes: str | None = None
+    actual_hours: float | None = None
+    operations: list | None = None
+
+
 class WONoteRequest(BaseModel):
     model_config = {"extra": "ignore"}
     note: str = Field(min_length=1)
@@ -179,6 +190,11 @@ def update_work_order(
     user=Depends(require_role("admin", "manager", "planner")),
     db: Session = Depends(get_db),
 ):
+    # Group A #3 — block edits on CERRADO (audit/legal lock post-closure)
+    from api.database.models import ManagedWorkOrderModel as _M
+    existing = db.query(_M).filter(_M.wo_id == wo_id).first()
+    if existing and existing.status == "CERRADO":
+        raise HTTPException(status_code=409, detail="Work order is closed and locked — cannot be edited.")
     update_data = data.model_dump(exclude_none=True)
     # Handle empty strings as "clear field" for dates and workers
     raw = data.model_dump()
@@ -278,12 +294,21 @@ def complete_work_order(
 @router.put("/{wo_id}/close")
 def close_work_order(
     wo_id: str,
+    data: WOCloseRequest,
     user=Depends(require_role("admin", "manager", "planner")),
     db: Session = Depends(get_db),
 ):
-    result = managed_wo_service.close_wo(db, wo_id, getattr(user, "user_id", ""))
+    result = managed_wo_service.close_wo(
+        db, wo_id,
+        user_id=getattr(user, "user_id", ""),
+        signature=data.signature,
+        pin=data.pin,
+        notes=data.notes,
+        actual_hours=data.actual_hours,
+        operations=data.operations,
+    )
     if not result:
-        raise HTTPException(status_code=400, detail="Cannot close — WO not found or invalid status")
+        raise HTTPException(status_code=400, detail="Cannot close — WO not found, invalid status, or missing signature")
     return result
 
 

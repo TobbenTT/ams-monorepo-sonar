@@ -37,6 +37,10 @@ export default function Execution() {
   const [closureWO, setClosureWO] = useState(null);
   const [closureHours, setClosureHours] = useState('');
   const [closureNotes, setClosureNotes] = useState('');
+  // Group A #3 supervisor signature + #5 per-op actuals for plan-vs-actual.
+  const [closureSignature, setClosureSignature] = useState('');
+  const [closurePin, setClosurePin] = useState('');
+  const [closureOps, setClosureOps] = useState([]); // [{...op, actual_hours}]
   const [closing, setClosing] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [batchSelected, setBatchSelected] = useState(new Set());
@@ -141,7 +145,9 @@ export default function Execution() {
   const handleBatchClose = async () => {
     const ids = Array.from(batchSelected);
     if (ids.length === 0) { toast.info('Selecciona al menos una OT'); return; }
-    if (!window.confirm(`¿Cerrar ${ids.length} OTs? Esta acción es final — no se puede deshacer.`)) return;
+    const signature = window.prompt(`Firma del supervisor (requerida para cerrar ${ids.length} OTs):`);
+    if (!signature || !signature.trim()) { toast.error('Firma obligatoria — cierre cancelado'); return; }
+    if (!window.confirm(`¿Cerrar ${ids.length} OTs firmando como "${signature.trim()}"? Esta acción es final.`)) return;
     setBatchClosing(true);
     let ok = 0, fail = 0;
     for (const wo_id of ids) {
@@ -155,7 +161,7 @@ export default function Execution() {
           actual_total_cost: hours * LABOR_RATE,
           completion_pct: 100,
         });
-        await closeManagedWO(wo_id);
+        await closeManagedWO(wo_id, { signature: signature.trim(), actual_hours: hours });
         ok++;
       } catch { fail++; }
     }
@@ -183,21 +189,46 @@ export default function Execution() {
     });
   };
 
-  // Close WO (single)
+  // Open closure modal — seeds per-operation actual_hours table
+  const openClosure = (wo) => {
+    const seed = (wo.operations || []).map(op => ({
+      ...op,
+      actual_hours: op.actual_hours != null ? op.actual_hours : (op.hours || 0),
+    }));
+    setClosureOps(seed);
+    setClosureWO(wo);
+    setClosureHours(String(wo.actual_hours || wo.estimated_hours || ''));
+    setClosureNotes('');
+    setClosureSignature('');
+    setClosurePin('');
+  };
+
+  // Close WO (single) — now requires supervisor signature and captures
+  // per-operation actuals for plan-vs-actual reporting.
   const handleClose = async () => {
     if (!closureWO) return;
+    if (!closureSignature.trim()) { toast.error('Firma del supervisor es obligatoria'); return; }
     setClosing(true);
     try {
-      const hours = parseFloat(closureHours) || closureWO.estimated_hours || 0;
+      const opsHours = closureOps.reduce((a, o) => a + (parseFloat(o.actual_hours) || 0), 0);
+      const hours = opsHours > 0 ? opsHours : (parseFloat(closureHours) || closureWO.estimated_hours || 0);
+      // Cost/pct update still done via PATCH (allowed pre-CERRADO); then close.
       await updateManagedWO(closureWO.wo_id, {
         actual_hours: hours,
         labor_cost: hours * LABOR_RATE,
         actual_total_cost: hours * LABOR_RATE,
         completion_pct: 100,
       });
-      await closeManagedWO(closureWO.wo_id);
-      toast.success(closureWO.wo_number + ' closed');
+      await closeManagedWO(closureWO.wo_id, {
+        signature: closureSignature.trim(),
+        pin: closurePin || null,
+        notes: closureNotes || null,
+        actual_hours: hours,
+        operations: closureOps.length ? closureOps : null,
+      });
+      toast.success(closureWO.wo_number + ' cerrada y firmada');
       setClosureWO(null); setClosureHours(''); setClosureNotes('');
+      setClosureSignature(''); setClosurePin(''); setClosureOps([]);
       loadData();
     } catch (e) { toast.error(e.message); }
     setClosing(false);
@@ -340,7 +371,7 @@ export default function Execution() {
                           </button>
                         )}
                         {isExec && (
-                          <button onClick={() => { setClosureWO(wo); setClosureHours(String(wo.actual_hours || wo.estimated_hours || '')); }}
+                          <button onClick={() => openClosure(wo)}
                             className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors ml-auto">
                             <FileText size={14} /> Close WO
                           </button>
@@ -488,7 +519,7 @@ export default function Execution() {
                           <span className="text-[10px] text-muted-foreground">h</span>
                         </div>
                         <div className="text-xs font-bold text-emerald-600 w-16 text-right">${cost.toFixed(0)}</div>
-                        <button onClick={() => { setClosureWO(wo); setClosureHours(String(hoursVal)); }}
+                        <button onClick={() => openClosure({ ...wo, actual_hours: hoursVal })}
                           className="text-xs px-2.5 py-1.5 text-muted-foreground border border-border rounded-lg hover:bg-muted"
                           title="Cerrar con notas detalladas">
                           <FileText size={12} />
@@ -586,55 +617,129 @@ export default function Execution() {
         </Suspense>
       )}
 
-      {/* ═══ CLOSURE MODAL ═══ */}
-      {closureWO && (
+      {/* ═══ CLOSURE MODAL — Group A #3 signature + #5 plan-vs-actual ═══ */}
+      {closureWO && (() => {
+        const opsTotalPlan = closureOps.reduce((a, o) => a + (parseFloat(o.hours) || 0) * (parseFloat(o.quantity) || 1), 0);
+        const opsTotalActual = closureOps.reduce((a, o) => a + (parseFloat(o.actual_hours) || 0), 0);
+        const planTotal = opsTotalPlan > 0 ? opsTotalPlan : (parseFloat(closureWO.estimated_hours) || 0);
+        const actualTotal = opsTotalActual > 0 ? opsTotalActual : (parseFloat(closureHours) || 0);
+        const variance = planTotal > 0 ? Math.round(((actualTotal - planTotal) / planTotal) * 100) : 0;
+        const varianceTone = Math.abs(variance) <= 10 ? 'text-emerald-700' : Math.abs(variance) <= 25 ? 'text-amber-700' : 'text-rose-700';
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !closing && setClosureWO(null)} />
-          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-border">
               <div>
-                <h3 className="text-lg font-bold text-foreground">Close Work Order</h3>
-                <p className="text-xs text-muted-foreground">{closureWO.wo_number} - {closureWO.equipment_tag}</p>
+                <h3 className="text-lg font-bold text-foreground">Cerrar y firmar OT</h3>
+                <p className="text-xs text-muted-foreground">{closureWO.wo_number} · {closureWO.equipment_tag}</p>
               </div>
               <button onClick={() => setClosureWO(null)} className="p-1 hover:bg-muted rounded-lg"><X size={18} /></button>
             </div>
 
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {/* Plan vs Actual per operation */}
+              {closureOps.length > 0 && (
+                <div>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">HH real por operación</label>
+                    <span className={`text-[11px] font-bold ${varianceTone}`}>
+                      Variance: {variance > 0 ? '+' : ''}{variance}% ({actualTotal.toFixed(1)}h vs {planTotal.toFixed(1)}h plan)
+                    </span>
+                  </div>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-12 bg-muted/40 text-[10px] font-semibold uppercase text-muted-foreground px-2 py-1.5">
+                      <div className="col-span-1">#</div>
+                      <div className="col-span-6">Operación</div>
+                      <div className="col-span-2 text-right">Plan HH</div>
+                      <div className="col-span-3 text-right">Real HH</div>
+                    </div>
+                    {closureOps.map((op, i) => {
+                      const planHH = (parseFloat(op.hours) || 0) * (parseFloat(op.quantity) || 1);
+                      const actualHH = parseFloat(op.actual_hours) || 0;
+                      const opVar = planHH > 0 ? ((actualHH - planHH) / planHH) : 0;
+                      const rowTone = Math.abs(opVar) > 0.25 ? 'bg-rose-50/40 dark:bg-rose-900/10' : '';
+                      return (
+                        <div key={i} className={`grid grid-cols-12 items-center px-2 py-1.5 text-xs border-t border-border/60 ${rowTone}`}>
+                          <div className="col-span-1 font-mono text-muted-foreground">{i + 1}</div>
+                          <div className="col-span-6 truncate text-foreground">{op.description || op.task || '—'}</div>
+                          <div className="col-span-2 text-right tabular-nums text-muted-foreground">{planHH.toFixed(1)}</div>
+                          <div className="col-span-3">
+                            <input type="number" min="0" step="0.25" value={op.actual_hours ?? ''}
+                              onChange={e => {
+                                const v = e.target.value;
+                                setClosureOps(prev => prev.map((p, idx) => idx === i ? { ...p, actual_hours: v === '' ? '' : parseFloat(v) } : p));
+                              }}
+                              className="w-full text-right text-xs px-2 py-1 border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Manual total fallback when there are no operations */}
+              {closureOps.length === 0 && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 block">HH reales totales *</label>
+                  <input type="number" min="0" step="0.5" value={closureHours} onChange={e => setClosureHours(e.target.value)}
+                    className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    placeholder={`Plan: ${closureWO.estimated_hours || 0}h`} />
+                </div>
+              )}
+
+              {/* Observations */}
               <div>
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 block">Actual Hours *</label>
-                <input type="number" min="0" step="0.5" value={closureHours} onChange={e => setClosureHours(e.target.value)}
-                  className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  placeholder={`Planned: ${closureWO.estimated_hours || 0}h`} />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 block">Observations</label>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 block">Observaciones</label>
                 <textarea value={closureNotes} onChange={e => setClosureNotes(e.target.value)}
                   className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30 min-h-[60px]"
-                  placeholder="Any observations or issues..." />
+                  placeholder="Desvíos, hallazgos, seguimiento..." />
+              </div>
+
+              {/* Signature block — legal trace */}
+              <div className="border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl p-4 bg-emerald-50/30 dark:bg-emerald-900/10">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2">Firma del supervisor · obligatoria</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-semibold text-muted-foreground mb-1 block">Nombre completo *</label>
+                    <input value={closureSignature} onChange={e => setClosureSignature(e.target.value)}
+                      className="w-full border border-border rounded-lg px-2.5 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      placeholder="Ej: Juan Pérez" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground mb-1 block">PIN (opcional)</label>
+                    <input type="password" inputMode="numeric" maxLength={6} value={closurePin} onChange={e => setClosurePin(e.target.value.replace(/\D/g, ''))}
+                      className="w-full border border-border rounded-lg px-2.5 py-2 text-sm tracking-widest bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      placeholder="••••" />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">Al firmar declaras que el trabajo fue ejecutado y verificado. La OT quedará bloqueada para edición post-cierre.</p>
               </div>
 
               {/* Cost preview */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 grid grid-cols-2 gap-2 text-xs">
-                <span className="text-muted-foreground">Hours:</span><span className="font-bold text-foreground">{closureHours || 0}h</span>
-                <span className="text-muted-foreground">Rate:</span><span className="font-bold text-foreground">${LABOR_RATE}/h</span>
-                <span className="text-muted-foreground">Labor Cost:</span><span className="font-bold text-emerald-700">${((parseFloat(closureHours) || 0) * LABOR_RATE).toFixed(0)}</span>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 grid grid-cols-3 gap-2 text-xs">
+                <div><span className="text-muted-foreground block text-[10px]">HH real</span><span className="font-bold text-foreground">{actualTotal.toFixed(1)}h</span></div>
+                <div><span className="text-muted-foreground block text-[10px]">Rate</span><span className="font-bold text-foreground">${LABOR_RATE}/h</span></div>
+                <div><span className="text-muted-foreground block text-[10px]">Costo mano de obra</span><span className="font-bold text-emerald-700">${(actualTotal * LABOR_RATE).toFixed(0)}</span></div>
               </div>
+            </div>
 
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setClosureWO(null)} disabled={closing}
-                  className="flex-1 py-2.5 text-sm font-semibold border border-border rounded-xl text-foreground hover:bg-muted">
-                  Cancel
-                </button>
-                <button onClick={handleClose} disabled={closing || !closureHours}
-                  className="flex-1 py-2.5 text-sm font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-40 flex items-center justify-center gap-2">
-                  {closing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                  Close WO
-                </button>
-              </div>
+            <div className="flex gap-3 p-5 border-t border-border bg-muted/20">
+              <button onClick={() => setClosureWO(null)} disabled={closing}
+                className="flex-1 py-2.5 text-sm font-semibold border border-border rounded-xl text-foreground hover:bg-muted">
+                Cancelar
+              </button>
+              <button onClick={handleClose} disabled={closing || !closureSignature.trim() || (closureOps.length === 0 && !closureHours)}
+                className="flex-1 py-2.5 text-sm font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-40 flex items-center justify-center gap-2">
+                {closing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                Cerrar y firmar
+              </button>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

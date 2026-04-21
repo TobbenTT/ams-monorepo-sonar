@@ -85,6 +85,10 @@ def _run_column_migrations():
         # Jorge (2026-04-20): historial de reservas. La reservation_code escalar
         # queda como "última/activa"; reservation_codes es el array completo.
         ("managed_work_orders", "reservation_codes", "TEXT", None),  # JSON list[str]
+        # Group A #3 — closure signature columns
+        ("managed_work_orders", "closed_by_signature", "VARCHAR(120)", None),
+        ("managed_work_orders", "closed_by_pin_hash", "VARCHAR(16)", None),
+        ("managed_work_orders", "closure_notes", "VARCHAR(500)", None),
     ]
 
     with engine.begin() as conn:

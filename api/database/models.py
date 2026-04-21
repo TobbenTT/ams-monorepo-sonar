@@ -539,6 +539,11 @@ class ManagedWorkOrderModel(Base):
     released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     closed_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Closure signature: legal trace that a supervisor signed off on the work.
+    # Not full e-sig — stores name typed + last-4 of PIN hash. Enough for audit.
+    closed_by_signature: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    closed_by_pin_hash: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    closure_notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
     assigned_workers: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{worker_id, name, specialty}]
 
     # Fast track (P1/P2 imprevistos skip planning)

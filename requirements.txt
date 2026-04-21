@@ -2,6 +2,8 @@
 pydantic==2.12.5
 pytest==9.0.3
 python-dateutil==2.9.0.post0
+# Sentry (free tier) — opcional, se activa si SENTRY_DSN_BACKEND está seteado
+sentry-sdk[fastapi]==2.19.0
 
 # Multi-Agent System (Claude Agent SDK)
 anthropic==0.83.0

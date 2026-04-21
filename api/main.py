@@ -14,6 +14,27 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.config import settings
+
+# ── Sentry (opcional) ─────────────────────────────────────────────────
+# Se activa si la var SENTRY_DSN_BACKEND está seteada. Captura errores
+# no manejados del ASGI + tracing básico. Free tier aguanta 5k events/mes.
+try:
+    _sentry_dsn = os.environ.get("SENTRY_DSN_BACKEND")
+    if _sentry_dsn:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            environment=os.environ.get("SENTRY_ENV", "production"),
+            integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+            traces_sample_rate=0.1,
+            send_default_pii=False,
+            release=os.environ.get("GIT_COMMIT", "unknown"),
+        )
+except Exception as _se:
+    import sys
+    print(f"[sentry] init failed (non-fatal): {_se}", file=sys.stderr)
 # Note: JWT auth enforcement is handled at router-level via
 # dependencies=[Depends(get_current_user)], NOT middleware.
 from api.database.connection import create_all_tables
@@ -199,6 +220,8 @@ def create_app() -> FastAPI:
     app.include_router(sap.router, prefix=prefix)
     app.include_router(analytics.router, prefix=prefix)
     app.include_router(admin.router, prefix=prefix)
+    # Endpoint público para kick-all-users (usa X-Internal-Key desde deploy.sh)
+    app.include_router(admin.public_kick_router, prefix=prefix)
     app.include_router(contractors.router, prefix=prefix)
     app.include_router(analytics_dashboards.router, prefix=prefix)
     app.include_router(reports_export.router, prefix=prefix)

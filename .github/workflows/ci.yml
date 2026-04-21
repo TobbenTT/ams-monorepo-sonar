@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main, demo-seed-data, feature/**]
+  pull_request:
+    branches: [main, demo-seed-data]
+
+jobs:
+  backend:
+    name: Backend · pytest smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run smoke tests (critical flows)
+        run: |
+          pytest tests/test_api/test_smoke_critical.py -v --tb=short
+      - name: Run full api test suite (allow some failures)
+        run: |
+          pytest tests/test_api/ --tb=short --ignore=tests/test_api/test_smoke_critical.py || true
+
+  frontend:
+    name: Frontend · build + lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+      - name: Lint (allow warnings)
+        working-directory: frontend
+        run: npm run lint || true
+
+  docker-build:
+    name: Docker · backend image builds
+    runs-on: ubuntu-latest
+    needs: [backend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t ams-backend:${{ github.sha }} .

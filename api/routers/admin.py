@@ -15,6 +15,49 @@ from api.dependencies.auth import get_current_user, require_role
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_user)])
 
 
+from fastapi import Header, Request
+import os as _os_admin
+
+
+# Endpoint que NO requiere auth estándar (bypass el dependencies=[get_current_user]
+# del router) porque lo usa deploy.sh con X-Internal-Key.
+_kick_router = APIRouter(prefix="/admin", tags=["admin-public"])
+
+
+@_kick_router.post("/kick-all-users")
+async def kick_all_users(
+    request: Request,
+    message: str = "Servidor actualizado. Volvé a iniciar sesión en unos segundos.",
+):
+    """Jorge 2026-04-21 — fuerza logout de todos los usuarios conectados.
+    Auth via X-Internal-Key (DEPLOY_SECRET env var) o Authorization Bearer
+    con role admin. Llamado desde /root/deploy.sh antes de reiniciar."""
+    deploy_secret = _os_admin.environ.get("DEPLOY_SECRET", "")
+    x_internal_key = request.headers.get("x-internal-key")
+    is_internal = deploy_secret and x_internal_key == deploy_secret
+    # Si no es internal, exigir admin via token
+    if not is_internal:
+        from api.services.auth_service import decode_token
+        auth = request.headers.get("authorization", "")
+        token = auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
+        if not token:
+            raise HTTPException(status_code=401, detail="missing auth")
+        try:
+            payload = decode_token(token)
+        except Exception:
+            raise HTTPException(status_code=401, detail="invalid token")
+        if payload.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="admin only")
+    from api.services.ws_manager import manager
+    await manager.broadcast("force_logout", {"message": message})
+    return {"kicked": True}
+
+
+# Registrar el router público en main.py — se hace vía router.include_router
+# pero main.py arma la app, así que lo exponemos acá para montarlo.
+public_kick_router = _kick_router
+
+
 @router.post("/seed-database", dependencies=[Depends(require_role("admin"))])
 def seed_database(db: Session = Depends(get_db)):
     from api.seed import seed_all

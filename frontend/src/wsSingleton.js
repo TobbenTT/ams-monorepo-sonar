@@ -71,6 +71,18 @@ function openConnection(plantId) {
             if (evt.data === 'pong') return;
             let msg;
             try { msg = JSON.parse(evt.data); } catch { return; }
+            // Jorge 2026-04-21 — si el servidor anuncia un restart/deploy,
+            // limpiamos sesión y redirigimos a login. Evita que el usuario
+            // vea errores/stale state mientras el backend reinicia.
+            if (msg?.event === 'server_restart' || msg?.event === 'force_logout') {
+                try {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    alert(msg?.data?.message || 'Servidor reiniciando. Volvé a iniciar sesión en unos segundos.');
+                } catch {}
+                try { window.location.href = '/login'; } catch {}
+                return;
+            }
             // Echo suppression: if this event was caused by THIS tab's own mutation,
             // skip it — our local state is already updated optimistically.
             if (msg && msg.origin_client_id && msg.origin_client_id === CLIENT_ID) return;

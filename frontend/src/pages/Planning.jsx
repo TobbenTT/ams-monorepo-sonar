@@ -101,6 +101,57 @@ function HistoryTab({ wo }) {
   );
 }
 
+// Group C #8 Jorge 2026-04-21 — picker de cuadrilla contratista.
+// Si la OT se tercerea, acá se elige. Null = trabajo interno.
+function ContractorCrewPicker({ wo, onChange }) {
+  const [crews, setCrews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const selected = wo.contractor_crew_id || '';
+
+  useEffect(() => {
+    let cancelled = false;
+    api.listAllCrews(wo.plant_id)
+      .then(r => { if (!cancelled) setCrews(Array.isArray(r) ? r : []); })
+      .catch(() => { if (!cancelled) setCrews([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [wo.plant_id]);
+
+  const handleChange = async (crewId) => {
+    try {
+      await api.updateManagedWO(wo.wo_id, { contractor_crew_id: crewId || null });
+      onChange && onChange(crewId || null);
+    } catch (e) {
+      alert('Error: ' + (e.message || 'no se pudo asignar cuadrilla'));
+    }
+  };
+
+  return (
+    <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+      <div className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase mb-1">
+        Cuadrilla contratista (opcional)
+      </div>
+      {loading ? (
+        <div className="text-xs text-amber-600 italic">Cargando cuadrillas…</div>
+      ) : crews.length === 0 ? (
+        <div className="text-xs text-amber-600 italic">
+          Sin contratistas configurados. Agregalos en <a href="/contractors" className="underline">Contratistas</a>.
+        </div>
+      ) : (
+        <select value={selected} onChange={e => handleChange(e.target.value)}
+          className="w-full text-sm font-semibold text-gray-800 bg-white border border-amber-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500">
+          <option value="">— In-house (técnicos propios) —</option>
+          {crews.map(c => (
+            <option key={c.crew_id} value={c.crew_id}>
+              {c.contractor_name} · {c.name}{c.specialty ? ` (${c.specialty})` : ''}{c.size > 1 ? ` · ${c.size} pers` : ''}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+
 function PriorityLabel({ priority }) {
   const p = String(priority || 'P3');
   return <span className={PRIORITY_COLORS[p] || 'text-gray-500'}>{PRIORITY_LABELS[p] || p}</span>;
@@ -1478,6 +1529,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         </select>
                       </div>
                     </div>
+
+                    {/* Group C #8 — Contractor crew picker (Jorge 2026-04-21).
+                        Opcional: si la OT se tercerea, se asigna a una cuadrilla externa. */}
+                    <ContractorCrewPicker wo={wo} onChange={(crewId) => { wo.contractor_crew_id = crewId; setSelectedOT({ ...wo }); }} />
 
                     {/* C22: Dates - Start/End + Week number */}
                     <div className="grid grid-cols-3 gap-3">

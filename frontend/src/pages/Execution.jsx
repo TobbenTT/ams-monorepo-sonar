@@ -11,7 +11,7 @@ import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   listManagedWOs, updateManagedWO, completeManagedWO, closeManagedWO,
-  updateManagedWOProgress, verifyCloseManagedWO,
+  updateManagedWOProgress, verifyCloseManagedWO, suggestFailureFields,
 } from '../api';
 
 // Fase 7 Jorge 2026-04-21 — grabar nota de voz en el cierre + transcribir.
@@ -261,6 +261,50 @@ export default function Execution() {
     });
   };
 
+  // Jorge 2026-04-21 — IA autocomplete para OTs PM03. Supervisor aprieta
+  // 'IA completa' y la OT recibe operations + materials sugeridos desde el
+  // endpoint de asistencia IA, basado en description + equipment + P1/P2.
+  const [aiFilling, setAiFilling] = useState(null);
+  const handleAIFillFailure = async (wo) => {
+    setAiFilling(wo.wo_id);
+    try {
+      const r = await suggestFailureFields({
+        description: wo.description || '',
+        equipment_tag: wo.equipment_tag || '',
+        equipment_condition: wo.status === 'EN_EJECUCION' ? 'stopped' : 'operating',
+        priority_hint: wo.priority_code || 'P2',
+      });
+      const ops = Array.isArray(r?.suggested_actions) ? r.suggested_actions.map((s, i) => ({
+        type: 'INT',
+        description: typeof s === 'string' ? s : (s.description || s.task || ''),
+        specialty: r?.specialty || 'Mechanical',
+        quantity: 1,
+        hours: r?.estimated_duration_hours ? Math.max(0.5, r.estimated_duration_hours / r.suggested_actions.length) : 1,
+      })) : [];
+      const mats = Array.isArray(r?.suggested_materials) ? r.suggested_materials.map(m => ({
+        code: m.code || m.sapId || m.sap_id || '',
+        description: m.description || m.name || '',
+        quantity: m.quantity || 1,
+        unit: m.unit || 'PZ',
+      })) : [];
+      if (ops.length === 0 && mats.length === 0) {
+        toast.info('IA no tiene sugerencias para esta OT');
+        return;
+      }
+      await updateManagedWO(wo.wo_id, {
+        operations: [...(wo.operations || []), ...ops],
+        materials: [...(wo.materials || []), ...mats],
+        estimated_hours: ops.reduce((a, o) => a + (o.hours * o.quantity), wo.estimated_hours || 0),
+      });
+      toast.success(`IA agregó ${ops.length} ops y ${mats.length} materiales a ${wo.wo_number}`);
+      loadData();
+    } catch (e) {
+      toast.error('Error IA: ' + (e.message || ''));
+    } finally {
+      setAiFilling(null);
+    }
+  };
+
   // Open closure modal — seeds per-operation actual_hours table
   const openClosure = (wo) => {
     const seed = (wo.operations || []).map(op => ({
@@ -413,7 +457,14 @@ export default function Execution() {
                     <span>{ops.length} operaciones</span>
                     {wo.planning_group && <span className="font-mono">{wo.planning_group}</span>}
                   </div>
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {ops.length === 0 && !isExec && (
+                      <button onClick={() => handleAIFillFailure(wo)} disabled={aiFilling === wo.wo_id}
+                        className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1 disabled:opacity-50">
+                        {aiFilling === wo.wo_id ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />}
+                        IA completa operaciones + repuestos
+                      </button>
+                    )}
                     {!isExec && (
                       <button onClick={() => handleStart(wo)}
                         className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1">

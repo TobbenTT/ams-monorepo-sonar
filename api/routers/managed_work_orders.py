@@ -1,6 +1,6 @@
 """Managed Work Orders router — full OT lifecycle (Jorge Phase 2)."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -189,6 +189,7 @@ def get_work_order(wo_id: str, plant_id: str | None = None, user=Depends(get_cur
 def update_work_order(
     wo_id: str,
     data: WOUpdateRequest,
+    request: Request,
     user=Depends(require_role("admin", "manager", "planner")),
     db: Session = Depends(get_db),
 ):
@@ -205,7 +206,26 @@ def update_work_order(
             update_data[field] = None
     # Group B #2 — pass authenticated user for audit trail attribution
     update_data.setdefault("updated_by", getattr(user, "user_id", "system"))
-    result = managed_wo_service.update_work_order(db, wo_id, update_data)
+    # Fase 9 — If-Match header para optimistic concurrency
+    if_match = request.headers.get("if-match")
+    if_match_version = None
+    if if_match:
+        try:
+            if_match_version = int(if_match.strip().strip('"'))
+        except ValueError:
+            pass
+    try:
+        result = managed_wo_service.update_work_order(db, wo_id, update_data, if_match_version=if_match_version)
+    except managed_wo_service.OptimisticLockError as oe:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "version_conflict",
+                "message": "La OT fue modificada por otro usuario. Recarga y vuelve a aplicar tus cambios.",
+                "current_version": oe.current_version,
+                "sent_version": oe.sent_version,
+            },
+        )
     if not result:
         raise HTTPException(status_code=400, detail="WO not found or not editable (must be PENDIENTE/APROBADO)")
     return result

@@ -576,6 +576,10 @@ class ManagedWorkOrderModel(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)
+    # Fase 9 Jorge 2026-04-21 — optimistic concurrency lock.
+    # Incrementa en cada PATCH; rechaza si el cliente manda If-Match con una
+    # versión distinta (otro usuario modificó la OT entre medio).
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
     __table_args__ = (
         Index("ix_mwo_status", "status"),

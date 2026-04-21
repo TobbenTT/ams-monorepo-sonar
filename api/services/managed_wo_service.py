@@ -82,6 +82,7 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "closed_by_signature": getattr(wo, "closed_by_signature", None),
         "closure_notes": getattr(wo, "closure_notes", None),
         "contractor_crew_id": getattr(wo, "contractor_crew_id", None),
+        "version": getattr(wo, "version", 1),
         "assigned_workers": wo.assigned_workers or [],
         "completion_pct": wo.completion_pct,
         "execution_notes": wo.execution_notes or [],
@@ -424,13 +425,27 @@ def list_work_orders(
     return rows
 
 
-def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
+class OptimisticLockError(Exception):
+    """Raised when If-Match version does not match current WO.version."""
+    def __init__(self, current_version: int, sent_version: int):
+        self.current_version = current_version
+        self.sent_version = sent_version
+        super().__init__(f"version mismatch: current={current_version} sent={sent_version}")
+
+
+def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int | None = None) -> dict | None:
     """Update planning fields on a WO (before execution starts)."""
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
     if not wo:
         return None
     if wo.status in ("CERRADO", "CANCELADO"):
         return None
+    # Fase 9 Jorge 2026-04-21 — optimistic concurrency. Si el cliente mandó
+    # If-Match y la versión actual es distinta, otro usuario ya modificó la
+    # OT en el ínterin → rechaza con 409.
+    current_version = getattr(wo, "version", None) or 1
+    if if_match_version is not None and int(if_match_version) != current_version:
+        raise OptimisticLockError(current_version, int(if_match_version))
 
     updatable = [
         "description", "wo_type", "priority_code", "estimated_hours",
@@ -482,6 +497,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
         wo.work_class = "NO_PROGRAMADO" if data["priority_code"] in ("P1", "P2") else "PROGRAMADO"
 
     wo.updated_at = datetime.now()
+    wo.version = current_version + 1
     _user = data.get("updated_by", "system")
     if _changes:
         log_action(db, "managed_work_order", wo_id, "UPDATE", payload={"changes": _changes}, user=_user)

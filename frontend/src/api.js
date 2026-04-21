@@ -271,7 +271,35 @@ export const getManagedWO = (id) => get(`/managed-work-orders/${id}`);
 export const getManagedWOImpactScore = (id) => get(`/managed-work-orders/${id}/impact-score`);
 export const createManagedWO = (d) => post('/managed-work-orders/', d);
 export const createWOFromWR = (d) => post('/managed-work-orders/from-wr', d);
-export const updateManagedWO = (id, d) => put(`/managed-work-orders/${id}`, d);
+// Fase 9 Jorge 2026-04-21 — optimistic lock. Si el caller pasa {...data, _version: N}
+// se manda como If-Match header y el backend rechaza con 409 si otro usuario
+// ya editó. Sin _version se comporta como antes (no lock).
+export async function updateManagedWO(id, d) {
+  const token = getToken();
+  const cid = (() => { try { return sessionStorage.getItem('ws_client_id') || ''; } catch { return ''; } })();
+  const body = { ...d };
+  const version = body._version;
+  delete body._version;
+  const url = `${BASE}/managed-work-orders/${id}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(cid ? { 'X-Client-Id': cid } : {}),
+    ...(version != null ? { 'If-Match': String(version) } : {}),
+  };
+  const plantId = getSelectedPlant();
+  if (plantId && !body.plant_id) body.plant_id = plantId;
+  const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (res.status === 409) {
+    const j = await res.json().catch(() => ({}));
+    const err = new Error(j?.detail?.message || 'La OT fue modificada por otro usuario');
+    err.code = 'VERSION_CONFLICT';
+    err.detail = j?.detail || j;
+    throw err;
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 export const planManagedWO = (id) => put(`/managed-work-orders/${id}/plan`);
 export const releaseManagedWO = (id) => put(`/managed-work-orders/${id}/release`);
 export const scheduleManagedWO = (id, d) => put(`/managed-work-orders/${id}/schedule`, d);

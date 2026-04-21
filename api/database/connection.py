@@ -95,6 +95,8 @@ def _run_column_migrations():
         ("workforce", "shift_pattern", "VARCHAR(16)", None),
         ("workforce", "shift_cycle_start", "VARCHAR(20)", None),
         ("workforce", "skills", "TEXT", None),
+        # Fase 9 — optimistic lock para OTs
+        ("managed_work_orders", "version", "INTEGER", "1"),
     ]
 
     with engine.begin() as conn:

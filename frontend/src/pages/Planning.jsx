@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
 import CapacityEvaluation from '../components/CapacityEvaluation';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -19,6 +19,87 @@ const PRIORITY_COLORS = {
   P4: 'text-blue-600',
 };
 const PRIORITY_LABELS = { P1: 'Immediate', P2: 'High', P3: 'Medium', P4: 'Low' };
+
+// Fase 10 Jorge 2026-04-21 — tab de historial en el modal de OT.
+// Consume /managed-work-orders/{id}/history que combina audit_log diffs
+// (quién cambió qué campo) con execution_notes (status transitions).
+function HistoryTab({ wo }) {
+  const [loading, setLoading] = useState(true);
+  const [entries, setEntries] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!wo?.wo_id) return;
+    let cancelled = false;
+    setLoading(true);
+    api.getManagedWOHistory(wo.wo_id)
+      .then(r => { if (!cancelled) { setEntries(r?.entries || []); setError(null); } })
+      .catch(e => { if (!cancelled) setError(e.message || 'Error'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [wo?.wo_id]);
+
+  const formatValue = (v) => {
+    if (v == null || v === '') return <span className="italic text-gray-400">vacío</span>;
+    if (typeof v === 'object') return JSON.stringify(v).slice(0, 80);
+    const s = String(v);
+    return s.length > 80 ? s.slice(0, 77) + '…' : s;
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-800">Historial · {entries.length} eventos</h3>
+        <span className="text-[10px] text-gray-400">Audit log + notas de ejecución</span>
+      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-6 text-gray-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="text-sm text-rose-600 bg-rose-50 p-3 rounded-lg">Error: {error}</div>
+      ) : entries.length === 0 ? (
+        <p className="text-center text-gray-400 text-sm py-6">Sin historial registrado</p>
+      ) : (
+        <div className="space-y-1.5">
+          {entries.map((e, idx) => {
+            const isChange = e.source === 'audit' && e.changes && Object.keys(e.changes).length > 0;
+            const isNote = e.source === 'note';
+            return (
+              <div key={idx} className={`rounded-lg border p-2.5 ${isChange ? 'bg-blue-50/40 border-blue-200' : isNote ? 'bg-emerald-50/40 border-emerald-200' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${isChange ? 'bg-blue-200 text-blue-800' : isNote ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-700'}`}>
+                    {isChange ? 'CAMBIO' : isNote ? 'NOTA' : (e.action || 'EVENT')}
+                  </span>
+                  <span className="text-[10px] text-gray-500">{e.timestamp ? new Date(e.timestamp).toLocaleString('es') : '—'}</span>
+                  <span className="text-[10px] font-mono text-gray-600 ml-auto">{e.user || 'system'}</span>
+                </div>
+                {isChange && (
+                  <div className="grid grid-cols-[auto,1fr,auto,1fr] gap-x-2 gap-y-0.5 text-[11px]">
+                    {Object.entries(e.changes).map(([field, diff]) => (
+                      <React.Fragment key={field}>
+                        <span className="font-semibold text-gray-700">{field}:</span>
+                        <span className="text-gray-500 line-through truncate">{formatValue(diff.from)}</span>
+                        <span className="text-gray-400">→</span>
+                        <span className="text-blue-700 font-medium truncate">{formatValue(diff.to)}</span>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+                {isNote && e.note && (
+                  <p className="text-xs text-gray-700">{e.note}</p>
+                )}
+                {!isChange && !isNote && (
+                  <p className="text-xs text-gray-500 italic">{e.action}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PriorityLabel({ priority }) {
   const p = String(priority || 'P3');
@@ -2231,34 +2312,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
                 {/* HISTORIAL */}
                 {otModalTab === 'historial' && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-gray-800">Execution History</h3>
-                    {(() => {
-                      let notes = wo.execution_notes;
-                      if (!notes) return <p className="text-center text-gray-400 text-sm py-6">No execution notes recorded</p>;
-                      if (typeof notes === 'string') {
-                        try { notes = JSON.parse(notes); } catch(e) {
-                          return <div className="bg-gray-50 rounded-lg p-3 border"><pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans">{notes}</pre></div>;
-                        }
-                      }
-                      const items = Array.isArray(notes) ? notes : [notes];
-                      return <div className="space-y-2">
-                        {items.map((entry, idx) => (
-                          <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] text-gray-400">{entry.timestamp ? new Date(entry.timestamp).toLocaleString('en-US', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</span>
-                            </div>
-                            <p className="text-xs text-gray-700">{entry.note || entry.message || JSON.stringify(entry)}</p>
-                          </div>
-                        ))}
-                      </div>;
-                    })()}
-                    <div className="text-xs text-gray-400 space-y-1">
-                      <p>Created: {wo.created_at ? new Date(wo.created_at).toLocaleString("es") : "\—"}</p>
-                      {wo.planned_start && <p>Start planificado: {new Date(wo.planned_start).toLocaleString("es")}</p>}
-                      {wo.planned_end && <p>Fin planificado: {new Date(wo.planned_end).toLocaleString("es")}</p>}
-                    </div>
-                  </div>
+                  <HistoryTab wo={wo} />
                 )}
               </div>
 

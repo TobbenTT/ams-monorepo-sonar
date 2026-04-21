@@ -842,11 +842,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
 
   const [showMaterialsRail, setShowMaterialsRail] = useState(false);
   const [expandedWCs, setExpandedWCs] = useState({}); // click → show tech names per work center
+  const [capacityCollapsed, setCapacityCollapsed] = useState(false); // Fase 4 Jorge 2026-04-21
 
   return (
     <div className="flex gap-4" style={{ minHeight: 500 }}>
-      {/* ── Left Panel: OTs to Schedule — also drop target to unschedule ── */}
-      <div className="w-72 min-w-[288px] flex flex-col">
+      {/* ── Left Panel: OTs to Schedule — sticky al scrollear (Jorge 2026-04-21) ── */}
+      <div className="w-72 min-w-[288px] flex flex-col sticky top-4 self-start"
+        style={{ maxHeight: 'calc(100vh - 40px)' }}>
         <div
           className={`bg-card border rounded-xl overflow-hidden flex flex-col transition-all ${dragWO && (dragWO.status === 'PROGRAMADO' || dragWO.planned_start) ? 'border-red-400 border-2 ring-2 ring-red-200 dark:ring-red-900/30 bg-red-50/30 dark:bg-red-900/10' : 'border-border'}`}
           style={{ maxHeight: 'calc(100vh - 300px)' }}
@@ -992,20 +994,32 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         </div>
 
         {/* Capacity by Work Center — Jorge 2026-04-20.
-            Semáforo HH/día por puesto de trabajo arriba de la grilla. */}
+            Semáforo HH/día por puesto de trabajo arriba de la grilla.
+            Sticky con toggle para que el planificador no lo pierda al scrollear. */}
         {capacityByWC.length > 0 && (
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className={`bg-card border border-border rounded-xl overflow-hidden sticky z-20 shadow-sm ${capacityCollapsed ? 'top-2' : 'top-2'}`}
+            style={{ maxHeight: capacityCollapsed ? '48px' : '40vh', overflowY: 'auto' }}>
             <div className="px-4 pt-3 pb-2 flex items-end justify-between">
               <div>
-                <h3 className="text-[13px] font-bold text-foreground tracking-tight">Capacity by Work Center</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Consumed HH vs nominal per day · derived from roster × effective shift length</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-[13px] font-bold text-foreground tracking-tight">Capacity by Work Center</h3>
+                  <button onClick={() => setCapacityCollapsed(c => !c)}
+                    className="p-0.5 rounded hover:bg-muted text-muted-foreground"
+                    title={capacityCollapsed ? 'Expandir' : 'Colapsar'}>
+                    {capacityCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                  </button>
+                </div>
+                {!capacityCollapsed && <p className="text-[11px] text-muted-foreground mt-0.5">Consumed HH vs nominal per day · derived from roster × effective shift length</p>}
               </div>
-              <div className="flex items-center gap-3 text-[10.5px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> &lt; 80%</span>
-                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> 80–100%</span>
-                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> &gt; 100%</span>
-              </div>
+              {!capacityCollapsed && (
+                <div className="flex items-center gap-3 text-[10.5px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> &lt; 80%</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> 80–100%</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> &gt; 100%</span>
+                </div>
+              )}
             </div>
+            {!capacityCollapsed && (<>
             <div className="grid border-t border-border" style={{ gridTemplateColumns: `180px repeat(${days.length}, minmax(72px, 1fr))` }}>
               <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Work Center</div>
               {days.map(d => (
@@ -1115,6 +1129,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 );
               })}
             </div>
+            </>)}
           </div>
         )}
 

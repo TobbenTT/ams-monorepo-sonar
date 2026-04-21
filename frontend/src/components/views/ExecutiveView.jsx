@@ -297,68 +297,6 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
             </div>
             <div>
               <h3 className="font-bold text-blue-900">{t('executive.rootCauseTitle')}</h3>
-              <button onClick={async () => {
-                try {
-                  const result = await api.agenticKpiWatchdog({ plant_id: selectedPlant, thresholds: { availability: 85, mtbf: 10, mttr: 8 } });
-                  const out = result.output_result || result;
-                  const alerts = out.alerts_triggered || out.anomalies_found || 0;
-                  if (alerts > 0) {
-                    alert('KPI Watchdog: ' + alerts + ' anomalies detected!');
-                  } else {
-                    alert('KPI Watchdog: All KPIs within normal parameters');
-                  }
-                } catch (e) { console.error(e); }
-              }} className="text-[10px] px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-                Run Watchdog
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    await api.downloadExecutiveReportPPTX({ plant_id: selectedPlant, period: 'monthly' });
-                  } catch (e) {
-                    alert('Error generando PPTX: ' + (e.message || ''));
-                  }
-                }}
-                className="ml-2 text-[10px] px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                title="Generar reporte ejecutivo mensual (PPTX)"
-              >
-                📊 Reporte PPTX
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    const res = await api.agenticBudgetSentinel({ plant_id: selectedPlant });
-                    const r = res?.output_result || res;
-                    const msg = [
-                      `Nivel: ${r?.alert_level || r?.level || '—'}`,
-                      `Gasto: ${r?.spent || r?.spending_mtd || '—'}`,
-                      `Presupuesto: ${r?.budget || r?.budget_mtd || '—'}`,
-                      `Proyección: ${r?.projection_qtd || r?.forecast || '—'}`,
-                    ].join(' · ');
-                    alert('Budget Sentinel — ' + msg);
-                  } catch (e) { alert('Error: ' + (e.message || '')); }
-                }}
-                className="ml-2 text-[10px] px-2 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
-                title="Budget Sentinel (SF-357)"
-              >
-                💰 Budget
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    const res = await api.chronicFailuresActive(selectedPlant);
-                    const r = res?.items || [];
-                    if (!r.length) { alert('Sin fallas crónicas detectadas'); return; }
-                    const top = r.slice(0, 5).map((x, i) => `#${i+1} ${x.equipment_tag || '—'} · ${x.failure_mode || x.mode || ''} · ${x.count || x.event_count || 0}x`).join('\n');
-                    alert(`Fallas crónicas activas (${r.length}):\n\n${top}`);
-                  } catch (e) { alert('Error: ' + (e.message || '')); }
-                }}
-                className="ml-2 text-[10px] px-2 py-1 bg-rose-600 text-white rounded hover:bg-rose-700"
-                title="Chronic Failures (SF-352)"
-              >
-                🔁 Crónicas
-              </button>
-              <AgentQuickActions plant={selectedPlant} />
               <p className="text-sm text-blue-700">
                 {totalActive > 0 ? t('executive.rootCauseActiveAlerts').replace('{count}', totalActive) : t('executive.rootCauseNoAlerts')}
               </p>

@@ -152,10 +152,10 @@ def backlog_aging(plant_id: str | None = None, db: Session = Depends(get_db)):
                 b["count"] += 1
                 return
 
-    # WRs that haven't been approved or have pending status
+    # WRs that haven't been approved or have pending status. El modelo actual
+    # no tiene plant_id, así que no filtramos por planta (las WRs son pocas en
+    # relación a las WOs; el total refleja pipeline global de avisos abiertos).
     wr_q = db.query(WorkRequestModel)
-    if plant_id:
-        wr_q = wr_q.filter(WorkRequestModel.plant_id == plant_id)
     for wr in wr_q.all():
         status = (getattr(wr, "status", "") or "").upper()
         if status in ("CERRADO", "CANCELADO", "RECHAZADO", "APROBADO"):

@@ -389,7 +389,10 @@ def list_work_orders(
     offset: int = 0,
     fast_track: bool | None = None,
     light: bool = False,
-) -> list[dict]:
+    paginated: bool = False,
+) -> list[dict] | dict:
+    """List WOs. When paginated=True returns {items, total, limit, offset, has_more}.
+    Legacy callers (paginated=False) still receive a bare list for back-compat."""
     q = db.query(ManagedWorkOrderModel)
     if status:
         q = q.filter(ManagedWorkOrderModel.status == status)
@@ -401,8 +404,18 @@ def list_work_orders(
         q = q.filter(ManagedWorkOrderModel.priority_code == priority)
     if fast_track is not None:
         q = q.filter(ManagedWorkOrderModel.is_fast_track == fast_track)
+    total = q.count() if paginated else None
     items = q.order_by(ManagedWorkOrderModel.created_at.desc()).offset(offset).limit(limit).all()
-    return [_to_light_dict(wo) for wo in items] if light else [_to_dict(wo) for wo in items]
+    rows = [_to_light_dict(wo) for wo in items] if light else [_to_dict(wo) for wo in items]
+    if paginated:
+        return {
+            "items": rows,
+            "total": total or 0,
+            "limit": limit,
+            "offset": offset,
+            "has_more": (offset + len(rows)) < (total or 0),
+        }
+    return rows
 
 
 def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:

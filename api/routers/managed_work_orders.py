@@ -149,9 +149,10 @@ def list_work_orders(
     limit: int = 200,
     offset: int = 0,
     light: bool = False,  # when True, returns only the fields needed by lists (≈70% smaller payload)
+    paginated: bool = False,  # Group B #4 — opt-in paginated response {items,total,limit,offset,has_more}
     db: Session = Depends(get_db),
 ):
-    return managed_wo_service.list_work_orders(db, status, plant_id, wo_type, priority, limit, offset, fast_track=fast_track, light=light)
+    return managed_wo_service.list_work_orders(db, status, plant_id, wo_type, priority, limit, offset, fast_track=fast_track, light=light, paginated=paginated)
 
 
 @router.get("/stats")

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useOutletContext } from 'react-router-dom';
 import { CritBadge, LoadingSpinner } from '../components/Shared';
 import { useWebSocket } from '../hooks/useWebSocket';
+import LiveIndicator from '../components/LiveIndicator';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -540,7 +541,7 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
 }
 
 /* ───── Weekly Calendar View (drag-and-drop scheduling grid) ───── */
-function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onUnscheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange, onRefresh, onAutoLevel }) {
+function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onUnscheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange, onRefresh, onAutoLevel, lastWsAt }) {
   const { CAP, PROGRAMMABLE_HH_PER_DAY, HOURS_PER_WEEK } = useCapacitySettings();
   const toast = useToast();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
@@ -1143,6 +1144,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             <button onClick={() => { const nw = addDays(weekStart, 7); setWeekStart(nw); onWeekChange?.(nw); }} className="p-1.5 rounded-lg border border-border hover:bg-muted transition-colors">
               <ChevronRight size={16} className="text-muted-foreground" />
             </button>
+            <LiveIndicator lastWsAt={lastWsAt} />
           </div>
           <div className="flex items-center gap-2">
             <div className="flex rounded-lg border border-border overflow-hidden">
@@ -3091,16 +3093,41 @@ export default function Scheduling() {
     }).catch(() => setBlockedEquipment([]));
   }, [plant]);
 
-  // Real-time updates via WebSocket — debounced, disabled when modal is open
+  // Real-time updates via WebSocket — patch granular (Jorge 2026-04-21).
+  // Si el evento trae el objeto wo completo (wo_updated/wo_status), mergeamos
+  // en state local sin refetchear. Cambios instantáneos, sin flash visual.
+  // Fallback: eventos sin wo payload o bulk → reload completo con debounce.
   const wsTimerRef = useRef(null);
+  const [lastWsAt, setLastWsAt] = useState(null);
+
+  const routeWOToBucket = useCallback((updatedWO) => {
+    const status = (updatedWO.status || '').toUpperCase();
+    const inReleased = ['LIBERADO', 'CREADO', 'PLANIFICADO'].includes(status);
+    const inScheduled = ['EN_PROGRAMACION', 'PROGRAMADO', 'EN_EJECUCION'].includes(status);
+    setReleasedWOs(prev => {
+      const without = prev.filter(w => w.wo_id !== updatedWO.wo_id);
+      return inReleased ? [updatedWO, ...without] : without;
+    });
+    setScheduledWOs(prev => {
+      const without = prev.filter(w => w.wo_id !== updatedWO.wo_id);
+      return inScheduled ? [updatedWO, ...without] : without;
+    });
+  }, []);
+
   useWebSocket(plant, useCallback((msg) => {
-    // Don't reload when AI modal or any action is in progress
     if (showAIModal || aiScheduling || showClearConfirm || clearing) return;
-    if (msg.event?.startsWith('wo_') || msg.event === 'wo_bulk_clear') {
-      if (wsTimerRef.current) clearTimeout(wsTimerRef.current);
-      wsTimerRef.current = setTimeout(() => { loadCalendarData(); loadGantt(); }, 3000);
+    if (!msg.event?.startsWith('wo_') && msg.event !== 'wo_bulk_clear') return;
+    setLastWsAt(Date.now());
+    // Granular: si viene el objeto wo completo, mergear directo.
+    const updated = msg?.data?.wo;
+    if (updated && updated.wo_id && msg.event !== 'wo_bulk_clear') {
+      routeWOToBucket(updated);
+      return;
     }
-  }, [showAIModal, aiScheduling, showClearConfirm, clearing]));
+    // Fallback al refetch si el evento es sin payload o bulk clear.
+    if (wsTimerRef.current) clearTimeout(wsTimerRef.current);
+    wsTimerRef.current = setTimeout(() => { loadCalendarData(); loadGantt(); }, 3000);
+  }, [showAIModal, aiScheduling, showClearConfirm, clearing, routeWOToBucket]));
   useEffect(() => { loadGantt(); }, [plant, ganttWeeks]);
 
   const handleUnscheduleWO = async (wo) => {
@@ -3691,6 +3718,7 @@ export default function Scheduling() {
           onWeekChange={setViewedWeekStart}
           onAutoLevel={() => setShowAIModal(true)}
           onOpenDetail={setDetailOrder}
+          lastWsAt={lastWsAt}
         />
       )}
       {tab === 'gantt' && (

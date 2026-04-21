@@ -505,7 +505,11 @@ def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int
         log_action(db, "managed_work_order", wo_id, "UPDATE", user=_user)
     db.commit()
     db.refresh(wo)
-    queue_notify("wo_updated", {"wo_id": wo_id, "wo_number": wo.wo_number, "status": wo.status}, wo.plant_id)
+    # Jorge 2026-04-21 — patch granular: enviamos el objeto WO completo en el
+    # evento. El cliente mergea en su estado local en vez de refetchear toda
+    # la lista. Cambia el feel de la app a "real-time" sin flashes.
+    _wo_dict = _to_dict(wo)
+    queue_notify("wo_updated", {"wo_id": wo_id, "wo_number": wo.wo_number, "status": wo.status, "wo": _wo_dict}, wo.plant_id)
     return _to_dict(wo)
 
 
@@ -578,7 +582,7 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
     log_action(db, "managed_work_order", wo_id, target_status, user=user_id or "system")
     db.commit()
     db.refresh(wo)
-    queue_notify("wo_status", {"wo_id": wo_id, "wo_number": wo.wo_number, "old": old_status, "new": target_status}, wo.plant_id)
+    queue_notify("wo_status", {"wo_id": wo_id, "wo_number": wo.wo_number, "old": old_status, "new": target_status, "wo": _to_dict(wo)}, wo.plant_id)
     return _to_dict(wo)
 
 

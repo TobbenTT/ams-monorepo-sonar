@@ -315,7 +315,12 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
             "planned_hours": est_hours,
         })
 
-    wo_type_map = {"P1": "PM01", "P2": "PM01", "P3": "PM02", "P4": "PM02"}
+    # Jorge 2026-04-21 — clasificación correcta SAP PM:
+    #   P1/P2 → PM03 (correctivo de falla, bypass planning, al supervisor)
+    #   P3/P4 → PM01 (correctivo programado, al planificador)
+    #   Estrategia auto-generada (sin WR) → PM02 (preventivo)
+    # Ver transcripción 2026-04-21 13:23 línea ~46-54, 683-708.
+    wo_type_map = {"P1": "PM03", "P2": "PM03", "P3": "PM01", "P4": "PM01"}
     text_to_pm = {"CORRECTIVO": "PM01", "PREVENTIVO": "PM02", "PREDICTIVO": "PM03", "MEJORA": "PM03"}
     raw_type = ai.get("work_order_type", "")
     wo_type = text_to_pm.get(raw_type, raw_type) if raw_type and not raw_type.startswith("PM") else (raw_type or wo_type_map.get(wr.priority_code, "PM01"))

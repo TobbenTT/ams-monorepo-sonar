@@ -512,6 +512,8 @@ export default function SettingsPage() {
                   if (v === 'underground') {
                     updateSetting('shiftType', 'abc_8h');
                     updateSetting('nominalHoursPerShift', 8);
+                    // Jorge 2026-04-21: efectivas no pueden superar nominales
+                    if ((settings.effectiveHoursPerShift || 0) > 8) updateSetting('effectiveHoursPerShift', 8);
                   } else {
                     updateSetting('shiftType', 'day_night');
                     updateSetting('nominalHoursPerShift', 12);
@@ -526,31 +528,55 @@ export default function SettingsPage() {
               </div>
               <div>
                 <Label>Hora de inicio turno día</Label>
-                <Input type="number" min="0" max="23" value={settings.shiftStartHour ?? 8}
-                  onChange={e => updateSetting('shiftStartHour', Number(e.target.value))}
+                <Input type="text" value={(() => {
+                  const h = settings.shiftStartHour ?? 8;
+                  return `${String(h).padStart(2,'0')}:00`;
+                })()}
+                  onChange={e => {
+                    const v = e.target.value.split(':')[0];
+                    const n = parseInt(v, 10);
+                    if (!isNaN(n) && n >= 0 && n <= 23) updateSetting('shiftStartHour', n);
+                  }}
+                  placeholder="08:00"
                   className="mt-1" />
-                <p className="text-xs text-gray-400 mt-1">Ej: 7 (7–19), 8 (8–20)</p>
+                <p className="text-xs text-gray-400 mt-1">Formato HH:00 · Ej: 07:00 (7–19), 08:00 (8–20)</p>
               </div>
               <div>
-                <Label>Horas nominales por turno</Label>
-                <Input type="number" value={settings.nominalHoursPerShift} onChange={e => updateSetting('nominalHoursPerShift', Number(e.target.value))} className="mt-1" />
-                <p className="text-xs text-gray-400 mt-1">Duración total del turno (ej. 12h, 8h)</p>
+                <Label>Horas nominales por turno (H)</Label>
+                <Input type="number" value={settings.nominalHoursPerShift}
+                  max={settings.mineType === 'underground' ? 8 : 12}
+                  onChange={e => {
+                    let v = Number(e.target.value);
+                    const cap = settings.mineType === 'underground' ? 8 : 12;
+                    if (v > cap) v = cap;
+                    updateSetting('nominalHoursPerShift', v);
+                    // Horas efectivas no puede exceder nominales
+                    if ((settings.effectiveHoursPerShift || 0) > v) updateSetting('effectiveHoursPerShift', v);
+                  }}
+                  className="mt-1" />
+                <p className="text-xs text-gray-400 mt-1">Duración total del turno · subterránea máx 8H, planta/rajo máx 12H</p>
               </div>
               <div>
-                <Label>Horas efectivas por turno</Label>
-                <Input type="number" value={settings.effectiveHoursPerShift} onChange={e => updateSetting('effectiveHoursPerShift', Number(e.target.value))} className="mt-1" />
-                <p className="text-xs text-gray-400 mt-1">Tras descontar almuerzo, reuniones, etc.</p>
+                <Label>Horas efectivas por turno (H)</Label>
+                <Input type="number" value={settings.effectiveHoursPerShift}
+                  max={settings.nominalHoursPerShift || 12}
+                  onChange={e => {
+                    let v = Number(e.target.value);
+                    const cap = settings.nominalHoursPerShift || 12;
+                    if (v > cap) v = cap;
+                    updateSetting('effectiveHoursPerShift', v);
+                  }}
+                  className="mt-1" />
+                <p className="text-xs text-gray-400 mt-1">Tras descontar almuerzo, reuniones, etc. No puede superar las horas nominales.</p>
               </div>
               <div>
                 <Label>% programable</Label>
                 <Input type="number" min="50" max="100" value={settings.schedulingPercent} onChange={e => updateSetting('schedulingPercent', Number(e.target.value))} className="mt-1" />
                 <p className="text-xs text-gray-400 mt-1">% de horas efectivas para trabajo planeado. El resto se reserva para correctivos/imprevistos.</p>
               </div>
-              <div>
-                <Label>Factor de productividad %</Label>
-                <Input type="number" min="50" max="100" value={settings.productivityFactor} onChange={e => updateSetting('productivityFactor', Number(e.target.value))} className="mt-1" />
-                <p className="text-xs text-gray-400 mt-1">Considera traslados, alistamiento y tiempos muertos.</p>
-              </div>
+              {/* Factor de productividad removido (Jorge 2026-04-21):
+                  ese concepto es Time on Tool y confundía la matemática del
+                  tablero. Irá en otra suite aparte (Time on Tool) más adelante. */}
               <div>
                 <Label>Patrón de turnos</Label>
                 <select value={settings.shiftType} onChange={e => updateSetting('shiftType', e.target.value)}
@@ -586,11 +612,12 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-400 mt-1">Algunas minas usan ciclos Mié-Mar</p>
               </div>
               <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                <div className="text-xs font-bold text-indigo-600 uppercase mb-1">HH programables por persona / día</div>
+                <div className="text-xs font-bold text-indigo-600 uppercase mb-1">HH programables por persona / turno</div>
                 <div className="text-2xl font-extrabold text-indigo-800">
-                  {((settings.effectiveHoursPerShift || 10) * (settings.schedulingPercent || 80) / 100 * (settings.productivityFactor || 90) / 100).toFixed(1)}h
+                  {((settings.effectiveHoursPerShift || 10) * (settings.schedulingPercent || 80) / 100).toFixed(1)} HH
                 </div>
-                <p className="text-xs text-indigo-500 mt-1">{settings.effectiveHoursPerShift}h x {settings.schedulingPercent}% x {settings.productivityFactor}%</p>
+                <p className="text-xs text-indigo-500 mt-1">{settings.effectiveHoursPerShift}H × {settings.schedulingPercent}%</p>
+                <p className="text-[10px] text-indigo-400 mt-1 italic">Día = 1 turno · si hay turno noche con dotación, el tablero los suma automáticamente.</p>
               </div>
             </div>
           </Card>

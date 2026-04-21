@@ -85,12 +85,11 @@ function getCapacitySettings() {
     return {
       effectiveHours: s.effectiveHoursPerShift || 10,
       schedulingPct: s.schedulingPercent || 80,
-      productivityPct: s.productivityFactor || 90,
       weekStartDay: s.weekStartDay ?? 1,
       dayShiftCount: s.dayShiftCount ?? null,   // explicit day-shift staffing (Jorge)
       nightShiftCount: s.nightShiftCount ?? null, // explicit night-shift staffing
     };
-  } catch { return { effectiveHours: 10, schedulingPct: 80, productivityPct: 90, dayShiftCount: null, nightShiftCount: null }; }
+  } catch { return { effectiveHours: 10, schedulingPct: 80, dayShiftCount: null, nightShiftCount: null }; }
 }
 function useCapacitySettings() {
   const [cap, setCap] = useState(getCapacitySettings);
@@ -103,8 +102,11 @@ function useCapacitySettings() {
       window.removeEventListener('ocp-settings-changed', onChange);
     };
   }, []);
-  const programmableHHPerDay = cap.effectiveHours * (cap.schedulingPct / 100) * (cap.productivityPct / 100);
-  return { CAP: cap, PROGRAMMABLE_HH_PER_DAY: programmableHHPerDay, HOURS_PER_WEEK: programmableHHPerDay * 5 };
+  // Jorge 2026-04-21: sacado factor de productividad — confundía y metía error
+  // en la matemática. Time on Tool se medirá en otra suite aparte.
+  // HH programables = horas efectivas × % programable / 100.
+  const programmableHHPerShift = cap.effectiveHours * (cap.schedulingPct / 100);
+  return { CAP: cap, PROGRAMMABLE_HH_PER_DAY: programmableHHPerShift, PROGRAMMABLE_HH_PER_SHIFT: programmableHHPerShift, HOURS_PER_WEEK: programmableHHPerShift * 5 };
 }
 
 // Classify a technician as 'day' or 'night' based on their workforce shift field
@@ -663,7 +665,16 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
       const s = (wo.status || '').toUpperCase();
       return s !== 'CREADO' && s !== 'DRAFT' && s !== 'PENDIENTE';
     });
-    // Priority filter — multi-select (each priority togglable)
+    // Jorge 2026-04-21: el tablero muestra SOLO PM01 y PM02 (programables).
+    // Las PM03 son fallas correctivas — van directo al supervisor, bypass planning.
+    list = list.filter(wo => {
+      const t = (wo.wo_type || '').toUpperCase();
+      if (t === 'PM03') return false;
+      const p = (wo.priority_code || '').toUpperCase();
+      if (p === 'P1' || p === 'P2') return false;
+      return true;
+    });
+    // Priority filter — multi-select (solo P3/P4 ya que P1/P2 no entran al tablero)
     const activePrios = Object.entries(prioFilter).filter(([, v]) => v).map(([k]) => k);
     if (activePrios.length > 0 && activePrios.length < 4) {
       list = list.filter(wo => activePrios.includes(wo.priority_code));
@@ -717,7 +728,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
       }
     }
     return Object.values(groups).map(g => {
-      const nominalPerDay = g.count * CAP.effectiveHours * (CAP.productivityPct / 100);
+      // Jorge 2026-04-21: nominal = personas × horas efectivas × %programable.
+      // Sumando ambos turnos (día + noche). Factor productividad NO entra acá.
+      const nominalPerShift = g.count * CAP.effectiveHours * (CAP.schedulingPct / 100);
+      const dayTechs = CAP.dayShiftCount != null ? Number(CAP.dayShiftCount) : g.count;
+      const nightTechs = CAP.nightShiftCount != null ? Number(CAP.nightShiftCount) : 0;
+      const nominalPerDay = (dayTechs + nightTechs) * CAP.effectiveHours * (CAP.schedulingPct / 100);
       const perDay = days.map(d => {
         let hh = 0;
         for (const key in grid) {
@@ -816,9 +832,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             {/* Priority chips — multi-select (like Prometheus) */}
             <div className="flex items-center gap-1 text-[10px] font-semibold">
               <span className="text-muted-foreground mr-0.5">Prio:</span>
+              {/* Jorge 2026-04-21: solo P3/P4 son programables. P1/P2 son fallas
+                  correctivas y van directo al supervisor, no al tablero. */}
               {[
-                { id: 'P1', color: 'bg-red-500 text-white border-red-600' },
-                { id: 'P2', color: 'bg-orange-500 text-white border-orange-600' },
                 { id: 'P3', color: 'bg-blue-500 text-white border-blue-600' },
                 { id: 'P4', color: 'bg-gray-400 text-white border-gray-500' },
               ].map(p => (
@@ -966,7 +982,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${accent}`}>{wc.key.slice(0,4)}</span>
                       <div className="leading-tight min-w-0">
                         <div className="text-[11.5px] font-semibold text-foreground truncate">{label}</div>
-                        <div className="text-[10px] text-muted-foreground">{wc.count} techs · nom {wc.nominalPerDay}h/d</div>
+                        <div className="text-[10px] text-muted-foreground">{wc.count} techs · nom {wc.nominalPerDay} HH/d</div>
                       </div>
                     </div>
                     {wc.perDay.map((hh, i) => {

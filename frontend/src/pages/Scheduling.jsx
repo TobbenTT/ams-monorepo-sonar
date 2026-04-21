@@ -995,11 +995,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         </div>
 
         {/* Capacity by Work Center — Jorge 2026-04-20.
-            Semáforo HH/día por puesto de trabajo arriba de la grilla.
-            Sticky con toggle para que el planificador no lo pierda al scrollear. */}
+            Jorge 2026-04-21: sacado el sticky porque se peleaba con el thead
+            de la grilla de técnicos al scrollear. El usuario ya tiene el
+            panel izquierdo sticky + thead de la grilla sticky, suficiente. */}
         {capacityByWC.length > 0 && (
-          <div className={`bg-card border border-border rounded-xl overflow-hidden sticky z-20 shadow-sm ${capacityCollapsed ? 'top-2' : 'top-2'}`}
-            style={{ maxHeight: capacityCollapsed ? '48px' : '40vh', overflowY: 'auto' }}>
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm"
+            style={{ maxHeight: capacityCollapsed ? '48px' : 'none', overflowY: capacityCollapsed ? 'hidden' : 'visible' }}>
             <div className="px-4 pt-3 pb-2 flex items-end justify-between">
               <div>
                 <div className="flex items-center gap-2">

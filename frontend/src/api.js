@@ -291,7 +291,6 @@ export const createContractorCrew = (contractorId, data) => post(`/contractors/$
 export const listAllCrews = (plantId) => get('/contractors/crews/all', { plant_id: plantId });
 
 // Fase 3 Jorge 2026-04-21 — editar perfil de técnico (especialidad, turno, pattern, skills)
-export const listTechnicians = (params) => get('/assignments/technicians', params);
 export async function updateTechnician(workerId, data) {
   const token = getToken();
   const url = `${BASE}/assignments/technicians/${workerId}`;

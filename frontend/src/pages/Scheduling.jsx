@@ -3506,60 +3506,41 @@ export default function Scheduling() {
           : p === 'P3' ? 'bg-blue-500 text-white'
           : 'bg-gray-400 text-white';
         return (
-          <div className="sticky bottom-3 left-0 right-0 z-30 mt-4 px-3"
+          <div className="sticky bottom-3 left-0 right-0 z-30 mt-3 px-3 pointer-events-none"
             style={{ animation: 'slideUp 220ms ease-out both' }}>
-            <div className="mx-auto max-w-full rounded-2xl bg-slate-900 dark:bg-slate-950 text-slate-100 shadow-2xl ring-1 ring-white/5 overflow-hidden">
-              <div className="flex items-stretch gap-2 pl-4 pr-1.5 py-1.5 min-w-0">
-                <div className="flex items-center gap-2 shrink-0 pr-3 border-r border-white/10">
-                  <div>
-                    <div className="text-[11px] font-bold leading-tight">Open</div>
-                    <div className="text-[11px] font-bold leading-tight">WOs</div>
-                  </div>
-                  <span className="text-lg font-bold tabular-nums text-white">{unscheduled.length}</span>
-                </div>
-                <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto scrollbar-thin py-0.5">
+            <div className="mx-auto w-fit max-w-full rounded-full bg-slate-900 dark:bg-slate-950 text-slate-100 shadow-xl ring-1 ring-white/5 pointer-events-auto">
+              <div className="flex items-center gap-1 pl-2.5 pr-1 py-1 min-w-0">
+                <span className="shrink-0 inline-flex items-center gap-1 pr-2 border-r border-white/10">
+                  <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold flex items-center justify-center">{unscheduled.length}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Open</span>
+                </span>
+                <div className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto scrollbar-none max-w-[60vw]">
                   {unscheduled.slice(0, 12).map((wo) => {
-                    const opsCount = Array.isArray(wo.operations) ? wo.operations.length : 0;
-                    const badgeTone = wo.priority_code === 'P1' ? 'bg-red-500/90 text-white'
-                      : wo.priority_code === 'P2' ? 'bg-amber-400/90 text-slate-900'
-                      : wo.priority_code === 'P3' ? 'bg-sky-400/90 text-slate-900'
-                      : 'bg-slate-500/80 text-white';
-                    const hasWarn = wo.priority_code === 'P1' && !wo.planned_start;
+                    const badgeTone = wo.priority_code === 'P1' ? 'bg-red-500 text-white'
+                      : wo.priority_code === 'P2' ? 'bg-amber-400 text-slate-900'
+                      : wo.priority_code === 'P3' ? 'bg-sky-400 text-slate-900'
+                      : 'bg-slate-500 text-white';
                     return (
                       <button key={wo.wo_id}
                         onClick={() => setDetailOrder(wo)}
-                        className="shrink-0 relative inline-flex items-center gap-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 ring-1 ring-white/5 px-3 py-1.5 transition-colors text-left"
+                        className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-slate-800/70 hover:bg-slate-700 px-2 py-0.5 transition-colors"
                         title={`${wo.wo_number} · ${wo.description || ''}`}>
-                        <span className={`inline-flex items-center gap-1 text-[9.5px] font-bold px-1.5 py-0.5 rounded-full ${badgeTone}`}>
-                          <span className="w-1 h-1 rounded-full bg-current opacity-80" />
-                          {wo.priority_code || 'P4'}
+                        <span className={`text-[8.5px] font-bold px-1 py-[1px] rounded-full ${badgeTone}`}>{wo.priority_code || 'P4'}</span>
+                        <span className="text-[10.5px] font-semibold text-slate-100 truncate max-w-[110px]">
+                          {(wo.description || wo.equipment_tag || wo.wo_number || '').slice(0, 22)}
                         </span>
-                        <div className="min-w-0 leading-tight">
-                          <div className="text-[10px] font-mono text-slate-400">{wo.wo_number}</div>
-                          <div className="text-[11.5px] font-semibold text-slate-50 truncate max-w-[160px]">
-                            {(wo.description || wo.equipment_tag || '').slice(0, 28)}
-                          </div>
-                        </div>
-                        {opsCount > 0 && (
-                          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-slate-900">
-                            {opsCount}
-                          </span>
-                        )}
-                        {hasWarn && (
-                          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-slate-900">!</span>
-                        )}
                       </button>
                     );
                   })}
                   {unscheduled.length > 12 && (
-                    <span className="shrink-0 text-[10.5px] text-slate-400 px-2">+{unscheduled.length - 12}</span>
+                    <span className="shrink-0 text-[9.5px] text-slate-400 px-1.5">+{unscheduled.length - 12}</span>
                   )}
                 </div>
                 <button
                   onClick={() => setDetailOrder(next)}
-                  className="shrink-0 inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 text-[11px] font-black px-3.5 rounded-xl shadow-lg transition-colors self-stretch">
-                  <Plus size={13} strokeWidth={3} />
-                  <span className="leading-tight text-[11px]">Open<br/>WO</span>
+                  className="shrink-0 inline-flex items-center gap-1 bg-emerald-500 hover:bg-emerald-400 text-slate-900 text-[10.5px] font-black px-2.5 py-1 rounded-full shadow transition-colors">
+                  <Plus size={11} strokeWidth={3} />
+                  Open WO
                 </button>
               </div>
             </div>

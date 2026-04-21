@@ -9,6 +9,7 @@ import { TrendingUp, TrendingDown, Loader2, AlertCircle, BarChart3, Filter, X, A
 import * as api from '../api';
 import { filterByDateRange } from '../utils/dateRange';
 import { useLanguage } from '../contexts/LanguageContext';
+import OpsKpiDashboard from '../components/analytics/OpsKpiDashboard';
 
 const AREA_PREFIXES = {
   Crushing:   ['CVY','CRU','STK','SCR','FDR','GYR','JAW'],
@@ -207,6 +208,9 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Real SQL KPI dashboard — MTBF, MTTR, PM compliance, backlog aging, cost */}
+      <OpsKpiDashboard plantId={plantId} />
+
       {/* ═══ EXECUTIVE VIEW ═══ */}
       {viewMode !== 'tactical' && (<>
 

@@ -289,6 +289,32 @@ export const createContractor = (data) => post('/contractors', data);
 export const listContractorCrews = (contractorId) => get(`/contractors/${contractorId}/crews`);
 export const createContractorCrew = (contractorId, data) => post(`/contractors/${contractorId}/crews`, data);
 export const listAllCrews = (plantId) => get('/contractors/crews/all', { plant_id: plantId });
+
+// Ops KPI dashboard (real SQL on managed_work_orders)
+export const getOpsSummary = (plantId) => get('/analytics-dash/summary', { plant_id: plantId });
+export const getOpsMtbfTimeseries = (plantId, months = 6) => get('/analytics-dash/mtbf-mttr/timeseries', { plant_id: plantId, months });
+export const getOpsPmCompliance = (plantId) => get('/analytics-dash/pm-compliance', { plant_id: plantId });
+export const getOpsBacklogAging = (plantId) => get('/analytics-dash/backlog-aging', { plant_id: plantId });
+export const getOpsCostPerEquipment = (plantId, limit = 10) => get('/analytics-dash/cost-per-equipment', { plant_id: plantId, limit });
+
+// Triggers an authenticated file download from the reports-export router.
+export async function downloadReportXlsx(path, params) {
+  const token = getToken();
+  const q = new URLSearchParams(params || {}).toString();
+  const url = `${BASE}${path}${q ? '?' + q : ''}`;
+  const r = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const cd = r.headers.get('Content-Disposition') || '';
+  const match = cd.match(/filename="?([^";]+)"?/);
+  const filename = match ? match[1] : 'report.xlsx';
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
 export const cancelManagedWO = (id) => put(`/managed-work-orders/${id}/cancel`);
 export const addManagedWONote = (id, d) => post(`/managed-work-orders/${id}/notes`, d);
 export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id}/progress`, d);

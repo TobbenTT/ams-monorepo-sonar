@@ -43,6 +43,7 @@ from api.routers import (
     sap_pm,
     data_import,
     agentic,
+    contractors,
 )
 
 # Optional modules — loaded only if their deps are installed. Missing deps won't crash startup.
@@ -196,6 +197,7 @@ def create_app() -> FastAPI:
     app.include_router(sap.router, prefix=prefix)
     app.include_router(analytics.router, prefix=prefix)
     app.include_router(admin.router, prefix=prefix)
+    app.include_router(contractors.router, prefix=prefix)
     # Phase 3 — Modules 1-3
     app.include_router(capture.photos_router, prefix=prefix)  # public (no auth) — serves photos for <img> tags
     app.include_router(capture.router, prefix=prefix)

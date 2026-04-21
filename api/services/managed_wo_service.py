@@ -81,6 +81,7 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "closed_at": wo.closed_at.isoformat() if wo.closed_at else None,
         "closed_by_signature": getattr(wo, "closed_by_signature", None),
         "closure_notes": getattr(wo, "closure_notes", None),
+        "contractor_crew_id": getattr(wo, "contractor_crew_id", None),
         "assigned_workers": wo.assigned_workers or [],
         "completion_pct": wo.completion_pct,
         "execution_notes": wo.execution_notes or [],
@@ -435,6 +436,7 @@ def update_work_order(db: Session, wo_id: str, data: dict) -> dict | None:
         "assigned_workers", "status", "planning_group", "work_center",
         "reservation_code", "cancellation_reason", "completion_pct", "execution_notes",
         "start_location", "started_via",
+        "contractor_crew_id",  # Group C #8
     ]
     # Group B #2 — capture per-field diff for audit trail. Only track scalar
     # fields (JSON blobs are noisy; we log a single "changed" marker).

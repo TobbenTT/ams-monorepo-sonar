@@ -539,6 +539,8 @@ class ManagedWorkOrderModel(Base):
     released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     closed_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Group C #8 — optional contractor crew assignment (NULL = in-house techs)
+    contractor_crew_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     # Closure signature: legal trace that a supervisor signed off on the work.
     # Not full e-sig — stores name typed + last-4 of PIN hash. Enough for audit.
     closed_by_signature: Mapped[str | None] = mapped_column(String(120), nullable=True)
@@ -1543,3 +1545,48 @@ class Equipment3DModelModel(Base):
     __table_args__ = (
         Index("ix_3d_model_equipment_type", "equipment_type"),
     )
+
+
+# ── Group C #6 — SAP sync log ────────────────────────────────────────
+# Tracks outbound pushes of WOs to SAP. The real SAP connection (IDoc/RFC/REST)
+# is not wired yet; this table captures the payload the worker WOULD send so
+# the pipeline is idempotent once the transport is plugged in.
+class SapSyncLogModel(Base):
+    __tablename__ = "sap_sync_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    entity_type: Mapped[str] = mapped_column(String(30), default="managed_work_order")
+    entity_id: Mapped[str] = mapped_column(String(50), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="PENDING")  # PENDING, SENT, FAILED, ACKED
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    sap_ref: Mapped[str | None] = mapped_column(String(100), nullable=True)  # SAP-side ID when acked
+    payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+# ── Group C #8 — Contractors & crews ─────────────────────────────────
+class ContractorModel(Base):
+    __tablename__ = "contractors"
+
+    contractor_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    plant_id: Mapped[str] = mapped_column(String(50), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    tax_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    contact_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    contact_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    hourly_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class ContractorCrewModel(Base):
+    __tablename__ = "contractor_crews"
+
+    crew_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    contractor_id: Mapped[str] = mapped_column(String(50), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    specialty: Mapped[str | None] = mapped_column(String(30), nullable=True)  # MECH, ELEC, INST, CIVIL, etc.
+    size: Mapped[int] = mapped_column(Integer, default=1)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)

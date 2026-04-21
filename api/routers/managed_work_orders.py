@@ -58,6 +58,7 @@ class WOUpdateRequest(BaseModel):
     reservation_code: str | None = None       # Jorge 2026-04-20: última/activa
     reservation_codes: list | None = None      # Jorge 2026-04-20: historial
     cancellation_reason: str | None = None
+    contractor_crew_id: str | None = None      # Group C #8
 
 
 class WOScheduleRequest(BaseModel):
@@ -313,6 +314,31 @@ def close_work_order(
     if not result:
         raise HTTPException(status_code=400, detail="Cannot close — WO not found, invalid status, or missing signature")
     return result
+
+
+@router.post("/{wo_id}/sap-sync")
+def sap_sync_wo(
+    wo_id: str,
+    user=Depends(require_role("admin", "manager", "planner")),
+    db: Session = Depends(get_db),
+):
+    """Group C #6 — queue WO for SAP PM push. Idempotent."""
+    from api.services import sap_sync_service
+    result = sap_sync_service.push_wo(db, wo_id, user=getattr(user, "user_id", "system"))
+    if not result:
+        raise HTTPException(status_code=404, detail="WO not found")
+    return result
+
+
+@router.get("/{wo_id}/sap-sync")
+def sap_sync_status(
+    wo_id: str,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from api.services import sap_sync_service
+    result = sap_sync_service.get_status(db, wo_id)
+    return result or {"status": "NOT_SYNCED"}
 
 
 @router.get("/{wo_id}/history")

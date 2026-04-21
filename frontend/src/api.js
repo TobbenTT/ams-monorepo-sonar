@@ -280,6 +280,15 @@ export const startManagedWO = (id) => put(`/managed-work-orders/${id}/start`);
 export const completeManagedWO = (id, d) => put(`/managed-work-orders/${id}/complete`, d);
 export const closeManagedWO = (id, body) => put(`/managed-work-orders/${id}/close`, body || {});
 export const getManagedWOHistory = (id) => get(`/managed-work-orders/${id}/history`);
+// Group C #6 — SAP sync (scaffolded; real transport pendiente)
+export const sapSyncWO = (id) => post(`/managed-work-orders/${id}/sap-sync`);
+export const getSapSyncStatus = (id) => get(`/managed-work-orders/${id}/sap-sync`);
+// Group C #8 — contractors & crews
+export const listContractors = (plantId) => get('/contractors', { plant_id: plantId });
+export const createContractor = (data) => post('/contractors', data);
+export const listContractorCrews = (contractorId) => get(`/contractors/${contractorId}/crews`);
+export const createContractorCrew = (contractorId, data) => post(`/contractors/${contractorId}/crews`, data);
+export const listAllCrews = (plantId) => get('/contractors/crews/all', { plant_id: plantId });
 export const cancelManagedWO = (id) => put(`/managed-work-orders/${id}/cancel`);
 export const addManagedWONote = (id, d) => post(`/managed-work-orders/${id}/notes`, d);
 export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id}/progress`, d);

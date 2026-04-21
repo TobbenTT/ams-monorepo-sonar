@@ -89,6 +89,8 @@ def _run_column_migrations():
         ("managed_work_orders", "closed_by_signature", "VARCHAR(120)", None),
         ("managed_work_orders", "closed_by_pin_hash", "VARCHAR(16)", None),
         ("managed_work_orders", "closure_notes", "VARCHAR(500)", None),
+        # Group C #8 — optional contractor crew assignment
+        ("managed_work_orders", "contractor_crew_id", "VARCHAR(50)", None),
     ]
 
     with engine.begin() as conn:

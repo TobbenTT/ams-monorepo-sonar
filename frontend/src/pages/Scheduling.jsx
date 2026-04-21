@@ -1314,7 +1314,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                               return (
                                 <td key={`${d.str}-${shift.id}`}
                                   className={`px-1 py-1 border-r border-border/50 align-top transition-colors ${d.isWeekend ? 'bg-gray-50 dark:bg-gray-800/30' : ''} ${shiftBg} ${isTarget ? 'bg-[#1B5E20]/10' : isDragging && cellWOs.length === 0 ? 'bg-emerald-50/30 dark:bg-emerald-900/5' : ''}`}
-                                  style={{ minHeight: 60, minWidth: 90 }}
+                                  style={{ minHeight: 70, minWidth: 120 }}
                                   onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
                                   onDragLeave={() => setDropTarget(null)}
                                   onDrop={e => { e.preventDefault(); if (dragWO) { const techLoad = techHours[tech.worker_id] || 0; if (techLoad >= HOURS_PER_WEEK) { toast.error('⛔ ' + tech.name + ' is at ' + Math.round(techLoad) + 'h/' + Math.round(HOURS_PER_WEEK) + 'h — OVER CAPACITY. Cannot schedule more work.'); setDragWO(null); setDropTarget(null); return; } onScheduleWO(dragWO, tech, d.date, shift.id); } setDragWO(null); setDropTarget(null); }}>
@@ -1328,6 +1328,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                       e.stopPropagation();
                                       setExpandedWOs(prev => { const n = new Set(prev); n.has(wo.wo_id) ? n.delete(wo.wo_id) : n.add(wo.wo_id); return n; });
                                     };
+                                    const prioDot = wo.priority_code === 'P1' ? 'bg-red-500 text-white'
+                                      : wo.priority_code === 'P2' ? 'bg-amber-400 text-slate-900'
+                                      : wo.priority_code === 'P3' ? 'bg-sky-400 text-slate-900'
+                                      : 'bg-gray-400 text-white';
+                                    const crewSize = Array.isArray(wo.assigned_workers) ? wo.assigned_workers.length : 0;
+                                    const timeRange = shift?.id === 'night' ? '19:00–07:00' : '07:00–19:00';
+                                    const leftAccent = isReserved ? 'border-l-emerald-500' : isDraft ? 'border-l-amber-400' : 'border-l-emerald-400';
                                     return (
                                       <div key={wo.wo_id} className="relative mb-1">
                                         <div
@@ -1336,16 +1343,28 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                           onMouseLeave={() => setHoverWO(null)}
                                           onClick={e => { if (!wo._continuation) toggleExpand(e); }}
                                           onDragStart={e => { if (isReserved) { e.preventDefault(); return; } e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
-                                          title={isReserved ? 'Reservada — desbloquea con Clear Assignments' : isDraft ? 'Borrador — arrástrala o reserva la semana' : ops.length > 0 ? 'Click para ver operaciones' : ''}
-                                          className={`p-1 rounded text-xs border ${isReserved ? 'cursor-not-allowed ring-1 ring-emerald-400' : 'cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-400'} ${isDraft ? 'border-dashed border-2' : ''} ${woType.bg} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
-                                          <div className="flex items-center gap-0.5">
-                                            <span className="font-bold truncate text-[0.65rem] flex-1">{wo.wo_number} {wo._continuation ? `(${wo._dayNum}/${wo._totalDays})` : ''}</span>
-                                            {ops.length > 0 && !wo._continuation && (
-                                              <span className="text-[0.55rem] opacity-60" title={`${ops.length} operaciones`}>{isExp ? '▾' : '▸'}</span>
+                                          title={isReserved ? 'Reservada — desbloquea con Clear Assignments' : isDraft ? 'Borrador — arrástrala o reserva la semana' : 'Click para detalle · arrastrar para mover'}
+                                          className={`relative bg-white dark:bg-card rounded-md border border-border border-l-[3px] ${leftAccent} px-2 py-1.5 shadow-sm transition-all ${isReserved ? 'cursor-not-allowed ring-1 ring-emerald-200' : 'cursor-grab active:cursor-grabbing hover:shadow-md hover:border-emerald-300'} ${isDraft ? 'border-dashed' : ''} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
+                                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                                            <span className="font-mono text-[9.5px] text-muted-foreground truncate">{wo.wo_number}{wo._continuation ? ` (${wo._dayNum}/${wo._totalDays})` : ''}</span>
+                                            <span className={`shrink-0 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-[1px] rounded-full ${prioDot}`}>
+                                              <span className="w-1 h-1 rounded-full bg-current opacity-70" />
+                                              {wo.priority_code || 'P4'}
+                                            </span>
+                                          </div>
+                                          <div className="text-[11px] font-bold text-foreground leading-tight line-clamp-2 mb-1">
+                                            {wo.description || wo.equipment_tag || '—'}
+                                          </div>
+                                          <div className="flex items-center gap-2 text-[9.5px] text-muted-foreground">
+                                            <span className="inline-flex items-center gap-0.5"><Clock size={9} /> {timeRange}</span>
+                                            <span className="font-semibold text-foreground tabular-nums">{wo._continuation ? 'cont.' : (wo.estimated_hours || 0) + 'h'}</span>
+                                            {crewSize > 0 && (
+                                              <span className="inline-flex items-center gap-0.5 ml-auto"><Users size={9} /> {crewSize}</span>
+                                            )}
+                                            {ops.length > 0 && !wo._continuation && crewSize === 0 && (
+                                              <span className="ml-auto text-[9px] opacity-70">{ops.length} ops</span>
                                             )}
                                           </div>
-                                          <div className="truncate text-[0.6rem]">{wo.equipment_tag}</div>
-                                          <div className="text-[0.55rem] mt-0.5">{wo._continuation ? 'cont.' : wo.estimated_hours + 'h'}{ops.length > 0 && !wo._continuation ? ` · ${ops.length} ops` : ''}</div>
                                         </div>
                                         {/* Floating rich card — matches Jorge mockup. Requested-By: Jorge Cabezas. */}
                                         {isExp && !wo._continuation && (

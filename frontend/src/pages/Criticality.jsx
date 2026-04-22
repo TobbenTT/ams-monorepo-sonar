@@ -373,6 +373,8 @@ function AssetHealthTab({ t, plant }) {
   const [search, setSearch] = useState('');
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   useEffect(() => {
     setLoading(true);
@@ -442,7 +444,7 @@ function AssetHealthTab({ t, plant }) {
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder={t('criticality.searchAssets')}
           className="w-full pl-9 pr-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30"
         />
@@ -457,7 +459,7 @@ function AssetHealthTab({ t, plant }) {
         </p>
       ) : null}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filtered.map(asset => {
+        {filtered.slice(0, page * PAGE_SIZE).map(asset => {
           const TrendIcon = TREND_ICON[asset.trend] || Minus;
           return (
             <div key={asset.equipment_tag} className={`rounded-xl border p-4 ${asset.healthBg}`}>
@@ -503,6 +505,21 @@ function AssetHealthTab({ t, plant }) {
           );
         })}
       </div>
+
+      {/* Pagination footer */}
+      {!loading && filtered.length > 0 && (
+        <div className="flex items-center justify-between mt-4 text-xs">
+          <span className="text-muted-foreground">
+            Mostrando <strong>{Math.min(page * PAGE_SIZE, filtered.length)}</strong> de <strong>{filtered.length}</strong> equipos
+          </span>
+          {filtered.length > page * PAGE_SIZE && (
+            <button onClick={() => setPage(p => p + 1)}
+              className="px-3 py-1.5 bg-[#1B5E20] text-white font-semibold rounded-lg hover:bg-[#2E7D32]">
+              Cargar {Math.min(PAGE_SIZE, filtered.length - page * PAGE_SIZE)} más
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

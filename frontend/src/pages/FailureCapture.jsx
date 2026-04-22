@@ -506,7 +506,7 @@ export default function FailureCapture({ onNavigateTab }) {
     setBrowsePath([]);
     loadBrowseChildren(null, '');
   };
-  const loadBrowseChildren = (parentId, search) => {
+  const loadBrowseChildren = (parentId, search, autoSelectIfEmpty = null) => {
     setBrowseLoading(true);
     const params = { limit: 500 };
     if (parentId) params.parent_node_id = parentId;
@@ -516,12 +516,21 @@ export default function FailureCapture({ onNavigateTab }) {
       const nodes = Array.isArray(res) ? res : res?.items || [];
       setBrowseResults(nodes);
       setBrowseLoading(false);
+      // Jorge 2026-04-22 — si drill-down llega a un leaf (sin hijos), auto-seleccionar.
+      // Antes Jorge pensaba que al llegar al leaf ya había seleccionado y cerraba el modal.
+      if (autoSelectIfEmpty && nodes.length === 0 && !search) {
+        selectBrowseLocation(autoSelectIfEmpty);
+      }
     }).catch(() => { setBrowseResults([]); setBrowseLoading(false); });
   };
   const drillDown = (node) => {
     setBrowsePath(prev => [...prev, { node_id: node.node_id, name: node.name, node_type: node.node_type }]);
     setBrowseSearch('');
-    loadBrowseChildren(node.node_id, '');
+    // Si es un tipo terminal (EQUIPMENT/SUB_ASSEMBLY/MAINTAINABLE_ITEM) y no tiene hijos,
+    // auto-select. Los tipos contenedores (PLANT/AREA/SYSTEM) siguen mostrando el botón
+    // por si realmente están vacíos en la data.
+    const isTerminal = ['EQUIPMENT', 'SUB_ASSEMBLY', 'MAINTAINABLE_ITEM'].includes(node.node_type);
+    loadBrowseChildren(node.node_id, '', isTerminal ? node : null);
   };
   const drillUp = (index) => {
     if (index < 0) {
@@ -2696,14 +2705,19 @@ export default function FailureCapture({ onNavigateTab }) {
               {browseLoading ? (
                 <div className="text-center py-8 text-gray-400">Loading...</div>
               ) : browseResults.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-400 mb-3">No sub-items at this level</p>
+                <div className="text-center py-12 px-6">
+                  <p className="text-sm text-gray-600 mb-1 font-medium">
+                    Esta es la ubicación final
+                  </p>
+                  <p className="text-xs text-gray-500 mb-5">
+                    Haz clic en el botón verde para confirmar la selección
+                  </p>
                   {browsePath.length > 0 && (
                     <button onClick={() => {
                       const last = browsePath[browsePath.length - 1];
                       selectBrowseLocation({ node_id: last.node_id, name: last.name, node_type: last.node_type });
-                    }} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">
-                      Select: {browsePath[browsePath.length - 1]?.name}
+                    }} className="px-6 py-3 bg-emerald-600 text-white rounded-xl text-base font-bold hover:bg-emerald-700 shadow-lg animate-pulse">
+                      ✓ Seleccionar: {browsePath[browsePath.length - 1]?.name}
                     </button>
                   )}
                 </div>

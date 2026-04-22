@@ -173,6 +173,70 @@ def list_fmeca_worksheets(db: Session, equipment_id: str | None = None, plant_id
     return result
 
 
+def list_fmeca_suggestions(db: Session, plant_id: str | None = None, limit: int = 20) -> list[dict]:
+    """Fase 3a — equipos con OTs P1/P2 cerradas y SIN worksheet FMECA asociado.
+    Sugiere crear análisis FMECA para los que más fallas críticas han tenido.
+    """
+    from api.database.models import HierarchyNodeModel, ManagedWorkOrderModel
+    from sqlalchemy import func as sql_func
+
+    # Equipos de la planta (si se filtra por plant)
+    equip_ids = None
+    if plant_id:
+        equip_ids = [
+            n.node_id for n in db.query(HierarchyNodeModel).filter(
+                HierarchyNodeModel.plant_id == plant_id,
+                HierarchyNodeModel.node_type == "EQUIPMENT",
+            ).all()
+        ]
+        if not equip_ids:
+            return []
+
+    # OTs cerradas P1/P2
+    q = db.query(
+        ManagedWorkOrderModel.equipment_id,
+        ManagedWorkOrderModel.equipment_tag,
+        sql_func.count(ManagedWorkOrderModel.wo_id).label("critical_count"),
+        sql_func.max(ManagedWorkOrderModel.closed_at).label("last_closure"),
+    ).filter(
+        ManagedWorkOrderModel.priority_code.in_(["P1", "P2"]),
+        ManagedWorkOrderModel.status == "CERRADO",
+    )
+    if equip_ids is not None:
+        q = q.filter(ManagedWorkOrderModel.equipment_id.in_(equip_ids))
+    rows = q.group_by(
+        ManagedWorkOrderModel.equipment_id, ManagedWorkOrderModel.equipment_tag,
+    ).order_by(sql_func.count(ManagedWorkOrderModel.wo_id).desc()).limit(limit * 3).all()
+
+    # Worksheets ya existentes para descartarlos
+    existing = {
+        w.equipment_id for w in db.query(FMECAWorksheetModel.equipment_id).all()
+    }
+    # Criticality letter por equipo
+    node_map = {}
+    if rows:
+        ids = [r.equipment_id for r in rows]
+        for n in db.query(HierarchyNodeModel).filter(HierarchyNodeModel.node_id.in_(ids)).all():
+            node_map[n.node_id] = n
+
+    suggestions = []
+    for r in rows:
+        if r.equipment_id in existing:
+            continue
+        node = node_map.get(r.equipment_id)
+        suggestions.append({
+            "equipment_id": r.equipment_id,
+            "equipment_tag": r.equipment_tag or (node.tag if node else ""),
+            "equipment_name": node.name if node else "",
+            "equipment_criticality": node.criticality if node else None,
+            "critical_closure_count": int(r.critical_count or 0),
+            "last_closure": r.last_closure.isoformat() if r.last_closure else None,
+        })
+        if len(suggestions) >= limit:
+            break
+    return suggestions
+
+
 def list_fmeca_worksheets_summary(db: Session, plant_id: str | None = None, status: str | None = None) -> list[dict]:
     """Return one entry per worksheet (NOT flattened per row) — for master/detail navigation."""
     from api.database.models import HierarchyNodeModel
@@ -403,6 +467,63 @@ def generate_tasks_from_fmeca(db: Session, worksheet_id: str) -> dict:
     if skipped:
         result["skipped_duplicates"] = skipped
     return result
+
+
+def push_fmeca_to_backlog(db: Session, worksheet_id: str) -> dict:
+    """Fase 3c — convierte las rows del FMECA con strategy_type en BacklogItem rows
+    para que aparezcan en el backlog de Planning. Idempotente por (equipment_id, failure_mode)."""
+    from api.database.models import BacklogItemModel
+    obj = db.query(FMECAWorksheetModel).filter(
+        FMECAWorksheetModel.worksheet_id == worksheet_id,
+    ).first()
+    if not obj:
+        return {"error": "Worksheet not found"}
+    rows = obj.rows or []
+    existing = db.query(BacklogItemModel).filter(
+        BacklogItemModel.equipment_id == obj.equipment_id,
+        BacklogItemModel.blocking_reason.like("%FMECA%"),
+    ).all()
+    existing_keys = {(b.equipment_tag, (b.blocking_reason or "")) for b in existing}
+
+    STRATEGY_TO_PM = {"CONDITION_BASED": "PM03", "FIXED_TIME": "PM02", "FAULT_FINDING": "PM02", "REDESIGN": "PM01"}
+    STRATEGY_TO_PRIORITY = {"CRITICAL": "P1", "HIGH": "P2", "MEDIUM": "P3", "LOW": "P4"}
+
+    created = []
+    skipped = 0
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        strategy = r.get("strategy_type")
+        if not strategy or strategy == "RUN_TO_FAILURE":
+            continue
+        fm = r.get("failure_mode", "")
+        reason = f"FMECA {worksheet_id} · {fm[:80]}"
+        key = (obj.equipment_tag or "", reason)
+        if key in existing_keys:
+            skipped += 1
+            continue
+        cat = r.get("rpn_category", "LOW")
+        severity = int(r.get("severity", 1) or 1)
+        dur = float(r.get("duration", 2) or 2)
+        qty = int(r.get("quantity", 1) or 1)
+        item = BacklogItemModel(
+            equipment_id=obj.equipment_id or "",
+            equipment_tag=obj.equipment_tag or "",
+            priority=STRATEGY_TO_PRIORITY.get(cat, "P3"),
+            wo_type=STRATEGY_TO_PM.get(strategy, "PM02"),
+            status="AWAITING_APPROVAL",
+            blocking_reason=reason,
+            estimated_hours=dur * qty,
+            specialties=[r.get("specialty")] if r.get("specialty") else [],
+            materials_ready=False,
+            shutdown_required=(strategy == "FIXED_TIME"),
+        )
+        db.add(item)
+        created.append({"equipment_tag": obj.equipment_tag, "failure_mode": fm, "strategy": strategy})
+    if created:
+        log_action(db, "fmeca_worksheet", worksheet_id, "PUSH_TO_BACKLOG", {"count": len(created)})
+        db.commit()
+    return {"worksheet_id": worksheet_id, "created": len(created), "skipped": skipped, "items": created}
 
 
 def get_fmeca_summary(db: Session, worksheet_id: str) -> dict:

@@ -198,6 +198,8 @@ export const getFmecaSummary = (id) => get(`/fmea/fmeca/worksheets/${id}/summary
 export const addFmecaRow = (id, d) => post(`/fmea/fmeca/worksheets/${id}/rows`, d);
 export const runFmecaDecisions = (id) => put(`/fmea/fmeca/worksheets/${id}/run-decisions`);
 export const generateFmecaTasks = (id) => post(`/fmea/fmeca/worksheets/${id}/generate-tasks`);
+export const pushFmecaToBacklog = (id) => post(`/fmea/fmeca/worksheets/${id}/push-to-backlog`);
+export const listFmecaSuggestions = (plantId, limit) => get('/fmea/fmeca/suggestions', { plant_id: plantId, limit: limit || 20 });
 
 // ── Tasks ──
 export const createTask = (d) => post('/tasks', d);

@@ -244,12 +244,18 @@ export default function RCA() {
           <div className="space-y-2">
             {recentFailures.slice(0, 5).map(wr => {
               const pd = wr.problem_description || {};
+              // Fase 3b — sugerir nivel RCA: recurrencia del equipo + prioridad.
+              const equipFailures = recentFailures.filter(f => f.equipment_tag === wr.equipment_tag).length;
+              const suggestedLevel = equipFailures >= 3 ? 1 : (wr.priority_code === 'P1' ? 2 : 3);
+              const levelLabels = { 1: 'Nivel 1 · Análisis profundo', 2: 'Nivel 2 · RCFA', 3: 'Nivel 3 · 5-porqué' };
+              const levelColor = suggestedLevel === 1 ? 'bg-red-100 text-red-700' : suggestedLevel === 2 ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700';
               return (
                 <div key={wr.request_id} className="flex items-center gap-3 bg-white dark:bg-card rounded-lg px-3 py-2 border border-red-100 dark:border-red-900/30">
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${wr.priority_code === 'P1' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'}`}>{wr.priority_code}</span>
                   <span className="text-xs font-mono text-muted-foreground">{wr.equipment_tag}</span>
                   <span className="text-xs text-foreground flex-1 truncate">{pd.original_text || wr.description || ''}</span>
                   <span className="text-[10px] text-red-500">{pd.failure_mode_detected}</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${levelColor}`} title={`Recurrencia equipo: ${equipFailures}`}>{levelLabels[suggestedLevel]}</span>
                   <button onClick={() => handleCreateFromWR(wr)}
                     className="text-[10px] px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 font-semibold shrink-0">
                     Start RCA

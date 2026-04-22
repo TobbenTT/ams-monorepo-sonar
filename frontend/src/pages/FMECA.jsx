@@ -65,6 +65,8 @@ export default function FMECA() {
   const [saving, setSaving] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ equipment_id: '', equipment_tag: '', equipment_name: '', analyst: '' });
+  const [suggestions, setSuggestions] = useState([]);
+  const [dismissedSuggest, setDismissedSuggest] = useState(false);
 
   const plantId = localStorage.getItem('selected_plant') || 'OCP-JFC1';
 
@@ -74,6 +76,9 @@ export default function FMECA() {
       .then((data) => setWorksheets(Array.isArray(data) ? data : []))
       .catch(() => setWorksheets([]))
       .finally(() => setLoadingList(false));
+    api.listFmecaSuggestions(plantId, 10)
+      .then((data) => setSuggestions(Array.isArray(data) ? data : []))
+      .catch(() => setSuggestions([]));
   }, [plantId]);
 
   const loadDetail = useCallback((id) => {
@@ -165,6 +170,39 @@ export default function FMECA() {
     }
   };
 
+  const handlePushToBacklog = async () => {
+    if (!selectedId) return;
+    if (!confirm('¿Empujar las filas con estrategia al backlog de Planning como items P1–P4?')) return;
+    try {
+      setSaving(true);
+      const res = await api.pushFmecaToBacklog(selectedId);
+      alert(`✓ ${res?.created ?? 0} items en backlog${res?.skipped ? ` (${res.skipped} ya existían)` : ''}`);
+    } catch (e) {
+      alert('Error empujando al backlog: ' + (e?.message || e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateFromSuggestion = async (sug) => {
+    try {
+      setSaving(true);
+      const res = await api.createFmecaWorksheet({
+        equipment_id: sug.equipment_id,
+        equipment_tag: sug.equipment_tag,
+        equipment_name: sug.equipment_name || sug.equipment_tag,
+        analyst: 'auto-sugerido',
+        plant_id: plantId,
+      });
+      reloadList();
+      if (res?.worksheet_id) setSelectedId(res.worksheet_id);
+    } catch (e) {
+      alert('Error creando worksheet: ' + (e?.message || e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Derived summary from detail.rows
   const summary = useMemo(() => {
     const rows = detail?.rows || [];
@@ -198,6 +236,52 @@ export default function FMECA() {
         <h1 className="text-2xl font-bold text-gray-900">FMECA — Análisis de Modos de Fallo, Efectos y Criticidad</h1>
         <p className="text-sm text-gray-500 mt-1">Flujo RCM de 4 etapas · RPN = S × O × D · Engine determinístico (sin LLM)</p>
       </div>
+
+      {/* Fase 3a — Sugerencias auto-init FMECA (equipos con P1/P2 cerradas y sin worksheet) */}
+      {suggestions.length > 0 && !dismissedSuggest && (
+        <div className="mb-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-3">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-amber-700" />
+              <span className="text-sm font-bold text-amber-900">
+                {suggestions.length} equipos con fallas críticas sin FMECA
+              </span>
+              <span className="text-[11px] text-amber-700">auto-detectado por P1/P2 cerradas</span>
+            </div>
+            <button onClick={() => setDismissedSuggest(true)}
+              className="text-xs text-amber-700 hover:text-amber-900">Ocultar</button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {suggestions.slice(0, 6).map(s => (
+              <div key={s.equipment_id} className="bg-white rounded-lg border border-amber-200 px-2.5 py-2 flex items-center gap-2">
+                {s.equipment_criticality && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                    s.equipment_criticality === 'AA' ? 'bg-red-100 text-red-700 border-red-300' :
+                    s.equipment_criticality === 'A+' ? 'bg-orange-100 text-orange-700 border-orange-300' :
+                    s.equipment_criticality === 'A' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
+                    'bg-blue-100 text-blue-700 border-blue-300'
+                  }`}>{s.equipment_criticality}</span>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-bold text-gray-800 truncate">{s.equipment_tag}</div>
+                  <div className="text-[10px] text-gray-500 truncate">
+                    {s.critical_closure_count} falla{s.critical_closure_count !== 1 ? 's' : ''} críticas
+                  </div>
+                </div>
+                <button onClick={() => handleCreateFromSuggestion(s)} disabled={saving}
+                  className="text-[10px] font-semibold bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700 disabled:opacity-50 shrink-0">
+                  Crear
+                </button>
+              </div>
+            ))}
+          </div>
+          {suggestions.length > 6 && (
+            <div className="text-[11px] text-amber-700 mt-2">
+              Y {suggestions.length - 6} más. Los equipos aparecen ordenados por cantidad de fallas.
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
         {/* LEFT: worksheet list */}
@@ -280,8 +364,13 @@ export default function FMECA() {
                   </button>
                   <button onClick={handleGenerateTasks} disabled={saving || !detail.rows?.some(r => r.strategy_type)}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
-                    title="Genera tareas de mantenimiento a partir de filas con estrategia asignada">
+                    title="Genera plantillas de mantenimiento (MaintenanceTaskModel)">
                     <Wrench size={12} /> Generar Tareas
+                  </button>
+                  <button onClick={handlePushToBacklog} disabled={saving || !detail.rows?.some(r => r.strategy_type)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700 disabled:opacity-50"
+                    title="Crea BacklogItems visibles en Planning con prioridad según RPN">
+                    <ChevronRight size={12} /> Push a Backlog
                   </button>
                 </div>
               </div>

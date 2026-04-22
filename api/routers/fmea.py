@@ -135,6 +135,17 @@ def list_fmeca_worksheets_summary(
     return fmea_service.list_fmeca_worksheets_summary(db, plant_id=plant_id, status=status)
 
 
+@router.get("/fmeca/suggestions")
+def list_fmeca_suggestions(
+    plant_id: str | None = None,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+):
+    """Fase 3a — equipos con OTs P1/P2 cerradas y sin worksheet FMECA.
+    Sugiere crear análisis (ordenado por conteo de fallas críticas)."""
+    return fmea_service.list_fmeca_suggestions(db, plant_id=plant_id, limit=limit)
+
+
 @router.post("/fmeca/worksheets")
 def create_fmeca_worksheet(data: FMECAWorksheetCreate, db: Session = Depends(get_db)):
     return fmea_service.create_fmeca_worksheet(db, data.model_dump())
@@ -176,6 +187,15 @@ def run_fmeca_decisions(worksheet_id: str, db: Session = Depends(get_db)):
 @router.post("/fmeca/worksheets/{worksheet_id}/generate-tasks")
 def generate_fmeca_tasks(worksheet_id: str, db: Session = Depends(get_db)):
     result = fmea_service.generate_tasks_from_fmeca(db, worksheet_id)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.post("/fmeca/worksheets/{worksheet_id}/push-to-backlog")
+def push_fmeca_to_backlog(worksheet_id: str, db: Session = Depends(get_db)):
+    """Fase 3c — convierte filas del FMECA con estrategia en BacklogItem rows."""
+    result = fmea_service.push_fmeca_to_backlog(db, worksheet_id)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result

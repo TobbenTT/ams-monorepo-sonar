@@ -8,10 +8,10 @@ import { StatusBadge, CritBadge, MetaChip, LoadingSpinner } from '../components/
 import * as api from '../api';
 import { criticalityColor, statusColor } from '../data/mockData';
 
-// ── Empty data placeholders (mock data removed) ─────────────────────────
-const EQUIPMENT_LIST = [];
-const HIERARCHY_TREE = { id: 'root', name: 'Root', type: 'Company', children: [] };
 import { useLanguage } from '../contexts/LanguageContext';
+
+// Fallback: árbol vacío cuando el backend aún no tiene jerarquía cargada.
+const HIERARCHY_TREE = { id: 'root', name: 'Root', type: 'Company', children: [] };
 
 const ICONS = { Company: '🏢', PLANT: '🏭', Plant: '🏭', AREA: '📍', Area: '📍', SYSTEM: '⚙️', System: '⚙️', EQUIPMENT: '🔧', Equipment: '🔧', SUB_ASSEMBLY: '🔩', Component: '🔩', MAINTAINABLE_ITEM: '🛠️' };
 
@@ -42,18 +42,17 @@ const EQUIPMENT_LIBRARY = [
   { name: 'Heat Exchanger', type: 'Equipment', icon: '🔧', children: ['Shell', 'Tube Bundle', 'Gaskets', 'Baffles'] },
 ];
 
-/* ─── Flatten the mock HIERARCHY_TREE to nodes array ─── */
+/* Fallback tree → flat node list (solo se usa si la API devuelve vacío). */
 function flattenTree(node, parentId = null, list = []) {
-  const n = {
+  list.push({
     node_id: node.id,
     name: node.name,
     node_type: node.type,
     parent_node_id: parentId,
     code: node.id,
-    criticality: EQUIPMENT_LIST.find(e => e.tag === node.id)?.criticality || null,
-    status: EQUIPMENT_LIST.find(e => e.tag === node.id)?.status || 'ACTIVE',
-  };
-  list.push(n);
+    criticality: null,
+    status: 'ACTIVE',
+  });
   if (node.children) node.children.forEach(c => flattenTree(c, node.id, list));
   return list;
 }

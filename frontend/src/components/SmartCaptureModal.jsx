@@ -63,6 +63,11 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
     const handlePhoto = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+            setError(`Archivo "${file.name}" pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. Máximo permitido: 10 MB.`);
+            e.target.value = '';
+            return;
+        }
         const reader = new FileReader();
         reader.onload = (ev) => setPhoto(ev.target.result);
         reader.readAsDataURL(file);
@@ -167,7 +172,7 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
 
                     {/* Photo */}
                     <div>
-                        <label className="text-xs font-semibold text-slate-500 tracking-wide block mb-2">FOTO (OPCIONAL)</label>
+                        <label className="text-xs font-semibold text-slate-500 tracking-wide block mb-2">FOTO (OPCIONAL · MÁX 10 MB)</label>
                         <input
                             ref={cameraRef}
                             type="file"

@@ -259,8 +259,14 @@ export default function MobileCreateWR() {
         const tag = node.tag || node.code || node.name;
         setSelectedEquip(node);
         set('whereTag', tag);
-        // Auto-resolve Ubicación Técnica from parent hierarchy
-        if (node.parent_node_id) {
+        // Jorge SF-504: auto-rellenar ubicación técnica al elegir equipo.
+        // Preferencia: (1) campo directo en el nodo, (2) padre en jerarquía.
+        const directFuncLoc = node.sap_func_loc || node.technical_location_code || node.technical_location;
+        if (directFuncLoc) {
+            setSelectedLoc(node);
+            set('technicalLocation', node.technical_location || node.name || directFuncLoc);
+            set('technicalLocationCode', directFuncLoc);
+        } else if (node.parent_node_id) {
             const nodeMap = {};
             allNodes.forEach(n => { nodeMap[n.node_id] = n; });
             const parent = nodeMap[node.parent_node_id];
@@ -350,6 +356,11 @@ export default function MobileCreateWR() {
     const handleCameraChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+            alert(`Archivo "${file.name}" pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. Máximo permitido: 10 MB.`);
+            e.target.value = '';
+            return;
+        }
         const reader = new FileReader();
         reader.onload = (ev) => set('photos', [...form.photos, ev.target.result]);
         reader.readAsDataURL(file);
@@ -536,6 +547,7 @@ export default function MobileCreateWR() {
                                     <Camera className="w-6 h-6 text-white" />
                                 </div>
                                 <div className="text-sm font-bold" style={{ color: '#0F172A' }}>Foto</div>
+                                <div className="text-[9px]" style={{ color: '#64748B' }}>máx 10 MB</div>
                             </div>
                         </button>
                     </div>

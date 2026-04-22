@@ -58,6 +58,7 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "plant_id": wo.plant_id,
         "equipment_id": wo.equipment_id,
         "equipment_tag": wo.equipment_tag,
+        "wo_title": getattr(wo, "wo_title", None),
         "description": wo.description,
         "wo_type": wo.wo_type,
         "priority_code": wo.priority_code,
@@ -148,6 +149,7 @@ def create_work_order(
     tools: list | None = None,
     planning_group: str | None = None,
     work_center: str | None = None,
+    wo_title: str | None = None,
 ) -> dict:
     """Create a new managed work order (optionally from an approved WR).
     P1/P2 priorities trigger fast track: OT created directly in RELEASED status."""
@@ -170,6 +172,7 @@ def create_work_order(
         plant_id=plant_id,
         equipment_id=equipment_tag,
         equipment_tag=equipment_tag,
+        wo_title=(wo_title or None),
         description=description,
         wo_type=wo_type,
         priority_code=priority_code,
@@ -258,9 +261,41 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
     failure_class = ai.get("failure_class", "")
     est_hours = ai.get("estimated_duration_hours", 4.0) or 4.0
 
-    # Try WR resources first (populated by user or AI)
-    wr_resources = getattr(wr, "resources", None)
-    if isinstance(wr_resources, list) and wr_resources:
+    # Jorge SF-509: cada paso numerado del suggested_action debe ser una operación
+    # independiente. Mapear recursos[i] a la operación i (fallback a recursos[0]).
+    import re as _re
+    wr_resources = getattr(wr, "resources", None) or []
+    if not isinstance(wr_resources, list):
+        wr_resources = []
+    steps = []
+    if suggested:
+        for line in str(suggested).split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            m = _re.match(r"^\d+[\.\)]\s*(.+)$", line)
+            if m:
+                steps.append(m.group(1).strip())
+    if steps:
+        for i, step_desc in enumerate(steps):
+            res = wr_resources[i] if i < len(wr_resources) else (wr_resources[0] if wr_resources else {})
+            if not isinstance(res, dict):
+                res = {}
+            qty = int(res.get("quantity", 1) or 1)
+            dur = float(res.get("hours", 1) or 1)
+            operations.append({
+                "op_number": op_num,
+                "description": step_desc,
+                "op_type": res.get("op_type", "INT"),
+                "specialty": res.get("type", failure_type or "Mecánico"),
+                "quantity": qty,
+                "duration": dur,
+                "estimated_hours": qty * dur,
+                "planned_hours": qty * dur,
+            })
+            op_num += 1
+    elif wr_resources:
+        # Sin suggested_action estructurado: 1 op por recurso
         for res in wr_resources:
             if isinstance(res, dict):
                 qty = int(res.get("quantity", 1) or 1)
@@ -316,6 +351,22 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
             "estimated_hours": est_hours,
             "planned_hours": est_hours,
         })
+        op_num = 2
+
+    # Jorge SF-510: trabajos con equipo detenido terminan siempre con Limpieza y Housekeeping.
+    is_shutdown = bool(getattr(wr, "shutdown_required", False)) or \
+        (isinstance(ai, dict) and (ai.get("equipment_stopped") or ai.get("activity_class") == "PARADA"))
+    if is_shutdown:
+        operations.append({
+            "op_number": op_num,
+            "description": "Limpieza y Housekeeping del área de trabajo",
+            "op_type": "INT",
+            "specialty": "Helper",
+            "quantity": 2,
+            "duration": 1.0,
+            "estimated_hours": 2.0,
+            "planned_hours": 2.0,
+        })
 
     # Jorge 2026-04-21 — clasificación correcta SAP PM:
     #   P1/P2 → PM03 (correctivo de falla, bypass planning, al supervisor)
@@ -342,6 +393,7 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
         estimated_hours=ai.get("estimated_duration_hours", 4.0) or 4.0,
         operations=operations,
         materials=materials,
+        wo_title=(ai.get("wo_title") if isinstance(ai, dict) else None) or None,
     )
 
     # Update WR status so it can't create duplicate WOs
@@ -369,6 +421,7 @@ def _to_light_dict(wo: ManagedWorkOrderModel) -> dict:
         "wo_number": wo.wo_number,
         "plant_id": wo.plant_id,
         "equipment_tag": wo.equipment_tag,
+        "wo_title": getattr(wo, "wo_title", None),
         "description": wo.description,
         "wo_type": wo.wo_type,
         "priority_code": wo.priority_code,

@@ -99,6 +99,8 @@ def _run_column_migrations():
         ("managed_work_orders", "version", "INTEGER", "1"),
         # Jorge 2026-04-21 — post-closure review
         ("managed_work_orders", "post_closure_review", "TEXT", None),
+        # Jorge SF-507 — título arrastrado desde el WR
+        ("managed_work_orders", "wo_title", "VARCHAR(200)", None),
     ]
 
     with engine.begin() as conn:

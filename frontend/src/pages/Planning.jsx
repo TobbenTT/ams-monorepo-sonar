@@ -777,6 +777,19 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           return { type: 'INT', description: desc, specialty: res.type || 'Mechanical', quantity: res.quantity || 1, hours: res.hours || 2 };
         });
       }
+      // Jorge SF-510: trabajos con equipo detenido siempre terminan con Limpieza y Housekeeping.
+      const isShutdown = wr.shutdown_required || wr.ai_classification?.equipment_stopped ||
+        wr.ai_classification?.activity_class === 'PARADA' ||
+        /parada|shutdown|equipo detenido/i.test(wr.problem_description?.circumstances || '');
+      if (isShutdown) {
+        operations.push({
+          type: 'INT',
+          description: 'Limpieza y Housekeeping del área de trabajo',
+          specialty: 'Helper',
+          quantity: 2,
+          hours: 1,
+        });
+      }
       // 3. Create OT with operations and original text
       const res = await api.createWOFromWR({
         work_request_id: wrId,
@@ -1749,11 +1762,22 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <input type="date" value={editDates.start ? editDates.start.slice(0, 10) : ''}
                           onChange={e => {
                             const newStart = e.target.value;
-                            setEditDates(d => ({
-                              start: newStart,
-                              // If end is before new start, bump it to match
-                              end: d.end && d.end.slice(0, 10) < newStart ? newStart : d.end,
-                            }));
+                            setEditDates(d => {
+                              // Jorge SF-508: al mover start, preservar duración (desplaza end).
+                              if (d.start && d.end && newStart) {
+                                const oldStart = new Date(d.start.slice(0, 10));
+                                const oldEnd = new Date(d.end.slice(0, 10));
+                                const durMs = oldEnd - oldStart;
+                                if (durMs >= 0) {
+                                  const shifted = new Date(new Date(newStart).getTime() + durMs);
+                                  return { start: newStart, end: shifted.toISOString().slice(0, 10) };
+                                }
+                              }
+                              return {
+                                start: newStart,
+                                end: d.end && d.end.slice(0, 10) < newStart ? newStart : d.end,
+                              };
+                            });
                           }}
                           className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
                       </div>
@@ -1772,9 +1796,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
                       </div>
                       <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
-                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Week Number</div>
-                        <div className="text-lg font-bold text-indigo-800 mt-1">
-                          {editDates.start ? 'W' + String(Math.ceil(((new Date(editDates.start) - new Date(new Date(editDates.start).getFullYear(), 0, 1)) / 86400000 + new Date(new Date(editDates.start).getFullYear(), 0, 1).getDay() + 1) / 7)).padStart(2, '0') : '—'}
+                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Duración · Semana</div>
+                        <div className="text-sm font-bold text-indigo-800 mt-1">
+                          {editDates.start && editDates.end ? `${Math.max(0, Math.round((new Date(editDates.end) - new Date(editDates.start)) / 86400000))}d` : '—'}
+                          {editDates.start && <span className="ml-2 text-indigo-500">· W{String(Math.ceil(((new Date(editDates.start) - new Date(new Date(editDates.start).getFullYear(), 0, 1)) / 86400000 + new Date(new Date(editDates.start).getFullYear(), 0, 1).getDay() + 1) / 7)).padStart(2, '0')}</span>}
                         </div>
                       </div>
                     </div>
@@ -1858,6 +1883,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             <div className="flex items-center gap-2 p-3 cursor-pointer" onClick={() => setExpandedOps(prev => ({...prev, [idx]: !prev[idx]}))}>
                               <span className="text-xs font-bold text-gray-400 w-5">#{idx+1}</span>
                               <span className={"text-xs font-bold px-1.5 py-0.5 rounded "+(op.type === 'EXT' ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600")}>{op.type || 'INT'}</span>
+                              {op.parallel && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300" title="Operación en paralelo · duración = máx entre paralelas; HH siempre suman">P</span>
+                              )}
                               <span className="flex-1 text-sm font-medium text-gray-800 truncate">{op.description ? op.description.replace(/^\d+[\.\)]\s*/, '').substring(0, 60) + (op.description.length > 60 ? '...' : '') : <span className="text-gray-400 italic">No description</span>}</span>
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">{op.specialty || 'Mechanical'}</span>
                               <span className="text-[10px] text-gray-500">{op.quantity || 1}p</span>

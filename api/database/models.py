@@ -512,6 +512,7 @@ class ManagedWorkOrderModel(Base):
     equipment_tag: Mapped[str] = mapped_column(String(100))
 
     # Planning
+    wo_title: Mapped[str | None] = mapped_column(String(200), nullable=True)  # SF-507 Jorge: título arrastrado desde el WR
     description: Mapped[str] = mapped_column(Text, default="")
     wo_type: Mapped[str] = mapped_column(String(30), default="CORRECTIVO")  # CORRECTIVO, PREVENTIVO, PREDICTIVO, MEJORA, INCIDENTE_OPERACIONAL, MONITOREO_CONDICION
     priority_code: Mapped[str] = mapped_column(String(5), default="P3")

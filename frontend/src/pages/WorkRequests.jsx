@@ -789,7 +789,29 @@ ${materials.length ? `<div class="section">
                 className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-y" />
             ) : /\d{1,2}\.\s/.test(item.suggested_action) ? (
               <div className="space-y-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
-                {(() => { const steps = []; const raw = item.suggested_action; for (let n = 1; n <= 20; n++) { const s = raw.indexOf(`${n}. `); if (s === -1) break; const nx = raw.indexOf(`${n+1}. `, s+1); steps.push({ num: n, text: raw.substring(s, nx > -1 ? nx : undefined).replace(/^\d+\.\s*/, '').trim() }); } return steps.map((s, i) => (<div key={i} className="flex gap-2 text-sm"><span className="font-bold text-emerald-600 min-w-[20px]">{s.num}.</span><span>{s.text}</span></div>)); })()}
+                {(() => {
+                  const steps = [];
+                  const raw = item.suggested_action;
+                  for (let n = 1; n <= 20; n++) {
+                    const s = raw.indexOf(`${n}. `);
+                    if (s === -1) break;
+                    const nx = raw.indexOf(`${n+1}. `, s+1);
+                    steps.push({ num: n, text: raw.substring(s, nx > -1 ? nx : undefined).replace(/^\d+\.\s*/, '').trim() });
+                  }
+                  // Jorge SF-505: el paso de bloqueo LOTO debe ir primero.
+                  const lotoIdx = steps.findIndex(st => /\bLOTO\b|bloqueo.*energ|lockout.*tagout/i.test(st.text));
+                  if (lotoIdx > 0) {
+                    const [loto] = steps.splice(lotoIdx, 1);
+                    steps.unshift(loto);
+                    steps.forEach((st, i) => { st.num = i + 1; });
+                  }
+                  return steps.map((s, i) => (
+                    <div key={i} className="flex gap-2 text-sm">
+                      <span className={`font-bold min-w-[20px] ${/\bLOTO\b|bloqueo/i.test(s.text) ? 'text-red-600' : 'text-emerald-600'}`}>{s.num}.</span>
+                      <span>{s.text}</span>
+                    </div>
+                  ));
+                })()}
               </div>
             ) : (
               <p className="text-sm text-foreground leading-relaxed bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
@@ -850,11 +872,22 @@ ${materials.length ? `<div class="section">
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {(Array.isArray(item.support_equipment) ? item.support_equipment : []).map((eq, i) => (
-                        <span key={i} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">
-                          {typeof eq === 'string' ? eq : eq.tag || eq.description || ''}
-                        </span>
-                      ))}
+                      {/* Jorge SF-505: dedup case-insensitive de equipos de apoyo. */}
+                      {(() => {
+                        const arr = Array.isArray(item.support_equipment) ? item.support_equipment : [];
+                        const seen = new Set();
+                        const uniq = [];
+                        for (const eq of arr) {
+                          const label = typeof eq === 'string' ? eq : (eq.tag || eq.description || '');
+                          const key = label.trim().toLowerCase();
+                          if (key && !seen.has(key)) { seen.add(key); uniq.push(label); }
+                        }
+                        return uniq.map((label, i) => (
+                          <span key={i} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">
+                            {label}
+                          </span>
+                        ));
+                      })()}
                     </div>
                   )}
                 </div>

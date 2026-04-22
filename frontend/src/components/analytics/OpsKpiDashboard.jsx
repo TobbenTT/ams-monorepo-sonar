@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Activity, Clock, AlertTriangle, DollarSign, Download, FileSpreadsheet, Loader2, TrendingUp } from 'lucide-react';
+import { Activity, Clock, AlertTriangle, DollarSign, Download, FileSpreadsheet, Loader2, TrendingUp, Target, CheckCircle2 } from 'lucide-react';
 import * as api from '../../api';
 
 const BUCKET_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#f97316', '#ef4444'];
@@ -38,6 +38,7 @@ export default function OpsKpiDashboard({ plantId }) {
     const [pmCompliance, setPmCompliance] = useState(null);
     const [aging, setAging] = useState(null);
     const [cost, setCost] = useState(null);
+    const [adherence, setAdherence] = useState(null);
     const [months, setMonths] = useState(6);
 
     useEffect(() => {
@@ -50,13 +51,15 @@ export default function OpsKpiDashboard({ plantId }) {
             safe(api.getOpsPmCompliance(plantId)),
             safe(api.getOpsBacklogAging(plantId)),
             safe(api.getOpsCostPerEquipment(plantId, 10)),
-        ]).then(([s, ts, pc, ag, c]) => {
+            safe(api.getAdherenceCompliance(plantId, 30)),
+        ]).then(([s, ts, pc, ag, c, ad]) => {
             if (cancelled) return;
             setSummary(s);
             setMtbfSeries(ts?.series || []);
             setPmCompliance(pc);
             setAging(ag);
             setCost(c);
+            setAdherence(ad);
             setLoading(false);
         });
         return () => { cancelled = true; };
@@ -108,12 +111,14 @@ export default function OpsKpiDashboard({ plantId }) {
             </div>
 
             {/* KPI strip */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-7 gap-3">
                 <KpiPill icon={Activity} tone="sky" label="OTs abiertas" value={summary?.open_wos ?? 0} sub={`${summary?.closed_30d ?? 0} cerradas 30d`} />
                 <KpiPill icon={AlertTriangle} tone="rose" label="Atrasadas" value={summary?.overdue_wos ?? 0} sub="planned_end vencido" />
                 <KpiPill icon={Clock} tone="amber" label="MTTR 30d" value={summary?.mttr_hours_30d != null ? `${summary.mttr_hours_30d}h` : '—'} sub="promedio correctivos cerrados" />
                 <KpiPill icon={TrendingUp} tone="emerald" label="PM compliance" value={summary?.pm_compliance_pct != null ? `${summary.pm_compliance_pct}%` : '—'} sub="on-time / total PM" />
                 <KpiPill icon={DollarSign} tone="purple" label="Costo total" value={cost?.total_cost_all ? `$${Math.round(cost.total_cost_all).toLocaleString()}` : '—'} sub={`${cost?.equipment_count ?? 0} equipos`} />
+                <KpiPill icon={Target} tone="sky" label="Adherencia" value={adherence?.adherence_pct != null ? `${adherence.adherence_pct}%` : '—'} sub={`${adherence?.adherence_count ?? 0}/${adherence?.total_closed ?? 0} en ±4h plan`} />
+                <KpiPill icon={CheckCircle2} tone="emerald" label="Cumplimiento" value={adherence?.compliance_pct != null ? `${adherence.compliance_pct}%` : '—'} sub={`${adherence?.compliance_count ?? 0}/${adherence?.total_closed ?? 0} ≤7d vs plan`} />
             </div>
 
             {/* Charts grid */}

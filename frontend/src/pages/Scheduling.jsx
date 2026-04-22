@@ -12,7 +12,7 @@ import {
   Calendar, Clock, Users, CheckCircle, Circle, Play, Loader2,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Inbox, Camera, Sparkles, Send, X,
   FileText, Wrench, AlertTriangle, Filter, Eye, BarChart3,
-  Package, Upload, Lock, ArrowRight, ArrowUpRight, Search, GripVertical, Trash2, CheckCircle2, Plus
+  Package, Upload, Lock, ArrowRight, ArrowUpRight, Search, GripVertical, Trash2, CheckCircle2, Plus, RotateCcw
 } from 'lucide-react';
 
 const TYPE_META = {
@@ -1178,6 +1178,21 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 {opt.l}
               </button>
             ))}
+            <button onClick={async () => {
+                const plantId = localStorage.getItem('selected_plant') || 'OCP-JFC1';
+                if (!confirm('¿Mover a REPROGRAMADO todas las OTs PROGRAMADO/EN_EJECUCION con planned_end vencido?')) return;
+                try {
+                  const r = await api.rescheduleStale(plantId);
+                  toast.success(`↻ ${r.rescheduled} OTs movidas a REPROGRAMADO`);
+                  onRefresh?.();
+                } catch (e) {
+                  toast.error('Error: ' + (e.message || e));
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded-lg text-xs font-semibold transition-colors"
+              title="Mueve a REPROGRAMADO las OTs PROGRAMADO/EN_EJECUCION cuyo planned_end ya pasó">
+              <RotateCcw size={14} /> Reprogramar vencidas
+            </button>
             <button onClick={async () => {
                 // Step 2 of 2-step flow: open styled confirmation modal
                 const weekMon = weekStart;

@@ -10,6 +10,10 @@ jobs:
   backend:
     name: Backend · pytest smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      TESTING: "1"
+      JWT_SECRET_KEY: "ci_jwt_key_at_least_32_chars_long_for_ci_runs_only"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

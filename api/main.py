@@ -176,17 +176,21 @@ async def lifespan(app: FastAPI):
         )
     create_all_tables()
     # Auto-seed users if DB is empty (prevents losing creds on rebuild)
-    try:
-        from api.database.connection import SessionLocal
-        from api.database.models import UserModel
-        db = SessionLocal()
-        if db.query(UserModel).count() == 0:
-            logger.info("No users found — auto-seeding default users + demo data")
-            from api.seed import seed_all
-            seed_all(db)
-        db.close()
-    except Exception as e:
-        logger.warning("Auto-seed failed: %s", e)
+    # Skip in tests — fixtures crean la data que necesiten y auto-seed
+    # agrega 141 WRs + 100 WOs + 10k nodes que hacen pytest lento y causan
+    # 'database is locked' con in-memory sqlite concurrente.
+    if not _os.environ.get("TESTING"):
+        try:
+            from api.database.connection import SessionLocal
+            from api.database.models import UserModel
+            db = SessionLocal()
+            if db.query(UserModel).count() == 0:
+                logger.info("No users found — auto-seeding default users + demo data")
+                from api.seed import seed_all
+                seed_all(db)
+            db.close()
+        except Exception as e:
+            logger.warning("Auto-seed failed: %s", e)
     yield
 
 

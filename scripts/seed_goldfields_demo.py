@@ -466,6 +466,7 @@ def _generate_wr_and_wo(db, idx, workers, now):
             "estimated_hours": random.choice([4, 6, 8, 12, 16, 24]),
             "confidence": round(random.uniform(0.75, 0.95), 2),
             "probable_cause": f"Causa raíz presumida: {description[:60]}",
+            "plant_id": PLANT,  # Jorge 2026-04-21 — filtro de listado busca plant en ai_classification
         },
         spare_parts=[{"code": m[0], "description": m[1], "qty": m[3]} for m in _pick_materials(equip_tag, problem)[:3]],
         priority_code=priority,
@@ -700,6 +701,7 @@ def seed_standalone_wrs(db, count_pending=20, count_approved=10, count_rejected=
                 "estimated_hours": random.choice([4, 6, 8, 12, 16]),
                 "confidence": round(random.uniform(0.75, 0.95), 2),
                 "probable_cause": description[:80],
+                "plant_id": PLANT,
             },
             spare_parts=[{"code": m[0], "description": m[1], "qty": m[3]} for m in _pick_materials(equip_tag, problem)[:3]],
             priority_code=priority,

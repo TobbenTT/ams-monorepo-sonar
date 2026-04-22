@@ -284,20 +284,29 @@ WORKFORCE_CATALOG = [
 # ═══════════════════════════════════════════════════════════════════════
 
 def wipe_plant_data(db):
-    print(f"[wipe] Limpiando data de {PLANT}...")
+    """Wipe NUCLEAR para demo limpio. Borra TODO work_request + managed_wo +
+    workforce de todas las plantas. WR no tiene plant_id entonces hay que
+    arrasar. Usar solo para entorno de demo."""
+    print(f"[wipe] Limpiando TODA la data (WRs + WOs + workforce + audit)...")
+    # Orden importa por foreign keys. Desactivo FK temporalmente para SQLite.
+    try:
+        db.execute(text("PRAGMA foreign_keys = OFF"))
+    except Exception:
+        pass
     stmts = [
-        f"DELETE FROM managed_work_orders WHERE plant_id = '{PLANT}'",
-        f"DELETE FROM work_requests WHERE request_id IN (SELECT request_id FROM work_requests WHERE equipment_tag LIKE 'BRY-%' OR equipment_tag LIKE 'CRU-%' OR equipment_tag LIKE 'CVY-%' OR equipment_tag LIKE 'FLT-%' OR equipment_tag LIKE 'THK-%' OR equipment_tag LIKE 'PMP-%' OR equipment_tag LIKE 'SUB-%' OR equipment_tag LIKE 'MCC-%' OR equipment_tag LIKE 'TRF-%' OR equipment_tag LIKE 'ANL-%' OR equipment_tag LIKE 'DCS-%' OR equipment_tag LIKE 'PLC-%' OR equipment_tag LIKE 'COM-%' OR equipment_tag LIKE 'HID-%')",
-        f"DELETE FROM workforce WHERE plant_id = '{PLANT}'",
-        f"DELETE FROM user_notifications WHERE plant_id = '{PLANT}'",
-        f"DELETE FROM audit_log WHERE entity_type = 'managed_work_order' AND entity_id LIKE 'WO-%'",
+        "DELETE FROM field_captures",  # FK hacia work_requests
+        "DELETE FROM backlog_items",
+        "DELETE FROM managed_work_orders",
+        "DELETE FROM work_requests",
+        "DELETE FROM workforce",
+        "DELETE FROM audit_log",
     ]
     for s in stmts:
         try:
             r = db.execute(text(s))
-            print(f"  ✓ {r.rowcount} rows · {s[:80]}...")
+            print(f"  ✓ {r.rowcount} rows · {s[:80]}")
         except Exception as e:
-            print(f"  ! skip: {e}")
+            print(f"  ! skip ({str(e)[:60]})")
     db.commit()
 
 

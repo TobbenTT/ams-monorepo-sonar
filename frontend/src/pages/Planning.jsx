@@ -1514,7 +1514,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         </select>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3 border">
-                        <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Puesto Trabajo Responsable {wo.planning_group ? `(${wo.planning_group})` : ''}</div>
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Puesto Trabajo Responsable</div>
                         <select value={wo.work_center || ''} disabled={!wo.planning_group}
                           onChange={e => {
                             const v = e.target.value;

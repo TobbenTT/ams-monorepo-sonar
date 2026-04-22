@@ -1,14 +1,29 @@
 """Sales contact form router — handles demo requests and sales inquiries."""
 
 import re
+import time
 import logging
 from datetime import datetime
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sales", tags=["sales"])
+
+# Auditoría 2026-04-22 — rate limit por IP para mitigar spam del form público.
+_CONTACT_IP_ATTEMPTS: dict[str, list[float]] = {}
+_CONTACT_WINDOW = 600.0  # 10 minutos
+_CONTACT_MAX = 3         # max 3 submissions por IP cada 10 min
+
+def _check_contact_throttle(ip: str) -> None:
+    now = time.time()
+    attempts = _CONTACT_IP_ATTEMPTS.setdefault(ip, [])
+    attempts[:] = [t for t in attempts if now - t < _CONTACT_WINDOW]
+    if len(attempts) >= _CONTACT_MAX:
+        logger.warning("Sales contact spam throttle: IP=%s attempts=%d", ip, len(attempts))
+        raise HTTPException(status_code=429, detail="Too many submissions. Please try again later.")
+    attempts.append(now)
 
 
 class ContactRequest(BaseModel):
@@ -42,9 +57,10 @@ class ContactRequest(BaseModel):
 
 
 @router.post("/contact")
-def submit_contact(data: ContactRequest):
+def submit_contact(data: ContactRequest, request: Request):
     """Handle contact form submission from landing page."""
     try:
+        _check_contact_throttle(request.client.host if request.client else "unknown")
         from api.services.email_service import send_email, is_configured
 
         # Log the lead

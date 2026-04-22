@@ -119,7 +119,7 @@ class FailureModeCreate(BaseModel):
     mechanism: str
     cause: str
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class FMValidateRequest(BaseModel):
@@ -129,7 +129,7 @@ class FMValidateRequest(BaseModel):
 
 class RCMDecideRequest(BaseModel):
     """Passed to RCMDecisionInput — allows extra fields for flexibility."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class FunctionCreate(BaseModel):
@@ -148,7 +148,7 @@ class FunctionalFailureCreate(BaseModel):
 
 class FMECAWorksheetCreate(BaseModel):
     """Passed to fmea_service.create_fmeca_worksheet — allows extra fields."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class RPNRequest(BaseModel):
@@ -168,7 +168,7 @@ class PlantCreate(BaseModel):
 
 class NodeCreate(BaseModel):
     """Passed to hierarchy_service.create_node — allows extra fields."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class VendorBuildRequest(BaseModel):
@@ -222,12 +222,12 @@ class RCAAdvance(BaseModel):
 
 class PlanningKPIRequest(BaseModel):
     """Passed directly to PlanningKPIInput — allows extra fields."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class DEKPIRequest(BaseModel):
     """Passed directly to DEKPIInput — allows extra fields."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 # ── Reliability ──────────────────────────────────────────────────────
@@ -258,12 +258,12 @@ class MOCCreate(BaseModel):
 class MOCAdvance(BaseModel):
     action: str = ""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class OCRRequest(BaseModel):
     """Passed directly to OCRAnalysisInput — allows extra fields."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class JackknifRequest(BaseModel):
@@ -279,7 +279,7 @@ class ParetoRequest(BaseModel):
 
 class LCCRequest(BaseModel):
     """Passed directly to LCCInput — allows extra fields."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class RBIRequest(BaseModel):
@@ -301,7 +301,7 @@ class WeeklyReportRequest(BaseModel):
     backlog_hours: float = 0.0
     key_events: list[str] | None = None
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class MonthlyReportRequest(BaseModel):
@@ -314,7 +314,7 @@ class MonthlyReportRequest(BaseModel):
     health_summary: dict[str, Any] | None = None
     previous_month_kpis: dict[str, Any] | None = None
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class QuarterlyReportRequest(BaseModel):
@@ -327,12 +327,12 @@ class QuarterlyReportRequest(BaseModel):
     bad_actors: list[dict[str, Any]] | None = None
     capas_summary: dict[str, Any] | None = None
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class ReportingDEKPIRequest(BaseModel):
     """Passed directly to DEKPIInput — allows extra fields."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class NotificationRequest(BaseModel):
@@ -346,7 +346,7 @@ class NotificationRequest(BaseModel):
     capas: list[dict[str, Any]] | None = None
     mocs: list[dict[str, Any]] | None = None
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class ImportValidateRequest(BaseModel):
@@ -368,7 +368,7 @@ class ExportRequest(BaseModel):
     report: dict[str, Any] | None = None
     format: str = "EXCEL"
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class CrossModuleRequest(BaseModel):
@@ -383,7 +383,7 @@ class CrossModuleRequest(BaseModel):
     pareto_result: dict[str, Any] | None = None
     rbi_result: dict[str, Any] | None = None
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 # ── SAP ──────────────────────────────────────────────────────────────
@@ -413,7 +413,7 @@ class ProgramCreate(BaseModel):
 
 class TaskCreate(BaseModel):
     """Passed to task_service.create_task — allows extra fields."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class TaskNameValidate(BaseModel):
@@ -429,7 +429,7 @@ class WPNameValidate(BaseModel):
 
 class WPCreate(BaseModel):
     """Passed to work_package_service.create_work_package — allows extra fields."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="ignore")
 
 
 class WPGroupRequest(BaseModel):

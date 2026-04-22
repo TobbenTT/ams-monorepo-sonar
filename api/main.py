@@ -147,6 +147,12 @@ async def lifespan(app: FastAPI):
         )
     # Log effective CORS origins (post-localhost-strip) for audit trail.
     logger.info("CORS effective origins: %s", settings.CORS_ORIGINS)
+    # Auditoría — con allow_credentials=True, un wildcard '*' es peligroso.
+    if not settings.DEBUG and "*" in settings.CORS_ORIGINS:
+        logger.error(
+            "CORS_ORIGINS contiene '*' con allow_credentials=True en producción. "
+            "Esto permite que cualquier sitio robe credenciales. Revisar .env."
+        )
     create_all_tables()
     # Auto-seed users if DB is empty (prevents losing creds on rebuild)
     try:

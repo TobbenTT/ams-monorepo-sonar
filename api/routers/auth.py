@@ -1,6 +1,8 @@
 """Auth router — registration, login, token refresh, user management."""
 
-from fastapi import APIRouter, Depends, HTTPException
+import time
+import logging
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
@@ -10,6 +12,22 @@ from api.services import auth_service
 from api.dependencies.auth import get_current_user, require_role
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
+
+# Auditoría 2026-04-22 — rate limit estricto por IP para /auth/login.
+# In-memory: 10 intentos / 60s por IP (complementa brute-force por usuario en auth_service).
+_LOGIN_IP_ATTEMPTS: dict[str, list[float]] = {}
+_LOGIN_IP_WINDOW = 60.0   # seconds
+_LOGIN_IP_MAX = 10
+
+def _check_ip_throttle(ip: str) -> None:
+    now = time.time()
+    attempts = _LOGIN_IP_ATTEMPTS.setdefault(ip, [])
+    attempts[:] = [t for t in attempts if now - t < _LOGIN_IP_WINDOW]
+    if len(attempts) >= _LOGIN_IP_MAX:
+        logger.warning("Login rate limit por IP disparado: %s (%d attempts)", ip, len(attempts))
+        raise HTTPException(status_code=429, detail="Demasiados intentos. Esperá un minuto e intentá de nuevo.")
+    attempts.append(now)
 
 
 def _user_to_dict(u: UserModel) -> dict:
@@ -27,8 +45,11 @@ def _user_to_dict(u: UserModel) -> dict:
 
 
 @router.post("/login")
-def login(data: UserLogin, db: Session = Depends(get_db)):
+def login(data: UserLogin, request: Request, db: Session = Depends(get_db)):
     from fastapi.responses import JSONResponse as JR
+    # Rate limit por IP antes de tocar la BD (mitigación DoS / brute-force)
+    client_ip = (request.client.host if request.client else "unknown")
+    _check_ip_throttle(client_ip)
     user = auth_service.authenticate_user(db, data.username, data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")

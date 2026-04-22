@@ -65,6 +65,7 @@ const Planner = lazyRetry(() => import('./pages/Planner'));
 const Planning = lazyRetry(() => import('./pages/Planning'));
 const FieldCapture = lazyRetry(() => import('./pages/FieldCapture'));
 const Reliability = lazyRetry(() => import('./pages/Reliability'));
+const Shutdowns = lazyRetry(() => import('./pages/Shutdowns'));
 const RCA = lazyRetry(() => import('./pages/RCA'));
 const DefectElimination = lazyRetry(() => import('./pages/DefectElimination'));
 const SAPReview = lazyRetry(() => import('./pages/SAPReview'));
@@ -160,6 +161,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="fmeca" element={<P roles={PLAN}><S><FMECA /></S></P>} />
                                     <Route path="strategy" element={<P roles={PLAN}><S><Strategy /></S></P>} />
                                     <Route path="reliability" element={<P roles={ENGR}><S><Reliability /></S></P>} />
+                                    <Route path="shutdowns" element={<P roles={PLAN}><S><Shutdowns /></S></P>} />
                                     <Route path="rca" element={<P roles={ENGR}><S><RCA /></S></P>} />
                                     <Route path="defect-elimination" element={<P roles={ENGR}><S><DefectElimination /></S></P>} />
                                     <Route path="sap-review" element={<P roles={MGMT}><S><SAPReview /></S></P>} />

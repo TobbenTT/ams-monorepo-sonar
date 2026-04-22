@@ -466,6 +466,10 @@ export const searchBOM = (query) => get('/sap/mock/MM60', { search: query });
 // ── Reliability ──
 export const analyzeSpare = (d) => post('/reliability/spare-parts/analyze', d);
 export const createShutdown = (d) => post('/reliability/shutdowns', d);
+export const listShutdowns = (p) => get('/reliability/shutdowns', p);
+export const getShutdown = (id) => get(`/reliability/shutdowns/${id}`);
+export const startShutdown = (id) => put(`/reliability/shutdowns/${id}/start`);
+export const completeShutdown = (id) => put(`/reliability/shutdowns/${id}/complete`);
 export const listMocs = (p) => get('/reliability/mocs', p);
 
 // ── Reporting ──

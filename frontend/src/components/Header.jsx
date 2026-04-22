@@ -55,6 +55,7 @@ export default function Header({
         { path: '/work-requests',      labelKey: 'nav.workRequests',       keywords: 'work requests avisos solicitudes' },
         { path: '/hierarchy',          labelKey: 'nav.assetHierarchy',     keywords: 'hierarchy assets equipment tree jerarquia activos' },
         { path: '/reliability',        labelKey: 'nav.reliabilityEng',     keywords: 'reliability weibull mtbf mttr confiabilidad' },
+        { path: '/shutdowns',          labelKey: 'Shutdowns',              keywords: 'shutdowns paradas calendario calendar maintenance windows mantenimiento' },
         { path: '/profile',           labelKey: 'nav.profile',            keywords: 'profile user perfil usuario' },
         { path: '/work-management', labelKey: 'nav.workManagement',   keywords: 'work management planning scheduling gestion trabajo planificacion programacion' },
         { path: '/rca',             labelKey: 'nav.rca',              keywords: 'rca root cause analysis analisis causa raiz' },

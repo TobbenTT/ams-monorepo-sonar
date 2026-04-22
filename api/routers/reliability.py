@@ -23,6 +23,15 @@ def analyze_spare_parts(data: SparePartsRequest, db: Session = Depends(get_db)):
 
 # ── Shutdowns ────────────────────────────────────────────────────────
 
+@router.get("/shutdowns")
+def list_shutdowns(
+    plant_id: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db),
+):
+    return reliability_service.list_shutdowns(db, plant_id=plant_id, status=status)
+
+
 @router.post("/shutdowns")
 def create_shutdown(data: ShutdownCreate, db: Session = Depends(get_db)):
     return reliability_service.create_shutdown(

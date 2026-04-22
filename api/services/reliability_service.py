@@ -64,6 +64,34 @@ def create_shutdown(
     return event.model_dump(mode="json")
 
 
+def list_shutdowns(db: Session, plant_id: str | None = None, status: str | None = None) -> list[dict]:
+    q = db.query(ShutdownEventModel)
+    if plant_id:
+        q = q.filter(ShutdownEventModel.plant_id == plant_id)
+    if status:
+        q = q.filter(ShutdownEventModel.status == status)
+    rows = q.order_by(ShutdownEventModel.planned_start.desc()).all()
+    return [
+        {
+            "shutdown_id": r.shutdown_id,
+            "plant_id": r.plant_id,
+            "name": r.name,
+            "status": r.status,
+            "planned_start": r.planned_start.isoformat() if r.planned_start else None,
+            "planned_end": r.planned_end.isoformat() if r.planned_end else None,
+            "actual_start": r.actual_start.isoformat() if r.actual_start else None,
+            "actual_end": r.actual_end.isoformat() if r.actual_end else None,
+            "planned_hours": r.planned_hours,
+            "actual_hours": r.actual_hours,
+            "work_orders_count": len(r.work_orders or []),
+            "completed_work_orders_count": len(r.completed_work_orders or []),
+            "completion_pct": r.completion_pct,
+            "delay_hours": r.delay_hours,
+        }
+        for r in rows
+    ]
+
+
 def get_shutdown(db: Session, shutdown_id: str) -> dict | None:
     obj = db.query(ShutdownEventModel).filter_by(shutdown_id=shutdown_id).first()
     if not obj:

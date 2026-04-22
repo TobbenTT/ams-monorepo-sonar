@@ -1756,6 +1756,11 @@ export default function FailureCapture({ onNavigateTab }) {
                 <Lock className="w-4 h-4 shrink-0" />
                 <span>Bloqueado — seleccioná planta primero.</span>
               </div>
+            ) : !selectedLoc ? (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 text-xs">
+                <Lock className="w-4 h-4 shrink-0" />
+                <span>Bloqueado — elegí <b>Technical Location</b> primero para filtrar equipos.</span>
+              </div>
             ) : !selectedEquip ? (
               <div className="relative">
                 <div className="relative">

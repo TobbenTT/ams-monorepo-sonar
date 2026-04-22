@@ -69,8 +69,13 @@ def get_technician_profiles(
             d = _db_worker_to_profile(w).model_dump(mode="json")
         except Exception:
             d = {"worker_id": w.worker_id, "name": w.name, "specialty": w.specialty or "", "shift": w.shift or "", "available": w.available}
-        # Jorge 2026-04-21 — expose shift_pattern + skills for the team table
-        # and the weekly board off-shift filtering.
+        # Jorge 2026-04-21 — el Pydantic schema LabourSpecialty convierte a FITTER
+        # todas las specialties que no están en el enum inglés. Pisamos con el valor
+        # crudo del DB para respetar MECANICO/ELECTRICO/INSTRUMENTISTA/... y que el
+        # Capacity by Work Center agrupe correctamente.
+        d["specialty"] = w.specialty or d.get("specialty", "")
+        # Expose shift_pattern + skills for the team table and the weekly board
+        # off-shift filtering.
         d["shift_pattern"] = getattr(w, "shift_pattern", None)
         d["shift_cycle_start"] = getattr(w, "shift_cycle_start", None)
         d["skills"] = getattr(w, "skills", None) or []

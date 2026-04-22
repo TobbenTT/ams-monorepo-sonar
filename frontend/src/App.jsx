@@ -14,6 +14,7 @@ import ProjectSelector from './pages/ProjectSelector';
 import useIsMobile from './hooks/useIsMobile';
 import { useAuth } from './contexts/AuthContext';
 import { listPlants } from './api';
+import { useWebSocket } from './hooks/useWebSocket';
 
 export default function App() {
     const { user } = useAuth();
@@ -54,6 +55,11 @@ export default function App() {
     }, []);
 
     useEffect(() => { localStorage.setItem('mobileRole', mobileRole); }, [mobileRole]);
+
+    // Mantener WS conectado app-wide (app-level subscribe) para que eventos
+    // como force_logout y server_restart lleguen aunque el usuario esté en
+    // una página sin su propio subscribe (Dashboard, Analytics, Criticality, etc).
+    useWebSocket(plant, () => {});
 
     // Auto-set viewMode when user role changes (login)
     useEffect(() => {

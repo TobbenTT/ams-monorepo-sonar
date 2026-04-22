@@ -131,11 +131,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import os as _os
     if not settings.JWT_SECRET_KEY or len(settings.JWT_SECRET_KEY) < 32:
         raise RuntimeError(
             "JWT_SECRET_KEY must be at least 32 characters. "
             "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
         )
+    # Security checks auditoría 2026-04-22
+    deploy_secret = _os.environ.get("DEPLOY_SECRET", "")
+    if not settings.DEBUG and not deploy_secret:
+        logger.warning(
+            "DEPLOY_SECRET no está configurado. /admin/kick-all-users "
+            "sigue protegido por Bearer admin, pero deploy.sh no podrá "
+            "hacer logout masivo automático."
+        )
+    # Log effective CORS origins (post-localhost-strip) for audit trail.
+    logger.info("CORS effective origins: %s", settings.CORS_ORIGINS)
     create_all_tables()
     # Auto-seed users if DB is empty (prevents losing creds on rebuild)
     try:

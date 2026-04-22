@@ -310,7 +310,7 @@ export const closeManagedWO = (id, body) => put(`/managed-work-orders/${id}/clos
 export const getManagedWOHistory = (id) => get(`/managed-work-orders/${id}/history`);
 export const saveWOPostReview = (id, data) => post(`/managed-work-orders/${id}/post-review`, data);
 export const getAdherenceCompliance = (plantId, days) => get('/analytics-dash/adherence-compliance', { plant_id: plantId, days: days || 30 });
-export const rescheduleStale = (plantId) => post('/analytics-dash/reschedule-stale', { plant_id: plantId });
+export const rescheduleStale = (plantId) => post(`/analytics-dash/reschedule-stale?plant_id=${encodeURIComponent(plantId || '')}`, {});
 // Group C #6 — SAP sync (scaffolded; real transport pendiente)
 export const sapSyncWO = (id) => post(`/managed-work-orders/${id}/sap-sync`);
 export const getSapSyncStatus = (id) => get(`/managed-work-orders/${id}/sap-sync`);

@@ -20,6 +20,117 @@ const PRIORITY_COLORS = {
 };
 const PRIORITY_LABELS = { P1: 'Immediate', P2: 'High', P3: 'Medium', P4: 'Low' };
 
+// Jorge SF-515 — Notificación HH: pestaña visible solo en EN_EJECUCION donde
+// el supervisor captura valores reales (puesto trabajo, HH, inicio/fin)
+// antes de cerrar. Fin real = inicio + duración, editable manualmente.
+function NotifHHTab({ wo, onSaved }) {
+  const [actualWorkCenter, setActualWorkCenter] = useState(wo.work_center || '');
+  const [actualStart, setActualStart] = useState(wo.actual_start ? wo.actual_start.slice(0, 16) : '');
+  const [actualDuration, setActualDuration] = useState(wo.actual_hours || wo.estimated_hours || 0);
+  const [actualEnd, setActualEnd] = useState(wo.actual_end ? wo.actual_end.slice(0, 16) : '');
+  const [actualHH, setActualHH] = useState(wo.actual_hours || 0);
+  const [saving, setSaving] = useState(false);
+
+  const computeEnd = (start, hours) => {
+    if (!start) return '';
+    try {
+      const d = new Date(start);
+      d.setMinutes(d.getMinutes() + Math.round(parseFloat(hours) * 60));
+      return d.toISOString().slice(0, 16);
+    } catch { return ''; }
+  };
+
+  const handleStartChange = (v) => {
+    setActualStart(v);
+    if (v && actualDuration) setActualEnd(computeEnd(v, actualDuration));
+  };
+  const handleDurationChange = (v) => {
+    setActualDuration(v);
+    if (actualStart && v) setActualEnd(computeEnd(actualStart, v));
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const updated = await api.updateManagedWO(wo.wo_id, {
+        work_center: actualWorkCenter,
+        actual_start: actualStart || null,
+        actual_end: actualEnd || null,
+        actual_hours: parseFloat(actualHH) || 0,
+      });
+      onSaved && onSaved(updated);
+    } catch (e) { alert('Error: ' + e.message); }
+    setSaving(false);
+  };
+
+  const plan = wo.estimated_hours || 0;
+  const variance = plan > 0 && actualHH > 0 ? Math.round(((actualHH - plan) / plan) * 100) : 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/40 p-3">
+        <div className="flex items-center gap-2 text-amber-800 font-bold text-sm mb-1">
+          <Clock size={14} /> Notificación de HH · captura en tiempo real
+        </div>
+        <p className="text-[11px] text-amber-700">
+          Registrá los valores reales de ejecución. El fin se calcula automáticamente
+          como inicio + duración, pero podés editarlo manualmente.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white rounded-lg p-3 border">
+          <label className="text-[10px] font-semibold text-gray-500 uppercase">Puesto de trabajo real</label>
+          <input value={actualWorkCenter} onChange={e => setActualWorkCenter(e.target.value)}
+            className="w-full mt-1 text-sm border border-gray-300 rounded px-2 py-1.5"
+            placeholder="Ej: MECA-01" />
+        </div>
+        <div className="bg-white rounded-lg p-3 border">
+          <label className="text-[10px] font-semibold text-gray-500 uppercase">Duración real (h)</label>
+          <input type="number" min="0" step="0.5" value={actualDuration}
+            onChange={e => handleDurationChange(e.target.value)}
+            className="w-full mt-1 text-sm border border-gray-300 rounded px-2 py-1.5"
+            placeholder={`Plan: ${plan}h`} />
+        </div>
+        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+          <label className="text-[10px] font-semibold text-blue-600 uppercase">Fecha/hora inicio real</label>
+          <input type="datetime-local" value={actualStart}
+            onChange={e => handleStartChange(e.target.value)}
+            className="w-full mt-1 text-sm border border-blue-200 rounded px-2 py-1.5 bg-white" />
+        </div>
+        <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+          <label className="text-[10px] font-semibold text-emerald-600 uppercase">
+            Fecha/hora fin real <span className="normal-case text-emerald-500">(auto, editable)</span>
+          </label>
+          <input type="datetime-local" value={actualEnd}
+            onChange={e => setActualEnd(e.target.value)}
+            className="w-full mt-1 text-sm border border-emerald-200 rounded px-2 py-1.5 bg-white" />
+        </div>
+        <div className="bg-white rounded-lg p-3 border col-span-2">
+          <label className="text-[10px] font-semibold text-gray-500 uppercase">HH reales totales</label>
+          <div className="flex items-center gap-2 mt-1">
+            <input type="number" min="0" step="0.25" value={actualHH}
+              onChange={e => setActualHH(e.target.value)}
+              className="flex-1 text-sm border border-gray-300 rounded px-2 py-1.5" />
+            {plan > 0 && actualHH > 0 && (
+              <span className={`text-[11px] font-bold px-2 py-1 rounded ${Math.abs(variance) <= 10 ? 'bg-emerald-100 text-emerald-700' : Math.abs(variance) <= 25 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
+                Var: {variance > 0 ? '+' : ''}{variance}%
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-gray-500 mt-1">Plan: {plan} HH · Real: {actualHH} HH</p>
+        </div>
+      </div>
+
+      <button onClick={save} disabled={saving}
+        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        Guardar notificación
+      </button>
+    </div>
+  );
+}
+
 // Fase 10 Jorge 2026-04-21 — tab de historial en el modal de OT.
 // Consume /managed-work-orders/{id}/history que combina audit_log diffs
 // (quién cambió qué campo) con execution_notes (status transitions).
@@ -1358,11 +1469,14 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
         // Execution flow now lives in the top-level Execution module (Bandeja de Cierre).
         // The old 'ejecucion' sub-tab inside this modal was duplicating that flow — removed.
+        // Jorge SF-515 — tab "Notificación HH" solo visible en EN_EJECUCION.
+        const isExec = wo.status === 'EN_EJECUCION';
         const OT_TABS = [
           { id: 'resumen', label: 'Summary', icon: Info },
           { id: 'operaciones', label: 'Operations', icon: List },
           { id: 'materiales', label: 'Materials', icon: Package },
           { id: 'costos', label: 'Costs', icon: DollarSign },
+          ...(isExec ? [{ id: 'notif_hh', label: 'Notif. HH', icon: Clock }] : []),
           { id: 'historial', label: 'History', icon: MessageSquare },
         ];
 
@@ -2363,6 +2477,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </table>
                     </div>
                   </div>
+                )}
+
+                {/* NOTIFICACIÓN HH — solo EN_EJECUCION · Jorge SF-515 */}
+                {otModalTab === 'notif_hh' && isExec && (
+                  <NotifHHTab wo={wo} onSaved={updated => setSelectedOT({ ...wo, ...updated })} />
                 )}
 
                 {/* HISTORIAL */}

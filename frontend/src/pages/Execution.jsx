@@ -358,6 +358,7 @@ export default function Execution() {
     { id: 'failures', label: '🔥 Fallas', icon: AlertTriangle, count: failureWOs.length },
     { id: 'close', label: 'Bandeja de Cierre', icon: CheckCircle, count: completedWOs.length },
     { id: 'summary', label: 'Resumen', icon: BarChart2, count: closedWOs.length },
+    { id: 'history', label: 'Historial', icon: Calendar, count: closedWOs.length },
   ];
 
   if (loading) return (
@@ -719,6 +720,76 @@ export default function Execution() {
                   })}
                 </div>
               </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ═══ HISTORY VIEW — turnos anteriores (Jorge SF-514) ═══ */}
+      {view === 'history' && (() => {
+        const byDate = new Map();
+        closedWOs.forEach(wo => {
+          const d = wo.closed_at ? wo.closed_at.slice(0, 10) : (wo.actual_end || '').slice(0, 10) || 'sin fecha';
+          if (!byDate.has(d)) byDate.set(d, []);
+          byDate.get(d).push(wo);
+        });
+        const dates = Array.from(byDate.keys()).filter(d => d !== 'sin fecha').sort().reverse();
+        return (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-900/10 p-3">
+              <div className="flex items-center gap-2 text-indigo-800 dark:text-indigo-300 font-bold text-sm mb-1">
+                <Calendar size={14} /> Historial de turnos anteriores
+              </div>
+              <p className="text-[11px] text-indigo-700 dark:text-indigo-200">
+                OTs cerradas agrupadas por fecha de cierre. Incluye firma del supervisor y variance plan vs real.
+              </p>
+            </div>
+            {dates.length === 0 ? (
+              <div className="bg-card border border-border rounded-xl p-12 text-center text-muted-foreground">Sin historial disponible</div>
+            ) : (
+              dates.map(date => {
+                const items = byDate.get(date);
+                const totalPlan = items.reduce((s, w) => s + (parseFloat(w.estimated_hours) || 0), 0);
+                const totalActual = items.reduce((s, w) => s + (parseFloat(w.actual_hours) || 0), 0);
+                const variance = totalPlan > 0 ? Math.round(((totalActual - totalPlan) / totalPlan) * 100) : 0;
+                return (
+                  <div key={date} className="bg-card border border-border rounded-xl overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-foreground">
+                          {new Date(date + 'T00:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground">{items.length} OT{items.length > 1 ? 's' : ''} cerradas · {totalPlan.toFixed(1)}h plan · {totalActual.toFixed(1)}h real</p>
+                      </div>
+                      <div className={`text-xs font-bold px-2.5 py-1 rounded ${Math.abs(variance) <= 10 ? 'bg-emerald-100 text-emerald-700' : Math.abs(variance) <= 25 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
+                        Variance: {variance > 0 ? '+' : ''}{variance}%
+                      </div>
+                    </div>
+                    <div className="divide-y divide-border/60">
+                      {items.map(wo => {
+                        const plan = parseFloat(wo.estimated_hours) || 0;
+                        const actual = parseFloat(wo.actual_hours) || 0;
+                        const v = plan > 0 ? Math.round(((actual - plan) / plan) * 100) : 0;
+                        return (
+                          <div key={wo.wo_id} className="px-4 py-2.5 flex items-center gap-3 hover:bg-muted/20">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${PRIO_STYLE[wo.priority_code] || PRIO_STYLE.P3}`}>{wo.priority_code}</span>
+                            <span className="font-mono text-xs font-bold text-foreground shrink-0">{wo.wo_number}</span>
+                            <span className="text-xs text-muted-foreground shrink-0">{wo.equipment_tag}</span>
+                            <span className="flex-1 text-xs text-foreground truncate">{wo.description}</span>
+                            <span className="text-[11px] text-muted-foreground shrink-0">{plan}h → {actual}h</span>
+                            <span className={`text-[11px] font-bold shrink-0 ${Math.abs(v) <= 10 ? 'text-emerald-700' : Math.abs(v) <= 25 ? 'text-amber-700' : 'text-rose-700'}`}>
+                              {v > 0 ? '+' : ''}{v}%
+                            </span>
+                            {wo.closed_by_signature && (
+                              <span className="text-[10px] text-muted-foreground shrink-0 italic">por {wo.closed_by_signature}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         );

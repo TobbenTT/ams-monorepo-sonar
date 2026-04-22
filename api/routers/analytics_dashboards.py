@@ -213,6 +213,68 @@ def cost_per_equipment(plant_id: str | None = None, limit: int = 10, db: Session
     return {"top": rows[:limit], "total_cost_all": total_all, "equipment_count": len(rows)}
 
 
+@router.get("/adherence-compliance")
+def adherence_compliance(plant_id: str | None = None, days: int = 30, db: Session = Depends(get_db)):
+    """Jorge SF-516 — KPIs de desempeño:
+    - Adherencia: % OTs cerradas en la fecha/hora exacta planificada (±4h)
+    - Cumplimiento: % OTs cerradas dentro de la ventana de 7 días planificada
+    """
+    now = datetime.now()
+    since = now - timedelta(days=days)
+    q = _base_wo_query(db, plant_id).filter(
+        ManagedWorkOrderModel.status == "CERRADO",
+        ManagedWorkOrderModel.closed_at >= since,
+        ManagedWorkOrderModel.planned_start.isnot(None),
+    )
+    rows = q.all()
+    total = len(rows)
+    if total == 0:
+        return {
+            "period_days": days,
+            "total_closed": 0,
+            "adherence_pct": None, "adherence_count": 0,
+            "compliance_pct": None, "compliance_count": 0,
+        }
+    adherent = 0
+    compliant = 0
+    for wo in rows:
+        actual = wo.actual_start or wo.closed_at
+        plan_start = wo.planned_start
+        if actual and plan_start:
+            delta_h = abs((actual - plan_start).total_seconds()) / 3600.0
+            if delta_h <= 4.0:
+                adherent += 1
+            if delta_h <= 24.0 * 7:
+                compliant += 1
+    return {
+        "period_days": days,
+        "total_closed": total,
+        "adherence_pct": round(adherent / total * 100, 1),
+        "adherence_count": adherent,
+        "compliance_pct": round(compliant / total * 100, 1),
+        "compliance_count": compliant,
+    }
+
+
+@router.post("/reschedule-stale")
+def reschedule_stale(plant_id: str | None = None, db: Session = Depends(get_db)):
+    """Jorge SF-513 — auto-mover a REPROGRAMADO las OTs PROGRAMADO/EN_EJECUCION
+    cuyo planned_end ya pasó y no se cerraron. Devuelve lista de afectadas."""
+    now = datetime.now()
+    q = _base_wo_query(db, plant_id).filter(
+        ManagedWorkOrderModel.status.in_(["PROGRAMADO", "EN_EJECUCION"]),
+        ManagedWorkOrderModel.planned_end.isnot(None),
+        ManagedWorkOrderModel.planned_end < now,
+    )
+    affected = []
+    for wo in q.all():
+        wo.status = "REPROGRAMADO"
+        wo.updated_at = now
+        affected.append({"wo_id": wo.wo_id, "wo_number": wo.wo_number})
+    db.commit()
+    return {"rescheduled": len(affected), "items": affected}
+
+
 @router.get("/summary")
 def summary(plant_id: str | None = None, db: Session = Depends(get_db)):
     """Header KPI strip: open WOs, overdue, avg MTTR last 30d, PM compliance."""

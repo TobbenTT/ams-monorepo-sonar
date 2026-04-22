@@ -1,5 +1,11 @@
 """Test fixtures for API tests — in-memory SQLite, TestClient."""
 
+# Set required env vars BEFORE importing api.main — lifespan exige JWT_SECRET_KEY>=32.
+import os as _os
+_os.environ.setdefault("JWT_SECRET_KEY", "pytest_jwt_key_at_least_32_chars_long_for_local_and_ci_runs")
+_os.environ.setdefault("TESTING", "1")
+_os.environ.setdefault("DEBUG", "1")
+
 import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker

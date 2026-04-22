@@ -154,7 +154,7 @@ class FMValidateRequest(BaseModel):
 
 class RCMDecideRequest(BaseModel):
     """Passed to RCMDecisionInput — allows extra fields for flexibility."""
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
 
 class FunctionCreate(BaseModel):
@@ -172,8 +172,13 @@ class FunctionalFailureCreate(BaseModel):
 
 
 class FMECAWorksheetCreate(BaseModel):
-    """Passed to fmea_service.create_fmeca_worksheet — allows extra fields."""
+    """Passed to fmea_service.create_fmeca_worksheet."""
     model_config = ConfigDict(extra="ignore")
+    equipment_id: str
+    equipment_tag: str = ""
+    equipment_name: str = ""
+    analyst: str = ""
+    plant_id: str | None = None
 
 
 class RPNRequest(BaseModel):
@@ -193,7 +198,7 @@ class PlantCreate(BaseModel):
 
 class NodeCreate(BaseModel):
     """Passed to hierarchy_service.create_node — allows extra fields."""
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
 
 class VendorBuildRequest(BaseModel):
@@ -247,7 +252,7 @@ class RCAAdvance(BaseModel):
 
 class PlanningKPIRequest(BaseModel):
     """Passed directly to PlanningKPIInput — allows extra fields."""
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
 
 class DEKPIRequest(BaseModel):
@@ -288,7 +293,7 @@ class MOCAdvance(BaseModel):
 
 class OCRRequest(BaseModel):
     """Passed directly to OCRAnalysisInput — allows extra fields."""
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
 
 class JackknifRequest(BaseModel):
@@ -304,7 +309,7 @@ class ParetoRequest(BaseModel):
 
 class LCCRequest(BaseModel):
     """Passed directly to LCCInput — allows extra fields."""
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
 
 class RBIRequest(BaseModel):
@@ -357,7 +362,7 @@ class QuarterlyReportRequest(BaseModel):
 
 class ReportingDEKPIRequest(BaseModel):
     """Passed directly to DEKPIInput — allows extra fields."""
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
 
 class NotificationRequest(BaseModel):
@@ -438,7 +443,7 @@ class ProgramCreate(BaseModel):
 
 class TaskCreate(BaseModel):
     """Passed to task_service.create_task — allows extra fields."""
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
 
 class TaskNameValidate(BaseModel):
@@ -454,7 +459,7 @@ class WPNameValidate(BaseModel):
 
 class WPCreate(BaseModel):
     """Passed to work_package_service.create_work_package — allows extra fields."""
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
 
 class WPGroupRequest(BaseModel):

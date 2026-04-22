@@ -127,17 +127,27 @@ async function request(method, path, data, params) {
     throw networkErr;
   }
 
-  if (r.status === 401 && getToken()) {
-    const newToken = await tryRefresh();
-    if (newToken) {
-      opts.headers = authHeaders();
-      r = await fetch(url, opts);
-    } else {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      if (!window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login';
+  if (r.status === 401) {
+    // Bug QA 2026-04-22: si localStorage ya fue vaciado (post-kick) pero el
+    // usuario sigue en una ruta protegida, el 401 debe redirigir a /login.
+    // Antes solo redirigía si había token → se silenciaba el error y el
+    // dashboard mostraba todas las KPIs vacías sin feedback.
+    if (getToken()) {
+      const newToken = await tryRefresh();
+      if (newToken) {
+        opts.headers = authHeaders();
+        r = await fetch(url, opts);
+      } else {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.replace('/login?notice=' + encodeURIComponent('Sesión expirada. Volvé a iniciar sesión.'));
+        }
+        throw new Error('Sesion expirada');
       }
+    } else if (!window.location.pathname.startsWith('/login')) {
+      // Sin token local pero recibiendo 401 → sesión cerrada remotamente.
+      window.location.replace('/login?notice=' + encodeURIComponent('Sesión no válida. Volvé a iniciar sesión.'));
       throw new Error('Sesion expirada');
     }
   }

@@ -12,6 +12,31 @@ _MAX_MEDIUM = 500   # Names, descriptions
 _MAX_LONG = 5000    # Free text, comments
 _MAX_LIST = 1000    # Max items in lists
 
+# ── Password policy (auditoría 2026-04-22) ────────────────────────────
+# Top-50 passwords más comunes (NIST SP 800-63B recomienda blacklist).
+_COMMON_PASSWORDS = {
+    "password", "123456789", "qwerty123", "admin123", "welcome1", "password1",
+    "12345678", "letmein1", "abc12345", "iloveyou1", "monkey123", "passw0rd",
+    "qwertyuiop", "administrator", "changeme", "password123", "admin1234",
+    "contraseña", "contrasena", "mageam123", "valuestrategy",
+}
+
+def _validate_password_strong(v: str) -> str:
+    """Política unificada: 8+ chars, mayúscula, dígito, símbolo, no común."""
+    if len(v) < 8:
+        raise ValueError("Password must be at least 8 characters")
+    if not any(c.isupper() for c in v):
+        raise ValueError("Password must contain at least one uppercase letter")
+    if not any(c.islower() for c in v):
+        raise ValueError("Password must contain at least one lowercase letter")
+    if not any(c.isdigit() for c in v):
+        raise ValueError("Password must contain at least one digit")
+    if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?/~`" for c in v):
+        raise ValueError("Password must contain at least one special character")
+    if v.lower() in _COMMON_PASSWORDS:
+        raise ValueError("Password is too common. Choose a less guessable one.")
+    return v
+
 
 # ── Admin ────────────────────────────────────────────────────────────
 
@@ -469,11 +494,7 @@ class UserRegister(BaseModel):
     @field_validator('password')
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
-        if not any(c.isupper() for c in v):
-            raise ValueError('Password must contain at least one uppercase letter')
-        if not any(c.isdigit() for c in v):
-            raise ValueError('Password must contain at least one digit')
-        return v
+        return _validate_password_strong(v)
 
 
 class UserLogin(BaseModel):
@@ -488,11 +509,7 @@ class PasswordChange(BaseModel):
     @field_validator('new_password')
     @classmethod
     def validate_new_password(cls, v: str) -> str:
-        if not any(c.isupper() for c in v):
-            raise ValueError('Password must contain at least one uppercase letter')
-        if not any(c.isdigit() for c in v):
-            raise ValueError('Password must contain at least one digit')
-        return v
+        return _validate_password_strong(v)
 
 
 class UserRoleUpdate(BaseModel):

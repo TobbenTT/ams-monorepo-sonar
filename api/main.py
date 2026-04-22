@@ -91,10 +91,31 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none'"
+        # Auditoría 2026-04-22 — Permissions-Policy endurecido (además bloquea payment y usb)
+        response.headers["Permissions-Policy"] = (
+            "camera=(self), microphone=(self), geolocation=(), payment=(), usb=(), "
+            "magnetometer=(), accelerometer=(), gyroscope=()"
+        )
+        # CSP robusto: form-action y base-uri limitados; websocket permitido; object-src 'none'
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: blob:; "
+            "connect-src 'self' ws: wss:; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "frame-ancestors 'none'; "
+            "form-action 'self'; "
+            "base-uri 'self'; "
+            "object-src 'none'; "
+            "upgrade-insecure-requests"
+        )
+        # Cross-origin isolation (anti-Spectre, anti-framejacking)
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
         if not settings.DEBUG:
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            # HSTS con preload listo + 2 años
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
         return response
 
 

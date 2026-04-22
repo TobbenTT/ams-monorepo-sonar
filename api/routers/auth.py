@@ -1,5 +1,6 @@
 """Auth router — registration, login, token refresh, user management."""
 
+import os
 import time
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -53,10 +54,30 @@ def login(data: UserLogin, request: Request, db: Session = Depends(get_db)):
     user = auth_service.authenticate_user(db, data.username, data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    # Check if MFA is enabled
+    # Auditoría 2026-04-22 — MFA obligatorio para admins/managers cuando
+    # MFA_ENFORCED=1 en el entorno (off por default para no romper dev).
+    ENFORCED_MFA_ROLES = {"admin", "manager"}
+    mfa_enforced = os.environ.get("MFA_ENFORCED", "0") == "1"
     mfa_required = bool(getattr(user, "mfa_secret", None))
+    if mfa_enforced and user.role in ENFORCED_MFA_ROLES and not mfa_required:
+        logger.warning("Login blocked: user=%s role=%s needs MFA enrollment", user.user_id, user.role)
+        raise HTTPException(
+            status_code=403,
+            detail="MFA enrollment required for admin/manager roles. Enrolá vía /mfa/setup antes de iniciar sesión.",
+        )
     access = auth_service.create_access_token({"sub": user.user_id, "role": user.role})
     refresh = auth_service.create_refresh_token({"sub": user.user_id, "role": user.role})
+    # Auditoría 2026-04-22 — registrar logins exitosos (IP + user-agent)
+    try:
+        from api.services.audit_service import log_action
+        log_action(db, "user", user.user_id, "LOGIN", payload={
+            "ip": client_ip,
+            "user_agent": request.headers.get("user-agent", "")[:200],
+            "role": user.role,
+        }, user=user.user_id)
+        db.commit()
+    except Exception as _e:
+        logger.warning("audit log_action failed on login: %s", _e)
     response_data = {
         "access_token": access,
         "refresh_token": refresh,

@@ -635,6 +635,92 @@ def _generate_wr_and_wo(db, idx, workers, now):
     return wr, wo
 
 
+def seed_standalone_wrs(db, count_pending=20, count_approved=10, count_rejected=8, count_cancelled=2):
+    """WRs que NO tienen OT todavía — para alimentar el tab Identification:
+    PENDIENTE (esperando revisión), APROBADO (listo para convertir),
+    RECHAZADO (devuelto al mantenedor), CANCELADO."""
+    print(f"[wrs standalone] {count_pending}P + {count_approved}A + {count_rejected}R + {count_cancelled}C...")
+    now = datetime.now()
+    total = count_pending + count_approved + count_rejected + count_cancelled
+
+    rejection_reasons = [
+        "Duplicado con WR-2026-00087. Coordinar con supervisor para consolidar.",
+        "Falta información técnica — especificar condición del equipo al momento de la falla.",
+        "El equipo está en plan de mantenimiento programado la próxima semana, no requiere OT adicional.",
+        "Prioridad asignada incorrecta — reclasificar según matriz de criticidad.",
+        "Equipo fuera de servicio por razones operacionales, no es falla de mantención.",
+    ]
+
+    for i in range(total):
+        equip = random.choice(EQUIPMENT_CATALOG)
+        equip_tag, equip_name, area, pg, wc = equip
+        problem, priority, description = _pick_scenario(equip_tag)
+        created_at = now - timedelta(days=random.randint(0, 30), hours=random.randint(0, 23))
+
+        if i < count_pending:
+            status = "PENDIENTE"
+            approved_at = None
+            approval_comment = None
+            rejection_reason = None
+        elif i < count_pending + count_approved:
+            status = "APROBADO"
+            approved_at = created_at + timedelta(hours=random.randint(1, 24))
+            approval_comment = random.choice([
+                "Aprobado. Coordinar con operaciones ventana detención.",
+                "OK · proceder con planificación, repuestos disponibles.",
+                "Aprobado, validar equipos de apoyo antes de asignar.",
+            ])
+            rejection_reason = None
+        elif i < count_pending + count_approved + count_rejected:
+            status = "RECHAZADO"
+            approved_at = None
+            approval_comment = None
+            rejection_reason = random.choice(rejection_reasons)
+        else:
+            status = "CANCELADO"
+            approved_at = None
+            approval_comment = "Cancelado por mantenedor — falla se autoresolvió."
+            rejection_reason = None
+
+        wr = WorkRequestModel(
+            equipment_id=equip_tag,
+            equipment_tag=equip_tag,
+            equipment_confidence=round(random.uniform(0.80, 0.98), 2),
+            resolution_method="AI" if random.random() > 0.5 else "MANUAL",
+            status=status,
+            problem_description={
+                "whatHappens": problem,
+                "whenHappens": random.choice(["Durante turno día", "Durante turno noche", "Durante el arranque", "En operación continua"]),
+                "triggerEvent": random.choice(["Alarma DCS", "Inspección visual", "Reporte mantenedor", "Análisis predictivo"]),
+                "impact": random.choice(["Sin impacto aún", "Pérdida parcial de capacidad", "Degradación progresiva"]),
+            },
+            ai_classification={
+                "failure_mode": problem[:80],
+                "suggested_specialty": "MECANICO",
+                "estimated_hours": random.choice([4, 6, 8, 12, 16]),
+                "confidence": round(random.uniform(0.75, 0.95), 2),
+                "probable_cause": description[:80],
+            },
+            spare_parts=[{"code": m[0], "description": m[1], "qty": m[3]} for m in _pick_materials(equip_tag, problem)[:3]],
+            priority_code=priority,
+            work_class="NO_PROGRAMADO" if priority in ("P1", "P2") else "PROGRAMADO",
+            created_by=random.choice(["tecnico_1", "tecnico_2", "tecnico_3", "supervisor_ocp"]),
+            reported_by=random.choice(["mantenedor_turno", "supervisor_area", "operaciones"]),
+            reported_at=created_at,
+            circumstances=description,
+            planning_group=pg,
+            work_center=wc,
+            created_at=created_at,
+            approved_at=approved_at,
+            approval_comment=approval_comment,
+            rejection_reason=rejection_reason,
+        )
+        db.add(wr)
+
+    db.commit()
+    print(f"  ✓ {total} WRs standalone creados")
+
+
 def seed_wos_and_wrs(db, count=100):
     print(f"[data] Creando {count} pares WR+OT realistas...")
     workers = db.query(WorkforceModel).filter(WorkforceModel.plant_id == PLANT).all()
@@ -671,6 +757,8 @@ def main():
         seed_materials(db)
         print()
         seed_wos_and_wrs(db, count=100)
+        print()
+        seed_standalone_wrs(db)
         print("\n✅ Seed completado.")
     except Exception as e:
         db.rollback()

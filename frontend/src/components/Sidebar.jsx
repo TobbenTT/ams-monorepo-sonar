@@ -3,7 +3,9 @@ import { useState, useMemo } from 'react';
 import {
     Home, Wrench, AlertTriangle, TrendingUp, BarChart3,
     FileText, Users, Settings, MessageSquare,
-    ChevronLeft, ChevronRight, User, LogOut, Search, Briefcase, Database, Upload, BookOpen, ScrollText } from 'lucide-react';
+    ChevronLeft, ChevronRight, User, LogOut, Search, Briefcase, Database, Upload, BookOpen, ScrollText,
+    Gauge, Target, Activity, Calendar, Package, Bell,
+} from 'lucide-react';
 import { cn } from './ui/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -15,6 +17,15 @@ const navItems = [
     { path: '/work-management', icon: Briefcase, labelKey: 'nav.workManagement', module: 'work-management' },
     { path: '/failures-events', icon: AlertTriangle, labelKey: 'nav.failuresEvents', module: 'failures-events' },
     { path: '/improvement-actions', icon: TrendingUp, labelKey: 'nav.improvementActions', module: 'improvement-actions' },
+    // ── Reliability & análisis ─────────────────────────────────────
+    { path: '/criticality', icon: Gauge,    labelKey: 'Criticality',   module: 'criticality' },
+    { path: '/fmeca',       icon: Target,   labelKey: 'FMECA',         module: 'fmeca' },
+    { path: '/rca',         icon: Search,   labelKey: 'RCA',           module: 'rca' },
+    { path: '/reliability', icon: Activity, labelKey: 'Reliability',   module: 'reliability' },
+    { path: '/shutdowns',   icon: Calendar, labelKey: 'Shutdowns',     module: 'shutdowns' },
+    { path: '/spare-parts', icon: Package,  labelKey: 'Spare Parts',   module: 'spare-parts' },
+    { path: '/notifications', icon: Bell,   labelKey: 'Notifications', module: 'notifications' },
+    // ────────────────────────────────────────────────────────────────
     { path: '/analytics', icon: BarChart3, labelKey: 'nav.analytics', module: 'analytics' },
     { path: '/reports', icon: FileText, labelKey: 'nav.reports', module: 'reports' },
     { path: '/team', icon: Users, labelKey: 'nav.team', module: 'team' },

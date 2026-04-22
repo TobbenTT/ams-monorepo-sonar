@@ -105,14 +105,14 @@ function CriticalityTab({ nodes, t, assessments, reload }) {
 
   const scatterData = useMemo(() => assessed.map(n => {
     const a = n.__assessment;
-    const prod = a?.criteria_scores?.find?.(s => s.category === 'PRODUCTION')?.consequence_level ?? 1;
-    const safety = a?.criteria_scores?.find?.(s => s.category === 'SAFETY')?.consequence_level ?? 1;
-    return {
+    const scoreFor = (cat) => a?.criteria_scores?.find?.(s => s.category === cat)?.consequence_level ?? 0;
+    const row = {
       equipment_name: n.name, equipment_tag: n.code || n.node_id,
       class: a.letter,
-      production_impact: prod, safety_risk: safety,
       total_score: Math.round(a?.overall_score || 0),
     };
+    FACTORS.forEach(f => { row[f.key] = scoreFor(f.category); });
+    return row;
   }), [assessed]);
   const sorted = useMemo(() => [...scatterData].sort((a, b) => b.total_score - a.total_score), [scatterData]);
 

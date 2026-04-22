@@ -1595,6 +1595,17 @@ class ContractorModel(Base):
     hourly_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    # QA Jorge 2026-04-22 — campos típicos de contratista minero
+    contact_email: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    specialties: Mapped[list | None] = mapped_column(JSON, nullable=True)  # ['MECANICO','ELECTRICO',...]
+    insurance_expiry: Mapped[date | None] = mapped_column(Date, nullable=True)
+    hse_score: Mapped[float | None] = mapped_column(Float, nullable=True)  # 0-100
+    sap_vendor_code: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    payment_terms_days: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 30/45/60/90
+    contract_ref: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")  # ACTIVE / BLOCKED / PENDING
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class ContractorCrewModel(Base):

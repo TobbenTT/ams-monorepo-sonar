@@ -101,6 +101,17 @@ def _run_column_migrations():
         ("managed_work_orders", "post_closure_review", "TEXT", None),
         # Jorge SF-507 — título arrastrado desde el WR
         ("managed_work_orders", "wo_title", "VARCHAR(200)", None),
+        # QA Jorge 2026-04-22 — contratistas mineros completos
+        ("contractors", "contact_email", "VARCHAR(120)", None),
+        ("contractors", "address", "VARCHAR(300)", None),
+        ("contractors", "specialties", "TEXT", None),
+        ("contractors", "insurance_expiry", "DATE", None),
+        ("contractors", "hse_score", "FLOAT", None),
+        ("contractors", "sap_vendor_code", "VARCHAR(30)", None),
+        ("contractors", "payment_terms_days", "INTEGER", None),
+        ("contractors", "contract_ref", "VARCHAR(60)", None),
+        ("contractors", "status", "VARCHAR(20)", "'ACTIVE'"),
+        ("contractors", "notes", "TEXT", None),
     ]
 
     with engine.begin() as conn:

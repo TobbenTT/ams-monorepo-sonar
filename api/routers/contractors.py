@@ -21,7 +21,17 @@ class ContractorIn(BaseModel):
     tax_id: str | None = None
     contact_name: str | None = None
     contact_phone: str | None = None
+    contact_email: str | None = None
+    address: str | None = None
     hourly_rate: float | None = None
+    specialties: list[str] | None = None
+    insurance_expiry: str | None = None  # ISO date
+    hse_score: float | None = None
+    sap_vendor_code: str | None = None
+    payment_terms_days: int | None = None
+    contract_ref: str | None = None
+    status: str | None = "ACTIVE"
+    notes: str | None = None
 
 
 class CrewIn(BaseModel):
@@ -47,7 +57,17 @@ def _contractor_dict(c: ContractorModel) -> dict:
         "tax_id": c.tax_id,
         "contact_name": c.contact_name,
         "contact_phone": c.contact_phone,
+        "contact_email": getattr(c, "contact_email", None),
+        "address": getattr(c, "address", None),
         "hourly_rate": c.hourly_rate,
+        "specialties": getattr(c, "specialties", None) or [],
+        "insurance_expiry": getattr(c, "insurance_expiry", None).isoformat() if getattr(c, "insurance_expiry", None) else None,
+        "hse_score": getattr(c, "hse_score", None),
+        "sap_vendor_code": getattr(c, "sap_vendor_code", None),
+        "payment_terms_days": getattr(c, "payment_terms_days", None),
+        "contract_ref": getattr(c, "contract_ref", None),
+        "status": getattr(c, "status", "ACTIVE"),
+        "notes": getattr(c, "notes", None),
         "active": c.active,
     }
 
@@ -77,7 +97,15 @@ def create_contractor(
     user=Depends(require_role("admin", "manager")),
     db: Session = Depends(get_db),
 ):
-    c = ContractorModel(**data.model_dump())
+    from datetime import date as _date
+    payload = data.model_dump()
+    # Parse insurance_expiry ISO string → date
+    if payload.get("insurance_expiry"):
+        try:
+            payload["insurance_expiry"] = _date.fromisoformat(payload["insurance_expiry"])
+        except (ValueError, TypeError):
+            payload["insurance_expiry"] = None
+    c = ContractorModel(**payload)
     db.add(c); db.commit(); db.refresh(c)
     return _contractor_dict(c)
 

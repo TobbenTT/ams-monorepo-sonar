@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/badge';
 import {
   Plus, Loader2, Users, Briefcase, X, Search, Building2, Phone, User,
   DollarSign, Hash, ChevronDown, ChevronRight, Wrench, Zap, Cpu, Flame, HardHat,
+  Mail, MapPin, Shield, FileText, Calendar, CreditCard,
 } from 'lucide-react';
 import * as api from '../api';
 
@@ -40,7 +41,14 @@ export default function ContractorsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [showAddCrew, setShowAddCrew] = useState(null);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ name: '', tax_id: '', contact_name: '', contact_phone: '', hourly_rate: '' });
+  const EMPTY_FORM = {
+    name: '', tax_id: '', contact_name: '', contact_phone: '', contact_email: '',
+    address: '', hourly_rate: '',
+    specialties: [], insurance_expiry: '', hse_score: '',
+    sap_vendor_code: '', payment_terms_days: '', contract_ref: '',
+    status: 'ACTIVE', notes: '',
+  };
+  const [form, setForm] = useState(EMPTY_FORM);
   const [crewForm, setCrewForm] = useState({ name: '', specialty: 'GENERAL', size: 1 });
   const [saving, setSaving] = useState(false);
 
@@ -78,9 +86,17 @@ export default function ContractorsPage() {
     if (!form.name.trim()) { alert('Nombre requerido'); return; }
     setSaving(true);
     try {
-      await api.createContractor({ ...form, plant_id: plant, hourly_rate: parseFloat(form.hourly_rate) || null });
+      await api.createContractor({
+        ...form,
+        plant_id: plant,
+        hourly_rate: parseFloat(form.hourly_rate) || null,
+        hse_score: form.hse_score === '' ? null : parseFloat(form.hse_score),
+        payment_terms_days: form.payment_terms_days === '' ? null : parseInt(form.payment_terms_days, 10),
+        insurance_expiry: form.insurance_expiry || null,
+        specialties: form.specialties?.length ? form.specialties : null,
+      });
       setShowAdd(false);
-      setForm({ name: '', tax_id: '', contact_name: '', contact_phone: '', hourly_rate: '' });
+      setForm(EMPTY_FORM);
       await load();
     } catch (e) { alert('Error: ' + e.message); }
     setSaving(false);
@@ -113,7 +129,8 @@ export default function ContractorsPage() {
     if (!search) return true;
     const q = search.toLowerCase();
     const crews = crewsByContractor[c.contractor_id] || [];
-    return [c.name, c.tax_id, c.contact_name, c.contact_phone,
+    return [c.name, c.tax_id, c.contact_name, c.contact_phone, c.contact_email,
+      c.address, c.sap_vendor_code, c.contract_ref, ...(c.specialties || []),
       ...crews.map(cr => cr.name), ...crews.map(cr => cr.specialty)]
       .filter(Boolean).join(' ').toLowerCase().includes(q);
   });
@@ -203,17 +220,55 @@ export default function ContractorsPage() {
                       {c.contact_phone && (
                         <span className="inline-flex items-center gap-1 font-mono"><Phone size={11} /> {c.contact_phone}</span>
                       )}
+                      {c.contact_email && (
+                        <span className="inline-flex items-center gap-1"><Mail size={11} /> {c.contact_email}</span>
+                      )}
                       {c.hourly_rate && (
                         <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><DollarSign size={11} />{c.hourly_rate}/h</span>
                       )}
+                      {c.sap_vendor_code && (
+                        <span className="inline-flex items-center gap-1 font-mono"><Hash size={11} /> SAP {c.sap_vendor_code}</span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
+                    {/* Chips de especialidades */}
+                    {c.specialties?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {c.specialties.slice(0, 6).map(sv => {
+                          const s = SPEC_BY_VALUE[sv];
+                          if (!s) return null;
+                          const t = TONES[s.tone] || TONES.slate;
+                          return (
+                            <span key={sv} className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded ${t.chip}`}>
+                              <s.icon size={10} /> {s.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <Badge className="bg-sky-100 text-sky-800 text-[10px]">
                         <Users size={10} className="mr-1" /> {crews.length} cuadrillas
                       </Badge>
                       <Badge className="bg-purple-100 text-purple-800 text-[10px]">
                         <Hash size={10} className="mr-1" /> {totalPeople} personas
                       </Badge>
+                      {c.hse_score != null && (
+                        <Badge className={`text-[10px] ${c.hse_score >= 80 ? 'bg-emerald-100 text-emerald-800' : c.hse_score >= 60 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}`}>
+                          <Shield size={10} className="mr-1" /> HSE {Math.round(c.hse_score)}
+                        </Badge>
+                      )}
+                      {c.insurance_expiry && (() => {
+                        const days = Math.round((new Date(c.insurance_expiry) - new Date()) / 86400000);
+                        const tone = days < 0 ? 'bg-rose-100 text-rose-800' : days < 30 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700';
+                        return <Badge className={`text-[10px] ${tone}`}>
+                          <Calendar size={10} className="mr-1" /> Póliza {days < 0 ? `vencida (${-days}d)` : `${days}d`}
+                        </Badge>;
+                      })()}
+                      {c.status && c.status !== 'ACTIVE' && (
+                        <Badge className={`text-[10px] ${c.status === 'BLOCKED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>
+                          {c.status === 'BLOCKED' ? 'Bloqueado' : 'Pendiente'}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   {isExp ? <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0 mt-2" />
@@ -314,7 +369,7 @@ export default function ContractorsPage() {
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           onClick={() => !saving && setShowAdd(false)}>
-          <div className="bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          <div className="bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]"
             onClick={e => e.stopPropagation()}>
             {/* Header con gradiente */}
             <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 relative">
@@ -333,7 +388,7 @@ export default function ContractorsPage() {
               </div>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
               <FormField icon={Building2} label="Nombre de la empresa" required>
                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                   placeholder="Ej: Servicios Mineros del Norte Ltda"
@@ -354,6 +409,13 @@ export default function ContractorsPage() {
                 </FormField>
               </div>
 
+              <FormField icon={MapPin} label="Dirección">
+                <input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })}
+                  placeholder="Av. Apoquindo 4500, Santiago"
+                  className="w-full text-sm border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/30 outline-none" />
+              </FormField>
+
+              {/* Contacto */}
               <div className="rounded-xl bg-muted/30 p-3 space-y-3">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Contacto</div>
                 <FormField icon={User} label="Nombre del contacto">
@@ -361,12 +423,107 @@ export default function ContractorsPage() {
                     placeholder="Ej: Juan Pérez"
                     className="w-full text-sm border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/30 outline-none" />
                 </FormField>
-                <FormField icon={Phone} label="Teléfono">
-                  <input value={form.contact_phone} onChange={e => setForm({ ...form, contact_phone: e.target.value })}
-                    placeholder="+56 9 1234 5678"
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField icon={Phone} label="Teléfono">
+                    <input value={form.contact_phone} onChange={e => setForm({ ...form, contact_phone: e.target.value })}
+                      placeholder="+56 9 1234 5678"
+                      className="w-full text-sm border border-border rounded-lg px-3 py-2 font-mono focus:ring-2 focus:ring-emerald-500/30 outline-none" />
+                  </FormField>
+                  <FormField icon={Mail} label="Email">
+                    <input type="email" value={form.contact_email} onChange={e => setForm({ ...form, contact_email: e.target.value })}
+                      placeholder="contacto@empresa.cl"
+                      className="w-full text-sm border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/30 outline-none" />
+                  </FormField>
+                </div>
+              </div>
+
+              {/* Especialidades */}
+              <FormField icon={Wrench} label="Especialidades que ofrece">
+                <div className="flex flex-wrap gap-1.5">
+                  {SPECIALTIES.map(s => {
+                    const active = form.specialties.includes(s.value);
+                    const t = TONES[s.tone] || TONES.slate;
+                    return (
+                      <button key={s.value} type="button"
+                        onClick={() => setForm(f => ({
+                          ...f,
+                          specialties: active ? f.specialties.filter(v => v !== s.value) : [...f.specialties, s.value],
+                        }))}
+                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border ${
+                          active ? `${t.chip} ${t.border}` : 'bg-muted/30 border-border text-muted-foreground'
+                        }`}>
+                        <s.icon size={11} /> {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FormField>
+
+              {/* HSE + Póliza */}
+              <div className="rounded-xl bg-muted/30 p-3 space-y-3">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Cumplimiento HSE</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField icon={Shield} label="HSE Score (0–100)">
+                    <input type="number" min="0" max="100" value={form.hse_score}
+                      onChange={e => setForm({ ...form, hse_score: e.target.value })}
+                      placeholder="85"
+                      className="w-full text-sm border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/30 outline-none" />
+                  </FormField>
+                  <FormField icon={Calendar} label="Vencim. póliza RC">
+                    <input type="date" value={form.insurance_expiry}
+                      onChange={e => setForm({ ...form, insurance_expiry: e.target.value })}
+                      className="w-full text-sm border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/30 outline-none" />
+                  </FormField>
+                </div>
+              </div>
+
+              {/* Comercial / SAP */}
+              <div className="rounded-xl bg-muted/30 p-3 space-y-3">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Comercial</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField icon={Hash} label="Código SAP proveedor">
+                    <input value={form.sap_vendor_code}
+                      onChange={e => setForm({ ...form, sap_vendor_code: e.target.value })}
+                      placeholder="V100234"
+                      className="w-full text-sm border border-border rounded-lg px-3 py-2 font-mono focus:ring-2 focus:ring-emerald-500/30 outline-none" />
+                  </FormField>
+                  <FormField icon={CreditCard} label="Plazo pago (días)">
+                    <select value={form.payment_terms_days}
+                      onChange={e => setForm({ ...form, payment_terms_days: e.target.value })}
+                      className="w-full text-sm border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/30 outline-none">
+                      <option value="">—</option>
+                      <option value="30">30</option>
+                      <option value="45">45</option>
+                      <option value="60">60</option>
+                      <option value="90">90</option>
+                    </select>
+                  </FormField>
+                </div>
+                <FormField icon={FileText} label="Contrato marco (referencia)">
+                  <input value={form.contract_ref}
+                    onChange={e => setForm({ ...form, contract_ref: e.target.value })}
+                    placeholder="CTR-2026-0045"
                     className="w-full text-sm border border-border rounded-lg px-3 py-2 font-mono focus:ring-2 focus:ring-emerald-500/30 outline-none" />
                 </FormField>
               </div>
+
+              <FormField label="Estado">
+                <select value={form.status}
+                  onChange={e => setForm({ ...form, status: e.target.value })}
+                  className="w-full text-sm border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/30 outline-none">
+                  <option value="ACTIVE">Activo</option>
+                  <option value="PENDING">Pendiente aprobación</option>
+                  <option value="BLOCKED">Bloqueado</option>
+                </select>
+              </FormField>
+
+              <FormField label="Notas">
+                <textarea value={form.notes}
+                  onChange={e => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Observaciones, certificaciones, restricciones…"
+                  rows={2}
+                  className="w-full text-sm border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/30 outline-none resize-y" />
+              </FormField>
             </div>
 
             <div className="flex gap-2 p-5 border-t border-border bg-muted/20">

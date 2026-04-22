@@ -93,29 +93,25 @@ function CriticalityTab({ nodes, t, assessments, reload }) {
     return map;
   }, [assessments]);
 
-  // Helper: letter class for a node (prefer assessment.letter > node.criticality)
-  const classOf = (n) => {
-    const a = assessmentByNode[n.node_id];
-    return a?.letter || a?.status ? a?.letter : n.criticality;
-  };
-
-  const assessed = nodes.map(n => ({ ...n, __class: classOf(n), __assessment: assessmentByNode[n.node_id] })).filter(n => n.__class);
-  const aaCount = assessed.filter(n => n.__class === 'AA').length;
-  const modCount = assessed.filter(n => n.__class === 'A+' || n.__class === 'A').length;
-  const bCount = assessed.filter(n => n.__class === 'B').length;
+  // Solo nodos con UNA evaluación real (no el default seed n.criticality).
+  const assessed = nodes
+    .map(n => ({ ...n, __assessment: assessmentByNode[n.node_id] }))
+    .filter(n => n.__assessment && n.__assessment.letter);
+  const aaCount = assessed.filter(n => n.__assessment.letter === 'AA').length;
+  const modCount = assessed.filter(n => n.__assessment.letter === 'A+' || n.__assessment.letter === 'A').length;
+  const bCount = assessed.filter(n => n.__assessment.letter === 'B').length;
+  const pendingCount = nodes.length - assessed.length;
   const total = assessed.length;
 
   const scatterData = useMemo(() => assessed.map(n => {
     const a = n.__assessment;
-    const prod = a?.criteria_scores?.find?.(s => s.category === 'PRODUCTION')?.consequence_level ||
-                 (n.__class === 'AA' ? 5 : n.__class === 'A+' ? 4 : n.__class === 'A' ? 3 : 2);
-    const safety = a?.criteria_scores?.find?.(s => s.category === 'SAFETY')?.consequence_level ||
-                   (n.__class === 'AA' ? 4 : n.__class === 'A+' ? 3 : 2);
+    const prod = a?.criteria_scores?.find?.(s => s.category === 'PRODUCTION')?.consequence_level ?? 1;
+    const safety = a?.criteria_scores?.find?.(s => s.category === 'SAFETY')?.consequence_level ?? 1;
     return {
       equipment_name: n.name, equipment_tag: n.code || n.node_id,
-      class: n.__class,
+      class: a.letter,
       production_impact: prod, safety_risk: safety,
-      total_score: Math.round(a?.overall_score || 0) || (n.__class === 'AA' ? 23 : n.__class === 'A+' ? 18 : n.__class === 'A' ? 13 : 8),
+      total_score: Math.round(a?.overall_score || 0),
     };
   }), [assessed]);
   const sorted = useMemo(() => [...scatterData].sort((a, b) => b.total_score - a.total_score), [scatterData]);
@@ -167,18 +163,19 @@ function CriticalityTab({ nodes, t, assessments, reload }) {
   return (
     <div className="space-y-5">
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: t('criticality.high'), sub: 'AA', count: aaCount, bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', text: 'text-red-800 dark:text-red-300', barColor: '#dc2626' },
           { label: t('criticality.moderate'), sub: 'A+ / A', count: modCount, bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800', text: 'text-amber-800 dark:text-amber-300', barColor: '#f59e0b' },
           { label: t('criticality.low'), sub: 'B', count: bCount, bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800', text: 'text-blue-800 dark:text-blue-300', barColor: '#2563eb' },
+          { label: 'Sin evaluar', sub: `de ${nodes.length} equipos`, count: pendingCount, bg: 'bg-gray-50 dark:bg-gray-900/20', border: 'border-gray-200 dark:border-gray-800', text: 'text-gray-700 dark:text-gray-300', barColor: '#6b7280' },
         ].map((c, i) => (
           <div key={i} className={`rounded-xl border ${c.border} ${c.bg} px-4 py-3`}>
             <div className={`text-3xl font-extrabold ${c.text}`}>{c.count}</div>
             <div className={`text-sm font-semibold ${c.text}`}>{c.label}</div>
             <div className="text-[0.7rem] text-muted-foreground">{c.sub}</div>
             <div className="mt-1 w-full h-1.5 bg-muted rounded-full overflow-hidden">
-              <div className="h-1.5 rounded-full" style={{ width: `${total > 0 ? Math.round((c.count / total) * 100) : 0}%`, backgroundColor: c.barColor }} />
+              <div className="h-1.5 rounded-full" style={{ width: `${nodes.length > 0 ? Math.min(100, Math.round((c.count / nodes.length) * 100)) : 0}%`, backgroundColor: c.barColor }} />
             </div>
           </div>
         ))}

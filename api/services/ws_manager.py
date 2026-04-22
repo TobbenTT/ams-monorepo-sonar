@@ -79,9 +79,17 @@ class ConnectionManager:
         }
         message = json.dumps(payload)
         targets = set()
-        if plant_id and plant_id in self.active:
-            targets = set(self.active[plant_id])
-        targets |= self.active.get("global", set())
+        if plant_id:
+            # broadcast dirigido a un plant específico + global
+            if plant_id in self.active:
+                targets = set(self.active[plant_id])
+            targets |= self.active.get("global", set())
+        else:
+            # Sin plant_id → broadcast a TODOS los conectados (any plant).
+            # Bug QA 2026-04-22: antes iba solo a 'global' → kick_all_users
+            # no llegaba a nadie porque los clientes están en sus plants.
+            for ws_set in self.active.values():
+                targets |= ws_set
 
         dead = []
         for ws in targets:

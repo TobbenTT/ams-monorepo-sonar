@@ -1,13 +1,16 @@
 /**
  * Singleton WebSocket connection per plant.
  *
- * - One physical WS per plantId, shared by subscribers via pub/sub.
- * - Each browser tab has a stable `client_id` kept in sessionStorage.
- *   The server tags every broadcast with `origin_client_id` so we can
- *   drop our own echo (prevents edit-in-progress from being clobbered
- *   by its own write when two tabs share the same account).
- * - `user_id` is sent so the server can detect shared-account sessions
- *   and emit a `presence.shared_account` event.
+ * - Un WS físico por plantId, compartido vía pub/sub.
+ * - client_id en sessionStorage → server etiqueta broadcasts para echo suppression.
+ * - user_id → presence tracking (shared-account detection).
+ *
+ * Audit 2026-04-22 — bugs fixed:
+ * 1. Connection leak: al quedarse sin subscribers la conexión seguía abierta.
+ * 2. Laptop sleep/wake: el browser no detecta el WS muerto hasta que intenta send.
+ *    Ahora: visibilitychange → force reconnect si el WS está muerto.
+ * 3. Ping timeout: si no hay pong en 10s, tratar como dead.
+ * 4. Online/offline: reconectar inmediato cuando la red vuelve.
  */
 
 const connections = new Map();
@@ -52,21 +55,53 @@ function openConnection(plantId) {
         subscribers: new Set(),
         reconnectTimer: null,
         pingInterval: null,
+        pongTimer: null,      // timeout de espera de pong
         closed: false,
-        retryAttempt: 0,    // contador para backoff exponencial
-        connected: false,   // estado actual para UI
+        retryAttempt: 0,
+        connected: false,
+        lastPongAt: 0,
     };
 
     const notifyStatus = (connected) => {
+        const prev = state.connected;
         state.connected = connected;
         if (!connected) state.retryAttempt++;
         else state.retryAttempt = 0;
-        // Disparar evento custom para que componentes UI puedan suscribirse
+        if (prev === connected) return;   // no disparar si no cambió
         try {
             window.dispatchEvent(new CustomEvent('ws:status', {
                 detail: { plantId, connected, attempt: state.retryAttempt },
             }));
         } catch {}
+    };
+
+    const clearTimers = () => {
+        if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
+        if (state.pongTimer)    { clearTimeout(state.pongTimer); state.pongTimer = null; }
+    };
+
+    const forceClose = () => {
+        // Fuerza el cierre del WS actual; onclose dispara reconnect.
+        if (state.ws) {
+            try { state.ws.onclose = null; state.ws.onerror = null; state.ws.onmessage = null; state.ws.close(); } catch {}
+            state.ws = null;
+        }
+        clearTimers();
+        if (state.connected) notifyStatus(false);
+        if (!state.closed) scheduleReconnect(0);
+    };
+
+    const sendPing = (ws) => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        try { ws.send('ping'); } catch { return forceClose(); }
+        // Si no recibimos pong en 10s, consideramos el WS muerto (laptop sleep,
+        // NAT timeout, proxy cierre, red intermitente).
+        if (state.pongTimer) clearTimeout(state.pongTimer);
+        state.pongTimer = setTimeout(() => {
+            if (Date.now() - state.lastPongAt > 10000) {
+                forceClose();
+            }
+        }, 10000);
     };
 
     const connect = () => {
@@ -76,26 +111,21 @@ function openConnection(plantId) {
         state.ws = ws;
 
         ws.onopen = () => {
+            state.lastPongAt = Date.now();
             notifyStatus(true);
-            state.pingInterval = setInterval(() => {
-                if (ws.readyState === WebSocket.OPEN) ws.send('ping');
-            }, 25000);
+            // ping cada 25s + espera pong ≤10s
+            state.pingInterval = setInterval(() => sendPing(ws), 25000);
         };
 
         ws.onmessage = (evt) => {
+            state.lastPongAt = Date.now();
+            if (state.pongTimer) { clearTimeout(state.pongTimer); state.pongTimer = null; }
             if (evt.data === 'pong') return;
             let msg;
             try { msg = JSON.parse(evt.data); } catch { return; }
-            // Jorge 2026-04-21 — si el servidor anuncia un restart/deploy,
-            // limpiamos sesión (cookies HttpOnly via /auth/logout + localStorage)
-            // y redirigimos a login. Evita stale cookies que sobreviven al deploy.
+            // force_logout / server_restart → cerrar sesión y redirect inmediato.
             if (msg?.event === 'server_restart' || msg?.event === 'force_logout') {
-                // Jorge 2026-04-22: NO usar alert() — es bloqueante y si la
-                // ventana está en background (ej: presentación Meet) no se ve
-                // y el redirect no ejecuta. Redirigimos inmediato y la página
-                // de login muestra el mensaje via query param.
                 const reason = encodeURIComponent(msg?.data?.message || 'Sesión cerrada por el servidor. Volvé a iniciar sesión.');
-                // Limpiar localStorage primero (sincrónico).
                 try {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
@@ -103,7 +133,6 @@ function openConnection(plantId) {
                     localStorage.removeItem('currentUser');
                     sessionStorage.removeItem('ws_client_id');
                 } catch {}
-                // Fire-and-forget al backend para borrar cookies HttpOnly.
                 try {
                     fetch('/api/v1/auth/logout', {
                         method: 'POST',
@@ -112,23 +141,21 @@ function openConnection(plantId) {
                         keepalive: true,
                     }).catch(() => {});
                 } catch {}
-                // Redirect INMEDIATO. No esperamos a nada.
                 try { window.location.replace(`/login?notice=${reason}`); } catch {
                     try { window.location.href = `/login?notice=${reason}`; } catch {}
                 }
                 return;
             }
-            // Echo suppression: if this event was caused by THIS tab's own mutation,
-            // skip it — our local state is already updated optimistically.
+            // Echo suppression
             if (msg && msg.origin_client_id && msg.origin_client_id === CLIENT_ID) return;
             const subs = Array.from(state.subscribers);
             for (const fn of subs) {
-                try { fn(msg); } catch { /* handler errors shouldn't kill the socket */ }
+                try { fn(msg); } catch {}
             }
         };
 
         ws.onclose = () => {
-            if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
+            clearTimers();
             if (state.connected) notifyStatus(false);
             if (!state.closed) scheduleReconnect();
         };
@@ -136,11 +163,11 @@ function openConnection(plantId) {
         ws.onerror = () => { try { ws.close(); } catch {} };
     };
 
-    const scheduleReconnect = () => {
+    const scheduleReconnect = (overrideDelay) => {
         if (state.closed || state.reconnectTimer) return;
-        // Backoff exponencial: 3s, 6s, 12s, 24s, max 30s. Evita flood durante
-        // restarts de backend (deploy) y alivia logs nginx.
-        const delay = Math.min(30000, 3000 * Math.pow(2, Math.min(state.retryAttempt, 4)));
+        const delay = overrideDelay != null
+            ? overrideDelay
+            : Math.min(30000, 3000 * Math.pow(2, Math.min(state.retryAttempt, 4)));
         state.reconnectTimer = setTimeout(() => {
             state.reconnectTimer = null;
             connect();
@@ -148,10 +175,11 @@ function openConnection(plantId) {
     };
 
     state.connect = connect;
+    state.forceClose = forceClose;
     state.close = () => {
         state.closed = true;
         if (state.reconnectTimer) { clearTimeout(state.reconnectTimer); state.reconnectTimer = null; }
-        if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
+        clearTimers();
         try { state.ws?.close(); } catch {}
         state.subscribers.clear();
     };
@@ -168,7 +196,21 @@ export function subscribe(plantId, onMessage) {
         connections.set(plantId, state);
     }
     state.subscribers.add(onMessage);
-    return () => { state.subscribers.delete(onMessage); };
+    return () => {
+        state.subscribers.delete(onMessage);
+        // Si no quedan subscribers, cerrar la conexión para liberar recursos.
+        // Un nuevo subscribe() reabrirá limpiamente.
+        if (state.subscribers.size === 0) {
+            // Debounce 3s por si el usuario sólo está navegando entre páginas que
+            // comparten el mismo plant — evita flap open/close.
+            setTimeout(() => {
+                if (state.subscribers.size === 0 && !state.closed) {
+                    state.close();
+                    connections.delete(plantId);
+                }
+            }, 3000);
+        }
+    };
 }
 
 export function closeConnection(plantId) {
@@ -181,3 +223,31 @@ export function closeConnection(plantId) {
 export function closeAllConnections() {
     for (const [plantId] of connections) closeConnection(plantId);
 }
+
+// ── Hooks globales: recuperar conexión tras sleep/wake, network switch ─
+// Sin esto, el browser mantiene el WS "abierto" pero el servidor ya no responde.
+// Los síntomas: laptop vuelve del sleep y el WS parece vivo pero no recibe eventos.
+try {
+    window.addEventListener('online', () => {
+        for (const [, state] of connections) {
+            if (!state.closed && !state.connected) state.forceClose?.();
+        }
+    });
+    window.addEventListener('offline', () => {
+        for (const [, state] of connections) {
+            if (!state.closed && state.connected) state.forceClose?.();
+        }
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        // Al volver a primer plano, verificar heartbeat: si no hubo pong reciente
+        // (>60s), el WS está muerto aunque el readyState diga OPEN.
+        const now = Date.now();
+        for (const [, state] of connections) {
+            if (state.closed) continue;
+            if (!state.connected || (state.lastPongAt && now - state.lastPongAt > 60000)) {
+                state.forceClose?.();
+            }
+        }
+    });
+} catch {}

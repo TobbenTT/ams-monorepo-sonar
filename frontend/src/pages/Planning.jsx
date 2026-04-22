@@ -131,6 +131,97 @@ function NotifHHTab({ wo, onSaved }) {
   );
 }
 
+// Jorge 2026-04-21 — Post-closure review (RCM feedback loop).
+// Se muestra solo cuando la OT está CERRADA. Captura causa raíz confirmada,
+// lecciones aprendidas, sugerencia de frecuencia PM, exactitud de repuestos.
+function PostReviewTab({ wo, onSaved }) {
+  const existing = wo.post_closure_review || {};
+  const [form, setForm] = useState({
+    root_cause_confirmed: existing.root_cause_confirmed || '',
+    lessons_learned: existing.lessons_learned || '',
+    pm_frequency_suggestion: existing.pm_frequency_suggestion || '',
+    spare_parts_accuracy: existing.spare_parts_accuracy || '',
+  });
+  const [saving, setSaving] = useState(false);
+  const hasReview = !!existing.reviewed_at;
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const res = await api.saveWOPostReview(wo.wo_id, form);
+      onSaved && onSaved(res);
+    } catch (e) { alert('Error: ' + e.message); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border-2 border-dashed border-purple-300 bg-purple-50/40 p-3">
+        <div className="flex items-center gap-2 text-purple-800 font-bold text-sm mb-1">
+          <ClipboardCheck size={14} /> Post-Closure Review · RCM feedback
+        </div>
+        <p className="text-[11px] text-purple-700">
+          Lecciones aprendidas que alimentan la estrategia de mantenimiento.
+          Responde en base a lo efectivamente ejecutado.
+        </p>
+        {hasReview && (
+          <p className="text-[10px] text-purple-500 mt-1 italic">
+            Revisado por {existing.reviewed_by} el {new Date(existing.reviewed_at).toLocaleString('es')}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-gray-700 mb-1 block">Causa raíz confirmada</label>
+        <textarea value={form.root_cause_confirmed}
+          onChange={e => setForm({ ...form, root_cause_confirmed: e.target.value })}
+          placeholder="¿Coincide con la causa sospechada al abrir el aviso? Si no, describí la causa real."
+          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 min-h-[60px]" />
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-gray-700 mb-1 block">Lecciones aprendidas</label>
+        <textarea value={form.lessons_learned}
+          onChange={e => setForm({ ...form, lessons_learned: e.target.value })}
+          placeholder="Qué haríamos distinto la próxima vez. Qué aprendizaje queda para el equipo."
+          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 min-h-[80px]" />
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-gray-700 mb-1 block">Sugerencia de frecuencia PM</label>
+        <select value={form.pm_frequency_suggestion}
+          onChange={e => setForm({ ...form, pm_frequency_suggestion: e.target.value })}
+          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2">
+          <option value="">— Seleccionar —</option>
+          <option value="keep">Mantener frecuencia actual</option>
+          <option value="increase">Aumentar frecuencia (falla recurrente)</option>
+          <option value="decrease">Disminuir frecuencia (sobre-mantenido)</option>
+          <option value="redesign">Redesign / cambio de estrategia (RCM)</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-gray-700 mb-1 block">Exactitud de repuestos</label>
+        <select value={form.spare_parts_accuracy}
+          onChange={e => setForm({ ...form, spare_parts_accuracy: e.target.value })}
+          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2">
+          <option value="">— Seleccionar —</option>
+          <option value="exact">Exacto — se usaron todos y ninguno faltó</option>
+          <option value="extra">Sobraron repuestos (revisar BOM)</option>
+          <option value="missing">Faltaron repuestos críticos</option>
+          <option value="substituted">Se sustituyeron por alternativos</option>
+        </select>
+      </div>
+
+      <button onClick={save} disabled={saving}
+        className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        {hasReview ? 'Actualizar review' : 'Guardar review'}
+      </button>
+    </div>
+  );
+}
+
 // Fase 10 Jorge 2026-04-21 — tab de historial en el modal de OT.
 // Consume /managed-work-orders/{id}/history que combina audit_log diffs
 // (quién cambió qué campo) con execution_notes (status transitions).
@@ -1470,13 +1561,16 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         // Execution flow now lives in the top-level Execution module (Bandeja de Cierre).
         // The old 'ejecucion' sub-tab inside this modal was duplicating that flow — removed.
         // Jorge SF-515 — tab "Notificación HH" solo visible en EN_EJECUCION.
+        // Jorge 2026-04-21 — tab "Post-Review" solo visible en CERRADO.
         const isExec = wo.status === 'EN_EJECUCION';
+        const isClosed = wo.status === 'CERRADO';
         const OT_TABS = [
           { id: 'resumen', label: 'Summary', icon: Info },
           { id: 'operaciones', label: 'Operations', icon: List },
           { id: 'materiales', label: 'Materials', icon: Package },
           { id: 'costos', label: 'Costs', icon: DollarSign },
           ...(isExec ? [{ id: 'notif_hh', label: 'Notif. HH', icon: Clock }] : []),
+          ...(isClosed ? [{ id: 'post_review', label: 'Post-Review', icon: ClipboardCheck }] : []),
           { id: 'historial', label: 'History', icon: MessageSquare },
         ];
 
@@ -2482,6 +2576,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 {/* NOTIFICACIÓN HH — solo EN_EJECUCION · Jorge SF-515 */}
                 {otModalTab === 'notif_hh' && isExec && (
                   <NotifHHTab wo={wo} onSaved={updated => setSelectedOT({ ...wo, ...updated })} />
+                )}
+
+                {/* POST-REVIEW — solo CERRADO · Jorge 2026-04-21 RCM feedback */}
+                {otModalTab === 'post_review' && isClosed && (
+                  <PostReviewTab wo={wo} onSaved={updated => setSelectedOT({ ...wo, post_closure_review: updated })} />
                 )}
 
                 {/* HISTORIAL */}

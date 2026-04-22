@@ -361,6 +361,36 @@ def sap_sync_status(
     return result or {"status": "NOT_SYNCED"}
 
 
+@router.post("/{wo_id}/post-review")
+def save_post_closure_review(
+    wo_id: str,
+    data: dict,
+    user=Depends(require_role("admin", "manager", "planner")),
+    db: Session = Depends(get_db),
+):
+    """Jorge 2026-04-21 — guardar review post-cierre (RCM feedback).
+    Body: {root_cause_confirmed, lessons_learned, pm_frequency_suggestion,
+           spare_parts_accuracy}. Solo válido si OT está CERRADO."""
+    from api.database.models import ManagedWorkOrderModel as _M
+    from datetime import datetime as _dt
+    wo = db.query(_M).filter(_M.wo_id == wo_id).first()
+    if not wo:
+        raise HTTPException(status_code=404, detail="WO not found")
+    if wo.status != "CERRADO":
+        raise HTTPException(status_code=400, detail="Solo OTs cerradas pueden tener review")
+    review = {
+        "root_cause_confirmed": data.get("root_cause_confirmed", ""),
+        "lessons_learned": data.get("lessons_learned", ""),
+        "pm_frequency_suggestion": data.get("pm_frequency_suggestion", ""),
+        "spare_parts_accuracy": data.get("spare_parts_accuracy", ""),
+        "reviewed_by": getattr(user, "user_id", "unknown"),
+        "reviewed_at": _dt.now().isoformat(),
+    }
+    wo.post_closure_review = review
+    db.commit()
+    return review
+
+
 @router.get("/{wo_id}/history")
 def get_wo_history(
     wo_id: str,

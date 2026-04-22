@@ -81,6 +81,7 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "closed_at": wo.closed_at.isoformat() if wo.closed_at else None,
         "closed_by_signature": getattr(wo, "closed_by_signature", None),
         "closure_notes": getattr(wo, "closure_notes", None),
+        "post_closure_review": getattr(wo, "post_closure_review", None),
         "contractor_crew_id": getattr(wo, "contractor_crew_id", None),
         "version": getattr(wo, "version", 1),
         "assigned_workers": wo.assigned_workers or [],

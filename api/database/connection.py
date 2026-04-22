@@ -97,6 +97,8 @@ def _run_column_migrations():
         ("workforce", "skills", "TEXT", None),
         # Fase 9 — optimistic lock para OTs
         ("managed_work_orders", "version", "INTEGER", "1"),
+        # Jorge 2026-04-21 — post-closure review
+        ("managed_work_orders", "post_closure_review", "TEXT", None),
     ]
 
     with engine.begin() as conn:

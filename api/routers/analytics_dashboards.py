@@ -46,7 +46,9 @@ def mtbf_mttr_timeseries(
     - MTTR: average actual_hours across failures closed in the month.
     """
     today = date.today()
-    start = (today.replace(day=1) - timedelta(days=31 * (months - 1))).replace(day=1)
+    # Calcular start exactamente months meses atrás (no 31×meses días, evita off-by-one).
+    total_month = today.year * 12 + (today.month - 1) - (months - 1)
+    start = date(year=total_month // 12, month=(total_month % 12) + 1, day=1)
 
     q = _base_wo_query(db, plant_id).filter(
         ManagedWorkOrderModel.created_at >= datetime.combine(start, datetime.min.time())

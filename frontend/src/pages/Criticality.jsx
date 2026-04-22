@@ -15,8 +15,6 @@ import {
   TrendingUp, TrendingDown, Minus, Search, Heart, Save
 } from 'lucide-react';
 
-const RELIABILITY_KPIs = [];  // TODO Fase 5b — cablear a Health Score API
-
 const CLASS_DOT_COLOR = { AA: '#dc2626', 'A+': '#ea580c', A: '#ca8a04', B: '#2563eb' };
 // 6 categorías mapeadas a CriticalityCategory del engine (de 11 disponibles).
 const FACTORS = [
@@ -374,21 +372,32 @@ function CriticalityTab({ nodes, t, assessments, reload }) {
 /* ═══════════════════════════════════════════════════════════
    ASSET HEALTH TAB
    ═══════════════════════════════════════════════════════════ */
-function AssetHealthTab({ t }) {
+function AssetHealthTab({ t, plant }) {
   const [search, setSearch] = useState('');
+  const [rawData, setRawData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    api.getAssetHealth({ plant_id: plant })
+      .then(d => {
+        const arr = d?.assets ?? (Array.isArray(d) ? d : []);
+        setRawData(Array.isArray(arr) ? arr : []);
+      })
+      .catch(() => setRawData([]))
+      .finally(() => setLoading(false));
+  }, [plant]);
 
   const healthData = useMemo(() => {
-    return RELIABILITY_KPIs.map(kpi => {
-      // Calculate health score 0-100
-      const avail = kpi.availability || 0;
-      const oee = kpi.oee || 0;
-      const mtbf = kpi.mtbf || 0;
-      const healthScore = Math.round((avail * 0.3 + oee * 0.3 + Math.min(mtbf / 20, 100) * 0.4));
+    return rawData.map(kpi => {
+      const healthScore = kpi.health_score != null
+        ? Math.round(kpi.health_score)
+        : Math.round(((kpi.availability || 0) * 0.3 + (kpi.oee || 0) * 0.3 + Math.min((kpi.mtbf || 0) / 20, 100) * 0.4));
       const healthColor = healthScore >= 85 ? 'text-green-600 dark:text-green-400' : healthScore >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
       const healthBg = healthScore >= 85 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : healthScore >= 70 ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
       return { ...kpi, healthScore, healthColor, healthBg };
     }).sort((a, b) => a.healthScore - b.healthScore);
-  }, []);
+  }, [rawData]);
 
   const filtered = search
     ? healthData.filter(h => h.equipment_name.toLowerCase().includes(search.toLowerCase()) || h.equipment_tag.toLowerCase().includes(search.toLowerCase()))
@@ -443,7 +452,13 @@ function AssetHealthTab({ t }) {
       </div>
 
       {/* Health Cards */}
-      {filtered.length === 0 && <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
+      {loading ? (
+        <div className="flex items-center justify-center py-10"><Loader2 size={18} className="animate-spin text-gray-400" /></div>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-10 text-center">
+          Sin datos de health score. Se mostrarán equipos cuando haya KPIs calculados.
+        </p>
+      ) : null}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filtered.map(asset => {
           const TrendIcon = TREND_ICON[asset.trend] || Minus;
@@ -558,7 +573,7 @@ export default function Criticality() {
       </div>
 
       {activeTab === 'criticality' && <CriticalityTab nodes={nodes} t={t} assessments={assessments} reload={reload} />}
-      {activeTab === 'health' && <AssetHealthTab t={t} />}
+      {activeTab === 'health' && <AssetHealthTab t={t} plant={plant} />}
     </div>
   );
 }

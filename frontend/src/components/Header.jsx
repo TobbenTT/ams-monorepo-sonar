@@ -56,6 +56,8 @@ export default function Header({
         { path: '/hierarchy',          labelKey: 'nav.assetHierarchy',     keywords: 'hierarchy assets equipment tree jerarquia activos' },
         { path: '/reliability',        labelKey: 'nav.reliabilityEng',     keywords: 'reliability weibull mtbf mttr confiabilidad' },
         { path: '/shutdowns',          labelKey: 'Shutdowns',              keywords: 'shutdowns paradas calendario calendar maintenance windows mantenimiento' },
+        { path: '/spare-parts',        labelKey: 'Spare Parts',            keywords: 'spare parts repuestos inventario inventory stock materiales' },
+        { path: '/notifications',      labelKey: 'Notifications',          keywords: 'notifications alerts center centro alertas notificaciones' },
         { path: '/profile',           labelKey: 'nav.profile',            keywords: 'profile user perfil usuario' },
         { path: '/work-management', labelKey: 'nav.workManagement',   keywords: 'work management planning scheduling gestion trabajo planificacion programacion' },
         { path: '/rca',             labelKey: 'nav.rca',              keywords: 'rca root cause analysis analisis causa raiz' },

@@ -484,6 +484,8 @@ export const listDeletedWRs = (p) => get('/work-requests/tools/deleted', p);
 export const restoreWR = (id) => post(`/work-requests/tools/restore/${id}`);
 export const permanentDeleteWR = (id) => del(`/work-requests/tools/permanent/${id}`);
 export const markAllNotificationsRead = () => put('/notifications/read-all');
+export const listNotificationsV2 = (p) => get('/notifications/', p);
+export const getUnreadNotificationsCount = () => get('/notifications/unread-count');
 export const exportData = (d) => post('/reporting/export', d);
 export const generateReportFromDB = (p) => get("/reporting/generate-report", p);
 

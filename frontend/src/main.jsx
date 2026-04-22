@@ -66,6 +66,8 @@ const Planning = lazyRetry(() => import('./pages/Planning'));
 const FieldCapture = lazyRetry(() => import('./pages/FieldCapture'));
 const Reliability = lazyRetry(() => import('./pages/Reliability'));
 const Shutdowns = lazyRetry(() => import('./pages/Shutdowns'));
+const SpareParts = lazyRetry(() => import('./pages/SpareParts'));
+const NotificationsCenter = lazyRetry(() => import('./pages/NotificationsCenter'));
 const RCA = lazyRetry(() => import('./pages/RCA'));
 const DefectElimination = lazyRetry(() => import('./pages/DefectElimination'));
 const SAPReview = lazyRetry(() => import('./pages/SAPReview'));
@@ -162,6 +164,8 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="strategy" element={<P roles={PLAN}><S><Strategy /></S></P>} />
                                     <Route path="reliability" element={<P roles={ENGR}><S><Reliability /></S></P>} />
                                     <Route path="shutdowns" element={<P roles={PLAN}><S><Shutdowns /></S></P>} />
+                                    <Route path="spare-parts" element={<P roles={PLAN}><S><SpareParts /></S></P>} />
+                                    <Route path="notifications" element={<P roles={ALL}><S><NotificationsCenter /></S></P>} />
                                     <Route path="rca" element={<P roles={ENGR}><S><RCA /></S></P>} />
                                     <Route path="defect-elimination" element={<P roles={ENGR}><S><DefectElimination /></S></P>} />
                                     <Route path="sap-review" element={<P roles={MGMT}><S><SAPReview /></S></P>} />

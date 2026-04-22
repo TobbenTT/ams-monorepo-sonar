@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Eye, EyeOff, AlertCircle, Shield, Wrench, BarChart3, Globe } from 'lucide-react';
@@ -18,6 +18,16 @@ export default function Login() {
     const { login } = useAuth();
     const { t, lang, setLang } = useLanguage();
     const navigate = useNavigate();
+    const location = useLocation();
+    // Banner si venimos de force_logout: /login?notice=...
+    const notice = useMemo(() => {
+        try {
+            const params = new URLSearchParams(location.search);
+            return params.get('notice') || '';
+        } catch {
+            return '';
+        }
+    }, [location.search]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -117,6 +127,13 @@ export default function Login() {
                         <h2 className="text-2xl font-bold text-foreground">{t('auth.welcome')}</h2>
                         <p className="text-muted-foreground mt-1">{t('auth.enterCredentials')}</p>
                     </div>
+
+                    {notice && !error && (
+                        <div className="flex items-center gap-2 text-sm text-amber-800 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-300 p-3 rounded-lg border border-amber-200 dark:border-amber-800 mb-5">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                            <span>{notice}</span>
+                        </div>
+                    )}
 
                     {error && (
                         <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400 p-3 rounded-lg border border-red-200 dark:border-red-800 mb-5">

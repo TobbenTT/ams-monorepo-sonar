@@ -90,8 +90,11 @@ function openConnection(plantId) {
             // limpiamos sesión (cookies HttpOnly via /auth/logout + localStorage)
             // y redirigimos a login. Evita stale cookies que sobreviven al deploy.
             if (msg?.event === 'server_restart' || msg?.event === 'force_logout') {
-                const message = msg?.data?.message || 'Servidor reiniciando. Volvé a iniciar sesión en unos segundos.';
-                const doRedirect = () => { try { window.location.href = '/login'; } catch {} };
+                // Jorge 2026-04-22: NO usar alert() — es bloqueante y si la
+                // ventana está en background (ej: presentación Meet) no se ve
+                // y el redirect no ejecuta. Redirigimos inmediato y la página
+                // de login muestra el mensaje via query param.
+                const reason = encodeURIComponent(msg?.data?.message || 'Sesión cerrada por el servidor. Volvé a iniciar sesión.');
                 // Limpiar localStorage primero (sincrónico).
                 try {
                     localStorage.removeItem('access_token');
@@ -100,19 +103,18 @@ function openConnection(plantId) {
                     localStorage.removeItem('currentUser');
                     sessionStorage.removeItem('ws_client_id');
                 } catch {}
-                // Pegar POST /auth/logout para borrar las cookies HttpOnly.
-                // fetch con credentials para que el navegador envíe y reciba Set-Cookie.
+                // Fire-and-forget al backend para borrar cookies HttpOnly.
                 try {
                     fetch('/api/v1/auth/logout', {
                         method: 'POST',
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
-                    })
-                        .catch(() => {})
-                        .finally(() => { alert(message); doRedirect(); });
-                } catch {
-                    alert(message);
-                    doRedirect();
+                        keepalive: true,
+                    }).catch(() => {});
+                } catch {}
+                // Redirect INMEDIATO. No esperamos a nada.
+                try { window.location.replace(`/login?notice=${reason}`); } catch {
+                    try { window.location.href = `/login?notice=${reason}`; } catch {}
                 }
                 return;
             }

@@ -32,6 +32,7 @@ export default function AnalyticsPage() {
   const ctx = useOutletContext();
   const { t } = useLanguage();
   const plantId = ctx?.selectedPlant?.plant_id || ctx?.selectedPlant || ctx?.plant || 'OCP-JFC1';
+  const selectedTimeRange = ctx?.selectedTimeRange || 'Last 30 Days';
   const [activeTab, setActiveTab] = useState('operational');
   const [selectedAreas, setSelectedAreas] = useState(new Set(AREA_NAMES));
 

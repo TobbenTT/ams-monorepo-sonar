@@ -53,6 +53,20 @@ function openConnection(plantId) {
         reconnectTimer: null,
         pingInterval: null,
         closed: false,
+        retryAttempt: 0,    // contador para backoff exponencial
+        connected: false,   // estado actual para UI
+    };
+
+    const notifyStatus = (connected) => {
+        state.connected = connected;
+        if (!connected) state.retryAttempt++;
+        else state.retryAttempt = 0;
+        // Disparar evento custom para que componentes UI puedan suscribirse
+        try {
+            window.dispatchEvent(new CustomEvent('ws:status', {
+                detail: { plantId, connected, attempt: state.retryAttempt },
+            }));
+        } catch {}
     };
 
     const connect = () => {
@@ -62,6 +76,7 @@ function openConnection(plantId) {
         state.ws = ws;
 
         ws.onopen = () => {
+            notifyStatus(true);
             state.pingInterval = setInterval(() => {
                 if (ws.readyState === WebSocket.OPEN) ws.send('ping');
             }, 25000);
@@ -94,6 +109,7 @@ function openConnection(plantId) {
 
         ws.onclose = () => {
             if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
+            if (state.connected) notifyStatus(false);
             if (!state.closed) scheduleReconnect();
         };
 
@@ -102,10 +118,13 @@ function openConnection(plantId) {
 
     const scheduleReconnect = () => {
         if (state.closed || state.reconnectTimer) return;
+        // Backoff exponencial: 3s, 6s, 12s, 24s, max 30s. Evita flood durante
+        // restarts de backend (deploy) y alivia logs nginx.
+        const delay = Math.min(30000, 3000 * Math.pow(2, Math.min(state.retryAttempt, 4)));
         state.reconnectTimer = setTimeout(() => {
             state.reconnectTimer = null;
             connect();
-        }, 3000);
+        }, delay);
     };
 
     state.connect = connect;

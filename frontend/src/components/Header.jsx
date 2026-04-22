@@ -3,6 +3,7 @@ import { Bell, Menu, Moon, Sun, Search, X, Globe, Factory, Calendar, MapPin } fr
 import { useState, useEffect, useRef, useMemo } from 'react';
 import * as api from '../api';
 import { cn } from './ui/utils';
+import WsStatusIndicator from './WsStatusIndicator';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
@@ -214,6 +215,9 @@ export default function Header({
                     >
                         {dark ? <Sun size={18} /> : <Moon size={18} />}
                     </button>
+
+                    {/* WebSocket status indicator */}
+                    <WsStatusIndicator />
 
                     {/* Notifications */}
                     <div className="relative" ref={notifRef}>

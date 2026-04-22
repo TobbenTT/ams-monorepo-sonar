@@ -210,6 +210,8 @@ class RCAUpdate(BaseModel):
     equipment_id: str | None = None
     analysis_5w2h: dict | None = None
     root_cause_levels: dict | None = None
+    cause_effect: dict | None = None
+    evidence_5p: list[dict] | None = None
     capa_actions: list[dict] | None = None
     team_members: list[str] | None = None
 

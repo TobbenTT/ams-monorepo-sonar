@@ -94,6 +94,11 @@ def update_rca(db: Session, analysis_id: str, data: dict) -> dict | None:
         ce = obj.cause_effect or {}
         ce.update(data["root_cause_levels"])
         obj.cause_effect = ce
+    if data.get("cause_effect") is not None:
+        # Full overwrite: usado para Ishikawa branches 6M.
+        obj.cause_effect = data["cause_effect"]
+    if data.get("evidence_5p") is not None:
+        obj.evidence_5p = data["evidence_5p"]
     if data.get("capa_actions") is not None:
         obj.solutions = data["capa_actions"]
     if data.get("team_members") is not None:
@@ -202,6 +207,58 @@ def get_rca_summary(db: Session, plant_id: str | None = None) -> dict:
             for level in RCALevel
         },
     }
+
+
+def push_solutions_to_capa(db: Session, analysis_id: str) -> dict | None:
+    """Crea ImprovementAction rows a partir de obj.solutions. Idempotente."""
+    from api.database.models import ImprovementActionModel
+    obj = db.query(RCAAnalysisModel).filter_by(analysis_id=analysis_id).first()
+    if not obj:
+        return None
+    solutions = obj.solutions or []
+    if not solutions:
+        return {"analysis_id": analysis_id, "created": 0, "skipped": 0, "message": "El RCA no tiene solutions cargadas"}
+    # Avoid dupes: check existing CAPAs tied to this RCA.
+    existing = db.query(ImprovementActionModel).filter(
+        ImprovementActionModel.source_type == "RCA",
+        ImprovementActionModel.source_ref == analysis_id,
+    ).all()
+    existing_titles = {(a.title or "").strip().lower() for a in existing}
+    created = []
+    skipped = 0
+    for s in solutions:
+        if not isinstance(s, dict):
+            continue
+        title = (s.get("description") or s.get("title") or "").strip()
+        if not title:
+            continue
+        if title.lower() in existing_titles:
+            skipped += 1
+            continue
+        sol_type = (s.get("type") or s.get("solution_type") or "CORRECTIVE").upper()
+        if sol_type not in ("CORRECTIVE", "PREVENTIVE", "IMPROVEMENT"):
+            sol_type = "CORRECTIVE"
+        action = ImprovementActionModel(
+            title=title[:300],
+            description=s.get("notes") or s.get("description") or "",
+            plant_id=obj.plant_id or "",
+            equipment_id=obj.equipment_id,
+            equipment_tag=s.get("equipment_tag") or "",
+            source_type="RCA",
+            source_ref=analysis_id,
+            action_type=sol_type,
+            priority=(s.get("priority") or "MEDIUM").upper(),
+            category=s.get("category") or "RCA",
+            assigned_to=s.get("responsible") or "",
+            status="OPEN",
+            ai_generated=bool(s.get("ai_generated")),
+        )
+        db.add(action)
+        created.append(title)
+    if created:
+        log_action(db, "rca", analysis_id, "PUSH_TO_CAPA", {"count": len(created)})
+        db.commit()
+    return {"analysis_id": analysis_id, "created": len(created), "skipped": skipped, "titles": created}
 
 
 def _rca_to_dict(obj: RCAAnalysisModel) -> dict:

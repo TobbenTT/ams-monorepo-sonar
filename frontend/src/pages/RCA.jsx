@@ -7,8 +7,27 @@ import * as api from '../api';
 import {
   Search, Plus, ChevronDown, ChevronUp, AlertTriangle, CheckCircle,
   Loader2, ArrowRight, Target, Zap, Shield, Clock, FileText, Activity,
-  TrendingUp, X, Play,
+  TrendingUp, X, Play, Fish, Send, Trash2,
 } from 'lucide-react';
+
+// Ishikawa 6M categorías (estándar RCA industrial).
+const ISHIKAWA_CATS = [
+  { key: 'METODO',         label: 'Método',       color: '#6366f1' },
+  { key: 'MAQUINA',        label: 'Máquina',      color: '#ef4444' },
+  { key: 'MATERIAL',       label: 'Material',     color: '#f59e0b' },
+  { key: 'MANO_OBRA',      label: 'Mano de obra', color: '#10b981' },
+  { key: 'MEDIO_AMBIENTE', label: 'Medio amb.',   color: '#06b6d4' },
+  { key: 'MEDICION',       label: 'Medición',     color: '#a855f7' },
+];
+
+// 5P evidence categories (per RCAEngine).
+const EVIDENCE_5P = [
+  { key: 'PARTS',      label: 'Parts (piezas físicas)',       color: '#6366f1' },
+  { key: 'POSITION',   label: 'Position (posición/escena)',   color: '#ef4444' },
+  { key: 'PEOPLE',     label: 'People (testimonios)',         color: '#10b981' },
+  { key: 'PAPERS',     label: 'Papers (registros/procedim.)', color: '#f59e0b' },
+  { key: 'PARADIGMS',  label: 'Paradigms (cultura/normas)',   color: '#a855f7' },
+];
 
 const STAGES = [
   { id: 'IDENTIFIED', label: 'Identificada', icon: Target, color: 'bg-red-500' },
@@ -132,6 +151,35 @@ export default function RCA() {
     const newData = { ...(selected.five_w_two_h || {}), [key]: value };
     setSelected(prev => ({ ...prev, five_w_two_h: newData }));
     try { await api.updateRca(selected.analysis_id, { analysis_5w2h: newData }); } catch {}
+  };
+
+  // Ishikawa — cause_effect.branches = { METODO: [...], MAQUINA: [...], ... }
+  const saveIshikawa = async (branches) => {
+    if (!selected?.analysis_id) return;
+    const ce = { ...(selected.cause_effect || {}), branches };
+    setSelected(prev => ({ ...prev, cause_effect: ce }));
+    try { await api.updateRca(selected.analysis_id, { cause_effect: ce }); }
+    catch (e) { toast.error('Error guardando Ishikawa'); }
+  };
+
+  // 5P evidence list — array of { category, description, source, fragility_score }
+  const save5P = async (evidence) => {
+    if (!selected?.analysis_id) return;
+    setSelected(prev => ({ ...prev, evidence_5p: evidence }));
+    try { await api.updateRca(selected.analysis_id, { evidence_5p: evidence }); }
+    catch (e) { toast.error('Error guardando evidencia'); }
+  };
+
+  const handlePushToCapa = async () => {
+    if (!selected?.analysis_id) return;
+    if (!(selected.solutions || []).length) {
+      toast.info('El RCA no tiene soluciones cargadas todavía');
+      return;
+    }
+    try {
+      const res = await api.pushRcaToCapa(selected.analysis_id);
+      toast.success(`✓ ${res.created} CAPA creada(s)${res.skipped ? ` · ${res.skipped} omitidas (ya existían)` : ''}`);
+    } catch (e) { toast.error('Error creando CAPA: ' + (e.message || '')); }
   };
 
   // Filter
@@ -330,6 +378,19 @@ export default function RCA() {
             </div>
           </div>
 
+          {/* Ishikawa Diagram (6M fishbone) */}
+          <IshikawaCard
+            effect={selected.event_description}
+            branches={selected.cause_effect?.branches || {}}
+            onSave={saveIshikawa}
+          />
+
+          {/* 5P Evidence */}
+          <Evidence5PCard
+            evidence={selected.evidence_5p || []}
+            onSave={save5P}
+          />
+
           {/* Root causes */}
           {selected.root_cause_levels && Object.keys(selected.root_cause_levels).length > 0 && (
             <div className="bg-card border border-border rounded-xl p-5">
@@ -346,9 +407,17 @@ export default function RCA() {
           )}
 
           {/* CAPAs */}
-          {(selected.corrective_actions || []).length > 0 && (
-            <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="text-sm font-bold text-foreground mb-3">Acciones correctivas (CAPA)</h3>
+          <div className="bg-card border border-border rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h3 className="text-sm font-bold text-foreground">Acciones correctivas (CAPA)</h3>
+              <button onClick={handlePushToCapa}
+                disabled={!(selected.solutions || []).length}
+                title="Crea ImprovementAction rows para cada solución cargada"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+                <Send size={12} /> Push a CAPA
+              </button>
+            </div>
+            {(selected.corrective_actions || []).length > 0 ? (
               <div className="space-y-2">
                 {selected.corrective_actions.map((capa, i) => (
                   <div key={i} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2 text-sm">
@@ -361,8 +430,10 @@ export default function RCA() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-muted-foreground italic">Sin soluciones cargadas. Agrega desde la sección 5W2H o directamente en Improvement Actions.</p>
+            )}
+          </div>
 
           {/* Advance button */}
           {selected.status !== 'CLOSED' && (
@@ -437,6 +508,265 @@ export default function RCA() {
                 {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                 Crear RCA + análisis IA
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ISHIKAWA 6M FISHBONE — SVG viewer + editor
+   ═══════════════════════════════════════════════════════════ */
+function IshikawaCard({ effect, branches, onSave }) {
+  const [editing, setEditing] = useState(null); // { catKey, idx|null, text }
+
+  const addCause = (catKey, text) => {
+    if (!text.trim()) return;
+    const next = { ...branches, [catKey]: [...(branches[catKey] || []), text.trim()] };
+    onSave(next);
+  };
+  const removeCause = (catKey, idx) => {
+    const next = { ...branches, [catKey]: (branches[catKey] || []).filter((_, i) => i !== idx) };
+    onSave(next);
+  };
+
+  // SVG geometry
+  const W = 720, H = 340;
+  const spineY = H / 2;
+  const spineX1 = 30, spineX2 = W - 180;
+  const branchLen = 110; // diagonal length
+  // 3 branches above, 3 below alternating along spine
+  const branchX = [spineX1 + 80, spineX1 + 240, spineX1 + 400];
+  // catLayout: [{cat, x, top}]
+  const catLayout = ISHIKAWA_CATS.map((c, i) => ({
+    ...c,
+    x: branchX[i % 3],
+    top: i < 3,
+  }));
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Fish size={16} className="text-indigo-600" />
+          <h3 className="text-sm font-bold text-foreground">Diagrama Ishikawa — 6M</h3>
+        </div>
+        <span className="text-[11px] text-muted-foreground">Click en una categoría para agregar causa</span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ minWidth: 680 }}>
+          {/* Spine */}
+          <line x1={spineX1} y1={spineY} x2={spineX2} y2={spineY} stroke="#334155" strokeWidth="3" />
+          {/* Arrow head */}
+          <polygon points={`${spineX2},${spineY-10} ${spineX2+20},${spineY} ${spineX2},${spineY+10}`} fill="#334155" />
+          {/* Effect box (right) */}
+          <rect x={spineX2 + 24} y={spineY - 30} width="150" height="60" rx="8" fill="#fee2e2" stroke="#dc2626" strokeWidth="2" />
+          <foreignObject x={spineX2 + 28} y={spineY - 26} width="142" height="52">
+            <div style={{ fontSize: 11, color: '#991b1b', fontWeight: 600, lineHeight: 1.2, padding: 2, overflow: 'hidden' }}>
+              {effect || 'Efecto / evento'}
+            </div>
+          </foreignObject>
+
+          {/* Branches */}
+          {catLayout.map((c, i) => {
+            const startX = c.x;
+            const startY = spineY;
+            const endX = startX - 40;
+            const endY = c.top ? startY - branchLen : startY + branchLen;
+            const labelOffsetY = c.top ? -8 : 18;
+            const causes = branches[c.key] || [];
+            return (
+              <g key={c.key}>
+                {/* Diagonal branch */}
+                <line x1={startX} y1={startY} x2={endX} y2={endY} stroke={c.color} strokeWidth="2" />
+                {/* Category label */}
+                <text x={endX - 5} y={endY + labelOffsetY} fill={c.color} fontSize="12" fontWeight="700" textAnchor="end">
+                  {c.label}
+                </text>
+                {/* Cause leaves */}
+                {causes.slice(0, 4).map((cause, idx) => {
+                  const t = (idx + 1) / 5; // position along branch
+                  const px = startX + (endX - startX) * t;
+                  const py = startY + (endY - startY) * t;
+                  const leafEndX = px - 35;
+                  const leafEndY = py;
+                  return (
+                    <g key={idx}>
+                      <line x1={px} y1={py} x2={leafEndX} y2={leafEndY} stroke={c.color} strokeWidth="1" />
+                      <foreignObject x={leafEndX - 110} y={leafEndY - 9} width="108" height="18">
+                        <div
+                          style={{ fontSize: 9.5, color: '#475569', textAlign: 'right', cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+                          title="Click para quitar"
+                          onClick={() => removeCause(c.key, idx)}>
+                          {cause}
+                        </div>
+                      </foreignObject>
+                    </g>
+                  );
+                })}
+                {/* Click zone to add cause */}
+                <circle cx={endX} cy={endY} r={14} fill={c.color} fillOpacity="0.15" stroke={c.color} style={{ cursor: 'pointer' }}
+                  onClick={() => setEditing({ catKey: c.key, text: '' })} />
+                <text x={endX} y={endY + 4} fill={c.color} fontSize="14" fontWeight="700" textAnchor="middle" style={{ pointerEvents: 'none' }}>+</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Category chips list for mobile/detail */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
+        {ISHIKAWA_CATS.map(c => (
+          <div key={c.key} className="rounded-lg border border-border p-2 bg-background">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold" style={{ color: c.color }}>{c.label}</span>
+              <button onClick={() => setEditing({ catKey: c.key, text: '' })}
+                className="text-[10px] text-indigo-600 hover:underline">+ agregar</button>
+            </div>
+            <div className="space-y-0.5">
+              {(branches[c.key] || []).length === 0 ? (
+                <span className="text-[10px] text-muted-foreground italic">—</span>
+              ) : (branches[c.key] || []).map((cause, idx) => (
+                <div key={idx} className="flex items-center gap-1 text-[11px] group">
+                  <span className="flex-1 text-foreground">• {cause}</span>
+                  <button onClick={() => removeCause(c.key, idx)}
+                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600"><Trash2 size={10} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add-cause inline dialog */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setEditing(null)}>
+          <div className="bg-white dark:bg-card rounded-xl shadow-2xl w-full max-w-md p-5" onClick={e => e.stopPropagation()}>
+            <h4 className="text-sm font-bold mb-2">
+              Agregar causa en <span style={{ color: ISHIKAWA_CATS.find(c => c.key === editing.catKey)?.color }}>
+                {ISHIKAWA_CATS.find(c => c.key === editing.catKey)?.label}
+              </span>
+            </h4>
+            <input value={editing.text}
+              onChange={e => setEditing(ed => ({ ...ed, text: e.target.value }))}
+              onKeyDown={e => { if (e.key === 'Enter') { addCause(editing.catKey, editing.text); setEditing(null); } }}
+              placeholder="p.ej. Lubricación insuficiente"
+              autoFocus
+              className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-indigo-300 focus:outline-none" />
+            <div className="flex justify-end gap-2 mt-3">
+              <button onClick={() => setEditing(null)} className="text-xs text-gray-600 hover:bg-gray-100 px-3 py-1.5 rounded-lg">Cancelar</button>
+              <button onClick={() => { addCause(editing.catKey, editing.text); setEditing(null); }}
+                className="text-xs font-semibold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700">Agregar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   5P EVIDENCE CARD — structured evidence by 5 categories
+   ═══════════════════════════════════════════════════════════ */
+function Evidence5PCard({ evidence, onSave }) {
+  const [adding, setAdding] = useState(null); // { category, description, source, fragility_score }
+
+  const addEvidence = () => {
+    if (!adding?.description?.trim()) return;
+    onSave([...evidence, { ...adding }]);
+    setAdding(null);
+  };
+  const removeEvidence = (idx) => {
+    onSave(evidence.filter((_, i) => i !== idx));
+  };
+
+  const grouped = EVIDENCE_5P.map(cat => ({
+    ...cat,
+    items: evidence.filter(e => e.category === cat.key),
+  }));
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <FileText size={16} className="text-amber-600" />
+          <h3 className="text-sm font-bold text-foreground">Evidencia 5P — Parts · Position · People · Papers · Paradigms</h3>
+        </div>
+        <span className="text-[11px] text-muted-foreground">Fragility 1–5 (1 = se pierde rápido)</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
+        {grouped.map(cat => (
+          <div key={cat.key} className="rounded-lg border border-border p-2 bg-background min-h-[120px]">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold" style={{ color: cat.color }}>{cat.label.split(' ')[0]}</span>
+              <button onClick={() => setAdding({ category: cat.key, description: '', source: '', fragility_score: 3 })}
+                className="text-[10px] text-indigo-600 hover:underline">+</button>
+            </div>
+            {cat.items.length === 0 ? (
+              <p className="text-[10px] italic text-muted-foreground">Sin evidencia</p>
+            ) : (
+              <div className="space-y-1">
+                {cat.items.map((e, i) => {
+                  const globalIdx = evidence.findIndex(x => x === e);
+                  return (
+                    <div key={i} className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded p-1.5 text-[10.5px] group">
+                      <div className="flex items-start gap-1">
+                        <span className="flex-1 text-foreground leading-tight">{e.description}</span>
+                        <button onClick={() => removeEvidence(globalIdx)}
+                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 shrink-0"><Trash2 size={10} /></button>
+                      </div>
+                      {e.source && <div className="text-[9px] text-muted-foreground mt-0.5">fuente: {e.source}</div>}
+                      {e.fragility_score && (
+                        <div className="mt-0.5 flex items-center gap-0.5">
+                          {[1,2,3,4,5].map(n => (
+                            <span key={n} className={`w-1.5 h-1.5 rounded-full ${n <= e.fragility_score ? 'bg-amber-500' : 'bg-gray-200'}`} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Add evidence modal */}
+      {adding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setAdding(null)}>
+          <div className="bg-white dark:bg-card rounded-xl shadow-2xl w-full max-w-md p-5" onClick={e => e.stopPropagation()}>
+            <h4 className="text-sm font-bold mb-3">
+              Nueva evidencia <span style={{ color: EVIDENCE_5P.find(c => c.key === adding.category)?.color }}>
+                {EVIDENCE_5P.find(c => c.key === adding.category)?.label}
+              </span>
+            </h4>
+            <div className="space-y-2">
+              <textarea value={adding.description}
+                onChange={e => setAdding(a => ({ ...a, description: e.target.value }))}
+                placeholder="Describe la evidencia (qué se observó / registró)"
+                rows={3}
+                className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background resize-y" />
+              <input value={adding.source}
+                onChange={e => setAdding(a => ({ ...a, source: e.target.value }))}
+                placeholder="Fuente (operador, bitácora, foto, etc.)"
+                className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background" />
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground">Fragilidad (1 = se pierde rápido, 5 = persistente)</label>
+                <input type="range" min="1" max="5" value={adding.fragility_score}
+                  onChange={e => setAdding(a => ({ ...a, fragility_score: Number(e.target.value) }))}
+                  className="w-full" />
+                <div className="text-xs text-center font-bold">{adding.fragility_score}</div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setAdding(null)} className="text-xs text-gray-600 hover:bg-gray-100 px-3 py-1.5 rounded-lg">Cancelar</button>
+              <button onClick={addEvidence}
+                className="text-xs font-semibold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700">Guardar</button>
             </div>
           </div>
         </div>

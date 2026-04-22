@@ -174,6 +174,7 @@ export const assessCriticality = (d) => post('/criticality/assess', d);
 export const getCriticality = (id) => get(`/criticality/${id}`);
 export const approveCriticality = (id) => put(`/criticality/${id}/approve`);
 export const listCriticalityByPlant = (plantId) => get('/criticality/by-plant', { plant_id: plantId });
+export const pushRcaToCapa = (id) => post(`/rca/analyses/${id}/push-to-capa`, {});
 
 // ── FMEA ──
 export const listFunctions = (nodeId) => get('/fmea/functions', { node_id: nodeId });

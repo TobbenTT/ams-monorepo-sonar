@@ -75,6 +75,16 @@ def advance_status(analysis_id: str, data: RCAAdvance, db: Session = Depends(get
     return result
 
 
+@router.post("/analyses/{analysis_id}/push-to-capa")
+def push_to_capa(analysis_id: str, db: Session = Depends(get_db)):
+    """Convierte las solutions del RCA en ImprovementAction (CAPA) rows.
+    Idempotente: omite las que ya fueron creadas (tracked via source_ref)."""
+    result = rca_service.push_solutions_to_capa(db, analysis_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="RCA analysis not found")
+    return result
+
+
 # ── Planning KPIs ─────────────────────────────────────────────────────
 
 @router.post("/planning-kpis/calculate")

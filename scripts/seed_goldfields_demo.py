@@ -447,7 +447,12 @@ def _generate_wr_and_wo(db, idx, workers, now):
     # Distribuir creación en últimos 45 días
     created_at = now - timedelta(days=random.randint(0, 45), hours=random.randint(0, 23))
 
-    # Crear WR
+    # Crear WR con TODOS los campos que el UI espera
+    whenHappens = random.choice(["Durante turno día", "Durante turno noche", "Durante el arranque", "En operación continua"])
+    full_text = f"{problem}. {whenHappens}. {description}"
+    est_hrs = random.choice([4, 6, 8, 12, 16, 24])
+    prod_impact = "HIGH" if priority == "P1" else "MEDIUM" if priority == "P2" else "LOW"
+
     wr = WorkRequestModel(
         equipment_id=equip_tag,
         equipment_tag=equip_tag,
@@ -456,19 +461,32 @@ def _generate_wr_and_wo(db, idx, workers, now):
         status="APROBADO",
         problem_description={
             "whatHappens": problem,
-            "whenHappens": random.choice(["Durante turno día", "Durante turno noche", "Durante el arranque", "En operación continua"]),
+            "whenHappens": whenHappens,
             "triggerEvent": random.choice(["Alarma DCS", "Inspección visual", "Reporte mantenedor", "Análisis predictivo"]),
             "impact": random.choice(["Sin impacto aún", "Pérdida parcial de capacidad", "Degradación progresiva", "Alarma crítica activa"]),
+            "original_text": full_text,
+            "structured_description": problem,
+            "technical_location": equip_tag,
+            "technical_location_code": equip_tag,
+            "failure_mode_detected": problem[:50],
+            "failure_mode_code": problem.split(" ")[0][:10].upper(),
+            "wo_title": f"{equip_tag} — {problem[:40]}",
         },
         ai_classification={
             "failure_mode": problem[:80],
             "suggested_specialty": "MECANICO",
-            "estimated_hours": random.choice([4, 6, 8, 12, 16, 24]),
+            "estimated_hours": est_hrs,
+            "estimated_duration_hours": est_hrs,
             "confidence": round(random.uniform(0.75, 0.95), 2),
             "probable_cause": f"Causa raíz presumida: {description[:60]}",
-            "plant_id": PLANT,  # Jorge 2026-04-21 — filtro de listado busca plant en ai_classification
+            "plant_id": PLANT,
+            "wo_title": f"{equip_tag} — {problem[:40]}",
+            "production_impact": prod_impact,
+            "required_specialties": ["Mecánico"],
+            "priority_suggested": priority,
+            "equipment_name": equip_tag,
         },
-        spare_parts=[{"code": m[0], "description": m[1], "qty": m[3]} for m in _pick_materials(equip_tag, problem)[:3]],
+        spare_parts=[{"code": m[0], "name": m[1], "description": m[1], "qty": m[3], "quantity": m[3]} for m in _pick_materials(equip_tag, problem)[:3]],
         priority_code=priority,
         work_class="NO_PROGRAMADO" if priority in ("P1", "P2") else "PROGRAMADO",
         created_by="admin",
@@ -689,21 +707,34 @@ def seed_standalone_wrs(db, count_pending=20, count_approved=10, count_rejected=
             equipment_confidence=round(random.uniform(0.80, 0.98), 2),
             resolution_method="AI" if random.random() > 0.5 else "MANUAL",
             status=status,
-            problem_description={
+            problem_description=(lambda whn=random.choice(["Durante turno día", "Durante turno noche", "Durante el arranque", "En operación continua"]): {
                 "whatHappens": problem,
-                "whenHappens": random.choice(["Durante turno día", "Durante turno noche", "Durante el arranque", "En operación continua"]),
+                "whenHappens": whn,
                 "triggerEvent": random.choice(["Alarma DCS", "Inspección visual", "Reporte mantenedor", "Análisis predictivo"]),
                 "impact": random.choice(["Sin impacto aún", "Pérdida parcial de capacidad", "Degradación progresiva"]),
-            },
-            ai_classification={
+                "original_text": f"{problem}. {whn}. {description}",
+                "structured_description": problem,
+                "technical_location": equip_tag,
+                "technical_location_code": equip_tag,
+                "failure_mode_detected": problem[:50],
+                "failure_mode_code": problem.split(" ")[0][:10].upper(),
+                "wo_title": f"{equip_tag} — {problem[:40]}",
+            })(),
+            ai_classification=(lambda eh=random.choice([4, 6, 8, 12, 16]): {
                 "failure_mode": problem[:80],
                 "suggested_specialty": "MECANICO",
-                "estimated_hours": random.choice([4, 6, 8, 12, 16]),
+                "estimated_hours": eh,
+                "estimated_duration_hours": eh,
                 "confidence": round(random.uniform(0.75, 0.95), 2),
                 "probable_cause": description[:80],
                 "plant_id": PLANT,
-            },
-            spare_parts=[{"code": m[0], "description": m[1], "qty": m[3]} for m in _pick_materials(equip_tag, problem)[:3]],
+                "wo_title": f"{equip_tag} — {problem[:40]}",
+                "production_impact": "HIGH" if priority == "P1" else "MEDIUM" if priority == "P2" else "LOW",
+                "required_specialties": ["Mecánico"],
+                "priority_suggested": priority,
+                "equipment_name": equip_tag,
+            })(),
+            spare_parts=[{"code": m[0], "name": m[1], "description": m[1], "qty": m[3], "quantity": m[3]} for m in _pick_materials(equip_tag, problem)[:3]],
             priority_code=priority,
             work_class="NO_PROGRAMADO" if priority in ("P1", "P2") else "PROGRAMADO",
             created_by=random.choice(["tecnico_1", "tecnico_2", "tecnico_3", "supervisor_ocp"]),

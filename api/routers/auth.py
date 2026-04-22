@@ -92,6 +92,22 @@ def login(data: UserLogin, request: Request, db: Session = Depends(get_db)):
     return response
 
 
+@router.post("/logout")
+def logout():
+    """Limpia cookies HttpOnly del navegador. El JS no puede borrarlas por sí
+    solo, por eso este endpoint existe. Llamado por el cliente antes de
+    redirect a /login durante force_logout."""
+    from fastapi.responses import JSONResponse as JR
+    response = JR(content={"ok": True})
+    # Max-Age=0 + same path/domain/flags = borra la cookie.
+    for name in ("access_token", "refresh_token"):
+        response.set_cookie(
+            name, value="", httponly=True, secure=True, samesite="lax",
+            max_age=0, expires=0,
+        )
+    return response
+
+
 @router.post("/refresh")
 def refresh_token(data: RefreshRequest, db: Session = Depends(get_db)):
     payload = auth_service.decode_token(data.refresh_token)

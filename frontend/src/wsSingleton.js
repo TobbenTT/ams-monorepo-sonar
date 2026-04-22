@@ -87,15 +87,33 @@ function openConnection(plantId) {
             let msg;
             try { msg = JSON.parse(evt.data); } catch { return; }
             // Jorge 2026-04-21 — si el servidor anuncia un restart/deploy,
-            // limpiamos sesión y redirigimos a login. Evita que el usuario
-            // vea errores/stale state mientras el backend reinicia.
+            // limpiamos sesión (cookies HttpOnly via /auth/logout + localStorage)
+            // y redirigimos a login. Evita stale cookies que sobreviven al deploy.
             if (msg?.event === 'server_restart' || msg?.event === 'force_logout') {
+                const message = msg?.data?.message || 'Servidor reiniciando. Volvé a iniciar sesión en unos segundos.';
+                const doRedirect = () => { try { window.location.href = '/login'; } catch {} };
+                // Limpiar localStorage primero (sincrónico).
                 try {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
-                    alert(msg?.data?.message || 'Servidor reiniciando. Volvé a iniciar sesión en unos segundos.');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('currentUser');
+                    sessionStorage.removeItem('ws_client_id');
                 } catch {}
-                try { window.location.href = '/login'; } catch {}
+                // Pegar POST /auth/logout para borrar las cookies HttpOnly.
+                // fetch con credentials para que el navegador envíe y reciba Set-Cookie.
+                try {
+                    fetch('/api/v1/auth/logout', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                    })
+                        .catch(() => {})
+                        .finally(() => { alert(message); doRedirect(); });
+                } catch {
+                    alert(message);
+                    doRedirect();
+                }
                 return;
             }
             // Echo suppression: if this event was caused by THIS tab's own mutation,

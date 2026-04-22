@@ -175,9 +175,9 @@ def list_fmeca_worksheets(db: Session, equipment_id: str | None = None, plant_id
 
 def list_fmeca_worksheets_summary(db: Session, plant_id: str | None = None, status: str | None = None) -> list[dict]:
     """Return one entry per worksheet (NOT flattened per row) — for master/detail navigation."""
+    from api.database.models import HierarchyNodeModel
     q = db.query(FMECAWorksheetModel)
     if plant_id:
-        from api.database.models import HierarchyNodeModel
         equip_ids = [
             n.node_id for n in db.query(HierarchyNodeModel).filter(
                 HierarchyNodeModel.plant_id == plant_id,
@@ -190,6 +190,12 @@ def list_fmeca_worksheets_summary(db: Session, plant_id: str | None = None, stat
     if status:
         q = q.filter(FMECAWorksheetModel.status == status)
     rows = q.order_by(FMECAWorksheetModel.created_at.desc()).all()
+    # Bulk-load criticality for all referenced equipment nodes
+    equip_ids_all = list({obj.equipment_id for obj in rows if obj.equipment_id})
+    crit_map = {}
+    if equip_ids_all:
+        for n in db.query(HierarchyNodeModel).filter(HierarchyNodeModel.node_id.in_(equip_ids_all)).all():
+            crit_map[n.node_id] = n.criticality
     result = []
     for obj in rows:
         ws_rows = obj.rows or []
@@ -199,6 +205,7 @@ def list_fmeca_worksheets_summary(db: Session, plant_id: str | None = None, stat
             "equipment_id": obj.equipment_id,
             "equipment_tag": obj.equipment_tag,
             "equipment_name": obj.equipment_name,
+            "equipment_criticality": crit_map.get(obj.equipment_id),
             "status": obj.status,
             "current_stage": obj.current_stage,
             "stage_completion": obj.stage_completion or {},
@@ -274,16 +281,23 @@ def _row_to_dict(r) -> dict:
 
 
 def get_fmeca_worksheet(db: Session, worksheet_id: str) -> dict | None:
+    from api.database.models import HierarchyNodeModel
     obj = db.query(FMECAWorksheetModel).filter(
         FMECAWorksheetModel.worksheet_id == worksheet_id,
     ).first()
     if not obj:
         return None
+    crit = None
+    if obj.equipment_id:
+        node = db.query(HierarchyNodeModel).filter(HierarchyNodeModel.node_id == obj.equipment_id).first()
+        if node:
+            crit = node.criticality
     return {
         "worksheet_id": obj.worksheet_id,
         "equipment_id": obj.equipment_id,
         "equipment_tag": obj.equipment_tag,
         "equipment_name": obj.equipment_name,
+        "equipment_criticality": crit,
         "status": obj.status,
         "current_stage": obj.current_stage,
         "rows": obj.rows or [],

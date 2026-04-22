@@ -6,22 +6,32 @@ import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 import { criticalityColor } from '../data/mockData';
 
-// ── Empty data placeholders (mock data removed) ─────────────────────────
-const EQUIPMENT_LIST = [];
-const RELIABILITY_KPIs = [];
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell
 } from 'recharts';
 import {
   Gauge, Sparkles, Loader2, CheckCircle, Activity, Shield,
-  TrendingUp, TrendingDown, Minus, Search, Heart
+  TrendingUp, TrendingDown, Minus, Search, Heart, Save
 } from 'lucide-react';
 
+const RELIABILITY_KPIs = [];  // TODO Fase 5b — cablear a Health Score API
+
 const CLASS_DOT_COLOR = { AA: '#dc2626', 'A+': '#ea580c', A: '#ca8a04', B: '#2563eb' };
-const FACTOR_KEYS = ['production_impact', 'safety_risk', 'environmental_risk', 'maintenance_cost', 'availability_impact', 'regulatory'];
-const FACTOR_LABELS = ['Prod', 'Safety', 'Env', 'Cost', 'Avail', 'Reg'];
-const FACTOR_BAR_COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4'];
+// 6 categorías mapeadas a CriticalityCategory del engine (de 11 disponibles).
+const FACTORS = [
+  { key: 'production_impact',   category: 'PRODUCTION',    label: 'Prod',   color: '#3b82f6', desc: 'Impacto en producción' },
+  { key: 'safety_risk',         category: 'SAFETY',        label: 'Safety', color: '#ef4444', desc: 'Riesgo de seguridad' },
+  { key: 'environmental_risk',  category: 'ENVIRONMENT',   label: 'Env',    color: '#22c55e', desc: 'Riesgo ambiental' },
+  { key: 'maintenance_cost',    category: 'OPERATING_COST', label: 'Cost',   color: '#f59e0b', desc: 'Costo operativo' },
+  { key: 'availability_impact', category: 'SCHEDULE',      label: 'Avail',  color: '#8b5cf6', desc: 'Impacto en disponibilidad' },
+  { key: 'regulatory',          category: 'COMPLIANCE',    label: 'Reg',    color: '#06b6d4', desc: 'Cumplimiento regulatorio' },
+];
+const FACTOR_KEYS = FACTORS.map(f => f.key);
+const FACTOR_LABELS = FACTORS.map(f => f.label);
+const FACTOR_BAR_COLORS = FACTORS.map(f => f.color);
+
+const RISK_TO_LETTER = { I_LOW: 'B', II_MEDIUM: 'A', III_HIGH: 'A+', IV_CRITICAL: 'AA' };
 
 const TREND_ICON = {
   IMPROVING: TrendingUp,
@@ -69,22 +79,47 @@ function CustomScatterTooltip({ active, payload, t }) {
 /* ═══════════════════════════════════════════════════════════
    CRITICALITY TAB
    ═══════════════════════════════════════════════════════════ */
-function CriticalityTab({ nodes, t }) {
+function CriticalityTab({ nodes, t, assessments, reload }) {
   const toast = useToast();
   const [selectedNode, setSelectedNode] = useState('');
   const [assessing, setAssessing] = useState(false);
   const [result, setResult] = useState(null);
+  // Matriz 6S + probabilidad (1-5)
+  const [scores, setScores] = useState(() => FACTORS.reduce((acc, f) => ({ ...acc, [f.key]: 3 }), {}));
+  const [probability, setProbability] = useState(3);
 
-  const aaCount = nodes.filter(n => n.criticality === 'AA').length;
-  const modCount = nodes.filter(n => n.criticality === 'A+' || n.criticality === 'A').length;
-  const bCount = nodes.filter(n => n.criticality === 'B').length;
-  const total = nodes.filter(n => n.criticality).length;
-  const scatterData = useMemo(() => nodes.filter(n => n.criticality).map(n => ({
-    equipment_name: n.name, equipment_tag: n.code || n.node_id,
-    class: n.criticality, production_impact: n.criticality === 'AA' ? 5 : n.criticality === 'A+' ? 4 : n.criticality === 'A' ? 3 : 2,
-    safety_risk: n.criticality === 'AA' ? 4 : n.criticality === 'A+' ? 3 : 2,
-    total_score: n.criticality === 'AA' ? 23 : n.criticality === 'A+' ? 18 : n.criticality === 'A' ? 13 : 8,
-  })), [nodes]);
+  // Index assessments by node_id for quick lookup
+  const assessmentByNode = useMemo(() => {
+    const map = {};
+    (assessments || []).forEach(a => { if (a.node_id) map[a.node_id] = a; });
+    return map;
+  }, [assessments]);
+
+  // Helper: letter class for a node (prefer assessment.letter > node.criticality)
+  const classOf = (n) => {
+    const a = assessmentByNode[n.node_id];
+    return a?.letter || a?.status ? a?.letter : n.criticality;
+  };
+
+  const assessed = nodes.map(n => ({ ...n, __class: classOf(n), __assessment: assessmentByNode[n.node_id] })).filter(n => n.__class);
+  const aaCount = assessed.filter(n => n.__class === 'AA').length;
+  const modCount = assessed.filter(n => n.__class === 'A+' || n.__class === 'A').length;
+  const bCount = assessed.filter(n => n.__class === 'B').length;
+  const total = assessed.length;
+
+  const scatterData = useMemo(() => assessed.map(n => {
+    const a = n.__assessment;
+    const prod = a?.criteria_scores?.find?.(s => s.category === 'PRODUCTION')?.consequence_level ||
+                 (n.__class === 'AA' ? 5 : n.__class === 'A+' ? 4 : n.__class === 'A' ? 3 : 2);
+    const safety = a?.criteria_scores?.find?.(s => s.category === 'SAFETY')?.consequence_level ||
+                   (n.__class === 'AA' ? 4 : n.__class === 'A+' ? 3 : 2);
+    return {
+      equipment_name: n.name, equipment_tag: n.code || n.node_id,
+      class: n.__class,
+      production_impact: prod, safety_risk: safety,
+      total_score: Math.round(a?.overall_score || 0) || (n.__class === 'AA' ? 23 : n.__class === 'A+' ? 18 : n.__class === 'A' ? 13 : 8),
+    };
+  }), [assessed]);
   const sorted = useMemo(() => [...scatterData].sort((a, b) => b.total_score - a.total_score), [scatterData]);
 
   async function handleAssess() {
@@ -92,38 +127,31 @@ function CriticalityTab({ nodes, t }) {
     setAssessing(true);
     setResult(null);
     try {
-      const res = await api.assessCriticality({
+      const payload = {
         node_id: selectedNode,
-        method: 'AI_AGENT',
-        assessed_by: 'reliability_agent',
+        probability: Number(probability),
+        method: 'FULL_MATRIX',
+        assessed_by: 'user',
+        criteria_scores: FACTORS.map(f => ({
+          category: f.category,
+          consequence_level: Number(scores[f.key]) || 1,
+        })),
+      };
+      const res = await api.assessCriticality(payload);
+      setResult({
+        ...res,
+        criticality_id: res.assessment_id,
+        new_criticality: RISK_TO_LETTER[res.risk_class] || res.risk_class,
+        scores: FACTORS.reduce((acc, f, i) => ({ ...acc, [f.key]: Number(scores[f.key]) }), { total: res.overall_score }),
+        justification: `Evaluación manual 6S completada. Score total ${res.overall_score} (max consecuencia × probabilidad=${probability}) → clase ${RISK_TO_LETTER[res.risk_class] || res.risk_class}.`,
       });
-      setResult(res);
       toast.success(t('criticality.assessmentComplete'));
-    } catch {
-      // Simulate AI agent result
-      const node = nodes.find(n => n.node_id === selectedNode);
-      setTimeout(() => {
-        setResult({
-          criticality_id: `CRIT-${Date.now()}`,
-          new_criticality: 'AA',
-          status: 'DRAFT',
-          justification: `AI Reliability Agent analysis complete for ${node?.name || selectedNode}. Based on production impact (5/5), safety risk (4/5), environmental risk (3/5), and maintenance history analysis, the recommended criticality classification is AA — Mission Critical. The equipment shows high consequence of failure with moderate probability of occurrence. Recommend implementation of CBM strategy with monthly vibration monitoring.`,
-          scores: {
-            production_impact: 5,
-            safety_risk: 4,
-            environmental_risk: 3,
-            maintenance_cost: 4,
-            availability_impact: 5,
-            regulatory: 2,
-            total: 23,
-          },
-        });
-        setAssessing(false);
-        toast.success(t('criticality.assessmentComplete'));
-      }, 3000);
-      return;
+      reload();
+    } catch (e) {
+      toast.error('Error: ' + (e?.message || e));
+    } finally {
+      setAssessing(false);
     }
-    setAssessing(false);
   }
 
   async function handleApprove() {
@@ -132,9 +160,9 @@ function CriticalityTab({ nodes, t }) {
       await api.approveCriticality(result.criticality_id);
       setResult(prev => ({ ...prev, status: 'APPROVED' }));
       toast.success(t('criticality.approved'));
-    } catch {
-      setResult(prev => ({ ...prev, status: 'APPROVED' }));
-      toast.success(t('criticality.approved'));
+      reload();
+    } catch (e) {
+      toast.error('Error: ' + (e?.message || e));
     }
   }
 
@@ -188,13 +216,15 @@ function CriticalityTab({ nodes, t }) {
         ) : <p className="text-sm text-muted-foreground py-10 text-center">No data</p>}
       </div>
 
-      {/* AI-Driven Assessment */}
+      {/* 6-Category Manual Assessment */}
       <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-5 h-5 text-amber-500" />
-          <div className="text-xs font-bold text-[#1B5E20] dark:text-green-400 uppercase tracking-wider">{t('criticality.aiAssessment')}</div>
+          <Gauge className="w-5 h-5 text-orange-500" />
+          <div className="text-xs font-bold text-[#1B5E20] dark:text-green-400 uppercase tracking-wider">Evaluación 6S · Consecuencia × Probabilidad</div>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">{t('criticality.aiAssessmentDesc')}</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          Califica cada categoría (1–5) y la probabilidad de falla. Score = max(consecuencia) × probabilidad. Clase: IV→AA, III→A+, II→A, I→B.
+        </p>
 
         <div className="flex items-center gap-3 flex-wrap mb-4">
           <select
@@ -205,13 +235,57 @@ function CriticalityTab({ nodes, t }) {
             <option value="">{t('criticality.selectEquipment')}</option>
             {nodes.map(n => <option key={n.node_id} value={n.node_id}>{n.code || n.node_id} — {n.name}</option>)}
           </select>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+          {FACTORS.map(f => (
+            <div key={f.key} className="bg-muted/30 border border-border rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-foreground">{f.desc}</label>
+                <span className="inline-block px-1.5 py-0.5 rounded text-xs font-bold text-white" style={{ backgroundColor: f.color }}>{scores[f.key]}</span>
+              </div>
+              <input type="range" min="1" max="5" step="1"
+                value={scores[f.key]}
+                onChange={e => setScores(s => ({ ...s, [f.key]: Number(e.target.value) }))}
+                className="w-full" />
+              <div className="flex justify-between text-[9px] text-muted-foreground mt-0.5">
+                <span>1 bajo</span><span>3 medio</span><span>5 severo</span>
+              </div>
+            </div>
+          ))}
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-amber-900 dark:text-amber-300">Probabilidad de falla</label>
+              <span className="inline-block px-1.5 py-0.5 rounded text-xs font-bold bg-amber-600 text-white">{probability}</span>
+            </div>
+            <input type="range" min="1" max="5" step="1"
+              value={probability}
+              onChange={e => setProbability(Number(e.target.value))}
+              className="w-full accent-amber-600" />
+            <div className="flex justify-between text-[9px] text-amber-700 dark:text-amber-400 mt-0.5">
+              <span>1 rara</span><span>3 ocasional</span><span>5 frecuente</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+          <span className="text-sm text-indigo-900 dark:text-indigo-300">
+            Score previsto: <strong className="text-lg tabular-nums">{Math.max(...Object.values(scores)) * probability}</strong>
+            {' '}· Clase estimada: <strong>{(() => {
+              const s = Math.max(...Object.values(scores)) * probability;
+              if (s >= 17) return 'AA';
+              if (s >= 10) return 'A+';
+              if (s >= 5) return 'A';
+              return 'B';
+            })()}</strong>
+          </span>
           <button
             onClick={handleAssess}
             disabled={assessing || !selectedNode}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1B5E20] text-white text-sm font-semibold hover:bg-[#2E7D32] disabled:opacity-50 transition-colors"
           >
-            {assessing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {assessing ? t('criticality.runningAssessment') : t('criticality.runAssessment')}
+            {assessing ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {assessing ? 'Evaluando…' : 'Evaluar y guardar'}
           </button>
         </div>
 
@@ -429,12 +503,18 @@ export default function Criticality() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('criticality');
   const [nodes, setNodes] = useState([]);
+  const [assessments, setAssessments] = useState([]);
 
-  useEffect(() => {
+  const reload = () => {
     api.listNodes({ plant_id: plant, node_type: 'EQUIPMENT' })
-      .then(n => { if (Array.isArray(n) && n.length > 0) setNodes(n); else setNodes([]); })
+      .then(n => setNodes(Array.isArray(n) ? n : []))
       .catch(() => setNodes([]));
-  }, [plant]);
+    api.listCriticalityByPlant(plant)
+      .then(a => setAssessments(Array.isArray(a) ? a : []))
+      .catch(() => setAssessments([]));
+  };
+
+  useEffect(() => { reload(); }, [plant]);
 
   return (
     <div className="p-6">
@@ -477,7 +557,7 @@ export default function Criticality() {
         </button>
       </div>
 
-      {activeTab === 'criticality' && <CriticalityTab nodes={nodes} t={t} />}
+      {activeTab === 'criticality' && <CriticalityTab nodes={nodes} t={t} assessments={assessments} reload={reload} />}
       {activeTab === 'health' && <AssetHealthTab t={t} />}
     </div>
   );

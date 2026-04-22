@@ -39,6 +39,10 @@ function categorize(rpn) {
   return 'LOW';
 }
 
+// Criticality letter → RPN multiplier (ajusta RPN crudo por clase del equipo).
+const CRIT_WEIGHT = { AA: 1.3, 'A+': 1.15, A: 1.0, B: 0.9, C: 0.8, D: 0.7 };
+const adjustRpn = (rpn, critLetter) => Math.round((rpn || 0) * (CRIT_WEIGHT[critLetter] || 1.0));
+
 const EMPTY_ROW = {
   function_description: '',
   functional_failure: '',
@@ -253,7 +257,19 @@ export default function FMECA() {
               <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
                 <div>
                   <div className="text-xs font-mono text-gray-400">{detail.worksheet_id}</div>
-                  <h2 className="text-lg font-bold text-gray-900">{detail.equipment_tag}</h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg font-bold text-gray-900">{detail.equipment_tag}</h2>
+                    {detail.equipment_criticality && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                        detail.equipment_criticality === 'AA' ? 'bg-red-100 text-red-700 border-red-300' :
+                        detail.equipment_criticality === 'A+' ? 'bg-orange-100 text-orange-700 border-orange-300' :
+                        detail.equipment_criticality === 'A' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
+                        'bg-blue-100 text-blue-700 border-blue-300'
+                      }`} title={`Criticidad del equipo: ${detail.equipment_criticality} · RPN ajustado ×${CRIT_WEIGHT[detail.equipment_criticality] || 1}`}>
+                        {detail.equipment_criticality}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500">{detail.equipment_name || '—'} · Analista: {detail.analyst || '—'}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -335,7 +351,7 @@ export default function FMECA() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
-                      {['#', 'Función', 'Fallo funcional', 'Modo de fallo', 'Efecto', 'Consecuencia', 'S', 'O', 'D', 'RPN', 'Estrategia'].map(h => (
+                      {['#', 'Función', 'Fallo funcional', 'Modo de fallo', 'Efecto', 'Consecuencia', 'S', 'O', 'D', 'RPN', 'RPN×crit', 'Estrategia'].map(h => (
                         <th key={h} className="px-2 py-2 text-left font-semibold text-gray-600 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -357,6 +373,11 @@ export default function FMECA() {
                           <td className="px-2 py-1.5 text-center font-semibold">{r.detection}</td>
                           <td className="px-2 py-1.5 text-center">
                             <span className={`inline-block px-2 py-0.5 rounded font-bold border ${catConf.color}`}>{r.rpn}</span>
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
+                            {detail.equipment_criticality ? (
+                              <span className="text-[11px] font-bold text-indigo-700">{adjustRpn(r.rpn, detail.equipment_criticality)}</span>
+                            ) : <span className="text-gray-300">—</span>}
                           </td>
                           <td className="px-2 py-1.5 text-[10.5px]">
                             {r.strategy_type ? (
@@ -381,7 +402,7 @@ export default function FMECA() {
                     )}
 
                     {(detail.rows || []).length === 0 && !draftRow && (
-                      <tr><td colSpan={11} className="px-2 py-8 text-center text-gray-400 italic">
+                      <tr><td colSpan={12} className="px-2 py-8 text-center text-gray-400 italic">
                         Sin filas aún. "Agregar fila" para comenzar con Funciones / Fallos / Efectos.
                       </td></tr>
                     )}
@@ -515,10 +536,11 @@ function DraftRowEditor({ row, setRow, onSave, onCancel, saving }) {
           <span className={`inline-block px-2 py-0.5 rounded font-bold border ${catConf.color}`}>{rpn}</span>
           <div className={`text-[9px] mt-0.5 ${catConf.color.split(' ')[1]}`}>{catConf.label}</div>
         </td>
+        <td className="px-2 py-1.5 text-[10px] text-gray-400 italic">—</td>
         <td className="px-2 py-1.5 text-[10px] text-gray-400 italic">stage 4</td>
       </tr>
       <tr className="bg-indigo-50/50 border-b border-indigo-200">
-        <td colSpan={11} className="px-2 py-2">
+        <td colSpan={12} className="px-2 py-2">
           <div className="flex items-center gap-2 flex-wrap">
             <input value={row.recommended_action} onChange={e => upd('recommended_action', e.target.value)}
               placeholder="Acción recomendada (opcional)"

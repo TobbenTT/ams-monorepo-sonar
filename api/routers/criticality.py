@@ -11,6 +11,12 @@ from api.services import criticality_service
 router = APIRouter(prefix="/criticality", tags=["criticality"], dependencies=[Depends(get_current_user)])
 
 
+@router.get("/by-plant")
+def list_by_plant(plant_id: str, db: Session = Depends(get_db)):
+    """Lista todos los equipos de una planta con su evaluación más reciente."""
+    return criticality_service.list_by_plant(db, plant_id=plant_id)
+
+
 @router.post("/assess")
 def assess_criticality(data: CriticalityAssessRequest, db: Session = Depends(get_db)):
     return criticality_service.assess(

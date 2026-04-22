@@ -688,7 +688,10 @@ export default function FailureCapture({ onNavigateTab }) {
           const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
           toast.info('Transcribing with AI...');
           try {
-            const lang = document.documentElement.lang === 'en' ? 'en' : 'es';
+            // Ver comentario en recognition.lang: el idioma de voz es
+            // independiente del UI language. Default es.
+            const stored = localStorage.getItem('voice_lang') || 'es-ES';
+            const lang = stored.startsWith('en') ? 'en' : 'es';
             const res = await api.transcribeAudio(blob, lang);
             const text = res.text || res.transcription || '';
             if (text) {
@@ -714,8 +717,10 @@ export default function FailureCapture({ onNavigateTab }) {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    // Auto-detect language: Spanish by default for this app
-    recognition.lang = document.documentElement.lang === 'en' ? 'en-US' : 'es-ES';
+    // El idioma de reconocimiento es INDEPENDIENTE del idioma de la UI.
+    // El operador siempre habla el idioma local (default es-ES para minería
+    // LATAM/España). Override via localStorage 'voice_lang' si hace falta.
+    recognition.lang = localStorage.getItem('voice_lang') || 'es-ES';
     recognitionRef.current = recognition;
 
     let finalTranscript = '';
@@ -1390,7 +1395,7 @@ export default function FailureCapture({ onNavigateTab }) {
                   <button type="button" onClick={handleVoice}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${isRecording ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
                     {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                    {isRecording ? 'Recording... (release to analyze)' : 'Voice'}
+                    {isRecording ? 'Grabando… click para detener' : 'Voice'}
                   </button>
                 ) : (
                   <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed" title="Requiere HTTPS">

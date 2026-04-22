@@ -125,6 +125,16 @@ def list_fmeca_worksheets(
     return fmea_service.list_fmeca_worksheets(db, equipment_id=equipment_id, plant_id=plant_id, status=status)
 
 
+@router.get("/fmeca/worksheets-summary")
+def list_fmeca_worksheets_summary(
+    plant_id: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Nueva vista: un entry por worksheet (para navegación master/detail)."""
+    return fmea_service.list_fmeca_worksheets_summary(db, plant_id=plant_id, status=status)
+
+
 @router.post("/fmeca/worksheets")
 def create_fmeca_worksheet(data: FMECAWorksheetCreate, db: Session = Depends(get_db)):
     return fmea_service.create_fmeca_worksheet(db, data.model_dump())

@@ -173,6 +173,43 @@ def list_fmeca_worksheets(db: Session, equipment_id: str | None = None, plant_id
     return result
 
 
+def list_fmeca_worksheets_summary(db: Session, plant_id: str | None = None, status: str | None = None) -> list[dict]:
+    """Return one entry per worksheet (NOT flattened per row) — for master/detail navigation."""
+    q = db.query(FMECAWorksheetModel)
+    if plant_id:
+        from api.database.models import HierarchyNodeModel
+        equip_ids = [
+            n.node_id for n in db.query(HierarchyNodeModel).filter(
+                HierarchyNodeModel.plant_id == plant_id,
+                HierarchyNodeModel.node_type == "EQUIPMENT",
+            ).all()
+        ]
+        if equip_ids:
+            q = q.filter(FMECAWorksheetModel.equipment_id.in_(equip_ids))
+        # If no equipment for plant, still return global worksheets (no plant filter applied)
+    if status:
+        q = q.filter(FMECAWorksheetModel.status == status)
+    rows = q.order_by(FMECAWorksheetModel.created_at.desc()).all()
+    result = []
+    for obj in rows:
+        ws_rows = obj.rows or []
+        rpn_vals = [r.get("rpn", 0) for r in ws_rows if isinstance(r, dict)]
+        result.append({
+            "worksheet_id": obj.worksheet_id,
+            "equipment_id": obj.equipment_id,
+            "equipment_tag": obj.equipment_tag,
+            "equipment_name": obj.equipment_name,
+            "status": obj.status,
+            "current_stage": obj.current_stage,
+            "stage_completion": obj.stage_completion or {},
+            "analyst": obj.analyst,
+            "row_count": len(ws_rows),
+            "max_rpn": max(rpn_vals) if rpn_vals else 0,
+            "created_at": str(obj.created_at),
+        })
+    return result
+
+
 def create_fmeca_worksheet(db: Session, data: dict) -> dict:
     ws = FMECAEngine.create_worksheet(
         equipment_id=data["equipment_id"],

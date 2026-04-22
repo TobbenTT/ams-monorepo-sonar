@@ -527,7 +527,7 @@ def build_story(S):
 
     story.append(Paragraph("Equipo requerido", S["H3"]))
     team = [
-        "<b>1 dev full-stack senior</b> (David, ya existente)",
+        "<b>1 dev full-stack junior</b> (David, ya existente)",
         "<b>1 ML engineer part-time</b> (6 meses, 50%) · ~US$3-5k/mes",
         "<b>1 domain expert minero</b> (Jorge o externo) · 10h/semana",
         "<b>1 DevOps part-time</b> (solo al llegar Escenario C) · ~US$2k/mes",

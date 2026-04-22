@@ -188,6 +188,7 @@ export const rcmDecide = (d) => post('/fmea/rcm-decide', d);
 
 // ── FMECA ──
 export const listFmecaWorksheets = (p) => get('/fmea/fmeca/worksheets', p);
+export const listFmecaWorksheetsSummary = (p) => get('/fmea/fmeca/worksheets-summary', p);
 export const getFmecaWorksheet = (id) => get(`/fmea/fmeca/worksheets/${id}`);
 export const createFmecaWorksheet = (d) => post('/fmea/fmeca/worksheets', d);
 export const calculateRPN = (d) => post('/fmea/fmeca/rpn', d);

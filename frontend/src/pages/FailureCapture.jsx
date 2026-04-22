@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { suggestFailureFields, aiAssistImage } from '../api';
 import { useOutletContext } from 'react-router-dom';
-import { Upload, Loader2, ArrowRight, X, Mic, MicOff, Camera, AlertTriangle, Search, ChevronDown, ChevronRight, Clock, Package, Wrench, Users, MapPin, CheckCircle, FileText, ClipboardCopy } from 'lucide-react';
+import { Upload, Loader2, ArrowRight, X, Mic, MicOff, Camera, AlertTriangle, Search, ChevronDown, ChevronRight, Clock, Package, Wrench, Users, MapPin, CheckCircle, FileText, ClipboardCopy, Lock } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import EquipmentChat from '../components/EquipmentChat';
 import { useAuth } from '../contexts/AuthContext';
@@ -1673,7 +1673,12 @@ export default function FailureCapture({ onNavigateTab }) {
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5" /> Technical Location *
             </label>
-            {!selectedLoc ? (
+            {!plant ? (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-xs">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Seleccioná una <b>planta</b> en el header antes de cargar el aviso.</span>
+              </div>
+            ) : !selectedLoc ? (
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" value={locSearch}
@@ -1746,7 +1751,12 @@ export default function FailureCapture({ onNavigateTab }) {
           {/* 3d. Equipo / TAG */}
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Equipo / TAG</label>
-            {!selectedEquip ? (
+            {!plant ? (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 text-xs">
+                <Lock className="w-4 h-4 shrink-0" />
+                <span>Bloqueado — seleccioná planta primero.</span>
+              </div>
+            ) : !selectedEquip ? (
               <div className="relative">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

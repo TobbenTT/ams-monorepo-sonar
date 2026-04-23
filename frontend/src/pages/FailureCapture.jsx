@@ -1389,6 +1389,42 @@ export default function FailureCapture({ onNavigateTab }) {
             <p className="text-[10px] text-gray-400 mt-1">This will be the Work Order name in Planning and Identification</p>
           </div>
 
+          {/* Jorge 2026-04-23: Priority + Estado del equipo ARRIBA del textbox
+              para que el AI los lea junto con la descripción. */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="border rounded-xl p-4">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Estado del Equipo</label>
+              <div className="grid grid-cols-2 gap-2">
+                {PLANT_CONDITIONS.map(opt => (
+                  <button key={opt.value}
+                    onClick={() => setF('equipmentCondition', opt.value)}
+                    className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
+                    style={{
+                      borderColor: form.equipmentCondition === opt.value ? opt.color : '#e5e7eb',
+                      backgroundColor: form.equipmentCondition === opt.value ? opt.color + '15' : 'transparent',
+                      color: form.equipmentCondition === opt.value ? opt.color : '#64748B',
+                    }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-xl p-4">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Priority</label>
+              <div className="grid grid-cols-2 gap-2">
+                {PRIORITIES.map(p => (
+                  <button key={p.value}
+                    onClick={() => { setF('priority', p.value); setF('activityClass', ['P1','P2'].includes(p.value) ? 'M002' : 'M001'); }}
+                    className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${form.priority === p.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
+                    style={{ borderColor: form.priority === p.value ? p.color : '#e5e7eb', backgroundColor: form.priority === p.value ? p.bg : 'transparent' }}>
+                    <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
+                    <div className="text-[9px] text-gray-500 leading-tight">{p.sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* 1. What happened? + Voice / Camera */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -1647,41 +1683,7 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          {/* 3. Equipment Condition + Priority */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border rounded-xl p-4">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Required Equipment Condition</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PLANT_CONDITIONS.map(opt => (
-                  <button key={opt.value}
-                    onClick={() => setF('equipmentCondition', opt.value)}
-                    className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
-                    style={{
-                      borderColor: form.equipmentCondition === opt.value ? opt.color : '#e5e7eb',
-                      backgroundColor: form.equipmentCondition === opt.value ? opt.color + '15' : 'transparent',
-                      color: form.equipmentCondition === opt.value ? opt.color : '#64748B',
-                    }}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="border rounded-xl p-4">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Priority</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PRIORITIES.map(p => (
-                  <button key={p.value}
-                    onClick={() => { setF('priority', p.value); setF('activityClass', ['P1','P2'].includes(p.value) ? 'M002' : 'M001'); }}
-                    className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${form.priority === p.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
-                    style={{ borderColor: form.priority === p.value ? p.color : '#e5e7eb', backgroundColor: form.priority === p.value ? p.bg : 'transparent' }}>
-                    <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
-                    <div className="text-[9px] text-gray-500 leading-tight">{p.sub}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
+          {/* Priority+Estado movidos arriba del textbox (Jorge 2026-04-23) */}
 
           </div>
           <div style={{display: wizardStep === 1 ? undefined : "none"}}>
@@ -2638,27 +2640,11 @@ export default function FailureCapture({ onNavigateTab }) {
 
         {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t p-5 flex justify-between items-center">
-          <div className="text-xs text-gray-500">
-            {selectedPriority && (
-              <span className="font-mono px-2 py-1 rounded" style={{ backgroundColor: selectedPriority.bg, color: selectedPriority.color }}>
-                {selectedPriority.value} / {claseOT}
-              </span>
-            )}
-          </div>
+          <div className="text-xs text-gray-500" />
           <div className="flex items-center gap-3">
-            {(!canSubmit || wizardStep !== 3) && (() => {
-              const missing = [];
-              if (!form.technicalLocationCode.trim()) missing.push('Ubicación / Equipo');
-              if (!form.whatHappens.trim()) missing.push('¿Qué pasó?');
-              if (wizardStep !== 3) missing.push(`completar Paso ${wizardStep + 1 <= 3 ? wizardStep + 1 : 3}`);
-              return (
-                <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-lg max-w-[340px]">
-                  ⚠ Falta: {missing.join(' · ')}
-                </span>
-              );
-            })()}
+            {/* Jorge 2026-04-23: quitados chip P3/PM01 y helper "Falta: ..." */}
             <button onClick={handleReset} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              Cancel
+              Limpiar
             </button>
             <button onClick={handleSubmit} disabled={submitting || !canSubmit || wizardStep !== 3}
               title={!canSubmit ? 'Completá los campos obligatorios antes de crear' : wizardStep !== 3 ? 'Avanzá hasta Paso 3' : ''}

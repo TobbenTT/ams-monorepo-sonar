@@ -1918,9 +1918,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     WO
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('ai_confidence')}>
-                    {t('workRequests.aiConfidence')} {sortField === 'ai_confidence' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
-                  </th>
+                  {/* Jorge 2026-04-23 (reunión 17:38): columna AI Reliability ocultada para ceder espacio */}
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     {t('common.actions')}
                   </th>
@@ -2019,10 +2017,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                         ) : <span className="text-xs text-gray-300">—</span>}
                       </td>
 
-                      {/* AI Reliability (Jorge SF-527 terminology) */}
-                      <td className="px-4 py-3">
-                        <ConfidenceBar value={req.ai_confidence} />
-                      </td>
+                      {/* Columna AI Reliability ocultada (Jorge 2026-04-23 17:38) */}
 
                                             {/* Actions -- SF-108 contextual status buttons */}
                       <td className="px-4 py-3">

@@ -111,15 +111,9 @@ export default function WorkManagement() {
         {/* View toggle removed per client feedback #1 */}
       </div>
 
-      {/* Date range filter */}
-      <div className="flex items-center gap-3 text-sm">
-        <span className="text-xs text-gray-500 font-medium">Date range:</span>
-        <input type="date" className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs"
-          onChange={e => { /* pass to child tabs via context */ }} />
-        <span className="text-gray-300">—</span>
-        <input type="date" className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs"
-          onChange={e => { /* pass to child tabs via context */ }} />
-      </div>
+      {/* Jorge 2026-04-23 (reunión 17:38): date range removido de Work Management —
+          cada tab tiene su propio filtro de fechas, éste estaba duplicando y no
+          se estaba cableando a los tabs. */}
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">

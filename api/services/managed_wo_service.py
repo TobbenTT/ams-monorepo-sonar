@@ -683,6 +683,14 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
         wo.closed_at = datetime.now()
         if "actual_hours" in kwargs:
             wo.actual_hours = kwargs["actual_hours"]
+        # Jorge 2026-04-23 (reunión 17:38): al cerrar la OT, auto-cerrar el aviso vinculado.
+        # Evita que el supervisor tenga que cerrar ambos por separado (como en SAP).
+        if wo.work_request_id:
+            from api.database.models import WorkRequestModel
+            wr_linked = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == wo.work_request_id).first()
+            if wr_linked and wr_linked.status not in ("CERRADO", "CLOSED", "COMPLETED"):
+                wr_linked.status = "CERRADO"
+                wr_linked.updated_at = datetime.now()
     # Legacy compat
     elif target_status == "APROBADO":
         wo.released_by = user_id

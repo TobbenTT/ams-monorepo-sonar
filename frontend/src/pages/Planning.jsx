@@ -1094,6 +1094,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         Score IA
                       </th>
                     )}
+                    {/* Jorge 2026-04-23 (reunión 17:38): fecha creación OT (distinta a Planned Date) */}
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha Creación</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Planned Date</th>
                   </tr>
                 </thead>
@@ -1164,6 +1166,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             </td>
                           );
                         })()}
+                        <td className="px-4 py-3 text-xs text-gray-500">
+                          {wo.created_at ? new Date(wo.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}
+                        </td>
                         <td className="px-4 py-3 text-xs text-gray-500">
                           {wo.planned_start ? new Date(wo.planned_start).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }) : '—'}
                         </td>

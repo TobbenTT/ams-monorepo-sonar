@@ -102,6 +102,8 @@ export default function Execution() {
   const { t } = useLanguage();
   const toast = useToast();
   const [view, setView] = useState('today');
+  // Jorge SF-525: nav entre semanas (W18, W17, W19…) con historial en bandeja ejecución
+  const [weekOffset, setWeekOffset] = useState(0); // 0=semana actual, -1=anterior, +1=siguiente
   const [loading, setLoading] = useState(true);
   const [activeWOs, setActiveWOs] = useState([]);
   const [completedWOs, setCompletedWOs] = useState([]);
@@ -554,7 +556,7 @@ export default function Execution() {
         // Semana calendario actual (lunes a domingo) con OTs activas distribuidas
         const now = new Date();
         const offset = now.getDay() === 0 ? 6 : now.getDay() - 1;
-        const monday = new Date(now); monday.setDate(now.getDate() - offset); monday.setHours(0, 0, 0, 0);
+        const monday = new Date(now); monday.setDate(now.getDate() - offset + (weekOffset * 7)); monday.setHours(0, 0, 0, 0);
         const weekDays = Array.from({ length: 7 }, (_, i) => {
           const d = new Date(monday); d.setDate(monday.getDate() + i); return d;
         });
@@ -571,10 +573,19 @@ export default function Execution() {
         return (
           <div className="space-y-3">
             <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3 flex items-center gap-2 flex-wrap">
+              <button type="button" onClick={() => setWeekOffset(o => o - 1)}
+                className="px-2 py-1 rounded bg-white border border-indigo-300 text-xs font-bold text-indigo-700 hover:bg-indigo-100" title="Semana anterior">◀</button>
               <Calendar size={16} className="text-indigo-600" />
               <span className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">
-                Semana {String(weekNum).padStart(2, '0')} · {monday.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })} – {weekDays[6].toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}
+                W{String(weekNum).padStart(2, '0')} · {monday.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })} – {weekDays[6].toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}
+                {weekOffset !== 0 && <span className="ml-2 text-[10px] text-indigo-600">({weekOffset > 0 ? `+${weekOffset}` : weekOffset}w)</span>}
               </span>
+              <button type="button" onClick={() => setWeekOffset(o => o + 1)}
+                className="px-2 py-1 rounded bg-white border border-indigo-300 text-xs font-bold text-indigo-700 hover:bg-indigo-100" title="Semana siguiente">▶</button>
+              {weekOffset !== 0 && (
+                <button type="button" onClick={() => setWeekOffset(0)}
+                  className="px-2 py-1 rounded bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700">Hoy</button>
+              )}
               <span className="text-xs text-indigo-700 dark:text-indigo-300 ml-auto">WIC · {activeWOs.length} OTs en la semana</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-7 gap-2">

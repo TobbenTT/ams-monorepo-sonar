@@ -1159,6 +1159,10 @@ export default function WorkOrdersPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
               Órdenes de Trabajo ({managedWOs.length})
+              {/* Jorge SF-536: timestamp última actualización */}
+              <span className="ml-3 text-xs font-normal text-gray-500">
+                Última actualización: {new Date().toLocaleString('es-CL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              </span>
             </h3>
             <div className="flex items-center gap-2">
               <Button variant="outline" className="flex items-center gap-2 border-gray-300" onClick={handleExportOTs} disabled={!managedWOs.length}>
@@ -1209,7 +1213,11 @@ export default function WorkOrdersPage() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm">{wo.equipment_tag}</TableCell>
+                        <TableCell className="text-sm">
+                          {/* Jorge SF-521: TL + TAG separados en lista OT */}
+                          {wo.technical_location && <div className="text-[10px] text-blue-500">TL: {wo.technical_location}</div>}
+                          <div className="font-mono">TAG: {wo.equipment_tag}</div>
+                        </TableCell>
                         <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
                         <TableCell>
                           <Badge className={`text-xs ${

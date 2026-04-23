@@ -257,7 +257,7 @@ export default {
         requestId: 'ID Aviso',
         equipmentName: 'Equipo',
         failureDesc: 'Descripción de Falla',
-        aiConfidence: 'Confianza IA',
+        aiConfidence: 'Confiabilidad IA',
         validate: 'Validar',
         validateRequest: 'Validar Aviso',
         scheduled: 'Programado',

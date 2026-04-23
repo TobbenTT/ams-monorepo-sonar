@@ -257,7 +257,7 @@ export default {
         requestId: 'Request ID',
         equipmentName: 'Equipment',
         failureDesc: 'Failure Description',
-        aiConfidence: 'AI Confidence',
+        aiConfidence: 'AI Reliability',
         validate: 'Validate',
         validateRequest: 'Validate Request',
         scheduled: 'Scheduled',

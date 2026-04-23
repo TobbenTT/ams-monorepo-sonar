@@ -2012,7 +2012,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                         ) : <span className="text-xs text-gray-300">—</span>}
                       </td>
 
-                      {/* AI Confidence */}
+                      {/* AI Reliability (Jorge SF-527 terminology) */}
                       <td className="px-4 py-3">
                         <ConfidenceBar value={req.ai_confidence} />
                       </td>

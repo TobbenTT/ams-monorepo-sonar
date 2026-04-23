@@ -67,6 +67,9 @@ export default function WorkOrdersPage() {
   const [managedWOs, setManagedWOs] = useState([]);
   const [woTab, setWoTab] = useState('ots'); // 'ots' | 'wrs'
   const [statusFilter, setStatusFilter] = useState(null); // null = all, else status code
+  // Jorge 2026-04-23: filtros dependientes PM-type ↔ Priority (tablero OTs)
+  const [woTypeFilter, setWoTypeFilter] = useState([]); // ['PM01','PM02','PM03']
+  const [woPriorityFilter, setWoPriorityFilter] = useState([]); // ['P1','P2','P3','P4']
   const [impactScore, setImpactScore] = useState(null);
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
   const [showCreateOTModal, setShowCreateOTModal] = useState(false);
@@ -1105,6 +1108,54 @@ export default function WorkOrdersPage() {
               );
             })}
           </div>
+          {/* Jorge 2026-04-23: filtros dependientes PM-type ↔ Priority
+              PM03 (falla) → solo P1/P2 · PM01/PM02 (programado/planificado) → solo P3/P4 */}
+          <div className="flex flex-wrap items-center gap-3 mb-3 p-3 bg-gray-50 rounded-lg border">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Tipo OT:</span>
+            {['PM01','PM02','PM03'].map(t => {
+              const sel = woTypeFilter.includes(t);
+              return (
+                <button key={t} type="button"
+                  onClick={() => {
+                    setWoTypeFilter(prev => {
+                      const next = prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t];
+                      // coherencia: si se elige sólo PM3 → limitar prioridad a P1/P2;
+                      // si sólo PM1/PM2 → limitar a P3/P4. Si mix, sin restricción.
+                      setWoPriorityFilter(wp => {
+                        if (next.length === 0) return wp;
+                        const onlyFalla = next.every(x => x === 'PM03');
+                        const onlyProgram = next.every(x => x === 'PM01' || x === 'PM02');
+                        if (onlyFalla) return wp.filter(p => ['P1','P2'].includes(p));
+                        if (onlyProgram) return wp.filter(p => ['P3','P4'].includes(p));
+                        return wp;
+                      });
+                      return next;
+                    });
+                  }}
+                  className={`text-xs px-2.5 py-1.5 rounded-md font-bold border ${sel ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>
+                  {t}
+                </button>
+              );
+            })}
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 ml-2">Prioridad:</span>
+            {['P1','P2','P3','P4'].map(p => {
+              const sel = woPriorityFilter.includes(p);
+              const onlyFalla = woTypeFilter.length > 0 && woTypeFilter.every(x => x === 'PM03');
+              const onlyProgram = woTypeFilter.length > 0 && woTypeFilter.every(x => x === 'PM01' || x === 'PM02');
+              const disabled = (onlyFalla && ['P3','P4'].includes(p)) || (onlyProgram && ['P1','P2'].includes(p));
+              return (
+                <button key={p} type="button" disabled={disabled}
+                  onClick={() => setWoPriorityFilter(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])}
+                  className={`text-xs px-2.5 py-1.5 rounded-md font-bold border ${sel ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'} ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}>
+                  {p}
+                </button>
+              );
+            })}
+            {(woTypeFilter.length > 0 || woPriorityFilter.length > 0) && (
+              <button onClick={() => { setWoTypeFilter([]); setWoPriorityFilter([]); }}
+                className="text-xs text-gray-500 hover:text-red-500 px-2 py-1 border border-gray-200 rounded ml-auto">Clear</button>
+            )}
+          </div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
               Órdenes de Trabajo ({managedWOs.length})
@@ -1134,7 +1185,11 @@ export default function WorkOrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[...managedWOs].filter(wo => !statusFilter || wo.status === statusFilter).sort((a, b) => {
+                  {[...managedWOs]
+                    .filter(wo => !statusFilter || wo.status === statusFilter)
+                    .filter(wo => woTypeFilter.length === 0 || woTypeFilter.includes(wo.wo_type))
+                    .filter(wo => woPriorityFilter.length === 0 || woPriorityFilter.includes(wo.priority_code))
+                    .sort((a, b) => {
                     // Fast track OTs first, then by creation date
                     if (a.is_fast_track && !b.is_fast_track) return -1;
                     if (!a.is_fast_track && b.is_fast_track) return 1;

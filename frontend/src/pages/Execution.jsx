@@ -5,7 +5,7 @@ const QRScanner = lazy(() => import('../components/QRScanner'));
 import {
   Wrench, CheckCircle, Clock, AlertTriangle, User, ChevronDown, ChevronUp, QrCode,
   Zap, Calendar, Loader2, Play, X, ArrowRight, BarChart2, Package, FileText,
-  Timer, TrendingUp, Users, Activity,
+  Timer, TrendingUp, Users, Activity, Plus, Inbox,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -13,6 +13,7 @@ import {
   listManagedWOs, updateManagedWO, completeManagedWO, closeManagedWO,
   updateManagedWOProgress, verifyCloseManagedWO, suggestFailureFields,
 } from '../api';
+import * as api from '../api';
 
 // Fase 7 Jorge 2026-04-21 — grabar nota de voz en el cierre + transcribir.
 // Usa MediaRecorder + endpoint /media/transcribe (whisper) ya existente.
@@ -119,26 +120,34 @@ export default function Execution() {
   const [batchHours, setBatchHours] = useState({});
   const [batchClosing, setBatchClosing] = useState(false);
   const [batchFilter, setBatchFilter] = useState('');
+  // Jorge 2026-04-22 — #6: agregar material adicional durante EN_EJECUCION
+  const [addMaterialFor, setAddMaterialFor] = useState(null); // { wo_id, materials }
+  const [newMatForm, setNewMatForm] = useState({ code: '', description: '', quantity: 1, unit: 'PZ' });
+  const [savingMat, setSavingMat] = useState(false);
+  // Jorge 2026-04-22 #9: Avisos pendientes de aprobación por supervisor
+  const [pendingWRs, setPendingWRs] = useState([]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [prog, exec, comp, closed, planned] = await Promise.all([
+      const [prog, exec, comp, closed, planned, wrs] = await Promise.all([
         listManagedWOs({ status: 'PROGRAMADO', plant_id: plant, limit: 100 }),
         listManagedWOs({ status: 'EN_EJECUCION', plant_id: plant, limit: 100 }),
         listManagedWOs({ status: 'COMPLETADO', plant_id: plant, limit: 50 }),
         listManagedWOs({ status: 'CERRADO', plant_id: plant, limit: 50 }),
         listManagedWOs({ status: 'PLANIFICADO', plant_id: plant, limit: 100 }),
+        // Avisos pendientes de aprobar
+        api.listWorkRequests({ plant_id: plant, status: 'PENDIENTE', limit: 50 }).catch(() => []),
       ]);
       const toArr = r => Array.isArray(r) ? r : r?.items || [];
       const execList = toArr(exec);
       const progList = toArr(prog);
       const plannedList = toArr(planned);
       setActiveWOs([...execList, ...progList, ...plannedList]);
-      // "Ready to close" = COMPLETADO + all EN_EJECUCION (supervisor can close any)
       const compList = toArr(comp);
       setCompletedWOs([...compList, ...execList]);
       setClosedWOs(toArr(closed));
+      setPendingWRs(toArr(wrs));
     } catch {}
     setLoading(false);
   };
@@ -355,8 +364,10 @@ export default function Execution() {
   const failureWOs = activeWOs.filter(w => (w.wo_type === 'PM03') || (w.priority_code === 'P1' || w.priority_code === 'P2'));
   const VIEWS = [
     { id: 'today', label: 'Hoy', icon: Zap, count: activeWOs.length },
-    { id: 'failures', label: '🔥 Fallas', icon: AlertTriangle, count: failureWOs.length },
+    { id: 'avisos', label: '📨 Avisos', icon: Inbox, count: pendingWRs.length },
+    { id: 'failures', label: '🔥 Fallas PM03', icon: AlertTriangle, count: failureWOs.length },
     { id: 'close', label: 'Bandeja de Cierre', icon: CheckCircle, count: completedWOs.length },
+    { id: 'week', label: 'Semana', icon: Calendar, count: activeWOs.length },
     { id: 'summary', label: 'Resumen', icon: BarChart2, count: closedWOs.length },
     { id: 'history', label: 'Historial', icon: Calendar, count: closedWOs.length },
   ];
@@ -490,6 +501,121 @@ export default function Execution() {
         </div>
       )}
 
+      {/* ═══ AVISOS PENDIENTES — Jorge 2026-04-22 #9 ═══ */}
+      {view === 'avisos' && (
+        <div className="space-y-3">
+          <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-center gap-2">
+            <Inbox size={16} className="text-amber-600" />
+            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">Avisos pendientes de aprobación · {pendingWRs.length}</span>
+            <span className="text-xs text-amber-700 dark:text-amber-300 ml-auto">El supervisor aprueba → se transforma en OT</span>
+          </div>
+          {pendingWRs.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <Inbox size={40} className="text-emerald-400/40 mx-auto mb-3" />
+              <p className="text-muted-foreground">Sin avisos pendientes. Todo al día.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {pendingWRs.map(wr => {
+                const pd = wr.problem_description || {};
+                const txt = pd.original_text || wr.description || wr.failure_description || '';
+                const prio = wr.priority_code || wr.priority;
+                const prioColor = prio === 'P1' ? 'bg-red-500' : prio === 'P2' ? 'bg-orange-500' : prio === 'P3' ? 'bg-amber-500' : 'bg-blue-500';
+                return (
+                  <div key={wr.request_id || wr.id} className="bg-card border border-border rounded-xl p-4 flex items-start gap-3">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded text-white ${prioColor}`}>{prio}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-bold text-foreground">{wr.equipment_tag || wr.equipment_name || '—'}</span>
+                        {wr.technical_location && <span className="text-[10px] font-mono text-blue-600">{wr.technical_location}</span>}
+                        {wr.reported_by && <span className="text-[10px] text-muted-foreground">por {wr.reported_by}</span>}
+                      </div>
+                      <p className="text-xs text-foreground mt-1 line-clamp-2">{txt}</p>
+                      <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground">
+                        <span>{wr.created_at ? new Date(wr.created_at).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                        {wr.failure_mode_detected && <span className="text-amber-700">{wr.failure_mode_detected}</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => window.location.href = `/work-management?tab=identification&wr=${wr.request_id || wr.id}`}
+                      className="text-xs font-semibold bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">
+                      Revisar
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══ VISTA SEMANA / CRONOGRAMA — Jorge 2026-04-22 #8 ═══ */}
+      {view === 'week' && (() => {
+        // Semana calendario actual (lunes a domingo) con OTs activas distribuidas
+        const now = new Date();
+        const offset = now.getDay() === 0 ? 6 : now.getDay() - 1;
+        const monday = new Date(now); monday.setDate(now.getDate() - offset); monday.setHours(0, 0, 0, 0);
+        const weekDays = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(monday); d.setDate(monday.getDate() + i); return d;
+        });
+        const weekNum = Math.ceil(((monday - new Date(monday.getFullYear(), 0, 1)) / 86400000 + new Date(monday.getFullYear(), 0, 1).getDay() + 1) / 7);
+        const wosByDay = weekDays.map(d => {
+          const dStr = d.toISOString().slice(0, 10);
+          return activeWOs.filter(w => {
+            const start = w.planned_start ? w.planned_start.slice(0, 10) : null;
+            const end = w.planned_end ? w.planned_end.slice(0, 10) : null;
+            if (!start) return false;
+            return start <= dStr && (end ? dStr <= end : dStr === start);
+          });
+        });
+        return (
+          <div className="space-y-3">
+            <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3 flex items-center gap-2 flex-wrap">
+              <Calendar size={16} className="text-indigo-600" />
+              <span className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">
+                Semana {String(weekNum).padStart(2, '0')} · {monday.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })} – {weekDays[6].toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}
+              </span>
+              <span className="text-xs text-indigo-700 dark:text-indigo-300 ml-auto">WIC · {activeWOs.length} OTs en la semana</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
+              {weekDays.map((d, i) => {
+                const isToday = d.toDateString() === new Date().toDateString();
+                const dayWOs = wosByDay[i];
+                const dayHH = dayWOs.reduce((s, w) => s + (w.estimated_hours || 0), 0);
+                return (
+                  <div key={i} className={`rounded-xl border p-2 ${isToday ? 'border-indigo-400 bg-indigo-50/40' : 'border-border bg-card'} min-h-[140px]`}>
+                    <div className={`text-[10px] font-bold uppercase ${isToday ? 'text-indigo-700' : 'text-muted-foreground'}`}>
+                      {d.toLocaleDateString('es-CL', { weekday: 'short' })} {d.getDate()}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mb-1">
+                      {dayWOs.length} OT · {dayHH.toFixed(0)}h
+                    </div>
+                    <div className="space-y-1">
+                      {dayWOs.slice(0, 6).map(w => (
+                        <div key={w.wo_id} title={`${w.wo_number} · ${w.description}`}
+                          className={`text-[9px] px-1.5 py-0.5 rounded truncate ${
+                            w.status === 'EN_EJECUCION' ? 'bg-amber-100 text-amber-800' :
+                            w.status === 'PROGRAMADO' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                          {w.wo_number || w.equipment_tag}
+                        </div>
+                      ))}
+                      {dayWOs.length > 6 && <div className="text-[9px] text-muted-foreground">+{dayWOs.length - 6}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-[11px] text-muted-foreground flex items-center gap-2 pt-2">
+              <span className="inline-block w-2.5 h-2.5 rounded bg-amber-400" /> En ejecución
+              <span className="inline-block w-2.5 h-2.5 rounded bg-blue-400 ml-2" /> Programada
+              <span className="inline-block w-2.5 h-2.5 rounded bg-gray-400 ml-2" /> Planificada
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ═══ TODAY VIEW ═══ */}
       {view === 'today' && (
         <div className="space-y-3">
@@ -527,9 +653,12 @@ export default function Execution() {
                     </div>
                     {/* Progress */}
                     <div className="flex items-center gap-3 shrink-0">
-                      <div className="w-32 h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : pct > 0 ? 'bg-amber-500' : 'bg-gray-300'}`}
-                          style={{ width: `${pct}%` }} />
+                      <div className="flex flex-col items-end">
+                        <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Avance</span>
+                        <div className="w-32 h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : pct > 0 ? 'bg-amber-500' : 'bg-gray-300'}`}
+                            style={{ width: `${pct}%` }} />
+                        </div>
                       </div>
                       <span className="text-sm font-bold text-foreground w-10 text-right">{pct}%</span>
                       <span className="text-xs text-muted-foreground">{wo.estimated_hours || 0}h</span>
@@ -581,36 +710,101 @@ export default function Execution() {
                         </div>
                       )}
 
-                      {/* Operations checklist */}
+                      {/* Operations checklist + notificación HH por operación (Jorge #7) */}
                       {ops.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Operations ({ops.length})</h4>
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Operations ({ops.length})</h4>
+                            {isExec && (
+                              <span className="text-[10px] text-muted-foreground">Notif. HH → personas y horas reales por op</span>
+                            )}
+                          </div>
                           <div className="space-y-1">
-                            {ops.map((op, i) => (
-                              <div key={i} className="flex items-center gap-2 text-xs bg-card rounded-lg px-3 py-2 border border-border/50">
-                                <span className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-600">{i + 1}</span>
-                                <span className="flex-1 text-foreground">{(op.description || '').substring(0, 60)}</span>
-                                <span className="text-[10px] text-muted-foreground">{op.specialty}</span>
-                                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">{((op.quantity || 1) * (op.hours || 0)).toFixed(1)}HH</span>
-                              </div>
-                            ))}
+                            {ops.map((op, i) => {
+                              const plannedHH = (op.quantity || 1) * (op.hours || 0);
+                              const actualHH = (op.actual_quantity || 0) * (op.actual_hours || 0);
+                              const saveOp = async (patch) => {
+                                const nextOps = ops.map((o, idx) => idx === i ? { ...o, ...patch } : o);
+                                try {
+                                  await updateManagedWO(wo.wo_id, { operations: nextOps });
+                                  loadData();
+                                } catch (e) { toast.error('No se pudo guardar: ' + (e.message || e)); }
+                              };
+                              return (
+                                <div key={i} className="bg-card rounded-lg px-3 py-2 border border-border/50">
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <span className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-600">{i + 1}</span>
+                                    <span className="flex-1 text-foreground">{(op.description || '').substring(0, 60)}</span>
+                                    <span className="text-[10px] text-muted-foreground">{op.specialty}</span>
+                                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400" title="Plan: personas × horas">
+                                      plan {op.quantity || 1}p × {op.hours || 0}h = {plannedHH.toFixed(1)}HH
+                                    </span>
+                                  </div>
+                                  {isExec && (
+                                    <div className="flex items-center gap-2 mt-1.5 pl-7 text-[11px]">
+                                      <span className="text-muted-foreground">Real:</span>
+                                      <input type="number" min="0" step="1"
+                                        defaultValue={op.actual_quantity || ''}
+                                        placeholder={String(op.quantity || 1)}
+                                        onBlur={e => {
+                                          const v = parseInt(e.target.value, 10);
+                                          if (!isNaN(v) && v !== op.actual_quantity) saveOp({ actual_quantity: v });
+                                        }}
+                                        title="Cantidad real de personas"
+                                        className="w-14 px-1.5 py-0.5 text-center border border-border rounded bg-background" />
+                                      <span className="text-muted-foreground">pers ×</span>
+                                      <input type="number" min="0" step="0.5"
+                                        defaultValue={op.actual_hours || ''}
+                                        placeholder={String(op.hours || 0)}
+                                        onBlur={e => {
+                                          const v = parseFloat(e.target.value);
+                                          if (!isNaN(v) && v !== op.actual_hours) saveOp({ actual_hours: v });
+                                        }}
+                                        title="Horas reales de la operación"
+                                        className="w-14 px-1.5 py-0.5 text-center border border-border rounded bg-background" />
+                                      <span className="text-muted-foreground">h = </span>
+                                      <span className={`font-bold ${actualHH > plannedHH ? 'text-red-600' : 'text-emerald-700'}`}>
+                                        {actualHH.toFixed(1)}HH
+                                      </span>
+                                      {actualHH > 0 && plannedHH > 0 && (
+                                        <span className="ml-1 text-[9px] text-muted-foreground">
+                                          ({actualHH > plannedHH ? '+' : ''}{(((actualHH - plannedHH) / plannedHH) * 100).toFixed(0)}%)
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
 
                       {/* Materials */}
-                      {mats.length > 0 && (
-                        <div>
-                          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Materials ({mats.length})</h4>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Materials ({mats.length})</h4>
+                          {isExec && (
+                            <button onClick={() => setAddMaterialFor({ wo_id: wo.wo_id, materials: mats })}
+                              className="text-[11px] font-semibold bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 inline-flex items-center gap-1"
+                              title="Agregar material adicional durante la ejecución (crea reserva nueva)">
+                              <Plus size={11} /> Agregar material
+                            </button>
+                          )}
+                        </div>
+                        {mats.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
                             {mats.map((m, i) => (
                               <span key={i} className="text-[11px] bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded border border-border">
                                 <span className="font-mono text-gray-400">{m.code || m.sapId}</span> {m.description} x{m.quantity}
+                                {m.added_during_execution && <span className="ml-1 text-[9px] bg-amber-100 text-amber-700 px-1 rounded">nuevo</span>}
                               </span>
                             ))}
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <p className="text-[11px] italic text-muted-foreground">Sin materiales cargados</p>
+                        )}
+                      </div>
 
                       {/* Actual hours input */}
                       {isExec && (
@@ -1005,6 +1199,81 @@ export default function Execution() {
         </div>
         );
       })()}
+
+      {/* #6 Add Material during execution — Jorge 2026-04-22 */}
+      {addMaterialFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !savingMat && setAddMaterialFor(null)}>
+          <div className="bg-white dark:bg-card rounded-xl shadow-2xl w-full max-w-md p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-foreground mb-1">Agregar material adicional</h3>
+            <p className="text-xs text-muted-foreground mb-4">Crea una reserva nueva durante la ejecución. Marcada como "nuevo".</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-semibold uppercase text-muted-foreground">Código SAP</label>
+                <input value={newMatForm.code}
+                  onChange={e => setNewMatForm(f => ({ ...f, code: e.target.value }))}
+                  placeholder="p.ej. 1000234"
+                  className="w-full text-sm mt-1 px-3 py-2 border border-border rounded-lg bg-background font-mono focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase text-muted-foreground">Descripción</label>
+                <input value={newMatForm.description}
+                  onChange={e => setNewMatForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="p.ej. Sello mecánico 2in"
+                  className="w-full text-sm mt-1 px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold uppercase text-muted-foreground">Cantidad</label>
+                  <input type="number" min="1" value={newMatForm.quantity}
+                    onChange={e => setNewMatForm(f => ({ ...f, quantity: parseInt(e.target.value, 10) || 1 }))}
+                    className="w-full text-sm mt-1 px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-blue-300" />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold uppercase text-muted-foreground">Unidad</label>
+                  <select value={newMatForm.unit}
+                    onChange={e => setNewMatForm(f => ({ ...f, unit: e.target.value }))}
+                    className="w-full text-sm mt-1 px-3 py-2 border border-border rounded-lg bg-background">
+                    <option value="PZ">PZ</option>
+                    <option value="M">M</option>
+                    <option value="KG">KG</option>
+                    <option value="L">L</option>
+                    <option value="SET">SET</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setAddMaterialFor(null)} disabled={savingMat}
+                className="px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted rounded-lg">Cancelar</button>
+              <button
+                disabled={savingMat || !newMatForm.description.trim()}
+                onClick={async () => {
+                  setSavingMat(true);
+                  try {
+                    const newItem = {
+                      code: newMatForm.code || `ADD-${Date.now()}`,
+                      description: newMatForm.description,
+                      quantity: newMatForm.quantity,
+                      unit: newMatForm.unit,
+                      added_during_execution: true,
+                      added_at: new Date().toISOString(),
+                    };
+                    const nextMats = [...(addMaterialFor.materials || []), newItem];
+                    await updateManagedWO(addMaterialFor.wo_id, { materials: nextMats });
+                    toast.success('Material agregado');
+                    setAddMaterialFor(null);
+                    setNewMatForm({ code: '', description: '', quantity: 1, unit: 'PZ' });
+                    loadData();
+                  } catch (e) { toast.error('Error: ' + (e.message || e)); }
+                  setSavingMat(false);
+                }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                {savingMat ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

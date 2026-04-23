@@ -1339,6 +1339,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [sortField, setSortField] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
   const [wrsWithOT, setWrsWithOT] = useState(new Set());
+  // Jorge 2026-04-23: ver aviso full-screen
+  const [wrFullScreen, setWrFullScreen] = useState(false);
 
   const { t } = useLanguage();
   const toast = useToast();
@@ -1959,8 +1961,13 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                               )}
                             </div>
                             <p className="font-semibold text-foreground text-xs">{req.equipment_name}</p>
-                            <p className="font-mono text-[10px] text-muted-foreground">{/^\d{8,}$/.test(req.equipment_tag) ? '' : req.equipment_tag}</p>
-                            {req.technical_location && <p className="text-[10px] text-blue-500">{req.technical_location}</p>}
+                            {/* Jorge 2026-04-23: TL y Equipo/TAG en líneas separadas con etiqueta */}
+                            {req.technical_location && (
+                              <p className="text-[10px] text-blue-500"><span className="font-semibold text-blue-400">TL:</span> {req.technical_location}</p>
+                            )}
+                            {req.equipment_tag && !/^\d{8,}$/.test(req.equipment_tag) && (
+                              <p className="font-mono text-[10px] text-muted-foreground"><span className="font-semibold text-gray-400">TAG:</span> {req.equipment_tag}</p>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -2166,11 +2173,19 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         const carIdx = carouselIdx;
         const setCarIdx = setCarouselIdx;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setSelected(null)}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setSelected(null); setWrFullScreen(false); }}>
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-            <div className="relative z-10 w-full max-w-5xl px-4" onClick={e => e.stopPropagation()}>
+            <div className={`relative z-10 w-full ${wrFullScreen ? 'max-w-[98vw] h-[98vh]' : 'max-w-5xl px-4'}`} onClick={e => e.stopPropagation()}>
+              {/* Jorge 2026-04-23: toggle full-screen del aviso */}
+              <button type="button"
+                onClick={() => setWrFullScreen(f => !f)}
+                title={wrFullScreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
+                className="absolute top-2 right-14 z-30 p-2 rounded-lg bg-white/90 hover:bg-white shadow border text-gray-700">
+                {wrFullScreen ? <X size={16} /> : <Search size={16} />}
+                <span className="sr-only">{wrFullScreen ? 'Minimizar' : 'Maximizar'}</span>
+              </button>
               {/* 3D Carousel */}
-              <div className="relative flex items-center justify-center" style={{ perspective: '1200px', minHeight: '80vh' }}>
+              <div className="relative flex items-center justify-center" style={{ perspective: '1200px', minHeight: wrFullScreen ? '94vh' : '80vh' }}>
                 {allItems.map((wrItem, idx) => {
                   const offset = idx - carIdx;
                   const absOff = Math.abs(offset);

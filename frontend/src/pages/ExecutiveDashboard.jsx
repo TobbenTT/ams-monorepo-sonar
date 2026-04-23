@@ -244,6 +244,29 @@ export default function ExecutiveDashboard() {
         </div>
       </div>
 
+      {/* Jorge SF-516: banner de Adherencia + Cumplimiento (agregado) + PM02 auto
+          Strategy preview — están en construcción a nivel consolidado. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/40 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">Adherencia + Cumplimiento (KPIs SF-516)</div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">Building</span>
+          </div>
+          <p className="text-xs text-emerald-800">
+            Cálculo ya disponible por OT individual (badge verde/ámbar/rojo en detalle de OT cerrada). La vista consolidada por sitio/área/semana se está construyendo.
+          </p>
+        </div>
+        <div className="rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/40 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-blue-700">Estrategia PM02 Auto-Generada</div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">Building</span>
+          </div>
+          <p className="text-xs text-blue-800">
+            FMECA → backlog ya asigna prioridad: <strong>FIXED_TIME → P4</strong> (parada planta), <strong>FAULT_FINDING → P3</strong> (operando). Preview del calendario anual de PM02 se está construyendo.
+          </p>
+        </div>
+      </div>
+
       {/* KPI Scorecards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {KPI_TARGETS.map(kpi => <KPICard key={kpi.key} kpi={kpi} />)}

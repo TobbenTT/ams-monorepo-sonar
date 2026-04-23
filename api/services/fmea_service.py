@@ -486,6 +486,9 @@ def push_fmeca_to_backlog(db: Session, worksheet_id: str) -> dict:
     existing_keys = {(b.equipment_tag, (b.blocking_reason or "")) for b in existing}
 
     STRATEGY_TO_PM = {"CONDITION_BASED": "PM03", "FIXED_TIME": "PM02", "FAULT_FINDING": "PM02", "REDESIGN": "PM01"}
+    # Jorge 2026-04-23: default priority para PM02 auto-generado depende de ventana
+    # de intervención: parada-planta (shutdown) → P4; ventanas cortas/operando → P3.
+    # Para otras estrategias se mantiene el mapping RPN estándar.
     STRATEGY_TO_PRIORITY = {"CRITICAL": "P1", "HIGH": "P2", "MEDIUM": "P3", "LOW": "P4"}
 
     created = []
@@ -506,11 +509,18 @@ def push_fmeca_to_backlog(db: Session, worksheet_id: str) -> dict:
         severity = int(r.get("severity", 1) or 1)
         dur = float(r.get("duration", 2) or 2)
         qty = int(r.get("quantity", 1) or 1)
+        # Jorge 2026-04-23: si es PM02 auto-generado, prioridad depende de ventana
+        pm_type = STRATEGY_TO_PM.get(strategy, "PM02")
+        default_priority = STRATEGY_TO_PRIORITY.get(cat, "P3")
+        if pm_type == "PM02":
+            # FIXED_TIME típicamente requiere parada de planta → P4; FAULT_FINDING
+            # se hace operando con el equipo → P3.
+            default_priority = "P4" if strategy == "FIXED_TIME" else "P3"
         item = BacklogItemModel(
             equipment_id=obj.equipment_id or "",
             equipment_tag=obj.equipment_tag or "",
-            priority=STRATEGY_TO_PRIORITY.get(cat, "P3"),
-            wo_type=STRATEGY_TO_PM.get(strategy, "PM02"),
+            priority=default_priority,
+            wo_type=pm_type,
             status="AWAITING_APPROVAL",
             blocking_reason=reason,
             estimated_hours=dur * qty,

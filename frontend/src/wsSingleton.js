@@ -165,9 +165,12 @@ function openConnection(plantId) {
 
     const scheduleReconnect = (overrideDelay) => {
         if (state.closed || state.reconnectTimer) return;
+        // Jorge 2026-04-23: Backoff más agresivo al inicio — usuario notaba que
+        // tenía que recargar. Primer reintento a 500ms, luego 1s, 2s, 4s, 8s...
+        // hasta 30s máximo. Así el reconnect es invisible para el usuario.
         const delay = overrideDelay != null
             ? overrideDelay
-            : Math.min(30000, 3000 * Math.pow(2, Math.min(state.retryAttempt, 4)));
+            : Math.min(30000, 500 * Math.pow(2, Math.min(state.retryAttempt, 6)));
         state.reconnectTimer = setTimeout(() => {
             state.reconnectTimer = null;
             connect();

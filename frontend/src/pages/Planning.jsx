@@ -552,8 +552,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [activeMatIdx, setActiveMatIdx] = useState(null);
 
   // SAP Material autocomplete
+  // Jorge 2026-04-23: bug fix — cuando el input estaba vacío o con 1 char, el
+  // dropdown "se abría y cerraba al clickear" porque limpiábamos resultados.
+  // Ahora: empty o 1 char NO limpia resultados previos (deja el dropdown
+  // visible con lo que había), y con 1 char ya busca (no espera 2).
   useEffect(() => {
-    if (!matSearchQuery || matSearchQuery.length < 2) { setMatSearchResults([]); return; }
+    if (!matSearchQuery || matSearchQuery.length < 1) return; // preserva resultados previos
     const timer = setTimeout(async () => {
       setMatSearchLoading(true);
       try {
@@ -561,7 +565,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         setMatSearchResults(Array.isArray(res) ? res : []);
       } catch { setMatSearchResults([]); }
       finally { setMatSearchLoading(false); }
-    }, 300);
+    }, 250);
     return () => clearTimeout(timer);
   }, [matSearchQuery]);
 
@@ -2454,7 +2458,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             <div className="flex items-center gap-2 mb-2">
                               <div className="relative">
                                 <input value={mat.code || mat.sapId || mat.sap_id || ''}
-                                  onFocus={() => { setActiveMatIdx(idx); setMatSearchQuery(mat.code || mat.sapId || ''); }}
+                                  onFocus={() => {
+                                    setActiveMatIdx(idx);
+                                    const existing = mat.code || mat.sapId || '';
+                                    // Solo sobrescribe la query si hay código; si input está vacío,
+                                    // deja el matSearchQuery previo para no cerrar el dropdown.
+                                    if (existing) setMatSearchQuery(existing);
+                                  }}
                                   onChange={e => { setActiveMatIdx(idx); setMatSearchQuery(e.target.value); const n = [...editMats]; n[idx].code = e.target.value; n[idx].sapId = e.target.value; setEditMats(n); }}
                                   className="w-28 text-xs border rounded px-2 py-1 font-mono" placeholder="Code" />
                                 {activeMatIdx === idx && matSearchResults.length > 0 && (

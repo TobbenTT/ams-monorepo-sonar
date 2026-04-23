@@ -1835,17 +1835,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                 </button>
               );
             })}
-            {['admin', 'ceo', 'manager'].includes(user?.role) && (
-              <button onClick={async () => {
-                try {
-                  const dels = await api.listDeletedWRs({ plant_id: plantId });
-                  setDeletedWRs(dels || []);
-                  setShowDeleted(true);
-                } catch(err) { console.error('Eliminados error:', err); toast.error('Error: ' + (err?.message || '')); }
-              }} className="text-xs px-3 py-1.5 rounded-full font-medium bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 flex items-center gap-1">
-                <Trash2 size={12} /> Eliminados
-              </button>
-            )}
+            {/* Jorge 2026-04-23 — SAP no borra, cierra. Botón Eliminados removido. */}
           </div>
           <select value={priorityFilter || 'ALL'} onChange={e => setPriorityFilter(e.target.value === 'ALL' ? '' : e.target.value)}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
@@ -2007,13 +1997,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                             <Eye size={16} />
                           </button>
                           {/* All actions moved to detail modal — user must open the WR to take action (Jorge feedback) */}
-                          <button
-                            onClick={() => handleDelete(req.id)}
-                            className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                            title={t('common.delete') || 'Delete'}
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {/* Jorge 2026-04-23 — SAP: no delete. Cancelar con motivo desde el detalle. */}
                         </div>
                       </td>
                     </tr>

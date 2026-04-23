@@ -1743,8 +1743,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         </select>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3 border">
-                        <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Puesto Trabajo Responsable</div>
-                        <select value={wo.work_center || ''} disabled={!wo.planning_group}
+                        <div className="text-[10px] text-gray-500 font-semibold uppercase mb-1">
+                          Puesto Trabajo Responsable
+                          {/* Jorge 2026-04-23 17:38: locked tras programación (SAP-style) */}
+                          {['PROGRAMADO', 'EN_EJECUCION', 'EN_PROGRESO', 'CERRADO', 'CLOSED'].includes(wo.status) && (
+                            <span className="ml-1 text-[9px] text-gray-400 normal-case">(bloqueado tras programación)</span>
+                          )}
+                        </div>
+                        <select value={wo.work_center || ''}
+                          disabled={!wo.planning_group || ['PROGRAMADO', 'EN_EJECUCION', 'EN_PROGRESO', 'CERRADO', 'CLOSED'].includes(wo.status)}
                           onChange={e => {
                             const v = e.target.value;
                             api.updateManagedWO(wo.wo_id, { work_center: v })

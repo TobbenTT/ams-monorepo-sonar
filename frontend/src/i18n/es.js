@@ -1202,7 +1202,7 @@ export default {
         statusREL: 'Liberado',
         statusCRTD: 'Creado',
         orderPM01: 'Inspección',
-        orderPM02: 'Preventivo',
+        orderPM02: 'Planificado',
         orderPM03: 'Correctivo',
     },
 

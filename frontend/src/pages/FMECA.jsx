@@ -237,7 +237,12 @@ export default function FMECA() {
         <h1 className="text-2xl font-bold text-gray-900">FMECA — Análisis de Modos de Fallo, Efectos y Criticidad</h1>
         <p className="text-sm text-gray-500 mt-1">Flujo RCM de 4 etapas · RPN = S × O × D · Engine determinístico (sin LLM)</p>
         <div className="mt-3">
-          <DevBanner variant="strong">Módulo FMECA del pivot reliability 2026-04-22. Las 4 etapas ya están funcionales; integración con plan de mantenimiento y push-to-backlog en calibración.</DevBanner>
+          <DevBanner variant="strong">
+            FMECA — 4 etapas funcionales (Funciones · Fallos · Efectos · Decisiones) con RPN = S × O × D.
+            Push-to-backlog ya genera items con prioridad (FIXED_TIME→P4, FAULT_FINDING→P3).
+            Pendiente (en construcción Jorge 2026-04-23): plantillas RCM por tipo de equipo,
+            export SAP-IW22, integración histórica con Fallas & Eventos.
+          </DevBanner>
         </div>
       </div>
 

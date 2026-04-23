@@ -5,6 +5,7 @@ import { Bug, AlertTriangle, CheckCircle, Clock, ChevronRight, Plus, Target, X, 
 // Mock data removed — uses real API data
 import * as api from '../api';
 import { useToast } from '../components/Toast';
+import DevBanner from '../components/DevBanner';
 
 const PRIORITY_COLORS = {
   ALTO: 'bg-red-100 text-red-700 border-red-200',
@@ -170,6 +171,7 @@ export default function DefectElimination() {
 
   return (
     <div className="min-h-screen bg-muted p-6">
+      <div className="mb-4"><DevBanner>Módulo Defect Elimination (pivot reliability). Workflow RCA → solución → tracking está funcional; métricas agregadas e integración con FMECA se están construyendo.</DevBanner></div>
       {/* Header */}
       <div className="bg-gradient-to-r from-rose-800 to-rose-700 rounded-2xl px-8 py-6 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-lg">
         <div className="flex items-center gap-3">

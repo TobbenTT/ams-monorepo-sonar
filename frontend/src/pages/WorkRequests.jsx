@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
   Wrench, Tag, MapPin, Gauge, Package, Calendar, FileText, Trash2, Zap,
-  Save, Download, X, Info, ArrowRight
+  Save, Download, X, Info, ArrowRight, Maximize2, Minimize2
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';
@@ -2176,13 +2176,13 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setSelected(null); setWrFullScreen(false); }}>
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <div className={`relative z-10 w-full ${wrFullScreen ? 'max-w-[98vw] h-[98vh]' : 'max-w-5xl px-4'}`} onClick={e => e.stopPropagation()}>
-              {/* Jorge 2026-04-23: toggle full-screen del aviso */}
+              {/* Jorge 2026-04-23: toggle full-screen del aviso — icono Maximize/Minimize */}
               <button type="button"
                 onClick={() => setWrFullScreen(f => !f)}
                 title={wrFullScreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
-                className="absolute top-2 right-14 z-30 p-2 rounded-lg bg-white/90 hover:bg-white shadow border text-gray-700">
-                {wrFullScreen ? <X size={16} /> : <Search size={16} />}
-                <span className="sr-only">{wrFullScreen ? 'Minimizar' : 'Maximizar'}</span>
+                className="absolute top-3 right-16 z-30 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-gray-50 shadow border border-gray-300 text-xs font-semibold text-gray-700">
+                {wrFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                {wrFullScreen ? 'Minimizar' : 'Pantalla completa'}
               </button>
               {/* 3D Carousel */}
               <div className="relative flex items-center justify-center" style={{ perspective: '1200px', minHeight: wrFullScreen ? '94vh' : '80vh' }}>

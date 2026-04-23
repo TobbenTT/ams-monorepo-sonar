@@ -8,6 +8,7 @@ import {
   Circle, ChevronRight, Trash2, Save,
 } from 'lucide-react';
 import * as api from '../api';
+import DevBanner from '../components/DevBanner';
 
 const STAGES = [
   { key: 'STAGE_1_FUNCTIONS', num: 1, label: 'Funciones', hint: 'Describe qué hace el equipo' },
@@ -235,6 +236,9 @@ export default function FMECA() {
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-gray-900">FMECA — Análisis de Modos de Fallo, Efectos y Criticidad</h1>
         <p className="text-sm text-gray-500 mt-1">Flujo RCM de 4 etapas · RPN = S × O × D · Engine determinístico (sin LLM)</p>
+        <div className="mt-3">
+          <DevBanner variant="strong">Módulo FMECA del pivot reliability 2026-04-22. Las 4 etapas ya están funcionales; integración con plan de mantenimiento y push-to-backlog en calibración.</DevBanner>
+        </div>
       </div>
 
       {/* Fase 3a — Sugerencias auto-init FMECA (equipos con P1/P2 cerradas y sin worksheet) */}

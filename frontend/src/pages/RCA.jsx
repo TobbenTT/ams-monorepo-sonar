@@ -4,6 +4,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
+import DevBanner from '../components/DevBanner';
 import {
   Search, Plus, ChevronDown, ChevronUp, AlertTriangle, CheckCircle,
   Loader2, ArrowRight, Target, Zap, Shield, Clock, FileText, Activity,
@@ -198,6 +199,7 @@ export default function RCA() {
 
   return (
     <div className="p-6 space-y-5">
+      <DevBanner variant="strong">Módulo RCA del pivot reliability (2026-04-22). Flujo base funcional; plantillas 5-Why / Fishbone / Fault-Tree en construcción iterativa con Jorge.</DevBanner>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

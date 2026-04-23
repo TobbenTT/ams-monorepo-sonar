@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { Activity, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import * as api from '../api';
+import DevBanner from '../components/DevBanner';
 
 // Weibull reliability R(t) and hazard h(t) — computed from real equipment parameters
 function computeWeibull(beta, eta, points = 20) {
@@ -119,6 +120,9 @@ export default function Reliability() {
         <p className="text-sm text-muted-foreground mt-1">
           {t('reliability.subtitle')}
         </p>
+        <div className="mt-3">
+          <DevBanner>Weibull β/η y agregados de sitio se están calibrando con datos reales de planta. Valores actuales mezclan histórico real + estimaciones.</DevBanner>
+        </div>
       </div>
 
       {/* Equipment selector */}

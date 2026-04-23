@@ -5,6 +5,7 @@ import {
   DollarSign, Globe, Zap, Shield, Activity, Bot, Sparkles,
 } from 'lucide-react';
 import * as api from '../api';
+import DevBanner from '../components/DevBanner';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
@@ -47,6 +48,7 @@ export default function AIAgents() {
 
   return (
     <div className="p-6 space-y-6">
+      <DevBanner>Agentes de IA (Diagnostics, Checklists, Strategy) están activos con prompts afinados; panel de monitoreo y cost-tracking por agente se están construyendo.</DevBanner>
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-700 via-purple-600 to-fuchsia-500 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />

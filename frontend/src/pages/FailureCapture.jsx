@@ -23,11 +23,14 @@ export default function FailureCapture({ onNavigateTab }) {
     { value: 'stopped', label: 'Stopped', color: '#EF4444' },
   ];
 
+  // Jorge 2026-04-23: P1<24h, P2<7d, P3>7d, P4 = Parada de Plantas.
+  // Sólo PM01 (correctivo programado) y PM03 (correctivo de falla) — PM02 lo
+  // genera el sistema automático por estrategia, no aparece en el aviso manual.
   const PRIORITIES = [
-    { value: 'P1', label: 'P1 (I) - Immediate', sub: '< 24h', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03' },
-    { value: 'P2', label: 'P2 (A) - High', sub: '< 7 days', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03' },
-    { value: 'P3', label: 'P3 (M) - Medium', sub: '> 7 days', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01' },
-    { value: 'P4', label: 'P4 (B) - Low', sub: 'Plant Shutdown', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01' },
+    { value: 'P1', label: 'P1 (I) - <24h', sub: 'Crítica', color: '#EF4444', bg: '#FEE2E2', claseOT: 'PM03' },
+    { value: 'P2', label: 'P2 (A) - <7d', sub: 'Alta', color: '#F97316', bg: '#FED7AA', claseOT: 'PM03' },
+    { value: 'P3', label: 'P3 (M) - >7d', sub: 'Programable', color: '#EAB308', bg: '#FEF3C7', claseOT: 'PM01' },
+    { value: 'P4', label: 'P4 (B) - Parada de Plantas', sub: 'Parada planificada', color: '#3B82F6', bg: '#DBEAFE', claseOT: 'PM01' },
   ];
 
   const ACTIVITY_CLASSES = {
@@ -188,16 +191,16 @@ export default function FailureCapture({ onNavigateTab }) {
   ];
 
   const SAP_PRIORITY_MAP = {
-    P1: { sap: 'I', label: 'Immediate', days: '< 24h' },
-    P2: { sap: 'A', label: 'High', days: '< 7 days' },
-    P3: { sap: 'M', label: 'Medium', days: '> 7 days' },
-    P4: { sap: 'B', label: 'Low', days: 'Plant Shutdown' },
+    P1: { sap: 'I', label: 'Crítica', days: '< 24h' },
+    P2: { sap: 'A', label: 'Alta', days: '< 7 días' },
+    P3: { sap: 'M', label: 'Programable', days: '> 7 días' },
+    P4: { sap: 'B', label: 'Parada de Plantas', days: 'Parada planificada' },
   };
 
   const ORDER_TYPES = [
-    { value: 'PM01', label: 'PM01 - Breakdown Maintenance Order' },
-    { value: 'PM02', label: 'PM02 - Preventive Maintenance Order' },
-    { value: 'PM03', label: 'PM03 - Maintenance Service Order' },
+    // Jorge 2026-04-23: PM02 queda reservado a generación automática por estrategia.
+    { value: 'PM01', label: 'PM01 - Correctivo Programado' },
+    { value: 'PM03', label: 'PM03 - Correctivo de Falla' },
     { value: 'PM06', label: 'PM06 - Investment Order' },
     { value: 'PM07', label: 'PM07 - Component Repair Order' },
   ];

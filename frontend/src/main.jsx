@@ -80,7 +80,8 @@ const Troubleshooting = lazyRetry(() => import('./pages/Troubleshooting'));
 const EquipmentChat = lazyRetry(() => import('./pages/EquipmentChat'));
 const ExpertKnowledge = lazyRetry(() => import('./pages/ExpertKnowledge'));
 const ExecutionChecklists = lazyRetry(() => import('./pages/ExecutionChecklists'));
-const FeedbackAdmin = lazyRetry(() => import('./pages/FeedbackAdmin'));
+// Jorge 2026-04-23: feedback-admin removido del nav (módulo en desuso).
+// const FeedbackAdmin = lazyRetry(() => import('./pages/FeedbackAdmin'));
 const Execution = lazyRetry(() => import('./pages/Execution'));
 const PostMaintenance = lazyRetry(() => import('./pages/PostMaintenance'));
 const DataImport = lazyRetry(() => import('./pages/DataImport'));
@@ -133,7 +134,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="reports" element={<S><ReportsPage /></S>} />
                                     <Route path="team" element={<P roles={['admin', 'manager', 'planner']}><S><TeamPage /></S></P>} />
                                     <Route path="settings" element={<S><SettingsPage /></S>} />
-                                    <Route path="feedback-admin" element={<S><FeedbackAdmin /></S>} />
+                                    {/* Route feedback-admin removida 2026-04-23 */}
                                     <Route path="execution" element={<P roles={['admin', 'planner', 'tecnico']}><S><Execution /></S></P>} />
                                     <Route path="post-maintenance" element={<P roles={PLAN}><S><PostMaintenance /></S></P>} />
                                     <Route path="data-import" element={<P roles={MGMT}><S><DataImport /></S></P>} />

@@ -18,7 +18,8 @@ const PRIORITY_COLORS = {
   P3: 'text-yellow-600',
   P4: 'text-blue-600',
 };
-const PRIORITY_LABELS = { P1: 'Immediate', P2: 'High', P3: 'Medium', P4: 'Low' };
+// Jorge 2026-04-23: P4 = Parada de Plantas (no 'Low').
+const PRIORITY_LABELS = { P1: '<24h', P2: '<7d', P3: '>7d', P4: 'Parada de Plantas' };
 
 // Jorge SF-515 — Notificación HH: pestaña visible solo en EN_EJECUCION donde
 // el supervisor captura valores reales (puesto trabajo, HH, inicio/fin)
@@ -1029,19 +1030,18 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
               <select value={woPriorityFilter} onChange={e => setWoPriorityFilter(e.target.value)}
                 className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
                 <option value="All">All Priority</option>
-                <option value="P1">P1 - Immediate</option>
-                <option value="P2">P2 - High</option>
-                <option value="P3">P3 - Medium</option>
-                <option value="P4">P4 - Low</option>
+                <option value="P1">P1 - &lt;24h</option>
+                <option value="P2">P2 - &lt;7d</option>
+                <option value="P3">P3 - &gt;7d</option>
+                <option value="P4">P4 - Parada de Plantas</option>
               </select>
               <select value={woTypeFilter} onChange={e => setWoTypeFilter(e.target.value)}
                 className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
                 <option value="All">All Types</option>
-                <option value="PM01">PM01 - Corrective</option>
-                <option value="PM02">PM02 - Preventive</option>
-                <option value="PM03">PM03 - Predictive</option>
-                <option value="PM05">PM05 - Improvement</option>
-                <option value="PM07">PM07</option>
+                <option value="PM01">PM01 - Correctivo Programado</option>
+                <option value="PM03">PM03 - Correctivo de Falla</option>
+                {/* Jorge 2026-04-23: PM02 (preventivo) queda reservado a generación
+                    automática por estrategia — NO aparece en creación manual. */}
               </select>
               {(woSearch || woStatusFilter !== "All" || woPriorityFilter !== "All" || woTypeFilter !== "All") && (
                 <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter("All"); setWoTypeFilter("All"); }}

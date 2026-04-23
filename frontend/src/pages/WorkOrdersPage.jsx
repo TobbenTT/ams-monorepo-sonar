@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../api';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -22,6 +22,7 @@ export default function WorkOrdersPage() {
   const toast = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { selectedPlant, selectedTimeRange, selectedArea, viewMode } = useOutletContext();
   const plant = selectedPlant;
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
@@ -162,6 +163,15 @@ export default function WorkOrdersPage() {
   }, [plant]);
 
   useEffect(() => { reloadData(); }, [reloadData]);
+
+  // Jorge 2026-04-23 — nav bidireccional Aviso → OT: abrir OT vinculada al WR
+  useEffect(() => {
+    const wrId = location?.state?.openOtByWrId;
+    if (!wrId || !managedWOs.length) return;
+    const match = managedWOs.find(w => w.work_request_id === wrId);
+    if (match) setSelectedOT(match);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location?.state?.openOtByWrId, managedWOs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build SAP functional location path from hierarchy
   const buildFuncLocPath = useCallback((node, nodeMap) => {
@@ -1083,7 +1093,7 @@ export default function WorkOrdersPage() {
             </h3>
             <div className="flex items-center gap-2">
               <Button variant="outline" className="flex items-center gap-2 border-gray-300" onClick={handleExportOTs} disabled={!managedWOs.length}>
-                <Download className="w-4 h-4" /> Excel
+                <Download className="w-4 h-4" /> Pasar a Excel
               </Button>
               <Button className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2" onClick={() => setShowCreateOTModal(true)}>
                 <Plus className="w-4 h-4" /> Create WO from Notification
@@ -1930,8 +1940,8 @@ export default function WorkOrdersPage() {
                     <span>{WO_TYPE_LABELS[selectedOT.wo_type] || selectedOT.wo_type}</span>
                     <span>{selectedOT.priority_code}</span>
                     {selectedOT.work_request_id && (
-                      <span className="text-blue-600 underline cursor-pointer hover:text-blue-800" onClick={() => navigate('/work-requests')}>
-                        Aviso: {selectedOT.work_request_id.slice(0, 8)}...
+                      <span className="text-blue-600 underline cursor-pointer hover:text-blue-800" onClick={() => navigate('/work-requests', { state: { openWrId: selectedOT.work_request_id } })} title="Ver aviso origen">
+                        → Aviso {selectedOT.work_request_id.slice(0, 8)}...
                       </span>
                     )}
                   </div>

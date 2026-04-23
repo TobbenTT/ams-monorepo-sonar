@@ -122,7 +122,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # ── Security: basic rate limiting ─────────────────────────────────────────
 _rate_limit_store: dict[str, list[float]] = {}
 _RATE_LIMIT_WINDOW = 60  # seconds
-_RATE_LIMIT_MAX = 120     # requests per window
+_RATE_LIMIT_MAX = 600    # Jorge 2026-04-23: dashboards hacen 10-20 req paralelas
+                          # + navegación rápida → 120 era demasiado ajustado.
+                          # 600/min = 10 req/s sostenido, razonable para B2B.
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -130,6 +132,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request, call_next):
         if settings.DEBUG or os.getenv("TESTING"):
+            return await call_next(request)
+        # Health, docs y WS no se rate-limitan — causan 429 espurios al dashboard.
+        path = request.url.path or ""
+        if path in ("/health", "/docs", "/redoc", "/openapi.json") or path.startswith("/ws/"):
             return await call_next(request)
         client_ip = request.client.host if request.client else "unknown"
         now = time.time()

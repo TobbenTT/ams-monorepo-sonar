@@ -116,16 +116,21 @@ const SCOPE_TABS = [
   { key: 'all', icon: Globe },
 ];
 
-/* ─── Confidence Bar ─── */
+/* ─── Confidence Bar con tooltip (Jorge 2026-04-22 #11) ─── */
 function ConfidenceBar({ value }) {
   const color = value >= 90 ? 'bg-emerald-500' : value >= 75 ? 'bg-amber-500' : 'bg-red-500';
   const textColor = value >= 90 ? 'text-emerald-700 dark:text-emerald-400' : value >= 75 ? 'text-amber-700 dark:text-amber-400' : 'text-red-700 dark:text-red-400';
+  const tooltip = 'Nivel de confianza del análisis IA (0-100%). Se calcula ' +
+    'combinando: match del equipo contra el maestro, claridad del texto del ' +
+    'aviso, coincidencia con catálogo de fallas, y similitud con WRs pasados ' +
+    'del mismo equipo. ≥90% = alta · 75-89% = media · <75% = revisar.';
   return (
-    <div className="flex items-center gap-2 min-w-[100px]">
+    <div className="flex items-center gap-2 min-w-[100px]" title={tooltip}>
       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${value}%` }} />
       </div>
       <span className={`text-xs font-bold w-9 text-right ${textColor}`}>{value}%</span>
+      <span className="text-[9px] text-muted-foreground cursor-help">ⓘ</span>
     </div>
   );
 }
@@ -270,7 +275,7 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRe
 }
 
 /* ─── Detail Modal (expanded + editable for supervisor) ─── */
-function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, userRole, t, _isInCarousel, _isDuplicate }) {
+function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, onGoToOT, userRole, t, _isInCarousel, _isDuplicate }) {
   if (!item) return null;
   const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(item.status);
   const isValidated = ['VALIDATED', 'APROBADO'].includes(item.status);
@@ -1112,13 +1117,24 @@ ${materials.length ? `<div class="section">
                   {t('common.reject')}
                 </button>
                 <button
-                  onClick={() => { if (window.confirm('Cancel this WR? Status will change to CANCELLED.')) onCancel(item.id); }}
+                  onClick={() => onCancel(item.id)}
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
                   Cancel WR
                 </button>
               </>
+            )}
+            {/* Jorge 2026-04-23 — nav bidireccional Aviso → OT */}
+            {onGoToOT && ['APROBADO', 'VALIDATED', 'APPROVED', 'ASSIGNED', 'IN_PROGRESS', 'CERRADO', 'CLOSED'].includes(item.status) && (
+              <button
+                onClick={onGoToOT}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-sm font-semibold hover:bg-blue-100 transition-colors"
+                title="Ver OT vinculada"
+              >
+                <ArrowRight size={16} />
+                Ver OT
+              </button>
             )}
             {/* Planner: Create WO from approved WR */}
             {isValidated && (
@@ -1138,7 +1154,7 @@ ${materials.length ? `<div class="section">
                   Reject
                 </button>
                 <button
-                  onClick={() => { if (window.confirm('Cancel this WR? Status will change to CANCELLED.')) onCancel(item.id); }}
+                  onClick={() => onCancel(item.id)}
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
@@ -1553,9 +1569,15 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   }
 
   function handleCancel(id) {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CANCELADO' } : r)));
-    api.cancelWorkRequest(id)
-      .then(() => toast.success(t('workRequests.cancelled') || 'Notification cancelled'))
+    // Jorge 2026-04-23 — SAP-style: cancelar exige motivo, transiciona a CERRADO (no se elimina).
+    const reason = window.prompt('Motivo de cancelación (obligatorio — el aviso quedará CERRADO):');
+    if (!reason || !reason.trim()) {
+      toast.error('Motivo obligatorio para cancelar');
+      return;
+    }
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CERRADO', cancellation_reason: reason.trim() } : r)));
+    api.cancelWorkRequest(id, { reason: reason.trim() })
+      .then(() => toast.success('Aviso cancelado y cerrado'))
       .finally(() => { setSelected(null); onRefreshCounts?.(); })
       .catch(() => toast.error(t('workRequests.errorCancel') || 'Error cancelling'));
   }
@@ -1828,10 +1850,10 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           <select value={priorityFilter || 'ALL'} onChange={e => setPriorityFilter(e.target.value === 'ALL' ? '' : e.target.value)}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
             <option value="ALL">All Priority</option>
-            <option value="P1">P1 - Immediate</option>
-            <option value="P2">P2 - High</option>
-            <option value="P3">P3 - Medium</option>
-            <option value="P4">P4 - Low</option>
+            <option value="P1">P1 - &lt;24h</option>
+            <option value="P2">P2 - &lt;7d</option>
+            <option value="P3">P3 - &gt;7d</option>
+            <option value="P4">P4 - Parada de Plantas</option>
           </select>
           {(search || statusFilter.length > 0 || priorityFilter) && (
             <button onClick={() => { setSearch(''); setStatusFilter([]); setPriorityFilter(''); setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
@@ -2194,6 +2216,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           onCloseWR={handleClose}
                           onSaveEdit={handleSaveEdit}
                           onPlannerCreateOT={handlePlannerCreateOT}
+                          onGoToOT={() => navigate('/work-orders', { state: { openOtByWrId: wrItem.id } })}
                           userRole={user?.role}
                           t={t}
                           _isInCarousel={true}

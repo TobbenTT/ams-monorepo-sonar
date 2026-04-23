@@ -28,7 +28,8 @@ const navItems = [
     { path: '/team', icon: Users, labelKey: 'nav.team', module: 'team' },
     { path: '/settings', icon: Settings, labelKey: 'nav.settings', module: 'settings' },
     { path: '/sap-pm', icon: Database, labelKey: 'SAP PM', module: 'sap-pm' },
-    { path: '/feedback-admin', icon: MessageSquare, labelKey: 'nav.feedback', module: 'feedback' },
+    // Jorge 2026-04-23: módulo Feedback sacado del sidebar (en desuso).
+    // { path: '/feedback-admin', icon: MessageSquare, labelKey: 'nav.feedback', module: 'feedback' },
     { path: '/data-import', icon: Upload, labelKey: 'Data Import', module: 'data-import' },
     { path: '/audit-log', icon: ScrollText, labelKey: 'Audit Log', module: 'audit-log' },
 ];

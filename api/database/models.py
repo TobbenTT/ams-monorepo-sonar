@@ -491,6 +491,8 @@ class WorkRequestModel(Base):
     aviso_number: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Numero correlativo secuencial
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # Soft delete
     deleted_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # Jorge 2026-04-23 — SAP-style: cancel con motivo obligatorio, nunca delete.
+    cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         Index("ix_work_requests_status", "status"),

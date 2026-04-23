@@ -407,21 +407,32 @@ def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(req
 @router.put("/{request_id}/cancel")
 def cancel_work_request(
     request_id: str,
+    data: dict | None = None,
     db: Session = Depends(get_db),
     user=Depends(require_role("admin", "manager", "planner")),
 ):
-    """Cancel a work request. Requires planner+ role. Cannot cancel already approved/closed WRs."""
+    """Cancel a WR con motivo. SAP-style (Jorge 2026-04-23):
+    - El aviso NO se elimina — queda CERRADO con cancellation_reason.
+    - Se exige un motivo (body: {reason: str}).
+    - No se puede cancelar un WR ya CERRADO."""
     from api.database.models import WorkRequestModel
     from datetime import datetime
+    reason = ""
+    if isinstance(data, dict):
+        reason = (data.get("reason") or data.get("cancellation_reason") or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="Motivo de cancelación es obligatorio")
     wr_model = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
     if not wr_model:
         raise HTTPException(status_code=404, detail="Work request not found")
     if wr_model.status in ("CERRADO", "CLOSED", "COMPLETED"):
-        raise HTTPException(status_code=400, detail="Cannot cancel a closed work request")
-    wr_model.status = "CANCELADO"
+        raise HTTPException(status_code=400, detail="El aviso ya está cerrado")
+    # SAP: el cancel pasa a estado final CERRADO (no CANCELADO).
+    wr_model.status = "CERRADO"
+    wr_model.cancellation_reason = reason[:500]
     wr_model.updated_at = datetime.now()
     db.commit()
-    return {"status": "CANCELADO", "request_id": request_id}
+    return {"status": "CERRADO", "request_id": request_id, "cancellation_reason": reason}
 
 @router.put("/{request_id}/assign")
 def assign_work_request(request_id: str, data: WRAssignRequest, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
@@ -600,11 +611,11 @@ class DeleteWRRequest(BaseModel):
 
 @router.delete("/{request_id}")
 def delete_work_request(request_id: str, data: DeleteWRRequest = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    reason = (data.reason if data else "") or ""
-    deleted = work_request_service.delete_work_request(db, request_id, user_id=getattr(user, 'username', ''), reason=reason)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Work request not found")
-    return {"ok": True, "request_id": request_id}
+    # Jorge 2026-04-23 — SAP-style: los avisos NUNCA se eliminan, se cancelan con motivo.
+    raise HTTPException(
+        status_code=410,
+        detail="Los avisos no se eliminan. Use PUT /work-requests/{id}/cancel con motivo obligatorio.",
+    )
 
 
 @router.get("/tools/deleted")
@@ -633,13 +644,11 @@ def restore_work_request(request_id: str, db: Session = Depends(get_db), user=De
 
 @router.delete("/tools/permanent/{request_id}")
 def permanent_delete(request_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Permanently delete a work request (admin only, no recovery)."""
-    if getattr(user, 'role', '') not in ('admin', 'ceo'):
-        raise HTTPException(status_code=403, detail="Solo admin/ceo")
-    ok = work_request_service.permanently_delete_work_request(db, request_id)
-    if not ok:
-        raise HTTPException(status_code=404, detail="Not found")
-    return {"ok": True, "request_id": request_id}
+    # Jorge 2026-04-23 — SAP no permite borrado físico; solo CERRADO con motivo.
+    raise HTTPException(
+        status_code=410,
+        detail="Borrado permanente deshabilitado. SAP-style: cancelar con motivo → CERRADO.",
+    )
 
 
 @router.post("/{request_id}/classify")

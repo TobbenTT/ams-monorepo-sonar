@@ -69,7 +69,8 @@ const PRIORITY_COLORS = {
 
 export function PriorityBadge({ priority }) {
     const p = String(priority).charAt(0);
-    const labels = { '1': 'P1 Critical', '2': 'P2 High', '3': 'P3 Medium', '4': 'P4 Low' };
+    // Jorge 2026-04-23: P1 <24h, P2 <7d, P3 >7d, P4 = Parada de plantas.
+    const labels = { '1': 'P1 <24h', '2': 'P2 <7d', '3': 'P3 >7d', '4': 'P4 Parada de Plantas' };
     return (
         <span className={cn(
             "inline-flex items-center px-2 py-0.5 rounded-full text-[0.7rem] font-semibold border",

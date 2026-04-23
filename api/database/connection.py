@@ -112,6 +112,8 @@ def _run_column_migrations():
         ("contractors", "contract_ref", "VARCHAR(60)", None),
         ("contractors", "status", "VARCHAR(20)", "'ACTIVE'"),
         ("contractors", "notes", "TEXT", None),
+        # Jorge 2026-04-23 — SAP-style: cancelar aviso con motivo, nunca eliminar.
+        ("work_requests", "cancellation_reason", "TEXT", None),
     ]
 
     with engine.begin() as conn:

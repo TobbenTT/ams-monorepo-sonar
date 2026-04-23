@@ -1145,7 +1145,7 @@ export default function WorkOrdersPage() {
                             wo.wo_type === 'PM03' ? 'bg-purple-100 text-purple-700' :
                             wo.wo_type === 'PM05' ? 'bg-cyan-100 text-cyan-700' :
                             'bg-gray-100 text-gray-700'
-                          }`}>{{ PM01: 'PM01 - Corrective', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Scheduled', PM05: 'PM05 - Calib./Reparación' }[wo.wo_type] || wo.wo_type}</Badge>
+                          }`}>{{ PM01: 'PM01 - Programado', PM02: 'PM02 - Planificado', PM03: 'PM03 - No Programado (Falla)', PM05: 'PM05 - Calib./Reparación' }[wo.wo_type] || wo.wo_type}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getCriticalityColor(wo.priority_code === 'P1' || wo.priority_code === 'P2' ? 'High' : wo.priority_code === 'P3' ? 'Medium' : 'Low')}>
@@ -1912,7 +1912,7 @@ export default function WorkOrdersPage() {
       {/* ── Professional OT Detail Modal ── */}
       {selectedOT && (() => {
         const sla = getSlaDays(selectedOT);
-        const WO_TYPE_LABELS = { PM01: 'PM01 - Corrective', PM02: 'PM02 - Preventivo', PM03: 'PM03 - Scheduled', PM05: 'PM05 - Calib./Reparación' };
+        const WO_TYPE_LABELS = { PM01: 'PM01 - Programado', PM02: 'PM02 - Planificado', PM03: 'PM03 - No Programado (Falla)', PM05: 'PM05 - Calib./Reparación' };
         const SPECIALTY_OPTIONS = ['Mechanical', 'Electrical', 'Instrumentation', 'Welder', 'Lubrication', 'Scaffolding', 'Insulation', 'Operator', 'Supervisor', 'Other'];
         const OP_TYPE_OPTIONS = [{ value: 'INT', label: 'INT' }, { value: 'EXT', label: 'EXT' }];
         const OT_TABS = [
@@ -2080,25 +2080,46 @@ export default function WorkOrdersPage() {
                     </div>
                   </div>
 
-                  {/* Key metrics */}
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Planned Hrs</div>
-                      <div className="text-lg font-bold text-gray-900">{selectedOT.estimated_hours || 0}h</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Actual Hrs</div>
-                      <div className={`text-lg font-bold ${(selectedOT.actual_hours || 0) > (selectedOT.estimated_hours || 0) ? 'text-red-600' : 'text-gray-900'}`}>{selectedOT.actual_hours || 0}h</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Costo Plan</div>
-                      <div className="text-lg font-bold text-gray-900">${(selectedOT.budget_amount || 0).toLocaleString()}</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Costo Real</div>
-                      <div className={`text-lg font-bold ${(selectedOT.actual_total_cost || 0) > (selectedOT.budget_amount || 0) && selectedOT.budget_amount ? 'text-red-600' : 'text-gray-900'}`}>${(selectedOT.actual_total_cost || 0).toLocaleString()}</div>
-                    </div>
-                  </div>
+                  {/* Key metrics — Jorge 2026-04-23: 6 campos Plan/Actual × HH/Duration/Cost */}
+                  {(() => {
+                    const plannedDur = selectedOT.planned_start && selectedOT.planned_end
+                      ? Math.max(0, (new Date(selectedOT.planned_end) - new Date(selectedOT.planned_start)) / 3600000)
+                      : 0;
+                    const actualDur = selectedOT.actual_start && selectedOT.actual_end
+                      ? Math.max(0, (new Date(selectedOT.actual_end) - new Date(selectedOT.actual_start)) / 3600000)
+                      : 0;
+                    const overHH = (selectedOT.actual_hours || 0) > (selectedOT.estimated_hours || 0);
+                    const overDur = actualDur > plannedDur && plannedDur > 0;
+                    const overCost = (selectedOT.actual_total_cost || 0) > (selectedOT.budget_amount || 0) && selectedOT.budget_amount;
+                    return (
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">HH (Plan / Real)</div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-base font-bold text-gray-900">{selectedOT.estimated_hours || 0}h</span>
+                            <span className="text-xs text-gray-400">/</span>
+                            <span className={`text-base font-bold ${overHH ? 'text-red-600' : 'text-gray-700'}`}>{selectedOT.actual_hours || 0}h</span>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Duración (Plan / Real)</div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-base font-bold text-gray-900">{plannedDur.toFixed(1)}h</span>
+                            <span className="text-xs text-gray-400">/</span>
+                            <span className={`text-base font-bold ${overDur ? 'text-red-600' : 'text-gray-700'}`}>{actualDur.toFixed(1)}h</span>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Costo (Plan / Real)</div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-base font-bold text-gray-900">${(selectedOT.budget_amount || 0).toLocaleString()}</span>
+                            <span className="text-xs text-gray-400">/</span>
+                            <span className={`text-base font-bold ${overCost ? 'text-red-600' : 'text-gray-700'}`}>${(selectedOT.actual_total_cost || 0).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Description */}
                   <div>

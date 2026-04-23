@@ -409,7 +409,8 @@ def cancel_work_request(
     request_id: str,
     data: dict | None = None,
     db: Session = Depends(get_db),
-    user=Depends(require_role("admin", "manager", "planner")),
+    # Jorge SF-542: supervisor también puede cancelar avisos.
+    user=Depends(require_role("admin", "manager", "planner", "supervisor")),
 ):
     """Cancel a WR con motivo. SAP-style (Jorge 2026-04-23):
     - El aviso NO se elimina — queda CERRADO con cancellation_reason.

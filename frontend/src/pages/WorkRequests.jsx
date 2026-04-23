@@ -496,15 +496,6 @@ ${materials.length ? `<div class="section">
                 {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
               </button>
             )}
-            {/* Jorge 2026-04-23: botón Pantalla completa dentro del header */}
-            {onToggleFullScreen && (
-              <button onClick={onToggleFullScreen}
-                title={isFullScreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
-                {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                {isFullScreen ? 'Minimizar' : 'Pantalla completa'}
-              </button>
-            )}
             <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <XCircle size={20} />
             </button>
@@ -1357,7 +1348,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [sortDir, setSortDir] = useState('desc');
   const [wrsWithOT, setWrsWithOT] = useState(new Set());
   // Jorge 2026-04-23: ver aviso full-screen
-  const [wrFullScreen, setWrFullScreen] = useState(false);
+  // Full-screen removido — el modal ya es suficientemente grande y el toggle no aportaba
 
   const { t } = useLanguage();
   const toast = useToast();
@@ -1594,15 +1585,22 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   function handleCancel(id) {
     // Jorge 2026-04-23 — SAP-style: cancelar exige motivo, transiciona a CERRADO (no se elimina).
     const reason = window.prompt('Motivo de cancelación (obligatorio — el aviso quedará CERRADO):');
-    if (!reason || !reason.trim()) {
+    if (reason === null) return; // usuario cerró el prompt
+    if (!reason.trim()) {
       toast.error('Motivo obligatorio para cancelar');
       return;
     }
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CERRADO', cancellation_reason: reason.trim() } : r)));
     api.cancelWorkRequest(id, { reason: reason.trim() })
-      .then(() => toast.success('Aviso cancelado y cerrado'))
-      .finally(() => { setSelected(null); onRefreshCounts?.(); })
-      .catch(() => toast.error(t('workRequests.errorCancel') || 'Error cancelling'));
+      .then(() => {
+        setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CERRADO', cancellation_reason: reason.trim() } : r)));
+        toast.success('Aviso cancelado y cerrado');
+        setSelected(null);
+        onRefreshCounts?.();
+      })
+      .catch((err) => {
+        const msg = err?.response?.data?.detail || err?.message || 'Error cancelling';
+        toast.error(msg);
+      });
   }
 
   function handleSaveEdit(id, updates) {
@@ -2190,12 +2188,11 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         const carIdx = carouselIdx;
         const setCarIdx = setCarouselIdx;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setSelected(null); setWrFullScreen(false); }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setSelected(null)}>
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-            <div className={`relative z-10 w-full ${wrFullScreen ? 'max-w-[98vw] h-[98vh]' : 'max-w-5xl px-4'}`} onClick={e => e.stopPropagation()}>
-              {/* Jorge 2026-04-23: toggle ahora vive dentro del header del modal (mejor UX) */}
+            <div className="relative z-10 w-full max-w-5xl px-4" onClick={e => e.stopPropagation()}>
               {/* 3D Carousel */}
-              <div className="relative flex items-center justify-center" style={{ perspective: '1200px', minHeight: wrFullScreen ? '94vh' : '80vh' }}>
+              <div className="relative flex items-center justify-center" style={{ perspective: '1200px', minHeight: '80vh' }}>
                 {allItems.map((wrItem, idx) => {
                   const offset = idx - carIdx;
                   const absOff = Math.abs(offset);
@@ -2250,8 +2247,6 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           onSaveEdit={handleSaveEdit}
                           onPlannerCreateOT={handlePlannerCreateOT}
                           onGoToOT={() => navigate('/work-orders', { state: { openOtByWrId: wrItem.id } })}
-                          onToggleFullScreen={() => setWrFullScreen(f => !f)}
-                          isFullScreen={wrFullScreen}
                           userRole={user?.role}
                           t={t}
                           _isInCarousel={true}

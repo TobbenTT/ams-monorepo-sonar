@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import * as api from '../api';
 import DevBanner from '../components/DevBanner';
+import { TEMPLATE_KEYS, getTemplate } from '../data/fmecaTemplates';
 
 const STAGES = [
   { key: 'STAGE_1_FUNCTIONS', num: 1, label: 'Funciones', hint: 'Describe qué hace el equipo' },
@@ -66,6 +67,7 @@ export default function FMECA() {
   const [saving, setSaving] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ equipment_id: '', equipment_tag: '', equipment_name: '', analyst: '' });
+  const [templateKey, setTemplateKey] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [dismissedSuggest, setDismissedSuggest] = useState(false);
 
@@ -102,8 +104,16 @@ export default function FMECA() {
     try {
       setSaving(true);
       const res = await api.createFmecaWorksheet({ ...createForm, plant_id: plantId });
+      // Jorge 2026-04-23: si eligió plantilla, pre-popular filas del template
+      if (res?.worksheet_id && templateKey) {
+        const rows = getTemplate(templateKey);
+        for (const row of rows) {
+          try { await api.addFmecaRow(res.worksheet_id, row); } catch { /* seguir con el resto */ }
+        }
+      }
       setShowCreate(false);
       setCreateForm({ equipment_id: '', equipment_tag: '', equipment_name: '', analyst: '' });
+      setTemplateKey('');
       reloadList();
       if (res?.worksheet_id) setSelectedId(res.worksheet_id);
     } catch (e) {
@@ -237,11 +247,11 @@ export default function FMECA() {
         <h1 className="text-2xl font-bold text-gray-900">FMECA — Análisis de Modos de Fallo, Efectos y Criticidad</h1>
         <p className="text-sm text-gray-500 mt-1">Flujo RCM de 4 etapas · RPN = S × O × D · Engine determinístico (sin LLM)</p>
         <div className="mt-3">
-          <DevBanner variant="strong">
-            FMECA — 4 etapas funcionales (Funciones · Fallos · Efectos · Decisiones) con RPN = S × O × D.
-            Push-to-backlog ya genera items con prioridad (FIXED_TIME→P4, FAULT_FINDING→P3).
-            Pendiente (en construcción Jorge 2026-04-23): plantillas RCM por tipo de equipo,
-            export SAP-IW22, integración histórica con Fallas & Eventos.
+          <DevBanner>
+            FMECA operativo — 4 etapas (Funciones · Fallos · Efectos · Decisiones), RPN = S × O × D,
+            push-to-backlog con prioridad por estrategia (FIXED_TIME→P4, FAULT_FINDING→P3) y
+            6 plantillas RCM precargadas (Bomba, Motor, Transformador, Compresor, Correa, Intercambiador).
+            Pendiente: export SAP-IW22 + integración histórica con Fallas & Eventos.
           </DevBanner>
         </div>
       </div>
@@ -535,6 +545,22 @@ export default function FMECA() {
               <Field label="Analista"
                 value={createForm.analyst}
                 onChange={v => setCreateForm(f => ({ ...f, analyst: v }))} />
+              {/* Jorge 2026-04-23: plantillas RCM pre-armadas por tipo de equipo */}
+              <div>
+                <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Plantilla RCM (opcional)</label>
+                <select value={templateKey} onChange={e => setTemplateKey(e.target.value)}
+                  className="mt-1 w-full px-2 py-1.5 text-sm border border-gray-300 rounded">
+                  <option value="">— Sin plantilla (worksheet vacío) —</option>
+                  {TEMPLATE_KEYS.map(t => (
+                    <option key={t.key} value={t.key}>{t.label}</option>
+                  ))}
+                </select>
+                {templateKey && (
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {TEMPLATE_KEYS.find(t => t.key === templateKey)?.desc}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setShowCreate(false)}

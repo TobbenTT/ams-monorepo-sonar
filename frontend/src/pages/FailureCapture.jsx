@@ -1773,12 +1773,9 @@ export default function FailureCapture({ onNavigateTab }) {
                 <Lock className="w-4 h-4 shrink-0" />
                 <span>Bloqueado — seleccioná planta primero.</span>
               </div>
-            ) : !selectedLoc ? (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 text-xs">
-                <Lock className="w-4 h-4 shrink-0" />
-                <span>Bloqueado — elegí <b>Technical Location</b> primero para filtrar equipos.</span>
-              </div>
             ) : !selectedEquip ? (
+              // Jorge 2026-04-23: Equipo/TAG NO requiere Technical Location — se
+              // puede buscar libre en toda la planta (o escribir TAG manual).
               <div className="relative">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -1798,7 +1795,7 @@ export default function FailureCapture({ onNavigateTab }) {
                 </div>
                 {showEquipSearch && equipResults.length === 0 && selectedLoc && equipSearch.length < 2 && (
                   <div className="mt-1 p-3 text-xs text-center rounded-lg bg-gray-50 text-gray-500 border border-gray-200">
-                    No equipment found under {selectedLoc.name || selectedLoc.code}
+                    No equipment found under {selectedLoc.name || selectedLoc.code} — escribí para buscar en toda la planta
                   </div>
                 )}
                 {equipSearch.length >= 2 && equipResults.length === 0 && (

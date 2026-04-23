@@ -1988,11 +1988,14 @@ export default function WorkOrdersPage() {
         const WO_TYPE_LABELS = { PM01: 'PM01 - Programado', PM02: 'PM02 - Planificado', PM03: 'PM03 - No Programado (Falla)', PM05: 'PM05 - Calib./Reparación' };
         const SPECIALTY_OPTIONS = ['Mechanical', 'Electrical', 'Instrumentation', 'Welder', 'Lubrication', 'Scaffolding', 'Insulation', 'Operator', 'Supervisor', 'Other'];
         const OP_TYPE_OPTIONS = [{ value: 'INT', label: 'INT' }, { value: 'EXT', label: 'EXT' }];
+        const isInExecution = ['EN_EJECUCION','EN_PROGRESO','IN_PROGRESS'].includes(selectedOT.status);
         const OT_TABS = [
           { id: 'resumen', label: 'Summary', icon: Info },
           { id: 'operaciones', label: 'Operaciones', icon: List },
           { id: 'materiales', label: 'Materials', icon: Package },
           { id: 'costos', label: 'Costos', icon: DollarSign },
+          // Jorge SF-515: pestaña HH Notification sólo activa cuando OT está En Ejecución
+          ...(isInExecution ? [{ id: 'hh_notif', label: 'Notif. HH', icon: Clock }] : []),
           { id: 'historial', label: 'History', icon: MessageSquare },
         ];
         return (
@@ -2662,6 +2665,67 @@ export default function WorkOrdersPage() {
                   </div>
                 );
               })()}
+
+              {/* ─── Jorge SF-515 ─ TAB: NOTIFICACIÓN HH (sólo En Ejecución) ─── */}
+              {otDetailTab === 'hh_notif' && (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3">
+                    <div className="flex items-center gap-2 text-amber-800 font-bold text-sm mb-1">
+                      <Clock size={14} /> Notificación de HH · OT En Ejecución
+                    </div>
+                    <p className="text-[11px] text-amber-700">
+                      Captura datos reales del trabajo. Fin real = Inicio real + Duración real (editable).
+                    </p>
+                  </div>
+                  {(() => {
+                    const realStart = selectedOT.actual_start || '';
+                    const realEnd = selectedOT.actual_end || '';
+                    const derivedDur = realStart && realEnd
+                      ? Math.max(0, (new Date(realEnd) - new Date(realStart)) / 3600000)
+                      : (selectedOT.actual_hours || 0);
+                    const updateField = async (patch) => {
+                      try {
+                        await api.updateManagedWO(selectedOT.wo_id, patch);
+                        toast.success('Notificación HH actualizada');
+                        reloadData();
+                      } catch (e) { toast.error(e.message || 'Error'); }
+                    };
+                    return (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-gray-50 rounded-lg p-3 border">
+                          <div className="text-[10px] font-bold uppercase text-gray-500 mb-1">Puesto Trabajo Real</div>
+                          <input type="text" defaultValue={selectedOT.work_center || ''}
+                            onBlur={e => e.target.value !== (selectedOT.work_center || '') && updateField({ work_center: e.target.value })}
+                            className="w-full text-sm border rounded px-2 py-1.5" placeholder="PT real donde se ejecutó" />
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3 border">
+                          <div className="text-[10px] font-bold uppercase text-gray-500 mb-1">HH Reales</div>
+                          <input type="number" step="0.5" min="0" defaultValue={selectedOT.actual_hours || 0}
+                            onBlur={e => { const v = parseFloat(e.target.value) || 0; if (v !== (selectedOT.actual_hours || 0)) updateField({ actual_hours: v }); }}
+                            className="w-full text-sm border rounded px-2 py-1.5" />
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3 border">
+                          <div className="text-[10px] font-bold uppercase text-gray-500 mb-1">Inicio Real</div>
+                          <input type="datetime-local" defaultValue={realStart ? realStart.slice(0, 16) : ''}
+                            onBlur={e => { const v = e.target.value ? new Date(e.target.value).toISOString() : null; if (v !== realStart) updateField({ actual_start: v }); }}
+                            className="w-full text-sm border rounded px-2 py-1.5" />
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3 border">
+                          <div className="text-[10px] font-bold uppercase text-gray-500 mb-1">Fin Real <span className="text-gray-400 font-normal">(auto: inicio+duración, editable)</span></div>
+                          <input type="datetime-local" defaultValue={realEnd ? realEnd.slice(0, 16) : ''}
+                            onBlur={e => { const v = e.target.value ? new Date(e.target.value).toISOString() : null; if (v !== realEnd) updateField({ actual_end: v }); }}
+                            className="w-full text-sm border rounded px-2 py-1.5" />
+                        </div>
+                        <div className="col-span-2 bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+                          <div className="text-[10px] font-bold uppercase text-indigo-600 mb-1">Duración Real (derivada)</div>
+                          <div className="text-lg font-bold text-indigo-800">{derivedDur.toFixed(1)}h</div>
+                          <div className="text-[10px] text-indigo-500 mt-0.5">Si cambias Inicio o Fin se recalcula automáticamente.</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
 
               {/* ─── TAB: HISTORIAL ─── */}
               {otDetailTab === 'historial' && (

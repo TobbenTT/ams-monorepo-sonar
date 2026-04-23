@@ -1796,11 +1796,30 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
                       </div>
                       <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
-                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Duración · Semana</div>
-                        <div className="text-sm font-bold text-indigo-800 mt-1">
-                          {editDates.start && editDates.end ? `${Math.max(0, Math.round((new Date(editDates.end) - new Date(editDates.start)) / 86400000))}d` : '—'}
-                          {editDates.start && <span className="ml-2 text-indigo-500">· W{String(Math.ceil(((new Date(editDates.start) - new Date(new Date(editDates.start).getFullYear(), 0, 1)) / 86400000 + new Date(new Date(editDates.start).getFullYear(), 0, 1).getDay() + 1) / 7)).padStart(2, '0')}</span>}
-                        </div>
+                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Duración (días)</div>
+                        {/* Jorge 2026-04-22: duración editable. Al cambiar, End = Start + Duration. */}
+                        <input type="number" min="0" step="1"
+                          value={editDates.start && editDates.end ? Math.max(0, Math.round((new Date(editDates.end) - new Date(editDates.start)) / 86400000)) : ''}
+                          placeholder="—"
+                          onChange={e => {
+                            const days = parseInt(e.target.value, 10);
+                            if (isNaN(days) || days < 0) return;
+                            setEditDates(d => {
+                              if (!d.start) {
+                                toast.info('Elige Planned Start primero');
+                                return d;
+                              }
+                              const start = new Date(d.start.slice(0, 10));
+                              const end = new Date(start.getTime() + days * 86400000);
+                              return { ...d, end: end.toISOString().slice(0, 10) };
+                            });
+                          }}
+                          className="mt-1 text-sm font-bold text-indigo-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                        {editDates.start && (
+                          <div className="text-[10px] text-indigo-500 mt-0.5">
+                            W{String(Math.ceil(((new Date(editDates.start) - new Date(new Date(editDates.start).getFullYear(), 0, 1)) / 86400000 + new Date(new Date(editDates.start).getFullYear(), 0, 1).getDay() + 1) / 7)).padStart(2, '0')} · end auto
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1813,33 +1832,36 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-gray-800">Operations / Work Steps</h3>
                       <div className="flex items-center gap-2">
-                        {/* Jorge (2026-04-20): cada paso debe ser una operación propia.
-                            Si alguna op tiene "1. ... 2. ... 3. ..." en la descripción,
-                            el botón Split la parte en N operaciones independientes,
-                            una por paso. */}
-                        {editOps.some(o => /\n?\s*\d+\.\s/.test(o.description || '')) && (
+                        {/* Jorge (2026-04-20 / QA 2026-04-22): cada paso debe ser
+                            una operación propia. Parser robusto que acepta:
+                              "1. Paso"   "1) Paso"   "1.- Paso"   "1.Paso" (sin espacio)
+                              - Paso      • Paso      * Paso       (viñetas no-numeradas)
+                            Si detecta <2 pasos, no hace nada y avisa al usuario. */}
+                        {editOps.some(o => /(^|\n)\s*(\d+[\.\)]|\-|•|\*)\s*\S/.test(o.description || '')) && (
                           <button type="button"
                             onClick={() => {
+                              // Regex global que captura pasos numerados o viñetas.
+                              const STEP_RE = /(^|\n)\s*(?:\d+[\.\)]|\-|•|\*)\s*(.+?)(?=(?:\n\s*(?:\d+[\.\)]|\-|•|\*)\s*)|$)/gs;
                               const next = [];
+                              let totalNew = 0;
                               editOps.forEach(op => {
                                 const raw = (op.description || '').trim();
-                                const steps = [];
-                                for (let n = 1; n <= 30; n++) {
-                                  const s = raw.indexOf(`${n}. `);
-                                  if (s === -1) break;
-                                  const nx = raw.indexOf(`${n + 1}. `, s + 1);
-                                  const text = raw.substring(s, nx > -1 ? nx : undefined).replace(/^\d+\.\s*/, '').trim();
-                                  if (text) steps.push(text);
-                                }
-                                if (steps.length <= 1) {
+                                const matches = Array.from(raw.matchAll(STEP_RE));
+                                const steps = matches.map(m => (m[2] || '').trim()).filter(Boolean);
+                                if (steps.length < 2) {
                                   next.push(op);
                                 } else {
                                   const perStepHours = op.hours ? +(op.hours / steps.length).toFixed(2) : 0;
                                   steps.forEach(s => next.push({ ...op, description: s, hours: perStepHours }));
+                                  totalNew += steps.length - 1;   // newly split ops
                                 }
                               });
+                              if (totalNew === 0) {
+                                toast.info('No se detectaron pasos separables. Usá "1. X  2. Y  3. Z" o viñetas.');
+                                return;
+                              }
                               setEditOps(next);
-                              toast.success(`Dividido en ${next.length} operaciones`);
+                              toast.success(`Split en ${next.length} operaciones (+${totalNew})`);
                             }}
                             className="text-xs px-2.5 py-1 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-medium"
                             title="Separar los pasos numerados en operaciones independientes">

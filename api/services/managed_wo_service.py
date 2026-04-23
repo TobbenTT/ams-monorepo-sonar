@@ -107,22 +107,87 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
     }
 
 
-def _auto_planning_group(wo_type: str, priority: str, description: str) -> str:
-    """Auto-assign planning group based on WO type and content."""
-    dl = (description or '').lower()
-    if any(k in dl for k in ['electr', 'motor', 'panel', 'cable', 'voltage', 'circuit']):
+def _lookup_equipment_master(db: Session, equipment_id: str) -> dict:
+    """Jorge 2026-04-22 — los datos maestros (planning_group, work_center) deben
+    leerse del hierarchy_node del equipo si están cargados en metadata_json.
+    Si no hay metadata útil, devolvemos el NOMBRE del equipo + nombre del área
+    padre para que el fallback por keywords tenga más información.
+    """
+    if not db or not equipment_id:
+        return {}
+    try:
+        from api.database.models import HierarchyNodeModel
+        node = db.query(HierarchyNodeModel).filter(
+            HierarchyNodeModel.node_id == equipment_id
+        ).first()
+        if not node:
+            node = db.query(HierarchyNodeModel).filter(
+                HierarchyNodeModel.tag == equipment_id
+            ).first()
+        if not node:
+            return {}
+        meta = node.metadata_json if isinstance(node.metadata_json, dict) else {}
+        # Walk up hasta encontrar el AREA padre — da contexto funcional.
+        area_name = ""
+        cursor = node
+        for _ in range(10):
+            if not cursor.parent_node_id:
+                break
+            parent = db.query(HierarchyNodeModel).filter(
+                HierarchyNodeModel.node_id == cursor.parent_node_id
+            ).first()
+            if not parent:
+                break
+            if parent.node_type == "AREA":
+                area_name = parent.name or ""
+                break
+            cursor = parent
+        return {
+            "planning_group": (meta.get("planning_group") or "").strip() or None,
+            "work_center": (meta.get("work_center") or "").strip() or None,
+            "equipment_name": node.name or "",
+            "area_name": area_name,
+        }
+    except Exception:
+        return {}
+
+
+def _auto_planning_group(wo_type: str, priority: str, description: str, *, db=None, equipment_id: str = "") -> str:
+    """Auto-assign planning group. Prioridad:
+    1. node.metadata_json.planning_group (maestros del equipo)
+    2. Keywords en description + nombre del equipo + nombre del área padre
+    3. PM type fallback
+    """
+    master = _lookup_equipment_master(db, equipment_id) if (db and equipment_id) else {}
+    if master.get("planning_group"):
+        return master["planning_group"]
+
+    # Enriquecer el texto con nombre del equipo y área para match más certero.
+    parts = [description or "", master.get("equipment_name", ""), master.get("area_name", "")]
+    dl = " ".join(parts).lower()
+    if any(k in dl for k in ['electr', 'motor', 'panel', 'cable', 'voltage', 'circuit',
+                              'variador', 'tablero', 'cct']):
         return 'ELEC-01'
-    if any(k in dl for k in ['instrum', 'sensor', 'transm', 'plc', 'dcs', 'calibra', 'valvula control']):
+    if any(k in dl for k in ['instrum', 'sensor', 'transm', 'plc', 'dcs', 'calibra',
+                              'valvula control', 'indicador', 'medidor']):
         return 'INST-01'
-    if any(k in dl for k in ['estructur', 'soldadura', 'weld', 'crack', 'corrosion', 'foundation']):
+    if any(k in dl for k in ['estructur', 'soldadura', 'weld', 'crack', 'corrosion',
+                              'foundation', 'civil', 'pintura']):
         return 'STRU-01'
     if wo_type == 'PM02':
         return 'PREV-01'
     return 'MECH-01'
 
 
-def _auto_work_center(planning_group: str, plant_id: str) -> str:
-    """Auto-assign work center based on planning group."""
+def _auto_work_center(planning_group: str, plant_id: str, *, db=None, equipment_id: str = "") -> str:
+    """Auto-assign work center. Prioridad:
+    1. node.metadata_json.work_center (maestros del equipo)
+    2. Mapping desde planning_group
+    """
+    master = _lookup_equipment_master(db, equipment_id) if (db and equipment_id) else {}
+    if master.get("work_center"):
+        return master["work_center"]
+
     prefix = (plant_id or 'PLT')[:3].upper()
     center_map = {
         'MECH-01': f'{prefix}-MEC01',
@@ -162,9 +227,14 @@ def create_work_order(
     LABOR_RATE = float(_platform_settings.get("laborRate", 50.0))
     auto_budget = round(estimated_hours * LABOR_RATE, 2)
 
-    # Auto-assign planning group and work center if not provided
-    pg = planning_group or _auto_planning_group(wo_type, priority_code, description)
-    wc = work_center or _auto_work_center(pg, plant_id)
+    # Auto-assign planning group and work center if not provided.
+    # Jorge 2026-04-22: leer primero de hierarchy_nodes.metadata_json del equipo.
+    pg = planning_group or _auto_planning_group(
+        wo_type, priority_code, description, db=db, equipment_id=equipment_tag
+    )
+    wc = work_center or _auto_work_center(
+        pg, plant_id, db=db, equipment_id=equipment_tag
+    )
 
     wo = ManagedWorkOrderModel(
         wo_number=wo_number,

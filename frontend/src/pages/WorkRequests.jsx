@@ -1436,7 +1436,11 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       const rDate = r.created_at ? r.created_at.slice(0, 10) : '';
       const matchesDateFrom = !dateFrom || rDate >= dateFrom;
       const matchesDateTo = !dateTo || rDate <= dateTo;
-      const matchesPriority = !priorityFilter || (r.priority_requested || r.priority_suggested || "") === priorityFilter;
+      // Jorge 2026-04-23: multi-select priority (P3+P4 juntos). priorityFilter puede ser
+      // string (legacy) o array.
+      const pCurrent = (r.priority_requested || r.priority_suggested || "");
+      const matchesPriority = !priorityFilter || priorityFilter.length === 0
+        || (Array.isArray(priorityFilter) ? priorityFilter.includes(pCurrent) : pCurrent === priorityFilter);
       // Time range filter — only apply for explicit short ranges, not the default "Last 30 Days"
       let matchesTimeRange = true;
       if (selectedTimeRange && selectedTimeRange !== 'Last 30 Days' && rDate) {
@@ -1837,16 +1841,36 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             })}
             {/* Jorge 2026-04-23 — SAP no borra, cierra. Botón Eliminados removido. */}
           </div>
-          <select value={priorityFilter || 'ALL'} onChange={e => setPriorityFilter(e.target.value === 'ALL' ? '' : e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
-            <option value="ALL">All Priority</option>
-            <option value="P1">P1 - &lt;24h</option>
-            <option value="P2">P2 - &lt;7d</option>
-            <option value="P3">P3 - &gt;7d</option>
-            <option value="P4">P4 - Parada de Plantas</option>
-          </select>
-          {(search || statusFilter.length > 0 || priorityFilter) && (
-            <button onClick={() => { setSearch(''); setStatusFilter([]); setPriorityFilter(''); setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
+          {/* Jorge 2026-04-23: multi-select priority (planificador necesita P3+P4 juntos) */}
+          <div className="flex items-center gap-1">
+            {['P1','P2','P3','P4'].map(p => {
+              const selected = Array.isArray(priorityFilter) ? priorityFilter.includes(p) : priorityFilter === p;
+              return (
+                <button key={p} type="button"
+                  onClick={() => {
+                    const arr = Array.isArray(priorityFilter) ? [...priorityFilter] : (priorityFilter ? [priorityFilter] : []);
+                    const idx = arr.indexOf(p);
+                    if (idx >= 0) arr.splice(idx, 1); else arr.push(p);
+                    setPriorityFilter(arr);
+                  }}
+                  className={`text-xs px-2.5 py-1.5 rounded-md font-bold border ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>
+                  {p}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Jorge 2026-04-23: SAP fecha-blanco — inicio blanco=histórico total, fin blanco=futuro total */}
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            placeholder="Desde (en blanco = todo el histórico)"
+            title="En blanco = desde el principio (todo el histórico)"
+            className="border border-gray-200 rounded-lg px-2 py-2 text-xs bg-white" />
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            placeholder="Hasta (en blanco = todo el futuro)"
+            title="En blanco = hasta el futuro (incluye OTs programadas)"
+            className="border border-gray-200 rounded-lg px-2 py-2 text-xs bg-white" />
+          {(search || statusFilter.length > 0 || (Array.isArray(priorityFilter) ? priorityFilter.length > 0 : priorityFilter) || dateFrom || dateTo) && (
+            <button onClick={() => { setSearch(''); setStatusFilter([]); setPriorityFilter([]); setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
               className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
           )}
         </div>

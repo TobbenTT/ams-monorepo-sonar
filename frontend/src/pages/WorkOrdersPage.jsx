@@ -1087,6 +1087,24 @@ export default function WorkOrdersPage() {
       {/* ── OTs Table ── */}
       {woTab === 'ots' && (
         <Card className="p-6 bg-white">
+          {/* Jorge 2026-04-23: 5 status cards en lugar de "grupo de clasificación / edad promedio" */}
+          <div className="grid grid-cols-5 gap-3 mb-4">
+            {[
+              { key: 'CREADO', label: 'Creadas', color: 'bg-gray-100 text-gray-700 border-gray-300' },
+              { key: 'PLANIFICADO', label: 'Planificadas', color: 'bg-blue-50 text-blue-700 border-blue-300' },
+              { key: 'PROGRAMADO', label: 'En Programación', color: 'bg-indigo-50 text-indigo-700 border-indigo-300' },
+              { key: 'EN_EJECUCION', label: 'En Ejecución', color: 'bg-amber-50 text-amber-700 border-amber-300' },
+              { key: 'CERRADO', label: 'Cerradas', color: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+            ].map(s => {
+              const count = managedWOs.filter(w => (w.status || '').toUpperCase() === s.key).length;
+              return (
+                <div key={s.key} className={`rounded-lg p-3 border ${s.color}`}>
+                  <div className="text-[10px] uppercase tracking-wider font-semibold opacity-80">{s.label}</div>
+                  <div className="text-2xl font-bold mt-1">{count}</div>
+                </div>
+              );
+            })}
+          </div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
               Órdenes de Trabajo ({managedWOs.length})
@@ -2741,6 +2759,35 @@ export default function WorkOrdersPage() {
                     </Button>
                   );
                 })()}
+                {/* Jorge 2026-04-23: Supervisor — Reprogramar (sacrifica PM por falla) + Cancel con motivo */}
+                {!['CERRADO','CANCELADO','CLOSED'].includes(selectedOT.status) && (
+                  <>
+                    <Button size="sm" variant="outline" className="text-amber-700 border-amber-300 hover:bg-amber-50"
+                      onClick={async () => {
+                        const reason = window.prompt('Motivo de reprogramación (p.ej. sacrificada por falla P1):');
+                        if (!reason || !reason.trim()) return;
+                        try {
+                          await api.updateManagedWO(selectedOT.wo_id, { status: 'REPROGRAMADO', cancellation_reason: reason.trim() });
+                          toast.success('OT reprogramada');
+                          setSelectedOT(null); reloadData();
+                        } catch(e) { toast.error(e.message || 'Error'); }
+                      }}>
+                      Reprogramar
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50"
+                      onClick={async () => {
+                        const reason = window.prompt('Motivo de cancelación (obligatorio):');
+                        if (!reason || !reason.trim()) return;
+                        try {
+                          await api.updateManagedWO(selectedOT.wo_id, { status: 'CANCELADO', cancellation_reason: reason.trim() });
+                          toast.success('OT cancelada');
+                          setSelectedOT(null); reloadData();
+                        } catch(e) { toast.error(e.message || 'Error'); }
+                      }}>
+                      Cancelar OT
+                    </Button>
+                  </>
+                )}
                 <Button variant="outline" size="sm"
                   onClick={async () => {
                     try {

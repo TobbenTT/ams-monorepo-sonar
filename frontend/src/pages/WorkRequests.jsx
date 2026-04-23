@@ -275,7 +275,7 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRe
 }
 
 /* ─── Detail Modal (expanded + editable for supervisor) ─── */
-function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, onGoToOT, userRole, t, _isInCarousel, _isDuplicate }) {
+function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, onGoToOT, onToggleFullScreen, isFullScreen, userRole, t, _isInCarousel, _isDuplicate }) {
   if (!item) return null;
   const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(item.status);
   const isValidated = ['VALIDATED', 'APROBADO'].includes(item.status);
@@ -362,7 +362,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
 
   const modalContent = (
       <div
-        className={`relative bg-card rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto ${_isDuplicate ? 'border-2 border-red-400 ring-2 ring-red-200' : 'border border-border'}`}
+        className={`relative bg-card rounded-2xl shadow-2xl w-full overflow-y-auto ${isFullScreen ? 'max-h-[95vh]' : 'max-h-[90vh]'} ${_isDuplicate ? 'border-2 border-red-400 ring-2 ring-red-200' : 'border border-border'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -486,6 +486,23 @@ ${materials.length ? `<div class="section">
             {canEdit && !editing && (
             <button onClick={() => setEditing(true)} className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-300 font-semibold hover:bg-amber-100 transition-colors">
                 Edit
+              </button>
+            )}
+            {/* Jorge 2026-04-23: toggle Pantalla Completa dentro del header */}
+            {onToggleFullScreen && (
+              <button onClick={onToggleFullScreen}
+                title={isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+              </button>
+            )}
+            {/* Jorge 2026-04-23: botón Pantalla completa dentro del header */}
+            {onToggleFullScreen && (
+              <button onClick={onToggleFullScreen}
+                title={isFullScreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
+                {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                {isFullScreen ? 'Minimizar' : 'Pantalla completa'}
               </button>
             )}
             <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -2176,14 +2193,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setSelected(null); setWrFullScreen(false); }}>
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <div className={`relative z-10 w-full ${wrFullScreen ? 'max-w-[98vw] h-[98vh]' : 'max-w-5xl px-4'}`} onClick={e => e.stopPropagation()}>
-              {/* Jorge 2026-04-23: toggle full-screen del aviso — icono Maximize/Minimize */}
-              <button type="button"
-                onClick={() => setWrFullScreen(f => !f)}
-                title={wrFullScreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
-                className="absolute top-3 right-16 z-30 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-gray-50 shadow border border-gray-300 text-xs font-semibold text-gray-700">
-                {wrFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                {wrFullScreen ? 'Minimizar' : 'Pantalla completa'}
-              </button>
+              {/* Jorge 2026-04-23: toggle ahora vive dentro del header del modal (mejor UX) */}
               {/* 3D Carousel */}
               <div className="relative flex items-center justify-center" style={{ perspective: '1200px', minHeight: wrFullScreen ? '94vh' : '80vh' }}>
                 {allItems.map((wrItem, idx) => {
@@ -2240,6 +2250,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           onSaveEdit={handleSaveEdit}
                           onPlannerCreateOT={handlePlannerCreateOT}
                           onGoToOT={() => navigate('/work-orders', { state: { openOtByWrId: wrItem.id } })}
+                          onToggleFullScreen={() => setWrFullScreen(f => !f)}
+                          isFullScreen={wrFullScreen}
                           userRole={user?.role}
                           t={t}
                           _isInCarousel={true}

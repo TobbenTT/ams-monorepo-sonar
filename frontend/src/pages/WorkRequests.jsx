@@ -488,14 +488,6 @@ ${materials.length ? `<div class="section">
                 Edit
               </button>
             )}
-            {/* Jorge 2026-04-23: toggle Pantalla Completa dentro del header */}
-            {onToggleFullScreen && (
-              <button onClick={onToggleFullScreen}
-                title={isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-              </button>
-            )}
             <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <XCircle size={20} />
             </button>

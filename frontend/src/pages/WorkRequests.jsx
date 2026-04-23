@@ -1740,7 +1740,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           { label: 'Pending', count: queueFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
           { label: 'Approved', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
           { label: 'Rejected', count: queueFiltered.filter(r => r.status === 'REJECTED').length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
-          { label: 'Cancelled', count: queueFiltered.filter(r => r.status === 'CANCELLED').length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
+          { label: 'Cancelled', count: queueFiltered.filter(r => ['CANCELLED', 'CANCELADO'].includes(r.status)).length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
+          // Jorge 2026-04-23 17:38: agregar tarjeta "Closed" para ver cuántos avisos se cerraron (vía OT auto-close).
+          { label: 'Closed', count: queueFiltered.filter(r => ['CLOSED', 'CERRADO', 'COMPLETED'].includes(r.status)).length, borderColor: 'border-l-emerald-500', textColor: 'text-emerald-700' },
         ].map(kpi => (
           <div key={kpi.label} className={`bg-white dark:bg-card rounded-lg border border-border ${kpi.borderColor ? 'border-l-4 ' + kpi.borderColor : ''} p-5`}>
             <p className={`text-sm ${kpi.textColor} mb-1`}>{kpi.label}</p>
@@ -1903,11 +1905,15 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('created_at')}>
                     DATE {sortField === 'created_at' ? (sortDir === 'asc' ? '\u2191' : '\u2193') : ''}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('equipment_name')}>
-                    {t('workRequests.requestId')} / {t('workRequests.equipmentName')} {sortField === 'equipment_name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                  {/* Jorge 2026-04-23 17:38: columnas separadas Aviso# | Título | Ubic. Técnica / TAG */}
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Aviso #
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('workRequests.failureDesc')}
+                    Título OT
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Ubic. Técnica / TAG
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground" onClick={() => toggleSort('priority_requested')}>
                     {t('common.priority')} {sortField === 'priority_requested' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
@@ -1950,37 +1956,37 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                         <span className="text-xs text-muted-foreground">{req.created_at ? new Date(req.created_at).toLocaleDateString('es-CL') : '-'}</span>
                       </td>
 
-                      {/* ID / Equipment */}
+                      {/* Jorge 2026-04-23 17:38 — 3 columnas separadas: Aviso# | Título OT | TL/TAG */}
+                      {/* Aviso # */}
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           {hasDuplicates && (
                             <span title={t('workRequests.duplicateWarning')} className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
                           )}
-                          <div>
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <p className="font-mono text-xs text-muted-foreground">{req.id}</p>
-                              {isFastTrackWR && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
-                                  <Zap size={8} /> FAST TRACK
-                                </span>
-                              )}
-                            </div>
-                            <p className="font-semibold text-foreground text-xs">{req.equipment_name}</p>
-                            {/* Jorge 2026-04-23: TL y Equipo/TAG en líneas separadas con etiqueta */}
-                            {req.technical_location && (
-                              <p className="text-[10px] text-blue-500"><span className="font-semibold text-blue-400">TL:</span> {req.technical_location}</p>
-                            )}
-                            {req.equipment_tag && !/^\d{8,}$/.test(req.equipment_tag) && (
-                              <p className="font-mono text-[10px] text-muted-foreground"><span className="font-semibold text-gray-400">TAG:</span> {req.equipment_tag}</p>
-                            )}
-                          </div>
+                          <p className="font-mono text-xs text-muted-foreground">{req.id}</p>
+                          {isFastTrackWR && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
+                              <Zap size={8} /> FT
+                            </span>
+                          )}
                         </div>
                       </td>
 
-                      {/* Failure */}
+                      {/* Título OT (wo_title viene del aviso y se arrastra a la OT) */}
                       <td className="px-4 py-3 max-w-xs">
-                        <p className="text-foreground/80 text-xs mb-1">{truncatedDesc}</p>
+                        <p className="font-semibold text-foreground text-xs truncate" title={req.wo_title || req.equipment_name}>{req.wo_title || req.equipment_name || '—'}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{truncatedDesc}</p>
+                      </td>
 
+                      {/* Ubicación Técnica / TAG */}
+                      <td className="px-4 py-3">
+                        {req.technical_location && (
+                          <p className="text-[11px] text-blue-600"><span className="font-semibold">TL:</span> {req.technical_location}</p>
+                        )}
+                        {req.equipment_tag && !/^\d{8,}$/.test(req.equipment_tag) && (
+                          <p className="font-mono text-[11px] text-gray-600"><span className="font-semibold">TAG:</span> {req.equipment_tag}</p>
+                        )}
+                        {!req.technical_location && !req.equipment_tag && <span className="text-[10px] text-gray-300">—</span>}
                       </td>
 
                       {/* Priority */}

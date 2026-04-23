@@ -129,8 +129,12 @@ export default function Header({
 
     // Show plant/time/area filters on these pages
     const showFilters = true;
-    // View mode toggle on all pages that have filters
-    const showViewToggle = showFilters;
+    // Jorge 2026-04-23 17:38: toggle Executive/Tactical ocultado en Work Management
+    // (Jorge: "para efectos del work management la vista tiene que ser una sola").
+    // Se esconde en todas las vistas donde el toggle no cambia nada útil.
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const hideToggleOnPaths = ['/work-management'];
+    const showViewToggle = showFilters && !hideToggleOnPaths.some(p => path.startsWith(p));
 
     return (
         <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex-shrink-0 sticky top-0 z-50">

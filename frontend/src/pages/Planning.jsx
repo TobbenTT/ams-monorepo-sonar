@@ -697,6 +697,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
     }).catch(() => setWorkRequests([])).finally(() => setLoading(false));
   };
   useEffect(() => { fetchData(); }, [plant]);
+  // Jorge 2026-04-23: auto-refresh al reconectarse el WS
+  useEffect(() => {
+    const h = () => fetchData();
+    window.addEventListener('ws:reconnected', h);
+    return () => window.removeEventListener('ws:reconnected', h);
+  }, [plant]); // eslint-disable-line react-hooks/exhaustive-deps
   useWebSocket(plant, useCallback((msg) => {
     if (msg.event?.startsWith('wo_') || msg.event?.startsWith('wr_')) fetchData();
   }, []));

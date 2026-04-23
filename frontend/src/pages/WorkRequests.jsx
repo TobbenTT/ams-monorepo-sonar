@@ -1373,6 +1373,13 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       .finally(() => setLoading(false));
   }, [plantId]);
 
+  // Jorge 2026-04-23: auto-refresh al reconectarse el WS (sin tener que recargar)
+  useEffect(() => {
+    const h = () => refreshList();
+    window.addEventListener('ws:reconnected', h);
+    return () => window.removeEventListener('ws:reconnected', h);
+  }, [plantId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Refresh data when tab becomes active
   useEffect(() => {
     if (isActive) refreshList();

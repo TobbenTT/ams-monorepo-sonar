@@ -64,14 +64,23 @@ function openConnection(plantId) {
 
     const notifyStatus = (connected) => {
         const prev = state.connected;
+        const prevAttempt = state.retryAttempt;
         state.connected = connected;
         if (!connected) state.retryAttempt++;
         else state.retryAttempt = 0;
         if (prev === connected) return;   // no disparar si no cambió
         try {
             window.dispatchEvent(new CustomEvent('ws:status', {
-                detail: { plantId, connected, attempt: state.retryAttempt },
+                detail: { plantId, connected, attempt: prevAttempt },
             }));
+            // Jorge 2026-04-23: evento dedicado "ws:reconnected" cuando volvemos
+            // de un disconnect. Las páginas lo escuchan para refrescar data
+            // que pudo haberse perdido durante el outage.
+            if (connected && prev === false && prevAttempt > 0) {
+                window.dispatchEvent(new CustomEvent('ws:reconnected', {
+                    detail: { plantId, downFor: prevAttempt },
+                }));
+            }
         } catch {}
     };
 

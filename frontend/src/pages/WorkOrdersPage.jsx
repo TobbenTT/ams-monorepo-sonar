@@ -167,6 +167,13 @@ export default function WorkOrdersPage() {
 
   useEffect(() => { reloadData(); }, [reloadData]);
 
+  // Jorge 2026-04-23: auto-refresh al reconectarse el WS (evita recargar página)
+  useEffect(() => {
+    const h = () => reloadData();
+    window.addEventListener('ws:reconnected', h);
+    return () => window.removeEventListener('ws:reconnected', h);
+  }, [reloadData]);
+
   // Jorge 2026-04-23 — nav bidireccional Aviso → OT: abrir OT vinculada al WR
   useEffect(() => {
     const wrId = location?.state?.openOtByWrId;

@@ -861,7 +861,10 @@ ${materials.length ? `<div class="section">
                   <p className="text-sm text-foreground mt-0.5">{item.circumstances}</p>
                 </div>
               )}
-              {(item.support_equipment?.length > 0 || editing) && (
+              {/* Jorge 2026-04-23 17:38: support_equipment duplicado (estaba
+                  renderizando acá inline Y más abajo en sección independiente).
+                  Ocultado el inline; la sección completa queda más abajo. */}
+              {false && (item.support_equipment?.length > 0 || editing) && (
                 <div>
                   <span className="text-xs text-muted-foreground">Support Equipment:</span>
                   {editing ? (

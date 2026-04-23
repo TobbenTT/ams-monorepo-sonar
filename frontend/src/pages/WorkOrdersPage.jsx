@@ -2153,6 +2153,28 @@ export default function WorkOrdersPage() {
                     </div>
                   </div>
 
+                  {/* Jorge SF-516: KPIs Adherencia (fecha/hora exacta) + Cumplimiento (ventana 7d) */}
+                  {selectedOT.planned_start && selectedOT.actual_start && ['CERRADO','CLOSED'].includes(selectedOT.status) && (() => {
+                    const planStart = new Date(selectedOT.planned_start);
+                    const realStart = new Date(selectedOT.actual_start);
+                    const diffHours = Math.abs((realStart - planStart) / 3600000);
+                    const adherence = diffHours < 1 ? 'OK' : diffHours < 24 ? 'DELAYED' : 'MISSED';
+                    const diffDays = Math.abs((realStart - planStart) / 86400000);
+                    const compliance = diffDays <= 7 ? 'IN_WINDOW' : 'OUT_OF_WINDOW';
+                    return (
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className={`rounded-lg p-2 border text-xs ${adherence === 'OK' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : adherence === 'DELAYED' ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-red-50 border-red-300 text-red-700'}`}>
+                          <div className="text-[10px] uppercase font-bold tracking-wider">Adherencia (fecha/hora)</div>
+                          <div className="font-semibold">{adherence === 'OK' ? '✓ Cumple (<1h desvío)' : adherence === 'DELAYED' ? `⚠ Desvío ${diffHours.toFixed(1)}h` : `✗ Missed (${diffHours.toFixed(0)}h)`}</div>
+                        </div>
+                        <div className={`rounded-lg p-2 border text-xs ${compliance === 'IN_WINDOW' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-red-50 border-red-300 text-red-700'}`}>
+                          <div className="text-[10px] uppercase font-bold tracking-wider">Cumplimiento (ventana 7d)</div>
+                          <div className="font-semibold">{compliance === 'IN_WINDOW' ? `✓ En ventana (${diffDays.toFixed(0)}d)` : `✗ Fuera (${diffDays.toFixed(0)}d)`}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Key metrics — Jorge 2026-04-23: 6 campos Plan/Actual × HH/Duration/Cost */}
                   {(() => {
                     const plannedDur = selectedOT.planned_start && selectedOT.planned_end

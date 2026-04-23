@@ -606,7 +606,9 @@ ${materials.length ? `<div class="section">
             <DetailCard icon={Users} label="Asignado a" value={item.assigned_to_name} />
           )}
           {item.sla_deadline && (
-            <DetailCard icon={Clock} label="SLA Deadline" value={new Date(item.sla_deadline).toLocaleDateString()} />
+            <DetailCard icon={Clock} label="SLA Deadline"
+              value={new Date(item.sla_deadline).toLocaleDateString()}
+              title="SLA = Service Level Agreement. Fecha tope según la prioridad: P1<24h, P2<7d, P3>7d, P4 parada de plantas." />
           )}
         </div>
 

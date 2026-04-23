@@ -965,7 +965,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 fetchData();
               })
               .catch(e => toast.error('Error: ' + (e.message || '')));
-          }} className="ml-2 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1">
+          }} className="ml-2 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
+            title="Ranking IA multi-criterio: criticidad del equipo (40%) + urgencia SLA (30%) + repetición histórica / Pareto (20%) + impacto productivo (10%). Prioriza primero P1/P2 fast-track, luego ordena P3/P4 por score combinado.">
             <Sparkles className="w-3 h-3" /> Priorizar con IA
           </button>
         </>)}

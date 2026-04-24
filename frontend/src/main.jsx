@@ -14,6 +14,48 @@ import './styles/index.css';
 // Install offline queue drainer — triggered on 'online' event + periodic checks.
 installOfflineSync();
 
+// Jorge 2026-04-23: cache-bust one-shot. Si la versión guardada no coincide,
+// limpiamos Cache Storage + Service Worker + localStorage efímero y forzamos
+// hard reload una sola vez por versión. Dispara al cargar la app.
+const CACHE_BUST_VERSION = '2026-04-23-jorge-final';
+(async () => {
+  try {
+    const prev = localStorage.getItem('ocp_cache_version');
+    if (prev === CACHE_BUST_VERSION) return; // ya refrescó esta versión
+    // 1. Purga Cache Storage (service workers, fetch cache)
+    if ('caches' in window) {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      } catch {}
+    }
+    // 2. Desregistra service workers si los hay
+    if ('serviceWorker' in navigator) {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      } catch {}
+    }
+    // 3. Limpia localStorage efímero (NO tocar auth ni settings del user)
+    const keepKeys = ['ocp_token', 'ocp_user', 'ocp_settings', 'selected_plant'];
+    const allKeys = Object.keys(localStorage);
+    for (const k of allKeys) {
+      if (!keepKeys.includes(k)) {
+        try { localStorage.removeItem(k); } catch {}
+      }
+    }
+    // 4. Marca la versión ANTES de recargar para no hacer loop
+    localStorage.setItem('ocp_cache_version', CACHE_BUST_VERSION);
+    // 5. Hard reload con cache-bust
+    const url = new URL(window.location.href);
+    url.searchParams.set('_cb', String(Date.now()));
+    window.location.replace(url.toString());
+  } catch (e) {
+    // Si algo falla, al menos marcamos la versión para no quedar colgados
+    try { localStorage.setItem('ocp_cache_version', CACHE_BUST_VERSION); } catch {}
+  }
+})();
+
 // Wrapper: if a lazy chunk fails (stale deploy), auto-reload once
 function lazyRetry(importFn) {
     return lazy(() =>

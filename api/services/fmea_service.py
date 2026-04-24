@@ -281,6 +281,84 @@ def list_fmeca_worksheets_summary(db: Session, plant_id: str | None = None, stat
     return result
 
 
+def create_fmeca_from_rca(db: Session, analysis_id: str, analyst: str = "") -> dict:
+    """Jorge 2026-04-23: FMECA ↔ RCA. Crea un worksheet FMECA pre-poblado con
+    las causas identificadas en un RCA. Usa cause_effect (Ishikawa 5M) +
+    solutions como filas sugeridas."""
+    from api.database.models import RCAAnalysisModel
+    rca = db.query(RCAAnalysisModel).filter(RCAAnalysisModel.analysis_id == analysis_id).first()
+    if not rca:
+        return {"error": "RCA not found"}
+
+    # Crear worksheet
+    ws_data = {
+        "equipment_id": rca.equipment_id or "",
+        "equipment_tag": rca.equipment_id or "",
+        "equipment_name": (rca.event_description or "")[:80],
+        "analyst": analyst,
+        "plant_id": rca.plant_id,
+    }
+    result = create_fmeca_worksheet(db, ws_data)
+    ws_id = result.get("worksheet_id")
+    if not ws_id:
+        return {"error": "No se pudo crear el worksheet"}
+
+    # Convertir causas → filas FMECA
+    ce = rca.cause_effect or {}
+    categories = ['manpower', 'machine', 'method', 'material', 'measurement', 'environment']
+    rows_added = 0
+    for cat in categories:
+        causes = ce.get(cat) or []
+        if isinstance(causes, str): causes = [causes]
+        for cause in causes:
+            if not cause or (isinstance(cause, dict) and not cause.get('description')): continue
+            desc = cause if isinstance(cause, str) else cause.get('description', '')
+            row = {
+                'function_description': f'Causa {cat}: {desc[:60]}',
+                'functional_failure': (rca.event_description or '')[:200],
+                'failure_mode': desc[:200],
+                'failure_effect': f'Identificado en RCA {analysis_id[:8]}',
+                'failure_consequence': 'EVIDENT_OPERATIONAL',
+                'severity': 6, 'occurrence': 5, 'detection': 5,
+                'recommended_action': f'Ver RCA {analysis_id[:8]} — análisis 5M categoría {cat}',
+            }
+            try:
+                from api.database.models import FMECAWorksheetModel
+                # Usa el service existente addFmecaRow vía engine
+                from api.services.fmea_service import FMECAEngine as _Engine
+                _Engine.add_row(ws_id, row)
+                rows_added += 1
+            except Exception: pass
+
+    # Soluciones del RCA como rows con acción recomendada
+    for sol in (rca.solutions or []):
+        if isinstance(sol, dict) and sol.get('description'):
+            row = {
+                'function_description': f'Solución RCA',
+                'functional_failure': sol.get('description', '')[:200],
+                'failure_mode': sol.get('type', 'CAPA'),
+                'failure_effect': 'Acción correctiva/preventiva del RCA',
+                'failure_consequence': 'EVIDENT_OPERATIONAL',
+                'severity': 5, 'occurrence': 4, 'detection': 4,
+                'recommended_action': sol.get('description', '')[:300],
+            }
+            try:
+                from api.services.fmea_service import FMECAEngine as _Engine
+                _Engine.add_row(ws_id, row)
+                rows_added += 1
+            except Exception: pass
+
+    # Link en el worksheet (campo ad-hoc)
+    try:
+        ws_obj = db.query(FMECAWorksheetModel).filter(FMECAWorksheetModel.worksheet_id == ws_id).first()
+        if ws_obj and hasattr(ws_obj, 'analyst'):
+            ws_obj.analyst = f"{ws_obj.analyst or ''} · desde RCA {analysis_id[:8]}".strip()
+        db.commit()
+    except Exception: pass
+
+    return {"worksheet_id": ws_id, "rows_added": rows_added, "source_rca": analysis_id}
+
+
 def fmeca_history_hints(db: Session, equipment_id: str, months: int = 12) -> list[dict]:
     """Jorge 2026-04-23: integración FMECA ↔ Fallas & Eventos.
     Dado un equipment_id, extrae las fallas correctivas cerradas de los últimos

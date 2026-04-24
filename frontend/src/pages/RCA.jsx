@@ -418,12 +418,26 @@ export default function RCA() {
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h3 className="text-sm font-bold text-foreground">Acciones correctivas (CAPA)</h3>
-              <button onClick={handlePushToCapa}
-                disabled={!(selected.solutions || []).length}
-                title="Crea ImprovementAction rows para cada solución cargada"
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
-                <Send size={12} /> Push a CAPA
-              </button>
+              <div className="flex gap-2">
+                {/* Jorge 2026-04-23: FMECA ↔ RCA — crear worksheet FMECA desde este RCA */}
+                <button onClick={async () => {
+                  try {
+                    const r = await api.createFmecaFromRca(selected.analysis_id || selected.id, '');
+                    toast.success(`FMECA creado con ${r.rows_added || 0} filas del RCA`);
+                    window.open(`/fmeca?open=${r.worksheet_id}`, '_blank');
+                  } catch(e) { toast.error(e.message || 'Error creando FMECA'); }
+                }}
+                  title="Crea un worksheet FMECA pre-poblado con las causas Ishikawa + soluciones de este RCA"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                  <Send size={12} /> Crear FMECA
+                </button>
+                <button onClick={handlePushToCapa}
+                  disabled={!(selected.solutions || []).length}
+                  title="Crea ImprovementAction rows para cada solución cargada"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+                  <Send size={12} /> Push a CAPA
+                </button>
+              </div>
             </div>
             {(selected.corrective_actions || []).length > 0 ? (
               <div className="space-y-2">

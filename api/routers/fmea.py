@@ -208,6 +208,16 @@ def push_fmeca_to_backlog(worksheet_id: str, db: Session = Depends(get_db)):
     return result
 
 
+@router.post("/fmeca/from-rca/{analysis_id}")
+def create_fmeca_from_rca(analysis_id: str, analyst: str = "", db: Session = Depends(get_db)):
+    """Jorge 2026-04-23: Crear worksheet FMECA pre-poblado desde un RCA.
+    Usa cause_effect (Ishikawa 5M) + solutions como filas sugeridas."""
+    result = fmea_service.create_fmeca_from_rca(db, analysis_id=analysis_id, analyst=analyst)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
 @router.get("/strategy/pm02-calendar")
 def strategy_pm02_calendar(plant_id: str | None = None, months: int = 12, db: Session = Depends(get_db)):
     """Jorge 2026-04-23: preview calendario anual de PM02 auto-generadas desde estrategia.

@@ -199,7 +199,7 @@ export default function RCA() {
 
   return (
     <div className="p-6 space-y-5">
-      <DevBanner variant="strong">Módulo RCA del pivot reliability (2026-04-22). Flujo base funcional; plantillas 5-Why / Fishbone / Fault-Tree en construcción iterativa con Jorge.</DevBanner>
+      <DevBanner variant="subtle">RCA operativo — 5M (Ishikawa) + solutions + push-to-CAPA + integración FMECA (botón "Crear FMECA" arrastra causas y soluciones). Plantillas avanzadas (5-Why / Fault-Tree) en iteración.</DevBanner>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

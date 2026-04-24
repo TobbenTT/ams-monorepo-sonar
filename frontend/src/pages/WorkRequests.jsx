@@ -521,15 +521,13 @@ ${materials.length ? `<div class="section">
           </DetailCard>
           <DetailCard icon={Gauge} label={t('workRequests.productionImpact')}>
             {editing ? (
-              /* Jorge 2026-04-24 (obs doc): Production Impact ahora es automático
-                 derivado de priority: P1→CRITICAL, P2→HIGH, P3→MEDIUM, P4→HIGH
-                 (parada planta). Se muestra readonly en edit. */
-              <span className="text-xs text-muted-foreground italic px-2 py-1">
-                Auto (derivado de priority): {impactLabels[(() => {
-                  const p = editData.priority_requested || editData.priority_suggested;
-                  return { P1: 'CRITICAL', P2: 'HIGH', P3: 'MEDIUM', P4: 'HIGH' }[p] || 'MEDIUM';
-                })()] || 'Medium'}
-              </span>
+              /* Jorge 2026-04-24 14:18: "automático PERO modificable" — se
+                 pre-popula derivado de priority pero el planner puede sobreescribirlo. */
+              <select value={editData.production_impact || 'MEDIUM'}
+                onChange={e => setEditData(d => ({ ...d, production_impact: e.target.value }))}
+                className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none">
+                {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(v => <option key={v} value={v}>{impactLabels[v]}</option>)}
+              </select>
             ) : (() => {
               // Prefer real multi-criteria score when available
               const label = impactScore?.impact_label || item.production_impact;
@@ -1153,8 +1151,18 @@ ${materials.length ? `<div class="section">
                 </button>
               </>
             )}
-            {/* Jorge 2026-04-24 (obs doc): "Ver OT" removido de la sección Identificación —
-                la OT aún no se crea ahí. Queda sólo en la columna "WO" de la tabla. */}
+            {/* Jorge 2026-04-24 14:18: "Ver OT" debe aparecer SÓLO cuando la OT ya
+                existe (item.wo_number / wo_id). Antes siempre aparecía, ahora condicional. */}
+            {onGoToOT && (item.wo_number || item.wo_id) && (
+              <button
+                onClick={onGoToOT}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-sm font-semibold hover:bg-blue-100 transition-colors"
+                title="Ver OT vinculada"
+              >
+                <ArrowRight size={16} />
+                Ver OT {item.wo_number || ''}
+              </button>
+            )}
             {/* Planner: Create WO from approved WR */}
             {isValidated && (
               <>
@@ -1267,8 +1275,9 @@ function normalizeWR(wr) {
     original_text: desc.original_text || '',
     technical_location: desc.technical_location || desc.technical_location_code || cls.technical_location || '',
     failure_mode: desc.failure_mode_detected || desc.failure_mode_code || wr.failure_mode || '',
-    // Jorge 2026-04-24 (obs doc): production_impact derivado automáticamente de priority.
-    production_impact: (() => {
+    // Jorge 2026-04-24 14:18: auto-derivado si no existe, pero si el usuario
+    // lo sobreescribió, mantener el valor manual.
+    production_impact: wr.production_impact || cls.production_impact || (() => {
       const p = cls.priority_suggested || wr.priority_requested || wr.priority || 'P3';
       return { P1: 'CRITICAL', P2: 'HIGH', P3: 'MEDIUM', P4: 'HIGH' }[p] || 'MEDIUM';
     })(),

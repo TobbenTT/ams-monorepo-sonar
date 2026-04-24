@@ -508,7 +508,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [extForm, setExtForm] = useState({ vendor: '', vendor_other: '', contract_ref: '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: '', currency: 'USD', start_date: '', end_date: '', lead_time_days: '', contact_name: '', contact_phone: '', safety_requirements: '', notes: '' });
   const [woSearch, setWoSearch] = useState("");
   const [woStatusFilter, setWoStatusFilter] = useState("All");
-  const [woPriorityFilter, setWoPriorityFilter] = useState("All");
+  // Jorge 2026-04-24 14:18: multi-select priority + P2 en Planning (antes era single "All"/P1/P3/P4)
+  const [woPriorityFilter, setWoPriorityFilter] = useState([]); // [] = all
   const [woTypeFilter, setWoTypeFilter] = useState("All");
   // AI ranking state — populated when user clicks "Priorizar con IA"
   const [aiScores, setAiScores] = useState({}); // { equipment_tag: { score, alerts, criticality, ... } }
@@ -522,7 +523,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       wos = wos.filter(wo => (wo.wo_number || "").toLowerCase().replace(/[\s\-]+/g, '').includes(q) || (wo.equipment_tag || "").toLowerCase().includes(woSearch.toLowerCase()) || (wo.description || "").toLowerCase().includes(woSearch.toLowerCase()));
     }
     if (woStatusFilter !== "All") wos = wos.filter(wo => wo.status === woStatusFilter);
-    if (woPriorityFilter !== "All") wos = wos.filter(wo => (wo.priority_code || wo.priority) === woPriorityFilter);
+    if (Array.isArray(woPriorityFilter) && woPriorityFilter.length > 0) {
+      wos = wos.filter(wo => woPriorityFilter.includes(wo.priority_code || wo.priority));
+    } else if (typeof woPriorityFilter === 'string' && woPriorityFilter !== 'All') {
+      wos = wos.filter(wo => (wo.priority_code || wo.priority) === woPriorityFilter);
+    }
     if (woTypeFilter !== "All") wos = wos.filter(wo => wo.wo_type === woTypeFilter);
     // SLA-at-risk filter
     if (filterSLARisk) {
@@ -984,24 +989,23 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         </>)}
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards — Jorge 2026-04-24 14:18: 4 conteos por status principal */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg border-l-4 border-l-blue-400 border border-gray-200 p-5">
-          <p className="text-sm text-blue-600 mb-1">Work Orders</p>
-          <p className="text-3xl font-bold text-gray-900">{managedWOs.length}</p>
-        </div>
-        <div className="bg-white rounded-lg border-l-4 border-l-red-400 border border-gray-200 p-5">
-          <p className="text-sm text-red-600 mb-1">Urgent (P1+P2)</p>
-          <p className="text-3xl font-bold text-gray-900">{kpis.urgent}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <p className="text-sm text-gray-500 mb-1">Average Age</p>
-          <p className="text-3xl font-bold text-gray-900">{kpis.avgAge}<span className="text-lg text-gray-400 ml-1">days</span></p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <p className="text-sm text-gray-500 mb-1">With Planning Group</p>
-          <p className="text-3xl font-bold text-gray-900">{kpis.withPlanGroup}<span className="text-lg text-gray-400 ml-1">/ {kpis.total}</span></p>
-        </div>
+        {(() => {
+          const byStatus = (keys) => managedWOs.filter(w => keys.includes((w.status || '').toUpperCase())).length;
+          const cards = [
+            { label: 'Creadas', count: byStatus(['CREADO','CREATED','LIBERADO','APROBADO']), color: 'border-l-gray-400', text: 'text-gray-700' },
+            { label: 'Planificadas', count: byStatus(['PLANIFICADO','PLANNED']), color: 'border-l-blue-400', text: 'text-blue-700' },
+            { label: 'Programadas', count: byStatus(['PROGRAMADO','EN_PROGRAMACION','SCHEDULED','EN_EJECUCION','EN_PROGRESO','IN_PROGRESS']), color: 'border-l-indigo-400', text: 'text-indigo-700' },
+            { label: 'Cerradas', count: byStatus(['CERRADO','CLOSED','COMPLETED']), color: 'border-l-emerald-400', text: 'text-emerald-700' },
+          ];
+          return cards.map(c => (
+            <div key={c.label} className={`bg-white rounded-lg border-l-4 ${c.color} border border-gray-200 p-5`}>
+              <p className={`text-sm ${c.text} mb-1`}>{c.label}</p>
+              <p className="text-3xl font-bold text-gray-900">{c.count}</p>
+            </div>
+          ));
+        })()}
       </div>
 
       {/* Unified Filter */}
@@ -1059,14 +1063,24 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 <option value="CERRADO">Closed</option>
                 <option value="CANCELADO">Cancelled</option>
               </select>
-              <select value={woPriorityFilter} onChange={e => setWoPriorityFilter(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
-                <option value="All">All Priority</option>
-                <option value="P1">P1 - &lt;24h</option>
-                <option value="P2">P2 - &lt;7d</option>
-                <option value="P3">P3 - &gt;7d</option>
-                <option value="P4">P4 - Parada de Plantas</option>
-              </select>
+              {/* Jorge 2026-04-24 14:18: multi-select priority (P1/P2/P3/P4) */}
+              <div className="flex items-center gap-1">
+                {['P1','P2','P3','P4'].map(p => {
+                  const sel = Array.isArray(woPriorityFilter) && woPriorityFilter.includes(p);
+                  return (
+                    <button key={p} type="button"
+                      onClick={() => setWoPriorityFilter(prev => {
+                        const arr = Array.isArray(prev) ? [...prev] : [];
+                        const i = arr.indexOf(p);
+                        if (i >= 0) arr.splice(i, 1); else arr.push(p);
+                        return arr;
+                      })}
+                      className={`text-xs px-2.5 py-1.5 rounded-md font-bold border ${sel ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
               <select value={woTypeFilter} onChange={e => setWoTypeFilter(e.target.value)}
                 className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
                 <option value="All">All Types</option>
@@ -1075,8 +1089,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 <option value="PM02">PM02 - Planificado</option>
                 <option value="PM03">PM03 - No Programado (Falla)</option>
               </select>
-              {(woSearch || woStatusFilter !== "All" || woPriorityFilter !== "All" || woTypeFilter !== "All") && (
-                <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter("All"); setWoTypeFilter("All"); }}
+              {(woSearch || woStatusFilter !== "All" || (Array.isArray(woPriorityFilter) ? woPriorityFilter.length > 0 : woPriorityFilter !== "All") || woTypeFilter !== "All") && (
+                <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter([]); setWoTypeFilter("All"); }}
                   className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
               )}
             </div>
@@ -1117,7 +1131,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   <tr className="border-b border-gray-100 bg-gray-50/50">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">WO Number</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Equipment</th>
+                    {/* Jorge 2026-04-24 14:18: columna "Equipment" reemplazada por TL + TAG */}
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ubic. Técnica / TAG</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
@@ -1159,7 +1174,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <td className="px-4 py-3">
                           <span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded">{TYPE_LABEL[wo.wo_type] || wo.wo_type || '—'}</span>
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-700">{wo.equipment_tag || '—'}</td>
+                        <td className="px-4 py-3 text-xs">
+                          {wo.technical_location && <div className="text-blue-600"><span className="font-semibold">TL:</span> {wo.technical_location}</div>}
+                          {wo.equipment_tag && <div className="font-mono text-gray-600"><span className="font-semibold">TAG:</span> {wo.equipment_tag}</div>}
+                          {!wo.technical_location && !wo.equipment_tag && <span className="text-gray-300">—</span>}
+                        </td>
                         <td className="px-4 py-3 text-xs text-gray-700 max-w-xs truncate">{wo.description || wo.failure_description || '—'}</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-2 py-0.5 rounded font-semibold ${s.color}`}>{s.label}</span>

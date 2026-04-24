@@ -1,0 +1,12 @@
+- [David es dev full-stack junior](user_role.md) — en PDFs, decks, propuestas: referirse como "junior" (o "dev full-stack"), nunca "senior".
+- [Pivot RCA/FMECA cerrado 2026-04-24](project_reliability_state.md) — FMECA+RCA+plantillas+historial+PM02 calendar+adherence+IW22 ya operativos. No rehacer.
+- [Pivot 2026-04-22 → reliability](project_focus_shift_rca_fmeca.md) — roadmap pasó de WR a RCA + FMECA (contexto histórico).
+- [VPS deploy pattern](project_vps_deploy.md) — push vps + ssh git reset --hard + docker compose build. Cache-bust en main.jsx. Tag backup `backup-2026-04-24-full`.
+- [No copiar UIs comerciales](feedback_legal_copying.md) — restricción legal. Inspirarse en paradigmas, no replicar pixel-por-pixel.
+- [Atribuir stakeholder en copias](feedback_stakeholder_attribution.md) — cuando Jorge pide algo que se parece a producto comercial, comentario + trailer en commit atribuyendo la decisión.
+- [Setup de tests + CI](reference_test_ci.md) — tests/test_api/ tiene 166 pytest; CI via .github/workflows/ci.yml; deploy.sh corre pytest pre-build.
+- [Jorge propone sin probar](feedback_jorge_no_prueba.md) — verificar evidencia técnica antes de codear. Asumir "no probó" en vez de "hay bug".
+- [Scope Freeze contra scope creep](feedback_scope_creep_defense.md) — exigir doc firmado antes de codear nuevos requisitos. Especialmente útil cuando Jorge pide replicar data ya existente (ej. OT heredando bloque WR completo — usuario rechazó 2026-04-24).
+- [No confabular fixes](feedback_ai_confabulation.md) — decir "arreglé X" sólo tras validar X funciona. Si no se probó, decirlo explícito.
+- [Docs para José](reference_docs_jose.md) — docs/QA_SCOPE.pdf y docs/SECURITY_SCOPE.pdf ya existen. No re-crear; editar el MD + regenerar con `_md_to_pdf.py`.
+</content>

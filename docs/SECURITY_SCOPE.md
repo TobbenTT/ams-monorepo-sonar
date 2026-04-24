@@ -86,6 +86,31 @@ Hoy corrí un audit defensivo con Claude y **encontramos 5 vulnerabilidades CRÍ
 
 ---
 
+## Seguridad = código + documentación (no sólo parchar)
+
+Igual que QA, ciberseguridad real **exige documentación obligatoria**. Especialmente con clientes mineros grandes como Goldfields que piden evidencia formal:
+
+| Documento que seguridad escribe | Para qué sirve | Sin rol humano |
+|---|---|---|
+| **Política de seguridad de la información** | Doc maestro exigido por ISO 27001, contratos B2B. | No existe, no podemos firmar DPA. |
+| **Threat model** | Matriz activos × amenazas × controles. Actualizada por release. | Volamos a ciegas. |
+| **Matriz de roles y permisos** | Documentada en detalle: qué puede hacer admin vs manager vs planner vs supervisor vs técnico. | IDOR de hoy vuelve a pasar. |
+| **Plan de respuesta a incidentes** | Qué hacer si se filtra un token, si hay ransomware, si un contratista roba data. | Improvisamos en plena crisis. |
+| **Registro de auditoría** | Qué usuario hizo qué cambio, cuándo. Exigido legalmente para data de mantención crítica. | Tenemos log básico pero sin retención formal. |
+| **DPA (Data Processing Agreement)** | Contrato legal con Goldfields sobre cómo tratamos su data. | Goldfields lo va a pedir y no lo tenemos. |
+| **Reporte de pentest** | Evidencia que el SaaS fue auditado externamente. | Cliente pide, no tenemos. |
+| **Cumplimiento Ley 21.663 Chile** | Obligatorio desde 2024 para data personal. | Riesgo legal. |
+| **Bitácora de secretos rotados** | Cuándo se rotó JWT_SECRET, credenciales DB, API keys. | Si hay filtración, no sabemos qué rotar. |
+| **Inventario de dependencias** | SBOM (Software Bill of Materials) con hash de cada lib. | Supply chain attack indetectable. |
+
+**Sin esta documentación:**
+- Goldfields puede rechazar el go-live por falta de compliance.
+- Un incidente futuro no tiene forense (no sabemos qué pasó).
+- Legal queda expuesto ante demanda por Ley 21.663.
+- Auditoría externa (ISO 27001, SOC 2) imposible.
+
+---
+
 ## Propuesta de scope Seguridad
 
 **Mínimo viable (externo, una vez):**

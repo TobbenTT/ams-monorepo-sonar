@@ -101,6 +101,24 @@ Se llama **confabulación de fixes** o **hallucinated fix**. Es un riesgo docume
 
 ---
 
+## QA = código + documentación (no sólo probar)
+
+Un QA real **no se puede hacer sin documentación**. No es "prueba y listo". Cada testeo genera artefactos que el cliente (Goldfields, auditores, futuros devs) puede pedir:
+
+| Documento que el QA escribe | Para qué sirve | Sin QA humano |
+|---|---|---|
+| **Test plan por sprint** | Define qué se prueba, con qué datos, en qué browser, con qué rol. | No existe — pruebas al azar. |
+| **Casos de uso (test cases)** | Pasos numerados reproducibles: "Login como supervisor → tab Planning → click OT-123 → verifica botón Cancelar visible". | Bugs llegan como "no funciona" sin repro. |
+| **Bug reports estructurados** | Pasos + dato usado + screenshot + browser + rol. | Claude/David adivinan lo que Jorge quiso decir. |
+| **Checklist de regresión** | Las 30+ pantallas que hay que revisar antes de cada deploy. | Cada deploy rompe algo que antes funcionaba. |
+| **Matriz de permisos** | Tabla rol × endpoint × resultado esperado (200/403/404). | Usuarios ven lo que no deberían ver. |
+| **Evidencia de pruebas** | Screenshots y videos para el cliente/auditor. | Goldfields pide "muéstrame que esto funciona" y no tenemos nada. |
+| **Registro de bugs escapados a prod** | Métrica de calidad del sprint. | No sabemos si mejoramos o empeoramos. |
+
+**Sin esta documentación, el cliente no tiene forma de validar que lo que le entregamos funciona.** Y en una minera formal (Goldfields), la ausencia de documentación de pruebas **es suficiente motivo para rechazar un entregable**.
+
+---
+
 ## Propuesta de scope QA
 
 **Mínimo viable (20h/semana):**

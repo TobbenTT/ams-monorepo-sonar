@@ -1746,6 +1746,8 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
   const [sortBy, setSortBy] = useState('priority'); // priority | date | equipment | type
   const [filterPrio, setFilterPrio] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  // Jorge 2026-04-24 (obs doc): filtro por Production Impact multiselección
+  const [filterImpact, setFilterImpact] = useState([]); // [] = all
   const [searchGantt, setSearchGantt] = useState('');
   const [ganttPage, setGanttPage] = useState(0);
   const GANTT_PAGE_SIZE = 25;
@@ -1783,6 +1785,12 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
   let filtered = [...ganttData];
   if (filterPrio !== 'all') filtered = filtered.filter(wo => wo.priority_code === filterPrio);
   if (filterType !== 'all') filtered = filtered.filter(wo => wo.wo_type === filterType);
+  // Jorge 2026-04-24: filtro Production Impact multiselección
+  if (filterImpact.length > 0) filtered = filtered.filter(wo => {
+    const p = wo.priority_code;
+    const derived = { P1: 'CRITICAL', P2: 'HIGH', P3: 'MEDIUM', P4: 'HIGH' }[p] || 'MEDIUM';
+    return filterImpact.includes(wo.production_impact || derived);
+  });
   if (searchGantt) {
     const q = searchGantt.toLowerCase().replace(/[\s\-]+/g, '');
     filtered = filtered.filter(wo => (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q) || (wo.equipment_tag || '').toLowerCase().includes(searchGantt.toLowerCase()) || (wo.description || '').toLowerCase().includes(searchGantt.toLowerCase()));
@@ -1858,6 +1866,21 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
             <option value="all">All Types</option>
             {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
+          {/* Jorge 2026-04-24 (obs doc): filtro Production Impact multiselección */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Impact:</span>
+            {['CRITICAL','HIGH','MEDIUM','LOW'].map(imp => {
+              const sel = filterImpact.includes(imp);
+              const col = { CRITICAL: 'bg-red-600', HIGH: 'bg-orange-500', MEDIUM: 'bg-yellow-500', LOW: 'bg-green-500' }[imp];
+              return (
+                <button key={imp} type="button"
+                  onClick={() => setFilterImpact(prev => prev.includes(imp) ? prev.filter(x => x !== imp) : [...prev, imp])}
+                  className={`text-[10px] font-bold px-2 py-1 rounded border ${sel ? `${col} text-white border-transparent` : 'bg-white text-gray-600 border-gray-300'}`}>
+                  {imp.slice(0,3)}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

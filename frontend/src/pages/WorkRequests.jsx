@@ -521,10 +521,15 @@ ${materials.length ? `<div class="section">
           </DetailCard>
           <DetailCard icon={Gauge} label={t('workRequests.productionImpact')}>
             {editing ? (
-              <select value={editData.production_impact} onChange={e => setEditData(d => ({ ...d, production_impact: e.target.value }))}
-                className="text-xs px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none">
-                {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(v => <option key={v} value={v}>{impactLabels[v]}</option>)}
-              </select>
+              /* Jorge 2026-04-24 (obs doc): Production Impact ahora es automático
+                 derivado de priority: P1→CRITICAL, P2→HIGH, P3→MEDIUM, P4→HIGH
+                 (parada planta). Se muestra readonly en edit. */
+              <span className="text-xs text-muted-foreground italic px-2 py-1">
+                Auto (derivado de priority): {impactLabels[(() => {
+                  const p = editData.priority_requested || editData.priority_suggested;
+                  return { P1: 'CRITICAL', P2: 'HIGH', P3: 'MEDIUM', P4: 'HIGH' }[p] || 'MEDIUM';
+                })()] || 'Medium'}
+              </span>
             ) : (() => {
               // Prefer real multi-criteria score when available
               const label = impactScore?.impact_label || item.production_impact;
@@ -1262,7 +1267,11 @@ function normalizeWR(wr) {
     original_text: desc.original_text || '',
     technical_location: desc.technical_location || desc.technical_location_code || cls.technical_location || '',
     failure_mode: desc.failure_mode_detected || desc.failure_mode_code || wr.failure_mode || '',
-    production_impact: wr.production_impact || cls.production_impact || 'MEDIUM',
+    // Jorge 2026-04-24 (obs doc): production_impact derivado automáticamente de priority.
+    production_impact: (() => {
+      const p = cls.priority_suggested || wr.priority_requested || wr.priority || 'P3';
+      return { P1: 'CRITICAL', P2: 'HIGH', P3: 'MEDIUM', P4: 'HIGH' }[p] || 'MEDIUM';
+    })(),
     estimated_duration: cls.estimated_duration_hours || wr.estimated_duration || 4,
     ai_confidence: Math.round(((cls.confidence ?? wr.equipment_confidence) ?? 0.85) * 100),
     spare_parts: wr.spare_parts || [],
@@ -1778,11 +1787,11 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         {[
           { label: 'Pending', count: queueFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
           { label: 'Approved', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
-          { label: 'Rejected', count: queueFiltered.filter(r => r.status === 'REJECTED').length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
+          { label: 'Rejected', count: queueFiltered.filter(r => ['REJECTED', 'RECHAZADO'].includes(r.status)).length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
           { label: 'Cancelled', count: queueFiltered.filter(r => ['CANCELLED', 'CANCELADO'].includes(r.status)).length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
           // Jorge 2026-04-23 17:38: agregar tarjeta "Closed" para ver cuántos avisos se cerraron (vía OT auto-close).
           { label: 'Closed', count: queueFiltered.filter(r => ['CLOSED', 'CERRADO', 'COMPLETED'].includes(r.status)).length, borderColor: 'border-l-emerald-500', textColor: 'text-emerald-700' },

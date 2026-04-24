@@ -314,6 +314,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
     production_impact: item.production_impact || 'MEDIUM',
     suggested_action: (item.suggested_action || '').replace(/(\d+)\.\s/g, (m, num) => num === '1' ? m : '\n' + m),
     wo_title: item.wo_title || '',
+    photos: Array.isArray(item.photos) ? [...item.photos] : [],
     failure_category: item.failure_category || '',
     failure_symptom: item.failure_symptom || '',
     failure_cause: item.failure_cause || '',
@@ -499,8 +500,49 @@ ${materials.length ? `<div class="section">
         {/* Duplicates indicator - panels shown beside this modal */}
 
         <div className="px-6 py-4 border-b border-border">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t('workRequests.photos')}</p>
-          <PhotoCarousel photos={item.photos} t={t} />
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('workRequests.photos')}</p>
+            {/* Jorge 2026-04-24: agregar/quitar fotos en modo edit */}
+            {editing && (
+              <label className="text-[10px] font-semibold px-2.5 py-1 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 cursor-pointer inline-flex items-center gap-1">
+                + Agregar foto
+                <input type="file" accept="image/*" multiple className="hidden"
+                  onChange={async e => {
+                    const files = Array.from(e.target.files || []);
+                    if (!files.length) return;
+                    const toBase64 = (f) => new Promise((res, rej) => {
+                      const r = new FileReader();
+                      r.onload = () => res(r.result);
+                      r.onerror = rej;
+                      r.readAsDataURL(f);
+                    });
+                    try {
+                      const dataUrls = await Promise.all(files.map(toBase64));
+                      setEditData(d => ({ ...d, photos: [...(d.photos || []), ...dataUrls] }));
+                      e.target.value = '';
+                    } catch { toast.error('Error leyendo imagen'); }
+                  }} />
+              </label>
+            )}
+          </div>
+          {editing ? (
+            <div className="flex flex-wrap gap-2">
+              {(editData.photos || []).map((p, i) => (
+                <div key={i} className="relative group">
+                  <img src={p} alt={`foto-${i}`} className="w-24 h-24 object-cover rounded-lg border border-border" />
+                  <button type="button"
+                    onClick={() => setEditData(d => ({ ...d, photos: (d.photos || []).filter((_, j) => j !== i) }))}
+                    className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-xs w-5 h-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Quitar foto">×</button>
+                </div>
+              ))}
+              {(!editData.photos || editData.photos.length === 0) && (
+                <div className="text-xs text-muted-foreground italic py-3">Sin fotos. Click "+ Agregar foto" para subir desde tu PC/móvil.</div>
+              )}
+            </div>
+          ) : (
+            <PhotoCarousel photos={item.photos} t={t} />
+          )}
         </div>
 
         {/* Detail Grid */}

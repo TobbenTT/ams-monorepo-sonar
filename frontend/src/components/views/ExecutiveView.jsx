@@ -532,7 +532,9 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
                 <div className="bg-white rounded-lg p-4 border border-violet-100 text-sm text-gray-700 leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: (() => {
                     let md = aiSummary.summary || '';
-                    // Clean stray ** that aren't paired
+                    // Security fix Jorge audit 2026-04-23: escape HTML ANTES del markdown
+                    // para prevenir XSS. Valores AI no son trusted.
+                    md = md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     md = md.replace(/\*\*([^*]+)$/gm, '<strong>$1</strong>');
                     // Headers
                     md = md.replace(/^### (.*$)/gm, '<h3 class="text-sm font-bold text-gray-800 mt-3 mb-1">$1</h3>');

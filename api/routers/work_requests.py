@@ -426,6 +426,11 @@ def cancel_work_request(
     wr_model = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
     if not wr_model:
         raise HTTPException(status_code=404, detail="Work request not found")
+    # IDOR fix Jorge 2026-04-23: verificar plant del usuario vs aviso
+    role = getattr(user, 'role', '') or ''
+    user_plant = getattr(user, 'plant_id', None)
+    if role not in ('admin', 'ceo') and user_plant and wr_model.plant_id and wr_model.plant_id != user_plant:
+        raise HTTPException(status_code=403, detail="Acceso denegado — aviso de otra planta")
     if wr_model.status in ("CERRADO", "CLOSED", "COMPLETED"):
         raise HTTPException(status_code=400, detail="El aviso ya está cerrado")
     # SAP: el cancel pasa a estado final CERRADO (no CANCELADO).

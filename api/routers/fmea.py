@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 from api.database.connection import get_db
-from api.dependencies.auth import get_current_user
+from api.dependencies.auth import get_current_user, require_role
 from api.schemas import (
     FailureModeCreate, RCMDecideRequest,
     FunctionCreate, FunctionalFailureCreate, FMECAWorksheetCreate, RPNRequest,
@@ -16,6 +16,27 @@ from api.schemas import (
 from api.services import fmea_service
 
 router = APIRouter(prefix="/fmea", tags=["fmea"], dependencies=[Depends(get_current_user)])
+
+
+def _assert_plant_access(user, plant_id: str | None):
+    """Jorge 2026-04-23 (audit): IDOR protection — verifica que el usuario
+    tenga acceso a la planta del recurso. Admin/CEO son exentos."""
+    role = getattr(user, 'role', '') or ''
+    if role in ('admin', 'ceo'):
+        return
+    user_plant = getattr(user, 'plant_id', None)
+    if plant_id and user_plant and plant_id != user_plant:
+        raise HTTPException(status_code=403, detail="Acceso denegado a esta planta")
+
+
+def _assert_ws_access(db, worksheet_id: str, user):
+    """Verifica plant_id del worksheet vs user."""
+    from api.database.models import FMECAWorksheetModel
+    ws = db.query(FMECAWorksheetModel).filter(FMECAWorksheetModel.worksheet_id == worksheet_id).first()
+    if not ws:
+        raise HTTPException(status_code=404, detail="Worksheet not found")
+    _assert_plant_access(user, getattr(ws, 'plant_id', None))
+    return ws
 
 
 @router.post("/failure-modes")
@@ -147,9 +168,14 @@ def list_fmeca_suggestions(
 
 
 @router.get("/fmeca/history-hints")
-def fmeca_history_hints(equipment_id: str, months: int = 12, db: Session = Depends(get_db)):
+def fmeca_history_hints(equipment_id: str, months: int = 12, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Jorge 2026-04-23: FMECA ↔ Fallas & Eventos. Dado un equipo, devuelve
-    sugerencias de filas FMECA extraídas del historial de OTs cerradas PM03/P1/P2."""
+    sugerencias de filas FMECA extraídas del historial de OTs cerradas PM03/P1/P2.
+    SECURITY: verifica que el equipment pertenezca a la planta del user (IDOR fix)."""
+    from api.database.models import HierarchyNodeModel
+    node = db.query(HierarchyNodeModel).filter(HierarchyNodeModel.node_id == equipment_id).first()
+    if node:
+        _assert_plant_access(user, node.plant_id)
     return fmea_service.fmeca_history_hints(db, equipment_id=equipment_id, months=months)
 
 
@@ -209,7 +235,7 @@ def push_fmeca_to_backlog(worksheet_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/fmeca/worksheets/{worksheet_id}/export-iw22")
-def export_iw22(worksheet_id: str, db: Session = Depends(get_db)):
+def export_iw22(worksheet_id: str, db: Session = Depends(get_db), user=Depends(require_role("admin", "manager", "planner"))):
     """Jorge 2026-04-23: export SAP-IW22 (modificación de aviso en masa).
     Genera CSV con el formato IW22-compatible (delimiter TAB, encabezado SAP):
     QMNUM, AUFNR, EQUNR, TPLNR, QMTXT, PRIOK, ILOAN, AUSZT (los campos que
@@ -219,9 +245,7 @@ def export_iw22(worksheet_id: str, db: Session = Depends(get_db)):
     """
     from api.database.models import FMECAWorksheetModel
     import io, csv
-    ws = db.query(FMECAWorksheetModel).filter(FMECAWorksheetModel.worksheet_id == worksheet_id).first()
-    if not ws:
-        raise HTTPException(status_code=404, detail="Worksheet not found")
+    ws = _assert_ws_access(db, worksheet_id, user)
     buf = io.StringIO()
     # Formato SAP IW22: TAB-delimited, cabecera con códigos de campo SAP
     # reales. Usuario puede adaptarlo en LSMW si el mapeo difiere.
@@ -249,7 +273,7 @@ def export_iw22(worksheet_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/fmeca/from-rca/{analysis_id}")
-def create_fmeca_from_rca(analysis_id: str, analyst: str = "", db: Session = Depends(get_db)):
+def create_fmeca_from_rca(analysis_id: str, analyst: str = "", db: Session = Depends(get_db), user=Depends(require_role("admin", "manager", "planner"))):
     """Jorge 2026-04-23: Crear worksheet FMECA pre-poblado desde un RCA.
     Usa cause_effect (Ishikawa 5M) + solutions como filas sugeridas."""
     result = fmea_service.create_fmeca_from_rca(db, analysis_id=analysis_id, analyst=analyst)
@@ -259,7 +283,11 @@ def create_fmeca_from_rca(analysis_id: str, analyst: str = "", db: Session = Dep
 
 
 @router.get("/analytics/adherence-compliance")
-def adherence_compliance_rollup(plant_id: str | None = None, weeks: int = 12, db: Session = Depends(get_db)):
+def adherence_compliance_rollup(plant_id: str | None = None, weeks: int = 12, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    # IDOR: forzar user's plant si no es admin
+    role = getattr(user, 'role', '') or ''
+    if role not in ('admin', 'ceo'):
+        plant_id = getattr(user, 'plant_id', None) or plant_id
     """Jorge SF-516: Adherencia + Cumplimiento consolidado por semana/sitio/área.
     Adherencia = % OTs donde |actual_start - planned_start| < 1h.
     Cumplimiento = % OTs ejecutadas dentro de ventana 7d desde planned_start.
@@ -331,7 +359,11 @@ def adherence_compliance_rollup(plant_id: str | None = None, weeks: int = 12, db
 
 
 @router.get("/strategy/pm02-calendar")
-def strategy_pm02_calendar(plant_id: str | None = None, months: int = 12, db: Session = Depends(get_db)):
+def strategy_pm02_calendar(plant_id: str | None = None, months: int = 12, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    # IDOR: forzar plant del user si no es admin
+    role = getattr(user, 'role', '') or ''
+    if role not in ('admin', 'ceo'):
+        plant_id = getattr(user, 'plant_id', None) or plant_id
     """Jorge 2026-04-23: preview calendario anual de PM02 auto-generadas desde estrategia.
     Explora MaintenanceTask activos (producto del FMECA push-to-backlog), proyecta
     fechas en los próximos `months` meses usando frequency_value/frequency_unit,

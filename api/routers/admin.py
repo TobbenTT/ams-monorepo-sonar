@@ -33,8 +33,10 @@ async def kick_all_users(
     Auth via X-Internal-Key (DEPLOY_SECRET env var) o Authorization Bearer
     con role admin. Llamado desde /root/deploy.sh antes de reiniciar."""
     deploy_secret = _os_admin.environ.get("DEPLOY_SECRET", "")
-    x_internal_key = request.headers.get("x-internal-key")
-    is_internal = deploy_secret and x_internal_key == deploy_secret
+    x_internal_key = request.headers.get("x-internal-key") or ""
+    # Security fix audit 2026-04-23: hmac.compare_digest para evitar timing attack
+    import hmac as _hmac
+    is_internal = bool(deploy_secret) and _hmac.compare_digest(x_internal_key, deploy_secret)
     # Si no es internal, exigir admin via token
     if not is_internal:
         from api.services.auth_service import decode_token

@@ -208,6 +208,67 @@ def push_fmeca_to_backlog(worksheet_id: str, db: Session = Depends(get_db)):
     return result
 
 
+@router.get("/strategy/pm02-calendar")
+def strategy_pm02_calendar(plant_id: str | None = None, months: int = 12, db: Session = Depends(get_db)):
+    """Jorge 2026-04-23: preview calendario anual de PM02 auto-generadas desde estrategia.
+    Explora MaintenanceTask activos (producto del FMECA push-to-backlog), proyecta
+    fechas en los próximos `months` meses usando frequency_value/frequency_unit,
+    y devuelve eventos para renderizar calendario.
+    """
+    from api.database.models import MaintenanceTaskModel, FailureModeModel, HierarchyNodeModel
+    from datetime import datetime, timedelta
+
+    # Multiplicador para convertir frequency_unit a días
+    unit_to_days = {
+        'day': 1, 'days': 1, 'DAY': 1, 'DAYS': 1,
+        'week': 7, 'weeks': 7, 'WEEK': 7, 'WEEKS': 7,
+        'month': 30, 'months': 30, 'MONTH': 30, 'MONTHS': 30,
+        'year': 365, 'years': 365, 'YEAR': 365, 'YEARS': 365,
+        'hour': 1/24, 'hours': 1/24, 'HOUR': 1/24, 'HOURS': 1/24,
+    }
+
+    tasks = db.query(MaintenanceTaskModel).filter(MaintenanceTaskModel.status.in_(['APPROVED', 'ACTIVE', 'DRAFT'])).all()
+    now = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    end = now + timedelta(days=months * 30)
+
+    # FailureMode → equipment_id (via cascade FailureMode hierarchy)
+    # Simplificación: si no hay equipment_id directo, queda vacío.
+    events = []
+    for t in tasks:
+        days = float(t.frequency_value or 0) * unit_to_days.get(t.frequency_unit, 30)
+        if days <= 0 or days > 730:  # descartar frecuencias inválidas o > 2 años
+            continue
+        # Primer evento proyectado: hoy + frequency (simplificación sin last_execution)
+        d = now + timedelta(days=days)
+        equipment_tag = ''
+        try:
+            fm = db.query(FailureModeModel).filter(FailureModeModel.failure_mode_id == t.failure_mode_id).first()
+            if fm and getattr(fm, 'equipment_id', None):
+                node = db.query(HierarchyNodeModel).filter(HierarchyNodeModel.node_id == fm.equipment_id).first()
+                if node: equipment_tag = node.tag or node.name or ''
+        except Exception:
+            pass
+        while d <= end:
+            events.append({
+                'date': d.strftime('%Y-%m-%d'),
+                'task_id': t.task_id,
+                'task_name': t.name or '',
+                'equipment_tag': equipment_tag,
+                'hours': float(t.access_time_hours or 0),
+                'shutdown': (t.constraint == 'OFFLINE'),
+                'priority': 'P4' if t.constraint == 'OFFLINE' else 'P3',
+            })
+            d = d + timedelta(days=days)
+
+    return {
+        'plant_id': plant_id or '',
+        'months': months,
+        'event_count': len(events),
+        'events': events,
+        'note': 'Preview: proyección desde hoy asumiendo ciclo completo. Cuando la estrategia real arranque, las fechas base se tomarán de last_execution/next_due.'
+    }
+
+
 @router.get("/fmeca/worksheets/{worksheet_id}/summary")
 def get_fmeca_summary(worksheet_id: str, db: Session = Depends(get_db)):
     result = fmea_service.get_fmeca_summary(db, worksheet_id)

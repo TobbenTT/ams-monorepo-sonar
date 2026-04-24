@@ -8,6 +8,7 @@ import { TrendingUp, TrendingDown, Minus, Award, X, Activity, Wrench, Clock, Bar
 import { useLanguage } from '../contexts/LanguageContext';
 import { criticalityColor, statusColor } from '../data/mockData';
 import { LoadingSpinner } from '../components/Shared';
+import PM02CalendarPreview from '../components/PM02CalendarPreview';
 import * as api from '../api';
 
 function isMet(kpi) {
@@ -178,6 +179,8 @@ export default function ExecutiveDashboard() {
   const [costByArea, setCostByArea] = useState([]);
   const [equipmentList, setEquipmentList] = useState([]);
   const [apiKpis, setApiKpis] = useState(null);
+  // Jorge Tanda 4: modal calendario PM02 preview anual
+  const [showPm02Calendar, setShowPm02Calendar] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -244,8 +247,8 @@ export default function ExecutiveDashboard() {
         </div>
       </div>
 
-      {/* Jorge SF-516: banner de Adherencia + Cumplimiento (agregado) + PM02 auto
-          Strategy preview — están en construcción a nivel consolidado. */}
+      {/* Jorge SF-516 + Tanda 4: Adherencia+Cumplimiento (en construcción consolidado)
+          y calendario PM02 auto — este último ya clickable. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/40 p-4">
           <div className="flex items-center justify-between mb-2">
@@ -256,16 +259,19 @@ export default function ExecutiveDashboard() {
             Cálculo ya disponible por OT individual (badge verde/ámbar/rojo en detalle de OT cerrada). La vista consolidada por sitio/área/semana se está construyendo.
           </p>
         </div>
-        <div className="rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/40 p-4">
+        <button onClick={() => setShowPm02Calendar(true)}
+          className="rounded-xl border-2 border-blue-300 bg-blue-50/40 p-4 text-left hover:bg-blue-100 transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-bold uppercase tracking-wider text-blue-700">Estrategia PM02 Auto-Generada</div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">Building</span>
+            <div className="text-xs font-bold uppercase tracking-wider text-blue-700">Calendario PM02 Estrategia · Preview 12m</div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-300">Abrir →</span>
           </div>
           <p className="text-xs text-blue-800">
-            FMECA → backlog ya asigna prioridad: <strong>FIXED_TIME → P4</strong> (parada planta), <strong>FAULT_FINDING → P3</strong> (operando). Preview del calendario anual de PM02 se está construyendo.
+            Proyección anual de las PM02 generadas desde FMECA → MaintenanceTask. Click para ver heatmap mensual, HH total, tareas próximas y shutdown hours.
           </p>
-        </div>
+        </button>
       </div>
+
+      {showPm02Calendar && <PM02CalendarPreview plantId={plant} onClose={() => setShowPm02Calendar(false)} />}
 
       {/* KPI Scorecards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

@@ -206,6 +206,7 @@ export const createFmecaWorksheet = (d) => post('/fmea/fmeca/worksheets', d);
 export const calculateRPN = (d) => post('/fmea/fmeca/rpn', d);
 export const getFmecaSummary = (id) => get(`/fmea/fmeca/worksheets/${id}/summary`);
 export const addFmecaRow = (id, d) => post(`/fmea/fmeca/worksheets/${id}/rows`, d);
+export const getFmecaHistoryHints = (equipment_id, months = 12) => get(`/fmea/fmeca/history-hints?equipment_id=${encodeURIComponent(equipment_id)}&months=${months}`);
 export const runFmecaDecisions = (id) => put(`/fmea/fmeca/worksheets/${id}/run-decisions`);
 export const generateFmecaTasks = (id) => post(`/fmea/fmeca/worksheets/${id}/generate-tasks`);
 export const pushFmecaToBacklog = (id) => post(`/fmea/fmeca/worksheets/${id}/push-to-backlog`);

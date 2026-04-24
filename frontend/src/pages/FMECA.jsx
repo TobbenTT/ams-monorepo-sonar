@@ -68,6 +68,10 @@ export default function FMECA() {
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ equipment_id: '', equipment_tag: '', equipment_name: '', analyst: '' });
   const [templateKey, setTemplateKey] = useState('');
+  // Jorge 2026-04-23: historial de fallas del equipo para pre-popular filas
+  const [historyHints, setHistoryHints] = useState([]);
+  const [hintsLoading, setHintsLoading] = useState(false);
+  const [useHistoryHints, setUseHistoryHints] = useState(true);
   const [suggestions, setSuggestions] = useState([]);
   const [dismissedSuggest, setDismissedSuggest] = useState(false);
 
@@ -96,6 +100,21 @@ export default function FMECA() {
   useEffect(() => { reloadList(); }, [reloadList]);
   useEffect(() => { loadDetail(selectedId); }, [selectedId, loadDetail]);
 
+  // Jorge 2026-04-23: fetch hints del historial cuando escriben equipment_id
+  useEffect(() => {
+    const eqId = createForm.equipment_id?.trim();
+    if (!showCreate || !eqId || eqId.length < 3) { setHistoryHints([]); return; }
+    const t = setTimeout(async () => {
+      setHintsLoading(true);
+      try {
+        const res = await api.getFmecaHistoryHints(eqId);
+        setHistoryHints(Array.isArray(res) ? res : []);
+      } catch { setHistoryHints([]); }
+      finally { setHintsLoading(false); }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [createForm.equipment_id, showCreate]);
+
   const handleCreate = async () => {
     if (!createForm.equipment_id || !createForm.equipment_tag) {
       alert('Equipment ID y Tag son obligatorios');
@@ -104,16 +123,36 @@ export default function FMECA() {
     try {
       setSaving(true);
       const res = await api.createFmecaWorksheet({ ...createForm, plant_id: plantId });
-      // Jorge 2026-04-23: si eligió plantilla, pre-popular filas del template
-      if (res?.worksheet_id && templateKey) {
-        const rows = getTemplate(templateKey);
-        for (const row of rows) {
-          try { await api.addFmecaRow(res.worksheet_id, row); } catch { /* seguir con el resto */ }
+      // Jorge 2026-04-23: combinar plantilla + historial de fallas
+      if (res?.worksheet_id) {
+        if (templateKey) {
+          const rows = getTemplate(templateKey);
+          for (const row of rows) {
+            try { await api.addFmecaRow(res.worksheet_id, row); } catch {}
+          }
+        }
+        if (useHistoryHints && historyHints.length > 0) {
+          for (const h of historyHints) {
+            try {
+              await api.addFmecaRow(res.worksheet_id, {
+                function_description: h.function_description,
+                functional_failure: h.functional_failure,
+                failure_mode: h.failure_mode,
+                failure_effect: h.failure_effect,
+                failure_consequence: h.failure_consequence,
+                severity: h.severity,
+                occurrence: h.occurrence,
+                detection: h.detection,
+                recommended_action: h.recommended_action,
+              });
+            } catch {}
+          }
         }
       }
       setShowCreate(false);
       setCreateForm({ equipment_id: '', equipment_tag: '', equipment_name: '', analyst: '' });
       setTemplateKey('');
+      setHistoryHints([]);
       reloadList();
       if (res?.worksheet_id) setSelectedId(res.worksheet_id);
     } catch (e) {
@@ -247,11 +286,11 @@ export default function FMECA() {
         <h1 className="text-2xl font-bold text-gray-900">FMECA — Análisis de Modos de Fallo, Efectos y Criticidad</h1>
         <p className="text-sm text-gray-500 mt-1">Flujo RCM de 4 etapas · RPN = S × O × D · Engine determinístico (sin LLM)</p>
         <div className="mt-3">
-          <DevBanner>
-            FMECA operativo — 4 etapas (Funciones · Fallos · Efectos · Decisiones), RPN = S × O × D,
-            push-to-backlog con prioridad por estrategia (FIXED_TIME→P4, FAULT_FINDING→P3) y
-            6 plantillas RCM precargadas (Bomba, Motor, Transformador, Compresor, Correa, Intercambiador).
-            Pendiente: export SAP-IW22 + integración histórica con Fallas & Eventos.
+          <DevBanner variant="subtle">
+            FMECA operativo — 4 etapas · RPN = S × O × D · 6 plantillas RCM precargadas ·
+            integración con historial de fallas (sugiere modos de fallo desde OTs PM03/P1/P2
+            cerradas de los últimos 12 meses) · push-to-backlog con prioridad por estrategia.
+            Pendiente: export SAP-IW22.
           </DevBanner>
         </div>
       </div>
@@ -561,6 +600,36 @@ export default function FMECA() {
                   </p>
                 )}
               </div>
+              {/* Jorge 2026-04-23: historial de fallas → sugerencias automáticas */}
+              {createForm.equipment_id.trim().length >= 3 && (
+                <div className="border-t pt-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <input type="checkbox" id="useHints" checked={useHistoryHints}
+                      onChange={e => setUseHistoryHints(e.target.checked)}
+                      className="rounded" />
+                    <label htmlFor="useHints" className="text-[11px] font-semibold text-gray-700 uppercase tracking-wide">
+                      Usar historial de fallas (últimos 12 meses)
+                    </label>
+                  </div>
+                  {hintsLoading ? (
+                    <p className="text-[10px] text-gray-400 italic">Buscando fallas cerradas del equipo…</p>
+                  ) : historyHints.length > 0 ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded p-2 max-h-32 overflow-y-auto">
+                      <p className="text-[10px] font-semibold text-amber-900 mb-1">
+                        {historyHints.length} modo(s) de falla detectado(s) del histórico · se agregarán como filas editables:
+                      </p>
+                      <ul className="text-[10px] text-amber-800 space-y-0.5">
+                        {historyHints.slice(0, 6).map((h, i) => (
+                          <li key={i}>· <b>{h.failure_mode}</b> — {h._history_count}x</li>
+                        ))}
+                        {historyHints.length > 6 && <li className="italic">… y {historyHints.length - 6} más</li>}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-gray-400 italic">Sin historial de fallas para este equipo.</p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setShowCreate(false)}

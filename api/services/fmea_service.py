@@ -281,6 +281,79 @@ def list_fmeca_worksheets_summary(db: Session, plant_id: str | None = None, stat
     return result
 
 
+def fmeca_history_hints(db: Session, equipment_id: str, months: int = 12) -> list[dict]:
+    """Jorge 2026-04-23: integración FMECA ↔ Fallas & Eventos.
+    Dado un equipment_id, extrae las fallas correctivas cerradas de los últimos
+    `months` meses (PM03 o priority P1/P2) y agrupa por failure_type/síntoma
+    para sugerir filas FMECA al analista.
+
+    Devuelve una lista de hints: {function_description, functional_failure,
+    failure_mode, failure_effect, severity/occurrence/detection sugeridos,
+    count (cuántas veces ocurrió), last_date}.
+    """
+    from api.database.models import ManagedWorkOrderModel
+    from datetime import datetime, timedelta
+    cutoff = datetime.now() - timedelta(days=months * 30)
+    wos = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.equipment_id == equipment_id,
+        ManagedWorkOrderModel.status == "CERRADO",
+        ((ManagedWorkOrderModel.wo_type == "PM03") |
+         (ManagedWorkOrderModel.priority_code.in_(["P1", "P2"]))),
+        ManagedWorkOrderModel.closed_at >= cutoff,
+    ).all()
+
+    # Agrupar por failure_type (extraído de ai_classification o wo_title)
+    import json as _json
+    groups = {}
+    for wo in wos:
+        ai = wo.ai_classification if hasattr(wo, 'ai_classification') else None
+        if isinstance(ai, str):
+            try: ai = _json.loads(ai)
+            except: ai = {}
+        ai = ai or {}
+        ftype = (ai.get("failure_type") or "").strip() or "Sin clasificar"
+        mechanism = (ai.get("failure_mechanism") or ai.get("symptom") or "").strip()
+        key = f"{ftype}|{mechanism}" if mechanism else ftype
+        if key not in groups:
+            groups[key] = {
+                "failure_type": ftype,
+                "mechanism": mechanism,
+                "count": 0,
+                "last_date": None,
+                "total_hours": 0.0,
+                "descriptions": set(),
+            }
+        g = groups[key]
+        g["count"] += 1
+        g["total_hours"] += float(wo.actual_hours or 0)
+        if wo.closed_at and (g["last_date"] is None or wo.closed_at > g["last_date"]):
+            g["last_date"] = wo.closed_at
+        if wo.description:
+            g["descriptions"].add(wo.description[:80])
+
+    # Convertir a hints ordenados por frecuencia
+    hints = []
+    for key, g in sorted(groups.items(), key=lambda x: -x[1]["count"]):
+        # Severidad sugerida según frecuencia + tipo de falla
+        occ_suggested = min(9, 3 + g["count"])  # 3 base + más según count
+        sev_suggested = 7 if "Seguridad" in key or "SAFETY" in key.upper() else 6
+        det_suggested = 5
+        hints.append({
+            "function_description": f"Equipo {g['failure_type']} funcional",
+            "functional_failure": g["mechanism"] or "Falla funcional detectada",
+            "failure_mode": g["mechanism"] or g["failure_type"],
+            "failure_effect": f"{g['count']} ocurrencia(s) en últimos {months}m · {g['total_hours']:.1f}h reparación total",
+            "failure_consequence": "EVIDENT_OPERATIONAL",
+            "severity": sev_suggested,
+            "occurrence": occ_suggested,
+            "detection": det_suggested,
+            "recommended_action": f"Revisar plan de mantenimiento: {g['count']} fallas repetidas de {g['failure_type']}.",
+            "_history_count": g["count"],
+            "_last_date": g["last_date"].isoformat() if g["last_date"] else None,
+        })
+    return hints[:15]  # top 15
+
+
 def create_fmeca_worksheet(db: Session, data: dict) -> dict:
     ws = FMECAEngine.create_worksheet(
         equipment_id=data["equipment_id"],

@@ -146,6 +146,13 @@ def list_fmeca_suggestions(
     return fmea_service.list_fmeca_suggestions(db, plant_id=plant_id, limit=limit)
 
 
+@router.get("/fmeca/history-hints")
+def fmeca_history_hints(equipment_id: str, months: int = 12, db: Session = Depends(get_db)):
+    """Jorge 2026-04-23: FMECA ↔ Fallas & Eventos. Dado un equipo, devuelve
+    sugerencias de filas FMECA extraídas del historial de OTs cerradas PM03/P1/P2."""
+    return fmea_service.fmeca_history_hints(db, equipment_id=equipment_id, months=months)
+
+
 @router.post("/fmeca/worksheets")
 def create_fmeca_worksheet(data: FMECAWorksheetCreate, db: Session = Depends(get_db)):
     return fmea_service.create_fmeca_worksheet(db, data.model_dump())

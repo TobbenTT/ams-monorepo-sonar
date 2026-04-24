@@ -1,15 +1,9 @@
 # Ciberseguridad — Por qué necesitamos revisión humana especializada
 
 **Autor:** David Cabezas (dev full-stack junior)
-**Destinatario:** José (decisión de hiring / scope security)
+**Destinatario:** José
 **Fecha:** 2026-04-23
 **Contexto:** Plataforma AMS (Mageam) con integración SAP PM, data industrial crítica (Goldfields).
-
----
-
-## TL;DR
-
-Hoy corrí un audit defensivo con Claude y **encontramos 5 vulnerabilidades CRÍTICO/ALTO que ya parcheé**. Pero una IA tiene techos duros en seguridad: **no puede atacar, no puede explotar cadenas de bugs, no tiene contexto del atacante real**. Sin un rol de seguridad humano (interno o consultor externo), quedamos expuestos a los mismos tres escenarios que llevan a incidentes en la industria minera.
 
 ---
 

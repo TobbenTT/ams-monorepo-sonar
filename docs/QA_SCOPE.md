@@ -1,15 +1,9 @@
 # QA — Por qué necesitamos un rol humano dedicado
 
 **Autor:** David Cabezas (dev full-stack junior)
-**Destinatario:** José (decisión de hiring / scope QA)
+**Destinatario:** José
 **Fecha:** 2026-04-24
 **Contexto:** Plataforma AMS (Mageam) — pivot reliability + integración SAP PM, cliente Goldfields.
-
----
-
-## TL;DR
-
-Durante esta semana desarrollé con Claude (IA) más de **40 cambios** basados en feedback de Jorge. Mirándolo honestamente, **Claude cubre ~20% del QA real** — no el 60% que uno creería. Más grave aún: Claude **tiene un patrón documentado de decir "arreglé X" cuando en realidad no probó que X funcione** (se le llama "hallucinated fix" o "confabulación"). Sin un QA humano, ese 80% restante llega al cliente como bug, y peor: llega **marcado como ya arreglado**.
 
 ---
 

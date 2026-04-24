@@ -104,6 +104,8 @@ export default function Execution() {
   const [view, setView] = useState('today');
   // Jorge SF-525: nav entre semanas (W18, W17, W19…) con historial en bandeja ejecución
   const [weekOffset, setWeekOffset] = useState(0); // 0=semana actual, -1=anterior, +1=siguiente
+  // Jorge 2026-04-23: modal Cancelar/Reprogramar OT con motivo obligatorio
+  const [cancelOtModal, setCancelOtModal] = useState(null); // { wo, mode, reason }
   const [loading, setLoading] = useState(true);
   const [activeWOs, setActiveWOs] = useState([]);
   const [completedWOs, setCompletedWOs] = useState([]);
@@ -491,6 +493,18 @@ export default function Execution() {
                         <FileText size={12} /> Cerrar y firmar
                       </button>
                     )}
+                    {/* Jorge 2026-04-23: supervisor puede CANCELAR OT con motivo (no solo cerrarla) */}
+                    <button onClick={() => setCancelOtModal({ wo, mode: 'CANCELADO', reason: '' })}
+                      className="px-3 py-2 border border-red-300 text-red-700 text-xs font-semibold rounded-lg hover:bg-red-50 flex items-center gap-1"
+                      title="Cancelar esta OT con motivo">
+                      <X size={12} /> Cancelar
+                    </button>
+                    {/* Reprogramar: volver a bandeja planificador */}
+                    <button onClick={() => setCancelOtModal({ wo, mode: 'REPROGRAMADO', reason: '' })}
+                      className="px-3 py-2 border border-amber-300 text-amber-700 text-xs font-semibold rounded-lg hover:bg-amber-50 flex items-center gap-1"
+                      title="Reprogramar — vuelve al planificador">
+                      Reprog.
+                    </button>
                     <button onClick={() => { try { window.open(`/work-management?tab=planning&openWo=${wo.wo_id}`, '_blank'); } catch {} }}
                       className="px-3 py-2 border border-border text-xs font-semibold rounded-lg hover:bg-muted flex items-center gap-1">
                       <ArrowRight size={12} /> Detalle
@@ -1212,6 +1226,53 @@ export default function Execution() {
       })()}
 
       {/* #6 Add Material during execution — Jorge 2026-04-22 */}
+      {/* Jorge 2026-04-23: Modal Cancelar/Reprogramar OT con motivo */}
+      {cancelOtModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" onClick={() => setCancelOtModal(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative z-10 bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <X className={cancelOtModal.mode === 'CANCELADO' ? 'w-6 h-6 text-red-600' : 'w-6 h-6 text-amber-600'} />
+              <h3 className="text-lg font-bold text-foreground">
+                {cancelOtModal.mode === 'CANCELADO' ? `Cancelar ${cancelOtModal.wo?.wo_number || 'OT'}` : `Reprogramar ${cancelOtModal.wo?.wo_number || 'OT'}`}
+              </h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              {cancelOtModal.mode === 'CANCELADO'
+                ? 'La OT quedará CANCELADO. El aviso asociado NO se cierra (el trabajo no se ejecutó).'
+                : 'La OT vuelve a la bandeja del planificador (REPROGRAMADO) para revalidar repuestos.'}
+            </p>
+            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+              Motivo <span className="text-red-500">*</span>
+            </label>
+            <textarea autoFocus value={cancelOtModal.reason}
+              onChange={e => setCancelOtModal(m => ({ ...m, reason: e.target.value }))}
+              rows={4}
+              placeholder={cancelOtModal.mode === 'CANCELADO' ? 'Ej.: Equipo dado de baja…' : 'Ej.: Sacrificada por falla P1…'}
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:ring-2 focus:ring-orange-500/30 resize-none" />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setCancelOtModal(null)}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg">Volver</button>
+              <button disabled={!cancelOtModal.reason.trim()}
+                onClick={async () => {
+                  try {
+                    await updateManagedWO(cancelOtModal.wo.wo_id, {
+                      status: cancelOtModal.mode,
+                      cancellation_reason: cancelOtModal.reason.trim(),
+                    });
+                    toast.success(cancelOtModal.mode === 'CANCELADO' ? 'OT cancelada' : 'OT reprogramada');
+                    setCancelOtModal(null);
+                    loadData();
+                  } catch (e) { toast.error(e.message || 'Error'); }
+                }}
+                className={`px-4 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed ${cancelOtModal.mode === 'CANCELADO' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {addMaterialFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !savingMat && setAddMaterialFor(null)}>
           <div className="bg-white dark:bg-card rounded-xl shadow-2xl w-full max-w-md p-5" onClick={e => e.stopPropagation()}>

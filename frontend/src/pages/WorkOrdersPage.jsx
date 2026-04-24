@@ -70,6 +70,8 @@ export default function WorkOrdersPage() {
   // Jorge 2026-04-23: filtros dependientes PM-type ↔ Priority (tablero OTs)
   const [woTypeFilter, setWoTypeFilter] = useState([]); // ['PM01','PM02','PM03']
   const [woPriorityFilter, setWoPriorityFilter] = useState([]); // ['P1','P2','P3','P4']
+  // Jorge 2026-04-23: modal motivo para Cancelar/Reprogramar OT
+  const [otReasonModal, setOtReasonModal] = useState(null); // { mode: 'CANCELADO'|'REPROGRAMADO', reason: '' }
   const [impactScore, setImpactScore] = useState(null);
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
   const [showCreateOTModal, setShowCreateOTModal] = useState(false);
@@ -1231,9 +1233,8 @@ export default function WorkOrdersPage() {
                             wo.wo_type === 'PM01' ? 'bg-red-100 text-red-700' :
                             wo.wo_type === 'PM02' ? 'bg-blue-100 text-blue-700' :
                             wo.wo_type === 'PM03' ? 'bg-purple-100 text-purple-700' :
-                            wo.wo_type === 'PM05' ? 'bg-cyan-100 text-cyan-700' :
                             'bg-gray-100 text-gray-700'
-                          }`}>{{ PM01: 'PM01 - Programado', PM02: 'PM02 - Planificado', PM03: 'PM03 - No Programado (Falla)', PM05: 'PM05 - Calib./Reparación' }[wo.wo_type] || wo.wo_type}</Badge>
+                          }`}>{{ PM01: 'PM01 - Programado', PM02: 'PM02 - Planificado', PM03: 'PM03 - No Programado (Falla)' }[wo.wo_type] || wo.wo_type}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getCriticalityColor(wo.priority_code === 'P1' || wo.priority_code === 'P2' ? 'High' : wo.priority_code === 'P3' ? 'Medium' : 'Low')}>
@@ -1998,9 +1999,62 @@ export default function WorkOrdersPage() {
       )}
 
       {/* ── Professional OT Detail Modal ── */}
+      {/* Jorge 2026-04-23: Modal motivo Cancelar/Reprogramar OT */}
+      {otReasonModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          onClick={() => setOtReasonModal(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <X className="w-6 h-6 text-orange-600" />
+              <h3 className="text-lg font-bold text-gray-900">
+                {otReasonModal.mode === 'CANCELADO' ? 'Cancelar OT' : 'Reprogramar OT'}
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-3">
+              {otReasonModal.mode === 'CANCELADO'
+                ? 'La OT quedará en estado CANCELADO con el motivo registrado.'
+                : 'La OT vuelve a la bandeja del planificador (REPROGRAMADO) para revalidar repuestos.'}
+            </p>
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">
+              Motivo <span className="text-red-500">*</span>
+            </label>
+            <textarea autoFocus value={otReasonModal.reason}
+              onChange={e => setOtReasonModal(m => ({ ...m, reason: e.target.value }))}
+              rows={4}
+              placeholder={otReasonModal.mode === 'CANCELADO'
+                ? 'Ej.: Equipo dado de baja · trabajo cubierto por otra OT…'
+                : 'Ej.: Sacrificada por falla P1 · repuestos no llegaron a tiempo…'}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 resize-none" />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setOtReasonModal(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Volver
+              </button>
+              <button disabled={!otReasonModal.reason.trim()}
+                onClick={async () => {
+                  try {
+                    await api.updateManagedWO(selectedOT.wo_id, {
+                      status: otReasonModal.mode,
+                      cancellation_reason: otReasonModal.reason.trim(),
+                    });
+                    toast.success(otReasonModal.mode === 'CANCELADO' ? 'OT cancelada' : 'OT reprogramada');
+                    setOtReasonModal(null);
+                    setSelectedOT(null);
+                    reloadData();
+                  } catch (e) { toast.error(e.message || 'Error'); }
+                }}
+                className={`px-4 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed ${otReasonModal.mode === 'CANCELADO' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedOT && (() => {
         const sla = getSlaDays(selectedOT);
-        const WO_TYPE_LABELS = { PM01: 'PM01 - Programado', PM02: 'PM02 - Planificado', PM03: 'PM03 - No Programado (Falla)', PM05: 'PM05 - Calib./Reparación' };
+        const WO_TYPE_LABELS = { PM01: 'PM01 - Programado', PM02: 'PM02 - Planificado', PM03: 'PM03 - No Programado (Falla)' };
         const SPECIALTY_OPTIONS = ['Mechanical', 'Electrical', 'Instrumentation', 'Welder', 'Lubrication', 'Scaffolding', 'Insulation', 'Operator', 'Supervisor', 'Other'];
         const OP_TYPE_OPTIONS = [{ value: 'INT', label: 'INT' }, { value: 'EXT', label: 'EXT' }];
         const isInExecution = ['EN_EJECUCION','EN_PROGRESO','IN_PROGRESS'].includes(selectedOT.status);
@@ -2915,31 +2969,15 @@ export default function WorkOrdersPage() {
                     </Button>
                   );
                 })()}
-                {/* Jorge 2026-04-23: Supervisor — Reprogramar (sacrifica PM por falla) + Cancel con motivo */}
+                {/* Jorge 2026-04-23: Supervisor — Reprogramar + Cancelar OT con modal de motivo */}
                 {!['CERRADO','CANCELADO','CLOSED'].includes(selectedOT.status) && (
                   <>
                     <Button size="sm" variant="outline" className="text-amber-700 border-amber-300 hover:bg-amber-50"
-                      onClick={async () => {
-                        const reason = window.prompt('Motivo de reprogramación (p.ej. sacrificada por falla P1):');
-                        if (!reason || !reason.trim()) return;
-                        try {
-                          await api.updateManagedWO(selectedOT.wo_id, { status: 'REPROGRAMADO', cancellation_reason: reason.trim() });
-                          toast.success('OT reprogramada');
-                          setSelectedOT(null); reloadData();
-                        } catch(e) { toast.error(e.message || 'Error'); }
-                      }}>
+                      onClick={() => setOtReasonModal({ mode: 'REPROGRAMADO', reason: '' })}>
                       Reprogramar
                     </Button>
                     <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50"
-                      onClick={async () => {
-                        const reason = window.prompt('Motivo de cancelación (obligatorio):');
-                        if (!reason || !reason.trim()) return;
-                        try {
-                          await api.updateManagedWO(selectedOT.wo_id, { status: 'CANCELADO', cancellation_reason: reason.trim() });
-                          toast.success('OT cancelada');
-                          setSelectedOT(null); reloadData();
-                        } catch(e) { toast.error(e.message || 'Error'); }
-                      }}>
+                      onClick={() => setOtReasonModal({ mode: 'CANCELADO', reason: '' })}>
                       Cancelar OT
                     </Button>
                   </>

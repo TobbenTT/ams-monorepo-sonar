@@ -1356,7 +1356,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   const [sortDir, setSortDir] = useState('desc');
   const [wrsWithOT, setWrsWithOT] = useState(new Set());
   // Jorge 2026-04-23: ver aviso full-screen
-  // Full-screen removido — el modal ya es suficientemente grande y el toggle no aportaba
+  // Jorge 2026-04-23: modal de Cancelar Aviso con textarea (reemplaza window.prompt)
+  const [cancelModal, setCancelModal] = useState(null); // { id } o null
+  const [cancelReason, setCancelReason] = useState('');
 
   const { t } = useLanguage();
   const toast = useToast();
@@ -1598,10 +1600,13 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   }
 
   function handleCancel(id) {
-    // Jorge 2026-04-23 — SAP-style: cancelar exige motivo, transiciona a CERRADO (no se elimina).
-    const reason = window.prompt('Motivo de cancelación (obligatorio — el aviso quedará CERRADO):');
-    if (reason === null) return; // usuario cerró el prompt
-    if (!reason.trim()) {
+    // Jorge 2026-04-23: modal con textarea (antes era window.prompt).
+    setCancelModal({ id });
+  }
+
+  function confirmCancel(reason) {
+    const id = cancelModal?.id;
+    if (!id || !reason || !reason.trim()) {
       toast.error('Motivo obligatorio para cancelar');
       return;
     }
@@ -1610,6 +1615,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
         setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'CERRADO', cancellation_reason: reason.trim() } : r)));
         toast.success('Aviso cancelado y cerrado');
         setSelected(null);
+        setCancelModal(null);
         onRefreshCounts?.();
       })
       .catch((err) => {
@@ -2190,6 +2196,41 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
               <button onClick={confirmDelete} disabled={!deleteReason.trim()}
                 className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                 {t('workRequests.confirmDeleteBtn') || 'Yes, delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Jorge 2026-04-23: modal Cancelar Aviso con textarea para motivo */}
+      {cancelModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          onClick={() => { setCancelModal(null); setCancelReason(''); }}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <XCircle className="w-6 h-6 text-orange-600" />
+              <h3 className="text-lg font-bold text-gray-900">Cancelar aviso</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-3">
+              El aviso quedará <b>CERRADO</b> con el motivo registrado. No se puede revertir.
+            </p>
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">
+              Motivo de cancelación <span className="text-red-500">*</span>
+            </label>
+            <textarea autoFocus value={cancelReason} onChange={e => setCancelReason(e.target.value)}
+              rows={4}
+              placeholder="Ej.: Duplicado del WR-2026-00123 · trabajo ya cubierto por la OT-2026-50000…"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 resize-none" />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => { setCancelModal(null); setCancelReason(''); }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Volver
+              </button>
+              <button onClick={() => { confirmCancel(cancelReason); setCancelReason(''); }}
+                disabled={!cancelReason.trim()}
+                className="px-4 py-2 text-sm font-semibold bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                Confirmar cancelación
               </button>
             </div>
           </div>

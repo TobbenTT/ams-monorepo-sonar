@@ -198,11 +198,10 @@ export default function FailureCapture({ onNavigateTab }) {
   };
 
   const ORDER_TYPES = [
-    // Jorge 2026-04-23: PM02 queda reservado a generación automática por estrategia.
-    { value: 'PM01', label: 'PM01 - Correctivo Programado' },
-    { value: 'PM03', label: 'PM03 - Correctivo de Falla' },
-    { value: 'PM06', label: 'PM06 - Investment Order' },
-    { value: 'PM07', label: 'PM07 - Component Repair Order' },
+    // Jorge 2026-04-23: PM02 reservado a generación automática por estrategia.
+    // PM05/PM06/PM07 eliminados por pedido de Jorge (solo PM01/PM02/PM03).
+    { value: 'PM01', label: 'PM01 - Programado' },
+    { value: 'PM03', label: 'PM03 - No Programado (Falla)' },
   ];
 
   // ── Form State ──

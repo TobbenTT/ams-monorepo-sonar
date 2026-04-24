@@ -1128,7 +1128,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       EN_PROGRESO: { label: 'In Execution', color: 'bg-amber-100 text-amber-700' },
                     };
                     const TYPE_LABEL = {
-                      PM01: 'PM01', PM02: 'PM02', PM03: 'PM03', PM05: 'PM05',
+                      PM01: 'PM01', PM02: 'PM02', PM03: 'PM03',
                     };
                     const s = SAP_STATUS[wo.status] || { label: wo.status, color: 'bg-gray-100 text-gray-600' };
                     const pColor = { P1: 'text-red-600 font-bold', P2: 'text-orange-600 font-semibold', P3: 'text-yellow-600', P4: 'text-blue-600' };
@@ -1582,7 +1582,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           APROBADO:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700']],
           EN_PROGRESO:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700']],
         };
-        const TLBL = {PM01:'PM01',PM02:'PM02',PM03:'PM03',PM05:'PM05'};
+        const TLBL = {PM01:'PM01',PM02:'PM02',PM03:'PM03'};
         const s = SAP[wo.status] || {label:wo.status,color:"bg-gray-100 text-gray-600"};
         const actions = NEXT[wo.status] || [];
         const ALL = ['CREADO','LIBERADO','PLANIFICADO','EN_PROGRAMACION','PROGRAMADO','EN_EJECUCION','CERRADO'];

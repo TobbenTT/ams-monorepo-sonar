@@ -1049,10 +1049,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
               <select value={woTypeFilter} onChange={e => setWoTypeFilter(e.target.value)}
                 className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500/30">
                 <option value="All">All Types</option>
-                <option value="PM01">PM01 - Correctivo Programado</option>
-                <option value="PM03">PM03 - Correctivo de Falla</option>
-                {/* Jorge 2026-04-23: PM02 (preventivo) queda reservado a generación
-                    automática por estrategia — NO aparece en creación manual. */}
+                {/* Jorge 2026-04-24 (obs doc): agregar PM2 + PM3 al filtro */}
+                <option value="PM01">PM01 - Programado</option>
+                <option value="PM02">PM02 - Planificado</option>
+                <option value="PM03">PM03 - No Programado (Falla)</option>
               </select>
               {(woSearch || woStatusFilter !== "All" || woPriorityFilter !== "All" || woTypeFilter !== "All") && (
                 <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter("All"); setWoTypeFilter("All"); }}

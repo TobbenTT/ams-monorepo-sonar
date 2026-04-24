@@ -3208,7 +3208,9 @@ export default function Scheduling() {
   const computeAIPlan = () => {
     // Only WOs in a schedulable state: LIBERADO, PLANIFICADO, EN_PROGRAMACION, REPROGRAMADO, APROBADO
     // (CREADO must be released first; backend rejects direct CREADO → PROGRAMADO transition)
-    const SCHEDULABLE = new Set(['LIBERADO', 'PLANIFICADO', 'EN_PROGRAMACION', 'REPROGRAMADO', 'APROBADO']);
+    // Jorge 2026-04-24 (obs doc): "No deben estar las OT si no están en programación.
+    // Solo deberían verse las en estado In Scheduling". Reducido el set.
+    const SCHEDULABLE = new Set(['EN_PROGRAMACION', 'REPROGRAMADO']);
     const toSchedule = (releasedWOs || []).filter(wo => SCHEDULABLE.has(wo.status));
     const techs = technicians || [];
     if (toSchedule.length === 0) return null;

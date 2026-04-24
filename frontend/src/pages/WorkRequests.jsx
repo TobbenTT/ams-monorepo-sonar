@@ -775,16 +775,8 @@ ${materials.length ? `<div class="section">
           </div>
         )}
 
-        {/* Failure Short Description — auto-generated from catalog fields */}
-        {(item.failure_object_part || item.failure_symptom || item.failure_cause) && (
-          <div className="px-6 pb-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Failure Short Description</p>
-            <p className="text-sm text-foreground leading-relaxed bg-amber-50 rounded-lg p-3 border border-amber-200">
-              {[item.failure_object_part, item.failure_symptom, item.failure_cause].filter(Boolean).join(' — ')}
-              {item.failure_category ? ` (${item.failure_category})` : ''}
-            </p>
-          </div>
-        )}
+        {/* Jorge 2026-04-24 (obs doc): "Failure Short Description" eliminado del detalle
+            — duplica info que ya está en Síntoma/Causa/Categoría de Clasificación. */}
 
         {/* Suggested Action */}
         {(item.suggested_action || editing) && (
@@ -1126,21 +1118,12 @@ ${materials.length ? `<div class="section">
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
-                  Cancelar Aviso
+                  Cancelar
                 </button>
               </>
             )}
-            {/* Jorge 2026-04-23 — nav bidireccional Aviso → OT */}
-            {onGoToOT && ['APROBADO', 'VALIDATED', 'APPROVED', 'ASSIGNED', 'IN_PROGRESS', 'CERRADO', 'CLOSED'].includes(item.status) && (
-              <button
-                onClick={onGoToOT}
-                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-sm font-semibold hover:bg-blue-100 transition-colors"
-                title="Ver OT vinculada"
-              >
-                <ArrowRight size={16} />
-                Ver OT
-              </button>
-            )}
+            {/* Jorge 2026-04-24 (obs doc): "Ver OT" removido de la sección Identificación —
+                la OT aún no se crea ahí. Queda sólo en la columna "WO" de la tabla. */}
             {/* Planner: Create WO from approved WR */}
             {isValidated && (
               <>
@@ -1163,7 +1146,7 @@ ${materials.length ? `<div class="section">
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
-                  Cancelar Aviso
+                  Cancelar
                 </button>
               </>
             )}
@@ -1175,7 +1158,7 @@ ${materials.length ? `<div class="section">
                 className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
               >
                 <XCircle size={16} />
-                Cancelar Aviso
+                Cancelar
               </button>
             )}
             {/* Start Work button removed per client feedback */}

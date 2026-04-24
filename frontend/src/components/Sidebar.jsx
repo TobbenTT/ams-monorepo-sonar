@@ -72,11 +72,11 @@ export default function Sidebar({ mobileOpen, onClose }) {
                 role="navigation"
                 aria-label="Main navigation"
             >
-                {/* Brand */}
+                {/* Brand — Jorge 2026-04-24: logo oficial del sidebar */}
                 <div className={cn("px-6 py-5 border-b border-emerald-600/30", collapsed && "px-3 flex justify-center")}>
                     {!collapsed ? (
                         <>
-                            <h1 className="text-xl font-semibold">{t('nav.brandTitle')}</h1>
+                            <img src="/MAGEAM_LOGO_WHITE.png" alt="MagEAM" className="h-8 w-auto mb-1" />
                             <p className="text-emerald-100 text-sm mt-1">{t('nav.brandSubtitle')}</p>
                         </>
                     ) : (

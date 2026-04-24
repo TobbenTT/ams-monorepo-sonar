@@ -1996,7 +1996,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               <span className="text-xs font-bold text-gray-400 w-5">#{idx+1}</span>
                               <span className={"text-xs font-bold px-1.5 py-0.5 rounded "+(op.type === 'EXT' ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600")}>{op.type || 'INT'}</span>
                               {op.parallel && (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300" title="Operación en paralelo · duración = máx entre paralelas; HH siempre suman">P</span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300"
+                                  title={`Operación en paralelo · grupo ${op.parallel_group || 'A'} · duración = máx del grupo`}>
+                                  P·{op.parallel_group || 'A'}
+                                </span>
                               )}
                               <span className="flex-1 text-sm font-medium text-gray-800 truncate">{op.description ? op.description.replace(/^\d+[\.\)]\s*/, '').substring(0, 60) + (op.description.length > 60 ? '...' : '') : <span className="text-gray-400 italic">No description</span>}</span>
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">{op.specialty || 'Mechanical'}</span>
@@ -2051,13 +2054,28 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                   <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs font-bold text-emerald-700 whitespace-nowrap">
                                     HH: {((op.quantity || 1) * (op.hours || 0)).toFixed(1)}
                                   </div>
-                                  {/* Jorge (2026-04-20): operaciones en paralelo vs serie. */}
+                                  {/* Jorge 2026-04-24 14:18: paralelismo con GRUPOS.
+                                      Varias tareas pueden formar el mismo grupo paralelo;
+                                      otras pueden formar otro grupo distinto. La duración
+                                      total = suma de (max hours por grupo) + suma de ops en serie. */}
                                   <label className="flex items-center gap-1 text-[10px] text-gray-600 cursor-pointer ml-auto">
                                     <input type="checkbox" checked={!!op.parallel}
-                                      onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], parallel: e.target.checked}; setEditOps(n); }}
+                                      onChange={e => {
+                                        const n = [...editOps];
+                                        const isOn = e.target.checked;
+                                        n[idx] = { ...n[idx], parallel: isOn, parallel_group: isOn ? (n[idx].parallel_group || 'A') : null };
+                                        setEditOps(n);
+                                      }}
                                       className="w-3 h-3" />
                                     En paralelo
                                   </label>
+                                  {op.parallel && (
+                                    <select value={op.parallel_group || 'A'}
+                                      onChange={e => { const n = [...editOps]; n[idx] = { ...n[idx], parallel_group: e.target.value }; setEditOps(n); }}
+                                      className="text-[10px] border rounded px-1 py-0.5" title="Grupo de paralelismo — tareas en el mismo grupo se ejecutan simultáneamente">
+                                      {['A','B','C','D','E'].map(g => <option key={g} value={g}>Grupo {g}</option>)}
+                                    </select>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -2070,20 +2088,35 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         HH siempre suma (hombre-hora). Duración depende de paralelo/serie:
                         las en serie se suman, las en paralelo se toma la máxima del bloque. */}
                     {editOps.length > 0 && (() => {
+                      // Jorge 2026-04-24 14:18: cálculo con grupos paralelos.
+                      // Duración = Σ(ops serie) + Σ(max hours de cada grupo paralelo).
+                      // HH siempre suma todo (recurso humano).
                       const totalHH = editOps.reduce((s, o) => s + (o.quantity || 1) * (o.hours || 0), 0);
                       const serieHours = editOps.filter(o => !o.parallel).reduce((s, o) => s + (o.hours || 0), 0);
-                      const parallelHours = editOps.filter(o => o.parallel).reduce((m, o) => Math.max(m, o.hours || 0), 0);
+                      // Agrupar paralelos por parallel_group
+                      const groups = {};
+                      for (const o of editOps.filter(o => o.parallel)) {
+                        const g = o.parallel_group || 'A';
+                        groups[g] = Math.max(groups[g] || 0, o.hours || 0);
+                      }
+                      const parallelHours = Object.values(groups).reduce((s, v) => s + v, 0);
                       const totalDuration = serieHours + parallelHours;
                       const parallelCount = editOps.filter(o => o.parallel).length;
+                      const groupCount = Object.keys(groups).length;
                       return (
                         <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2 border flex-wrap gap-2">
                           <span className="text-xs text-gray-500">
-                            {editOps.length} operaciones{parallelCount > 0 && ` · ${parallelCount} en paralelo`}
+                            {editOps.length} operaciones
+                            {parallelCount > 0 && ` · ${parallelCount} en paralelo en ${groupCount} grupo${groupCount > 1 ? 's' : ''}`}
                           </span>
                           <div className="flex items-center gap-4 flex-wrap">
                             <span className="text-xs text-gray-500">
                               Duración: <strong className="text-gray-800">{totalDuration.toFixed(1)}h</strong>
-                              {parallelCount > 0 && <span className="text-[10px] text-gray-400 ml-1">(serie + max paralelo)</span>}
+                              {groupCount > 0 && (
+                                <span className="text-[10px] text-gray-400 ml-1">
+                                  (serie + {Object.entries(groups).map(([g, h]) => `${g}:max ${h}h`).join(' + ')})
+                                </span>
+                              )}
                             </span>
                             <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">Total HH: {totalHH.toFixed(1)}</span>
                           </div>

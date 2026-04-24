@@ -2724,8 +2724,9 @@ export default function FailureCapture({ onNavigateTab }) {
                       MAINTAINABLE_ITEM: 'bg-gray-100 text-gray-600',
                     };
                     return (
-                      <div key={node.node_id || i} className="flex items-center px-4 py-3 hover:bg-gray-50 group">
-                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => hasChildren ? drillDown(node) : selectBrowseLocation(node)}>
+                      <div key={node.node_id || i} className="flex items-center px-4 py-3 hover:bg-gray-50">
+                        {/* Jorge SF-518: click en la fila SELECCIONA directo. Chevron al final para drill-down. */}
+                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => selectBrowseLocation(node)}>
                           <div className="flex items-center gap-2">
                             <span className={"text-xs font-mono px-1.5 py-0.5 rounded " + (typeColors[node.node_type] || 'bg-gray-100 text-gray-600')}>
                               {node.node_type}
@@ -2738,13 +2739,14 @@ export default function FailureCapture({ onNavigateTab }) {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                          <button onClick={() => selectBrowseLocation(node)}
-                            className="text-xs px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                            Select
+                          <button onClick={(e) => { e.stopPropagation(); selectBrowseLocation(node); }}
+                            className="text-xs px-2.5 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 font-semibold">
+                            Seleccionar
                           </button>
                           {hasChildren && (
-                            <button onClick={() => drillDown(node)}
-                              className="text-gray-400 hover:text-gray-600">
+                            <button onClick={(e) => { e.stopPropagation(); drillDown(node); }}
+                              title="Ver hijos"
+                              className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
                               <ChevronRight className="w-4 h-4" />
                             </button>
                           )}

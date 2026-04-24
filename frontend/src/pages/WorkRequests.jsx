@@ -313,6 +313,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
     estimated_duration: item.estimated_duration || '',
     production_impact: item.production_impact || 'MEDIUM',
     suggested_action: (item.suggested_action || '').replace(/(\d+)\.\s/g, (m, num) => num === '1' ? m : '\n' + m),
+    wo_title: item.wo_title || '',
     failure_category: item.failure_category || '',
     failure_symptom: item.failure_symptom || '',
     failure_cause: item.failure_cause || '',
@@ -668,11 +669,18 @@ ${materials.length ? `<div class="section">
           </div>
         )}
 
-        {/* WO Title */}
-        {item.wo_title && (
+        {/* WO Title — Jorge 2026-04-24 (obs doc): debe ser editable */}
+        {(item.wo_title || editing) && (
           <div className="px-6 pb-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Work Order Title</p>
-            <p className="text-base font-bold text-foreground bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">{item.wo_title}</p>
+            {editing ? (
+              <input type="text" value={editData.wo_title || ''}
+                onChange={e => setEditData(d => ({ ...d, wo_title: e.target.value }))}
+                className="w-full text-base font-bold text-foreground bg-emerald-50 border border-emerald-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                placeholder="Título para la OT (arrastrado desde el aviso)" />
+            ) : (
+              <p className="text-base font-bold text-foreground bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">{item.wo_title}</p>
+            )}
           </div>
         )}
 
@@ -728,20 +736,38 @@ ${materials.length ? `<div class="section">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Clasificación de Falla</p>
             {editing ? (
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
+                {/* Jorge 2026-04-24 (obs doc): dropdowns en vez de inputs libres */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Parte Objeto:</span>
-                  <input type="text" value={editData.failure_category} onChange={e => setEditData(d => ({ ...d, failure_category: e.target.value }))}
-                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="MECANICO, ELECTRICO..." />
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                  <select value={editData.failure_category || ''} onChange={e => setEditData(d => ({ ...d, failure_category: e.target.value }))}
+                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30">
+                    <option value="">— Seleccionar —</option>
+                    <option>MECANICO</option><option>ELECTRICO</option><option>INSTRUMENTACION</option>
+                    <option>ESTRUCTURAL</option><option>HIDRAULICO</option><option>NEUMATICO</option>
+                    <option>LUBRICACION</option><option>OTRO</option>
+                  </select>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground min-w-[80px]">Síntoma:</span>
-                  <input type="text" value={editData.failure_symptom} onChange={e => setEditData(d => ({ ...d, failure_symptom: e.target.value }))}
-                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="Fuga, Vibración..." />
+                  <select value={editData.failure_symptom || ''} onChange={e => setEditData(d => ({ ...d, failure_symptom: e.target.value }))}
+                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30">
+                    <option value="">— Seleccionar —</option>
+                    <option>FUGA</option><option>VIBRACION</option><option>RUIDO</option>
+                    <option>SOBRETEMPERATURA</option><option>NO ARRANCA</option><option>BAJO RENDIMIENTO</option>
+                    <option>CORROSION</option><option>DESGASTE</option><option>ROTURA</option>
+                    <option>OBSTRUCCION</option><option>DESALINEACION</option><option>OTRO</option>
+                  </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Cause:</span>
-                  <input type="text" value={editData.failure_cause} onChange={e => setEditData(d => ({ ...d, failure_cause: e.target.value }))}
-                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="Desgaste, Corrosión..." />
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Causa:</span>
+                  <select value={editData.failure_cause || ''} onChange={e => setEditData(d => ({ ...d, failure_cause: e.target.value }))}
+                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30">
+                    <option value="">— Seleccionar —</option>
+                    <option>DESGASTE NORMAL</option><option>FATIGA</option><option>CORROSION</option>
+                    <option>MAL MANTENIMIENTO</option><option>SOBRECARGA</option><option>CONTAMINACION</option>
+                    <option>MAL MONTAJE</option><option>DEFECTO FABRICACION</option><option>OPERACION FUERA RANGO</option>
+                    <option>DESCONOCIDA</option>
+                  </select>
                 </div>
               </div>
             ) : (

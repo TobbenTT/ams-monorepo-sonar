@@ -30,6 +30,29 @@ originSessionId: aa907cbb-cf3b-4c1b-8eb3-264b2251bba8
   - Endpoint `/fmea/strategy/pm02-calendar?plant_id=X&months=12` — proyecta MaintenanceTask activos.
   - Componente `PM02CalendarPreview.jsx` (modal) con heatmap + tabla próximas 20 tareas.
 
+**Reunión 2026-04-24 14:18 — 39/41 items implementados (batch 1-5):**
+- Fix 401 (revert single-session kick a warning)
+- Production Impact auto pero editable (derivado de priority)
+- Ver OT condicional (solo si wo_number existe)
+- Planning 4 KPI cards: Creadas/Planificadas/Programadas/Cerradas
+- Multi-select priority con P2 en Planning
+- Columna TL+TAG en Planning (reemplaza Equipment)
+- TL+TAG dentro del modal aviso detail
+- Week-only en OT header Planning (duración fuera)
+- Paralelismo con GRUPOS (A-E), duración = Σ(max por grupo)
+- Drag&drop operaciones
+- Especialidad inline editable en fila op
+- Reservas en Summary OT detail
+- Columna Impact en Scheduling Mass Change
+- Alerta out-of-week (>14d) en planned_start edit
+- Refresh aviso al volver de OT
+
+**Tag de respaldo:** `backup-2026-04-24-jorge-1418-complete` (10 commits desde backup-2026-04-24-full).
+
+**Items 14:18 NO hechos (Jorge dijo "luego" o no localizados):**
+- Fotos en modo edit (luego)
+- Rename "Mark Planet" button (no hay string literal en el repo)
+
 **NO REHACER estas cosas — ya están.** Si Jorge las pide "de nuevo" es cosmético, confirmar antes de codear.
 
 **Pendiente real del roadmap (no hecho):**

@@ -1102,7 +1102,7 @@ ${materials.length ? `<div class="section">
                 Save
               </button>
             )}
-            {/* Supervisor: Approve + Reject + Cancel WR */}
+            {/* Supervisor: Approve + Reject + Cancelar Aviso */}
             {isPending && (
               <>
                 <button
@@ -1126,7 +1126,7 @@ ${materials.length ? `<div class="section">
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
-                  Cancel WR
+                  Cancelar Aviso
                 </button>
               </>
             )}
@@ -1163,11 +1163,11 @@ ${materials.length ? `<div class="section">
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
-                  Cancel WR
+                  Cancelar Aviso
                 </button>
               </>
             )}
-            {/* Jorge 2026-04-23: Cancel WR disponible SIEMPRE que el aviso no esté cerrado/cancelado/rechazado.
+            {/* Jorge 2026-04-23: Cancelar Aviso disponible SIEMPRE que el aviso no esté cerrado/cancelado/rechazado.
                 Antes solo aparecía en PENDIENTE/APROBADO; faltaba para OT_CREADA e IN_PROGRESS. */}
             {!isPending && !isValidated && !['CERRADO', 'CLOSED', 'COMPLETED', 'CANCELADO', 'CANCELLED', 'RECHAZADO', 'REJECTED'].includes(item.status) && (
               <button
@@ -1175,7 +1175,7 @@ ${materials.length ? `<div class="section">
                 className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
               >
                 <XCircle size={16} />
-                Cancel WR
+                Cancelar Aviso
               </button>
             )}
             {/* Start Work button removed per client feedback */}

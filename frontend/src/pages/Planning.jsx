@@ -1894,34 +1894,22 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           }}
                           className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
                       </div>
+                      {/* Jorge 2026-04-24 14:18: "Sacar duración del encabezado porque va
+                          en el mini-dashboard de arriba. Dejar solo Week/WIC". */}
                       <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
-                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Duración (horas)</div>
-                        {/* Jorge 2026-04-23: duración en HORAS (no días). End = Start + hours. */}
-                        <input type="number" min="0" step="0.5"
-                          value={editDates.start && editDates.end ? Math.max(0, ((new Date(editDates.end) - new Date(editDates.start)) / 3600000)).toFixed(1) : ''}
-                          placeholder="—"
-                          onChange={e => {
-                            const hrs = parseFloat(e.target.value);
-                            if (isNaN(hrs) || hrs < 0) return;
-                            setEditDates(d => {
-                              if (!d.start) { toast.info('Elige Planned Start primero'); return d; }
-                              const start = new Date(d.start);
-                              const end = new Date(start.getTime() + hrs * 3600000);
-                              return { ...d, end: end.toISOString() };
-                            });
-                          }}
-                          className="mt-1 text-sm font-bold text-indigo-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
-                        {/* Jorge 2026-04-23: WIC (week) auto-calc desde fecha partida + duración */}
-                        {editDates.start && (() => {
+                        <div className="text-[10px] text-indigo-600 font-semibold uppercase">Week (WIC)</div>
+                        {editDates.start ? (() => {
                           const d = new Date(editDates.start);
                           const firstJan = new Date(d.getFullYear(), 0, 1);
                           const wic = Math.ceil(((d - firstJan) / 86400000 + firstJan.getDay() + 1) / 7);
                           return (
-                            <div className="text-[10px] text-indigo-500 mt-0.5 font-mono">
-                              WIC W{String(wic).padStart(2, '0')}-{d.getFullYear()}
+                            <div className="mt-1 text-lg font-bold text-indigo-800 font-mono">
+                              W{String(wic).padStart(2, '0')}-{d.getFullYear()}
                             </div>
                           );
-                        })()}
+                        })() : (
+                          <div className="mt-1 text-sm text-indigo-400 italic">Elige Planned Start</div>
+                        )}
                       </div>
                     </div>
 

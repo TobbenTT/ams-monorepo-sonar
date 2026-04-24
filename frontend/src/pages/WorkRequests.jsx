@@ -506,6 +506,9 @@ ${materials.length ? `<div class="section">
         {/* Detail Grid */}
         <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <DetailCard icon={MapPin} label={t('workRequests.plantArea')} value={`${item.plant} / ${item.area}`} />
+          {/* Jorge 2026-04-24 14:18: TL + TAG DENTRO del modal aviso */}
+          <DetailCard icon={MapPin} label="Ubic. Técnica" value={item.technical_location || '—'} />
+          <DetailCard icon={Tag} label="Equipo / TAG" value={item.equipment_tag || '—'} />
           <DetailCard icon={User} label="Created By" value={item.created_by || '-'} />
             <DetailCard icon={CheckCircle} label="Approved By" value={item.approver_id || (["Approved","APROBADO","VALIDATED"].includes(item.status) ? "Supervisor" : "—")} />
           <DetailCard icon={Clock} label={t('workRequests.estimatedDuration')}>

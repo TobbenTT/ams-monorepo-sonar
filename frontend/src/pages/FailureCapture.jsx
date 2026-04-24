@@ -381,7 +381,9 @@ export default function FailureCapture({ onNavigateTab }) {
           setF('woTitle', title);
         }
         if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);
-        if (s.priority) setF('priority', s.priority);
+        // Jorge SF-544: NO sobreescribir priority si el usuario ya la seleccionó manualmente.
+        // La selección manual gana sobre la sugerencia IA al regenerar.
+        if (s.priority && !form.priority) setF('priority', s.priority);
         if (s.estimatedDuration || s.estimated_duration) setF('estimatedDuration', String(s.estimatedDuration || s.estimated_duration));
         if (s.equipmentCondition || s.equipment_condition) {
           const pc = (s.equipmentCondition || s.equipment_condition).toLowerCase();
@@ -848,7 +850,8 @@ export default function FailureCapture({ onNavigateTab }) {
       const cat = s.failureCategory.toUpperCase().trim();
       if (['MECHANICAL','ELECTRICAL','INSTRUMENTATION','HYDRAULIC','STRUCTURAL'].includes(cat)) setF('failureCategory', cat);
     }
-    if (s.priority) setF('priority', s.priority);
+    // Jorge SF-544: respetar selección manual de priority
+    if (s.priority && !form.priority) setF('priority', s.priority);
     if (s.activityClass) setF('activityClass', s.activityClass);
     if (s.suggestedAction) setF('suggestedAction', s.suggestedAction);
     const aiCat = (s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase();
@@ -908,7 +911,8 @@ export default function FailureCapture({ onNavigateTab }) {
           const cat = s.failureCategory.toUpperCase().trim();
           if (['MECHANICAL', 'ELECTRICAL', 'INSTRUMENTATION'].includes(cat)) setF('failureCategory', cat);
         }
-        if (s.priority) setF('priority', s.priority);
+        // Jorge SF-544: respetar selección manual de priority
+        if (s.priority && !form.priority) setF('priority', s.priority);
         if (s.activityClass) setF('activityClass', s.activityClass);
         if (s.suggestedAction) setF('suggestedAction', s.suggestedAction);
         // Validate catalog values against FAILURE_CATALOG
@@ -2587,27 +2591,10 @@ export default function FailureCapture({ onNavigateTab }) {
             )}
           </div>
 
-          {/* 16. Activity Class (Clase de Actividad) */}
-          <div className="border rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-              Activity Class
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { value: 'PM01', label: 'PM01 - Preventive/Request', desc: 'Scheduled or requested maintenance' },
-                { value: 'PM03', label: 'PM03 - Corrective', desc: 'Breakdown / corrective repair' },
-              ].map(ac => (
-                <button key={ac.value} onClick={() => {/* read-only, set by priority */}}
-                  className={`p-3 rounded-lg border-2 text-left transition-all ${claseOT === ac.value ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 opacity-50'}`}>
-                  <div className={`text-xs font-bold ${claseOT === ac.value ? 'text-emerald-700' : 'text-gray-500'}`}>{ac.value}</div>
-                  <div className={`text-[10px] mt-0.5 ${claseOT === ac.value ? 'text-emerald-600' : 'text-gray-400'}`}>{ac.desc}</div>
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Determined by priority: {selectedPriority?.value || '—'} → <strong>{claseOT}</strong>
-            </p>
-          </div>
+          {/* Jorge SF-551: bloque "Activity Class" eliminado de la captura inicial.
+              La clase OT (PM01/PM03) se deriva automáticamente de la prioridad y NO
+              se le muestra al usuario en esta etapa. Lógica `claseOT` sigue activa
+              internamente para crear la OT con el wo_type correcto. */}
         </div>
         </div>
 

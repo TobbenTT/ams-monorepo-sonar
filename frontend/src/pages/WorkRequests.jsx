@@ -1992,7 +1992,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           {hasDuplicates && (
                             <span title={t('workRequests.duplicateWarning')} className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
                           )}
-                          <p className="font-mono text-xs text-muted-foreground">{req.id}</p>
+                          {/* Jorge 2026-04-23 17:38: quitar prefijo "WR-" del número de aviso */}
+                          <p className="font-mono text-xs text-muted-foreground">{String(req.id || '').replace(/^WR-?/i, '')}</p>
                           {isFastTrackWR && (
                             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
                               <Zap size={8} /> FT

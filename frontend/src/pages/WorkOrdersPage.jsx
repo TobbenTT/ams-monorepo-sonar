@@ -1180,6 +1180,10 @@ export default function WorkOrdersPage() {
                     <TableHead className="font-semibold">Priority</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Progress</TableHead>
+                    {/* Jorge 2026-04-23 17:38: columnas HH/Duración/Costo en la lista */}
+                    <TableHead className="font-semibold text-[11px]">HH (P/R)</TableHead>
+                    <TableHead className="font-semibold text-[11px]">Duración (P/R)</TableHead>
+                    <TableHead className="font-semibold text-[11px]">Costo (P/R)</TableHead>
                     <TableHead className="font-semibold">Acción</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1240,6 +1244,35 @@ export default function WorkOrdersPage() {
                             <span className="text-xs text-gray-500">{Math.round(wo.completion_pct || 0)}%</span>
                           </div>
                         </TableCell>
+                        {/* Jorge SF-537 / 2026-04-23: HH / Dur / Cost Plan vs Real en la lista */}
+                        {(() => {
+                          const plannedDur = wo.planned_start && wo.planned_end
+                            ? Math.max(0, (new Date(wo.planned_end) - new Date(wo.planned_start)) / 3600000) : 0;
+                          const actualDur = wo.actual_start && wo.actual_end
+                            ? Math.max(0, (new Date(wo.actual_end) - new Date(wo.actual_start)) / 3600000) : 0;
+                          const overHH = (wo.actual_hours || 0) > (wo.estimated_hours || 0);
+                          const overDur = actualDur > plannedDur && plannedDur > 0;
+                          const overCost = (wo.actual_total_cost || 0) > (wo.budget_amount || 0) && wo.budget_amount;
+                          return (
+                            <>
+                              <TableCell className="text-xs font-mono">
+                                <span>{wo.estimated_hours || 0}</span>
+                                <span className="text-gray-300 mx-0.5">/</span>
+                                <span className={overHH ? 'text-red-600 font-bold' : ''}>{wo.actual_hours || 0}h</span>
+                              </TableCell>
+                              <TableCell className="text-xs font-mono">
+                                <span>{plannedDur.toFixed(1)}</span>
+                                <span className="text-gray-300 mx-0.5">/</span>
+                                <span className={overDur ? 'text-red-600 font-bold' : ''}>{actualDur.toFixed(1)}h</span>
+                              </TableCell>
+                              <TableCell className="text-xs font-mono">
+                                <span>${(wo.budget_amount || 0).toLocaleString()}</span>
+                                <span className="text-gray-300 mx-0.5">/</span>
+                                <span className={overCost ? 'text-red-600 font-bold' : ''}>${(wo.actual_total_cost || 0).toLocaleString()}</span>
+                              </TableCell>
+                            </>
+                          );
+                        })()}
                         <TableCell>
                           {nextAct && (
                             <Button size="sm" variant="outline"

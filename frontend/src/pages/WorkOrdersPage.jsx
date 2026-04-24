@@ -1060,29 +1060,8 @@ export default function WorkOrdersPage() {
       {/* ═══ TACTICAL VIEW: OTs + WRs Tabbed ═══ */}
       {viewMode === 'tactical' && (<>
 
-      {/* OT Summary Cards — click to filter */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        {[
-          { key: null, label: 'All' },
-          { key: 'CREADO', label: 'Created' },
-          { key: 'PLANIFICADO', label: 'Planned' },
-          { key: 'EN_PROGRAMACION', label: 'In Scheduling' },
-          { key: 'PROGRAMADO', label: 'Scheduled' },
-          { key: 'EN_EJECUCION', label: 'In Execution' },
-          { key: 'CERRADO', label: 'Closed' },
-          { key: 'CANCELADO', label: 'Cancelled' },
-        ].map(({ key, label }) => {
-          const count = key === null ? managedWOs.length : (otStats[key] || 0);
-          const active = statusFilter === key;
-          return (
-            <Card key={key || 'all'} className={`p-3 bg-white cursor-pointer border-2 transition-all ${active ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-transparent hover:border-emerald-300'}`}
-              onClick={() => { setWoTab('ots'); setStatusFilter(key); }}>
-              <div className="text-xs text-gray-500 truncate">{label}</div>
-              <div className="text-xl font-bold text-gray-900">{count}</div>
-            </Card>
-          );
-        })}
-      </div>
+      {/* Jorge 2026-04-23 17:38: removido status cards duplicado — las 5 pestañas
+          clickables ahora están dentro del tab OTs para no duplicar. */}
 
       {/* Tab Switcher */}
       <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit">
@@ -1099,21 +1078,28 @@ export default function WorkOrdersPage() {
       {/* ── OTs Table ── */}
       {woTab === 'ots' && (
         <Card className="p-6 bg-white">
-          {/* Jorge 2026-04-23: 5 status cards en lugar de "grupo de clasificación / edad promedio" */}
-          <div className="grid grid-cols-5 gap-3 mb-4">
+          {/* Jorge 2026-04-23 17:38: 5 pestañas CLICKABLES que filtran la tabla
+              (Created/Planificada/En Programación/En Ejecución/Cerrada) + Total. */}
+          <div className="grid grid-cols-6 gap-3 mb-4">
             {[
+              { key: null, label: 'Total', color: 'bg-slate-50 text-slate-700 border-slate-300' },
               { key: 'CREADO', label: 'Creadas', color: 'bg-gray-100 text-gray-700 border-gray-300' },
               { key: 'PLANIFICADO', label: 'Planificadas', color: 'bg-blue-50 text-blue-700 border-blue-300' },
               { key: 'PROGRAMADO', label: 'En Programación', color: 'bg-indigo-50 text-indigo-700 border-indigo-300' },
               { key: 'EN_EJECUCION', label: 'En Ejecución', color: 'bg-amber-50 text-amber-700 border-amber-300' },
               { key: 'CERRADO', label: 'Cerradas', color: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
             ].map(s => {
-              const count = managedWOs.filter(w => (w.status || '').toUpperCase() === s.key).length;
+              const count = s.key
+                ? managedWOs.filter(w => (w.status || '').toUpperCase() === s.key).length
+                : managedWOs.length;
+              const active = statusFilter === s.key;
               return (
-                <div key={s.key} className={`rounded-lg p-3 border ${s.color}`}>
+                <button key={s.key || 'all'} type="button"
+                  onClick={() => setStatusFilter(s.key)}
+                  className={`text-left rounded-lg p-3 border-2 transition-all ${s.color} ${active ? 'ring-2 ring-offset-1 ring-emerald-500 border-emerald-500' : 'hover:opacity-80'}`}>
                   <div className="text-[10px] uppercase tracking-wider font-semibold opacity-80">{s.label}</div>
                   <div className="text-2xl font-bold mt-1">{count}</div>
-                </div>
+                </button>
               );
             })}
           </div>

@@ -865,6 +865,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
     toast.success('Exported ' + filteredWRs.length + ' notifications');
   };
 
+  // Export OT inline en el header del tablero Planning (ver abajo)
+
   const changeOTStatus = async (wo, ns) => {
     const WO_ID = wo.wo_id;
     setOtActionLoading(ns);
@@ -1017,7 +1019,26 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           <div className="space-y-3 mb-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900">Work Orders</h3>
-              <span className="text-sm text-gray-400">{filteredWOs.length} / {managedWOs.length} OTs</span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-400">{filteredWOs.length} / {managedWOs.length} OTs</span>
+                {/* Jorge 2026-04-24 (obs doc): Pasar a Excel en tablero Planning */}
+                <button onClick={() => {
+                  const headers = ['OT #', 'Tipo', 'Equipo', 'TL', 'Descripción', 'Prioridad', 'Status', 'Plan HH', 'Actual HH', 'Plan Start', 'Plan End', 'Creado'];
+                  const rows = filteredWOs.map(wo => [
+                    wo.wo_number || '', wo.wo_type || '', wo.equipment_tag || '', wo.technical_location || '',
+                    wo.description || wo.wo_title || '', wo.priority_code || '', wo.status || '',
+                    wo.estimated_hours || 0, wo.actual_hours || 0,
+                    wo.planned_start ? new Date(wo.planned_start).toLocaleDateString() : '',
+                    wo.planned_end ? new Date(wo.planned_end).toLocaleDateString() : '',
+                    wo.created_at ? new Date(wo.created_at).toLocaleDateString() : '',
+                  ]);
+                  downloadExport({ format: 'EXCEL', sheets: [{ name: 'Órdenes de Trabajo', headers, rows }] }, `ordenes_planning_${new Date().toISOString().slice(0, 10)}`);
+                  toast.success('Exportadas ' + rows.length + ' OTs');
+                }}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+                  <Download className="w-4 h-4" /> Pasar a Excel
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="relative flex-1 min-w-[200px]">
@@ -1708,15 +1729,48 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       <label className="text-xs font-semibold text-gray-500 uppercase">Description</label>
                       <p className="text-sm text-gray-800 mt-1 bg-gray-50 rounded-lg p-3">{wo.description||wo.failure_description||"No description"}</p>
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
-                      <div className="bg-blue-50 rounded-lg p-3 text-center"><div className="text-[10px] text-blue-600 font-semibold uppercase">Planned HH</div><div className="text-lg font-bold text-blue-700">{(() => {
-                        // HH = Σ(quantity × duration) — hombre-hora planificada (Jorge 2026-04-20)
+                    {/* Jorge 2026-04-24 (obs doc): 6 tarjetas Plan/Actual × HH/Duración/Costo */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {(() => {
                         const opsHH = (editOps || []).reduce((s, o) => s + ((parseFloat(o.quantity) || 1) * (parseFloat(o.hours) || 0)), 0);
-                        return opsHH > 0 ? opsHH.toFixed(1) : (wo.estimated_hours || 0);
-                      })()}</div></div>
-                      <div className="bg-green-50 rounded-lg p-3 text-center"><div className="text-[10px] text-green-600 font-semibold uppercase">Actual HH</div><div className="text-lg font-bold text-green-700">{wo.actual_hours||execData.actual_hours||"0"}</div></div>
-                      <div className="bg-purple-50 rounded-lg p-3 text-center"><div className="text-[10px] text-purple-600 font-semibold uppercase">Planned Cost</div><div className="text-lg font-bold text-purple-700">${totalPlan.toFixed(0)}</div></div>
-                      <div className="bg-amber-50 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-600 font-semibold uppercase">Actual Cost</div><div className="text-lg font-bold text-amber-700">${totalReal.toFixed(0)}</div></div>
+                        const plannedHH = opsHH > 0 ? opsHH : (wo.estimated_hours || 0);
+                        const actualHH = wo.actual_hours || execData.actual_hours || 0;
+                        const plannedDur = wo.planned_start && wo.planned_end
+                          ? Math.max(0, (new Date(wo.planned_end) - new Date(wo.planned_start)) / 3600000) : 0;
+                        const actualDur = wo.actual_start && wo.actual_end
+                          ? Math.max(0, (new Date(wo.actual_end) - new Date(wo.actual_start)) / 3600000) : 0;
+                        const overHH = parseFloat(actualHH) > parseFloat(plannedHH);
+                        const overDur = actualDur > plannedDur && plannedDur > 0;
+                        const overCost = totalReal > totalPlan && totalPlan > 0;
+                        return (
+                          <>
+                            <div className="bg-blue-50 rounded-lg p-3">
+                              <div className="text-[10px] text-blue-600 font-semibold uppercase mb-1">HH (Plan / Real)</div>
+                              <div className="flex items-baseline gap-1.5 text-base font-bold">
+                                <span className="text-blue-700">{plannedHH}h</span>
+                                <span className="text-gray-300">/</span>
+                                <span className={overHH ? 'text-red-600' : 'text-green-700'}>{actualHH}h</span>
+                              </div>
+                            </div>
+                            <div className="bg-indigo-50 rounded-lg p-3">
+                              <div className="text-[10px] text-indigo-600 font-semibold uppercase mb-1">Duración (Plan / Real)</div>
+                              <div className="flex items-baseline gap-1.5 text-base font-bold">
+                                <span className="text-indigo-700">{plannedDur.toFixed(1)}h</span>
+                                <span className="text-gray-300">/</span>
+                                <span className={overDur ? 'text-red-600' : 'text-gray-700'}>{actualDur.toFixed(1)}h</span>
+                              </div>
+                            </div>
+                            <div className="bg-purple-50 rounded-lg p-3">
+                              <div className="text-[10px] text-purple-600 font-semibold uppercase mb-1">Costo (Plan / Real)</div>
+                              <div className="flex items-baseline gap-1.5 text-base font-bold">
+                                <span className="text-purple-700">${totalPlan.toFixed(0)}</span>
+                                <span className="text-gray-300">/</span>
+                                <span className={overCost ? 'text-red-600' : 'text-amber-700'}>${totalReal.toFixed(0)}</span>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Status Flow</label>

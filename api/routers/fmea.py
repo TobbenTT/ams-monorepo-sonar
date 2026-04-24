@@ -218,6 +218,78 @@ def create_fmeca_from_rca(analysis_id: str, analyst: str = "", db: Session = Dep
     return result
 
 
+@router.get("/analytics/adherence-compliance")
+def adherence_compliance_rollup(plant_id: str | None = None, weeks: int = 12, db: Session = Depends(get_db)):
+    """Jorge SF-516: Adherencia + Cumplimiento consolidado por semana/sitio/área.
+    Adherencia = % OTs donde |actual_start - planned_start| < 1h.
+    Cumplimiento = % OTs ejecutadas dentro de ventana 7d desde planned_start.
+    """
+    from api.database.models import ManagedWorkOrderModel
+    from datetime import datetime, timedelta
+    cutoff = datetime.now() - timedelta(weeks=weeks)
+    q = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.status == "CERRADO",
+        ManagedWorkOrderModel.closed_at >= cutoff,
+        ManagedWorkOrderModel.planned_start.isnot(None),
+        ManagedWorkOrderModel.actual_start.isnot(None),
+    )
+    if plant_id:
+        q = q.filter(ManagedWorkOrderModel.plant_id == plant_id)
+    wos = q.all()
+
+    # Agregados globales
+    total = len(wos)
+    adherent = 0
+    compliant = 0
+    # Por semana
+    by_week = {}
+    # Por planning_group (proxy de área)
+    by_area = {}
+    for wo in wos:
+        diff_hours = abs((wo.actual_start - wo.planned_start).total_seconds() / 3600)
+        diff_days = abs((wo.actual_start - wo.planned_start).total_seconds() / 86400)
+        is_adh = diff_hours < 1
+        is_cmp = diff_days <= 7
+        if is_adh: adherent += 1
+        if is_cmp: compliant += 1
+
+        # Por semana (ISO week)
+        wk = wo.closed_at.strftime('%Y-W%W')
+        if wk not in by_week: by_week[wk] = {'total': 0, 'adherent': 0, 'compliant': 0}
+        by_week[wk]['total'] += 1
+        if is_adh: by_week[wk]['adherent'] += 1
+        if is_cmp: by_week[wk]['compliant'] += 1
+
+        # Por área (planning_group)
+        area = wo.planning_group or 'SIN_ASIGNAR'
+        if area not in by_area: by_area[area] = {'total': 0, 'adherent': 0, 'compliant': 0}
+        by_area[area]['total'] += 1
+        if is_adh: by_area[area]['adherent'] += 1
+        if is_cmp: by_area[area]['compliant'] += 1
+
+    def pct(n, d): return round(100 * n / d, 1) if d > 0 else 0.0
+
+    return {
+        'plant_id': plant_id or '',
+        'weeks': weeks,
+        'total': total,
+        'adherence_pct': pct(adherent, total),
+        'compliance_pct': pct(compliant, total),
+        'by_week': [
+            {'week': k, 'total': v['total'],
+             'adherence_pct': pct(v['adherent'], v['total']),
+             'compliance_pct': pct(v['compliant'], v['total'])}
+            for k, v in sorted(by_week.items())
+        ],
+        'by_area': [
+            {'area': k, 'total': v['total'],
+             'adherence_pct': pct(v['adherent'], v['total']),
+             'compliance_pct': pct(v['compliant'], v['total'])}
+            for k, v in sorted(by_area.items(), key=lambda x: -x[1]['total'])
+        ],
+    }
+
+
 @router.get("/strategy/pm02-calendar")
 def strategy_pm02_calendar(plant_id: str | None = None, months: int = 12, db: Session = Depends(get_db)):
     """Jorge 2026-04-23: preview calendario anual de PM02 auto-generadas desde estrategia.

@@ -9,6 +9,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { criticalityColor, statusColor } from '../data/mockData';
 import { LoadingSpinner } from '../components/Shared';
 import PM02CalendarPreview from '../components/PM02CalendarPreview';
+import AdherenceCompliancePanel from '../components/AdherenceCompliancePanel';
 import * as api from '../api';
 
 function isMet(kpi) {
@@ -250,15 +251,7 @@ export default function ExecutiveDashboard() {
       {/* Jorge SF-516 + Tanda 4: Adherencia+Cumplimiento (en construcción consolidado)
           y calendario PM02 auto — este último ya clickable. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/40 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">Adherencia + Cumplimiento (KPIs SF-516)</div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">Building</span>
-          </div>
-          <p className="text-xs text-emerald-800">
-            Cálculo ya disponible por OT individual (badge verde/ámbar/rojo en detalle de OT cerrada). La vista consolidada por sitio/área/semana se está construyendo.
-          </p>
-        </div>
+        <AdherenceCompliancePanel plantId={plant} weeks={12} />
         <button onClick={() => setShowPm02Calendar(true)}
           className="rounded-xl border-2 border-blue-300 bg-blue-50/40 p-4 text-left hover:bg-blue-100 transition-colors">
           <div className="flex items-center justify-between mb-2">

@@ -209,6 +209,7 @@ export const addFmecaRow = (id, d) => post(`/fmea/fmeca/worksheets/${id}/rows`, 
 export const getFmecaHistoryHints = (equipment_id, months = 12) => get(`/fmea/fmeca/history-hints?equipment_id=${encodeURIComponent(equipment_id)}&months=${months}`);
 export const getPm02Calendar = (plant_id, months = 12) => get(`/fmea/strategy/pm02-calendar?${plant_id ? `plant_id=${encodeURIComponent(plant_id)}&` : ''}months=${months}`);
 export const createFmecaFromRca = (analysis_id, analyst = '') => post(`/fmea/fmeca/from-rca/${analysis_id}?analyst=${encodeURIComponent(analyst)}`, {});
+export const getAdherenceCompliance = (plant_id, weeks = 12) => get(`/fmea/analytics/adherence-compliance?${plant_id ? `plant_id=${encodeURIComponent(plant_id)}&` : ''}weeks=${weeks}`);
 export const runFmecaDecisions = (id) => put(`/fmea/fmeca/worksheets/${id}/run-decisions`);
 export const generateFmecaTasks = (id) => post(`/fmea/fmeca/worksheets/${id}/generate-tasks`);
 export const pushFmecaToBacklog = (id) => post(`/fmea/fmeca/worksheets/${id}/push-to-backlog`);

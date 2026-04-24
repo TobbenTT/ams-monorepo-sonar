@@ -100,6 +100,13 @@ export default function FMECA() {
   useEffect(() => { reloadList(); }, [reloadList]);
   useEffect(() => { loadDetail(selectedId); }, [selectedId, loadDetail]);
 
+  // Jorge 2026-04-23: deep-link desde RCA → ?open=WS_ID abre directo ese worksheet
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const wid = params.get('open');
+    if (wid) setSelectedId(wid);
+  }, []);
+
   // Jorge 2026-04-23: fetch hints del historial cuando escriben equipment_id
   useEffect(() => {
     const eqId = createForm.equipment_id?.trim();
@@ -287,10 +294,9 @@ export default function FMECA() {
         <p className="text-sm text-gray-500 mt-1">Flujo RCM de 4 etapas · RPN = S × O × D · Engine determinístico (sin LLM)</p>
         <div className="mt-3">
           <DevBanner variant="subtle">
-            FMECA operativo — 4 etapas · RPN = S × O × D · 6 plantillas RCM precargadas ·
-            integración con historial de fallas (sugiere modos de fallo desde OTs PM03/P1/P2
-            cerradas de los últimos 12 meses) · push-to-backlog con prioridad por estrategia.
-            Pendiente: export SAP-IW22.
+            FMECA operativo — 4 etapas · RPN = S × O × D · 6 plantillas RCM · integración
+            historial de fallas · push-to-backlog por estrategia · export SAP-IW22 (TAB-delimited,
+            LSMW-compatible) · import desde RCA (botón en RCA detail).
           </DevBanner>
         </div>
       </div>
@@ -429,6 +435,12 @@ export default function FMECA() {
                     className="inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700 disabled:opacity-50"
                     title="Crea BacklogItems visibles en Planning con prioridad según RPN">
                     <ChevronRight size={12} /> Push a Backlog
+                  </button>
+                  {/* Jorge 2026-04-23: export SAP-IW22 (TAB-delimited, compatible LSMW) */}
+                  <button onClick={() => { window.open(`/api/v1/fmea/fmeca/worksheets/${selectedId}/export-iw22`, '_blank'); }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700"
+                    title="Descarga CSV TAB-delimited con campos SAP (EQUNR, TPLNR, QMTXT, PRIOK, etc.) listo para LSMW">
+                    <Save size={12} /> Export IW22
                   </button>
                 </div>
               </div>

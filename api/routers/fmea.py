@@ -208,6 +208,46 @@ def push_fmeca_to_backlog(worksheet_id: str, db: Session = Depends(get_db)):
     return result
 
 
+@router.get("/fmeca/worksheets/{worksheet_id}/export-iw22")
+def export_iw22(worksheet_id: str, db: Session = Depends(get_db)):
+    """Jorge 2026-04-23: export SAP-IW22 (modificación de aviso en masa).
+    Genera CSV con el formato IW22-compatible (delimiter TAB, encabezado SAP):
+    QMNUM, AUFNR, EQUNR, TPLNR, QMTXT, PRIOK, ILOAN, AUSZT (los campos que
+    se pueden poblar desde un worksheet FMECA con estrategias aprobadas).
+    Como no tenemos specs oficiales, usamos el formato CSV con headers que
+    Jorge puede mapear en SAP Legacy System Migration Workbench (LSMW).
+    """
+    from api.database.models import FMECAWorksheetModel
+    import io, csv
+    ws = db.query(FMECAWorksheetModel).filter(FMECAWorksheetModel.worksheet_id == worksheet_id).first()
+    if not ws:
+        raise HTTPException(status_code=404, detail="Worksheet not found")
+    buf = io.StringIO()
+    # Formato SAP IW22: TAB-delimited, cabecera con códigos de campo SAP
+    # reales. Usuario puede adaptarlo en LSMW si el mapeo difiere.
+    writer = csv.writer(buf, delimiter='\t')
+    writer.writerow(['EQUNR', 'TPLNR', 'QMTXT', 'PRIOK', 'FECODE', 'OTGRP', 'AUSZT_HH', 'FUNCTION', 'FAILURE_MODE', 'RECOMMENDED_ACTION'])
+    for row in (ws.rows or []):
+        writer.writerow([
+            ws.equipment_id or '',
+            ws.equipment_tag or '',
+            (row.get('failure_mode') or '')[:40],
+            '1' if row.get('severity', 0) >= 8 else '2' if row.get('severity', 0) >= 6 else '3',
+            row.get('failure_consequence', '')[:10],
+            'PM02',  # estrategia preventiva
+            str(round(row.get('severity', 0) * row.get('occurrence', 0) * 0.1, 1)),
+            (row.get('function_description') or '')[:200],
+            (row.get('failure_mode') or '')[:200],
+            (row.get('recommended_action') or '')[:300],
+        ])
+    from fastapi.responses import StreamingResponse
+    buf.seek(0)
+    filename = f"fmeca-iw22-{worksheet_id[:8]}.csv"
+    return StreamingResponse(iter([buf.getvalue()]),
+        media_type='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'})
+
+
 @router.post("/fmeca/from-rca/{analysis_id}")
 def create_fmeca_from_rca(analysis_id: str, analyst: str = "", db: Session = Depends(get_db)):
     """Jorge 2026-04-23: Crear worksheet FMECA pre-poblado desde un RCA.

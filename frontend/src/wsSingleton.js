@@ -132,6 +132,21 @@ function openConnection(plantId) {
             if (evt.data === 'pong') return;
             let msg;
             try { msg = JSON.parse(evt.data); } catch { return; }
+            // Jorge 2026-04-24: single-session — sesión kickeada por nueva apertura.
+            if (msg?.event === 'presence.session_kicked') {
+                const reason = encodeURIComponent('Se abrió una sesión nueva con tu cuenta desde otro dispositivo. Esta sesión se cerró.');
+                try {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('currentUser');
+                    sessionStorage.removeItem('ws_client_id');
+                } catch {}
+                state.closed = true;
+                try { state.ws?.close(); } catch {}
+                window.location.replace(`/login?notice=${reason}`);
+                return;
+            }
             // force_logout / server_restart → cerrar sesión y redirect inmediato.
             if (msg?.event === 'server_restart' || msg?.event === 'force_logout') {
                 const reason = encodeURIComponent(msg?.data?.message || 'Sesión cerrada por el servidor. Volvé a iniciar sesión.');

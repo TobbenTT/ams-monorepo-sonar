@@ -27,6 +27,31 @@ class ConnectionManager:
         user_id: Optional[str] = None,
     ):
         await websocket.accept()
+        # Jorge 2026-04-24: single-session enforcement. Una cuenta = una sesión
+        # activa. Cuando un usuario abre una sesión nueva, la anterior recibe
+        # un kick y se cierra. Reduce carga de WS + evita estados inconsistentes
+        # por tabs paralelas usando la misma cuenta.
+        if user_id:
+            prev = [ws for ws, m in list(self.meta.items())
+                    if m.get("user_id") == user_id and ws is not websocket]
+            for old_ws in prev:
+                try:
+                    await old_ws.send_text(json.dumps({
+                        "event": "presence.session_kicked",
+                        "data": {"reason": "nueva sesión abierta", "user_id": user_id},
+                        "plant_id": plant_id,
+                        "origin_client_id": None,
+                    }))
+                except Exception: pass
+                try: await old_ws.close(code=4000, reason="Nueva sesión activa")
+                except Exception: pass
+                old_meta = self.meta.pop(old_ws, None)
+                if old_meta:
+                    old_pid = old_meta.get("plant_id", plant_id)
+                    if old_pid in self.active:
+                        self.active[old_pid].discard(old_ws)
+                        if not self.active[old_pid]:
+                            del self.active[old_pid]
         if plant_id not in self.active:
             self.active[plant_id] = set()
         self.active[plant_id].add(websocket)

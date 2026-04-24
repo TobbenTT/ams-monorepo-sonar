@@ -1448,13 +1448,18 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       const statusMap = { PENDING_VALIDATION: 'PENDIENTE', VALIDATED: 'APROBADO', REJECTED: 'RECHAZADO', CANCELLED: 'CANCELADO', CLOSED: 'CERRADO', DRAFT: 'PENDIENTE', ASSIGNED: 'APROBADO', IN_PROGRESS: 'APROBADO', COMPLETED: 'CERRADO' };
       const normalizedStatus = statusMap[r.status] || r.status;
       const matchesFilter = statusFilter.length === 0 || statusFilter.includes(normalizedStatus) || statusFilter.includes(r.status);
-      const q = search.toLowerCase();
+      // Jorge 2026-04-24: búsqueda tolera prefijo "WR-" (se muestra sin él pero
+      // el ID crudo lo tiene). Normalizamos ambos lados para que "WR-2026-00146",
+      // "wr-2026-00146" y "2026-00146" encuentren lo mismo.
+      const q = search.toLowerCase().replace(/^wr-?/i, '');
+      const idNorm = (r.id || r.request_id || '').toLowerCase().replace(/^wr-?/i, '');
       const matchesSearch =
         !search ||
-        (r.id || r.request_id || '').toLowerCase().includes(q) ||
-        (r.equipment_tag || '').toLowerCase().includes(q) ||
-        (r.equipment_name || '').toLowerCase().includes(q) ||
-        (r.failure_description || '').toLowerCase().includes(q);
+        idNorm.includes(q) ||
+        (r.id || r.request_id || '').toLowerCase().includes(search.toLowerCase()) ||
+        (r.equipment_tag || '').toLowerCase().includes(search.toLowerCase()) ||
+        (r.equipment_name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (r.failure_description || '').toLowerCase().includes(search.toLowerCase());
       // Location filter
       const matchesLocation = !locationFilter ||
         (r.technical_location || '').toLowerCase().includes(locationFilter.toLowerCase()) ||

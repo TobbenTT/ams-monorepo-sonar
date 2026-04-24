@@ -1376,6 +1376,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
     if (!id || requests.length === 0) return;
     const found = requests.find(r => r.id === id || r.request_id === id);
     if (found) {
+      // Jorge 2026-04-24 item 27: refrescar la lista antes de abrir el detalle,
+      // para que el status y campos vengan actualizados (no la versión cacheada).
+      refreshList();
       fetchAndOpenDetail(found);
       navigate(location.pathname, { replace: true, state: {} });
     }

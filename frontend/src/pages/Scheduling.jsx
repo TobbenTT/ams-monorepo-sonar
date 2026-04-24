@@ -2272,8 +2272,24 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
                       </select>
                     </td>
                     <td className="px-3 py-2 text-center">
-                      <input type="date" value={e.planned_start ?? (wo.planned_start || '').slice(0, 10)} onChange={ev => updateEdit(wo.wo_id, 'planned_start', ev.target.value)}
-                        className={`border rounded-md px-1.5 py-1 bg-background text-foreground text-[10px] w-[105px] ${e.planned_start ? 'ring-2 ring-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700'}`} />
+                      {(() => {
+                        // Jorge 2026-04-24 item 40: alerta si la fecha planificada queda
+                        // muy lejos de la original (>14 días = fuera de semana razonable).
+                        const currentDate = e.planned_start ?? (wo.planned_start || '').slice(0, 10);
+                        const originalDate = (wo.planned_start || '').slice(0, 10);
+                        let outOfWindow = false;
+                        if (e.planned_start && originalDate) {
+                          const diffDays = Math.abs((new Date(e.planned_start) - new Date(originalDate)) / 86400000);
+                          outOfWindow = diffDays > 14;
+                        }
+                        return (
+                          <div className="flex items-center gap-1">
+                            <input type="date" value={currentDate} onChange={ev => updateEdit(wo.wo_id, 'planned_start', ev.target.value)}
+                              className={`border rounded-md px-1.5 py-1 bg-background text-foreground text-[10px] w-[105px] ${e.planned_start ? (outOfWindow ? 'ring-2 ring-red-500 bg-red-50 dark:bg-red-900/20' : 'ring-2 ring-amber-400 bg-amber-50 dark:bg-amber-900/20') : 'border-gray-200 dark:border-gray-700'}`} />
+                            {outOfWindow && <span className="text-red-600 text-[10px]" title="Fecha lejos del planned_start original (>14 días)">⚠</span>}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-3 py-2 text-center">
                       <input type="date" value={e.planned_end ?? (wo.planned_end || '').slice(0, 10)} onChange={ev => updateEdit(wo.wo_id, 'planned_end', ev.target.value)}

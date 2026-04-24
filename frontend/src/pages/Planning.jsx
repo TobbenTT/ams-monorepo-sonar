@@ -1991,8 +1991,21 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         {editOps.map((op, idx) => {
                           const isExpanded = !!expandedOps[idx];
                           return (
-                          <div key={idx} className={"rounded-lg border "+(op.type === 'EXT' ? "border-purple-200 bg-purple-50/30" : "border-gray-200")}>
+                          <div key={idx} draggable
+                            onDragStart={e => { e.dataTransfer.setData('text/plain', String(idx)); e.dataTransfer.effectAllowed = 'move'; }}
+                            onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                            onDrop={e => {
+                              e.preventDefault();
+                              const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                              if (isNaN(from) || from === idx) return;
+                              const arr = [...editOps];
+                              const [moved] = arr.splice(from, 1);
+                              arr.splice(idx, 0, moved);
+                              setEditOps(arr);
+                            }}
+                            className={"rounded-lg border "+(op.type === 'EXT' ? "border-purple-200 bg-purple-50/30" : "border-gray-200")+" hover:ring-1 hover:ring-blue-300"}>
                             <div className="flex items-center gap-2 p-3 cursor-pointer" onClick={() => setExpandedOps(prev => ({...prev, [idx]: !prev[idx]}))}>
+                              <span className="text-gray-300 cursor-move select-none" title="Arrastrar para reordenar">⋮⋮</span>
                               <span className="text-xs font-bold text-gray-400 w-5">#{idx+1}</span>
                               <span className={"text-xs font-bold px-1.5 py-0.5 rounded "+(op.type === 'EXT' ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600")}>{op.type || 'INT'}</span>
                               {op.parallel && (
@@ -2002,7 +2015,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 </span>
                               )}
                               <span className="flex-1 text-sm font-medium text-gray-800 truncate">{op.description ? op.description.replace(/^\d+[\.\)]\s*/, '').substring(0, 60) + (op.description.length > 60 ? '...' : '') : <span className="text-gray-400 italic">No description</span>}</span>
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">{op.specialty || 'Mechanical'}</span>
+                              {/* Jorge 2026-04-24 item 28: especialidad editable inline (antes readonly) */}
+                              <select value={op.specialty || ''}
+                                onClick={e => e.stopPropagation()}
+                                onChange={e => { e.stopPropagation(); const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium border border-blue-200 hover:bg-blue-100">
+                                {(wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : WORK_CENTERS).map(w => (
+                                  <option key={w.value} value={w.value}>{w.value}</option>
+                                ))}
+                              </select>
                               <span className="text-[10px] text-gray-500">{op.quantity || 1}p</span>
                               <span className="text-[10px] text-gray-500">{op.hours || 0}h</span>
                               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">{((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH</span>

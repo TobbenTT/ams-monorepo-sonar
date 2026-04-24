@@ -2307,6 +2307,28 @@ export default function WorkOrdersPage() {
                     );
                   })()}
 
+                  {/* Jorge 2026-04-24 item 35: info de reservas en el resumen */}
+                  {(selectedOT.reservation_code || (Array.isArray(selectedOT.reservation_codes) && selectedOT.reservation_codes.length > 0)) && (
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                      <div className="text-[10px] font-bold uppercase text-indigo-700 mb-1">Reservas de Materiales</div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {selectedOT.reservation_code && (
+                          <span className="text-xs font-mono font-bold bg-indigo-600 text-white px-2 py-0.5 rounded">
+                            {selectedOT.reservation_code} <span className="text-indigo-200">(activa)</span>
+                          </span>
+                        )}
+                        {Array.isArray(selectedOT.reservation_codes) && selectedOT.reservation_codes
+                          .filter(c => c !== selectedOT.reservation_code)
+                          .map(c => (
+                            <span key={c} className="text-xs font-mono bg-white text-indigo-700 border border-indigo-300 px-2 py-0.5 rounded">{c}</span>
+                          ))}
+                        <span className="text-[10px] text-indigo-600 ml-auto">
+                          {(selectedOT.materials || []).length} material{(selectedOT.materials || []).length !== 1 ? 'es' : ''} · ver pestaña Materials
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Description */}
                   <div>
                     <label className="text-gray-500 text-xs block mb-1">Descripción</label>

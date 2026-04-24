@@ -2225,6 +2225,8 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
                 <th className="px-3 py-3 text-left font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Equipment</th>
                 <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Type</th>
                 <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Priority</th>
+                {/* Jorge 2026-04-24 item 38: columna Production Impact en Scheduling */}
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Impact</th>
                 <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Status</th>
                 <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Start</th>
                 <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">End</th>
@@ -2254,6 +2256,14 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
                         className={`text-[10px] font-bold px-2 py-1 rounded-md border cursor-pointer ${e.priority_code ? 'ring-2 ring-amber-400' : ''} ${prioStyle}`}>
                         {['P1','P2','P3','P4'].map(p => <option key={p} value={p}>{p}</option>)}
                       </select>
+                    </td>
+                    {/* Jorge 2026-04-24 item 38: celda Production Impact */}
+                    <td className="px-3 py-2 text-center">
+                      {(() => {
+                        const imp = wo.production_impact || ({ P1: 'CRITICAL', P2: 'HIGH', P3: 'MEDIUM', P4: 'HIGH' }[prio] || 'MEDIUM');
+                        const col = { CRITICAL: 'bg-red-100 text-red-700 border-red-300', HIGH: 'bg-orange-100 text-orange-700 border-orange-300', MEDIUM: 'bg-yellow-100 text-yellow-700 border-yellow-300', LOW: 'bg-green-100 text-green-700 border-green-300' }[imp];
+                        return <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${col}`}>{imp.slice(0,4)}</span>;
+                      })()}
                     </td>
                     <td className="px-3 py-2 text-center">
                       <select value={stat} onChange={ev => updateEdit(wo.wo_id, 'status', ev.target.value)}

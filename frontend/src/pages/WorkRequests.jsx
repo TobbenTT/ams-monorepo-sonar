@@ -1548,11 +1548,13 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       const pCurrent = (r.priority_requested || r.priority_suggested || "");
       const matchesPriority = !priorityFilter || priorityFilter.length === 0
         || (Array.isArray(priorityFilter) ? priorityFilter.includes(pCurrent) : pCurrent === priorityFilter);
-      // Time range filter — only apply for explicit short ranges, not the default "Last 30 Days"
+      // Jorge SF-548: bug — los botones "7d/30d/90d" no refrescaban porque
+      // el filtro saltaba "Last 30 Days" pensando que era default. Ahora SIEMPRE
+      // aplica el rango si hay selectedTimeRange definido.
       let matchesTimeRange = true;
-      if (selectedTimeRange && selectedTimeRange !== 'Last 30 Days' && rDate) {
+      if (selectedTimeRange && rDate) {
         const now = new Date();
-        const daysMap = { 'Last 7 Days': 7, 'Last 90 Days': 90, 'Last 365 Days': 365 };
+        const daysMap = { 'Last 7 Days': 7, 'Last 30 Days': 30, 'Last 90 Days': 90, 'Last 365 Days': 365 };
         const days = daysMap[selectedTimeRange];
         if (days) {
           const cutoff = new Date(now.getTime() - days * 86400000).toISOString().slice(0, 10);
@@ -1980,15 +1982,10 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             })}
           </div>
 
-          {/* Jorge 2026-04-23: SAP fecha-blanco — inicio blanco=histórico total, fin blanco=futuro total */}
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            placeholder="Desde (en blanco = todo el histórico)"
-            title="En blanco = desde el principio (todo el histórico)"
-            className="border border-gray-200 rounded-lg px-2 py-2 text-xs bg-white" />
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            placeholder="Hasta (en blanco = todo el futuro)"
-            title="En blanco = hasta el futuro (incluye OTs programadas)"
-            className="border border-gray-200 rounded-lg px-2 py-2 text-xs bg-white" />
+          {/* Jorge SF-547 (2026-04-24): selectores Desde/Hasta removidos del listado
+              de avisos — duplicaban el filtro "Last 30 Days/7 Days/etc" del header
+              global. Queda sólo el del header. SAP fecha-blanco se accede via
+              el dropdown del header. */}
           {(search || statusFilter.length > 0 || (Array.isArray(priorityFilter) ? priorityFilter.length > 0 : priorityFilter) || dateFrom || dateTo) && (
             <button onClick={() => { setSearch(''); setStatusFilter([]); setPriorityFilter([]); setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
               className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>

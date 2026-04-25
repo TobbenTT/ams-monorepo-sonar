@@ -11,3 +11,45 @@ tests/
 .claude/
 .vscode/
 .idea/
+
+# Security parcheo 2026-04-25: excluir paths que metían FALSOS POSITIVOS
+# de trivy en la imagen backend (Windows venv, frontend node_modules, etc).
+# El backend NO necesita NADA del frontend ni del venv local.
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Frontend completo — el backend no lo necesita
+frontend/
+
+# Carpetas dev / docs / extras
+docs/
+Ayudas/
+Ideas/
+Ciberseguridad/
+Logos Nuevos/
+field_app/
+client/
+agents/
+sap_mock/
+seed_data/
+templates/
+tools/
+skills/
+scripts/
+certs/
+
+# Transcripts/jsonl (Claude Code logs gigantes)
+*.jsonl
+
+# Dockerfiles del frontend (no afectan el backend)
+frontend/Dockerfile
+docker-compose.yml
+
+# Datos efímeros / outputs
+data/
+ocp_maintenance.db*

@@ -1,11 +1,18 @@
-FROM node:20-alpine AS build
+# Security parcheo 2026-04-25: bump node 20→22 + nginx alpine latest patch
+# Cubre las 2 críticas + 11 altas reportadas en asset-management-ocp-frontend
+# (vulns OS-level del nginx:alpine viejo + paquetes node/openssl).
+FROM node:22-alpine AS build
 WORKDIR /app
+# apk upgrade para parchear paquetes Alpine en build stage también
+RUN apk upgrade --no-cache
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx:alpine
+# nginx:1.29-alpine — el que el escáner recomienda (crit+alta resueltas)
+FROM nginx:1.29-alpine
+RUN apk upgrade --no-cache
 COPY --from=build /app/dist /usr/share/nginx/html
 # SPA fallback + cache control: never cache index.html, cache hashed assets forever
 RUN printf 'server {\n\

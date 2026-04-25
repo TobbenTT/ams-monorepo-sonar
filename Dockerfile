@@ -1,8 +1,9 @@
 # ── Stage 1: Build dependencies ──────────────────────────────────────
-# Security parcheo 2026-04-24: python:3.11-slim (auto-latest patch) en lugar
-# de pin a 3.11.11 — toma updates de OS packages (libssl, libsqlite3, glibc,
-# gpgv, libxml2, perl, libtiff, libcap, etc) sin bumpear minor de Python.
-FROM python:3.11-slim AS builder
+# Security parcheo 2026-04-25 (2da pasada): python:3.13-slim (Debian 13 trixie)
+# en lugar de 3.11 (Debian 12 bookworm). Cubre las 22 vulns con fix que
+# quedaron del primer parcheo — Debian 12 ya no recibe parches para
+# zlib1g/libxml2/perl-base. Trixie sí los tiene patcheados upstream.
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
@@ -27,7 +28,7 @@ RUN pip install --no-cache-dir --prefix=/install --upgrade \
     'certifi>=2024.7.4'
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 

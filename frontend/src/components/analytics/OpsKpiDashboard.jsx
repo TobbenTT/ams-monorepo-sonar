@@ -51,7 +51,7 @@ export default function OpsKpiDashboard({ plantId }) {
             safe(api.getOpsPmCompliance(plantId)),
             safe(api.getOpsBacklogAging(plantId)),
             safe(api.getOpsCostPerEquipment(plantId, 10)),
-            safe(api.getAdherenceCompliance(plantId, 30)),
+            safe(api.getAdherenceComplianceDash(plantId, 30)),
         ]).then(([s, ts, pc, ag, c, ad]) => {
             if (cancelled) return;
             setSummary(s);

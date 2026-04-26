@@ -129,6 +129,7 @@ function openConnection(plantId) {
         ws.onmessage = (evt) => {
             state.lastPongAt = Date.now();
             if (state.pongTimer) { clearTimeout(state.pongTimer); state.pongTimer = null; }
+            try { window.dispatchEvent(new CustomEvent('ws:activity', { detail: { plantId, at: state.lastPongAt } })); } catch {}
             if (evt.data === 'pong') return;
             let msg;
             try { msg = JSON.parse(evt.data); } catch { return; }

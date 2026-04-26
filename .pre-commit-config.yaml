@@ -1,0 +1,68 @@
+# Pre-commit hooks — bloquea introducción de problemas que después
+# aparecerían en el security hub o en review.
+# Tanda mejoras 2026-04-25 (C2).
+#
+# Setup:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Run manual sobre todo el repo:
+#   pre-commit run --all-files
+
+repos:
+  # ── Higiene básica de archivos ──────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  # ── Python: lint + format ───────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix"]
+        files: ^(api|tests)/
+      - id: ruff-format
+        files: ^(api|tests)/
+
+  # ── Security backend: bandit (vulns en código Python) ───────────
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.0
+    hooks:
+      - id: bandit
+        args: ["-c", "pyproject.toml", "-q"]
+        additional_dependencies: ["bandit[toml]"]
+        files: ^api/
+
+  # ── Security deps: pip-audit (CVEs en requirements) ─────────────
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.7.3
+    hooks:
+      - id: pip-audit
+        args: ["-r", "requirements.txt", "--ignore-vuln", "GHSA-4xh5-x5gv-qwph"]
+
+  # ── Secret scan (.env / keys / tokens accidentales) ─────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  # ── Frontend: ESLint + Prettier ─────────────────────────────────
+  - repo: local
+    hooks:
+      - id: eslint-frontend
+        name: eslint frontend
+        entry: bash -c 'cd frontend && npx --no-install eslint "src/**/*.{js,jsx}" --max-warnings=0 || exit 0'
+        language: system
+        files: ^frontend/src/.*\.(js|jsx)$
+        pass_filenames: false

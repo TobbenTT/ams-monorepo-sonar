@@ -9,6 +9,7 @@ import UpdateBanner from './components/UpdateBanner';
 // Jorge 2026-04-23: feedback widget removido — no se usa y enturbia la UI.
 // import FeedbackWidget from './components/FeedbackWidget';
 import OfflineSyncToasts from './components/OfflineSyncToasts';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { lazy, Suspense } from 'react';
 const GuidedTour = lazy(() => import('./components/GuidedTour'));
 import ProjectSelector from './pages/ProjectSelector';
@@ -144,6 +145,7 @@ export default function App() {
             </div>
             {/* <FeedbackWidget /> removido 2026-04-23 */}
             <OfflineSyncToasts />
+            <PWAInstallPrompt />
             <Suspense fallback={null}><GuidedTour /></Suspense>
         </div>
     );

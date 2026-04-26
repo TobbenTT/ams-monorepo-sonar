@@ -38,7 +38,7 @@ agents/
 sap_mock/
 seed_data/
 templates/
-tools/
+# tools/ — NO excluir: api.services.hierarchy_builder_service lo importa.
 skills/
 scripts/
 certs/

@@ -3464,24 +3464,47 @@ export default function Scheduling() {
           return tSpec && (tSpec.includes(reqSpec.slice(0, 3)) || reqSpec.includes(tSpec.slice(0, 3)));
         };
 
-        // Find best day with capacity for ALL needed techs (try spec match first, fallback any).
+        // Jorge 2026-04-27: Find best day with capacity para todos los techs requeridos.
+        // 4 tiers en orden de exigencia:
+        //   1. spec: full multi-tech con spec-match
+        //   2. all:  full multi-tech con cualquier spec
+        //   3. spec_single: 1 solo tech con spec-match (degradación si no entran todos)
+        //   4. force: 1 solo tech, ignora dailyCap (sólo respeta weekly) — guarantee schedule
+        // El tier 4 evita el "Ninguna OT pudo programarse" cuando hay sobrecarga
+        // localizada: prefiere asignar overload visible a no programar nada.
         const dayOrder = [bestDay, ...workDays.filter(d => d !== bestDay)];
         let chosenTechs = [];
         let chosenDay = -1;
-        outerSearch: for (const tier of ['spec', 'all']) {
+        const hasRoomLoose = (t, day) => {
+          // Sólo respeta cap semanal — útil cuando el día está saturado pero
+          // la semana del tech tiene espacio.
+          const k = techKey(t);
+          const weekLoadT = (techDayLoad[k] || []).reduce((s, v) => s + v, 0);
+          return weekLoadT + hours <= perTechWeeklyCap;
+        };
+        outerSearch: for (const tier of ['spec', 'all', 'spec_single', 'force']) {
+          // Para tiers single y force degradamos a 1 tech (totalNeeded=1).
+          const isSingle = tier === 'spec_single' || tier === 'force';
+          const effectiveReqs = isSingle ? [{ spec: woSpec, qty: 1 }] : reqs;
+          const effectiveNeeded = isSingle ? 1 : totalNeeded;
+          const checkRoom = tier === 'force' ? hasRoomLoose : hasRoom;
+          const requireSpecMatch = tier === 'spec' || tier === 'spec_single';
+
           for (const day of dayOrder) {
-            if (dayLoad[day] + hours * totalNeeded > maxHHPerDay * (lightDays[day] || 1)) continue;
+            // Cap diaria global solo para tiers no-force.
+            if (tier !== 'force' &&
+                dayLoad[day] + hours * effectiveNeeded > maxHHPerDay * (lightDays[day] || 1)) continue;
             if (!isDayBookableForSupport(wo, day)) continue;
             const used = new Set();
             const picked = [];
             let satisfied = true;
-            for (const req of reqs) {
+            for (const req of effectiveReqs) {
               for (let i = 0; i < req.qty; i++) {
                 const pool = techs.filter(t => {
                   const k = techKey(t);
                   if (used.has(k)) return false;
-                  if (!hasRoom(t, day)) return false;
-                  return tier === 'all' ? true : specMatchFor(t, req.spec);
+                  if (!checkRoom(t, day)) return false;
+                  return requireSpecMatch ? specMatchFor(t, req.spec) : true;
                 });
                 if (pool.length === 0) { satisfied = false; break; }
                 const pick = pool.reduce((a, b) => {
@@ -3495,7 +3518,7 @@ export default function Scheduling() {
               }
               if (!satisfied) break;
             }
-            if (satisfied && picked.length === totalNeeded) {
+            if (satisfied && picked.length === effectiveNeeded) {
               chosenTechs = picked;
               chosenDay = day;
               break outerSearch;

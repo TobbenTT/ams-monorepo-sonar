@@ -549,6 +549,8 @@ class ManagedWorkOrderModel(Base):
     closed_by_signature: Mapped[str | None] = mapped_column(String(120), nullable=True)
     closed_by_pin_hash: Mapped[str | None] = mapped_column(String(16), nullable=True)
     closure_notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # SF-500 — audio comments al cerrar y firmar OT (data URL o ruta).
+    closure_audio_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Jorge 2026-04-21 — RCM feedback post-cierre (lecciones aprendidas).
     post_closure_review: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     assigned_workers: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{worker_id, name, specialty}]

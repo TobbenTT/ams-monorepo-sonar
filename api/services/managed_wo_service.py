@@ -218,6 +218,17 @@ def create_work_order(
 ) -> dict:
     """Create a new managed work order (optionally from an approved WR).
     P1/P2 priorities trigger fast track: OT created directly in RELEASED status."""
+    # SF-533 (Jorge 2026-04-25): bloquear creación PM02 hasta cargar maestros
+    # de estrategia. Override via env var DISABLE_PM02_CREATION=false.
+    import os as _os_pm02
+    if wo_type == "PM02" and _os_pm02.environ.get("DISABLE_PM02_CREATION", "true").lower() == "true":
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=409,
+            detail="Creación de OT PM02 deshabilitada hasta cargar maestros de estrategia (SF-533). "
+                   "Para habilitar: setear DISABLE_PM02_CREATION=false.",
+        )
+
     wo_number = _generate_wo_number(db)
     work_class = "NO_PROGRAMADO" if priority_code in ("P1", "P2") else "PROGRAMADO"
     is_fast_track = priority_code in ("P1", "P2")
@@ -707,6 +718,9 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
         wo.closed_by_pin_hash = kwargs["closed_by_pin_hash"]
     if "closure_notes" in kwargs:
         wo.closure_notes = kwargs["closure_notes"]
+    # SF-500 — audio del cierre.
+    if "closure_audio_url" in kwargs:
+        wo.closure_audio_url = kwargs["closure_audio_url"]
     if "operations" in kwargs:
         wo.operations = kwargs["operations"]
 
@@ -808,6 +822,7 @@ def close_wo(
     notes: str | None = None,
     actual_hours: float | None = None,
     operations: list | None = None,
+    closure_audio_url: str | None = None,
 ) -> dict | None:
     """Close a WO with supervisor signature. Signature is mandatory.
 
@@ -823,6 +838,7 @@ def close_wo(
         "closed_by_signature": signature.strip()[:120],
         "closed_by_pin_hash": pin_hash,
         "closure_notes": (notes or "").strip()[:500] or None,
+        "closure_audio_url": (closure_audio_url or "").strip()[:500] or None,
     }
     if operations is not None:
         kwargs["operations"] = operations

@@ -83,6 +83,7 @@ class WOCloseRequest(BaseModel):
     notes: str | None = None
     actual_hours: float | None = None
     operations: list | None = None
+    closure_audio_url: str | None = None  # SF-500
 
 
 class WONoteRequest(BaseModel):
@@ -330,6 +331,7 @@ def close_work_order(
         notes=data.notes,
         actual_hours=data.actual_hours,
         operations=data.operations,
+        closure_audio_url=data.closure_audio_url,
     )
     if not result:
         raise HTTPException(status_code=400, detail="Cannot close — WO not found, invalid status, or missing signature")

@@ -878,6 +878,17 @@ ${materials.length ? `<div class="section">
                     steps.unshift(loto);
                     steps.forEach((st, i) => { st.num = i + 1; });
                   }
+                  // SF-539: LOTO condicional. Si el equipo está operando (running),
+                  // omitir el paso LOTO porque el supuesto es inspección/medición
+                  // sin desenergizar. Si está detenido, mantenerlo.
+                  const equipCond = (item.ai_classification?.equipment_condition || item.equipment_condition || '').toLowerCase();
+                  if (equipCond === 'operating' || equipCond === 'running') {
+                    const filtered = steps.filter(st => !/\bLOTO\b|bloqueo.*energ|lockout.*tagout/i.test(st.text));
+                    if (filtered.length !== steps.length) {
+                      steps.length = 0;
+                      filtered.forEach((s, i) => { s.num = i + 1; steps.push(s); });
+                    }
+                  }
                   return steps.map((s, i) => (
                     <div key={i} className="flex gap-2 text-sm">
                       <span className={`font-bold min-w-[20px] ${/\bLOTO\b|bloqueo/i.test(s.text) ? 'text-red-600' : 'text-emerald-600'}`}>{s.num}.</span>

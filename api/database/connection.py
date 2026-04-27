@@ -101,6 +101,8 @@ def _run_column_migrations():
         ("managed_work_orders", "post_closure_review", "TEXT", None),
         # Jorge SF-507 — título arrastrado desde el WR
         ("managed_work_orders", "wo_title", "VARCHAR(200)", None),
+        # SF-500 — audio comments al cerrar y firmar OT
+        ("managed_work_orders", "closure_audio_url", "VARCHAR(500)", None),
         # QA Jorge 2026-04-22 — contratistas mineros completos
         ("contractors", "contact_email", "VARCHAR(120)", None),
         ("contractors", "address", "VARCHAR(300)", None),

@@ -432,12 +432,38 @@ def create_app() -> FastAPI:
                     }))
         except Exception:
             pass
+        # Jorge 2026-04-27: keepalive activo del servidor (no esperar al
+        # cliente). Algunos proxies/CDN cortan conexiones idle a 60-90s y
+        # el cliente no detecta el corte hasta intentar enviar.
+        # Esquema: tarea concurrente que envía heartbeat cada 30s; el loop
+        # principal sigue escuchando ping del cliente.
+        import asyncio as _asyncio
+        async def _server_heartbeat():
+            try:
+                while True:
+                    await _asyncio.sleep(30)
+                    try:
+                        await websocket.send_text("pong")
+                    except Exception:
+                        return
+            except _asyncio.CancelledError:
+                return
+        hb_task = _asyncio.create_task(_server_heartbeat())
         try:
             while True:
                 data = await websocket.receive_text()
                 if data == "ping":
                     await websocket.send_text("pong")
         except WebSocketDisconnect:
+            pass
+        except Exception as _e:
+            # Cualquier otro error en el loop debe limpiar el slot del manager.
+            import logging as _logging
+            _logging.getLogger(__name__).warning(
+                "WS receive loop aborted (plant=%s): %s", plant_id, _e
+            )
+        finally:
+            hb_task.cancel()
             manager.disconnect(websocket, plant_id)
 
     return app

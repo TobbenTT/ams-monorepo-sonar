@@ -122,8 +122,14 @@ function openConnection(plantId) {
         ws.onopen = () => {
             state.lastPongAt = Date.now();
             notifyStatus(true);
-            // ping cada 25s + espera pong ≤10s
-            state.pingInterval = setInterval(() => sendPing(ws), 25000);
+            // Jorge 2026-04-27: ping cada 15s (antes 25s). Reduce ventana de
+            // detección de conexión muerta a ≤25s vs ~35s anterior. Cuando la
+            // pestaña está oculta el ping se pausa para no quemar batería.
+            const tickPing = () => {
+                if (document.visibilityState === 'hidden') return;
+                sendPing(ws);
+            };
+            state.pingInterval = setInterval(tickPing, 15000);
         };
 
         ws.onmessage = (evt) => {
@@ -268,13 +274,17 @@ try {
     });
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState !== 'visible') return;
-        // Al volver a primer plano, verificar heartbeat: si no hubo pong reciente
-        // (>60s), el WS está muerto aunque el readyState diga OPEN.
+        // Al volver a primer plano: ping inmediato + verificar heartbeat.
+        // Si no hubo pong reciente (>45s, ahora que el server hace heartbeat
+        // cada 30s) el WS está muerto aunque readyState diga OPEN.
         const now = Date.now();
         for (const [, state] of connections) {
             if (state.closed) continue;
-            if (!state.connected || (state.lastPongAt && now - state.lastPongAt > 60000)) {
+            if (!state.connected || (state.lastPongAt && now - state.lastPongAt > 45000)) {
                 state.forceClose?.();
+            } else if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                // Heartbeat sanity check inmediato al volver a foreground.
+                try { state.ws.send('ping'); } catch {}
             }
         }
     });

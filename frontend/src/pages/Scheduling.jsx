@@ -3659,7 +3659,18 @@ export default function Scheduling() {
         console.warn('Auto-Level failures:', failures);
       }
       setAiResult({ assignments: plan.assignments.slice(0, ok), message: msg, failed, failures });
-      setTimeout(() => { loadCalendarData(); loadPrograms(); loadGantt(); }, 300);
+      // Jorge 2026-04-27: el reload anterior corría a 300ms — antes de que
+      // backend committeara las 25 PUTs en cascada, así el calendario quedaba
+      // mostrando 0 asignaciones. Refresh inmediato + dos retries (1500ms y
+      // 3000ms) garantizan ver los assignments después del Auto-Level.
+      const _refreshAll = () => {
+        try { loadCalendarData(); } catch {}
+        try { loadPrograms(); } catch {}
+        try { loadGantt(); } catch {}
+      };
+      _refreshAll();
+      setTimeout(_refreshAll, 1500);
+      setTimeout(_refreshAll, 3000);
     } catch (e) {
       toast.error('Auto-level error: ' + (e.message || ''));
     } finally {

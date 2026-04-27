@@ -122,7 +122,7 @@ export default function ContactPage() {
             <ArrowLeft className="w-4 h-4" /> {T.back}
           </button>
           <div className="flex items-center">
-            <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-9 w-auto" />
+            <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-14 w-auto" />
           </div>
           <button onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-100">

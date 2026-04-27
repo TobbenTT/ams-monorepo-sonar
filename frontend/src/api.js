@@ -260,6 +260,8 @@ export const getWeeklyDigest = (plantId, weekStart) => {
 
 // ── Admin ──
 export const seedDatabase = () => post('/admin/seed-database');
+export const getWsConnections = () => get('/admin/ws/connections');
+export const getWsAuditLog = (limit = 200) => get(`/admin/ws/audit?limit=${limit}`);
 export const getStats = () => get('/admin/stats');
 export const getAuditLog = (p) => get('/admin/audit-log', p);
 export const testEmail = (d) => post('/admin/test-email', d);

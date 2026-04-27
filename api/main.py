@@ -462,6 +462,11 @@ def create_app() -> FastAPI:
             _logging.getLogger(__name__).warning(
                 "WS receive loop aborted (plant=%s): %s", plant_id, _e
             )
+            try:
+                from api.services.ws_manager import _audit
+                _audit("loop_error", plant_id=plant_id, error=str(_e)[:200])
+            except Exception:
+                pass
         finally:
             hb_task.cancel()
             manager.disconnect(websocket, plant_id)

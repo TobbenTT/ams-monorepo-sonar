@@ -2,10 +2,37 @@
 
 import json
 import logging
-from typing import Dict, Set, Optional
+import time
+from collections import deque
+from typing import Dict, Set, Optional, Deque
 from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
+
+
+# Jorge 2026-04-27: ring buffer auditor para diagnosticar problemas WS en
+# producción. Guarda los últimos N eventos (connect/disconnect/broadcast/
+# errors) accesibles por GET /api/v1/admin/ws/audit.
+_AUDIT_MAX = 300
+_audit_log: Deque[dict] = deque(maxlen=_AUDIT_MAX)
+
+
+def _audit(event_type: str, **kwargs) -> None:
+    try:
+        _audit_log.append({
+            "ts": time.time(),
+            "type": event_type,
+            **kwargs,
+        })
+    except Exception:
+        pass
+
+
+def get_audit_log(limit: int = 200) -> list[dict]:
+    """Returns the last N audit entries (newest first)."""
+    items = list(_audit_log)
+    items.reverse()
+    return items[:limit]
 
 
 class ConnectionManager:
@@ -41,10 +68,12 @@ class ConnectionManager:
             "client_id": client_id,
             "user_id": user_id,
         }
+        total = sum(len(v) for v in self.active.values())
         logger.info(
             "WS connected: plant=%s client=%s user=%s total=%d",
-            plant_id, client_id, user_id, sum(len(v) for v in self.active.values()),
+            plant_id, client_id, user_id, total,
         )
+        _audit("connect", plant_id=plant_id, client_id=client_id, user_id=user_id, total=total)
 
     def disconnect(self, websocket: WebSocket, plant_id: str = "global"):
         pid = plant_id
@@ -56,6 +85,9 @@ class ConnectionManager:
             if not self.active[pid]:
                 del self.active[pid]
         logger.info("WS disconnected: plant=%s", pid)
+        client_id = (m or {}).get("client_id") if m else None
+        user_id = (m or {}).get("user_id") if m else None
+        _audit("disconnect", plant_id=pid, client_id=client_id, user_id=user_id)
 
     def presence_for_user(self, user_id: str) -> int:
         """Return how many live sockets a given user has open (across plants)."""
@@ -101,8 +133,18 @@ class ConnectionManager:
         for ws in targets:
             try:
                 await ws.send_text(message)
-            except Exception:
+            except Exception as e:
                 dead.append(ws)
+                _audit("send_error", event=event, error=str(e)[:120])
+
+        _audit(
+            "broadcast",
+            event=event,
+            plant_id=plant_id,
+            targets=len(targets),
+            delivered=len(targets) - len(dead),
+            dead=len(dead),
+        )
 
         for ws in dead:
             m = self.meta.get(ws) or {}

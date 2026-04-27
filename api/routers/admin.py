@@ -310,6 +310,31 @@ def submit_feedback(data: FeedbackCreate, db: Session = Depends(get_db)):
     return {"feedback_id": fb.feedback_id, "status": "received"}
 
 
+# ── WebSocket Audit (Jorge 2026-04-27) ───────────────────────────────
+# Diagnóstico en producción cuando hay sospecha de WS issues / "no se
+# actualiza en tiempo real". Ring buffer in-memory de los últimos 300
+# eventos (connect/disconnect/broadcast/error) — se pierde al restart.
+
+@router.get("/ws/connections", dependencies=[Depends(require_role("admin", "manager"))])
+def ws_connections():
+    from api.services.ws_manager import manager
+    out = []
+    for _ws, meta in manager.meta.items():
+        out.append({
+            "plant_id": meta.get("plant_id"),
+            "client_id": meta.get("client_id"),
+            "user_id": meta.get("user_id"),
+        })
+    by_plant = {p: len(s) for p, s in manager.active.items()}
+    return {"total": len(out), "by_plant": by_plant, "connections": out}
+
+
+@router.get("/ws/audit", dependencies=[Depends(require_role("admin", "manager"))])
+def ws_audit_log(limit: int = 200):
+    from api.services.ws_manager import get_audit_log
+    return {"events": get_audit_log(limit=limit)}
+
+
 @router.get("/feedback", dependencies=[Depends(require_role("admin", "manager"))])
 def list_feedback(page: str | None = None, limit: int = 50, db: Session = Depends(get_db)):
     q = db.query(UserFeedbackModel)

@@ -17,7 +17,7 @@ installOfflineSync();
 // Jorge 2026-04-23: cache-bust one-shot. Si la versión guardada no coincide,
 // limpiamos Cache Storage + Service Worker + localStorage efímero y forzamos
 // hard reload una sola vez por versión. Dispara al cargar la app.
-const CACHE_BUST_VERSION = '2026-04-27-ws-keepalive';
+const CACHE_BUST_VERSION = '2026-04-27-ws-debug';
 (async () => {
   try {
     const prev = localStorage.getItem('ocp_cache_version');
@@ -134,6 +134,7 @@ const ContactPage = lazyRetry(() => import('./pages/ContactPage'));
 const SecurityCompliancePage = lazyRetry(() => import('./pages/SecurityCompliancePage'));
 const UserGuidePage = lazyRetry(() => import('./pages/UserGuidePage'));
 const AuditLogPage = lazyRetry(() => import('./pages/AuditLogPage'));
+const WSDebugPage = lazyRetry(() => import('./pages/WSDebugPage'));
 
 const ALL = ['admin', 'manager', 'planner', 'tecnico', 'engineer'];
 const MGMT = ['admin', 'manager'];
@@ -182,6 +183,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="data-import" element={<P roles={MGMT}><S><DataImport /></S></P>} />
                                     <Route path="user-guide" element={<S><UserGuidePage /></S>} />
                                     <Route path="audit-log" element={<P roles={MGMT}><S><AuditLogPage /></S></P>} />
+                                    <Route path="ws-debug" element={<P roles={MGMT}><S><WSDebugPage /></S></P>} />
                                     <Route path="contractors" element={<P roles={['admin', 'manager', 'planner']}><S><ContractorsPage /></S></P>} />
 
                                     {/* ── Mobile routes ── */}

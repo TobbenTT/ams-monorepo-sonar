@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import * as api from '../api';
-import { Activity, RefreshCw, Wifi, AlertTriangle } from 'lucide-react';
+import { Activity, RefreshCw, Wifi, AlertTriangle, Loader2 } from 'lucide-react';
 
 /**
  * WS Debug — auditor en tiempo real para diagnosticar problemas WebSocket.
@@ -32,8 +32,10 @@ export default function WSDebugPage() {
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
+    setLoading(true);
     try {
       const [c, a] = await Promise.all([api.getWsConnections(), api.getWsAuditLog(200)]);
       setConns(c);
@@ -41,16 +43,18 @@ export default function WSDebugPage() {
       setError(null);
       setLastUpdate(new Date());
     } catch (e) {
-      setError(e.message || 'Error fetching WS audit');
+      setError(e.message || String(e) || 'Error fetching WS audit');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refresh();
     if (paused) return;
     const id = setInterval(refresh, 2000);
     return () => clearInterval(id);
-  }, [paused]);
+  }, [paused, refresh]);
 
   const filtered = events.filter(e => filter === 'all' || e.type === filter);
   const errorCount = events.filter(e => e.type === 'send_error' || e.type === 'loop_error').length;
@@ -74,8 +78,10 @@ export default function WSDebugPage() {
             className={`px-3 py-1.5 text-xs font-bold rounded-lg border ${paused ? 'bg-amber-50 text-amber-700 border-amber-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'}`}>
             {paused ? 'Reanudar' : 'Pausar (2s polling)'}
           </button>
-          <button onClick={refresh} className="px-3 py-1.5 text-xs font-bold rounded-lg border bg-white">
-            <RefreshCw size={12} className="inline mr-1" /> Refresh
+          <button onClick={() => refresh()} disabled={loading}
+            className="px-3 py-1.5 text-xs font-bold rounded-lg border bg-white hover:bg-gray-50 active:bg-gray-100 disabled:opacity-60 disabled:cursor-wait flex items-center gap-1.5">
+            {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            {loading ? 'Cargando…' : 'Refresh'}
           </button>
         </div>
       </div>

@@ -820,7 +820,31 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
           for (const w of list) {
             if (w._continuation) continue;
             const spanDays = Math.max(1, Math.ceil((w.estimated_hours || 0) / Math.max(1, PROGRAMMABLE_HH_PER_DAY)));
-            hh += (w.estimated_hours || 0) / spanDays / Math.max(1, (w.assigned_workers || []).length || 1);
+            const crewSize = Math.max(1, (w.assigned_workers || []).length || 1);
+            // Jorge 2026-04-27 (reunión 18:06): distribuir HH por disciplina según
+            // op.specialty. Antes, una OT 16h con 8h mec + 8h elec contaba 16h
+            // íntegros al grupo del técnico (MECANICO). Ahora sólo se atribuye
+            // a g.key la fracción de operaciones que coinciden con esta especialidad.
+            const ops = Array.isArray(w.operations) ? w.operations : [];
+            let attributable;
+            if (ops.length > 0) {
+              let specHH = 0, totalOpHH = 0;
+              for (const op of ops) {
+                const opSpec = (op.specialty || op.work_center || w.work_center || '').toUpperCase();
+                const opHH = (parseFloat(op.hours) || 0) * (parseInt(op.quantity) || 1);
+                totalOpHH += opHH;
+                const matchSpec = opSpec === g.key
+                  || (opSpec.length >= 3 && g.key.startsWith(opSpec.slice(0, 3)))
+                  || (g.key.length >= 3 && opSpec.startsWith(g.key.slice(0, 3)));
+                if (matchSpec) specHH += opHH;
+              }
+              attributable = totalOpHH > 0
+                ? (specHH / totalOpHH) * (w.estimated_hours || totalOpHH)
+                : (w.estimated_hours || 0);
+            } else {
+              attributable = (w.estimated_hours || 0);
+            }
+            hh += attributable / spanDays / crewSize;
           }
         }
         return Math.round(hh);
@@ -3057,6 +3081,55 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
           {crewSize > 0 && <span className="inline-flex items-center gap-1"><Users size={11} /> {crewSize} crew</span>}
         </div>
       </div>
+      {/* Jorge 2026-04-27 (reunión 18:06): HH desglose por disciplina + duración real.
+          Antes el resumen mostraba sólo total HH y leía 16h como puro mecánico aunque
+          tuviera 8h mecánico + 8h eléctrico. Ahora calculamos por op.specialty.
+          Duración = serie + max(paralelos por grupo) — misma fórmula que Planning. */}
+      {ops.length > 0 && (() => {
+        const byDiscipline = {};
+        let totalHH = 0;
+        for (const op of ops) {
+          const spec = (op.specialty || op.work_center || wo.work_center || 'OTRO').toUpperCase();
+          const qty = parseInt(op.quantity) || 1;
+          const hh = (parseFloat(op.hours) || 0) * qty;
+          byDiscipline[spec] = (byDiscipline[spec] || 0) + hh;
+          totalHH += hh;
+        }
+        const serieHrs = ops.filter(o => !o.parallel).reduce((s, o) => s + (parseFloat(o.hours) || 0), 0);
+        const parGroups = {};
+        ops.filter(o => o.parallel).forEach(o => {
+          const g = o.parallel_group || 'A';
+          parGroups[g] = Math.max(parGroups[g] || 0, parseFloat(o.hours) || 0);
+        });
+        const parallelHrs = Object.values(parGroups).reduce((s, v) => s + v, 0);
+        const duration = serieHrs + parallelHrs;
+        const entries = Object.entries(byDiscipline).sort((a, b) => b[1] - a[1]);
+        return (
+          <div className="px-3 pb-2 grid grid-cols-2 gap-2 text-[10.5px]">
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded p-1.5">
+              <div className="text-[9px] font-bold uppercase text-emerald-700 dark:text-emerald-300">Duración</div>
+              <div className="font-semibold text-foreground tabular-nums">{duration.toFixed(1)}h</div>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-1.5">
+              <div className="text-[9px] font-bold uppercase text-blue-700 dark:text-blue-300">Total HH</div>
+              <div className="font-semibold text-foreground tabular-nums">{totalHH.toFixed(1)}h</div>
+            </div>
+            <div className="col-span-2 bg-muted/40 rounded p-1.5">
+              <div className="text-[9px] font-bold uppercase text-muted-foreground mb-1">HH por disciplina</div>
+              <div className="flex flex-wrap gap-1.5">
+                {entries.map(([spec, hh]) => {
+                  const tone = specTone(spec);
+                  return (
+                    <span key={spec} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${tone.bg}`}>
+                      {tone.label} <span className="tabular-nums opacity-90">{hh.toFixed(1)}h</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       <div className="px-3 pb-2.5">
         <div className="text-[9.5px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">Operations · {ops.length}</div>
         {ops.length === 0 && (

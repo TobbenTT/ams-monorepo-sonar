@@ -1253,7 +1253,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
               className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${includeWeekends ? 'bg-purple-600 text-white border-purple-600' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
               {includeWeekends ? '7 Days' : '5 Days'}
             </button>
-            {[{ v: 1, l: 'Week' }, { v: 2, l: '2 Weeks' }, { v: 3, l: '3 Weeks' }].map(opt => (
+            {/* Jorge 2026-04-27: agregado 4 Weeks (mes completo) — programador
+                programa typically 2 semanas adelante, pero quiere ver 1 mes. */}
+            {[{ v: 1, l: 'Week' }, { v: 2, l: '2 Weeks' }, { v: 3, l: '3 Weeks' }, { v: 4, l: 'Mes' }].map(opt => (
               <button key={opt.v} onClick={() => setViewRange(opt.v)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${viewRange === opt.v ? 'bg-[#1B5E20] text-white border-[#1B5E20]' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
                 {opt.l}

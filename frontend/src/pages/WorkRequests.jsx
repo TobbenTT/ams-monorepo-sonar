@@ -2024,10 +2024,19 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             })}
           </div>
 
-          {/* Jorge SF-547 (2026-04-24): selectores Desde/Hasta removidos del listado
-              de avisos — duplicaban el filtro "Last 30 Days/7 Days/etc" del header
-              global. Queda sólo el del header. SAP fecha-blanco se accede via
-              el dropdown del header. */}
+          {/* Jorge 2026-04-27 (revert SF-547): re-introducir Desde/Hasta a pedido
+              de Jorge en reunión 18:06 — el filtro global del header opera por
+              presets fijos (7d/30d/90d) y el planificador necesita rangos
+              arbitrarios "fechas entry" para reportes y auditorías. */}
+          <div className="flex items-center gap-1">
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              title="Desde (fecha de creación)"
+              className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white" />
+            <span className="text-xs text-gray-400">→</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              title="Hasta (fecha de creación)"
+              className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white" />
+          </div>
           {(search || statusFilter.length > 0 || (Array.isArray(priorityFilter) ? priorityFilter.length > 0 : priorityFilter) || dateFrom || dateTo) && (
             <button onClick={() => { setSearch(''); setStatusFilter([]); setPriorityFilter([]); setLocationFilter(''); setDateFrom(''); setDateTo(''); }}
               className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>

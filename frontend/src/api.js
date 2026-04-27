@@ -101,7 +101,12 @@ async function request(method, path, data, params) {
   }
   if (params) Object.entries(params).forEach(([k, v]) => { if (v != null) url.searchParams.set(k, v); });
 
-  const opts = { method, headers: authHeaders() };
+  // Jorge 2026-04-27: timeout duro de 30s en cada request — sin esto, si el
+  // backend o el WS se cuelgan al persistir, el front queda "pegado" sin
+  // poder reintentar (síntoma reportado en Failure Capture y al editar OT).
+  const ctrl = new AbortController();
+  const timeoutId = setTimeout(() => ctrl.abort(), 30000);
+  const opts = { method, headers: authHeaders(), signal: ctrl.signal };
   if (data !== undefined && method !== 'GET') opts.body = JSON.stringify(data);
 
   // Offline queue: mutation endpoints the field tech uses get stored for later
@@ -117,6 +122,7 @@ async function request(method, path, data, params) {
   try {
     r = await fetch(url, opts);
   } catch (networkErr) {
+    clearTimeout(timeoutId);
     // Network failure while supposedly online — queue if applicable, else rethrow
     if (isQueueablePath(method, path)) {
       const entry = { method, path, data: data ?? null, params: params ?? null };
@@ -124,8 +130,12 @@ async function request(method, path, data, params) {
       emitQueued(entry);
       return { __queued__: true, __queued_at__: Date.now(), ...entry };
     }
+    if (networkErr?.name === 'AbortError') {
+      throw new Error('Request timeout (30s) — el servidor no respondió. Reintentá.');
+    }
     throw networkErr;
   }
+  clearTimeout(timeoutId);
 
   if (r.status === 401) {
     // Bug QA 2026-04-22: si localStorage ya fue vaciado (post-kick) pero el
@@ -477,6 +487,7 @@ export const updateWorkerAvailability = (workerId, data) => put(`/scheduling/wor
 export const listSupportEquipment = (plantId) => get('/scheduling/support-equipment', { plant_id: plantId });
 export const createSupportEquipment = (data) => post('/scheduling/support-equipment', data);
 export const updateSupportEquipment = (id, data) => put(`/scheduling/support-equipment/${id}`, data);
+export const deleteSupportEquipment = (id) => del(`/scheduling/support-equipment/${id}`);
 
 // MFA
 export const mfaStatus = () => get('/mfa/status');

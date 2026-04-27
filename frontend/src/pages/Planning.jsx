@@ -515,6 +515,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [aiScores, setAiScores] = useState({}); // { equipment_tag: { score, alerts, criticality, ... } }
   const [sortByAI, setSortByAI] = useState(false);
   const [filterSLARisk, setFilterSLARisk] = useState(false);
+  // Jorge 2026-04-27 (reunión 18:06) — filtro fechas entry pedido para Planning.
+  const [woDateFrom, setWoDateFrom] = useState('');
+  const [woDateTo, setWoDateTo] = useState('');
 
   const filteredWOs = useMemo(() => {
     let wos = managedWOs;
@@ -529,6 +532,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       wos = wos.filter(wo => (wo.priority_code || wo.priority) === woPriorityFilter);
     }
     if (woTypeFilter !== "All") wos = wos.filter(wo => wo.wo_type === woTypeFilter);
+    if (woDateFrom || woDateTo) {
+      wos = wos.filter(wo => {
+        const d = (wo.created_at || '').slice(0, 10);
+        if (!d) return false;
+        if (woDateFrom && d < woDateFrom) return false;
+        if (woDateTo && d > woDateTo) return false;
+        return true;
+      });
+    }
     // SLA-at-risk filter
     if (filterSLARisk) {
       wos = wos.filter(wo => {
@@ -547,7 +559,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       });
     }
     return wos;
-  }, [managedWOs, woSearch, woStatusFilter, woPriorityFilter, woTypeFilter, filterSLARisk, sortByAI, aiScores]);
+  }, [managedWOs, woSearch, woStatusFilter, woPriorityFilter, woTypeFilter, filterSLARisk, sortByAI, aiScores, woDateFrom, woDateTo]);
 
   const [execData, setExecData] = useState({ actual_hours: '', observations: '', materials_used: [] });
   const [closingWithAI, setClosingWithAI] = useState(false);
@@ -1089,8 +1101,17 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 <option value="PM02">PM02 - Planificado</option>
                 <option value="PM03">PM03 - No Programado (Falla)</option>
               </select>
-              {(woSearch || woStatusFilter !== "All" || (Array.isArray(woPriorityFilter) ? woPriorityFilter.length > 0 : woPriorityFilter !== "All") || woTypeFilter !== "All") && (
-                <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter([]); setWoTypeFilter("All"); }}
+              <div className="flex items-center gap-1">
+                <input type="date" value={woDateFrom} onChange={e => setWoDateFrom(e.target.value)}
+                  title="Desde (fecha de creación)"
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white" />
+                <span className="text-xs text-gray-400">→</span>
+                <input type="date" value={woDateTo} onChange={e => setWoDateTo(e.target.value)}
+                  title="Hasta (fecha de creación)"
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white" />
+              </div>
+              {(woSearch || woStatusFilter !== "All" || (Array.isArray(woPriorityFilter) ? woPriorityFilter.length > 0 : woPriorityFilter !== "All") || woTypeFilter !== "All" || woDateFrom || woDateTo) && (
+                <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter([]); setWoTypeFilter("All"); setWoDateFrom(""); setWoDateTo(""); }}
                   className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
               )}
             </div>

@@ -237,6 +237,17 @@ def update_support_equipment(equipment_id: str, data: dict, user=Depends(require
     return {"ok": True}
 
 
+# Jorge 2026-04-27 (reunión 18:06): permitir eliminar equipos de apoyo creados
+# por error. Sólo admin/manager — el supervisor sólo puede bloquear (PUT).
+@router.delete("/support-equipment/{equipment_id}")
+def delete_support_equipment(equipment_id: str, user=Depends(require_role("admin", "manager")), db: Session = Depends(get_db)):
+    from api.database.models import SupportEquipmentModel
+    eq = db.query(SupportEquipmentModel).filter(SupportEquipmentModel.equipment_id == equipment_id).first()
+    if not eq: raise HTTPException(status_code=404, detail="Equipment not found")
+    db.delete(eq); db.commit()
+    return {"ok": True}
+
+
 # ── Workforce availability management ─────────────────────────────────
 
 @router.put("/workforce/{worker_id}/availability")

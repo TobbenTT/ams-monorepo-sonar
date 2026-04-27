@@ -1441,7 +1441,22 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                   style={{ minHeight: 70, minWidth: 120 }}
                                   onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
                                   onDragLeave={() => setDropTarget(null)}
-                                  onDrop={e => { e.preventDefault(); if (dragWO) { const techLoad = techHours[tech.worker_id] || 0; if (techLoad >= HOURS_PER_WEEK) { toast.error('⛔ ' + tech.name + ' is at ' + Math.round(techLoad) + 'h/' + Math.round(HOURS_PER_WEEK) + 'h — OVER CAPACITY. Cannot schedule more work.'); setDragWO(null); setDropTarget(null); return; } onScheduleWO(dragWO, tech, d.date, shift.id); } setDragWO(null); setDropTarget(null); }}>
+                                  onDrop={e => {
+                                    e.preventDefault();
+                                    if (dragWO) {
+                                      // Jorge 2026-04-27: la guarda de capacidad bloqueaba el drop incluso al
+                                      // reasignar una OT ya programada (move, no net add). Si la OT venía de
+                                      // una celda (tiene planned_start o assigned_workers) tratamos como move.
+                                      const isMove = !!(dragWO.planned_start || (Array.isArray(dragWO.assigned_workers) && dragWO.assigned_workers.length > 0));
+                                      const techLoad = techHours[tech.worker_id] || 0;
+                                      if (!isMove && techLoad >= HOURS_PER_WEEK) {
+                                        toast.error('⛔ ' + tech.name + ' está en ' + Math.round(techLoad) + 'h/' + Math.round(HOURS_PER_WEEK) + 'h — sobre capacidad. Saca tareas antes de cargar más.');
+                                        setDragWO(null); setDropTarget(null); return;
+                                      }
+                                      onScheduleWO(dragWO, tech, d.date, shift.id);
+                                    }
+                                    setDragWO(null); setDropTarget(null);
+                                  }}>
                                   {cellWOs.map(wo => {
                                     const woType = TYPE_META[wo.wo_type] || TYPE_META.PM02;
                                     const isDraft = wo.status === 'EN_PROGRAMACION';
@@ -2828,6 +2843,15 @@ function SupportEquipmentTab({ plantId, t }) {
     } catch { toast.error('Error'); }
   };
 
+  const removeEquipment = async (eq) => {
+    if (!window.confirm(`¿Eliminar definitivamente "${eq.name}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      await api.deleteSupportEquipment(eq.equipment_id);
+      toast.success('Equipo eliminado');
+      load();
+    } catch { toast.error('Error eliminando equipo'); }
+  };
+
   const availableCount = items.filter(i => i.available).length;
   const blockedCount = items.filter(i => !i.available).length;
   const rentedCount = items.filter(i => i.is_rented).length;
@@ -2913,6 +2937,11 @@ function SupportEquipmentTab({ plantId, t }) {
                 <button onClick={() => toggleAvailable(eq)}
                   className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${eq.available ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/20'}`}>
                   {eq.available ? 'Bloquear' : 'Habilitar'}
+                </button>
+                <button onClick={() => removeEquipment(eq)}
+                  title="Eliminar definitivamente"
+                  className="text-xs p-1.5 rounded-lg text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                  <Trash2 size={14} />
                 </button>
               </div>
             ))}

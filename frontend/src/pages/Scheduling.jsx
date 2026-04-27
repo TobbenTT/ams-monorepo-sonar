@@ -658,8 +658,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     scheduledWOs.forEach(wo => {
       const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
       if (!start || !daySet.has(start)) return;
+      // Jorge fix #5: dedupe workers per WO — si la misma persona aparece 2x en
+      // assigned_workers (corrupción de data), no duplicar las horas.
+      const seen = new Set();
       (wo.assigned_workers || []).forEach(w => {
-        if (h[w.worker_id] !== undefined) h[w.worker_id] += wo.estimated_hours || 0;
+        const wid = w.worker_id || w.user_id || w.id;
+        if (!wid || seen.has(wid)) return;
+        seen.add(wid);
+        if (h[wid] !== undefined) h[wid] += wo.estimated_hours || 0;
       });
     });
     return h;
@@ -3307,9 +3313,14 @@ export default function Scheduling() {
       const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
       const lightDays = dayNames.map((name, i) => instructions.includes(name) && (instructions.includes('light') || instructions.includes('libre') || instructions.includes('liviano')) ? 0.5 : 1);
 
-      // Track per-technician daily load
+      // Track per-technician daily load.
+      // Jorge 2026-04-27 fix #5: normalizar la clave (worker_id || user_id || id).
+      // Bug previo: si un tech tenía solo user_id, su load no se trackeaba y el
+      // algoritmo lo veía siempre con 0h → todos los WOs caían sobre él (Pedro/Hugo
+      // 99h/40h en la demo).
+      const techKey = (t) => t.worker_id || t.user_id || t.id || '';
       const techDayLoad = {};
-      techs.forEach(t => { techDayLoad[t.worker_id] = new Array(numDays).fill(0); });
+      techs.forEach(t => { const k = techKey(t); if (k) techDayLoad[k] = new Array(numDays).fill(0); });
 
       // ── Seed existing scheduled WOs so we don't overlap/exceed capacity ──
       // Distribute long WOs across multiple days (same as the placement logic).
@@ -3425,8 +3436,9 @@ export default function Scheduling() {
         // We only enforce that the tech isn't already saturated this week.
         const isLongWO = hours > perTechDailyCap;
         const hasRoom = (t, day) => {
-          const dayLoadT = techDayLoad[t.worker_id]?.[day] || 0;
-          const weekLoadT = (techDayLoad[t.worker_id] || []).reduce((s, v) => s + v, 0);
+          const k = techKey(t);
+          const dayLoadT = techDayLoad[k]?.[day] || 0;
+          const weekLoadT = (techDayLoad[k] || []).reduce((s, v) => s + v, 0);
           // Weekly cap is ALWAYS enforced — no tech should exceed their weekly capacity
           if (weekLoadT + hours > perTechWeeklyCap) return false;
           if (isLongWO) {
@@ -3436,75 +3448,113 @@ export default function Scheduling() {
           return dayLoadT + hours <= perTechDailyCap;
         };
 
-        // Try each day in order: bestDay first, then rest (only working days)
+        // Determinar requisitos de personal por especialidad (Jorge fix #6).
+        // wo.resources = [{type:'MEC', quantity:2, hours:4}, {type:'ELEC', quantity:3, hours:4}]
+        // Si no hay resources, default = 1 técnico de la especialidad del WO.
+        const reqs = Array.isArray(wo.resources) && wo.resources.length > 0
+          ? wo.resources.map(r => ({
+              spec: String(r.type || r.specialty || woSpec || '').toUpperCase(),
+              qty: Math.max(1, parseInt(r.quantity) || 1),
+            }))
+          : [{ spec: woSpec, qty: 1 }];
+        const totalNeeded = reqs.reduce((s, r) => s + r.qty, 0);
+        const specMatchFor = (t, reqSpec) => {
+          const tSpec = (t.specialty || '').toUpperCase();
+          if (!reqSpec) return true;
+          return tSpec && (tSpec.includes(reqSpec.slice(0, 3)) || reqSpec.includes(tSpec.slice(0, 3)));
+        };
+
+        // Find best day with capacity for ALL needed techs (try spec match first, fallback any).
         const dayOrder = [bestDay, ...workDays.filter(d => d !== bestDay)];
-        let bestTech = null;
+        let chosenTechs = [];
         let chosenDay = -1;
-        outer: for (const tier of ['spec', 'all']) {
+        outerSearch: for (const tier of ['spec', 'all']) {
           for (const day of dayOrder) {
-            // Day must have real room for these hours (no pre-reservation pollution)
-            if (dayLoad[day] + hours > maxHHPerDay * (lightDays[day] || 1)) continue;
-            // Group A #7: if this WO needs unique support equipment already booked
-            // that day, skip — try next day.
+            if (dayLoad[day] + hours * totalNeeded > maxHHPerDay * (lightDays[day] || 1)) continue;
             if (!isDayBookableForSupport(wo, day)) continue;
-            const candidates = techs.filter(t => hasRoom(t, day) && (tier === 'all' || hasSpecMatch(t)));
-            if (candidates.length > 0) {
-              bestTech = candidates.reduce((a, b) => {
-                const aWk = (techDayLoad[a.worker_id] || []).reduce((s, v) => s + v, 0);
-                const bWk = (techDayLoad[b.worker_id] || []).reduce((s, v) => s + v, 0);
-                if (aWk !== bWk) return aWk <= bWk ? a : b;
-                const aDay = techDayLoad[a.worker_id]?.[day] || 0;
-                const bDay = techDayLoad[b.worker_id]?.[day] || 0;
-                return aDay <= bDay ? a : b;
-              });
+            const used = new Set();
+            const picked = [];
+            let satisfied = true;
+            for (const req of reqs) {
+              for (let i = 0; i < req.qty; i++) {
+                const pool = techs.filter(t => {
+                  const k = techKey(t);
+                  if (used.has(k)) return false;
+                  if (!hasRoom(t, day)) return false;
+                  return tier === 'all' ? true : specMatchFor(t, req.spec);
+                });
+                if (pool.length === 0) { satisfied = false; break; }
+                const pick = pool.reduce((a, b) => {
+                  const aK = techKey(a), bK = techKey(b);
+                  const aWk = (techDayLoad[aK] || []).reduce((s, v) => s + v, 0);
+                  const bWk = (techDayLoad[bK] || []).reduce((s, v) => s + v, 0);
+                  return aWk <= bWk ? a : b;
+                });
+                used.add(techKey(pick));
+                picked.push({ tech: pick, spec: req.spec });
+              }
+              if (!satisfied) break;
+            }
+            if (satisfied && picked.length === totalNeeded) {
+              chosenTechs = picked;
               chosenDay = day;
-              break outer;
+              break outerSearch;
             }
           }
         }
 
-        if (!bestTech || chosenDay < 0) {
+        if (chosenTechs.length === 0 || chosenDay < 0) {
           deferred++;
           continue;
         }
         bestDay = chosenDay;
+        // Para compat con código abajo: bestTech = primero (el "principal").
+        const bestTech = chosenTechs[0].tech;
         // NOW commit the hours — distribute across days for long WOs so no single day is double-counted.
         // A 48h WO with 7.2h/day cap spans ~7 days at 6.86h/day each, not 48h on one day.
-        if (isLongWO) {
-          let remaining = hours;
-          const daysNeeded = Math.ceil(hours / perTechDailyCap);
-          // Distribute evenly across consecutive working days starting at bestDay
-          let placed = 0;
-          for (let d = bestDay; d < numDays && placed < daysNeeded && remaining > 0; d++) {
-            if (!workDayMask[d]) continue;
-            const chunk = Math.min(remaining, perTechDailyCap);
-            dayLoad[d] += chunk;
-            if (techDayLoad[bestTech.worker_id]) techDayLoad[bestTech.worker_id][d] += chunk;
-            remaining -= chunk;
-            placed++;
-          }
-        } else {
-          dayLoad[bestDay] += hours;
-          if (techDayLoad[bestTech.worker_id]) {
-            techDayLoad[bestTech.worker_id][bestDay] += hours;
+        // Distribuir las horas a TODOS los técnicos asignados (cada uno trabaja
+        // la duración del WO en paralelo). dayLoad refleja la suma de HH del equipo.
+        for (const ct of chosenTechs) {
+          const k = techKey(ct.tech);
+          if (isLongWO) {
+            let remaining = hours;
+            const daysNeeded = Math.ceil(hours / perTechDailyCap);
+            let placed = 0;
+            for (let d = bestDay; d < numDays && placed < daysNeeded && remaining > 0; d++) {
+              if (!workDayMask[d]) continue;
+              const chunk = Math.min(remaining, perTechDailyCap);
+              if (techDayLoad[k]) techDayLoad[k][d] += chunk;
+              remaining -= chunk;
+              placed++;
+            }
+          } else {
+            if (techDayLoad[k]) techDayLoad[k][bestDay] += hours;
           }
         }
+        dayLoad[bestDay] += hours * chosenTechs.length;
 
         // Group A #7: reserve the support equipment for this day so other
         // WOs with the same unique requirement get pushed to another day.
         bookSupportForDay(wo, bestDay);
 
         scheduled++;
+        // Lista completa de workers asignados al WO (para applyAIPlan).
+        const workers = chosenTechs.map(ct => ({
+          worker_id: techKey(ct.tech),
+          name: ct.tech.name || ct.tech.full_name || 'Unassigned',
+          specialty: ct.tech.specialty || ct.spec || '',
+        }));
         assignments.push({
           wo_id: wo.wo_id,
           wo_number: wo.wo_number,
-          worker_id: bestTech?.worker_id || bestTech?.user_id || null,
-          worker_name: bestTech?.name || bestTech?.full_name || 'Unassigned',
-          worker_specialty: bestTech?.specialty || '',
+          worker_id: workers[0]?.worker_id || null,  // legacy field
+          worker_name: workers[0]?.name || 'Unassigned',
+          worker_specialty: workers[0]?.specialty || '',
+          workers,                                    // NEW: lista completa
           day: weekDays[bestDay],
           hours,
           priority: prio,
-          reason: `${prio} ${hours}h`,
+          reason: `${prio} ${hours}h × ${workers.length} téc`,
           support_equipment: Array.isArray(wo.support_equipment) ? wo.support_equipment.map(r => r.tag || r.name).filter(Boolean) : [],
         });
       }
@@ -3543,7 +3593,11 @@ export default function Scheduling() {
             planned_end: a.day,
             status: 'EN_PROGRAMACION',
           };
-          if (a.worker_id) {
+          // Jorge fix #6: si Auto-Level produjo lista de workers (multi-tech), usarla.
+          // Fallback al worker único legacy si la lista está vacía.
+          if (Array.isArray(a.workers) && a.workers.length > 0) {
+            updateData.assigned_workers = a.workers;
+          } else if (a.worker_id) {
             updateData.assigned_workers = [{ worker_id: a.worker_id, name: a.worker_name, specialty: a.worker_specialty || '' }];
           }
           return api.updateManagedWO(a.wo_id, updateData);

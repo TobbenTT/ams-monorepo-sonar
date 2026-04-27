@@ -3414,6 +3414,24 @@ export default function Scheduling() {
     // 2-step flow: drag-drop = borrador (EN_PROGRAMACION). Reservar Semana lo confirma a PROGRAMADO.
     const prevScheduled = scheduledWOs;
     const prevReleased = releasedWOs;
+    // SF-562: bloqueo de asignación en día de descanso del técnico.
+    if (tech.available === false) {
+      toast.error(`⛔ ${tech.name} está en descanso/vacaciones (${tech.absence_reason || 'no disponible'}). No se puede asignar.`);
+      return;
+    }
+    // SF-562: detectar OTs que exceden la duración del turno y advertir
+    // que el saldo deberá redistribuirse (turno noche o día siguiente).
+    // Día/Noche = 12h cada uno; subterránea A/B/C = 8h.
+    const shiftHours = (CAP.shiftDurationHours || 12);
+    const woHours = parseFloat(wo.estimated_hours) || 0;
+    if (woHours > shiftHours) {
+      const overflow = woHours - shiftHours;
+      toast.info(
+        `⚠️ ${wo.wo_number} dura ${woHours}h > ${shiftHours}h del turno. ` +
+        `Las ${overflow.toFixed(1)}h restantes deberás reasignarlas al turno siguiente o al día siguiente.`,
+        8000
+      );
+    }
     const scheduled = {
       ...wo,
       assigned_workers: [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }],

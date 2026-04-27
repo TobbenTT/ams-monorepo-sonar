@@ -249,6 +249,15 @@ export const getAnalyticsPageData = (plantId, startDate, endDate) => {
   return get(`/analytics/page-data/${plantId}${qs ? '?' + qs : ''}`);
 };
 
+// ── Reports ──
+export const getWeeklyDigest = (plantId, weekStart) => {
+  const params = new URLSearchParams();
+  if (plantId) params.set('plant_id', plantId);
+  if (weekStart) params.set('week_start', weekStart);
+  const qs = params.toString();
+  return get(`/reports-export/weekly-digest${qs ? '?' + qs : ''}`);
+};
+
 // ── Admin ──
 export const seedDatabase = () => post('/admin/seed-database');
 export const getStats = () => get('/admin/stats');

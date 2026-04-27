@@ -5,12 +5,14 @@ import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 import {
   FileText, Download, Calendar, CheckCircle, Clock, Loader2,
-  BarChart3, TrendingUp, FileSpreadsheet, RefreshCw,
+  BarChart3, TrendingUp, FileSpreadsheet, RefreshCw, Printer,
 } from 'lucide-react';
+import { openWeeklyDigest } from '../components/WeeklyDigest';
 // xlsx is dynamically imported in downloadExcel() to keep the 277KB lib out of the initial bundle
 
 const REPORTS = [
-  { id: 'weekly', title: 'Weekly Maintenance Report', desc: 'WOs completed, HH summary, pending backlog, material status', icon: FileText, freq: 'Weekly', color: 'bg-blue-500' },
+  { id: 'weekly_digest', title: 'Weekly Operations Digest (PDF)', desc: 'Resumen ejecutivo 1 página: KPIs, flujo, top equipos, vencidas. Imprimible / Save as PDF.', icon: Printer, freq: 'Weekly', color: 'bg-emerald-600' },
+  { id: 'weekly', title: 'Weekly Maintenance Report (Excel)', desc: 'WOs completed, HH summary, pending backlog, material status', icon: FileText, freq: 'Weekly', color: 'bg-blue-500' },
   { id: 'monthly', title: 'Monthly KPI Report', desc: 'MTBF, MTTR, availability, OEE, cost analysis, trends', icon: BarChart3, freq: 'Monthly', color: 'bg-purple-500' },
   { id: 'executive', title: 'Executive Summary', desc: 'High-level KPIs, budget vs actual, reliability trends', icon: TrendingUp, freq: 'On demand', color: 'bg-emerald-500' },
   { id: 'reliability', title: 'Reliability Analysis', desc: 'Bad actors, Weibull curves, failure patterns, RCA status', icon: FileSpreadsheet, freq: 'Monthly', color: 'bg-amber-500' },
@@ -39,10 +41,17 @@ export default function ReportsPage() {
   };
 
   const handleGenerate = async (reportId) => {
-    if (!kpis) { toast.error('No data loaded'); return; }
     setGenerating(reportId);
     try {
       const date = new Date().toISOString().slice(0, 10);
+      if (reportId === 'weekly_digest') {
+        const data = await api.getWeeklyDigest(plantId);
+        openWeeklyDigest(data);
+        toast.success('Weekly Digest abierto — usá el botón Imprimir / Guardar PDF');
+        setGenerating(null);
+        return;
+      }
+      if (!kpis) { toast.error('No data loaded'); setGenerating(null); return; }
       if (reportId === 'weekly') {
         const woData = await api.listManagedWOs({ plant_id: plantId, limit: 200 }).catch(() => []);
         const wos = Array.isArray(woData) ? woData : [];

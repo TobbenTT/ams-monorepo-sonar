@@ -224,3 +224,128 @@ def kpi_summary_xlsx(plant_id: str | None = None, db: Session = Depends(get_db))
 
     today = date.today().isoformat()
     return _wb_response(wb, f"kpi-summary-{today}.xlsx")
+
+
+# ── Weekly Digest (PDF-friendly aggregator) ──────────────────────────
+# Construye los datos para el reporte semanal de 1 página. El frontend
+# lo renderiza como HTML imprimible y el usuario hace "Save as PDF".
+
+@router.get("/weekly-digest")
+def weekly_digest(
+    plant_id: str | None = None,
+    week_start: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Weekly digest data: counts, KPIs, top equipment, vencidas.
+    week_start ISO date (lunes). Default: lunes de la semana actual."""
+    today = date.today()
+    if week_start:
+        try:
+            ws_date = datetime.fromisoformat(week_start).date()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid week_start")
+    else:
+        ws_date = today - timedelta(days=today.weekday())
+    we_date = ws_date + timedelta(days=7)
+    ws_dt = datetime.combine(ws_date, datetime.min.time())
+    we_dt = datetime.combine(we_date, datetime.min.time())
+    now = datetime.now()
+
+    base_q = db.query(ManagedWorkOrderModel)
+    if plant_id:
+        base_q = base_q.filter(ManagedWorkOrderModel.plant_id == plant_id)
+
+    # Counts dentro de la semana (planned)
+    week_q = base_q.filter(
+        ManagedWorkOrderModel.planned_start >= ws_dt,
+        ManagedWorkOrderModel.planned_start < we_dt,
+    )
+    week_wos = week_q.all()
+    created = sum(1 for w in week_wos if w.created_at and ws_dt <= w.created_at < we_dt)
+    scheduled = sum(1 for w in week_wos if w.status in ("PROGRAMADO", "EN_PROGRAMACION"))
+    in_exec = sum(1 for w in week_wos if w.status == "EN_EJECUCION")
+    closed = sum(1 for w in week_wos if w.status in ("CERRADO", "COMPLETADO", "CLOSED"))
+    canceled = sum(1 for w in week_wos if w.status in ("CANCELADO", "CANCELED"))
+
+    # Adherencia / Cumplimiento sobre cerradas en la semana
+    closed_in_week = [w for w in week_wos if w.status == "CERRADO" and w.planned_start]
+    adherent = compliant = 0
+    for w in closed_in_week:
+        actual = w.actual_start or w.closed_at
+        if actual and w.planned_start:
+            delta_h = abs((actual - w.planned_start).total_seconds()) / 3600.0
+            if delta_h <= 4.0:
+                adherent += 1
+            if delta_h <= 24.0 * 7:
+                compliant += 1
+    total_closed = len(closed_in_week)
+    adherence_pct = round(adherent / total_closed * 100, 1) if total_closed else None
+    compliance_pct = round(compliant / total_closed * 100, 1) if total_closed else None
+
+    # HH plan vs actual de la semana (todas las cerradas en la ventana)
+    hh_plan = sum(float(w.estimated_hours or 0) for w in week_wos)
+    hh_actual = sum(float(w.actual_hours or 0) for w in week_wos if w.status in ("CERRADO", "COMPLETADO"))
+
+    # Top 5 equipos por HH consumida en la semana
+    by_eq: dict[str, dict] = {}
+    for w in week_wos:
+        tag = (w.equipment_tag or w.equipment_id or "—")
+        if tag not in by_eq:
+            by_eq[tag] = {"tag": tag, "wo_count": 0, "hh": 0.0}
+        by_eq[tag]["wo_count"] += 1
+        by_eq[tag]["hh"] += float(w.actual_hours or w.estimated_hours or 0)
+    top_equipment = sorted(by_eq.values(), key=lambda x: -x["hh"])[:5]
+
+    # OTs vencidas (planned_end pasado, status no terminal)
+    overdue_q = base_q.filter(
+        ManagedWorkOrderModel.planned_end.isnot(None),
+        ManagedWorkOrderModel.planned_end < now,
+        ~ManagedWorkOrderModel.status.in_(("CERRADO", "COMPLETADO", "CLOSED", "CANCELADO", "CANCELED")),
+    )
+    overdue_count = overdue_q.count()
+    overdue_top = [
+        {
+            "wo_number": w.wo_number,
+            "equipment_tag": w.equipment_tag or "",
+            "priority": w.priority_code,
+            "planned_end": w.planned_end.isoformat() if w.planned_end else None,
+            "days_overdue": (now - w.planned_end).days if w.planned_end else 0,
+        }
+        for w in overdue_q.order_by(ManagedWorkOrderModel.planned_end.asc()).limit(5).all()
+    ]
+
+    # Distribución por prioridad de la semana
+    prio_dist: dict[str, int] = {}
+    for w in week_wos:
+        p = w.priority_code or "—"
+        prio_dist[p] = prio_dist.get(p, 0) + 1
+
+    return {
+        "plant_id": plant_id or "",
+        "week_start": ws_date.isoformat(),
+        "week_end": (we_date - timedelta(days=1)).isoformat(),
+        "week_iso": f"{ws_date.isocalendar()[0]}-W{ws_date.isocalendar()[1]:02d}",
+        "generated_at": now.isoformat(),
+        "counts": {
+            "created": created,
+            "scheduled": scheduled,
+            "in_execution": in_exec,
+            "closed": closed,
+            "canceled": canceled,
+            "total_planned": len(week_wos),
+        },
+        "kpis": {
+            "adherence_pct": adherence_pct,
+            "compliance_pct": compliance_pct,
+            "total_closed": total_closed,
+            "hh_plan": round(hh_plan, 1),
+            "hh_actual": round(hh_actual, 1),
+            "hh_variance_pct": round((hh_actual - hh_plan) / hh_plan * 100, 1) if hh_plan else None,
+        },
+        "priority_distribution": prio_dist,
+        "top_equipment": top_equipment,
+        "overdue": {
+            "count": overdue_count,
+            "top": overdue_top,
+        },
+    }

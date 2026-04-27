@@ -546,9 +546,15 @@ def reopen_work_request(
 
 class WRUpdateRequest(BaseModel):
     """Generic update for WR fields (supervisor)."""
+    # Jorge 2026-04-27: aceptar field names del frontend Y alias legacy.
+    model_config = {"extra": "ignore"}
     priority: str | None = None
+    priority_requested: str | None = None  # alias frontend
     description: str | None = None
+    failure_description: str | None = None  # alias frontend
     suggested_action: str | None = None
+    wo_title: str | None = None             # se persiste en ai_classification
+    failure_object_part: str | None = None
     failure_category: str | None = None
     failure_symptom: str | None = None
     failure_cause: str | None = None
@@ -567,11 +573,26 @@ def update_work_request(request_id: str, data: WRUpdateRequest, db: Session = De
     if not wr:
         raise HTTPException(status_code=404, detail="Work request not found")
 
-    if data.priority:
-        wr.priority_code = data.priority
-    if data.description is not None:
+    # Aliases del frontend → fields canónicos
+    priority_in = data.priority or data.priority_requested
+    description_in = data.description if data.description is not None else data.failure_description
+    if priority_in:
+        wr.priority_code = priority_in
+    if description_in is not None:
         pd = dict(wr.problem_description) if isinstance(wr.problem_description, dict) else {}
-        pd["original_text"] = data.description
+        pd["original_text"] = description_in
+        wr.problem_description = pd
+        flag_modified(wr, "problem_description")
+    if data.wo_title is not None:
+        ai = dict(wr.ai_classification) if isinstance(wr.ai_classification, dict) else {}
+        ai["wo_title"] = data.wo_title
+        wr.ai_classification = ai
+        flag_modified(wr, "ai_classification")
+    if data.failure_object_part is not None:
+        pd = dict(wr.problem_description) if isinstance(wr.problem_description, dict) else {}
+        cat = dict(pd.get("failure_catalog") or {})
+        cat["object_part"] = data.failure_object_part
+        pd["failure_catalog"] = cat
         wr.problem_description = pd
         flag_modified(wr, "problem_description")
     if data.suggested_action is not None:

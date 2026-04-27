@@ -2062,17 +2062,19 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                       ))}
                                     </select>
                                   </div>
+                                  {/* Jorge 2026-04-27: agrandar inputs Cantidad/Duración/HH
+                                      para que se lean fácil (eran w-12/w-14 text-xs → w-16/w-20 text-sm). */}
                                   <div className="flex items-center gap-1">
-                                    <label className="text-[10px] text-gray-500">Cantidad:</label>
+                                    <label className="text-xs text-gray-600 font-semibold">Cantidad:</label>
                                     <input type="number" min="1" value={op.quantity || 1} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], quantity: parseInt(e.target.value)||1}; setEditOps(n); }}
-                                      className="w-12 text-xs border rounded px-1 py-1 text-center" />
+                                      className="w-16 text-sm font-semibold border rounded px-2 py-1.5 text-center" />
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <label className="text-[10px] text-gray-500">Duración (h):</label>
+                                    <label className="text-xs text-gray-600 font-semibold">Duración (h):</label>
                                     <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
-                                      className="w-14 text-xs border rounded px-1 py-1 text-center" />
+                                      className="w-20 text-sm font-semibold border rounded px-2 py-1.5 text-center" />
                                   </div>
-                                  <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs font-bold text-emerald-700 whitespace-nowrap">
+                                  <div className="bg-emerald-50 border border-emerald-200 rounded px-3 py-1.5 text-sm font-bold text-emerald-700 whitespace-nowrap">
                                     HH: {((op.quantity || 1) * (op.hours || 0)).toFixed(1)}
                                   </div>
                                   {/* Jorge 2026-04-24 14:18: paralelismo con GRUPOS.

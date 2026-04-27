@@ -809,64 +809,70 @@ ${materials.length ? `<div class="section">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Failure Classification</p>
             {editing ? (
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
-                {/* Jorge 2026-04-27: labels EN (los enum values quedan ES por compat DB) */}
+                {/* Jorge 2026-04-27: orden FAYA correcto = Object Part → Symptom → Cause.
+                    Inputs libres con datalist (sugerencias) en vez de selects rígidos:
+                    así no se pierde el valor cuando la IA devuelve algo fuera de la
+                    lista estática (ej. "WONT START", "LOOSE CONNECTION"). */}
+                <datalist id="dl-object-part">
+                  <option>Impulsor</option><option>Rodamiento</option><option>Carcasa</option>
+                  <option>Sello</option><option>Eje</option><option>Acoplamiento</option>
+                  <option>Polín</option><option>Cinta</option><option>Motor</option>
+                  <option>Reductor</option><option>Tarjeta</option><option>Sensor</option>
+                  <option>Contactor</option><option>Cable</option><option>Otro</option>
+                </datalist>
+                <datalist id="dl-symptom">
+                  <option>FUGA</option><option>VIBRACION</option><option>RUIDO</option>
+                  <option>SOBRETEMPERATURA</option><option>NO ARRANCA</option>
+                  <option>BAJO RENDIMIENTO</option><option>CORROSION</option>
+                  <option>DESGASTE</option><option>ROTURA</option><option>OBSTRUCCION</option>
+                  <option>DESALINEACION</option><option>OTRO</option>
+                </datalist>
+                <datalist id="dl-cause">
+                  <option>DESGASTE NORMAL</option><option>FATIGA</option><option>CORROSION</option>
+                  <option>MAL MANTENIMIENTO</option><option>SOBRECARGA</option>
+                  <option>CONTAMINACION</option><option>MAL MONTAJE</option>
+                  <option>DEFECTO FABRICACION</option><option>OPERACION FUERA RANGO</option>
+                  <option>DESCONOCIDA</option>
+                </datalist>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Category:</span>
-                  <select value={editData.failure_category || ''} onChange={e => setEditData(d => ({ ...d, failure_category: e.target.value }))}
-                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30">
-                    <option value="">— Seleccionar —</option>
-                    <option>MECANICO</option><option>ELECTRICO</option><option>INSTRUMENTACION</option>
-                    <option>ESTRUCTURAL</option><option>HIDRAULICO</option><option>NEUMATICO</option>
-                    <option>LUBRICACION</option><option>OTRO</option>
-                  </select>
+                  <span className="text-xs text-muted-foreground min-w-[90px]">Object Part:</span>
+                  <input type="text" list="dl-object-part" value={editData.failure_category || ''}
+                    onChange={e => setEditData(d => ({ ...d, failure_category: e.target.value }))}
+                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Symptom:</span>
-                  <select value={editData.failure_symptom || ''} onChange={e => setEditData(d => ({ ...d, failure_symptom: e.target.value }))}
-                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30">
-                    <option value="">— Seleccionar —</option>
-                    <option>FUGA</option><option>VIBRACION</option><option>RUIDO</option>
-                    <option>SOBRETEMPERATURA</option><option>NO ARRANCA</option><option>BAJO RENDIMIENTO</option>
-                    <option>CORROSION</option><option>DESGASTE</option><option>ROTURA</option>
-                    <option>OBSTRUCCION</option><option>DESALINEACION</option><option>OTRO</option>
-                  </select>
+                  <span className="text-xs text-muted-foreground min-w-[90px]">Symptom:</span>
+                  <input type="text" list="dl-symptom" value={editData.failure_symptom || ''}
+                    onChange={e => setEditData(d => ({ ...d, failure_symptom: e.target.value }))}
+                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Cause:</span>
-                  <select value={editData.failure_cause || ''} onChange={e => setEditData(d => ({ ...d, failure_cause: e.target.value }))}
-                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30">
-                    <option value="">— Seleccionar —</option>
-                    <option>DESGASTE NORMAL</option><option>FATIGA</option><option>CORROSION</option>
-                    <option>MAL MANTENIMIENTO</option><option>SOBRECARGA</option><option>CONTAMINACION</option>
-                    <option>MAL MONTAJE</option><option>DEFECTO FABRICACION</option><option>OPERACION FUERA RANGO</option>
-                    <option>DESCONOCIDA</option>
-                  </select>
+                  <span className="text-xs text-muted-foreground min-w-[90px]">Cause:</span>
+                  <input type="text" list="dl-cause" value={editData.failure_cause || ''}
+                    onChange={e => setEditData(d => ({ ...d, failure_cause: e.target.value }))}
+                    className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30" />
                 </div>
               </div>
             ) : (
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
-                {item.failure_object_part && (
+                {/* Jorge 2026-04-27: orden FAYA = Object Part → Symptom → Cause.
+                    failure_object_part > failure_category como fuente del 1er campo. */}
+                {(item.failure_object_part || item.failure_category) && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Object Part:</span>
-                    <span className="text-sm font-medium text-foreground">{item.failure_object_part}</span>
+                    <span className="text-xs text-muted-foreground min-w-[90px]">Object Part:</span>
+                    <span className="text-sm font-medium text-foreground">{item.failure_object_part || item.failure_category}</span>
                   </div>
                 )}
                 {item.failure_symptom && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Symptom:</span>
+                    <span className="text-xs text-muted-foreground min-w-[90px]">Symptom:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_symptom}</span>
                   </div>
                 )}
                 {item.failure_cause && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Cause:</span>
+                    <span className="text-xs text-muted-foreground min-w-[90px]">Cause:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_cause}</span>
-                  </div>
-                )}
-                {item.failure_category && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Category:</span>
-                    <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
                   </div>
                 )}
               </div>

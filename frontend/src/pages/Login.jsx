@@ -55,7 +55,7 @@ export default function Login() {
 
                 <div className="relative z-10">
                     <div className="mb-4">
-                        <img src="/MAGEAM_LOGO_WHITE.png" alt="MagEAM" className="h-14 w-auto mb-4" />
+                        <img src="/MAGEAM_LOGO_WHITE.png" alt="MagEAM" className="h-24 w-auto mb-4" />
                         <h1 className="text-3xl font-bold tracking-tight">{t('login.title')}</h1>
                         <p className="text-green-200 text-sm font-medium mt-1">{t('login.subtitle')}</p>
                     </div>
@@ -120,7 +120,7 @@ export default function Login() {
 
                     {/* Mobile logo */}
                     <div className="lg:hidden flex items-center justify-center mb-8">
-                        <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-12 w-auto" />
+                        <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-20 w-auto" />
                     </div>
 
                     <div className="mb-8">

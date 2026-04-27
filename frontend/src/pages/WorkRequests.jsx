@@ -486,7 +486,32 @@ ${materials.length ? `<div class="section">
               <Download size={12} /> PDF Report
             </button>
             {canEdit && !editing && (
-            <button onClick={() => setEditing(true)} className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-300 font-semibold hover:bg-amber-100 transition-colors">
+            <button onClick={() => {
+              // Re-hidratar editData con valores actuales antes de editar
+              // (fix Jorge 2026-04-27: campos categoría/síntoma/causa no se recuperaban).
+              setEditData({
+                failure_description: item.failure_description || '',
+                priority_requested: item.priority_requested || 'P3',
+                failure_mode: item.failure_mode || '',
+                estimated_duration: item.estimated_duration || '',
+                production_impact: item.production_impact || 'MEDIUM',
+                suggested_action: (item.suggested_action || '').replace(/(\d+)\.\s/g, (m, num) => num === '1' ? m : '\n' + m),
+                wo_title: item.wo_title || '',
+                photos: Array.isArray(item.photos) ? [...item.photos] : [],
+                failure_category: item.failure_category || '',
+                failure_symptom: item.failure_symptom || '',
+                failure_cause: item.failure_cause || '',
+                support_equipment: Array.isArray(item.support_equipment) ? [...item.support_equipment] : [],
+                resources: Array.isArray(item.resources) ? item.resources.map(r => {
+                  if (typeof r === 'object') return { ...r };
+                  const m = String(r).match(/^(.+?)\s*x\s*(\d+)\s*\((\d+\.?\d*)h\)$/i);
+                  if (m) return { type: m[1].trim(), quantity: parseInt(m[2]) || 1, hours: parseFloat(m[3]) || 4 };
+                  return { type: r, quantity: 1, hours: 4 };
+                }) : [],
+                materials: Array.isArray(item.materials) ? item.materials.map(m => typeof m === 'string' ? { description: m, quantity: 1 } : { ...m }) : [],
+              });
+              setEditing(true);
+            }} className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-300 font-semibold hover:bg-amber-100 transition-colors">
                 Edit
               </button>
             )}
@@ -781,12 +806,12 @@ ${materials.length ? `<div class="section">
         {/* Failure Classification */}
         {(item.failure_category || item.failure_symptom || item.failure_cause || editing) && (
           <div className="px-6 pb-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Clasificación de Falla</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Failure Classification</p>
             {editing ? (
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
-                {/* Jorge 2026-04-24 (obs doc): dropdowns en vez de inputs libres */}
+                {/* Jorge 2026-04-27: labels EN (los enum values quedan ES por compat DB) */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Category:</span>
                   <select value={editData.failure_category || ''} onChange={e => setEditData(d => ({ ...d, failure_category: e.target.value }))}
                     className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30">
                     <option value="">— Seleccionar —</option>
@@ -796,7 +821,7 @@ ${materials.length ? `<div class="section">
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Síntoma:</span>
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Symptom:</span>
                   <select value={editData.failure_symptom || ''} onChange={e => setEditData(d => ({ ...d, failure_symptom: e.target.value }))}
                     className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30">
                     <option value="">— Seleccionar —</option>
@@ -807,7 +832,7 @@ ${materials.length ? `<div class="section">
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground min-w-[80px]">Causa:</span>
+                  <span className="text-xs text-muted-foreground min-w-[80px]">Cause:</span>
                   <select value={editData.failure_cause || ''} onChange={e => setEditData(d => ({ ...d, failure_cause: e.target.value }))}
                     className="flex-1 text-sm px-2 py-1 border border-border rounded bg-background focus:ring-2 focus:ring-primary/30">
                     <option value="">— Seleccionar —</option>
@@ -822,25 +847,25 @@ ${materials.length ? `<div class="section">
               <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
                 {item.failure_object_part && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Parte Objeto:</span>
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Object Part:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_object_part}</span>
                   </div>
                 )}
                 {item.failure_symptom && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Síntoma:</span>
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Symptom:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_symptom}</span>
                   </div>
                 )}
                 {item.failure_cause && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Causa:</span>
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Cause:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_cause}</span>
                   </div>
                 )}
                 {item.failure_category && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground min-w-[80px]">Categoría:</span>
+                    <span className="text-xs text-muted-foreground min-w-[80px]">Category:</span>
                     <span className="text-sm font-medium text-foreground">{item.failure_category}</span>
                   </div>
                 )}

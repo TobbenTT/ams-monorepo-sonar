@@ -76,7 +76,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
                 <div className={cn("px-6 py-5 border-b border-emerald-600/30", collapsed && "px-3 flex justify-center")}>
                     {!collapsed ? (
                         <>
-                            <img src="/MAGEAM_LOGO_WHITE.png" alt="MagEAM" className="h-8 w-auto mb-1" />
+                            <img src="/MAGEAM_LOGO_WHITE.png" alt="MagEAM" className="h-14 w-auto mb-1" />
                             <p className="text-emerald-100 text-sm mt-1">{t('nav.brandSubtitle')}</p>
                         </>
                     ) : (

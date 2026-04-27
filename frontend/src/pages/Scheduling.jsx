@@ -551,6 +551,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   const [search, setSearch] = useState('');
   // Multi-select priority filter (Prometheus style): default P3+P4 on, P1/P2 off
   const [prioFilter, setPrioFilter] = useState({ P1: false, P2: false, P3: true, P4: true });
+  // Jorge 2026-04-27 (reunión 18:06): el tablero del programador debe mostrar
+  // SOLO OTs en estatus "en programación" — las planificadas todavía no son
+  // input válido. Toggle 'inSched' / 'planned' / 'all' para transicionar.
+  const [statusFilter, setStatusFilter] = useState('inSched');
   const [filterGroup, setFilterGroup] = useState('all');
   const [sortBy, setSortBy] = useState('priority'); // 'priority' | 'hours_desc' | 'hours_asc' | 'number'
   const [showShifts, setShowShifts] = useState(true);
@@ -736,6 +740,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
       if (p === 'P1' || p === 'P2') return false;
       return true;
     });
+    // Status filter Jorge 2026-04-27 — programador trabaja solo con EN_PROGRAMACION.
+    if (statusFilter === 'inSched') {
+      list = list.filter(wo => (wo.status || '').toUpperCase() === 'EN_PROGRAMACION');
+    } else if (statusFilter === 'planned') {
+      const planned = new Set(['PLANIFICADO', 'LIBERADO', 'CREADO']);
+      list = list.filter(wo => planned.has((wo.status || '').toUpperCase()));
+    }
     // Priority filter — multi-select (solo P3/P4 ya que P1/P2 no entran al tablero)
     const activePrios = Object.entries(prioFilter).filter(([, v]) => v).map(([k]) => k);
     if (activePrios.length > 0 && activePrios.length < 4) {
@@ -761,7 +772,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     else if (sortBy === 'recent') list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     else if (sortBy === 'oldest') list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     return list;
-  }, [releasedWOs, search, prioFilter, filterGroup, sortBy]);
+  }, [releasedWOs, search, prioFilter, filterGroup, sortBy, statusFilter]);
 
   const weekEnd = days[days.length - 1]?.date || weekStart;
   const weekNum = getISOWeek(weekStart);
@@ -914,6 +925,22 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 todas
               </button>
             </div>
+            {/* Jorge 2026-04-27: status filter — programador trabaja con EN_PROGRAMACION */}
+            <div className="flex items-center gap-1 text-[10px] font-semibold">
+              <span className="text-muted-foreground mr-0.5">Estatus:</span>
+              {[
+                { id: 'inSched', label: 'En programación', color: 'bg-emerald-600 text-white border-emerald-700' },
+                { id: 'planned', label: 'Planificadas', color: 'bg-blue-500 text-white border-blue-600' },
+                { id: 'all', label: 'Todas', color: 'bg-gray-500 text-white border-gray-600' },
+              ].map(s => (
+                <button key={s.id}
+                  onClick={() => setStatusFilter(s.id)}
+                  className={`px-2 py-0.5 rounded border transition-all ${statusFilter === s.id ? s.color + ' shadow-sm' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                  title={s.label}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
             {/* Group + Sort */}
             <div className="grid grid-cols-2 gap-1">
               <select value={filterGroup} onChange={e => setFilterGroup(e.target.value)}
@@ -958,6 +985,22 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                     </span>
                     <span className="font-mono text-xs font-bold text-foreground">{wo.wo_number}</span>
                     <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded border ${typeMeta.bg}`}>{wo.wo_type}</span>
+                    {/* Jorge 2026-04-27: pasar PLANIFICADO/LIBERADO/CREADO → EN_PROGRAMACION */}
+                    {['PLANIFICADO', 'LIBERADO', 'CREADO'].includes((wo.status || '').toUpperCase()) && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await api.updateManagedWO(wo.wo_id, { status: 'EN_PROGRAMACION' });
+                            toast.success(`${wo.wo_number} → en programación`);
+                            onRefresh?.();
+                          } catch { toast.error('Error cambiando estatus'); }
+                        }}
+                        title="Pasar a programación"
+                        className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700">
+                        →prog
+                      </button>
+                    )}
                   </div>
                   {/* Título de cabecera visible siempre (no solo tag/descripción corta) */}
                   <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">{wo.description || wo.equipment_tag || '—'}</p>
@@ -1498,10 +1541,28 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                             <span className="inline-flex items-center gap-0.5"><Clock size={9} /> {timeRange}</span>
                                             <span className="font-semibold text-foreground tabular-nums">{wo._continuation ? 'cont.' : (wo.estimated_hours || 0) + 'h'}</span>
                                             {crewSize > 0 && (
-                                              <span className="inline-flex items-center gap-0.5 ml-auto"><Users size={9} /> {crewSize}</span>
+                                              <span className="inline-flex items-center gap-0.5"><Users size={9} /> {crewSize}</span>
                                             )}
                                             {ops.length > 0 && !wo._continuation && crewSize === 0 && (
-                                              <span className="ml-auto text-[9px] opacity-70">{ops.length} ops</span>
+                                              <span className="text-[9px] opacity-70">{ops.length} ops</span>
+                                            )}
+                                            {/* Jorge 2026-04-27: reservar/desreservar OT puntual sin bloquear semana entera */}
+                                            {!wo._continuation && (
+                                              <button
+                                                onClick={async (e) => {
+                                                  e.stopPropagation();
+                                                  const next = isReserved ? 'EN_PROGRAMACION' : 'PROGRAMADO';
+                                                  try {
+                                                    await api.scheduleManagedWO(wo.wo_id, { status: next });
+                                                    toast.success(isReserved ? `${wo.wo_number} desreservada` : `${wo.wo_number} reservada`);
+                                                    onRefresh?.();
+                                                    setTimeout(() => onRefresh?.(), 1500);
+                                                  } catch { toast.error('Error'); }
+                                                }}
+                                                title={isReserved ? 'Desreservar OT' : 'Reservar OT puntual'}
+                                                className={`ml-auto p-0.5 rounded transition-colors ${isReserved ? 'text-emerald-600 hover:bg-emerald-100' : 'text-muted-foreground hover:bg-muted hover:text-emerald-600'}`}>
+                                                <Lock size={10} />
+                                              </button>
                                             )}
                                           </div>
                                         </div>
@@ -2749,6 +2810,12 @@ function MaterialsTab({ programId, t, plantId }) {
                         <span className="text-foreground flex-1 truncate">{item.description}</span>
                         <span className="font-bold text-foreground w-10 text-right">{item.quantity}</span>
                         <span className="text-gray-400 w-6">{item.unit}</span>
+                        {/* Jorge 2026-04-27: nº reserva por material — repuesto puede pertenecer
+                            a una reserva distinta a la del paquete (planificador a veces crea
+                            sub-reservas). Si el item tiene su propia, gana; si no, hereda del pkg. */}
+                        <span className="font-mono text-[10px] text-indigo-600 w-20 text-right truncate" title="Nº reserva">
+                          {item.reservation_number || pkg.reservation_code || '—'}
+                        </span>
                         {/* Status selector */}
                         <select
                           value={item.collection_status}

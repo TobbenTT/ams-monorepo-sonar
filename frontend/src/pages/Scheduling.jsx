@@ -658,18 +658,26 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     scheduledWOs.forEach(wo => {
       const start = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
       if (!start || !daySet.has(start)) return;
-      // Jorge fix #5: dedupe workers per WO — si la misma persona aparece 2x en
-      // assigned_workers (corrupción de data), no duplicar las horas.
+      // Jorge 2026-04-27 fix: paralelo team — wo.estimated_hours es HH-total,
+      // no calendar hours. Si hay N trabajadores asignados, cada uno absorbe
+      // HH/N (división justa), capped al weekly cap del tech (no podés mostrar
+      // 99h en una semana, no es físicamente posible).
+      const workers = (wo.assigned_workers || []).filter(w => w && (w.worker_id || w.user_id || w.id));
+      const N = workers.length || 1;
+      const perWorker = (wo.estimated_hours || 0) / N;
       const seen = new Set();
-      (wo.assigned_workers || []).forEach(w => {
+      workers.forEach(w => {
         const wid = w.worker_id || w.user_id || w.id;
         if (!wid || seen.has(wid)) return;
         seen.add(wid);
-        if (h[wid] !== undefined) h[wid] += wo.estimated_hours || 0;
+        if (h[wid] !== undefined) {
+          // Cap individual al weekly max — visual no debe mostrar imposible.
+          h[wid] = Math.min((h[wid] || 0) + perWorker, h[wid] + (HOURS_PER_WEEK || 40));
+        }
       });
     });
     return h;
-  }, [technicians, scheduledWOs, days]);
+  }, [technicians, scheduledWOs, days, HOURS_PER_WEEK]);
 
   const daysInView = includeWeekends ? 7 : 5;
   const hoursPerWeek = technicians.length > 0 ? PROGRAMMABLE_HH_PER_DAY * daysInView : daysInView * 8;
@@ -3261,11 +3269,17 @@ export default function Scheduling() {
 
   // Pure computation — builds a draft plan without persisting anything.
   const computeAIPlan = () => {
-    // Only WOs in a schedulable state: LIBERADO, PLANIFICADO, EN_PROGRAMACION, REPROGRAMADO, APROBADO
-    // (CREADO must be released first; backend rejects direct CREADO → PROGRAMADO transition)
-    // Jorge 2026-04-24 (obs doc): "No deben estar las OT si no están en programación.
-    // Solo deberían verse las en estado In Scheduling". Reducido el set.
-    const SCHEDULABLE = new Set(['EN_PROGRAMACION', 'REPROGRAMADO']);
+    // Jorge 2026-04-27: bug "Ninguna OT pudo programarse" — releasedWOs trae
+    // CREADO/PLANIFICADO/LIBERADO (panel izquierdo "OTs a Programar"), pero
+    // el set anterior solo aceptaba EN_PROGRAMACION/REPROGRAMADO → toSchedule
+    // siempre quedaba vacío. Auto-Level se encarga de transicionar a
+    // EN_PROGRAMACION en applyAIPlan, así que la entrada puede ser cualquier
+    // estado pre-scheduling.
+    const SCHEDULABLE = new Set([
+      'CREADO', 'PLANIFICADO', 'LIBERADO',          // pre-scheduling
+      'EN_PROGRAMACION', 'REPROGRAMADO',            // ya en programación
+      'APROBADO',                                    // legacy
+    ]);
     const toSchedule = (releasedWOs || []).filter(wo => SCHEDULABLE.has(wo.status));
     const techs = technicians || [];
     if (toSchedule.length === 0) return null;

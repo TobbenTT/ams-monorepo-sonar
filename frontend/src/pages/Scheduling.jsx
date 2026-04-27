@@ -1669,8 +1669,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 setReserving(false);
                 setReserveConfirm(null);
                 onWeekChange?.(weekStart);
-                // Force full reload to show reserved OTs with updated status
+                // Jorge 2026-04-27: refresh inmediato + retries defensivos
+                // (mismo bug que Auto-Level: backend tarda ~1.5s en committear
+                // la cascada de PUTs, refresh inmediato sólo no captura todo).
                 onRefresh?.();
+                setTimeout(() => onRefresh?.(), 1500);
+                setTimeout(() => onRefresh?.(), 3000);
               }}
                 className="flex-1 py-2.5 text-sm font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
                 {reserving ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}

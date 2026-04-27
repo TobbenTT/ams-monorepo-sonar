@@ -1816,6 +1816,18 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
     log_action(db, "work_request", wr.request_id, "CREATE_MANUAL")
     db.commit()
     db.refresh(wr)
+    # Jorge 2026-04-27: broadcast wr_created para que la pestaña Identification
+    # se refresque al toque cuando alguien crea un aviso desde Failure Capture.
+    # Antes: ningún broadcast → la lista no aparecía hasta navegar fuera y volver.
+    try:
+        from api.services.ws_manager import queue_notify
+        queue_notify(
+            "wr_created",
+            {"request_id": wr.request_id, "equipment_tag": wr.equipment_tag, "priority": wr.priority_code},
+            data.plant_id,
+        )
+    except Exception:
+        pass
     return {
         "request_id": wr.request_id,
         "status": wr.status,
@@ -1844,6 +1856,15 @@ def create_wr_from_hierarchy(data: WRFromHierarchyRequest, db: Session = Depends
     db.add(wr)
     db.commit()
     db.refresh(wr)
+    try:
+        from api.services.ws_manager import queue_notify
+        queue_notify(
+            "wr_created",
+            {"request_id": wr.request_id, "equipment_tag": wr.equipment_tag},
+            data.plant_id,
+        )
+    except Exception:
+        pass
     return {
         "request_id": wr.request_id,
         "status": wr.status,

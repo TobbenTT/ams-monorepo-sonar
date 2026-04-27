@@ -11,7 +11,7 @@ import * as api from '../api';
 // Browser Speech Recognition (no API key needed)
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-export default function FailureCapture({ onNavigateTab }) {
+export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const { plant } = useOutletContext();
   const { user } = useAuth();
   const toast = useToast();
@@ -1099,6 +1099,15 @@ export default function FailureCapture({ onNavigateTab }) {
       const wrId = res?.request_id || res?.work_request_id || '';
       setCreatedWRId(wrId);
       toast.success('Notification created: ' + wrId);
+      // Jorge 2026-04-27: refrescar badge counts del WM al toque + retry 1.5s
+      // por si el backend tarda en commitear. La pestaña Identification se
+      // refresca sola por el WS broadcast wr_created.
+      try {
+        if (typeof onRefreshCounts === 'function') {
+          onRefreshCounts();
+          setTimeout(() => onRefreshCounts(), 1500);
+        }
+      } catch {}
     } catch (err) {
       toast.error(err.message || 'Error creating notification');
     } finally {

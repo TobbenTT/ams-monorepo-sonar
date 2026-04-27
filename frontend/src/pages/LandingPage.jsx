@@ -100,9 +100,9 @@ export default function LandingPage() {
         <div className="min-h-screen bg-white">
             {/* Nav */}
             <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-lg border-b border-gray-100 z-50">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                <div className="max-w-7xl mx-auto px-6 h-28 flex items-center justify-between">
                     <div className="flex items-center">
-                        <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-14 w-auto" />
+                        <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-24 w-auto" />
                     </div>
                     <div className="flex items-center gap-4">
                         <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">{t.features}</a>

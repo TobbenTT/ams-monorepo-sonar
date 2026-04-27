@@ -80,7 +80,7 @@ export default function SecurityCompliancePage() {
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-slate-700 hover:text-emerald-700 transition">
             <ArrowLeft className="w-4 h-4" />
-            <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-14 w-auto" />
+            <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-24 w-auto" />
           </Link>
           <div className="flex items-center gap-3">
             <Link to="/contact" className="text-sm text-slate-600 hover:text-emerald-700">Contact Sales</Link>

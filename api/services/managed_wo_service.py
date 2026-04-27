@@ -215,6 +215,7 @@ def create_work_order(
     planning_group: str | None = None,
     work_center: str | None = None,
     wo_title: str | None = None,
+    technical_location: str | None = None,
 ) -> dict:
     """Create a new managed work order (optionally from an approved WR).
     P1/P2 priorities trigger fast track: OT created directly in RELEASED status."""
@@ -260,6 +261,7 @@ def create_work_order(
         work_class=work_class,
         planning_group=pg,
         work_center=wc,
+        technical_location=(technical_location or None),
         planned_by=planned_by,
         estimated_hours=estimated_hours,
         budget_amount=auto_budget,
@@ -462,6 +464,15 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
     # Use explicit plant_id from request, then AI classification, then fallback
     plant = plant_id or ai.get("plant_id") or "GOLDFIELDS-SN"
 
+    # Jorge 2026-04-27: propagar technical_location del aviso a la OT.
+    # La TL puede estar en ai_classification.technical_location o problem_description.technical_location.
+    tl_from_wr = (
+        (ai.get("technical_location") if isinstance(ai, dict) else None)
+        or (pd.get("technical_location") if isinstance(pd, dict) else None)
+        or (pd.get("technical_location_code") if isinstance(pd, dict) else None)
+        or None
+    )
+
     result = create_work_order(
         db=db,
         equipment_tag=wr.equipment_tag,
@@ -475,6 +486,7 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
         operations=operations,
         materials=materials,
         wo_title=(ai.get("wo_title") if isinstance(ai, dict) else None) or None,
+        technical_location=tl_from_wr,
     )
 
     # Update WR status so it can't create duplicate WOs

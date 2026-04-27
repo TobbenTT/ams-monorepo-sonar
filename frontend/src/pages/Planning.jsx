@@ -1754,8 +1754,20 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         const opsHH = (editOps || []).reduce((s, o) => s + ((parseFloat(o.quantity) || 1) * (parseFloat(o.hours) || 0)), 0);
                         const plannedHH = opsHH > 0 ? opsHH : (wo.estimated_hours || 0);
                         const actualHH = wo.actual_hours || execData.actual_hours || 0;
-                        const plannedDur = wo.planned_start && wo.planned_end
+                        // Jorge 2026-04-27 (G): Duración planificada = serie + max(paralelos por grupo).
+                        // Antes: planned_end - planned_start, lo cual daba 0h cuando ambas
+                        // fechas eran el mismo día sin horario.
+                        const opsSerieHrs = (editOps || []).filter(o => !o.parallel).reduce((s, o) => s + (parseFloat(o.hours) || 0), 0);
+                        const opsParallelGroups = {};
+                        for (const o of (editOps || []).filter(o => o.parallel)) {
+                          const g = o.parallel_group || 'A';
+                          opsParallelGroups[g] = Math.max(opsParallelGroups[g] || 0, parseFloat(o.hours) || 0);
+                        }
+                        const opsParallelHrs = Object.values(opsParallelGroups).reduce((s, v) => s + v, 0);
+                        const opsDuration = opsSerieHrs + opsParallelHrs;
+                        const calendarDur = wo.planned_start && wo.planned_end
                           ? Math.max(0, (new Date(wo.planned_end) - new Date(wo.planned_start)) / 3600000) : 0;
+                        const plannedDur = opsDuration > 0 ? opsDuration : calendarDur;
                         const actualDur = wo.actual_start && wo.actual_end
                           ? Math.max(0, (new Date(wo.actual_end) - new Date(wo.actual_start)) / 3600000) : 0;
                         const overHH = parseFloat(actualHH) > parseFloat(plannedHH);

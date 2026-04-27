@@ -288,6 +288,16 @@ def create_work_order(
         log_action(db, "managed_work_order", wo.wo_id, "FAST_TRACK_PROGRAMADO", user=planned_by or "system")
     db.commit()
     db.refresh(wo)
+    # Jorge 2026-04-27: broadcast wo_created para refrescar Planning/Scheduling
+    # automáticamente cuando alguien crea una OT desde otra pestaña/sesión.
+    try:
+        queue_notify(
+            "wo_created",
+            {"wo_id": wo.wo_id, "wo_number": wo.wo_number, "status": wo.status, "priority": wo.priority_code},
+            wo.plant_id,
+        )
+    except Exception:
+        pass
     return _to_dict(wo)
 
 

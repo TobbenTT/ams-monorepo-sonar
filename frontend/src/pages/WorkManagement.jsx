@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../components/Shared';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AlertTriangle, ClipboardList, CalendarRange, Calendar, Wrench } from 'lucide-react';
 import * as api from '../api';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 const FailureCapture = lazy(() => import('./FailureCapture'));
 const WorkRequests = lazy(() => import('./WorkRequests'));
@@ -85,6 +86,15 @@ export default function WorkManagement() {
   }, []);
 
   useEffect(() => { refreshCounts(); }, [refreshCounts, refreshKey]);
+
+  // Jorge 2026-04-27: badges del WM se refrescan al toque cuando llegan
+  // eventos wr_*/wo_* del backend (otros usuarios o creación local).
+  const plantId = outletContext?.selectedPlant?.plant_id || outletContext?.selectedPlant || 'OCP-JFC1';
+  useWebSocket(plantId, useCallback((msg) => {
+    if (msg?.event && (msg.event.startsWith('wr_') || msg.event.startsWith('wo_'))) {
+      refreshCounts();
+    }
+  }, [refreshCounts]));
 
   const navigateTab = useCallback((tabId, selectedWrId, selectedWoId) => {
     setActiveTab(tabId);

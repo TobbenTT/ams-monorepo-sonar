@@ -438,6 +438,12 @@ def cancel_work_request(
     wr_model.cancellation_reason = reason[:500]
     wr_model.updated_at = datetime.now()
     db.commit()
+    # Jorge 2026-04-27: broadcast para refrescar Identification al toque
+    try:
+        from api.services.ws_manager import queue_notify
+        queue_notify("wr_cancelled", {"request_id": request_id}, wr_model.plant_id)
+    except Exception:
+        pass
     return {"status": "CERRADO", "request_id": request_id, "cancellation_reason": reason}
 
 @router.put("/{request_id}/assign")
@@ -630,6 +636,12 @@ def update_work_request(request_id: str, data: WRUpdateRequest, db: Session = De
     log_action(db, "work_request", request_id, "UPDATE")
     db.commit()
     db.refresh(wr)
+    try:
+        from api.services.ws_manager import queue_notify
+        plant_id = (wr.ai_classification or {}).get("plant_id") if isinstance(wr.ai_classification, dict) else None
+        queue_notify("wr_updated", {"request_id": request_id}, plant_id)
+    except Exception:
+        pass
     return work_request_service._to_dict(wr)
 
 

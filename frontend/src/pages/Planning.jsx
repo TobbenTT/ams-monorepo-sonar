@@ -504,6 +504,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [cancelReason, setCancelReason] = useState('');
   const [savingOT, setSavingOT] = useState(false);
   const [expandedOps, setExpandedOps] = useState({});
+  // Jorge SF-559 (2026-04-27): vista agrupada por especialidad con subtotales
+  const [opsViewMode, setOpsViewMode] = useState('flat'); // 'flat' | 'bySpec'
+  const [collapsedSpecs, setCollapsedSpecs] = useState({});
   const [extModal, setExtModal] = useState({ open: false, opIdx: -1, context: 'operation' });
   const [extForm, setExtForm] = useState({ vendor: '', vendor_other: '', contract_ref: '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: '', currency: 'USD', start_date: '', end_date: '', lead_time_days: '', contact_name: '', contact_phone: '', safety_requirements: '', notes: '' });
   const [woSearch, setWoSearch] = useState("");
@@ -2012,8 +2015,57 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         })()}
                         <button type="button" onClick={() => setEditOps(prev => [...prev, { type: 'INT', description: '', specialty: 'Mechanical', quantity: 1, hours: 4 }])}
                           className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">+ Add</button>
+                        {/* Jorge SF-559 — toggle vista plana / agrupada por especialidad */}
+                        <div className="ml-2 inline-flex items-center gap-0.5 border border-gray-300 rounded-lg overflow-hidden">
+                          <button type="button" onClick={() => setOpsViewMode('flat')}
+                            className={`text-xs px-2 py-1 ${opsViewMode === 'flat' ? 'bg-gray-700 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                            Lista
+                          </button>
+                          <button type="button" onClick={() => setOpsViewMode('bySpec')}
+                            className={`text-xs px-2 py-1 ${opsViewMode === 'bySpec' ? 'bg-gray-700 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                            title="Agrupar por especialidad con subtotales HH/duración">
+                            Por especialidad
+                          </button>
+                        </div>
                       </div>
                     </div>
+                    {/* Subtotales por disciplina — siempre visibles arriba de la lista. SF-559 */}
+                    {editOps.length > 0 && (() => {
+                      const subtotals = {};
+                      editOps.forEach(op => {
+                        const spec = (op.specialty || 'Sin especialidad').trim() || 'Sin especialidad';
+                        const qty = parseInt(op.quantity) || 1;
+                        const hh = (parseFloat(op.hours) || 0) * qty;
+                        if (!subtotals[spec]) subtotals[spec] = { hh: 0, count: 0, durSerie: 0, parGroups: {} };
+                        subtotals[spec].hh += hh;
+                        subtotals[spec].count += 1;
+                        if (op.parallel) {
+                          const g = op.parallel_group || 'A';
+                          subtotals[spec].parGroups[g] = Math.max(subtotals[spec].parGroups[g] || 0, parseFloat(op.hours) || 0);
+                        } else {
+                          subtotals[spec].durSerie += parseFloat(op.hours) || 0;
+                        }
+                      });
+                      const entries = Object.entries(subtotals).sort((a, b) => b[1].hh - a[1].hh);
+                      return (
+                        <div className="mb-2 flex flex-wrap gap-1.5">
+                          {entries.map(([spec, s]) => {
+                            const dur = s.durSerie + Object.values(s.parGroups).reduce((sum, v) => sum + v, 0);
+                            return (
+                              <div key={spec} className="px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 text-xs">
+                                <span className="font-bold text-blue-700">{spec}</span>
+                                <span className="text-gray-500 mx-1">·</span>
+                                <span className="text-gray-700">{s.count} ops</span>
+                                <span className="text-gray-500 mx-1">·</span>
+                                <span className="font-semibold text-gray-800 tabular-nums">{s.hh.toFixed(1)} HH</span>
+                                <span className="text-gray-500 mx-1">·</span>
+                                <span className="text-gray-600 tabular-nums">{dur.toFixed(1)}h dur</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                     {editOps.length === 0 ? (
                       <div className="text-center py-6 text-gray-400">
                         <p className="text-sm">No operations</p>
@@ -2022,9 +2074,28 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     ) : (
                       <div className="space-y-2">
                         {editOps.map((op, idx) => {
+                          const opSpec = (op.specialty || 'Sin especialidad').trim() || 'Sin especialidad';
+                          // SF-559: cuando bySpec, ocultamos op si su grupo está colapsado
+                          if (opsViewMode === 'bySpec' && collapsedSpecs[opSpec]) return null;
+                          // Insertamos header de sección al inicio de cada grupo de specialty
+                          // (la primera vez que aparece en orden de array). El planner aún
+                          // puede arrastrar para reordenar — los headers se recalculan.
+                          const prevSpec = idx > 0 ? ((editOps[idx - 1].specialty || 'Sin especialidad').trim() || 'Sin especialidad') : null;
+                          const isFirstOfGroup = opsViewMode === 'bySpec' && opSpec !== prevSpec;
                           const isExpanded = !!expandedOps[idx];
                           return (
-                          <div key={idx} draggable
+                          <React.Fragment key={idx}>
+                          {/* SF-559: header de grupo specialty (clic para colapsar/expandir) */}
+                          {isFirstOfGroup && (
+                            <div className="flex items-center gap-2 mt-2 pb-1 border-b border-blue-200">
+                              <button type="button" onClick={() => setCollapsedSpecs(p => ({ ...p, [opSpec]: !p[opSpec] }))}
+                                className="flex items-center gap-1 text-xs font-bold text-blue-700">
+                                {collapsedSpecs[opSpec] ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                {opSpec}
+                              </button>
+                            </div>
+                          )}
+                          <div draggable
                             onDragStart={e => { e.dataTransfer.setData('text/plain', String(idx)); e.dataTransfer.effectAllowed = 'move'; }}
                             onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                             onDrop={e => {
@@ -2136,6 +2207,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               </div>
                             )}
                           </div>
+                          </React.Fragment>
                           );
                         })}
                       </div>

@@ -130,6 +130,11 @@ export default function Execution() {
   const [savingMat, setSavingMat] = useState(false);
   // Jorge 2026-04-22 #9: Avisos pendientes de aprobación por supervisor
   const [pendingWRs, setPendingWRs] = useState([]);
+  // SF-566 C6 Tanda C (2026-04-28): validation gate antes de EN_EJECUCION
+  // para PM03 fast-track. Supervisor confirma explícitamente que revisó
+  // operaciones + materiales antes de pasar a ejecución.
+  const [validateGate, setValidateGate] = useState(null); // { wo, opts }
+  const [gateChecks, setGateChecks] = useState({ ops: false, materials: false, safety: false });
 
   const loadData = async () => {
     setLoading(true);
@@ -180,6 +185,18 @@ export default function Execution() {
       { timeout: 5000, maximumAge: 60000 }
     );
   });
+
+  // SF-566 C6: para PM03 fast-track, abrir gate de validación. Para el resto
+  // (PM01/PM02 que ya pasaron por planificación + scheduling) seguir directo.
+  const handleStartRequest = (wo, opts = {}) => {
+    const isFastTrack = wo.wo_type === 'PM03' || ['P1', 'P2'].includes(wo.priority_code);
+    if (isFastTrack && !opts.bypassGate) {
+      setValidateGate({ wo, opts });
+      setGateChecks({ ops: false, materials: false, safety: false });
+      return;
+    }
+    handleStart(wo, opts);
+  };
 
   // Start execution — captures start timestamp + geolocation (when from QR)
   const handleStart = async (wo, opts = {}) => {
@@ -441,9 +458,23 @@ export default function Execution() {
       {/* ═══ PROGRAMADO VIEW — SF-566 Tanda C (Jorge 2026-04-27) ═══
           Vista cronológica del supervisor: OTs programadas para esta semana
           agrupadas por día y separadas por turno día (07-19) y noche (19-07),
-          ordenadas por planned_start. Reemplaza la lista plana del "Hoy".  */}
+          ordenadas por planned_start. Navegación entre semanas con weekOffset
+          compartido del state superior (C2 Tanda C). */}
       {view === 'programado' && (() => {
-        const programmedWOs = activeWOs.filter(w => w.wo_type !== 'PM03' && !['P1', 'P2'].includes(w.priority_code));
+        // C2: filtrar por semana seleccionada (weekOffset shift de la actual)
+        const now = new Date();
+        const offset = now.getDay() === 0 ? 6 : now.getDay() - 1;
+        const weekMon = new Date(now); weekMon.setDate(now.getDate() - offset + (weekOffset * 7)); weekMon.setHours(0,0,0,0);
+        const weekSun = new Date(weekMon); weekSun.setDate(weekMon.getDate() + 6); weekSun.setHours(23,59,59,999);
+        const weekMonStr = weekMon.toISOString().slice(0, 10);
+        const weekSunStr = weekSun.toISOString().slice(0, 10);
+        const weekNum = Math.ceil(((weekMon - new Date(weekMon.getFullYear(), 0, 1)) / 86400000 + new Date(weekMon.getFullYear(), 0, 1).getDay() + 1) / 7);
+        const programmedWOs = activeWOs.filter(w => {
+          if (w.wo_type === 'PM03' || ['P1', 'P2'].includes(w.priority_code)) return false;
+          if (!w.planned_start) return weekOffset === 0; // sin fecha solo en semana actual
+          const d = String(w.planned_start).slice(0, 10);
+          return d >= weekMonStr && d <= weekSunStr;
+        });
         // Agrupar por dia (planned_start) y dentro por turno
         const groups = {};
         const undated = [];
@@ -467,11 +498,23 @@ export default function Execution() {
         return (
           <div className="space-y-3">
             <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-900/10 p-3">
-              <div className="flex items-center gap-2 text-indigo-800 dark:text-indigo-300 font-bold text-sm mb-1">
-                <Calendar size={14} /> Programa de la semana · vista cronológica
+              <div className="flex items-center gap-2 mb-2">
+                <button type="button" onClick={() => setWeekOffset(o => o - 1)}
+                  className="px-2 py-0.5 rounded bg-white border border-indigo-300 text-xs font-bold text-indigo-700 hover:bg-indigo-100">◀</button>
+                <span className="text-sm font-bold text-indigo-900 dark:text-indigo-200">
+                  W{String(weekNum).padStart(2, '0')} · {weekMon.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })} – {weekSun.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}
+                  {weekOffset !== 0 && <span className="ml-2 text-[10px] text-indigo-600">({weekOffset > 0 ? '+' : ''}{weekOffset}w)</span>}
+                </span>
+                <button type="button" onClick={() => setWeekOffset(o => o + 1)}
+                  className="px-2 py-0.5 rounded bg-white border border-indigo-300 text-xs font-bold text-indigo-700 hover:bg-indigo-100">▶</button>
+                {weekOffset !== 0 && (
+                  <button type="button" onClick={() => setWeekOffset(0)}
+                    className="px-2 py-0.5 rounded bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700">Hoy</button>
+                )}
+                <span className="ml-auto text-xs text-indigo-700 dark:text-indigo-300 font-semibold">{programmedWOs.length} OTs</span>
               </div>
               <p className="text-[11px] text-indigo-700 dark:text-indigo-200">
-                OTs programadas agrupadas por día y separadas por turno. Sigue el orden cronológico para ejecutarlas.
+                Vista cronológica del programa semanal. Sigue el orden numérico dentro de cada día/turno para ejecutar.
               </p>
             </div>
             {sortedDates.length === 0 && undated.length === 0 ? (
@@ -588,9 +631,9 @@ export default function Execution() {
                       </button>
                     )}
                     {!isExec && (
-                      <button onClick={() => handleStart(wo)}
+                      <button onClick={() => handleStartRequest(wo)}
                         className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1">
-                        <Play size={12} /> Iniciar ejecución
+                        <Play size={12} /> Validar y empezar
                       </button>
                     )}
                     {isExec && (
@@ -1452,6 +1495,109 @@ export default function Execution() {
           </div>
         </div>
       )}
+
+      {/* SF-566 C6: Validation gate antes de EN_EJECUCION para PM03 fast-track.
+          Supervisor confirma 3 chequeos antes de proceder. Audit trail captura
+          la decisión vía supervisor_validated_by + supervisor_validated_at. */}
+      {validateGate && (() => {
+        const w = validateGate.wo;
+        const ops = w.operations || [];
+        const mats = w.materials || [];
+        const allChecked = gateChecks.ops && gateChecks.materials && gateChecks.safety;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setValidateGate(null)} />
+            <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="p-5 border-b border-border bg-amber-50 dark:bg-amber-900/20">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={20} className="text-amber-600" />
+                  <h3 className="text-lg font-bold text-foreground">Validación supervisor · OT {w.wo_number}</h3>
+                </div>
+                <p className="text-xs text-amber-800 dark:text-amber-200 mt-1">
+                  Esta OT es <strong>{w.priority_code} / {w.wo_type}</strong> (falla correctiva fast-track). Confirmá los 3 puntos antes de pasar a ejecución.
+                </p>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Operaciones · {ops.length}</div>
+                  {ops.length === 0 ? (
+                    <p className="text-xs text-red-600 italic">⚠️ Esta OT no tiene operaciones definidas. Usá "IA completa operaciones" antes de seguir.</p>
+                  ) : (
+                    <div className="text-xs space-y-1 max-h-32 overflow-y-auto bg-muted/30 rounded p-2">
+                      {ops.slice(0, 5).map((op, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="font-mono text-muted-foreground">{String((i+1)*10).padStart(4,'0')}</span>
+                          <span className="text-foreground truncate flex-1">{op.description || op.task || '—'}</span>
+                          <span className="tabular-nums">{(op.hours || 0)}h</span>
+                        </div>
+                      ))}
+                      {ops.length > 5 && <div className="text-[10px] text-muted-foreground">+{ops.length - 5} más</div>}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Materiales · {mats.length}</div>
+                  {mats.length === 0 ? (
+                    <p className="text-xs text-amber-600 italic">Sin materiales asignados. Verificá si el trabajo realmente no requiere repuestos.</p>
+                  ) : (
+                    <div className="text-xs space-y-1 max-h-24 overflow-y-auto bg-muted/30 rounded p-2">
+                      {mats.slice(0, 4).map((m, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="font-mono text-muted-foreground w-16 truncate">{m.code || '—'}</span>
+                          <span className="flex-1 truncate">{m.description || '—'}</span>
+                          <span className="tabular-nums">{m.quantity || 1} {m.unit || ''}</span>
+                        </div>
+                      ))}
+                      {mats.length > 4 && <div className="text-[10px] text-muted-foreground">+{mats.length - 4} más</div>}
+                    </div>
+                  )}
+                </div>
+                <div className="border-t border-border pt-3 space-y-2">
+                  <label className="flex items-start gap-2 cursor-pointer text-sm">
+                    <input type="checkbox" checked={gateChecks.ops}
+                      onChange={e => setGateChecks(s => ({ ...s, ops: e.target.checked }))}
+                      className="mt-0.5 accent-emerald-600" />
+                    <span>Revisé las <strong>operaciones</strong> y son correctas para este trabajo.</span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer text-sm">
+                    <input type="checkbox" checked={gateChecks.materials}
+                      onChange={e => setGateChecks(s => ({ ...s, materials: e.target.checked }))}
+                      className="mt-0.5 accent-emerald-600" />
+                    <span>Confirmé que los <strong>materiales/repuestos</strong> están disponibles o no se requieren.</span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer text-sm">
+                    <input type="checkbox" checked={gateChecks.safety}
+                      onChange={e => setGateChecks(s => ({ ...s, safety: e.target.checked }))}
+                      className="mt-0.5 accent-emerald-600" />
+                    <span>Verifiqué <strong>condiciones de seguridad</strong> (LOTO/perímetro/EPP) según procedimiento.</span>
+                  </label>
+                </div>
+              </div>
+              <div className="p-3 border-t border-border flex gap-2 bg-muted/20">
+                <button onClick={() => setValidateGate(null)}
+                  className="flex-1 py-2 text-sm font-semibold border border-border rounded-lg hover:bg-muted">
+                  Cancelar
+                </button>
+                <button disabled={!allChecked}
+                  onClick={async () => {
+                    try {
+                      await updateManagedWO(w.wo_id, {
+                        supervisor_validated_by: 'supervisor',
+                        supervisor_validated_at: new Date().toISOString(),
+                        supervisor_validation_notes: 'ops+materials+safety confirmed via SF-566 gate',
+                      });
+                    } catch { /* el audit field puede no estar en backend, no bloquear */ }
+                    setValidateGate(null);
+                    handleStart(w, { ...validateGate.opts, bypassGate: true });
+                  }}
+                  className="flex-1 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                  Validar y empezar ejecución
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

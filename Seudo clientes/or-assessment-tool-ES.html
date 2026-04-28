@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scorecard de Evaluación de Preparación Operacional - ValueStrategy Consulting</title>
+<script src="role_config_es.js"></script>
+<style>
+:root {
+  --bg-primary: #0d0d1a;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --accent: #0f3460;
+  --highlight: #e94560;
+  --success: #00b4d8;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0b8;
+  --text-muted: #606078;
+  --border: #2a2a4a;
+  --level1: #e94560;
+  --level2: #ff6b35;
+  --level3: #f1c40f;
+  --level4: #2ecc71;
+  --level5: #00b4d8;
+  --radius: 8px;
+  --gap: 16px;
+  --transition: 0.25s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 16px;
+  min-height: 100vh;
+}
+
+.container { max-width: 960px; margin: 0 auto; padding: 0 var(--gap); }
+
+/* ---- ROLE SELECTOR ---- */
+.role-section {
+  padding: 40px var(--gap) 32px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.role-section h2 {
+  font-size: 22px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.role-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 24px;
+}
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.role-card {
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  min-height: 110px;
+}
+.role-card:hover {
+  border-color: var(--success);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 180, 216, 0.18);
+}
+.role-card.selected {
+  border-color: var(--success);
+  background: linear-gradient(135deg, var(--bg-tertiary), rgba(0, 180, 216, 0.12));
+}
+.role-card .role-icon {
+  font-size: 26px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.role-card .role-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.role-card .role-tagline {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.role-badge {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--success);
+}
+.role-badge button.role-change {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  margin-left: 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all var(--transition);
+}
+.role-badge button.role-change:hover {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+/* ---- HERO ---- */
+.hero {
+  text-align: center;
+  padding: 64px var(--gap) 48px;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 50%, var(--bg-primary) 100%);
+  border-bottom: 1px solid var(--border);
+}
+.hero-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #fff;
+}
+.hero .subtitle {
+  font-size: clamp(14px, 2.5vw, 18px);
+  color: var(--success);
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+.hero .intro {
+  max-width: 640px;
+  margin: 0 auto;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+/* ---- PHASE GATE ---- */
+.phase-section {
+  padding: 40px 0;
+}
+.phase-section h2 {
+  text-align: center;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.phase-section .phase-hint {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+.phase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.phase-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+  user-select: none;
+}
+.phase-card:hover {
+  border-color: var(--success);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,180,216,0.15);
+}
+.phase-card.selected {
+  border-color: var(--success);
+  background: var(--bg-tertiary);
+  box-shadow: 0 0 0 3px rgba(0,180,216,0.25);
+}
+.phase-card .icon { font-size: 32px; margin-bottom: 8px; }
+.phase-card .name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.phase-card .desc { font-size: 12px; color: var(--text-muted); }
+
+.phase-badge {
+  text-align: center;
+  margin-top: 20px;
+  min-height: 36px;
+}
+.phase-badge span {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--success);
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---- PROJECT INFO ---- */
+.project-info {
+  padding: 0 0 32px;
+}
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition);
+}
+.collapsible-header:hover { background: var(--bg-tertiary); }
+.collapsible-header h3 { font-size: 15px; font-weight: 600; }
+.collapsible-header .arrow { transition: transform var(--transition); font-size: 12px; color: var(--text-muted); }
+.collapsible-header.open .arrow { transform: rotate(180deg); }
+.collapsible-body {
+  display: none;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 16px;
+}
+.collapsible-body.open { display: block; }
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.form-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.form-group input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.form-group input:focus { border-color: var(--success); }
+
+@media (max-width: 600px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+
+/* ---- STICKY PROGRESS ---- */
+.sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  padding: 10px var(--gap);
+  display: none;
+}
+.sticky-bar.visible { display: block; }
+.sticky-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.progress-track {
+  flex: 1;
+  min-width: 120px;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--success);
+  border-radius: 4px;
+  transition: width var(--transition);
+  width: 0%;
+}
+.progress-text { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.progress-score { font-size: 13px; font-weight: 700; color: var(--success); white-space: nowrap; }
+.btn-calculate {
+  padding: 8px 20px;
+  background: var(--highlight);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--transition);
+  white-space: nowrap;
+}
+.btn-calculate:hover { opacity: 0.85; }
+.btn-calculate:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---- ASSESSMENT ---- */
+.assessment-section {
+  padding-bottom: 40px;
+  display: none;
+}
+.assessment-section.visible { display: block; }
+
+.discipline-accordion {
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.disc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition);
+}
+.disc-header:hover { background: var(--bg-tertiary); }
+.disc-header .disc-icon { font-size: 22px; flex-shrink: 0; }
+.disc-header .disc-name { font-weight: 700; font-size: 15px; flex: 1; }
+.disc-header .disc-weight {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-primary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.disc-header .disc-score-badge {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 42px;
+  text-align: center;
+}
+.disc-header .disc-score-badge.scored { color: var(--success); }
+.disc-header .disc-arrow {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+.disc-header.open .disc-arrow { transform: rotate(180deg); }
+
+.disc-body {
+  display: none;
+  background: var(--bg-primary);
+  padding: 16px;
+}
+.disc-body.open { display: block; }
+
+.criterion {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.criterion:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+
+.criterion-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.criterion-number {
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.score-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.score-btn {
+  flex: 1;
+  min-width: 52px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.score-btn:hover {
+  border-color: var(--success);
+  color: var(--text-primary);
+}
+.score-btn.active {
+  border-color: var(--success);
+  background: var(--success);
+  color: #0d0d1a;
+}
+.score-labels {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.score-labels span {
+  flex: 1;
+  min-width: 52px;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+}
+
+@media (max-width: 480px) {
+  .score-btn { min-width: 44px; height: 34px; font-size: 14px; }
+  .score-labels span { min-width: 44px; font-size: 9px; }
+}
+
+/* ---- SCALE EXPLAINER (collapsible) ---- */
+.scale-block { margin: 0 0 24px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg-secondary); }
+.scale-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; cursor: pointer; user-select: none; transition: background var(--transition); background: var(--bg-tertiary); }
+.scale-header:hover { background: var(--accent); }
+.scale-header h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.scale-header .hint { font-size: 11px; color: var(--text-muted); margin-left: 12px; font-weight: 400; }
+.scale-header .arrow { font-size: 12px; color: var(--text-muted); transition: transform var(--transition); }
+.scale-header.open .arrow { transform: rotate(180deg); }
+.scale-body { display: none; padding: 20px 18px; border-top: 1px solid var(--border); }
+.scale-body.open { display: block; }
+.scale-intro { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.55; }
+.scale-advice { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+.scale-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.scale-level-card { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px; border-left-width: 4px; border-left-style: solid; }
+.scale-level-card .lvl-num { font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.scale-level-card .lvl-name { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.scale-level-card .lvl-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+@media (max-width: 600px) { .scale-levels { grid-template-columns: 1fr 1fr; } }
+
+/* ---- RESULTS ---- */
+.results-section {
+  display: none;
+  padding: 40px 0 60px;
+}
+.results-section.visible { display: block; }
+
+.result-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 32px;
+}
+.result-score {
+  font-size: 72px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.result-label {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.result-interp {
+  font-size: 15px;
+  color: var(--text-secondary);
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.7;
+  text-align: left;
+}
+
+/* Radar */
+.radar-container {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+.radar-container h3 {
+  text-align: center;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+.radar-svg-wrap {
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+}
+.radar-svg-wrap svg { max-width: 100%; height: auto; }
+.radar-legend { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-top: 14px; font-size: 12px; color: var(--text-secondary); }
+.radar-legend .item { display: flex; align-items: center; gap: 8px; }
+.radar-legend .swatch { width: 24px; height: 0; border-top-width: 2px; border-top-style: solid; }
+.radar-legend .swatch.dashed { border-top-style: dashed; }
+
+/* Breakdown table */
+.breakdown {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 32px;
+  overflow-x: auto;
+}
+.breakdown h3 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+.breakdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.breakdown th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.breakdown td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.breakdown tr:last-child td { border-bottom: none; }
+.bar-cell { min-width: 120px; }
+.bar-track {
+  height: 8px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar-track .bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width var(--transition);
+}
+
+/* Gap analysis */
+.gap-section {
+  margin-bottom: 32px;
+}
+.gap-section h3 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+.gap-card {
+  background: var(--bg-secondary);
+  border-left: 4px solid var(--highlight);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 20px;
+  margin-bottom: 12px;
+}
+.gap-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.gap-card-header .gap-name { font-weight: 700; font-size: 15px; }
+.gap-card-header .gap-score {
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.gap-risk {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  font-style: italic;
+}
+.gap-actions {
+  list-style: none;
+  margin-bottom: 8px;
+}
+.gap-actions li {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 3px 0 3px 18px;
+  position: relative;
+}
+.gap-actions li::before {
+  content: "\25B6";
+  position: absolute;
+  left: 0;
+  color: var(--highlight);
+  font-size: 9px;
+  top: 6px;
+}
+.gap-chapter {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.no-gaps {
+  background: var(--bg-secondary);
+  border-left: 4px solid var(--level4);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 20px;
+  color: var(--level4);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Actions bar */
+.actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--transition);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--success); color: #0d0d1a; }
+.btn-secondary { background: var(--accent); color: var(--text-primary); }
+.btn-danger { background: rgba(233,69,96,0.2); color: var(--highlight); border: 1px solid var(--highlight); }
+
+.cta-block {
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--accent) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+.cta-block h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #fff;
+}
+.cta-block p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.cta-block .btn-cta {
+  display: inline-block;
+  padding: 14px 36px;
+  background: var(--highlight);
+  color: #fff;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity var(--transition);
+}
+.cta-block .btn-cta:hover { opacity: 0.85; }
+
+.footer-ref {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+}
+
+/* ---- CONFIRM DIALOG ---- */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+}
+.modal-box h3 { margin-bottom: 12px; font-size: 18px; }
+.modal-box p { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 12px; justify-content: center; }
+.modal-actions .btn { min-width: 100px; justify-content: center; }
+
+/* ---- PRINT ---- */
+@media print {
+  body { background: #fff; color: #111; font-size: 11pt; }
+  .sticky-bar, .phase-section, .project-info, .assessment-section, .actions-bar, .cta-block, .modal-overlay { display: none !important; }
+  .hero { background: #fff; border-bottom-color: #ccc; padding: 24px 0; }
+  .hero h1 { color: #111; font-size: 24pt; }
+  .hero .subtitle { color: #333; }
+  .hero .intro { color: #555; }
+  .hero-badge { background: #eee; color: #333; }
+  .results-section { display: block !important; padding-top: 0; }
+  .result-card, .radar-container, .breakdown, .gap-card, .no-gaps {
+    background: #fff;
+    border-color: #ccc;
+    break-inside: avoid;
+  }
+  .result-score { color: #111 !important; }
+  .result-label { color: #333 !important; }
+  .result-interp { color: #444; }
+  .breakdown th { color: #666; border-bottom-color: #ccc; }
+  .breakdown td { color: #333; border-bottom-color: #eee; }
+  .gap-risk { color: #555; }
+  .gap-actions li { color: #444; }
+  .gap-chapter { color: #666; }
+  .footer-ref { color: #888; border-top-color: #ccc; }
+  .container { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="container">
+    <div class="hero-badge">Herramienta de Diagnóstico</div>
+    <h1>Scorecard de Evaluación de Preparación Operacional</h1>
+    <p class="subtitle">Ready to Operate - por ValueStrategy Consulting</p>
+    <p class="intro">Evalúe la Preparación Operacional de su proyecto en menos de 10 minutos. Seleccione la fase de su proyecto a continuación para recibir un diagnóstico personalizado con recomendaciones accionables.</p>
+  </div>
+</section>
+
+<!-- STICKY PROGRESS -->
+<div class="sticky-bar" id="stickyBar">
+  <div class="sticky-inner">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-text" id="progressText">0 / 39 criterios evaluados</span>
+    <span class="progress-score" id="progressScore"></span>
+    <button class="btn-calculate" id="btnCalculate" disabled onclick="calculateResults()">Calcular Resultados</button>
+  </div>
+</div>
+
+<!-- ROLE SELECTION -->
+<section class="role-section" id="roleSection">
+  <div class="container">
+    <h2>¿Desde qué rol evalúas tu proyecto?</h2>
+    <p class="role-hint">Las preguntas, pesos y recomendaciones se ajustan a la óptica profesional del rol que selecciones. Puedes cambiar de rol en cualquier momento.</p>
+    <div class="role-grid" id="roleGrid"></div>
+    <div class="role-badge" id="roleBadge"></div>
+  </div>
+</section>
+
+<!-- PHASE SELECTION -->
+<section class="phase-section" id="phaseSection" style="display:none;">
+  <div class="container">
+    <h2>Seleccione la fase de su proyecto</h2>
+    <p class="phase-hint">Esto determina qué criterios se evalúan</p>
+    <div class="phase-grid" id="phaseGrid"></div>
+    <div class="phase-badge" id="phaseBadge"></div>
+  </div>
+</section>
+
+<!-- PROJECT INFO -->
+<div class="container">
+  <section class="project-info" id="projectInfo" style="display:none;">
+    <div class="collapsible-header" id="infoToggle" onclick="toggleInfo()">
+      <h3>Información del Proyecto (opcional)</h3>
+      <span class="arrow">&#9660;</span>
+    </div>
+    <div class="collapsible-body" id="infoBody">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="companyName">Nombre de la Empresa</label>
+          <input type="text" id="companyName" placeholder="ej. Minera Corp" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="projectName">Nombre del Proyecto</label>
+          <input type="text" id="projectName" placeholder="ej. Expansión Cobre Fase 2" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="assessDate">Fecha de Evaluación</label>
+          <input type="date" id="assessDate">
+        </div>
+        <div class="form-group">
+          <label for="assessor">Nombre del Evaluador</label>
+          <input type="text" id="assessor" placeholder="ej. Juan Pérez" autocomplete="off">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ASSESSMENT -->
+  <section class="scale-block" id="scaleBlock" style="display:none;">
+    <div class="scale-header" id="scaleHeader" onclick="toggleScale()">
+      <h3>¿Cómo evaluar? (Escala 1 a 5) <span class="hint">Haga clic para expandir / colapsar</span></h3>
+      <span class="arrow">&#9660;</span>
+    </div>
+    <div class="scale-body" id="scaleBody">
+      <p class="scale-intro">Para cada criterio, asigne un puntaje del 1 al 5 que refleje el estado ACTUAL de su proyecto, basado en evidencia verificable (documentos, actas, planes aprobados, entregables). No puntúe lo que cree que debería estar implementado: puntúe lo que realmente está en marcha. Si no está seguro, use el nivel inferior.</p>
+      <p class="scale-advice">Recomendaciones: (1) Sea honesto - el valor del diagnóstico nace de su objetividad. (2) Evalúe solo la fase actual del proyecto. (3) Considere lo que tiene documentado y ejecutado, no solo lo planeado. (4) Consulte a especialistas de cada disciplina si no maneja el detalle.</p>
+      <div class="scale-levels">
+        <div class="scale-level-card" style="border-left-color:var(--level1)">
+          <div class="lvl-num" style="color:var(--level1)">1</div>
+          <div class="lvl-name" style="color:var(--level1)">No iniciado</div>
+          <div class="lvl-desc">Sin actividad, sin conciencia, sin plan. El tema no ha sido considerado.</div>
+        </div>
+        <div class="scale-level-card" style="border-left-color:var(--level2)">
+          <div class="lvl-num" style="color:var(--level2)">2</div>
+          <div class="lvl-name" style="color:var(--level2)">Conciencia</div>
+          <div class="lvl-desc">Problema reconocido, acciones iniciales o discusiones, sin estructura formal.</div>
+        </div>
+        <div class="scale-level-card" style="border-left-color:var(--level3)">
+          <div class="lvl-num" style="color:var(--level3)">3</div>
+          <div class="lvl-name" style="color:var(--level3)">En progreso</div>
+          <div class="lvl-desc">Plan existe y actividades en marcha, brechas relevantes aún por cerrar.</div>
+        </div>
+        <div class="scale-level-card" style="border-left-color:var(--level4)">
+          <div class="lvl-num" style="color:var(--level4)">4</div>
+          <div class="lvl-name" style="color:var(--level4)">Sustancialmente listo</div>
+          <div class="lvl-desc">Mayoría de entregables completos, brechas menores identificadas y gestionadas.</div>
+        </div>
+        <div class="scale-level-card" style="border-left-color:var(--level5)">
+          <div class="lvl-num" style="color:var(--level5)">5</div>
+          <div class="lvl-name" style="color:var(--level5)">Completamente listo</div>
+          <div class="lvl-desc">Todos los entregables completos, verificados y operacionales. Evidencia sólida.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="assessment-section" id="assessmentSection"></section>
+</div>
+
+<!-- RESULTS -->
+<div class="container">
+  <section class="results-section" id="resultsSection">
+    <div class="result-card" id="resultCard"></div>
+    <div class="radar-container" id="radarContainer">
+      <h3>Radar por Disciplina</h3>
+      <div class="radar-svg-wrap" id="radarWrap"></div>
+    </div>
+    <div class="breakdown" id="breakdownTable"></div>
+    <div class="gap-section" id="gapSection"></div>
+    <div class="actions-bar" id="actionsBar">
+      <button class="btn btn-primary" onclick="downloadCSV()">&#128196; Descargar CSV</button>
+      <button class="btn btn-secondary" onclick="window.print()">&#128424; Imprimir Reporte</button>
+      <button class="btn btn-danger" onclick="resetAssessment()">&#9888; Reiniciar Evaluación</button>
+    </div>
+    <div class="cta-block">
+      <h3>¿Necesita ayuda para cerrar sus brechas de OR?</h3>
+      <p>Agenda una reunión con un especialista en OR para discutir sus resultados y definir un plan de acción priorizado.</p>
+      <a href="https://calendly.com/valuestrategyconsulting" target="_blank" rel="noopener" class="btn-cta">Agenda una Reunión con un Especialista en OR</a>
+    </div>
+    <div class="footer-ref">Basado en "Ready to Operate" de Jose Cortinat - ValueStrategy Consulting</div>
+  </section>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <h3>¿Cambiar fase del proyecto?</h3>
+    <p>Cambiar la fase del proyecto reiniciará todos los puntajes. ¿Continuar?</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="confirmPhaseChange()">Sí, reiniciar</button>
+      <button class="btn btn-secondary" onclick="cancelPhaseChange()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROLE CHANGE MODAL -->
+<div class="modal-overlay" id="roleConfirmModal">
+  <div class="modal-box">
+    <h3>¿Cambiar de rol?</h3>
+    <p>Cambiar de rol reiniciará todos los puntajes ingresados, porque cada rol evalúa con preguntas y pesos distintos. ¿Continuar?</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="confirmRoleChange()">Sí, cambiar de rol</button>
+      <button class="btn btn-secondary" onclick="cancelRoleChange()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========================================================================
+   DATA
+   ======================================================================== */
+
+var STORAGE_KEY = "or_assessment_v4_es";
+
+// ROLE_CONFIG se carga desde role_config_es.js (script externo arriba).
+// Defensive default if the external file fails to load.
+if (typeof ROLE_CONFIG === "undefined") { var ROLE_CONFIG = {}; }
+
+var PHASES = [
+  { id: "Factibilidad", icon: "\uD83D\uDD0D", desc: "Definición de estrategia y concepto" },
+  { id: "FEED",         icon: "\uD83D\uDCD0", desc: "Desarrollo de planificación y diseño" },
+  { id: "EPC",          icon: "\uD83D\uDD27", desc: "Ejecución y cierre de brechas" },
+  { id: "Commissioning", icon: "\uD83D\uDE80", desc: "Verificación y preparación Día 1" },
+  { id: "Operaciones",  icon: "\u2699\uFE0F", desc: "Rendimiento y mejora continua" }
+];
+
+var DISC_META = [
+  { id:1,  name:"Liderazgo y Gestión de Integración", weight:10, icon:"\uD83C\uDFAF" },
+  { id:2,  name:"Gestión de Activos y Mantenimiento",  weight:12, icon:"\u2699\uFE0F" },
+  { id:3,  name:"Gestión de Operaciones",               weight:12, icon:"\uD83C\uDFED" },
+  { id:4,  name:"Organización y Recursos (RRHH)",       weight:10, icon:"\uD83D\uDC65" },
+  { id:5,  name:"HSSEQ, Cumplimiento y Riesgo",         weight:10, icon:"\uD83D\uDEE1\uFE0F" },
+  { id:6,  name:"Adquisiciones y Cadena de Suministro",  weight:8,  icon:"\uD83D\uDCE6" },
+  { id:7,  name:"Gestión de Contratos",                  weight:6,  icon:"\uD83D\uDCCB" },
+  { id:8,  name:"Commissioning y Puesta en Marcha",      weight:10, icon:"\uD83D\uDE80" },
+  { id:9,  name:"IT/OT y Tecnología",                    weight:7,  icon:"\uD83D\uDCBB" },
+  { id:10, name:"Finanzas y Presupuesto",                weight:5,  icon:"\uD83D\uDCB0" },
+  { id:11, name:"Legal y Permisos",                      weight:4,  icon:"\u2696\uFE0F" },
+  { id:12, name:"Medio Ambiente",                        weight:3,  icon:"\uD83C\uDF3F" },
+  { id:13, name:"Gestión de Proyectos e Interfaz Construcción", weight:3, icon:"\uD83D\uDD17" }
+];
+
+var DISC_CHAPTERS = {1:"Cap. 4",2:"Cap. 7",3:"Cap. 8",4:"Cap. 6",5:"Cap. 8",6:"Cap. 8",7:"Cap. 8",8:"Cap. 7",9:"Cap. 7",10:"Cap. 8",11:"Cap. 8",12:"Cap. 8",13:"Cap. 5"};
+
+var PHASE_CRITERIA = {
+"Factibilidad":{
+1:["Estrategia de OR documentada con objetivos, alcance y cronograma de alto nivel","Sponsor ejecutivo identificado y concepto de gobernanza OR definido","Estimación de alto nivel de presupuesto y recursos OR desarrollada"],
+2:["Filosofía de mantenimiento de alto nivel definida (reactivo vs. preventivo vs. predictivo)","Clases de activos críticos identificadas para el proyecto","Lista de equipos de largo lead time compilada con implicaciones de mantenimiento"],
+3:["Filosofía operativa y concepto de producción documentados","Modelo de dotación preliminar definido (estimación de headcount)","Riesgos operacionales clave identificados en estudio de factibilidad"],
+4:["Concepto organizacional definido (insource vs. outsource vs. híbrido)","Posiciones de liderazgo clave identificadas (Gerente de Planta, Gerente de Mantenimiento, etc.)","Evaluación del mercado laboral completada para la ubicación del proyecto"],
+5:["Marco regulatorio HSE identificado para la jurisdicción del proyecto","Registro de riesgos preliminar desarrollado (peligros mayores)","Filosofía de seguridad documentada (cero daño, enfoque cultural)"],
+6:["Análisis make-or-buy para servicios principales iniciado","Evaluación preliminar de cadena de suministro para ubicación del proyecto","Ítems críticos de adquisición de largo lead time identificados"],
+7:["Concepto de estrategia contractual definido (EPCM, EPC, híbrido)","Necesidades de contratos operacionales identificadas a alto nivel","Concepto de acuerdos de interfaz definido (proyecto vs. operaciones)"],
+8:["Filosofía de commissioning definida (concepto de secuencia)","Commissioning incluido en el cronograma del proyecto a nivel de hitos","Necesidades de recursos de pre-commissioning y commissioning estimadas"],
+9:["Concepto de arquitectura tecnológica definido (DCS, SCADA, MES, ERP)","Requisitos de integración IT/OT identificados","Requisitos de ciberseguridad identificados a alto nivel"],
+10:["Estimación preliminar de OPEX desarrollada (orden de magnitud)","Modelo de ingresos y estrategia de off-take definidos","Concepto de marco de control financiero documentado"],
+11:["Panorama regulatorio y de permisos mapeado","Permisos y licencias clave identificados con cronograma","Estructura de entidad legal para operaciones definida"],
+12:["Estudios de línea base ambiental completados o en curso","Requisitos de permisos ambientales identificados","Enfoque de gestión ambiental definido"],
+13:["Integración de OR en la gobernanza del proyecto discutida","Filosofía de handover definida (por fases vs. masivo)","Lecciones aprendidas de proyectos similares revisadas"]
+},
+"FEED":{
+1:["Plan de OR en desarrollo con hitos claros","Estructura de gobernanza OR establecida (SteerCo, Líder de Programa)","Presupuesto OR detallado y aprobado por liderazgo del proyecto"],
+2:["Registro y jerarquía de activos en desarrollo","Estrategia de mantenimiento en desarrollo (alcance RCM/FMECA definido)","Filosofía de repuestos definida (capital, commissioning, 2 años)"],
+3:["Plan de desarrollo de SOPs e instrucciones de trabajo creado","Curva de ramp-up de producción borrador con KPIs preliminares","Requisitos de sistema de control especificados (alcance DCS/SCADA/MES)"],
+4:["Organigrama desarrollado con todas las posiciones clave","Plan de reclutamiento establecido con cronograma","Análisis de necesidades de capacitación completado"],
+5:["Marco del Sistema de Gestión HSE documentado","Planificación de HAZID/HAZOP en curso","Concepto de plan de respuesta a emergencias desarrollado"],
+6:["Estrategia de adquisiciones O&M definida","Contratos de servicios críticos con alcance y precalificación","Requisitos de almacén definidos (ubicación, tamaño, sistemas)"],
+7:["Estrategia contractual operacional documentada","Paquetes contractuales clave identificados y con alcance","Marco de administración de contratos definido"],
+8:["Plan de commissioning en desarrollo con secuencia","Procedimientos de pre-commissioning y commissioning en escritura","Estructura y proceso de Turnover Package (TOP) definidos"],
+9:["Diseño detallado de arquitectura IT/OT en progreso","Diseño de segmentación de red y ciberseguridad especificado","Requisitos de DMS e integración documentados"],
+10:["Presupuesto OPEX desarrollado bottom-up por centro de costo","Requisitos de sistemas financieros definidos","Estrategia de seguros y comercialización desarrollada"],
+11:["Cronograma de solicitud de permisos establecido y en seguimiento","Permisos ambientales presentados o en revisión","Asesoría legal en proceso de establecimiento"],
+12:["Marco del Sistema de Gestión Ambiental (SGA) documentado","Requisitos de sistemas de monitoreo especificados","Enfoque de gestión de residuos definido"],
+13:["Estrategia de handover y RASCI documentados","Requisitos de documentación as-built especificados","Hitos de OR integrados en el Cronograma Maestro del Proyecto"]
+},
+"EPC":{
+1:["Plan de OR en plena ejecución con seguimiento de progreso","Champions de OR activos en cada área funcional","Reuniones interfuncionales de OR en marcha con resolución de problemas"],
+2:["Planes de mantenimiento desarrollados para todos los activos críticos","CMMS/ERP en configuración con carga de datos maestros","Repuestos ordenados y seguimiento de entregas en marcha"],
+3:["SOPs e instrucciones de trabajo sustancialmente completos","Plan de ramp-up finalizado con KPIs mensuales","DCS/SCADA/MES en configuración y pruebas (FAT/SAT)"],
+4:["Posiciones clave reclutadas y onboarding en progreso","Programa de capacitación ejecutándose activamente (técnica + seguridad)","Marco de evaluación de competencias implementado"],
+5:["HAZOP y evaluaciones de riesgo completadas para todas las áreas de proceso","Sistema PTW en implementación y pruebas","Planes de respuesta a emergencias desarrollados con calendario de simulacros"],
+6:["Contratos de servicios críticos adjudicados y movilizando","Almacén operacional con capacidad de recepción","Cadena de suministro para primer año de operaciones asegurada"],
+7:["Contratos clave de O&M firmados y proveedores movilizando","Sistema de administración de contratos operacional","Marco de gestión de desempeño de proveedores activo"],
+8:["Procedimientos de commissioning finalizados y aprobados","Sistema de punch list activo con categorización A/B/C/D","Criterios TCCC definidos y acordados con todas las partes"],
+9:["Infraestructura IT/OT en instalación y configuración","Pruebas de integración de sistemas en curso (ERP-MES-DCS)","Modelo de soporte IT definido con help desk listo"],
+10:["Sistemas de reporte financiero configurados y probados","Contratos de off-take/comercialización firmados","Pólizas de seguro gestionadas para fase operacional"],
+11:["Todos los permisos críticos obtenidos o en trámite confirmado","Sistema de monitoreo de cumplimiento regulatorio activo","Protocolos de comunicación con autoridades establecidos"],
+12:["Sistemas de monitoreo ambiental en instalación","Programa de capacitación ambiental en curso para personal de operaciones","Procedimientos de gestión de residuos documentados e instalaciones listas"],
+13:["Entrega de documentación as-built en cronograma","Protocolos de walk-down e inspección activos","Verificación de finalización de construcción y QA/QC en curso"]
+},
+"Commissioning":{
+1:["Programa OR sustancialmente completo - ítems residuales en seguimiento","Todos los entregables OR verificados contra criterios de aceptación","Transición de gobernanza de proyecto a operaciones planificada"],
+2:["CMMS plenamente operacional con todos los planes de mantenimiento cargados","Repuestos en almacén e inventario verificado","Equipo de mantenimiento completamente dotado y orientado"],
+3:["Todos los SOPs finalizados, validados y accesibles a operadores","Sistemas de control comisionados y con pruebas de rendimiento","Equipo de operaciones desplegado y realizando recorridos"],
+4:["Todas las posiciones operacionales cubiertas y personal en sitio","Programa de capacitación completado - evaluaciones de competencia aprobadas","Turnos, nómina y sistemas de RRHH plenamente operacionales"],
+5:["Simulacro de emergencia a escala completa completado exitosamente","Sistema PTW operacional y verificado mediante simulacros","PSSR (Revisión de Seguridad Pre-Arranque) completada para todas las áreas"],
+6:["Todos los consumibles y suministros del Día 1 en sitio","Almacén plenamente operacional con sistema de gestión activo","Acuerdos de soporte OEM confirmados y probados"],
+7:["Todos los contratos operacionales activos con proveedores movilizados","Acuerdos de nivel de servicio verificados y líneas base de desempeño establecidas","Monitoreo de cumplimiento contractual operacional"],
+8:["Pre-commissioning y commissioning de sistemas completos","Todos los ítems de punch list Categoría A cerrados","Proceso TCCC ejecutado - sistemas formalmente transferidos a operaciones"],
+9:["Todos los sistemas IT/OT comisionados y rendimiento verificado","Integraciones de sistemas probadas de extremo a extremo bajo carga","Controles de ciberseguridad verificados y operacionales"],
+10:["Presupuesto OPEX activado con seguimiento de costos operacional","Todos los contratos de comercialización ejecutados y flujo de ingresos confirmado","Controles internos y marco SOX verificados"],
+11:["Todos los permisos operacionales obtenidos y condiciones cumplidas","Cumplimiento regulatorio verificado para operaciones del Día 1","Notificaciones a autoridades completadas para inicio de operaciones"],
+12:["Todos los sistemas de monitoreo ambiental comisionados y calibrados","Cumplimiento de permisos ambientales verificado","Sistemas de gestión de residuos operacionales y probados"],
+13:["Toda la documentación as-built recibida y archivada","Walk-down final completado con firma","Lecciones aprendidas compiladas e institucionalizadas"]
+},
+"Operaciones":{
+1:["Gobernanza OR transitada al sistema de gestión de operaciones","Seguimiento de KPIs y cadencia de revisión gerencial establecidos","Programa de mejora continua activo para brechas de OR"],
+2:["Planes de mantenimiento ejecutándose en cronograma con seguimiento de KPIs","Rendimiento de activos siendo monitoreado y optimizado","Mejoras centradas en confiabilidad siendo implementadas"],
+3:["Ramp-up de producción en seguimiento contra curva S","Procedimientos operativos siendo refinados con base en experiencia de campo","Optimización de procesos y debottlenecking en curso"],
+4:["Fuerza laboral estabilizada con programas de retención activos","Capacitación continua y desarrollo de competencias operacional","Planificación de sucesión y transferencia de conocimiento documentados"],
+5:["Sistema de gestión de seguridad plenamente operacional con seguimiento de incidentes","Cumplimiento regulatorio mantenido con calendario de auditorías","Programa de mejora continua de seguridad activo"],
+6:["Cadena de suministro operando confiablemente sin escaseces críticas","Desempeño de proveedores en seguimiento contra SLAs","Optimización de adquisiciones en curso (costo, calidad, lead time)"],
+7:["Todos los contratos ejecutándose según SLA con revisiones regulares","Renovaciones y optimizaciones de contratos siendo gestionadas","Gestión de relaciones con proveedores activa"],
+8:["Todos los ítems de punch list restantes resueltos","Seguimiento de deficiencias post-commissioning activo","Pruebas de garantía de rendimiento completadas"],
+9:["Todos los sistemas operando confiablemente con metas de uptime cumplidas","Modelo de soporte IT/OT ejecutándose según diseño","Optimización tecnológica y actualizaciones en planificación"],
+10:["OPEX en seguimiento dentro de umbrales de variación presupuestaria","Ingresos y economía de producción en meta","Cadencia de reporte financiero establecida y operando"],
+11:["Todos los permisos mantenidos y calendario de renovación en seguimiento","Cambios regulatorios monitoreados y cumplimiento actualizado","Relaciones con stakeholders y comunidad gestionadas"],
+12:["KPIs ambientales en seguimiento dentro de condiciones de permisos","Datos de monitoreo siendo analizados y reportados en cronograma","Iniciativas de mejora ambiental activas"],
+13:["Reclamos de garantía y resolución de deficiencias en seguimiento","Revisión post-proyecto completada con recomendaciones","Transferencia de conocimiento al equipo de operaciones completada"]
+}
+};
+
+var PHASE_DIAGNOSTICS = {
+"Factibilidad":{
+1:{risk:"Sin estrategia ni gobernanza de OR en la etapa conceptual. El proyecto entrará a FEED sin alineamiento del liderazgo.",actions:["Documentar una estrategia de OR con objetivos, alcance y cronograma","Identificar un sponsor ejecutivo y definir el concepto de gobernanza","Desarrollar una estimación de alto nivel de presupuesto y recursos OR"],ch:"Cap. 4"},
+2:{risk:"Filosofía de mantenimiento indefinida. Sin visibilidad sobre activos críticos ni implicaciones de largo lead time.",actions:["Definir la filosofía de mantenimiento (reactivo, preventivo o predictivo)","Identificar las clases de activos críticos del proyecto","Compilar la lista de equipos de largo lead time con implicaciones de mantenimiento"],ch:"Cap. 7"},
+3:{risk:"Filosofía operativa no documentada. Sin modelo de dotación ni evaluación de riesgos operacionales.",actions:["Documentar la filosofía operativa y el concepto de producción","Definir un modelo de dotación preliminar con estimación de headcount","Identificar riesgos operacionales clave en el estudio de factibilidad"],ch:"Cap. 8"},
+4:{risk:"Concepto organizacional indefinido. Sin claridad sobre modelo insource vs. outsource vs. híbrido.",actions:["Definir el concepto organizacional (insource, outsource, híbrido)","Identificar las posiciones de liderazgo clave requeridas","Completar una evaluación del mercado laboral para la ubicación del proyecto"],ch:"Cap. 6"},
+5:{risk:"Marco regulatorio HSE no identificado. Sin registro de riesgos preliminar ni filosofía de seguridad.",actions:["Identificar el marco regulatorio HSE para la jurisdicción del proyecto","Desarrollar un registro de riesgos preliminar cubriendo peligros mayores","Documentar la filosofía de seguridad y enfoque cultural"],ch:"Cap. 8"},
+6:{risk:"Sin análisis make-or-buy iniciado. Riesgos de cadena de suministro y adquisiciones no evaluados.",actions:["Iniciar el análisis make-or-buy para servicios principales","Evaluar las capacidades de cadena de suministro para la ubicación del proyecto","Identificar ítems críticos de adquisición de largo lead time"],ch:"Cap. 8"},
+7:{risk:"Estrategia contractual no definida. Sin comprensión de las necesidades de contratos operacionales.",actions:["Definir el concepto de estrategia contractual (EPCM, EPC, híbrido)","Identificar necesidades de contratos operacionales a alto nivel","Definir acuerdos de interfaz entre proyecto y operaciones"],ch:"Cap. 8"},
+8:{risk:"Sin filosofía de commissioning. Commissioning no reflejado en el cronograma del proyecto.",actions:["Definir la filosofía de commissioning y concepto de secuencia","Incluir commissioning en el cronograma del proyecto a nivel de hitos","Estimar las necesidades de recursos de pre-commissioning y commissioning"],ch:"Cap. 7"},
+9:{risk:"Arquitectura tecnológica no conceptualizada. Integración IT/OT y ciberseguridad no abordadas.",actions:["Definir el concepto de arquitectura tecnológica (DCS, SCADA, MES, ERP)","Identificar los requisitos de integración IT/OT","Identificar requisitos de ciberseguridad a alto nivel"],ch:"Cap. 7"},
+10:{risk:"Sin estimación preliminar de OPEX. Modelo de ingresos y controles financieros no definidos.",actions:["Desarrollar una estimación preliminar de OPEX (orden de magnitud)","Definir el modelo de ingresos y estrategia de off-take","Documentar el concepto de marco de control financiero"],ch:"Cap. 8"},
+11:{risk:"Panorama regulatorio no mapeado. Permisos clave y estructura legal indefinidos.",actions:["Mapear el panorama regulatorio y de permisos","Identificar permisos y licencias clave con cronogramas","Definir la estructura de entidad legal para operaciones"],ch:"Cap. 8"},
+12:{risk:"Estudios de línea base ambiental no iniciados. Requisitos de permisos y enfoque de gestión indefinidos.",actions:["Completar o iniciar los estudios de línea base ambiental","Identificar los requisitos de permisos ambientales","Definir el enfoque de gestión ambiental"],ch:"Cap. 8"},
+13:{risk:"OR no integrado en la gobernanza del proyecto. Filosofía de handover no definida.",actions:["Discutir la integración de OR en la estructura de gobernanza del proyecto","Definir la filosofía de handover (por fases vs. masivo)","Revisar lecciones aprendidas de proyectos similares"],ch:"Cap. 5"}
+},
+"FEED":{
+1:{risk:"Plan de OR no en desarrollo. Estructura de gobernanza y presupuesto no establecidos para FEED.",actions:["Desarrollar el Plan de OR con hitos claros","Establecer la estructura de gobernanza OR (SteerCo, Líder de Programa)","Detallar y aprobar el presupuesto OR con liderazgo del proyecto"],ch:"Cap. 4"},
+2:{risk:"Registro de activos no iniciado. Estrategia de mantenimiento y filosofía de repuestos retrasadas.",actions:["Iniciar el desarrollo del registro y jerarquía de activos","Definir el alcance RCM/FMECA para la estrategia de mantenimiento","Establecer la filosofía de repuestos (capital, commissioning, 2 años)"],ch:"Cap. 7"},
+3:{risk:"Plan de desarrollo de SOPs no creado. Curva de ramp-up y alcance de sistemas de control no definidos.",actions:["Crear un plan de desarrollo para SOPs e instrucciones de trabajo","Elaborar el borrador de la curva de ramp-up con KPIs preliminares","Especificar requisitos de sistemas de control (alcance DCS/SCADA/MES)"],ch:"Cap. 8"},
+4:{risk:"Organigrama incompleto. Sin plan de reclutamiento ni análisis de necesidades de capacitación.",actions:["Desarrollar el organigrama con todas las posiciones clave","Establecer un plan de reclutamiento con cronograma","Completar un análisis de necesidades de capacitación"],ch:"Cap. 6"},
+5:{risk:"Marco del Sistema de Gestión HSE no documentado. Planificación HAZID/HAZOP no iniciada.",actions:["Documentar el marco del Sistema de Gestión HSE","Iniciar la planificación de HAZID/HAZOP","Desarrollar el concepto de plan de respuesta a emergencias"],ch:"Cap. 8"},
+6:{risk:"Estrategia de adquisiciones O&M no definida. Contratos de servicios críticos sin alcance.",actions:["Definir la estrategia de adquisiciones O&M","Definir alcance y precalificar contratos de servicios críticos","Definir requisitos de almacén (ubicación, tamaño, sistemas)"],ch:"Cap. 8"},
+7:{risk:"Estrategia contractual no documentada. Paquetes contractuales clave no identificados.",actions:["Documentar la estrategia contractual operacional","Identificar y definir alcance de paquetes contractuales clave","Definir el marco de administración de contratos"],ch:"Cap. 8"},
+8:{risk:"Plan de commissioning no en desarrollo. Proceso de Turnover Package no definido.",actions:["Desarrollar el plan de commissioning con secuenciamiento","Iniciar la escritura de procedimientos de pre-commissioning y commissioning","Definir la estructura y proceso del Turnover Package (TOP)"],ch:"Cap. 7"},
+9:{risk:"Diseño detallado de IT/OT no iniciado. Requisitos de ciberseguridad e integración retrasados.",actions:["Avanzar el diseño detallado de arquitectura IT/OT","Especificar el diseño de segmentación de red y ciberseguridad","Documentar requisitos de DMS e integración"],ch:"Cap. 7"},
+10:{risk:"Presupuesto OPEX no desarrollado bottom-up. Sistemas financieros y seguros no abordados.",actions:["Desarrollar el presupuesto OPEX bottom-up por centro de costo","Definir los requisitos de sistemas financieros","Desarrollar la estrategia de seguros y comercialización"],ch:"Cap. 8"},
+11:{risk:"Cronograma de solicitud de permisos no establecido. Asesoría legal no gestionada.",actions:["Establecer el cronograma de solicitud de permisos e iniciar seguimiento","Presentar permisos ambientales o avanzar proceso de revisión","Establecer acuerdos de asesoría legal"],ch:"Cap. 8"},
+12:{risk:"Marco del SGA no documentado. Monitoreo y gestión de residuos no especificados.",actions:["Documentar el marco del Sistema de Gestión Ambiental","Especificar requisitos de sistemas de monitoreo","Definir el enfoque de gestión de residuos"],ch:"Cap. 8"},
+13:{risk:"Estrategia de handover no documentada. Hitos de OR no en el Cronograma Maestro del Proyecto.",actions:["Documentar la estrategia de handover y RASCI","Especificar requisitos de documentación as-built","Integrar hitos de OR en el Cronograma Maestro del Proyecto"],ch:"Cap. 5"}
+},
+"EPC":{
+1:{risk:"Plan de OR sin ejecutarse con seguimiento de progreso. Sin Champions de OR ni reuniones interfuncionales.",actions:["Ejecutar el Plan de OR con seguimiento de progreso contra cronograma","Activar Champions de OR en cada área funcional","Establecer reuniones interfuncionales de OR con resolución de problemas"],ch:"Cap. 4"},
+2:{risk:"Planes de mantenimiento no desarrollados. CMMS sin configurar. Repuestos no ordenados.",actions:["Desarrollar planes de mantenimiento para todos los activos críticos","Configurar CMMS/ERP con carga de datos maestros","Ordenar repuestos e implementar seguimiento de entregas"],ch:"Cap. 7"},
+3:{risk:"SOPs no sustancialmente completos. Plan de ramp-up no finalizado. Sistemas de control retrasados.",actions:["Completar sustancialmente los SOPs e instrucciones de trabajo","Finalizar el plan de ramp-up con KPIs mensuales","Configurar y probar DCS/SCADA/MES (FAT/SAT)"],ch:"Cap. 8"},
+4:{risk:"Posiciones clave no reclutadas. Programa de capacitación sin entregar. Marco de competencias ausente.",actions:["Reclutar posiciones clave e iniciar onboarding","Entregar activamente el programa de capacitación (técnica + seguridad)","Implementar el marco de evaluación de competencias"],ch:"Cap. 6"},
+5:{risk:"HAZOP incompleto. Sistema PTW sin implementar. Planes de emergencia no desarrollados.",actions:["Completar HAZOP y evaluaciones de riesgo para todas las áreas de proceso","Implementar y probar el sistema PTW","Desarrollar planes de respuesta a emergencias con calendario de simulacros"],ch:"Cap. 8"},
+6:{risk:"Contratos críticos no adjudicados. Almacén no operacional. Cadena de suministro no asegurada.",actions:["Adjudicar contratos de servicios críticos e iniciar movilización","Hacer operacional el almacén con capacidad de recepción","Asegurar la cadena de suministro para el primer año de operaciones"],ch:"Cap. 8"},
+7:{risk:"Contratos clave de O&M no firmados. Sistema de administración de contratos no operacional.",actions:["Firmar contratos clave de O&M y movilizar proveedores","Hacer operacional el sistema de administración de contratos","Activar el marco de gestión de desempeño de proveedores"],ch:"Cap. 8"},
+8:{risk:"Procedimientos de commissioning no finalizados. Sistema de punch list inactivo. Criterios TCCC no definidos.",actions:["Finalizar y aprobar procedimientos de commissioning","Activar el sistema de punch list con categorización A/B/C/D","Definir y acordar criterios TCCC con todas las partes"],ch:"Cap. 7"},
+9:{risk:"Infraestructura IT/OT sin instalar. Pruebas de integración de sistemas no iniciadas.",actions:["Instalar y configurar infraestructura IT/OT","Iniciar pruebas de integración de sistemas (ERP-MES-DCS)","Definir el modelo de soporte IT y preparar el help desk"],ch:"Cap. 7"},
+10:{risk:"Sistemas de reporte financiero sin configurar. Contratos de off-take y seguros no gestionados.",actions:["Configurar y probar sistemas de reporte financiero","Firmar contratos de off-take/comercialización","Gestionar pólizas de seguro para la fase operacional"],ch:"Cap. 8"},
+11:{risk:"Permisos críticos no obtenidos o sin seguimiento confirmado. Monitoreo de cumplimiento inactivo.",actions:["Obtener todos los permisos críticos o confirmar su trámite","Activar el sistema de monitoreo de cumplimiento regulatorio","Establecer protocolos de comunicación con autoridades"],ch:"Cap. 8"},
+12:{risk:"Monitoreo ambiental sin instalar. Capacitación ambiental no iniciada.",actions:["Instalar sistemas de monitoreo ambiental","Iniciar el programa de capacitación ambiental para personal de operaciones","Documentar procedimientos de gestión de residuos y preparar instalaciones"],ch:"Cap. 8"},
+13:{risk:"Entrega de documentación as-built retrasada. Protocolos de walk-down inactivos.",actions:["Poner al día la entrega de documentación as-built","Activar protocolos de walk-down e inspección","Continuar verificación de finalización de construcción y QA/QC"],ch:"Cap. 5"}
+},
+"Commissioning":{
+1:{risk:"Programa OR no sustancialmente completo. Entregables no verificados. Transición no planificada.",actions:["Completar el programa OR y hacer seguimiento de ítems residuales","Verificar todos los entregables OR contra criterios de aceptación","Planificar la transición de gobernanza de proyecto a operaciones"],ch:"Cap. 4"},
+2:{risk:"CMMS no operacional. Repuestos no almacenados. Equipo de mantenimiento sin dotar.",actions:["Hacer el CMMS plenamente operacional con todos los planes de mantenimiento cargados","Verificar almacén de repuestos e inventario","Asegurar que el equipo de mantenimiento esté completamente dotado y orientado"],ch:"Cap. 7"},
+3:{risk:"SOPs no finalizados. Sistemas de control no comisionados. Equipo de operaciones no desplegado.",actions:["Finalizar y validar todos los SOPs; hacerlos accesibles a operadores","Comisionar sistemas de control y completar pruebas de rendimiento","Desplegar el equipo de operaciones e iniciar recorridos"],ch:"Cap. 8"},
+4:{risk:"Posiciones no cubiertas. Capacitación incompleta. Sistemas de RRHH no operacionales.",actions:["Cubrir todas las posiciones operacionales y asegurar personal en sitio","Completar el programa de capacitación y aprobar evaluaciones de competencia","Hacer turnos, nómina y sistemas de RRHH plenamente operacionales"],ch:"Cap. 6"},
+5:{risk:"Simulacro de emergencia no completado. PTW no verificado. PSSR no realizada.",actions:["Completar exitosamente un simulacro de emergencia a escala completa","Verificar el sistema PTW mediante simulacros","Completar PSSR (Revisión de Seguridad Pre-Arranque) para todas las áreas"],ch:"Cap. 8"},
+6:{risk:"Consumibles del Día 1 no en sitio. Almacén o soporte OEM no confirmados.",actions:["Asegurar que todos los consumibles y suministros del Día 1 estén en sitio","Hacer el almacén plenamente operacional con sistema de gestión activo","Confirmar y probar acuerdos de soporte OEM"],ch:"Cap. 8"},
+7:{risk:"Contratos operacionales inactivos. SLAs no verificados. Monitoreo de cumplimiento no operacional.",actions:["Activar todos los contratos operacionales con proveedores movilizados","Verificar acuerdos de nivel de servicio y establecer líneas base de desempeño","Hacer operacional el monitoreo de cumplimiento contractual"],ch:"Cap. 8"},
+8:{risk:"Commissioning incompleto. Ítems de punch list Categoría A abiertos. TCCC no ejecutado.",actions:["Completar pre-commissioning y commissioning de todos los sistemas","Cerrar todos los ítems de punch list Categoría A","Ejecutar el proceso TCCC y transferir formalmente sistemas a operaciones"],ch:"Cap. 7"},
+9:{risk:"Sistemas IT/OT no comisionados. Integraciones no probadas. Ciberseguridad no verificada.",actions:["Comisionar todos los sistemas IT/OT y verificar rendimiento","Probar integraciones de sistemas de extremo a extremo bajo carga","Verificar que los controles de ciberseguridad estén operacionales"],ch:"Cap. 7"},
+10:{risk:"Presupuesto OPEX no activado. Contratos de comercialización no ejecutados. Controles internos no verificados.",actions:["Activar el presupuesto OPEX con seguimiento de costos operacional","Ejecutar todos los contratos de comercialización y confirmar flujo de ingresos","Verificar controles internos y marco SOX"],ch:"Cap. 8"},
+11:{risk:"Permisos operacionales no obtenidos. Cumplimiento no verificado para el Día 1.",actions:["Obtener todos los permisos operacionales y cumplir condiciones","Verificar cumplimiento regulatorio para operaciones del Día 1","Completar notificaciones a autoridades para inicio de operaciones"],ch:"Cap. 8"},
+12:{risk:"Monitoreo ambiental no comisionado. Cumplimiento de permisos no verificado.",actions:["Comisionar y calibrar todos los sistemas de monitoreo ambiental","Verificar cumplimiento de permisos ambientales","Hacer operacionales y probar los sistemas de gestión de residuos"],ch:"Cap. 8"},
+13:{risk:"Documentación as-built no recibida. Walk-down final no completado. Lecciones no compiladas.",actions:["Recibir y archivar toda la documentación as-built","Completar el walk-down final con firma","Compilar e institucionalizar lecciones aprendidas"],ch:"Cap. 5"}
+},
+"Operaciones":{
+1:{risk:"Gobernanza OR no transicionada. Sin seguimiento de KPIs ni mejora continua para OR.",actions:["Transicionar la gobernanza OR al sistema de gestión de operaciones","Establecer seguimiento de KPIs y cadencia de revisión gerencial","Activar un programa de mejora continua para brechas de OR"],ch:"Cap. 4"},
+2:{risk:"Planes de mantenimiento sin ejecutarse. Rendimiento de activos no monitoreado. Mejoras de confiabilidad estancadas.",actions:["Ejecutar planes de mantenimiento en cronograma con seguimiento de KPIs","Monitorear y optimizar el rendimiento de activos","Implementar mejoras centradas en confiabilidad"],ch:"Cap. 7"},
+3:{risk:"Ramp-up sin seguimiento contra metas. Procedimientos no refinados. Optimización no iniciada.",actions:["Hacer seguimiento del ramp-up de producción contra curva S","Refinar procedimientos operativos con base en experiencia de campo","Iniciar optimización de procesos y debottlenecking"],ch:"Cap. 8"},
+4:{risk:"Fuerza laboral no estabilizada. Capacitación no continua. Sin planificación de sucesión.",actions:["Estabilizar la fuerza laboral con programas de retención","Mantener capacitación continua y desarrollo de competencias","Documentar planificación de sucesión y transferencia de conocimiento"],ch:"Cap. 6"},
+5:{risk:"Sistema de seguridad no plenamente operacional. Brechas de cumplimiento. Sin mejora continua.",actions:["Operacionalizar completamente el sistema de gestión de seguridad con seguimiento de incidentes","Mantener cumplimiento regulatorio con calendario de auditorías","Activar un programa de mejora continua de seguridad"],ch:"Cap. 8"},
+6:{risk:"Cadena de suministro no confiable. Desempeño de proveedores sin seguimiento. Sin optimización de adquisiciones.",actions:["Asegurar que la cadena de suministro opere confiablemente sin escaseces críticas","Hacer seguimiento del desempeño de proveedores contra SLAs","Iniciar optimización de adquisiciones (costo, calidad, lead time)"],ch:"Cap. 8"},
+7:{risk:"Contratos sin desempeñarse según SLA. Sin gestión de renovaciones ni relaciones con proveedores.",actions:["Asegurar que todos los contratos se ejecuten según SLA con revisiones regulares","Gestionar renovaciones y optimizaciones de contratos","Activar gestión de relaciones con proveedores"],ch:"Cap. 8"},
+8:{risk:"Ítems de punch list sin resolver. Sin seguimiento de deficiencias. Garantías de rendimiento no probadas.",actions:["Resolver todos los ítems de punch list restantes","Activar seguimiento de deficiencias post-commissioning","Completar pruebas de garantía de rendimiento"],ch:"Cap. 7"},
+9:{risk:"Sistemas no confiables. Soporte IT/OT sin ejecutarse. Sin planificación tecnológica.",actions:["Asegurar que todos los sistemas operen confiablemente con metas de uptime cumplidas","Ejecutar el modelo de soporte IT/OT según diseño","Planificar optimización tecnológica y actualizaciones"],ch:"Cap. 7"},
+10:{risk:"OPEX excediendo presupuestos. Ingresos fuera de meta. Brechas en reporte financiero.",actions:["Hacer seguimiento de OPEX dentro de umbrales de variación presupuestaria","Asegurar que ingresos y economía de producción estén en meta","Establecer cadencia de reporte financiero"],ch:"Cap. 8"},
+11:{risk:"Permisos no mantenidos. Cambios regulatorios no monitoreados. Relaciones con stakeholders no gestionadas.",actions:["Mantener todos los permisos y hacer seguimiento del calendario de renovación","Monitorear cambios regulatorios y actualizar cumplimiento","Gestionar relaciones con stakeholders y comunidad"],ch:"Cap. 8"},
+12:{risk:"KPIs ambientales sin seguimiento. Datos de monitoreo no analizados. Sin iniciativas de mejora.",actions:["Hacer seguimiento de KPIs ambientales dentro de condiciones de permisos","Analizar y reportar datos de monitoreo en cronograma","Activar iniciativas de mejora ambiental"],ch:"Cap. 8"},
+13:{risk:"Reclamos de garantía sin resolver. Revisión post-proyecto no realizada. Transferencia de conocimiento incompleta.",actions:["Hacer seguimiento de reclamos de garantía y resolución de deficiencias","Completar la revisión post-proyecto con recomendaciones","Completar la transferencia de conocimiento al equipo de operaciones"],ch:"Cap. 5"}
+}
+};
+
+var PHASE_LEVELS = {
+"Factibilidad":[
+{min:0,max:1.19,level:1,label:"Riesgo Crítico",color:"var(--level1)",interp:"En la etapa de Factibilidad, la conciencia sobre OR debería estar emergiendo. Su puntaje indica que la Preparación Operacional ni siquiera ha sido considerada. Aunque no se espera ejecución detallada en esta fase, la planificación estratégica y la gobernanza deberían estar en marcha. Acción inmediata: establecer liderazgo de OR e iniciar el desarrollo de la estrategia."},
+{min:1.2,max:1.79,level:2,label:"Riesgo Alto",color:"var(--level2)",interp:"En Factibilidad, existe cierta conciencia sobre OR pero faltan elementos estratégicos clave. Debería tener como mínimo un esbozo de estrategia de OR y una estructura de gobernanza en discusión. Enfóquese en establecer la responsabilidad del liderazgo y alinear OR con el cronograma maestro del proyecto."},
+{min:1.8,max:2.49,level:3,label:"Riesgo Moderado",color:"var(--level3)",interp:"Para la etapa de Factibilidad, está logrando un progreso razonable. Los elementos estratégicos están siendo abordados, aunque algunas disciplinas necesitan atención. Continúe construyendo su base de OR; este es el momento adecuado para establecer gobernanza e iniciar la planificación."},
+{min:2.5,max:3.49,level:4,label:"En Camino",color:"var(--level4)",interp:"Excelente para la etapa de Factibilidad. Su programa de OR está bien establecido para esta fase temprana. La planificación estratégica está avanzada y está posicionado para pasar a la planificación detallada durante FEED."},
+{min:3.5,max:5.0,level:5,label:"Adelantado",color:"var(--level5)",interp:"Sobresaliente. Su preparación operacional supera significativamente las expectativas para la etapa de Factibilidad. Tiene un programa de OR maduro muy adelantado al cronograma. Esto lo posiciona para una transición acelerada y de menor riesgo hacia operaciones."}
+],
+"FEED":[
+{min:0,max:1.49,level:1,label:"Riesgo Crítico",color:"var(--level1)",interp:"En la etapa de FEED, su programa de OR debería estar transitando de estrategia a planificación. Este puntaje indica brechas críticas en gobernanza y planificación de OR. Los planes de OR deberían estar en desarrollo y las posiciones clave identificadas. Se requiere intervención ejecutiva inmediata."},
+{min:1.5,max:2.19,level:2,label:"Riesgo Alto",color:"var(--level2)",interp:"En FEED, la planificación de OR debería estar bien encaminada. Quedan brechas importantes en disciplinas críticas. Sin aceleración, entrará a EPC sin la base de planificación necesaria para una ejecución exitosa de OR."},
+{min:2.2,max:2.99,level:3,label:"Riesgo Moderado",color:"var(--level3)",interp:"Para la etapa de FEED, OR está progresando pero algunas disciplinas están rezagadas. Las actividades de planificación deberían estar más avanzadas. Enfóquese en cerrar brechas en las disciplinas rezagadas antes de entrar a EPC."},
+{min:3.0,max:3.99,level:4,label:"En Camino",color:"var(--level4)",interp:"Buen progreso para la etapa de FEED. La mayoría de las actividades de planificación de OR están en camino. Quedan brechas menores por cerrar antes de transicionar a la ejecución en EPC."},
+{min:4.0,max:5.0,level:5,label:"Adelantado",color:"var(--level5)",interp:"Excepcional para la etapa de FEED. Su planificación de OR está muy avanzada. Está posicionado para una fase de ejecución sólida durante EPC."}
+],
+"EPC":[
+{min:0,max:1.99,level:1,label:"Riesgo Crítico",color:"var(--level1)",interp:"Durante EPC, la ejecución de OR debería estar en pleno desarrollo. Este puntaje representa una falla crítica en la preparación operacional. La mayoría de las disciplinas están severamente retrasadas. El riesgo de un ramp-up fallido es muy alto. Se necesita intervención inmediata y comprehensiva en todas las disciplinas."},
+{min:2.0,max:2.49,level:2,label:"Riesgo Alto",color:"var(--level2)",interp:"Durante EPC, la ejecución de OR debería estar bien encaminada. Quedan brechas importantes que impactarán la preparación del Día 1. Se necesita un programa de aceleración focalizado para cerrar las brechas críticas antes del commissioning."},
+{min:2.5,max:3.19,level:3,label:"Riesgo Moderado",color:"var(--level3)",interp:"Para la etapa de EPC, OR está progresando pero persisten brechas significativas. Algunas disciplinas avanzan bien mientras otras se retrasan. Las disciplinas rezagadas representan un riesgo real. Se necesita intervención focalizada en las disciplinas con brechas."},
+{min:3.2,max:3.99,level:4,label:"En Camino",color:"var(--level4)",interp:"Buen progreso para la etapa de EPC. La mayoría de las actividades de ejecución de OR están en camino. Quedan brechas menores por cerrar antes del commissioning. Asegúrese de que todas las actividades de verificación estén programadas."},
+{min:4.0,max:5.0,level:5,label:"Listo para Commissioning",color:"var(--level5)",interp:"Excelente para la etapa de EPC. Su ejecución de OR está muy avanzada y está listo para transicionar al commissioning. Este nivel de preparación durante EPC es poco común y lo posiciona para un arranque exitoso."}
+],
+"Commissioning":[
+{min:0,max:2.49,level:1,label:"Riesgo Crítico",color:"var(--level1)",interp:"En la etapa de Commissioning, la organización debería estar casi lista para operar. Este puntaje indica brechas severas y sistémicas en las disciplinas de OR. El riesgo de un ramp-up extendido, incidentes de seguridad e incapacidad de alcanzar capacidad nominal es muy alto. Se requieren medidas de emergencia."},
+{min:2.5,max:2.99,level:2,label:"Riesgo Alto",color:"var(--level2)",interp:"En Commissioning, la mayoría de los entregables de OR deberían estar completos o casi completos. Quedan brechas importantes que impactarán directamente las operaciones del Día 1. La aceleración focalizada en brechas críticas es esencial; el tiempo se está agotando."},
+{min:3.0,max:3.79,level:3,label:"Riesgo Moderado",color:"var(--level3)",interp:"Para la etapa de Commissioning, OR está progresando pero por debajo de las expectativas. Varias disciplinas necesitan cerrarse con urgencia. Cada semana de retraso incrementa el riesgo de ramp-up. Priorice las brechas más grandes."},
+{min:3.8,max:4.49,level:4,label:"En Camino",color:"var(--level4)",interp:"En camino para la etapa de Commissioning. La mayoría de las disciplinas están sustancialmente listas. Cierre las brechas restantes y complete todas las actividades de verificación. Está posicionado para un arranque exitoso."},
+{min:4.5,max:5.0,level:5,label:"Ready to Operate",color:"var(--level5)",interp:"Plenamente listo para operaciones. Todas las disciplinas críticas están verificadas y completas. Proceda a operaciones con confianza. Este nivel de preparación en commissioning es alcanzado por menos del 15% de los proyectos de capital a nivel global."}
+],
+"Operaciones":[
+{min:0,max:2.99,level:1,label:"Riesgo Crítico",color:"var(--level1)",interp:"Está en operaciones pero OR está críticamente incompleto. Esto explica las dificultades de ramp-up, los riesgos de seguridad y la incapacidad de alcanzar capacidad nominal. Se requiere un programa de remediación inmediato en todas las disciplinas con brechas."},
+{min:3.0,max:3.49,level:2,label:"Riesgo Alto",color:"var(--level2)",interp:"Operando con brechas significativas de OR. Estas brechas probablemente se manifiestan como problemas operacionales, fallas de equipos, incidentes de seguridad o incapacidad de alcanzar metas de producción. Priorice el cierre de brechas para estabilizar las operaciones."},
+{min:3.5,max:3.99,level:3,label:"Riesgo Moderado",color:"var(--level3)",interp:"Las operaciones están funcionando pero persisten brechas de OR. Estas brechas representan un riesgo continuo y probablemente están limitando el rendimiento de producción. Cierre las brechas restantes para alcanzar plena capacidad operacional."},
+{min:4.0,max:4.49,level:4,label:"En Camino",color:"var(--level4)",interp:"Las operaciones están sustancialmente listas. Quedan brechas menores que no están impactando críticamente el rendimiento. Continúe cerrando brechas y transicionando a operaciones en estado estable."},
+{min:4.5,max:5.0,level:5,label:"Plenamente Operacional",color:"var(--level5)",interp:"Todas las disciplinas de OR están plenamente operacionales. La organización ha transitado exitosamente de proyecto a operaciones. Enfóquese en mejora continua e institucionalización de prácticas de OR para futuros proyectos."}
+]
+};
+
+var SCORE_LABELS = ["No iniciado","Conciencia","En progreso","Sustancialmente listo","Completamente listo"];
+
+/* ========================================================================
+   STATE
+   ======================================================================== */
+
+var state = {
+  role: null,
+  phase: null,
+  scores: {},
+  projectInfo: { company:"", project:"", date:"", assessor:"" },
+  showResults: false
+};
+
+var pendingPhase = null;
+var pendingRole = null;
+
+/* ========================================================================
+   ROLE MERGE HELPERS
+   ======================================================================== */
+
+function getActiveRoleConfig(){
+  if(!state.role || !ROLE_CONFIG[state.role]) return null;
+  return ROLE_CONFIG[state.role];
+}
+
+function getRoleCriteria(phase, discId){
+  var cfg = getActiveRoleConfig();
+  if(cfg && cfg.criteriaOverrides && cfg.criteriaOverrides[phase] && cfg.criteriaOverrides[phase][discId]){
+    return cfg.criteriaOverrides[phase][discId];
+  }
+  return PHASE_CRITERIA[phase][discId];
+}
+
+function getRoleDiagnostic(phase, discId){
+  var cfg = getActiveRoleConfig();
+  if(cfg && cfg.diagnosticsOverrides && cfg.diagnosticsOverrides[phase] && cfg.diagnosticsOverrides[phase][discId]){
+    return cfg.diagnosticsOverrides[phase][discId];
+  }
+  return PHASE_DIAGNOSTICS[phase][discId];
+}
+
+function getRoleWeight(discId){
+  var cfg = getActiveRoleConfig();
+  if(cfg && cfg.discWeights && typeof cfg.discWeights[discId] === "number"){
+    return cfg.discWeights[discId];
+  }
+  var base = DISC_META.filter(function(d){ return d.id === discId; })[0];
+  return base ? base.weight : 0;
+}
+
+function getRoleLabel(roleId){
+  var cfg = ROLE_CONFIG[roleId];
+  if(!cfg) return "Diagnóstico general (360°)";
+  if(typeof cfg.label === "string") return cfg.label;
+  if(cfg.label && cfg.label.es) return cfg.label.es;
+  if(cfg.label && cfg.label.en) return cfg.label.en;
+  return roleId;
+}
+
+function getRoleTagline(roleId){
+  var cfg = ROLE_CONFIG[roleId];
+  if(!cfg) return "Evaluación 360° genérica del proyecto";
+  if(typeof cfg.tagline === "string") return cfg.tagline;
+  if(cfg.tagline && cfg.tagline.es) return cfg.tagline.es;
+  if(cfg.tagline && cfg.tagline.en) return cfg.tagline.en;
+  return "";
+}
+
+function getRoleIcon(roleId){
+  var cfg = ROLE_CONFIG[roleId];
+  return (cfg && cfg.icon) || "\uD83C\uDFAF";
+}
+
+function getRoleCTA(){
+  var cfg = getActiveRoleConfig();
+  if(!cfg || !cfg.cta) return null;
+  var cta = cfg.cta;
+  var headline = typeof cta.headline === "string" ? cta.headline : (cta.headline && (cta.headline.es || cta.headline.en)) || "";
+  var body = typeof cta.body === "string" ? cta.body : (cta.body && (cta.body.es || cta.body.en)) || "";
+  return { headline: headline, body: body, url: cta.url || "https://calendly.com/valuestrategyconsulting" };
+}
+
+/* Lista de roles a mostrar en el selector.
+   El rol "generic" es virtual (no tiene entrada en ROLE_CONFIG) y usa DISC_META base. */
+var ROLE_MENU = [
+  { id: "generic",       name: "Diagnóstico general (360°)",                 icon: "\uD83C\uDFAF", tagline: "Evaluación 360° genérica del proyecto" },
+  { id: "ops",           name: "Gerente de Operaciones",                     icon: "\uD83C\uDFED", tagline: "Rampa, SOPs, turnos, OEE, handover" },
+  { id: "process",       name: "Gerente de Procesos / Metalurgia",           icon: "\uD83E\uDDEA", tagline: "Flowsheet, balance, control loops, geomet" },
+  { id: "pmo",           name: "Director de Proyecto / PMO",                 icon: "\uD83D\uDCD0", tagline: "WBS, schedule, gate reviews, handover" },
+  { id: "commissioning", name: "Gerente de Comisionamiento",                 icon: "\uD83D\uDE80", tagline: "FAT/SAT, walkdowns, punch list, TCCC" },
+  { id: "assets",        name: "Gerente de Gestión de Activos",              icon: "\u2699\uFE0F", tagline: "FMECA, RCM, EAM, spare strategy" },
+  { id: "finance",       name: "CFO / Control de Gestión",                   icon: "\uD83D\uDCB0", tagline: "CAPEX/OPEX, DSCR, NPV, SOX, working capital" },
+  { id: "procurement",   name: "Gerente de Compras y Cadena de Suministro",  icon: "\uD83D\uDCE6", tagline: "Critical spares, contratos O&M, vendors" },
+  { id: "risk",          name: "Gerente de Riesgo / PSM",                    icon: "\uD83D\uDEE1\uFE0F", tagline: "Risk register, HAZOP/LOPA, PSSR, ERP" },
+  { id: "hr",            name: "Gerente de RRHH / People Director",          icon: "\uD83D\uDC65", tagline: "Staffing curve, competency, training" },
+  { id: "hse",           name: "Gerente HSE / Sostenibilidad",               icon: "\uD83C\uDF3F", tagline: "Permits, drills, GISTM, SLO, ESG" },
+  { id: "itot",          name: "Gerente IT/OT / Digital",                    icon: "\uD83D\uDCBB", tagline: "ISA-95, IEC 62443, SAP masters, historian" }
+];
+
+/* ========================================================================
+   STORAGE
+   ======================================================================== */
+
+function saveState(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+
+function loadState(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      var loaded = JSON.parse(raw);
+      if(loaded && loaded.phase) state = loaded;
+    }
+  } catch(e){}
+}
+
+/* ========================================================================
+   RENDER: ROLES
+   ======================================================================== */
+
+function renderRoles(){
+  var grid = document.getElementById("roleGrid");
+  if(!grid) return;
+  grid.innerHTML = "";
+  ROLE_MENU.forEach(function(r){
+    var card = document.createElement("div");
+    card.className = "role-card" + (state.role === r.id ? " selected" : "");
+    card.innerHTML = '<div class="role-icon">'+r.icon+'</div>'+
+                     '<div class="role-name">'+r.name+'</div>'+
+                     '<div class="role-tagline">'+r.tagline+'</div>';
+    card.onclick = function(){ selectRole(r.id); };
+    grid.appendChild(card);
+  });
+  updateRoleBadge();
+}
+
+function updateRoleBadge(){
+  var badge = document.getElementById("roleBadge");
+  if(!badge) return;
+  if(state.role){
+    var currentRole = ROLE_MENU.filter(function(r){ return r.id === state.role; })[0];
+    var label = currentRole ? currentRole.name : state.role;
+    badge.innerHTML = '<span>Rol seleccionado: <strong>'+label+'</strong></span>'+
+                      '<button class="role-change" onclick="changeRole()">Cambiar de rol</button>';
+  } else {
+    badge.innerHTML = "";
+  }
+}
+
+function selectRole(roleId){
+  if(state.role === roleId) return;
+  var scored = Object.keys(state.scores).length;
+  if(state.role && scored > 0){
+    pendingRole = roleId;
+    document.getElementById("roleConfirmModal").classList.add("visible");
+    return;
+  }
+  applyRole(roleId);
+}
+
+function changeRole(){
+  document.getElementById("phaseSection").style.display = "none";
+  document.getElementById("projectInfo").style.display = "none";
+  document.getElementById("scaleBlock").style.display = "none";
+  document.getElementById("assessmentSection").classList.remove("visible");
+  document.getElementById("stickyBar").classList.remove("visible");
+  document.getElementById("resultsSection").classList.remove("visible");
+  document.getElementById("roleSection").scrollIntoView({behavior:"smooth"});
+}
+
+function confirmRoleChange(){
+  document.getElementById("roleConfirmModal").classList.remove("visible");
+  if(pendingRole){
+    state.scores = {};
+    state.phase = null;
+    state.showResults = false;
+    applyRole(pendingRole);
+    pendingRole = null;
+  }
+}
+
+function cancelRoleChange(){
+  document.getElementById("roleConfirmModal").classList.remove("visible");
+  pendingRole = null;
+}
+
+function applyRole(roleId){
+  state.role = roleId;
+  state.showResults = false;
+  saveState();
+  renderRoles();
+  document.getElementById("phaseSection").style.display = "block";
+  document.getElementById("projectInfo").style.display = "none";
+  document.getElementById("scaleBlock").style.display = "none";
+  document.getElementById("assessmentSection").classList.remove("visible");
+  document.getElementById("stickyBar").classList.remove("visible");
+  document.getElementById("resultsSection").classList.remove("visible");
+  renderPhases();
+  setTimeout(function(){ document.getElementById("phaseSection").scrollIntoView({behavior:"smooth"}); }, 50);
+}
+
+/* ========================================================================
+   RENDER: PHASES
+   ======================================================================== */
+
+function renderPhases(){
+  var grid = document.getElementById("phaseGrid");
+  grid.innerHTML = "";
+  PHASES.forEach(function(p){
+    var card = document.createElement("div");
+    card.className = "phase-card" + (state.phase === p.id ? " selected" : "");
+    card.innerHTML = '<div class="icon">'+p.icon+'</div><div class="name">'+p.id+'</div><div class="desc">'+p.desc+'</div>';
+    card.onclick = function(){ selectPhase(p.id); };
+    grid.appendChild(card);
+  });
+  updatePhaseBadge();
+}
+
+function updatePhaseBadge(){
+  var badge = document.getElementById("phaseBadge");
+  badge.innerHTML = state.phase ? '<span>Fase seleccionada: '+state.phase+'</span>' : "";
+}
+
+function selectPhase(phaseId){
+  if(state.phase === phaseId) return;
+  var scored = Object.keys(state.scores).length;
+  if(state.phase && scored > 0){
+    pendingPhase = phaseId;
+    document.getElementById("confirmModal").classList.add("visible");
+    return;
+  }
+  applyPhase(phaseId);
+}
+
+function confirmPhaseChange(){
+  document.getElementById("confirmModal").classList.remove("visible");
+  if(pendingPhase){
+    state.scores = {};
+    state.showResults = false;
+    applyPhase(pendingPhase);
+    pendingPhase = null;
+  }
+}
+
+function cancelPhaseChange(){
+  document.getElementById("confirmModal").classList.remove("visible");
+  pendingPhase = null;
+}
+
+function applyPhase(phaseId){
+  state.phase = phaseId;
+  state.showResults = false;
+  saveState();
+  renderPhases();
+  renderAssessment();
+  document.getElementById("projectInfo").style.display = "block";
+  document.getElementById("scaleBlock").style.display = "block";
+  document.getElementById("assessmentSection").classList.add("visible");
+  document.getElementById("stickyBar").classList.add("visible");
+  document.getElementById("resultsSection").classList.remove("visible");
+  updateProgress();
+}
+
+function toggleScale(){
+  var h = document.getElementById("scaleHeader");
+  var b = document.getElementById("scaleBody");
+  h.classList.toggle("open");
+  b.classList.toggle("open");
+}
+
+/* ========================================================================
+   RENDER: PROJECT INFO
+   ======================================================================== */
+
+function toggleInfo(){
+  var header = document.getElementById("infoToggle");
+  var body = document.getElementById("infoBody");
+  header.classList.toggle("open");
+  body.classList.toggle("open");
+}
+
+function bindProjectInputs(){
+  var mapping = {companyName:"company",projectName:"project",assessDate:"date",assessor:"assessor"};
+  var ids = ["companyName","projectName","assessDate","assessor"];
+  ids.forEach(function(id){
+    var el = document.getElementById(id);
+    var key = mapping[id];
+    el.value = state.projectInfo[key] || "";
+    el.addEventListener("input", function(){ state.projectInfo[key] = el.value; saveState(); });
+  });
+  if(!state.projectInfo.date){
+    var today = new Date().toISOString().slice(0,10);
+    document.getElementById("assessDate").value = today;
+    state.projectInfo.date = today;
+  }
+}
+
+/* ========================================================================
+   RENDER: ASSESSMENT
+   ======================================================================== */
+
+function renderAssessment(){
+  var section = document.getElementById("assessmentSection");
+  if(!state.phase){ section.innerHTML = ""; return; }
+  var html = "";
+  DISC_META.forEach(function(d){
+    var discScores = [0,1,2].map(function(i){ return state.scores[d.id + "_" + i]; });
+    var scored = discScores.filter(function(v){ return v != null; });
+    var avg = scored.length ? (scored.reduce(function(a,b){return a+b;}, 0) / scored.length) : null;
+    var badgeText = avg != null ? avg.toFixed(1) : "\u2014";
+    var badgeClass = avg != null ? " scored" : "";
+    var weight = getRoleWeight(d.id);
+    html += '<div class="discipline-accordion" id="disc-'+d.id+'">';
+    html += '<div class="disc-header" onclick="toggleDisc('+d.id+')">';
+    html += '<span class="disc-icon">'+d.icon+'</span>';
+    html += '<span class="disc-name">'+d.name+'</span>';
+    html += '<span class="disc-weight">'+weight+'%</span>';
+    html += '<span class="disc-score-badge'+badgeClass+'" id="badge-'+d.id+'">'+badgeText+'</span>';
+    html += '<span class="disc-arrow">&#9660;</span>';
+    html += '</div>';
+    html += '<div class="disc-body" id="body-'+d.id+'">';
+    var criteriaList = getRoleCriteria(state.phase, d.id);
+    criteriaList.forEach(function(q, idx){
+      var key = d.id + "_" + idx;
+      var val = state.scores[key] || 0;
+      html += '<div class="criterion">';
+      html += '<p class="criterion-text"><span class="criterion-number">'+(idx+1)+'.</span> '+q+'</p>';
+      html += '<div class="score-buttons">';
+      for(var s=1; s<=5; s++){
+        html += '<button class="score-btn'+(val===s?' active':'')+'" onclick="setScore(\''+key+'\','+s+','+d.id+')" title="'+SCORE_LABELS[s-1]+'">'+s+'</button>';
+      }
+      html += '</div>';
+      html += '<div class="score-labels">';
+      SCORE_LABELS.forEach(function(l){ html += '<span>'+l+'</span>'; });
+      html += '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  section.innerHTML = html;
+}
+
+function toggleDisc(id){
+  var header = document.querySelector('#disc-'+id+' .disc-header');
+  var body = document.getElementById('body-'+id);
+  header.classList.toggle("open");
+  body.classList.toggle("open");
+}
+
+function setScore(key, val, discId){
+  state.scores[key] = val;
+  saveState();
+  var parts = key.split("_");
+  var disc = parseInt(parts[0]);
+  var idx = parseInt(parts[1]);
+  var accordion = document.getElementById('disc-'+disc);
+  var criteriaEls = accordion.querySelectorAll(".criterion");
+  var btns = criteriaEls[idx].querySelectorAll(".score-btn");
+  for(var i=0; i<btns.length; i++){ btns[i].classList.toggle("active", i+1 === val); }
+  var discScores = [0,1,2].map(function(i){ return state.scores[disc+"_"+i]; }).filter(function(v){ return v!=null; });
+  var avg = discScores.length ? (discScores.reduce(function(a,b){return a+b;},0)/discScores.length) : null;
+  var badge = document.getElementById('badge-'+disc);
+  badge.textContent = avg != null ? avg.toFixed(1) : "\u2014";
+  badge.classList.toggle("scored", avg != null);
+  updateProgress();
+}
+
+/* ========================================================================
+   PROGRESS
+   ======================================================================== */
+
+function updateProgress(){
+  var total = 39;
+  var scored = Object.keys(state.scores).length;
+  var pct = Math.round((scored / total) * 100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  var label = scored + " / " + total + " criterios evaluados";
+  if(scored > 0 && scored < total) label += " (parcial - complete todos)";
+  document.getElementById("progressText").textContent = label;
+  if(scored > 0){
+    var ws = computeWeightedScore();
+    document.getElementById("progressScore").textContent = "Puntaje: " + ws.toFixed(2) + " / 5.00";
+  } else {
+    document.getElementById("progressScore").textContent = "";
+  }
+  document.getElementById("btnCalculate").disabled = scored < total;
+}
+
+function computeWeightedScore(){
+  var weightedSum = 0;
+  DISC_META.forEach(function(d){
+    var vals = [0,1,2].map(function(i){ return state.scores[d.id+"_"+i]; }).filter(function(v){ return v!=null; });
+    if(vals.length > 0){
+      var avg = vals.reduce(function(a,b){return a+b;},0) / vals.length;
+      weightedSum += avg * getRoleWeight(d.id);
+    }
+  });
+  return weightedSum / 100;
+}
+
+function getCompletionPct(){
+  return Math.round((Object.keys(state.scores).length / 39) * 100);
+}
+
+/* ========================================================================
+   RESULTS
+   ======================================================================== */
+
+function calculateResults(){
+  if(Object.keys(state.scores).length < 39){
+    alert("Debe completar los 39 criterios antes de ver los resultados.");
+    return;
+  }
+  state.showResults = true;
+  saveState();
+  renderResults();
+  document.getElementById("resultsSection").classList.add("visible");
+  setTimeout(function(){ document.getElementById("resultsSection").scrollIntoView({behavior:"smooth"}); }, 100);
+}
+
+function renderResults(){
+  var ws = computeWeightedScore();
+  var levels = PHASE_LEVELS[state.phase];
+  var matched = levels[0];
+  for(var i=0; i<levels.length; i++){
+    if(ws >= levels[i].min && ws <= levels[i].max) matched = levels[i];
+  }
+
+  document.getElementById("resultCard").innerHTML =
+    '<div class="result-score" style="color:'+matched.color+'">'+ws.toFixed(2)+'</div>'+
+    '<div class="result-label" style="color:'+matched.color+'">'+matched.label+'</div>'+
+    '<p class="result-interp">'+matched.interp+'</p>';
+
+  var discData = DISC_META.map(function(d){
+    var vals = [0,1,2].map(function(i){ return state.scores[d.id+"_"+i]; }).filter(function(v){ return v!=null; });
+    var avg = vals.length > 0 ? vals.reduce(function(a,b){return a+b;},0)/vals.length : 0;
+    var w = getRoleWeight(d.id);
+    var weighted = avg * w / 100;
+    return { id:d.id, name:d.name, weight:w, icon:d.icon, avg:avg, weighted:weighted, scored:vals.length>0 };
+  });
+
+  renderRadar(discData);
+  renderBreakdown(discData);
+  renderGaps(discData);
+  renderDynamicCTA();
+}
+
+/* ========================================================================
+   RADAR (SVG)
+   ======================================================================== */
+
+function renderRadar(discData){
+  var wrap = document.getElementById("radarWrap");
+  var cx = 250, cy = 250, maxR = 180;
+  var n = discData.length;
+  var angleStep = (2 * Math.PI) / n;
+  var startAngle = -Math.PI / 2;
+
+  function polar(angle, r){ return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) }; }
+
+  var svg = '<svg viewBox="0 0 500 500" width="500" height="500" xmlns="http://www.w3.org/2000/svg">';
+
+  // Grid circles (rings 3 and 5 are reference lines: good / best practice)
+  for(var lv = 1; lv <= 5; lv++){
+    var r = (lv / 5) * maxR;
+    var ringStroke = "#2a2a4a", ringWidth = "0.7", ringDash = "";
+    if(lv === 3){ ringStroke = "#f1c40f"; ringWidth = "2"; ringDash = ' stroke-dasharray="6 4"'; }
+    else if(lv === 5){ ringStroke = "#2ecc71"; ringWidth = "2"; }
+    svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+ringStroke+'" stroke-width="'+ringWidth+'"'+ringDash+' />';
+  }
+
+  // Axes + labels
+  discData.forEach(function(d, i){
+    var angle = startAngle + i * angleStep;
+    var tip = polar(angle, maxR);
+    svg += '<line x1="'+cx+'" y1="'+cy+'" x2="'+tip.x.toFixed(1)+'" y2="'+tip.y.toFixed(1)+'" stroke="#2a2a4a" stroke-width="0.5" />';
+    var labelR = maxR + 28;
+    var lp = polar(angle, labelR);
+    var anchor = "middle";
+    if(lp.x < cx - 10) anchor = "end";
+    else if(lp.x > cx + 10) anchor = "start";
+    var shortName = d.name.length > 24 ? d.name.slice(0,22) + "\u2026" : d.name;
+    svg += '<text x="'+lp.x.toFixed(1)+'" y="'+lp.y.toFixed(1)+'" fill="#a0a0b8" font-size="9" font-family="sans-serif" text-anchor="'+anchor+'" dominant-baseline="central">'+shortName+'</text>';
+  });
+
+  // Data polygon
+  var pts = discData.map(function(d, i){
+    var angle = startAngle + i * angleStep;
+    var r = (d.avg / 5) * maxR;
+    return polar(angle, r);
+  });
+  var polyStr = pts.map(function(p){ return p.x.toFixed(1)+","+p.y.toFixed(1); }).join(" ");
+  svg += '<polygon points="'+polyStr+'" fill="rgba(0,180,216,0.2)" stroke="#00b4d8" stroke-width="2" />';
+
+  // Data points
+  pts.forEach(function(p){
+    svg += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="#00b4d8" />';
+  });
+
+  // Center score labels
+  for(var lv2 = 1; lv2 <= 5; lv2++){
+    var r2 = (lv2 / 5) * maxR;
+    svg += '<text x="'+(cx+4)+'" y="'+(cy - r2 + 4)+'" fill="#606078" font-size="9" font-family="sans-serif">'+lv2+'</text>';
+  }
+
+  svg += '</svg>';
+  var legendHtml = '<div class="radar-legend">' +
+    '<div class="item"><span class="swatch dashed" style="border-top-color:#f1c40f"></span>Buena práctica (3)</div>' +
+    '<div class="item"><span class="swatch" style="border-top-color:#2ecc71"></span>La mejor práctica (5)</div>' +
+    '</div>';
+  wrap.innerHTML = svg + legendHtml;
+}
+
+/* ========================================================================
+   BREAKDOWN TABLE
+   ======================================================================== */
+
+function renderBreakdown(discData){
+  var el = document.getElementById("breakdownTable");
+  var html = '<h3>Desglose por Disciplina</h3>';
+  html += '<table><thead><tr><th>Disciplina</th><th>Peso</th><th>Puntaje</th><th>Ponderado</th><th class="bar-cell">Nivel</th></tr></thead><tbody>';
+  discData.forEach(function(d){
+    var color = getScoreColor(d.avg);
+    var pct = (d.avg / 5) * 100;
+    html += '<tr>';
+    html += '<td>'+d.icon+' '+d.name+'</td>';
+    html += '<td>'+d.weight+'%</td>';
+    html += '<td style="font-weight:700;color:'+color+'">'+d.avg.toFixed(1)+'</td>';
+    html += '<td>'+d.weighted.toFixed(2)+'</td>';
+    html += '<td class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function getScoreColor(score){
+  if(score < 1.5) return "var(--level1)";
+  if(score < 2.5) return "var(--level2)";
+  if(score < 3.5) return "var(--level3)";
+  if(score < 4.5) return "var(--level4)";
+  return "var(--level5)";
+}
+
+/* ========================================================================
+   GAP ANALYSIS
+   ======================================================================== */
+
+function renderGaps(discData){
+  var section = document.getElementById("gapSection");
+  var gaps = discData.filter(function(d){ return d.avg < 3.0 && d.scored; });
+  var html = '<h3>Análisis de Brechas</h3>';
+  if(gaps.length === 0){
+    html += '<div class="no-gaps">Todas las disciplinas con puntaje de 3.0 o superior. No se identificaron brechas críticas.</div>';
+  } else {
+    gaps.sort(function(a,b){ return a.avg - b.avg; });
+    gaps.forEach(function(d){
+      var diag = getRoleDiagnostic(state.phase, d.id);
+      var color = getScoreColor(d.avg);
+      html += '<div class="gap-card">';
+      html += '<div class="gap-card-header">';
+      html += '<span class="gap-name">'+d.icon+' '+d.name+'</span>';
+      html += '<span class="gap-score" style="background:'+color+'22;color:'+color+'">'+d.avg.toFixed(1)+' / 5.0</span>';
+      html += '</div>';
+      html += '<p class="gap-risk">'+diag.risk+'</p>';
+      html += '<ul class="gap-actions">';
+      diag.actions.forEach(function(a){ html += '<li>'+a+'</li>'; });
+      html += '</ul>';
+      html += '<span class="gap-chapter">'+diag.ch+' \u2014 Ready to Operate</span>';
+      html += '</div>';
+    });
+  }
+  section.innerHTML = html;
+}
+
+/* ========================================================================
+   EXPORT CSV
+   ======================================================================== */
+
+function downloadCSV(){
+  var rows = [["Disciplina","Peso (%)","Criterio","Puntaje"]];
+  DISC_META.forEach(function(d){
+    var criteriaList = getRoleCriteria(state.phase, d.id);
+    var weight = getRoleWeight(d.id);
+    criteriaList.forEach(function(q, idx){
+      var key = d.id + "_" + idx;
+      var val = state.scores[key] || "";
+      rows.push(['"'+d.name+'"', weight, '"'+q.replace(/"/g,'""')+'"', val]);
+    });
+  });
+  rows.push([]);
+  var roleLabel = state.role ? getRoleLabel(state.role) : "Diagnóstico general (360°)";
+  rows.push(["Rol", '"'+roleLabel+'"']);
+  rows.push(["Fase", state.phase]);
+  rows.push(["Puntaje Ponderado", computeWeightedScore().toFixed(2)]);
+  rows.push(["Empresa", state.projectInfo.company || ""]);
+  rows.push(["Proyecto", state.projectInfo.project || ""]);
+  rows.push(["Fecha", state.projectInfo.date || ""]);
+  rows.push(["Evaluador", state.projectInfo.assessor || ""]);
+
+  var csv = rows.map(function(r){ return r.join(","); }).join("\n");
+  var blob = new Blob(["\uFEFF" + csv], {type:"text/csv;charset=utf-8;"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  var slug = (state.projectInfo.project || "evaluacion").replace(/[^a-zA-Z0-9]/g,"-").toLowerCase();
+  var roleSlug = state.role || "generic";
+  a.download = "OR_Evaluacion_"+roleSlug+"_"+state.phase+"_"+slug+"_"+(state.projectInfo.date || new Date().toISOString().slice(0,10))+".csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ========================================================================
+   RESET
+   ======================================================================== */
+
+function renderDynamicCTA(){
+  var ctaBlock = document.querySelector(".cta-block");
+  if(!ctaBlock) return;
+  var cta = getRoleCTA();
+  if(!cta){
+    // Default generic CTA (rol genérico o sin rol)
+    ctaBlock.innerHTML = '<h3>¿Necesitas ayuda para cerrar tus brechas de OR?</h3>'+
+      '<p>Agenda una reunión conmigo para discutir tus resultados y definir un plan de acción priorizado.</p>'+
+      '<a href="https://calendly.com/valuestrategyconsulting" target="_blank" rel="noopener" class="btn-cta">Agenda una reunión conmigo</a>';
+    return;
+  }
+  ctaBlock.innerHTML = '<h3>'+cta.headline+'</h3>'+
+    '<p>'+cta.body+'</p>'+
+    '<a href="'+cta.url+'" target="_blank" rel="noopener" class="btn-cta">Agenda una reunión conmigo</a>';
+}
+
+function resetAssessment(){
+  if(!confirm("Esto eliminará permanentemente todos los puntajes e información del proyecto. ¿Continuar?")) return;
+  state = { role:null, phase:null, scores:{}, projectInfo:{company:"",project:"",date:"",assessor:""}, showResults:false };
+  localStorage.removeItem(STORAGE_KEY);
+  document.getElementById("phaseSection").style.display = "none";
+  document.getElementById("projectInfo").style.display = "none";
+  document.getElementById("scaleBlock").style.display = "none";
+  document.getElementById("assessmentSection").classList.remove("visible");
+  document.getElementById("assessmentSection").innerHTML = "";
+  document.getElementById("stickyBar").classList.remove("visible");
+  document.getElementById("resultsSection").classList.remove("visible");
+  renderRoles();
+  renderPhases();
+  bindProjectInputs();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ========================================================================
+   INIT
+   ======================================================================== */
+
+function init(){
+  loadState();
+  renderRoles();
+  renderPhases();
+  bindProjectInputs();
+  if(state.role){
+    document.getElementById("phaseSection").style.display = "block";
+  }
+  if(state.phase){
+    document.getElementById("projectInfo").style.display = "block";
+    document.getElementById("scaleBlock").style.display = "block";
+    document.getElementById("assessmentSection").classList.add("visible");
+    document.getElementById("stickyBar").classList.add("visible");
+    renderAssessment();
+    updateProgress();
+    if(state.showResults){
+      renderResults();
+      document.getElementById("resultsSection").classList.add("visible");
+    }
+  }
+  renderDynamicCTA();
+}
+
+init();
+</script>
+</body>
+</html>

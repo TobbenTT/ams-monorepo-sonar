@@ -366,10 +366,13 @@ export default function Execution() {
   // Fase Jorge 2026-04-21 — vista Fallas separa las OTs PM03 (correctivo
   // de falla, P1/P2) que llegan directo al supervisor bypass-planning.
   const failureWOs = activeWOs.filter(w => (w.wo_type === 'PM03') || (w.priority_code === 'P1' || w.priority_code === 'P2'));
+  // SF-566 Tanda C (Jorge transcript 2026-04-27): supervisor distingue
+  // PROGRAMADO (sale de Scheduling) vs NO PROGRAMADO (PM03 P1/P2 fallas).
   const VIEWS = [
     { id: 'today', label: 'Hoy', icon: Zap, count: activeWOs.length },
+    { id: 'programado', label: '📅 Programado', icon: Calendar, count: activeWOs.filter(w => w.wo_type !== 'PM03' && !['P1', 'P2'].includes(w.priority_code)).length },
+    { id: 'failures', label: '🚨 No Programado (PM03)', icon: AlertTriangle, count: failureWOs.length },
     { id: 'avisos', label: '📨 Avisos', icon: Inbox, count: pendingWRs.length },
-    { id: 'failures', label: '🔥 Fallas PM03', icon: AlertTriangle, count: failureWOs.length },
     { id: 'close', label: 'Bandeja de Cierre', icon: CheckCircle, count: completedWOs.length },
     { id: 'week', label: 'Semana', icon: Calendar, count: activeWOs.length },
     { id: 'summary', label: 'Resumen', icon: BarChart2, count: closedWOs.length },
@@ -435,16 +438,119 @@ export default function Execution() {
         ))}
       </div>
 
-      {/* ═══ FAILURES VIEW (PM03 / P1-P2) — Jorge 2026-04-21 ═══ */}
+      {/* ═══ PROGRAMADO VIEW — SF-566 Tanda C (Jorge 2026-04-27) ═══
+          Vista cronológica del supervisor: OTs programadas para esta semana
+          agrupadas por día y separadas por turno día (07-19) y noche (19-07),
+          ordenadas por planned_start. Reemplaza la lista plana del "Hoy".  */}
+      {view === 'programado' && (() => {
+        const programmedWOs = activeWOs.filter(w => w.wo_type !== 'PM03' && !['P1', 'P2'].includes(w.priority_code));
+        // Agrupar por dia (planned_start) y dentro por turno
+        const groups = {};
+        const undated = [];
+        programmedWOs.forEach(wo => {
+          const d = wo.planned_start ? String(wo.planned_start).slice(0, 10) : null;
+          if (!d) { undated.push(wo); return; }
+          if (!groups[d]) groups[d] = { day: [], night: [] };
+          const shift = (wo.shift || 'day').toLowerCase();
+          (shift === 'night' ? groups[d].night : groups[d].day).push(wo);
+        });
+        // Ordenar OTs dentro de cada turno por hora
+        Object.values(groups).forEach(g => {
+          const byTime = (a, b) => String(a.planned_start || '').localeCompare(String(b.planned_start || ''));
+          g.day.sort(byTime); g.night.sort(byTime);
+        });
+        const sortedDates = Object.keys(groups).sort();
+        const dayLabel = iso => {
+          const dt = new Date(iso + 'T12:00:00');
+          return dt.toLocaleDateString('es-CL', { weekday: 'long', day: '2-digit', month: 'short' });
+        };
+        return (
+          <div className="space-y-3">
+            <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-900/10 p-3">
+              <div className="flex items-center gap-2 text-indigo-800 dark:text-indigo-300 font-bold text-sm mb-1">
+                <Calendar size={14} /> Programa de la semana · vista cronológica
+              </div>
+              <p className="text-[11px] text-indigo-700 dark:text-indigo-200">
+                OTs programadas agrupadas por día y separadas por turno. Sigue el orden cronológico para ejecutarlas.
+              </p>
+            </div>
+            {sortedDates.length === 0 && undated.length === 0 ? (
+              <div className="bg-card border border-border rounded-xl p-12 text-center">
+                <Calendar size={40} className="text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-muted-foreground">No hay OTs programadas para esta semana</p>
+              </div>
+            ) : (
+              sortedDates.map(date => (
+                <div key={date} className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="bg-muted/40 px-4 py-2 font-bold text-sm capitalize border-b border-border">
+                    {dayLabel(date)}
+                  </div>
+                  <div className="divide-y divide-border/50">
+                    {['day', 'night'].map(shift => {
+                      const list = groups[date][shift];
+                      if (list.length === 0) return null;
+                      return (
+                        <div key={shift} className="p-3">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
+                            {shift === 'day' ? '☀️ Turno día (07:00-19:00)' : '🌙 Turno noche (19:00-07:00)'}
+                            <span className="ml-auto text-foreground tabular-nums">{list.length} OT{list.length !== 1 ? 's' : ''}</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {list.map((wo, i) => (
+                              <div key={wo.wo_id} className="flex items-center gap-2 text-xs p-2 rounded bg-muted/20 hover:bg-muted/40 transition-colors">
+                                <span className="font-bold text-muted-foreground w-6 text-right">{i + 1}.</span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${PRIO_STYLE[wo.priority_code] || PRIO_STYLE.P3}`}>{wo.priority_code}</span>
+                                <span className="font-mono font-semibold">{wo.wo_number}</span>
+                                <span className="flex-1 truncate text-foreground">{wo.description || wo.equipment_tag}</span>
+                                <span className="tabular-nums text-muted-foreground">{wo.estimated_hours || 0}h</span>
+                                <span className="text-[10px] font-semibold text-muted-foreground">{wo.status}</span>
+                                <button onClick={() => setExpandedWO(wo)}
+                                  className="text-[10px] px-2 py-1 rounded border border-border hover:bg-muted">
+                                  ver
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
+            )}
+            {undated.length > 0 && (
+              <div className="bg-card border border-amber-300 dark:border-amber-700 rounded-xl p-3">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-2">
+                  ⚠️ Sin fecha programada · {undated.length}
+                </div>
+                <div className="space-y-1">
+                  {undated.map(wo => (
+                    <div key={wo.wo_id} className="flex items-center gap-2 text-xs p-2 rounded bg-amber-50/50 dark:bg-amber-900/10">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${PRIO_STYLE[wo.priority_code] || PRIO_STYLE.P3}`}>{wo.priority_code}</span>
+                      <span className="font-mono font-semibold">{wo.wo_number}</span>
+                      <span className="flex-1 truncate">{wo.description || wo.equipment_tag}</span>
+                      <span className="tabular-nums text-muted-foreground">{wo.estimated_hours || 0}h</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ═══ NO PROGRAMADO VIEW (PM03 / P1-P2) — SF-566 Tanda C ═══
+          Antes label "Failures" — renombrado a la terminología SAP PM
+          (No Programado = correctivo de falla bypass-planning). */}
       {view === 'failures' && (
         <div className="space-y-3">
           <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/40 dark:bg-red-900/10 p-3">
             <div className="flex items-center gap-2 text-red-800 dark:text-red-300 font-bold text-sm mb-1">
-              <AlertTriangle size={14} /> OTs PM03 · Fallas correctivas
+              <AlertTriangle size={14} /> OTs No Programado · PM03 · Fallas correctivas
             </div>
             <p className="text-[11px] text-red-700 dark:text-red-200">
-              Las OTs de prioridad P1 (menos de 24h) y P2 (1-7 días) vienen directo del WR sin pasar por planificación.
-              Atendelas priorizando P1 y cerralas firmando al final.
+              OTs P1 (&lt;24h) y P2 (&lt;7d) que vienen directo del aviso sin pasar por planificación.
+              Atendelas priorizando P1, completá operaciones/repuestos con IA si hace falta, y firmá al cerrar.
             </p>
           </div>
           {failureWOs.length === 0 ? (

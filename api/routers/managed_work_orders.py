@@ -446,18 +446,64 @@ def update_progress(wo_id: str, data: WOProgressRequest, user=Depends(get_curren
     return result
 
 
+class WOPartialNotifyRequest(BaseModel):
+    model_config = {"extra": "ignore"}
+    op_seq: int
+    hours: float = Field(gt=0)
+    technician_id: str | None = None
+    shift: str | None = None
+    note: str | None = None
+
+
+@router.post("/{wo_id}/notify-partial")
+def notify_partial(
+    wo_id: str,
+    data: WOPartialNotifyRequest,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """SF-572 — Notificación parcial multi-turno. Si todas las ops llegan a 100%
+    se gatilla notificación FINAL automática (flag final_auto_triggered=true)."""
+    result = managed_wo_service.notify_operation_partial(
+        db, wo_id, data.op_seq, data.hours,
+        technician_id=data.technician_id or "",
+        shift=data.shift or "",
+        note=data.note or "",
+        user_id=getattr(user, "user_id", ""),
+    )
+    if not result:
+        raise HTTPException(status_code=400, detail="WO/op not found or WO not in execution")
+    return result
+
+
+
+
+class WOCancelRequest(BaseModel):
+    model_config = {"extra": "ignore"}
+    reason: str | None = None
+    cancellation_type: str | None = None  # ABSORBED | NOT_NEEDED | OTHER
+    absorbed_by_wo_id: str | None = None
 
 
 @router.put("/{wo_id}/cancel")
 def cancel_work_order(
     wo_id: str,
+    payload: WOCancelRequest | None = None,
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Cancel a work order from any non-final status."""
-    result = managed_wo_service.cancel_wo(db, wo_id, getattr(user, "user_id", ""))
+    """SF-579 — Cancel a WO with reason + type. type=ABSORBED requires absorbed_by_wo_id."""
+    p = payload or WOCancelRequest()
+    if p.cancellation_type == "ABSORBED" and not p.absorbed_by_wo_id:
+        raise HTTPException(status_code=400, detail="absorbed_by_wo_id required when type=ABSORBED")
+    result = managed_wo_service.cancel_wo(
+        db, wo_id, getattr(user, "user_id", ""),
+        reason=p.reason,
+        cancellation_type=p.cancellation_type,
+        absorbed_by_wo_id=p.absorbed_by_wo_id,
+    )
     if not result:
-        raise HTTPException(status_code=400, detail="Cannot cancel - WO not found or already closed")
+        raise HTTPException(status_code=400, detail="Cannot cancel - WO not found, already closed, or invalid absorbing OT (must exist and be PM03)")
     return result
 
 @router.delete("/{wo_id}", dependencies=[Depends(require_role("admin", "planner"))])

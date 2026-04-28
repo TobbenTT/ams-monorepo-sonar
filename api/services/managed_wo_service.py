@@ -115,6 +115,8 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "technical_location": getattr(wo, "technical_location", None),
         "reservation_code": getattr(wo, "reservation_code", None),
         "cancellation_reason": getattr(wo, "cancellation_reason", None),
+        "cancellation_type": getattr(wo, "cancellation_type", None),
+        "absorbed_by_wo_id": getattr(wo, "absorbed_by_wo_id", None),
         "created_at": wo.created_at.isoformat() if wo.created_at else None,
         "updated_at": wo.updated_at.isoformat() if wo.updated_at else None,
     }
@@ -676,6 +678,27 @@ def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int
         return None
     if wo.status in ("CERRADO", "CANCELADO"):
         return None
+    # SF-570 — prohibir convertir una OT programada (PM01/PM02) en falla.
+    # Si el caller intenta cambiar priority_code → P1/P2 o wo_type → PM03 sobre
+    # una OT PM01/PM02, se bloquea para no contaminar estadísticas de programa.
+    # La falla debe crearse como una NUEVA OT PM03 (ver SF-569).
+    if wo.wo_type in ("PM01", "PM02"):
+        new_pri = (data.get("priority_code") or "").upper()
+        new_type = (data.get("wo_type") or "").upper()
+        if new_pri in ("P1", "P2") or new_type == "PM03":
+            from fastapi import HTTPException
+            try:
+                log_action(db, "managed_work_order", wo.wo_id, "BLOCKED_FAILURE_LOAD",
+                           payload={"attempted_priority": new_pri, "attempted_type": new_type, "wo_type": wo.wo_type})
+            except Exception:
+                pass
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"No puede cargar una falla sobre una OT programada ({wo.wo_type}). "
+                    f"Cree una OT de falla nueva (PM03) — ver botón 'Convertir Aviso → PM03'."
+                ),
+            )
     # Fase 9 Jorge 2026-04-21 — optimistic concurrency. Si el cliente mandó
     # If-Match y la versión actual es distinta, otro usuario ya modificó la
     # OT en el ínterin → rechaza con 409.
@@ -897,7 +920,42 @@ def reject_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
     return _transition(db, wo_id, "CANCELADO", user_id)
 
 
-def cancel_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
+def cancel_wo(
+    db: Session,
+    wo_id: str,
+    user_id: str = "",
+    reason: str | None = None,
+    cancellation_type: str | None = None,
+    absorbed_by_wo_id: str | None = None,
+) -> dict | None:
+    """SF-579: cancela una OT con motivo + tipología.
+
+    cancellation_type:
+      - ABSORBED: absorbida por OT PM03 (requiere absorbed_by_wo_id)
+      - NOT_NEEDED: ya no es necesaria
+      - OTHER: otros motivos
+
+    Si type=ABSORBED, valida que la OT absorbente exista y sea PM03.
+    """
+    from api.database.models import ManagedWorkOrderModel
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return None
+    if cancellation_type == "ABSORBED":
+        if not absorbed_by_wo_id:
+            return None
+        absorber = db.query(ManagedWorkOrderModel).filter(
+            ManagedWorkOrderModel.wo_id == absorbed_by_wo_id
+        ).first()
+        if not absorber or absorber.wo_type != "PM03":
+            return None
+    if reason:
+        wo.cancellation_reason = reason
+    if cancellation_type:
+        wo.cancellation_type = cancellation_type
+    if absorbed_by_wo_id and cancellation_type == "ABSORBED":
+        wo.absorbed_by_wo_id = absorbed_by_wo_id
+    db.commit()
     return _transition(db, wo_id, "CANCELADO", user_id)
 
 
@@ -962,6 +1020,87 @@ def add_note(db: Session, wo_id: str, user_id: str, note: str) -> dict | None:
     db.commit()
     db.refresh(wo)
     return _to_dict(wo)
+
+
+def notify_operation_partial(
+    db: Session,
+    wo_id: str,
+    op_seq: int,
+    hours: float,
+    technician_id: str = "",
+    shift: str = "",
+    note: str = "",
+    user_id: str = "",
+) -> dict | None:
+    """SF-572 — Notificación parcial multi-turno por operación.
+
+    - Acumula `hours` en `op.notifications` (lista de partials con técnico+turno+timestamp).
+    - op.actual_hours = suma de hours de las parciales.
+    - op.completion_pct = min(100, actual / planned * 100). Si llega a 100, op.status='COMPLETED'.
+    - WO.completion_pct = promedio de op.completion_pct.
+    - Si TODAS las ops están al 100%, registra notificación FINAL automática en wo.execution_notes
+      y devuelve `final_auto_triggered=true`. (No transiciona a CERRADO; eso requiere firma supervisor.)
+    """
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return None
+    if wo.status not in ("EN_EJECUCION", "EN_PROGRESO", "PROGRAMADO"):
+        return None
+    ops = list(wo.operations or [])
+    if not ops:
+        return None
+    target = None
+    for op in ops:
+        if int(op.get("op_number", op.get("seq", 0))) == int(op_seq):
+            target = op
+            break
+    if target is None:
+        return None
+    planned = float(target.get("planned_hours", target.get("estimated_hours", target.get("duration", 0))) or 0)
+    notifs = list(target.get("notifications") or [])
+    notifs.append({
+        "type": "PARTIAL",
+        "hours": float(hours),
+        "technician_id": technician_id or None,
+        "shift": shift or None,
+        "note": (note or "")[:300] or None,
+        "timestamp": datetime.now().isoformat(),
+        "user": user_id or "system",
+    })
+    target["notifications"] = notifs
+    actual = round(sum(float(n.get("hours") or 0) for n in notifs), 2)
+    target["actual_hours"] = actual
+    pct = min(100.0, (actual / planned * 100.0) if planned > 0 else 0.0)
+    target["completion_pct"] = round(pct, 1)
+    if pct >= 100.0:
+        target["status"] = "COMPLETED"
+    wo.operations = ops
+    valid_pcts = [float(o.get("completion_pct") or 0) for o in ops]
+    wo.completion_pct = round(sum(valid_pcts) / len(valid_pcts), 1) if valid_pcts else 0.0
+    wo.actual_hours = round(sum(float(o.get("actual_hours") or 0) for o in ops), 2)
+
+    final_auto = all(float(o.get("completion_pct") or 0) >= 100.0 for o in ops)
+    notes = list(wo.execution_notes or [])
+    notes.append({
+        "timestamp": datetime.now().isoformat(),
+        "user": user_id or "system",
+        "note": f"[NOTIF PARCIAL] Op#{op_seq} +{hours}h por {technician_id or 'sin id'} ({shift or 'sin turno'}). Op@{target['completion_pct']}%, OT@{wo.completion_pct}%",
+    })
+    if final_auto:
+        notes.append({
+            "timestamp": datetime.now().isoformat(),
+            "user": "system",
+            "note": "[NOTIF FINAL AUTO] Todas las operaciones al 100%. Listo para validación supervisor + cierre.",
+        })
+        log_action(db, "managed_work_order", wo.wo_id, "FINAL_NOTIFICATION_AUTO",
+                   payload={"total_actual_hours": wo.actual_hours, "completion_pct": wo.completion_pct})
+    wo.execution_notes = notes
+    wo.updated_at = datetime.now()
+    db.commit()
+    db.refresh(wo)
+    out = _to_dict(wo)
+    out["final_auto_triggered"] = final_auto
+    return out
 
 
 def update_progress(db: Session, wo_id: str, pct: float) -> dict | None:

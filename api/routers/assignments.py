@@ -124,6 +124,79 @@ def list_technicians(
     )
 
 
+@router.post("/rank-for-operation")
+def rank_for_operation(
+    data: dict,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """SF-568 — Smart Assignment IA: ranking de técnicos para una operación.
+
+    Body: {
+      plant_id, specialty (op specialty), shift?, planned_hours,
+      target_date (ISO), exclude_worker_ids? (list)
+    }
+
+    Score (0-100):
+      +40 si specialty match exacto en su perfil
+      +30 si specialty match en sus skills (hidráulica, mecánica, neumática, eléctrica)
+      +20 si shift coincide con el turno objetivo
+      +10 * (HH disponibles / 8) hasta 10 pts
+      -10 si está en absence_reason
+
+    Devuelve top 10 técnicos ordenados con score y breakdown.
+    """
+    plant_id = data.get("plant_id")
+    op_spec = (data.get("specialty") or "").strip()
+    shift = (data.get("shift") or "").strip().lower()
+    planned_hours = float(data.get("planned_hours", 0) or 0)
+    exclude_ids = set(data.get("exclude_worker_ids") or [])
+
+    techs = assignment_service.get_technician_profiles(db, plant_id=plant_id)
+    op_norm = op_spec.lower()
+    ranked = []
+    for tn in techs:
+        wid = tn.get("id") or tn.get("worker_id")
+        if not wid or wid in exclude_ids: continue
+        if not tn.get("available", True):
+            continue
+        score = 0.0
+        breakdown = {}
+        tn_spec = (tn.get("specialty") or "").lower()
+        tn_skills = [str(s).lower() for s in (tn.get("skills") or [])]
+        # Spec match (substring tolerante: MEC ~ Mecánico ~ PMEC)
+        if op_norm and (op_norm in tn_spec or tn_spec[:3] == op_norm[:3]):
+            score += 40; breakdown["specialty_match"] = 40
+        # Skills match
+        if op_norm and any(op_norm in sk or sk in op_norm for sk in tn_skills):
+            score += 30; breakdown["skill_match"] = 30
+        # Shift match
+        tn_shift = (tn.get("shift") or "").lower()
+        if shift and tn_shift and (shift == tn_shift or shift in tn_shift):
+            score += 20; breakdown["shift_match"] = 20
+        # HH disponibles (cap a 8h/turno)
+        hh_avail = float(tn.get("hh_available", tn.get("hours_available", 8)) or 8)
+        if planned_hours <= hh_avail:
+            hh_pts = min(10.0, hh_avail)
+            score += hh_pts; breakdown["hh_available_pts"] = hh_pts
+        else:
+            score -= 5; breakdown["hh_overload_penalty"] = -5
+        if tn.get("absence_reason"):
+            score -= 10; breakdown["absence_penalty"] = -10
+        ranked.append({
+            "worker_id": wid,
+            "name": tn.get("name"),
+            "specialty": tn.get("specialty"),
+            "shift": tn.get("shift"),
+            "skills": tn.get("skills") or [],
+            "hh_available": hh_avail,
+            "score": round(score, 1),
+            "breakdown": breakdown,
+        })
+    ranked.sort(key=lambda x: x["score"], reverse=True)
+    return {"plant_id": plant_id, "specialty": op_spec, "shift": shift, "candidates": ranked[:10]}
+
+
 @router.post("/optimize")
 def optimize_assignments(data: dict, db: Session = Depends(get_db)):
     """Generate optimized technician-to-task assignments.

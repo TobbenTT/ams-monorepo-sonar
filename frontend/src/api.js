@@ -289,6 +289,8 @@ export const getWorkRequest = (id) => get(`/work-requests/${id}`);
 export const getWorkRequestImpactScore = (id) => get(`/work-requests/${id}/impact-score`);
 export const validateWorkRequest = (id, d) => put(`/work-requests/${id}/validate`, d);
 export const approveWorkRequest = (id, d) => put(`/work-requests/${id}/approve`, d);
+// SF-569 — Conversión rápida Aviso → OT PM03 (express, un sólo paso)
+export const convertWRToPM03 = (id, d) => post(`/work-requests/${id}/convert-to-pm03`, d || {});
 export const rejectWorkRequest = (id, d) => put(`/work-requests/${id}/reject`, d);
 export const getEquipmentHistory = (tag, excludeId) => get(`/work-requests/equipment-history/${encodeURIComponent(tag)}`, { exclude_id: excludeId });
 export const checkDuplicates = (d) => post('/work-requests/check-duplicates', d);
@@ -402,9 +404,13 @@ export async function downloadReportXlsx(path, params) {
   a.click();
   a.remove();
 }
-export const cancelManagedWO = (id) => put(`/managed-work-orders/${id}/cancel`);
+export const cancelManagedWO = (id, payload) => put(`/managed-work-orders/${id}/cancel`, payload || {});
 export const addManagedWONote = (id, d) => post(`/managed-work-orders/${id}/notes`, d);
 export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id}/progress`, d);
+// SF-572 — notificación parcial multi-turno (acumula HH por op; auto-final cuando todas 100%)
+export const notifyManagedWOPartial = (id, d) => post(`/managed-work-orders/${id}/notify-partial`, d);
+// SF-568 — Smart Assignment IA: ranking de técnicos por skill + HH disponibles
+export const rankTechniciansForOperation = (d) => post('/assignments/rank-for-operation', d);
 export const verifyCloseManagedWO = (id, d) => post(`/managed-work-orders/${id}/verify-close`, d);
 export const getManagedWOStats = (p) => get('/managed-work-orders/stats', p);
 

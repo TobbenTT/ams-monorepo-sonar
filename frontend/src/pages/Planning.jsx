@@ -511,6 +511,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [showOTCreatedModal, setShowOTCreatedModal] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(null); // { woId, woNumber, status }
   const [cancelReason, setCancelReason] = useState('');
+  // SF-579 — tipología de cancelación + OT absorbente (PM03)
+  const [cancelType, setCancelType] = useState('NOT_NEEDED'); // ABSORBED | NOT_NEEDED | OTHER
+  const [absorbedByWoNumber, setAbsorbedByWoNumber] = useState('');
   // CE2 Tanda C-EXT (Jorge 2026-04-28 12:32): motivo obligatorio al reprogramar
   const [showRescheduleModal, setShowRescheduleModal] = useState(null);
   const [rescheduleReason, setRescheduleReason] = useState('');
@@ -3138,26 +3141,59 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
             </div>
             <h3 className="text-lg font-bold text-gray-900 text-center mb-1">Cancel Work Order</h3>
             <p className="text-sm text-gray-500 text-center mb-4">{showCancelModal.woNumber}</p>
+            {/* SF-579 — tipología de cancelación */}
+            <div className="mb-3">
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">Tipo de cancelación *</label>
+              <select value={cancelType} onChange={e => setCancelType(e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30">
+                <option value="ABSORBED">Absorbida por OT de falla (PM03)</option>
+                <option value="NOT_NEEDED">Ya no es necesaria</option>
+                <option value="OTHER">Otros</option>
+              </select>
+            </div>
+            {cancelType === 'ABSORBED' && (
+              <div className="mb-3">
+                <label className="text-xs font-semibold text-gray-700 mb-1 block">N° OT PM03 absorbente *</label>
+                <input value={absorbedByWoNumber} onChange={e => setAbsorbedByWoNumber(e.target.value)}
+                  placeholder="OT-2026-XXXXX"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30" />
+                <p className="text-[11px] text-gray-500 mt-1">Debe existir y ser tipo PM03. Quedará linkeada en histórico.</p>
+              </div>
+            )}
             <div className="mb-4">
-              <label className="text-xs font-semibold text-gray-700 mb-1 block">Cancellation reason *</label>
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">Comentario {cancelType === 'OTHER' ? '*' : ''}</label>
               <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)}
-                placeholder="Explain why this WO is being cancelled..."
+                placeholder="Detalle adicional..."
                 className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 min-h-[80px]" />
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setShowCancelModal(null)}
+              <button onClick={() => { setShowCancelModal(null); setCancelType('NOT_NEEDED'); setAbsorbedByWoNumber(''); setCancelReason(''); }}
                 className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
                 Go Back
               </button>
-              <button disabled={!cancelReason.trim()} onClick={async () => {
+              <button disabled={
+                (cancelType === 'ABSORBED' && !absorbedByWoNumber.trim()) ||
+                (cancelType === 'OTHER' && !cancelReason.trim())
+              } onClick={async () => {
                 const { woId } = showCancelModal;
                 try {
-                  await api.cancelManagedWO(woId);
-                  // Log the reason in history
-                  try { await api.updateManagedWO(woId, { cancellation_reason: cancelReason.trim() }); } catch {}
-                  toast.success('WO cancelled: ' + showCancelModal.woNumber);
+                  let absorbedId = null;
+                  if (cancelType === 'ABSORBED') {
+                    // Resolver wo_number → wo_id
+                    const num = absorbedByWoNumber.trim();
+                    const match = (managedWOs || []).find(w => w.wo_number === num);
+                    if (!match) { toast.error('OT absorbente no encontrada en planta'); return; }
+                    if (match.wo_type !== 'PM03') { toast.error('La OT absorbente debe ser PM03'); return; }
+                    absorbedId = match.wo_id;
+                  }
+                  await api.cancelManagedWO(woId, {
+                    reason: cancelReason.trim() || null,
+                    cancellation_type: cancelType,
+                    absorbed_by_wo_id: absorbedId,
+                  });
+                  toast.success(cancelType === 'ABSORBED' ? `OT cancelada por absorción → ${absorbedByWoNumber}` : 'WO cancelled: ' + showCancelModal.woNumber);
                   setShowCancelModal(null);
-                  setCancelReason('');
+                  setCancelReason(''); setCancelType('NOT_NEEDED'); setAbsorbedByWoNumber('');
                   setSelectedOT(null);
                   fetchData();
                 } catch (e) { toast.error('Error: ' + (e.message || '')); }

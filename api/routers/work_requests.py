@@ -390,6 +390,105 @@ def approve_work_request(request_id: str, data: WRApproveRequest, user=Depends(r
     return result
 
 
+class WRConvertPM03Request(BaseModel):
+    model_config = {"extra": "ignore"}
+    comment: str | None = "Express conversion P1/P2 → PM03"
+    estimated_hours: float | None = None
+    operations: list | None = None  # [{op_number, description, specialty, planned_hours, quantity}]
+    materials: list | None = None   # [{code, description, quantity, unit, reservation_code?}]
+    workers_required: list | None = None  # [{specialty, count}]
+
+
+@router.post("/{request_id}/convert-to-pm03")
+def convert_wr_to_pm03(
+    request_id: str,
+    data: WRConvertPM03Request,
+    user=Depends(require_role("admin", "manager", "planner", "supervisor")),
+    db: Session = Depends(get_db),
+):
+    """SF-569 — Conversión rápida Aviso aprobado → OT PM03 con carga express.
+
+    Hace en un solo paso:
+      1. Si el WR no está aprobado, lo aprueba con comentario express.
+      2. Crea la OT PM03 directamente en PROGRAMADO (fast-track P1/P2).
+      3. Sobreescribe ops/HH/materials con lo que envía el supervisor.
+
+    Aplica regla SF-570: si el WR no es P1/P2, fuerza priority_code=P2 para
+    asegurar que se cree como PM03 (la decisión de tratar como falla es del
+    supervisor que invoca este endpoint).
+    """
+    from api.database.models import WorkRequestModel
+    wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not wr:
+        raise HTTPException(status_code=404, detail="Work request not found")
+    # 1. Asegurar aprobación
+    if wr.status not in ("VALIDATED", "APPROVED", "ASSIGNED", "APROBADO"):
+        work_request_service.approve_work_request(
+            db, request_id,
+            approver_id=getattr(user, "user_id", ""),
+            comment=(data.comment or "Express conversion P1/P2 → PM03"),
+            priority_override="P2" if wr.priority_code not in ("P1", "P2") else None,
+        )
+        db.refresh(wr)
+    # 2. Forzar P1/P2 si no lo es (requisito de PM03)
+    if wr.priority_code not in ("P1", "P2"):
+        wr.priority_code = "P2"
+        db.commit()
+        db.refresh(wr)
+    # 3. Crear OT
+    from api.services import managed_wo_service
+    result = managed_wo_service.create_from_work_request(
+        db, request_id, planned_by=getattr(user, "user_id", ""), plant_id=wr.plant_id,
+    )
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to create PM03 from WR")
+    # 4. Express overrides (ops, materials, HH, workers)
+    overrides = {}
+    if data.estimated_hours and data.estimated_hours > 0:
+        overrides["estimated_hours"] = float(data.estimated_hours)
+    if data.operations:
+        # Normalizar mínimos
+        ops = []
+        for i, o in enumerate(data.operations, start=1):
+            if not isinstance(o, dict): continue
+            ops.append({
+                "op_number": int(o.get("op_number", i)),
+                "description": (o.get("description") or "Intervención")[:200],
+                "op_type": o.get("op_type", "INT"),
+                "specialty": o.get("specialty", "Mecánico"),
+                "quantity": int(o.get("quantity", 1) or 1),
+                "duration": float(o.get("planned_hours", o.get("duration", 1.0)) or 1.0),
+                "estimated_hours": float(o.get("planned_hours", o.get("duration", 1.0)) or 1.0),
+                "planned_hours": float(o.get("planned_hours", o.get("duration", 1.0)) or 1.0),
+                "actual_hours": 0.0,
+                "completion_pct": 0.0,
+            })
+        if ops:
+            overrides["operations"] = ops
+    if data.materials:
+        overrides["materials"] = [
+            {
+                "code": m.get("code", m.get("sapId", "")),
+                "description": m.get("description", ""),
+                "quantity": int(m.get("quantity", 1) or 1),
+                "unit": m.get("unit", "PZ"),
+                "reservation_code": m.get("reservation_code") or None,
+            }
+            for m in (data.materials or []) if isinstance(m, dict)
+        ]
+    if overrides:
+        managed_wo_service.update_work_order(db, result["wo_id"], overrides)
+        # refetch
+        from api.services.managed_wo_service import _to_dict as _wo_to_dict
+        from api.database.models import ManagedWorkOrderModel
+        wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == result["wo_id"]).first()
+        result = _wo_to_dict(wo)
+    from api.services.audit_service import log_action
+    log_action(db, "managed_work_order", result["wo_id"], "EXPRESS_PM03_CONVERSION",
+               payload={"work_request_id": request_id, "user": getattr(user, "user_id", "")})
+    return result
+
+
 @router.put("/{request_id}/reject")
 def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(require_role("admin", "manager", "planner")), db: Session = Depends(get_db)):
     """Supervisor rejects a WR with mandatory reason (Jorge Work Management)."""

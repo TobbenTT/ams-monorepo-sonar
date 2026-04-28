@@ -585,6 +585,9 @@ class ManagedWorkOrderModel(Base):
     reservation_code: Mapped[str | None] = mapped_column(String(20), nullable=True)  # Última reserva creada (activa)
     reservation_codes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # Historial: [{code, created_at, locked}] — Jorge 2026-04-20
     cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)  # Why the WO was cancelled
+    # SF-579 — cancelación con tipología (ABSORBED / NOT_NEEDED / OTHER) + link a OT absorbente
+    cancellation_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    absorbed_by_wo_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)

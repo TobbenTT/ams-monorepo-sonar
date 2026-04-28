@@ -41,7 +41,7 @@ installOfflineSync();
 // Jorge 2026-04-23: cache-bust one-shot. Si la versión guardada no coincide,
 // limpiamos Cache Storage + Service Worker + localStorage efímero y forzamos
 // hard reload una sola vez por versión. Dispara al cargar la app.
-const CACHE_BUST_VERSION = '2026-04-28-4-reliability-failures';
+const CACHE_BUST_VERSION = '2026-04-28-5-sp5-pendientes-completos';
 (async () => {
   try {
     const prev = localStorage.getItem('ocp_cache_version');
@@ -149,6 +149,7 @@ const ExecutionChecklists = lazyRetry(() => import('./pages/ExecutionChecklists'
 // Jorge 2026-04-23: feedback-admin removido del nav (módulo en desuso).
 // const FeedbackAdmin = lazyRetry(() => import('./pages/FeedbackAdmin'));
 const Execution = lazyRetry(() => import('./pages/Execution'));
+const SupervisorBoard = lazyRetry(() => import('./pages/SupervisorBoard'));
 const PostMaintenance = lazyRetry(() => import('./pages/PostMaintenance'));
 const DataImport = lazyRetry(() => import('./pages/DataImport'));
 
@@ -203,6 +204,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="settings" element={<S><SettingsPage /></S>} />
                                     {/* Route feedback-admin removida 2026-04-23 */}
                                     <Route path="execution" element={<P roles={['admin', 'planner', 'tecnico']}><S><Execution /></S></P>} />
+                                    <Route path="supervisor-board" element={<P roles={['admin', 'manager', 'planner', 'supervisor']}><S><SupervisorBoard /></S></P>} />
                                     <Route path="post-maintenance" element={<P roles={PLAN}><S><PostMaintenance /></S></P>} />
                                     <Route path="data-import" element={<P roles={MGMT}><S><DataImport /></S></P>} />
                                     <Route path="user-guide" element={<S><UserGuidePage /></S>} />

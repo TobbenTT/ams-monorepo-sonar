@@ -116,6 +116,9 @@ def _run_column_migrations():
         ("contractors", "notes", "TEXT", None),
         # Jorge 2026-04-23 — SAP-style: cancelar aviso con motivo, nunca eliminar.
         ("work_requests", "cancellation_reason", "TEXT", None),
+        # SF-579 — cancelación con tipología (ABSORBED / NOT_NEEDED / OTHER)
+        ("managed_work_orders", "cancellation_type", "VARCHAR(20)", None),
+        ("managed_work_orders", "absorbed_by_wo_id", "VARCHAR(50)", None),
     ]
 
     with engine.begin() as conn:

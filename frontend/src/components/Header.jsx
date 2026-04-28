@@ -66,6 +66,7 @@ export default function Header({
         { path: '/troubleshooting', labelKey: 'nav.troubleshooting',  keywords: 'troubleshooting diagnostics diagnostico' },
         { path: '/fmea',            labelKey: 'nav.fmea',             keywords: 'fmea failure modes effects analysis modos falla' },
         { path: '/execution',       labelKey: 'nav.execution',        keywords: 'execution tasks field tareas ejecucion campo' },
+        { path: '/supervisor-board', labelKey: 'Tablero Supervisor',   keywords: 'supervisor board tablero programa semanal diario detalle ot' },
         { path: '/financial',       labelKey: 'nav.financial',        keywords: 'financial budget costs roi financiero presupuesto costos' },
     ].map(p => ({ ...p, label: t(p.labelKey) })), [t]);
 

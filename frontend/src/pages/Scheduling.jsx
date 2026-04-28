@@ -3339,7 +3339,24 @@ function SupportEquipmentTab({ plantId, t }) {
 // Rich expanded OT card — click-to-expand overlay styled after Jorge's mockup.
 // Positioned absolute over its cell so it can overflow to show full operation
 // list, materials status and an "Open WO" shortcut. Requested-By: Jorge Cabezas.
+// 2026-04-28: Draggable. Click+drag en el header reposiciona el card libremente.
+//   Estado offset persistido en el componente; se reinicia al cerrar/reabrir.
 function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
+  const [drag, setDrag] = useState({ x: 0, y: 0, dragging: false, startX: 0, startY: 0 });
+  const onHeaderMouseDown = (e) => {
+    // Ignorar clicks en el botón de cerrar
+    if (e.target.closest('button')) return;
+    e.preventDefault();
+    setDrag(d => ({ ...d, dragging: true, startX: e.clientX - d.x, startY: e.clientY - d.y }));
+  };
+  useEffect(() => {
+    if (!drag.dragging) return;
+    const move = (e) => setDrag(d => ({ ...d, x: e.clientX - d.startX, y: e.clientY - d.startY }));
+    const up = () => setDrag(d => ({ ...d, dragging: false }));
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+  }, [drag.dragging]);
   // David 2026-04-28 (Jorge captura): work_centers como "PMEC", "MCAMEC01", etc
   // (códigos SAP que embeben la disciplina). El matching anterior por prefijo 3
   // no detectaba "PMEC" como MEC porque "PME" != "MEC". Ahora buscamos cualquier
@@ -3371,13 +3388,26 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
     <div
       onClick={e => e.stopPropagation()}
       className="absolute top-0 left-0 z-40 w-[340px] rounded-xl border border-emerald-400 dark:border-emerald-600 bg-white dark:bg-card shadow-2xl ring-4 ring-emerald-500/15 overflow-hidden"
-      style={{ animation: 'fadeIn 140ms ease-out both' }}>
-      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border bg-white dark:bg-card">
+      style={{
+        animation: drag.dragging ? 'none' : 'fadeIn 140ms ease-out both',
+        transform: `translate(${drag.x}px, ${drag.y}px)`,
+        cursor: drag.dragging ? 'grabbing' : 'auto',
+      }}>
+      <div
+        onMouseDown={onHeaderMouseDown}
+        className="flex items-center gap-1.5 px-3 py-2 border-b border-border bg-white dark:bg-card select-none"
+        style={{ cursor: drag.dragging ? 'grabbing' : 'grab' }}
+        title="Arrastrar para mover"
+      >
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
         <span className="font-mono font-bold text-[11.5px] text-foreground">{wo.wo_number}</span>
         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${prioTone}`}>{wo.priority_code || 'P4'}</span>
         <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${woSpec.bg}`}>{woSpec.label}</span>
         <div className="flex-1" />
+        {(drag.x !== 0 || drag.y !== 0) && (
+          <button onClick={(e) => { e.stopPropagation(); setDrag({ x: 0, y: 0, dragging: false, startX: 0, startY: 0 }); }}
+            className="p-0.5 rounded hover:bg-muted text-[9px] text-muted-foreground" title="Volver a posición original">↺</button>
+        )}
         <button onClick={onClose} className="p-0.5 rounded hover:bg-muted" title="Cerrar"><X size={12} /></button>
       </div>
       <div className="px-3 pt-2.5 pb-2">

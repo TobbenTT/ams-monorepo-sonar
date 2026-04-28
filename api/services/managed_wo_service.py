@@ -1114,6 +1114,17 @@ def notify_operation_partial(
         })
         log_action(db, "managed_work_order", wo.wo_id, "FINAL_NOTIFICATION_AUTO",
                    payload={"total_actual_hours": wo.actual_hours, "completion_pct": wo.completion_pct})
+        # WebSocket toast → supervisor ve el evento sin refrescar
+        try:
+            queue_notify("wo_final_auto", {
+                "wo_id": wo.wo_id,
+                "wo_number": wo.wo_number,
+                "equipment_tag": wo.equipment_tag,
+                "actual_hours": wo.actual_hours,
+                "completion_pct": wo.completion_pct,
+            }, wo.plant_id)
+        except Exception:
+            pass
     wo.execution_notes = notes
     wo.updated_at = datetime.now()
     db.commit()

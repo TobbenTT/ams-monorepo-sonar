@@ -817,6 +817,8 @@ export const agenticEnergyMonitor = (d) => post('/agentic/energy-monitor', d);
 export const agenticMultiSiteBenchmark = (d) => post('/agentic/multi-site-benchmark', d);
 export const agenticAutoRCA = (d) => post('/agentic/auto-rca', d);
 export const agenticDuplicateCheck = (d) => post('/agentic/duplicate-check', d);
+// Vincular un WR como duplicado y cancelarlo (agrega evidencia al original)
+export const linkWRAsDuplicate = (id, d) => put(`/work-requests/${id}/link-duplicate`, d);
 export const agenticPlannerAutofill = (d) => post('/agentic/planner-autofill', d);
 export const adviseRCMStrategy = (d) => post('/agentic/rcm-advisor', d);
 export const voiceCapture = (d) => post('/agentic/voice-capture', d);

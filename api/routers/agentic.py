@@ -963,6 +963,7 @@ class DuplicateCheckRequest(BaseModel):
     description: str = Field(..., max_length=4000)
     equipment_tag: str | None = Field(default=None, max_length=50)
     plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    priority: str | None = Field(default=None, max_length=4)  # P1/P2/P3/P4 — severity filter
     lookback_days: int = Field(default=14, ge=1, le=60)
     threshold: float = Field(default=0.55, ge=0.1, le=0.99)
 
@@ -973,13 +974,15 @@ def duplicate_check(
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    """SF-213 — look for likely duplicate WRs before creation."""
+    """SF-213 — look for likely duplicate WRs before creation. Excluye estados terminales,
+    aplica time-decay exponencial (7d) y filtro de severidad ±2 niveles."""
     from api.services.agentic_duplicate_check_service import check_duplicates
     return check_duplicates(
         db=db,
         description=data.description,
         equipment_tag=data.equipment_tag,
         plant_id=data.plant_id,
+        priority=data.priority,
         lookback_days=data.lookback_days,
         threshold=data.threshold,
     )

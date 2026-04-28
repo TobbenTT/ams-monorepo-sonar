@@ -16,6 +16,13 @@ from api.services import context_builder_service as ctx_builder
 class DuplicateCheckRequest(BaseModel):
     equipment_tag: str
     problem_description: str = ""
+    priority: str | None = None  # filtro severidad (mejora 2026-04-28)
+
+
+class LinkDuplicateRequest(BaseModel):
+    """Vincular un WR como duplicado de otro y cancelarlo automáticamente."""
+    duplicate_of_request_id: str
+    note: str | None = None
 
 
 class OCRClosureRequest(BaseModel):
@@ -503,6 +510,52 @@ def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(req
     queue_notify("wr_rejected", {"request_id": request_id}, result.get("ai_classification", {}).get("plant_id"))
     return result
 
+
+
+@router.put("/{request_id}/link-duplicate")
+def link_as_duplicate(
+    request_id: str,
+    data: LinkDuplicateRequest,
+    user=Depends(require_role("admin", "manager", "planner", "supervisor")),
+    db: Session = Depends(get_db),
+):
+    """Vincula este WR como duplicado de otro y lo cancela. Agrega evidencia
+    al WR original con referencia al duplicado.
+    """
+    from api.database.models import WorkRequestModel
+    new_wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not new_wr:
+        raise HTTPException(status_code=404, detail="WR not found")
+    original = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == data.duplicate_of_request_id).first()
+    if not original:
+        raise HTTPException(status_code=404, detail="Original WR not found")
+    if original.status in ("CERRADO", "CANCELADO", "RECHAZADO"):
+        raise HTTPException(status_code=409, detail="Original WR ya está en estado terminal")
+
+    # Cancelar el duplicado
+    orig_av = getattr(original, "aviso_number", None)
+    orig_label = f"AV-{str(orig_av).zfill(5)}" if orig_av else (original.request_id or "")[:8]
+    new_wr.status = "CANCELADO"
+    new_wr.cancellation_reason = f"Duplicado de {orig_label}. {data.note or ''}".strip()
+
+    # Agregar nota al original (en circumstances o validation log)
+    note_text = (data.note or "").strip() or "Reportado nuevamente por otro usuario."
+    new_av = getattr(new_wr, "aviso_number", None)
+    new_label = f"AV-{str(new_av).zfill(5)}" if new_av else (new_wr.request_id or "")[:8]
+    from datetime import datetime as _dt
+    addendum = f"\n[{_dt.now().isoformat()}] Reporte duplicado vinculado: {new_label} — {note_text}"
+    original.circumstances = ((original.circumstances or "") + addendum)[:2000]
+
+    from api.services.audit_service import log_action
+    log_action(db, "work_request", request_id, "LINKED_AS_DUPLICATE",
+               payload={"duplicate_of": data.duplicate_of_request_id, "user": getattr(user, "user_id", "")})
+    db.commit()
+    return {
+        "request_id": request_id,
+        "status": new_wr.status,
+        "duplicate_of": data.duplicate_of_request_id,
+        "duplicate_of_label": orig_label,
+    }
 
 
 @router.put("/{request_id}/cancel")

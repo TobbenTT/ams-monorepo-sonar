@@ -203,6 +203,14 @@ export default function Execution() {
   };
   useWebSocket(plant, useCallback((msg) => {
     if (msg.event?.startsWith('wo_')) loadData();
+    // SF-572: notificación FINAL automática gatillada → toast destacado al supervisor
+    if (msg.event === 'wo_final_auto') {
+      const d = msg.data || {};
+      toast.success(
+        `✅ FINAL automática · ${d.wo_number || ''} (${d.equipment_tag || ''}) — todas las ops al 100%, lista para cerrar.`,
+        { duration: 8000 }
+      );
+    }
   }, []));
 
   // KPIs

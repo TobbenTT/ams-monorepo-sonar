@@ -59,57 +59,74 @@ def check_duplicates(
     description: str,
     equipment_tag: str | None = None,
     plant_id: str | None = None,
+    priority: str | None = None,
     lookback_days: int = 14,
     threshold: float = 0.55,
     limit: int = 5,
 ) -> dict:
     """Return likely-duplicate WRs for the given candidate description.
 
-    Parameters
-    ----------
-    description : str
-        Proposed WR description (free text).
-    equipment_tag : str, optional
-        Tag/equipment identifier of the new WR. When provided, the candidate
-        list is narrowed to the same equipment first.
-    lookback_days : int
-        Window to scan (default 14).
-    threshold : float
-        Minimum combined similarity to surface as a duplicate.
-    limit : int
-        Max suggestions returned (sorted by score desc).
+    Mejoras 2026-04-28:
+    - Excluye estados terminales (CERRADO/CANCELADO/RECHAZADO/CLOSED) — un aviso
+      ya resuelto no es duplicado de uno nuevo.
+    - Filtra por severidad cercana: P1 no matchea P4 (max 2 niveles diferencia).
+    - Time-decay exponencial: WRs recientes pesan más (decay 7d).
+    - Devuelve aviso_number cuando está disponible (legible).
     """
+    import math
+    EXCLUDED_STATES = ("CERRADO", "CANCELADO", "RECHAZADO", "CLOSED", "CANCELLED", "REJECTED")
     cutoff = datetime.now() - timedelta(days=max(1, lookback_days))
     q = db.query(WorkRequestModel).filter(WorkRequestModel.created_at >= cutoff)
+    q = q.filter(~WorkRequestModel.status.in_(EXCLUDED_STATES))
     if equipment_tag:
         q = q.filter(WorkRequestModel.equipment_tag == equipment_tag)
     candidates = q.order_by(WorkRequestModel.created_at.desc()).limit(200).all()
 
+    # Severity filter: limit to ±2 priority levels (P1≈P3 OK, P1↔P4 no)
+    PRI_NUM = {"P1": 1, "P2": 2, "P3": 3, "P4": 4}
+    incoming_pri = PRI_NUM.get((priority or "").upper())
+
+    now = datetime.now()
     scored = []
     for wr in candidates:
+        # Severity filter
+        if incoming_pri is not None:
+            wr_pri = PRI_NUM.get((wr.priority_code or "").upper())
+            if wr_pri and abs(wr_pri - incoming_pri) > 2:
+                continue
         text = _text_of(wr)
-        score = _similarity(description, text)
-        if score >= threshold:
-            scored.append((score, wr, text))
+        base_score = _similarity(description, text)
+        if base_score < threshold:
+            continue
+        # Time-decay: factor que multiplica el score (1.0 hoy → ~0.5 a 7d → ~0.25 a 14d)
+        age_days = max(0, (now - wr.created_at).total_seconds() / 86400) if wr.created_at else 0
+        decay = math.exp(-age_days / 7.0)
+        final_score = base_score * (0.5 + 0.5 * decay)  # mezcla 50% pure + 50% time-weighted
+        scored.append((final_score, wr, text, base_score, decay))
     scored.sort(key=lambda r: r[0], reverse=True)
 
     items = []
-    for score, wr, text in scored[:limit]:
+    for final_score, wr, text, base_score, decay in scored[:limit]:
         items.append({
             "request_id": wr.request_id,
+            "aviso_number": getattr(wr, "aviso_number", None),
             "equipment_tag": wr.equipment_tag,
             "status": wr.status,
             "priority_code": wr.priority_code,
             "created_at": wr.created_at.isoformat() if wr.created_at else None,
             "description": text[:280],
-            "similarity": round(score, 3),
+            "similarity": round(base_score, 3),
+            "score_weighted": round(final_score, 3),
+            "recency_factor": round(decay, 2),
         })
 
     return {
         "candidate_description": description[:280],
         "equipment_tag": equipment_tag,
+        "priority": priority,
         "lookback_days": lookback_days,
         "threshold": threshold,
+        "excluded_states": list(EXCLUDED_STATES),
         "total_possible_duplicates": len(items),
         "suggestions": items,
     }

@@ -308,6 +308,10 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const [wizardStep, setWizardStep] = useState(1); // 1=Ubicacion, 2=Falla, 3=Accion
   const [chatOpen, setChatOpen] = useState(false);
   const [detectedEquipment, setDetectedEquipment] = useState(null);
+  // Search-as-you-type duplicate detection
+  const [dupSuggestions, setDupSuggestions] = useState([]);
+  const [checkingDups, setCheckingDups] = useState(false);
+  const [dismissedDups, setDismissedDups] = useState(new Set());
   const [visionResult, setVisionResult] = useState(null);
   const [duplicates, setDuplicates] = useState([]);
   const [showDuplicateDetail, setShowDuplicateDetail] = useState(null);
@@ -1522,28 +1526,90 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                 setF('whatHappens', text);
                 // Auto-detect equipment from text (debounced)
                 clearTimeout(dupeCheckTimer.current);
-                if (text.length > 5 && !form.whereTag && allEquipment.length > 0) {
-                  dupeCheckTimer.current = setTimeout(() => {
-                    const words = text.toLowerCase().split(/\s+/);
-                    // Try exact tag match first, then partial
-                    const textLower = text.toLowerCase();
-                    const match = allEquipment.find(eq => {
-                      const tag = (eq.tag || '').toLowerCase();
-                      const code = (eq.code || '').toLowerCase();
-                      // Exact tag/code appears in the text
-                      return tag.length > 2 && textLower.includes(tag) ||
-                             code.length > 2 && textLower.includes(code);
-                    });
-                    if (match && match.tag !== detectedEquipment?.tag) {
-                      setDetectedEquipment(match);
+                if (text.length > 5 && allEquipment.length > 0) {
+                  dupeCheckTimer.current = setTimeout(async () => {
+                    // 1. Auto-detect equipment from text
+                    if (!form.whereTag) {
+                      const textLower = text.toLowerCase();
+                      const match = allEquipment.find(eq => {
+                        const tag = (eq.tag || '').toLowerCase();
+                        const code = (eq.code || '').toLowerCase();
+                        return tag.length > 2 && textLower.includes(tag) ||
+                               code.length > 2 && textLower.includes(code);
+                      });
+                      if (match && match.tag !== detectedEquipment?.tag) {
+                        setDetectedEquipment(match);
+                      }
                     }
-                  }, 800);
+                    // 2. Search-as-you-type dup detection (sólo si texto >= 20 chars + tag conocido)
+                    const tag = form.whereTag || detectedEquipment?.tag;
+                    if (text.length >= 20 && tag) {
+                      setCheckingDups(true);
+                      try {
+                        const res = await api.agenticDuplicateCheck({
+                          description: text,
+                          equipment_tag: tag,
+                          plant_id: plant,
+                          priority: form.priority,
+                          lookback_days: 14,
+                          threshold: 0.5,
+                        });
+                        const sugs = (res?.suggestions || []).filter(s => !dismissedDups.has(s.request_id));
+                        setDupSuggestions(sugs);
+                      } catch { setDupSuggestions([]); }
+                      finally { setCheckingDups(false); }
+                    } else {
+                      setDupSuggestions([]);
+                    }
+                  }, 700);
                 }
               }}
               placeholder="Describe the problem, failure or work request..."
               rows={5}
               className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-y ${isRecording ? 'border-red-400 bg-red-50/30' : 'border-gray-300'}`}
             />
+            {/* Search-as-you-type duplicate suggestions banner */}
+            {checkingDups && (
+              <div className="mt-2 text-[11px] text-gray-500 italic flex items-center gap-1">
+                <span className="inline-block w-2 h-2 bg-amber-400 rounded-full animate-pulse" /> Verificando duplicados...
+              </div>
+            )}
+            {!checkingDups && dupSuggestions.length > 0 && (
+              <div className="mt-2 p-3 bg-amber-50 border-2 border-amber-300 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-amber-700 font-bold text-xs flex items-center gap-1">
+                    ⚠ Posibles duplicados detectados ({dupSuggestions.length})
+                  </span>
+                  <button type="button" onClick={() => {
+                    const dismissed = new Set(dismissedDups);
+                    dupSuggestions.forEach(s => dismissed.add(s.request_id));
+                    setDismissedDups(dismissed);
+                    setDupSuggestions([]);
+                  }} className="ml-auto text-[10px] text-amber-700 hover:underline">Descartar todos</button>
+                </div>
+                <div className="space-y-1.5">
+                  {dupSuggestions.slice(0, 3).map(s => {
+                    const label = s.aviso_number ? `AV-${String(s.aviso_number).padStart(5, '0')}` : (s.request_id || '').slice(0, 8);
+                    return (
+                      <div key={s.request_id} className="flex items-start gap-2 text-xs bg-white rounded-lg p-2 border border-amber-200">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-amber-800">{label}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-700">{s.priority_code || '—'}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">{s.status}</span>
+                            <span className="text-[10px] text-gray-500">match {Math.round(s.similarity * 100)}%</span>
+                          </div>
+                          <p className="text-gray-700 truncate mt-0.5" title={s.description}>{s.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-amber-700 mt-2">
+                  Si tu reporte ya está en uno de estos avisos, contacta al supervisor en lugar de crear uno nuevo.
+                </p>
+              </div>
+            )}
             {/* AI Suggest Button */}
             <div className="flex items-center gap-2 mt-2">
               <button

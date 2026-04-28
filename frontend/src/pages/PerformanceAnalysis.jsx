@@ -58,6 +58,9 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
   });
 
   const [backendKpis, setBackendKpis] = useState(null);
+  // Jorge 2026-04-28 17:56: Bad Actors deben cruzarse con lista de equipos críticos.
+  // Mapa equipment_tag → criticality (A/B/C/D) leído desde hierarchy_nodes.
+  const [criticalityMap, setCriticalityMap] = useState({});
 
   useEffect(() => {
     setLoading(true);
@@ -67,13 +70,22 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       api.listPMReviews({ plant_id: plant }),
       api.listImprovementActions({ plant_id: plant }),
       api.getWorkManagementKpis(plant),
-    ]).then(([woRes, wrRes, revRes, iaRes, kpiRes]) => {
+      api.listNodes({ plant_id: plant, node_type: 'EQUIPMENT', limit: 1000 }),
+    ]).then(([woRes, wrRes, revRes, iaRes, kpiRes, nodesRes]) => {
       const parse = r => r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : r.value?.items || []) : [];
       setWos(parse(woRes));
       setWrs(parse(wrRes));
       setReviews(parse(revRes));
       setImprovementActions(parse(iaRes));
       if (kpiRes.status === 'fulfilled' && kpiRes.value) setBackendKpis(kpiRes.value);
+      // Mapa equip_tag → criticality
+      const nodes = parse(nodesRes);
+      const map = {};
+      nodes.forEach(n => {
+        const tag = n.tag || n.code;
+        if (tag) map[tag] = (n.criticality || 'D').toUpperCase();
+      });
+      setCriticalityMap(map);
       setLoading(false);
     });
   }, [plant]);
@@ -191,9 +203,18 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         priority: wr.priority_code,
       });
     });
+    // Jorge 2026-04-28 17:56: cruce con criticidad. Equipos críticos (A/B) tienen
+    // threshold más bajo (≥2 fallas) y se priorizan en el ranking; no-críticos
+    // siguen con ≥3. Sort: críticos primero, luego por count.
+    const CRIT_PRIORITY = { A: 4, B: 3, C: 2, D: 1 };
     return Object.entries(byEquip)
-      .filter(([, arr]) => arr.length >= 3)
       .map(([equipment, occurrences]) => {
+        const crit = criticalityMap[equipment] || 'D';
+        const minOccurrences = (crit === 'A' || crit === 'B') ? 2 : 3;
+        return { equipment, occurrences, crit, minOccurrences };
+      })
+      .filter(({ occurrences, minOccurrences }) => occurrences.length >= minOccurrences)
+      .map(({ equipment, occurrences, crit }) => {
         const sorted = [...occurrences].sort((a, b) => new Date(b.date) - new Date(a.date));
         const last = sorted[0]?.date;
         const span = sorted.length >= 2
@@ -202,6 +223,8 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         const modes = [...new Set(sorted.map(o => o.failure_mode).filter(Boolean))];
         return {
           equipment,
+          criticality: crit,
+          isCritical: ['A', 'B'].includes(crit),
           count: occurrences.length,
           lastDate: last,
           span_days: span,
@@ -209,9 +232,132 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
           mtbf_local: sorted.length >= 2 ? Math.round(span / (sorted.length - 1)) : null,
         };
       })
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
+      // Críticos primero (mayor prioridad), luego por count desc
+      .sort((a, b) => {
+        const da = (CRIT_PRIORITY[b.criticality] || 0) - (CRIT_PRIORITY[a.criticality] || 0);
+        if (da !== 0) return da;
+        return b.count - a.count;
+      })
+      .slice(0, 12);
+  }, [wrs, criticalityMap]);
+
+  // ── Retrabajos / Reprocesos (Jorge 2026-04-28 17:56) ──
+  // Detecta cuándo un equipo entró a mantenimiento (CERRADO) y volvió a fallar
+  // (nuevo WR creado) en <24h. Indica problema de calidad de la intervención.
+  const reworkEvents = useMemo(() => {
+    const events = [];
+    // Mapear OTs cerradas por equipo, ordenadas por fecha
+    const closedByEquip = {};
+    wos.filter(w => w.status === 'CERRADO' && w.equipment_tag && (w.actual_end || w.closed_at))
+      .forEach(w => {
+        const tag = w.equipment_tag;
+        if (!closedByEquip[tag]) closedByEquip[tag] = [];
+        closedByEquip[tag].push({ wo: w, end: new Date(w.actual_end || w.closed_at) });
+      });
+    Object.values(closedByEquip).forEach(arr => arr.sort((a, b) => a.end - b.end));
+
+    // Por cada WR, ver si hay una OT cerrada del mismo equipo en las 24h previas
+    wrs.forEach(wr => {
+      if (!wr.equipment_tag || !wr.created_at) return;
+      const wrDate = new Date(wr.created_at);
+      const closedList = closedByEquip[wr.equipment_tag] || [];
+      const recentClose = closedList.find(c => {
+        const diffH = (wrDate - c.end) / 3600000;
+        return diffH > 0 && diffH <= 24;
+      });
+      if (recentClose) {
+        events.push({
+          equipment: wr.equipment_tag,
+          previous_wo: recentClose.wo.wo_number,
+          previous_closed: recentClose.end,
+          new_wr: wr.request_id || wr.id,
+          new_wr_date: wrDate,
+          hours_gap: Math.round((wrDate - recentClose.end) / 3600000 * 10) / 10,
+          new_priority: wr.priority_code,
+          previous_description: (recentClose.wo.description || '').slice(0, 80),
+          new_description: ((wr.problem_description?.original_text || wr.problem_description) || '').toString().slice(0, 80),
+        });
+      }
+    });
+    return events.sort((a, b) => b.new_wr_date - a.new_wr_date).slice(0, 15);
+  }, [wos, wrs]);
+
+  // ── Pareto de modos de falla (Jorge 2026-04-28 17:56) ──
+  // 80/20: qué pocos modos generan la mayoría de las fallas
+  const failureModePareto = useMemo(() => {
+    const counts = {};
+    wrs.forEach(wr => {
+      const mode = (wr.ai_classification?.failure_type
+                  || wr.ai_classification?.failure_class
+                  || wr.failure_mode_detected
+                  || wr.problem_description?.failure_category
+                  || '').trim();
+      if (!mode) return;
+      counts[mode] = (counts[mode] || 0) + 1;
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const total = sorted.reduce((s, [, c]) => s + c, 0) || 1;
+    let cumPct = 0;
+    return sorted.slice(0, 10).map(([mode, count]) => {
+      const pct = Math.round(count / total * 100);
+      cumPct += pct;
+      return { mode, count, pct, cumPct: Math.min(100, cumPct), inTop20: cumPct <= 80 };
+    });
   }, [wrs]);
+
+  // ── KPIs de Resultados por equipo (Jorge 2026-04-28 17:56) ──
+  // MTBF = horas operativas / # fallas. MTTR = horas reparación / # reparaciones.
+  // Disponibilidad = MTBF / (MTBF + MTTR) * 100.
+  // Período: 30 días (analizado a partir del WR/WO más reciente disponible).
+  const equipmentResultsKpis = useMemo(() => {
+    const PERIOD_DAYS = 30;
+    const PERIOD_HOURS = PERIOD_DAYS * 24;
+    const now = new Date();
+    const cutoff = new Date(now - PERIOD_DAYS * 86400000);
+    const byEq = {};
+    // Fallas (PM03) y reparaciones cerradas
+    wos.forEach(w => {
+      if (!w.equipment_tag) return;
+      const created = new Date(w.created_at || 0);
+      if (created < cutoff) return;
+      const tag = w.equipment_tag;
+      if (!byEq[tag]) byEq[tag] = { failures: 0, repair_hours: 0, repairs_count: 0 };
+      // Falla = PM03 (correctivo no programado)
+      if (w.wo_type === 'PM03' || ['P1', 'P2'].includes(w.priority_code)) {
+        byEq[tag].failures++;
+      }
+      // Reparación cerrada con HH real
+      if (w.status === 'CERRADO' && (w.actual_hours || 0) > 0) {
+        byEq[tag].repair_hours += parseFloat(w.actual_hours) || 0;
+        byEq[tag].repairs_count++;
+      }
+    });
+    return Object.entries(byEq)
+      .map(([tag, m]) => {
+        const mttr = m.repairs_count > 0 ? m.repair_hours / m.repairs_count : 0;
+        const totalDowntime = m.repair_hours;
+        const uptime = Math.max(0, PERIOD_HOURS - totalDowntime);
+        const mtbf = m.failures > 0 ? uptime / m.failures : null;
+        const availability = (mtbf && mttr >= 0) ? (mtbf / (mtbf + mttr) * 100) : (m.failures === 0 ? 100 : null);
+        return {
+          equipment: tag,
+          criticality: criticalityMap[tag] || 'D',
+          failures: m.failures,
+          mttr: Math.round(mttr * 10) / 10,
+          mtbf: mtbf ? Math.round(mtbf * 10) / 10 : null,
+          availability: availability ? Math.round(availability * 10) / 10 : null,
+        };
+      })
+      .filter(r => r.failures > 0 || r.mttr > 0)
+      .sort((a, b) => {
+        // críticos primero, luego por menor disponibilidad
+        const ca = (['A', 'B'].includes(a.criticality) ? 1 : 0);
+        const cb = (['A', 'B'].includes(b.criticality) ? 1 : 0);
+        if (ca !== cb) return cb - ca;
+        return (a.availability ?? 100) - (b.availability ?? 100);
+      })
+      .slice(0, 15);
+  }, [wos, criticalityMap]);
 
   // ── Análisis Plan vs Real usando notificación (CE1) ──
   const planVsReal = useMemo(() => {
@@ -522,6 +668,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
             <table className="w-full text-xs">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Crit.</th>
                   <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
                   <th className="text-center px-2 py-1.5 font-bold text-gray-700">Fallas</th>
                   <th className="text-center px-2 py-1.5 font-bold text-gray-700">Período</th>
@@ -532,9 +679,20 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                 </tr>
               </thead>
               <tbody>
-                {recurringFailures.map(rf => (
-                  <tr key={rf.equipment} className="border-t border-gray-100 hover:bg-red-50/30">
-                    <td className="px-2 py-2 font-mono text-blue-700">{rf.equipment}</td>
+                {recurringFailures.map(rf => {
+                  const critTone = rf.criticality === 'A' ? 'bg-red-600 text-white' :
+                                   rf.criticality === 'B' ? 'bg-orange-500 text-white' :
+                                   rf.criticality === 'C' ? 'bg-amber-300 text-amber-900' :
+                                   'bg-gray-200 text-gray-700';
+                  return (
+                  <tr key={rf.equipment} className={`border-t border-gray-100 hover:bg-red-50/30 ${rf.isCritical ? 'bg-red-50/40' : ''}`}>
+                    <td className="px-2 py-2 text-center">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${critTone}`}>{rf.criticality}</span>
+                    </td>
+                    <td className="px-2 py-2 font-mono text-blue-700">
+                      {rf.equipment}
+                      {rf.isCritical && <span className="ml-1 text-[10px] text-red-600 font-bold">⚠ CRÍTICO</span>}
+                    </td>
                     <td className="px-2 py-2 text-center">
                       <span className="font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded">{rf.count}</span>
                     </td>
@@ -560,14 +718,164 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                       </button>
                     </td>
                   </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge transcript 2026-04-28 17:56: cruzar Bad Actors con lista de equipos críticos. <strong>Críticos A/B</strong> aparecen con threshold ≥2 fallas y se rankean primero (impactan producción). No-críticos C/D requieren ≥3.
+          Candidatos a estudio FMECA + RCA → cierre de ciclo en DefectElimination → push a FMECA worksheet.
+        </p>
+      </div>
+
+      {/* ── Retrabajos / Reprocesos (Jorge 2026-04-28 17:56) ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            🔁 Retrabajos / Reprocesos detectados
+          </h3>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-rose-100 text-rose-700">
+            {reworkEvents.length} eventos
+          </span>
+        </div>
+        {reworkEvents.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin retrabajos detectados — la calidad de las intervenciones es buena.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-rose-50">
+                <tr>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">OT cerrada anterior</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Aviso nuevo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Δ horas</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Pri.</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Descripción nueva</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reworkEvents.map((rw, i) => (
+                  <tr key={i} className="border-t border-gray-100 hover:bg-rose-50/30">
+                    <td className="px-2 py-2 font-mono text-blue-700">{rw.equipment}</td>
+                    <td className="px-2 py-2 font-mono text-gray-600">{rw.previous_wo}</td>
+                    <td className="px-2 py-2 font-mono text-gray-600">{(rw.new_wr || '').slice(0, 10)}</td>
+                    <td className="px-2 py-2 text-center">
+                      <span className={`font-bold px-1.5 py-0.5 rounded ${rw.hours_gap < 4 ? 'bg-red-200 text-red-800' : rw.hours_gap < 12 ? 'bg-orange-200 text-orange-800' : 'bg-amber-100 text-amber-700'}`}>
+                        {rw.hours_gap}h
+                      </span>
+                    </td>
+                    <td className="px-2 py-2 text-center text-xs">{rw.new_priority || '—'}</td>
+                    <td className="px-2 py-2 text-gray-700 max-w-[300px] truncate" title={rw.new_description}>{rw.new_description}</td>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
         <p className="text-[10px] text-gray-500 italic mt-2">
-          Jorge transcript 2026-04-28 12:32: "el sistema va a leer, esta falla, ¿cuándo fue la última vez que se asentó?".
-          Equipos con ≥3 fallas en el período son candidatos a estudio FMECA + RCA.
+          Jorge 2026-04-28 17:56: si un equipo intervenido falla en &lt;24h en algo similar, es un <strong>retrabajo</strong>. Causas típicas: instalación mala, repuesto de menor calidad, o falla operacional no reportada. Genera acciones de mejora.
+        </p>
+      </div>
+
+      {/* ── Pareto de modos de falla (Jorge 2026-04-28 17:56) ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            📊 Pareto de modos de falla (80/20)
+          </h3>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+            {failureModePareto.filter(f => f.inTop20).length} modos = 80% fallas
+          </span>
+        </div>
+        {failureModePareto.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin data de modos de falla suficiente.
+          </p>
+        ) : (
+          <div className="space-y-1.5">
+            {failureModePareto.map((fm, i) => (
+              <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${fm.inTop20 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+                <span className="font-mono text-[10px] w-6 text-gray-500">#{i + 1}</span>
+                <span className="flex-1 text-xs font-medium text-gray-800 truncate" title={fm.mode}>{fm.mode}</span>
+                <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div className={`h-2 ${fm.inTop20 ? 'bg-red-500' : 'bg-gray-400'}`} style={{ width: `${fm.pct}%` }} />
+                </div>
+                <span className="text-xs font-bold tabular-nums w-12 text-right">{fm.count}</span>
+                <span className="text-[10px] text-gray-500 tabular-nums w-12 text-right">{fm.pct}%</span>
+                <span className="text-[10px] font-bold text-gray-700 tabular-nums w-12 text-right">{fm.cumPct}%</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: el 20% de los modos genera el 80% de las fallas. Foco del ingeniero de confiabilidad debe estar en los modos en rojo. Cumulative% acumula al 80% en los top.
+        </p>
+      </div>
+
+      {/* ── KPIs de Resultados por equipo (Jorge 2026-04-28 17:56) ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            ⚙️ KPIs de Resultados por equipo (Disponibilidad · MTBF · MTTR)
+          </h3>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+            Período 30 días · {equipmentResultsKpis.length} equipos
+          </span>
+        </div>
+        {equipmentResultsKpis.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin data suficiente de fallas/reparaciones en últimos 30 días.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-blue-50">
+                <tr>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Crit.</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Fallas (30d)</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">MTBF</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">MTTR</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Disponibilidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                {equipmentResultsKpis.map(eq => {
+                  const critTone = eq.criticality === 'A' ? 'bg-red-600 text-white' :
+                                   eq.criticality === 'B' ? 'bg-orange-500 text-white' :
+                                   eq.criticality === 'C' ? 'bg-amber-300 text-amber-900' :
+                                   'bg-gray-200 text-gray-700';
+                  const availTone = eq.availability == null ? 'text-gray-500' :
+                                     eq.availability >= 95 ? 'text-emerald-600' :
+                                     eq.availability >= 90 ? 'text-amber-600' : 'text-red-600';
+                  return (
+                    <tr key={eq.equipment} className="border-t border-gray-100 hover:bg-blue-50/30">
+                      <td className="px-2 py-2 text-center">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${critTone}`}>{eq.criticality}</span>
+                      </td>
+                      <td className="px-2 py-2 font-mono text-blue-700">{eq.equipment}</td>
+                      <td className="px-2 py-2 text-center">
+                        <span className="font-bold text-red-700">{eq.failures}</span>
+                      </td>
+                      <td className="px-2 py-2 text-center tabular-nums">{eq.mtbf != null ? `${eq.mtbf}h` : '—'}</td>
+                      <td className="px-2 py-2 text-center tabular-nums">{eq.mttr > 0 ? `${eq.mttr}h` : '—'}</td>
+                      <td className={`px-2 py-2 text-center font-bold tabular-nums ${availTone}`}>
+                        {eq.availability != null ? `${eq.availability}%` : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          MTBF = horas operativas / fallas. MTTR = HH reparación / # reparaciones cerradas. Disponibilidad = MTBF / (MTBF + MTTR) × 100.
+          Críticos A/B aparecen primero. Disponibilidad &lt;90% en rojo (acción inmediata), 90-95% ámbar.
         </p>
       </div>
 

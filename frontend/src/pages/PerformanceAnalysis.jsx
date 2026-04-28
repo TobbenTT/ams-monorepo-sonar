@@ -174,6 +174,89 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       .map(([equipment, count]) => ({ equipment, count }));
   }, [wrs]);
 
+  // Tanda C-EXT post-meeting 2026-04-28 12:32: Jorge dijo que el análisis
+  // tiene que cruzar fallas con datos reales de notificación (HH plan vs real
+  // por op) y detectar repetición de fallas en el mismo equipo.
+
+  // ── Fallas recurrentes (bad actors) ──
+  const recurringFailures = useMemo(() => {
+    const byEquip = {};
+    wrs.forEach(wr => {
+      const tag = wr.equipment_tag || wr.equipment_name;
+      if (!tag) return;
+      if (!byEquip[tag]) byEquip[tag] = [];
+      byEquip[tag].push({
+        date: wr.created_at,
+        failure_mode: wr.failure_mode_detected || (wr.problem_description?.failure_category) || '',
+        priority: wr.priority_code,
+      });
+    });
+    return Object.entries(byEquip)
+      .filter(([, arr]) => arr.length >= 3)
+      .map(([equipment, occurrences]) => {
+        const sorted = [...occurrences].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const last = sorted[0]?.date;
+        const span = sorted.length >= 2
+          ? Math.round((new Date(sorted[0].date) - new Date(sorted[sorted.length - 1].date)) / 86400000)
+          : 0;
+        const modes = [...new Set(sorted.map(o => o.failure_mode).filter(Boolean))];
+        return {
+          equipment,
+          count: occurrences.length,
+          lastDate: last,
+          span_days: span,
+          modes: modes.slice(0, 3),
+          mtbf_local: sorted.length >= 2 ? Math.round(span / (sorted.length - 1)) : null,
+        };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [wrs]);
+
+  // ── Análisis Plan vs Real usando notificación (CE1) ──
+  const planVsReal = useMemo(() => {
+    const stats = { totalPlannedHH: 0, totalActualHH: 0, opsCount: 0, opsNotified: 0, otsAnalyzed: 0 };
+    const overruns = []; // ops con desviación >25%
+    const underruns = []; // ops con muy poca HH real (puede ser señal de que faltó hacer)
+    wos.forEach(wo => {
+      const ops = Array.isArray(wo.operations) ? wo.operations : [];
+      if (ops.length === 0) return;
+      stats.otsAnalyzed++;
+      ops.forEach(op => {
+        const planHH = (parseFloat(op.hours) || 0) * (parseInt(op.quantity) || 1);
+        const actualHH = (parseFloat(op.actual_hours) || 0) * (parseInt(op.actual_quantity) || 0);
+        stats.opsCount++;
+        if (actualHH > 0) {
+          stats.opsNotified++;
+          stats.totalPlannedHH += planHH;
+          stats.totalActualHH += actualHH;
+          if (planHH > 0) {
+            const variance = (actualHH - planHH) / planHH;
+            if (variance > 0.25) overruns.push({
+              wo: wo.wo_number, op: op.description?.slice(0, 60),
+              specialty: op.specialty, planHH, actualHH, variance,
+            });
+            if (variance < -0.4) underruns.push({
+              wo: wo.wo_number, op: op.description?.slice(0, 60),
+              specialty: op.specialty, planHH, actualHH, variance,
+              notes: op.notif_notes || '',
+            });
+          }
+        }
+      });
+    });
+    const avgVariancePct = stats.totalPlannedHH > 0
+      ? Math.round(((stats.totalActualHH - stats.totalPlannedHH) / stats.totalPlannedHH) * 100)
+      : 0;
+    return {
+      ...stats,
+      avgVariancePct,
+      overruns: overruns.sort((a, b) => b.variance - a.variance).slice(0, 5),
+      underruns: underruns.sort((a, b) => a.variance - b.variance).slice(0, 5),
+      coveragePct: stats.opsCount > 0 ? Math.round((stats.opsNotified / stats.opsCount) * 100) : 0,
+    };
+  }, [wos]);
+
   // ── Actions ──
   const handleCreateAction = async (category) => {
     setCreatingAction(true);
@@ -337,6 +420,155 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* ── Tanda C-EXT post 2026-04-28 12:32: Plan vs Real desde notificación ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">
+            Plan vs Real (desde notificación HH por operación)
+          </h3>
+          <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+            planVsReal.coveragePct >= 70 ? 'bg-emerald-100 text-emerald-700'
+            : planVsReal.coveragePct >= 40 ? 'bg-amber-100 text-amber-700'
+            : 'bg-red-100 text-red-700'
+          }`}>
+            Cobertura {planVsReal.coveragePct}% · {planVsReal.opsNotified}/{planVsReal.opsCount} ops
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div className="bg-blue-50 rounded-lg p-3">
+            <div className="text-xs uppercase font-bold text-blue-700">HH Planificadas</div>
+            <div className="text-2xl font-bold tabular-nums">{Math.round(planVsReal.totalPlannedHH)}h</div>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-3">
+            <div className="text-xs uppercase font-bold text-purple-700">HH Reales</div>
+            <div className="text-2xl font-bold tabular-nums">{Math.round(planVsReal.totalActualHH)}h</div>
+          </div>
+          <div className={`rounded-lg p-3 ${
+            Math.abs(planVsReal.avgVariancePct) > 20 ? 'bg-red-50' :
+            Math.abs(planVsReal.avgVariancePct) > 10 ? 'bg-amber-50' : 'bg-emerald-50'
+          }`}>
+            <div className="text-xs uppercase font-bold">Desviación promedio</div>
+            <div className="text-2xl font-bold tabular-nums">
+              {planVsReal.avgVariancePct >= 0 ? '+' : ''}{planVsReal.avgVariancePct}%
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Overruns: ops que tomaron mucho más */}
+          <div>
+            <h4 className="text-xs font-bold text-red-700 uppercase mb-2">⏱️ Overruns (op tomó &gt;25% más)</h4>
+            {planVsReal.overruns.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">Sin overruns significativos</p>
+            ) : (
+              <div className="space-y-1">
+                {planVsReal.overruns.map((o, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs p-2 bg-red-50 rounded">
+                    <span className="font-mono text-red-700">{o.wo}</span>
+                    <span className="flex-1 truncate">{o.op}</span>
+                    <span className="text-[10px] bg-red-200 px-1 rounded">{o.specialty}</span>
+                    <span className="font-bold tabular-nums text-red-700">+{Math.round(o.variance * 100)}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Underruns: ops que se ejecutaron mucho menos — señal de que faltó hacer */}
+          <div>
+            <h4 className="text-xs font-bold text-amber-700 uppercase mb-2">⚠️ Underruns (&lt;60% del plan — ¿se omitió?)</h4>
+            {planVsReal.underruns.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">Sin underruns significativos</p>
+            ) : (
+              <div className="space-y-1">
+                {planVsReal.underruns.map((o, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs p-2 bg-amber-50 rounded">
+                    <span className="font-mono text-amber-700">{o.wo}</span>
+                    <span className="flex-1 truncate">{o.op}</span>
+                    <span className="text-[10px] bg-amber-200 px-1 rounded">{o.specialty}</span>
+                    <span className="font-bold tabular-nums text-amber-700">{Math.round(o.variance * 100)}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {planVsReal.coveragePct < 50 && (
+          <div className="mt-3 p-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded">
+            ℹ️ Cobertura baja: solo {planVsReal.opsNotified} de {planVsReal.opsCount} operaciones tienen notificación.
+            Recordá al supervisor / mantenedor cargar las HH reales en la pestaña <strong>Notificación</strong>.
+          </div>
+        )}
+      </div>
+
+      {/* ── Fallas recurrentes (bad actors) — el sistema "lee cuándo fue la última vez" ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">
+            Fallas recurrentes (≥3 reportes) · candidatos a estudio FMECA / RCA
+          </h3>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-red-100 text-red-700">
+            {recurringFailures.length} bad actors
+          </span>
+        </div>
+        {recurringFailures.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin equipos con fallas recurrentes — la flota está estable
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Fallas</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Período</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">MTBF (días)</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Modos detectados</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Última falla</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recurringFailures.map(rf => (
+                  <tr key={rf.equipment} className="border-t border-gray-100 hover:bg-red-50/30">
+                    <td className="px-2 py-2 font-mono text-blue-700">{rf.equipment}</td>
+                    <td className="px-2 py-2 text-center">
+                      <span className="font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded">{rf.count}</span>
+                    </td>
+                    <td className="px-2 py-2 text-center text-gray-600">{rf.span_days}d</td>
+                    <td className="px-2 py-2 text-center font-bold tabular-nums">
+                      {rf.mtbf_local != null ? `${rf.mtbf_local}d` : '—'}
+                    </td>
+                    <td className="px-2 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {rf.modes.length > 0 ? rf.modes.map((m, i) => (
+                          <span key={i} className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded">{m}</span>
+                        )) : <span className="text-gray-400 italic">sin clasificar</span>}
+                      </div>
+                    </td>
+                    <td className="px-2 py-2 text-gray-500">
+                      {rf.lastDate ? new Date(rf.lastDate).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}
+                    </td>
+                    <td className="px-2 py-2 text-center">
+                      <button
+                        onClick={() => navigate(`/fmeca?equipment=${encodeURIComponent(rf.equipment)}`)}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">
+                        FMECA
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge transcript 2026-04-28 12:32: "el sistema va a leer, esta falla, ¿cuándo fue la última vez que se asentó?".
+          Equipos con ≥3 fallas en el período son candidatos a estudio FMECA + RCA.
+        </p>
       </div>
 
       {/* Quick Actions — Route back to other phases or create improvement actions */}

@@ -14,17 +14,21 @@ import * as api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
-const ROLES = ['admin', 'manager', 'planner', 'tecnico'];
+const ROLES = ['admin', 'manager', 'planner', 'supervisor', 'engineer', 'tecnico'];
 const ROLE_COLORS = {
   admin: 'bg-red-100 text-red-800 border-red-300',
   manager: 'bg-purple-100 text-purple-800 border-purple-300',
   planner: 'bg-blue-100 text-blue-800 border-blue-300',
+  supervisor: 'bg-amber-100 text-amber-800 border-amber-300',
+  engineer: 'bg-cyan-100 text-cyan-800 border-cyan-300',
   tecnico: 'bg-emerald-100 text-emerald-800 border-emerald-300',
 };
 const ROLE_BAR_COLORS = {
   admin: 'bg-red-500',
   manager: 'bg-purple-500',
   planner: 'bg-blue-500',
+  supervisor: 'bg-amber-500',
+  engineer: 'bg-cyan-500',
   tecnico: 'bg-emerald-500',
 };
 
@@ -843,6 +847,8 @@ export default function TeamPage() {
                           className="flex-1 border rounded px-3 py-1.5 text-sm"
                         >
                           {ROLES.map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
+                          <option value="supervisor">supervisor</option>
+                          <option value="engineer">engineer</option>
                         </select>
                         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handleChangeRole} disabled={saving}>
                           {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
@@ -857,6 +863,45 @@ export default function TeamPage() {
                       </Badge>
                     )}
                   </div>
+
+                  {/* C7 Tanda C — Scope por especialidad para supervisores */}
+                  {profileMember.role === 'supervisor' && (
+                    <div className="border-t pt-4">
+                      <p className="text-sm font-semibold text-gray-700 mb-2">Especialidad asignada (RBAC)</p>
+                      <p className="text-[11px] text-gray-500 mb-2">
+                        El supervisor solo verá técnicos de esta disciplina en Team y Scheduling.
+                        Dejar vacío para acceso a todas.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={profileMember.scoped_specialty || ''}
+                          onChange={async (e) => {
+                            const val = e.target.value;
+                            try {
+                              setSaving(true);
+                              const updated = await api.authUpdateUser(profileMember.user_id, { scoped_specialty: val });
+                              setProfileMember({ ...profileMember, scoped_specialty: updated.scoped_specialty });
+                              toast.success(val ? `Scope: ${val}` : 'Scope removido (todas las disciplinas)');
+                              await fetchTeam();
+                            } catch (err) {
+                              toast.error('Error: ' + err.message);
+                            } finally {
+                              setSaving(false);
+                            }
+                          }}
+                          className="flex-1 border rounded px-3 py-1.5 text-sm"
+                          disabled={saving}>
+                          <option value="">— Todas (sin scope) —</option>
+                          {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      {profileMember.scoped_specialty && (
+                        <Badge className="mt-2 bg-amber-100 text-amber-800 border-amber-300 text-xs">
+                          🔒 Solo {profileMember.scoped_specialty}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
 
                   {/* Fase 3 Jorge 2026-04-21 — técnico: especialidad + turno + pattern + skills.
                       Solo para miembros que existen en workforce (tienen worker_id). */}

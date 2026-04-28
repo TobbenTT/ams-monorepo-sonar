@@ -532,6 +532,8 @@ class AdminUserUpdate(BaseModel):
     email: str | None = Field(default=None, max_length=254)
     plant_id: str | None = Field(default=None, max_length=50)
     role: str | None = Field(default=None, max_length=20)
+    # C7 Tanda C: scope por especialidad para supervisor (Mecánico/Eléctrico/...)
+    scoped_specialty: str | None = Field(default=None, max_length=50)
 
 
 class RefreshRequest(BaseModel):

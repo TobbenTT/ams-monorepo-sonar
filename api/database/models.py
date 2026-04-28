@@ -37,6 +37,11 @@ class UserModel(Base):
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     mfa_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
     mfa_pending_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # C7 Tanda C (David 2026-04-28, Magda transcript 210): RBAC scoped por
+    # especialidad para supervisores. supervisor mecánico solo opera técnicos
+    # con specialty=='Mecánico'; análogo para eléctrico/instrumentista. Null
+    # = sin restricción (admin/manager/planner). Los técnicos no usan este campo.
+    scoped_specialty: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     __table_args__ = (
         Index("ix_users_role", "role"),

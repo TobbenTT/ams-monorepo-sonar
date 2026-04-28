@@ -42,6 +42,8 @@ def _user_to_dict(u: UserModel) -> dict:
         "is_active": u.is_active,
         "created_at": u.created_at.isoformat() if u.created_at else None,
         "last_login": u.last_login.isoformat() if u.last_login else None,
+        # C7 Tanda C: scope por especialidad (supervisor mec/elec/inst)
+        "scoped_specialty": getattr(u, "scoped_specialty", None),
     }
 
 
@@ -200,6 +202,9 @@ def admin_update_user(user_id: str, data: AdminUserUpdate, db: Session = Depends
         target.plant_id = data.plant_id
     if data.role is not None:
         target.role = data.role
+    if data.scoped_specialty is not None:
+        # Vacío "" = limpiar scope; cualquier otro valor lo persiste.
+        target.scoped_specialty = data.scoped_specialty.strip() or None
     db.commit()
     db.refresh(target)
     return _user_to_dict(target)

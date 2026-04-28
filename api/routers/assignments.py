@@ -107,9 +107,18 @@ def list_technicians(
     plant_id: str | None = None,
     shift: str | None = None,
     specialty: str | None = None,
+    user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """List technician profiles with optional filters."""
+    """List technician profiles with optional filters.
+    C7 Tanda C: si el usuario tiene scoped_specialty (supervisor mec/elec/inst),
+    se fuerza el filtro a esa especialidad — supervisores no ven equipos de
+    otras disciplinas. Admin/manager/planner pasan sin restricción.
+    """
+    scoped = getattr(user, "scoped_specialty", None)
+    if scoped:
+        # Si el llamador pidió otra specialty, la sobrescribimos al scope.
+        specialty = scoped
     return assignment_service.get_technician_profiles(
         db, plant_id=plant_id, shift=shift, specialty=specialty,
     )

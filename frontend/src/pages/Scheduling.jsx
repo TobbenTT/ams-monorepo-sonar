@@ -3455,6 +3455,77 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
           {ops.length > 8 && <div className="text-[10px] text-muted-foreground pl-10">+{ops.length - 8} más</div>}
         </div>
       </div>
+      {/* B3-FULL-1 Tanda B3 (David 2026-04-28, Magda transcript 110-116):
+          Asignación por disciplina — muestra técnicos asignados agrupados
+          por specialty para que el planner vea cuáles ops fueron tomadas
+          por mecánicos vs eléctricos vs instrumentistas, en lugar de un
+          único bucket "assigned_workers" plano. */}
+      {Array.isArray(wo.assigned_workers) && wo.assigned_workers.length > 0 && ops.length > 0 && (() => {
+        // Agrupar workers por specialty
+        const byWorkerSpec = {};
+        wo.assigned_workers.forEach(w => {
+          const s = (w.specialty || 'Sin especialidad').trim() || 'Sin especialidad';
+          if (!byWorkerSpec[s]) byWorkerSpec[s] = [];
+          byWorkerSpec[s].push(w);
+        });
+        // Ops por specialty (ya calculado arriba)
+        const opsBySpec = {};
+        ops.forEach(op => {
+          const s = (op.specialty || op.work_center || wo.work_center || 'Sin especialidad').toUpperCase();
+          if (!opsBySpec[s]) opsBySpec[s] = { count: 0, hh: 0 };
+          opsBySpec[s].count += 1;
+          opsBySpec[s].hh += (parseFloat(op.hours) || 0) * (parseInt(op.quantity) || 1);
+        });
+        // Match: para cada specialty con ops, mostrar workers que coinciden
+        // (matching prefix 3 chars, case-insensitive).
+        const allSpecs = new Set([...Object.keys(opsBySpec), ...Object.keys(byWorkerSpec).map(k => k.toUpperCase())]);
+        const rows = [];
+        allSpecs.forEach(specUp => {
+          const opsInfo = opsBySpec[specUp] || { count: 0, hh: 0 };
+          const workers = Object.entries(byWorkerSpec)
+            .filter(([k]) => {
+              const ku = k.toUpperCase();
+              return ku === specUp
+                || (ku.length >= 3 && specUp.startsWith(ku.slice(0, 3)))
+                || (specUp.length >= 3 && ku.startsWith(specUp.slice(0, 3)));
+            })
+            .flatMap(([, ws]) => ws);
+          if (opsInfo.count === 0 && workers.length === 0) return;
+          rows.push({ spec: specUp, ops: opsInfo, workers });
+        });
+        if (rows.length === 0) return null;
+        return (
+          <div className="px-3 pb-2">
+            <div className="text-[9.5px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">Asignación por disciplina</div>
+            <div className="space-y-1">
+              {rows.map(({ spec, ops: o, workers }) => {
+                const tone = specTone(spec);
+                const matched = workers.length > 0;
+                const needsTech = o.count > 0 && !matched;
+                return (
+                  <div key={spec} className={`flex items-center gap-2 text-[10.5px] p-1.5 rounded ${needsTech ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200' : 'bg-muted/30'}`}>
+                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${tone.bg}`}>{tone.label}</span>
+                    <span className="text-muted-foreground tabular-nums shrink-0">{o.count}op · {o.hh.toFixed(1)}h</span>
+                    <span className="text-muted-foreground">→</span>
+                    {matched ? (
+                      <span className="flex-1 truncate text-foreground">
+                        {workers.map(w => w.name || w.worker_id).join(', ')}
+                      </span>
+                    ) : needsTech ? (
+                      <span className="flex-1 text-amber-700 dark:text-amber-300 italic">
+                        ⚠️ falta técnico {tone.label.toLowerCase()} — arrastra a un técnico de esta disciplina
+                      </span>
+                    ) : (
+                      <span className="flex-1 text-muted-foreground italic text-[10px]">técnico sin ops asignadas</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Fase 6 Jorge 2026-04-21 — materiales y costos en el rich card */}
       {Array.isArray(wo.materials) && wo.materials.length > 0 && (
         <div className="px-3 pb-2">

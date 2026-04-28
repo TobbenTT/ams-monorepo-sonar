@@ -300,6 +300,10 @@ def wipe_plant_data(db):
         "DELETE FROM work_requests",
         "DELETE FROM workforce",
         "DELETE FROM audit_log",
+        # Reliability data — Jorge 17:56
+        "DELETE FROM improvement_actions",
+        "DELETE FROM rca_analyses",
+        "DELETE FROM fmeca_worksheets",
     ]
     for s in stmts:
         try:
@@ -826,6 +830,193 @@ def seed_standalone_wrs(db, count_pending=20, count_approved=10, count_rejected=
     print(f"  ✓ {total} WRs standalone creados")
 
 
+def seed_critical_equipment_hierarchy(db):
+    """Crea hierarchy_nodes con criticality A/B/C/D para los equipos del catálogo.
+    A = molinos SAG/Bolas (críticos máximos). B = chancadores, bombas slurry, subestaciones.
+    C = correas, celdas. D = compresores, equipos auxiliares.
+    """
+    from api.database.models import HierarchyNodeModel
+    print("[hierarchy] Creando nodos de equipos con criticidad...")
+    crit_map = {
+        "BRY-SAG-ML-001": "A", "BRY-SAG-ML-002": "A",
+        "BRY-BAL-ML-001": "A", "BRY-BAL-ML-002": "A",
+        "BRY-CYC-NST-01": "B",
+        "CRU-GIR-01": "A", "CRU-CON-HP-01": "B", "CRU-CON-HP-02": "B", "CRU-JAW-01": "B",
+        "CVY-CV-001": "B", "CVY-CV-002": "C", "CVY-CV-003": "C",
+        "FLT-CEL-RG-01": "C", "FLT-CEL-RG-02": "C", "FLT-CEL-CL-01": "C", "FLT-BCO-CND-01": "C",
+        "THK-CNC-01": "B", "THK-REL-01": "B", "THK-REL-02": "B",
+        "PMP-SL-HP-001": "B", "PMP-SL-HP-002": "B", "PMP-AGUA-01": "C", "PMP-REL-01": "B",
+        "SUB-MT-P01": "A", "SUB-AT-S01": "A", "MCC-ML-01": "B", "TRF-PRI-01": "A",
+        "ANL-XRF-01": "C", "DCS-PLT-01": "B", "PLC-FLT-01": "C",
+        "COM-AIRE-01": "C", "COM-AIRE-02": "C", "HID-CEN-01": "C",
+    }
+    # Plant + area nodes (parent)
+    plant_node = db.query(HierarchyNodeModel).filter_by(code=PLANT, node_type="PLANT").first()
+    if not plant_node:
+        plant_node = HierarchyNodeModel(
+            node_type="PLANT", name="Goldfields Salares Norte", code=PLANT,
+            level=1, plant_id=PLANT, criticality="A",
+        )
+        db.add(plant_node); db.flush()
+    count = 0
+    for tag, name, area, pg, wc in EQUIPMENT_CATALOG:
+        existing = db.query(HierarchyNodeModel).filter_by(code=tag).first()
+        if existing:
+            existing.criticality = crit_map.get(tag, "C")
+            existing.tag = tag
+            continue
+        node = HierarchyNodeModel(
+            node_type="EQUIPMENT", name=name, code=tag, tag=tag,
+            parent_node_id=plant_node.node_id,
+            level=4, plant_id=PLANT,
+            criticality=crit_map.get(tag, "C"),
+            sap_func_loc=wc,
+        )
+        db.add(node); count += 1
+    db.commit()
+    print(f"  ✓ {count} equipos creados con criticality")
+
+
+def seed_rca_and_capa(db):
+    """Crea ~6 análisis RCA con solutions + ImprovementActions (CAPA) — algunas
+    abiertas, algunas vencidas (close-the-loop visible), algunas cerradas."""
+    from api.database.models import RCAAnalysisModel, ImprovementActionModel
+    from datetime import date, timedelta
+    print("[rca] Creando 6 RCAs + ~12 acciones de mejora...")
+    now = datetime.now()
+    rca_specs = [
+        ("BRY-SAG-ML-001", "Falla recurrente en sello de trunnion bearing", "REVIEWED", "Material del sello no resistente a temperatura operativa", -45),
+        ("PMP-SL-HP-001", "Sobrecalentamiento sostenido en motor", "COMPLETED", "Filtros de admisión obstruidos por presencia de polvo", -30),
+        ("CRU-CON-HP-01", "Vibración elevada en cone crusher", "UNDER_INVESTIGATION", "Posible desgaste irregular del bowl liner", -7),
+        ("CVY-CV-001", "Empalmes de cinta fallando antes de tiempo", "OPEN", "Calidad del kit de empalme actual deficiente", -3),
+        ("SUB-MT-P01", "Falla en interruptor MT recurrente", "REVIEWED", "Configuración relé térmico incorrecta", -60),
+        ("BRY-BAL-ML-001", "Bajo rendimiento del molino de bolas", "COMPLETED", "Carga de bolas fuera de rango óptimo", -20),
+    ]
+    rca_ids = []
+    for tag, event, status, root_cause, days_ago in rca_specs:
+        rca = RCAAnalysisModel(
+            event_description=event,
+            plant_id=PLANT,
+            equipment_id=tag,
+            level="LEVEL_2",
+            status=status,
+            team_members=["Ingeniero Confiabilidad", "Supervisor Mecánico", "Operaciones"],
+            analysis_5w2h={
+                "what": event,
+                "when": (now + timedelta(days=days_ago)).isoformat(),
+                "where": tag,
+                "who": "Equipo mantenimiento",
+                "why": root_cause,
+                "how": "Detectado en inspección rutina + análisis vibracional",
+                "how_much": "Pérdida estimada $15-25k por evento",
+            },
+            cause_effect={
+                "causes": [
+                    {"description": root_cause, "score": 0.85, "category": "Material/Calidad"},
+                    {"description": "Procedimiento de instalación no optimizado", "score": 0.45, "category": "Método"},
+                ],
+            },
+            solutions=[
+                {"description": f"Cambiar a material/proveedor alternativo", "type": "CORRECTIVE", "priority": "HIGH", "responsible": "Compras"},
+                {"description": f"Actualizar procedimiento estándar y capacitar", "type": "PREVENTIVE", "priority": "MEDIUM", "responsible": "Confiabilidad"},
+            ],
+            created_at=now + timedelta(days=days_ago),
+            completed_at=now + timedelta(days=days_ago + 14) if status in ("COMPLETED", "REVIEWED") else None,
+        )
+        db.add(rca); db.flush()
+        rca_ids.append((rca.analysis_id, tag, event))
+    db.commit()
+    # Crear ImprovementActions a partir de los RCAs
+    actions_created = 0
+    for rca_id, tag, event in rca_ids:
+        # 2 acciones por RCA: 1 corrective abierta + 1 preventive (random vencida o cerrada)
+        statuses = ["OPEN", "IN_PROGRESS", "COMPLETED", "OPEN"]  # algunas abiertas, otras cerradas
+        for j, (typ, prio, status) in enumerate([
+            ("CORRECTIVE", "HIGH", random.choice(statuses)),
+            ("PREVENTIVE", "MEDIUM", random.choice(statuses)),
+        ]):
+            target_offset = random.randint(-30, 14)  # algunas pasadas (vencidas), otras futuras
+            target_dt = (date.today() + timedelta(days=target_offset))
+            action = ImprovementActionModel(
+                title=f"{event[:80]} — Acción {j+1}",
+                description=f"Acción derivada de RCA {rca_id[:8]}",
+                plant_id=PLANT,
+                equipment_id=tag,
+                equipment_tag=tag,
+                source_type="RCA",
+                source_ref=rca_id,
+                action_type=typ,
+                priority=prio,
+                category=random.choice(["Strategy", "Planning", "Spare Parts", "Procedures", "Training"]),
+                assigned_to=random.choice(["Ricardo Valdés", "María González", "Catalina Molina", "Pedro Silva"]),
+                created_by="ingeniero_confiabilidad",
+                target_date=target_dt,
+                status=status,
+                completed_at=now if status == "COMPLETED" else None,
+                ai_generated=False,
+                notes=f"Plan: implementar mejora identificada en RCA. Equipo crítico {tag}.",
+            )
+            db.add(action); actions_created += 1
+    db.commit()
+    print(f"  ✓ {len(rca_ids)} RCAs + {actions_created} ImprovementActions")
+
+
+def seed_fmeca_worksheets(db):
+    """Crea FMECA worksheets con rows para 4 equipos críticos (top RPN para Pareto/insights)."""
+    from api.database.models import FMECAWorksheetModel
+    print("[fmeca] Creando 4 FMECA worksheets...")
+    worksheets = [
+        ("BRY-SAG-ML-001", "Molino SAG 01", [
+            ("Sello trunnion", "Fuga de aceite progresiva", "Desgaste sello", 8, 6, 5, "Inspeccion visual cada 30 dias"),
+            ("Pinion drive", "Vibracion alta", "Desalineacion", 7, 4, 6, "Analisis vibracional mensual"),
+            ("Lubricacion", "Temperatura alta", "Filtro obstruido", 6, 5, 7, "Cambio filtro segun pauta"),
+            ("Liners", "Desgaste avanzado", "Vida util agotada", 5, 7, 4, "Medicion UT cada 60 dias"),
+        ]),
+        ("PMP-SL-HP-001", "Bomba Slurry HP 001", [
+            ("Sello mecanico", "Fuga primaria", "Desgaste sello", 9, 6, 5, "Inspeccion semanal"),
+            ("Rodamiento", "Ruido anormal", "Lubricacion deficiente", 8, 5, 6, "Engrase cada 7 dias"),
+            ("Impeller", "Cavitacion", "NPSH insuficiente", 7, 3, 7, "Monitor presion succion"),
+        ]),
+        ("CRU-CON-HP-01", "Chancador HP800", [
+            ("Bowl liner", "Desgaste irregular", "Material abrasivo", 7, 7, 4, "Cambio liner cada 800h"),
+            ("Mantle", "Fractura", "Sobrecarga", 9, 3, 5, "Sensor sobrecarga + LOTO"),
+            ("Hydraulic system", "Perdida de presion", "Fuga interna", 6, 4, 7, "Test presion mensual"),
+        ]),
+        ("SUB-MT-P01", "Subestacion MT", [
+            ("Interruptor", "No conmuta", "Contactos desgastados", 9, 4, 6, "Termografia trimestral"),
+            ("Trafo poder", "Sobretemperatura", "Enfriamiento bajo", 8, 3, 5, "Inspeccion ventiladores"),
+        ]),
+    ]
+    count = 0
+    for tag, name, rows_data in worksheets:
+        ws = FMECAWorksheetModel(
+            equipment_id=tag,
+            equipment_tag=tag,
+            equipment_name=name,
+            status="ACTIVE",
+            current_stage="STAGE_5_RPN",
+            rows=[
+                {
+                    "function": part,
+                    "failure_mode": fm,
+                    "failure_cause": cause,
+                    "severity": s,
+                    "occurrence": o,
+                    "detection": d,
+                    "rpn": s * o * d,
+                    "current_controls": ctrl,
+                    "recommended_action": f"Revisar pauta + monitoreo intensivo si RPN > 100",
+                }
+                for (part, fm, cause, s, o, d, ctrl) in rows_data
+            ],
+            analyst="Ingeniero Confiabilidad",
+            created_at=datetime.now() - timedelta(days=random.randint(30, 180)),
+        )
+        db.add(ws); count += 1
+    db.commit()
+    print(f"  ✓ {count} FMECA worksheets con rows + RPNs calculados")
+
+
 def seed_absorbed_cancellations(db, n_links=8):
     """SF-579 — Para demos de cancelación por absorción: toma N pares (PM01 PROGRAMADO,
     PM03 cualquier estado) del mismo equipo y marca el PM01 como cancelado por
@@ -902,9 +1093,15 @@ def main():
         print()
         seed_materials(db)
         print()
+        seed_critical_equipment_hierarchy(db)
+        print()
         seed_wos_and_wrs(db, count=100)
         print()
         seed_absorbed_cancellations(db, n_links=8)
+        print()
+        seed_rca_and_capa(db)
+        print()
+        seed_fmeca_worksheets(db)
         print()
         seed_standalone_wrs(db)
         print("\n✅ Seed completado.")

@@ -1346,13 +1346,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 <Lock className="w-4 h-4" />
                               </button>
                             )}
-                            <button onClick={async () => {
-                              if (!confirm(`¿Delete ${wo.wo_number}?`)) return;
-                              try { await api.deleteManagedWO(wo.wo_id); toast.success('WO deleted'); fetchData(); }
-                              catch(e) { toast.error('Error deleting'); }
-                            }} className="p-1 text-gray-300 hover:text-red-500 rounded transition-colors" title="Delete WO">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {/* Jorge SAP-style: las OTs NO se eliminan, sólo se cancelan con motivo (SF-579).
+                                Botón delete removido — usar "Cancelar OT" desde el detalle (modal con tipología). */}
                           </div>
                         </td>
                       </tr>

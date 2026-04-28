@@ -3508,8 +3508,16 @@ export default function Scheduling() {
       ]);
       const arr = v => Array.isArray(v) ? v : [];
       // 2-step flow (Jose): EN_PROGRAMACION = borrador en calendario, PROGRAMADO = reservado/bloqueado
-      setReleasedWOs([...arr(created), ...arr(planned), ...arr(released)]);
-      setScheduledWOs([...arr(enProg), ...arr(scheduled), ...arr(executing)]);
+      // David 2026-04-28 (Jorge bug): OTs en EN_PROGRAMACION sin planned_start
+      // estaban en scheduledWOs pero no se renderizaban (sin posicion en grilla) y
+      // tampoco aparecian en el panel izquierdo. Split por planned_start: las que
+      // ya tienen planned_start van al calendario; las que no, al panel izquierdo
+      // como input pendiente de programar.
+      const enProgList = arr(enProg);
+      const enProgPlaced = enProgList.filter(w => w.planned_start);
+      const enProgPending = enProgList.filter(w => !w.planned_start);
+      setReleasedWOs([...arr(created), ...arr(planned), ...arr(released), ...enProgPending]);
+      setScheduledWOs([...enProgPlaced, ...arr(scheduled), ...arr(executing)]);
     } catch {}
   };
 

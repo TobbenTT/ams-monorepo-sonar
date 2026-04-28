@@ -1048,7 +1048,11 @@ def notify_operation_partial(
         return None
     if wo.status not in ("EN_EJECUCION", "EN_PROGRESO", "PROGRAMADO"):
         return None
-    ops = list(wo.operations or [])
+    # Deep-copy: SQLAlchemy JSON column no detecta mutaciones in-place sobre los
+    # dicts internos. Hacer deep copy + reasignar `wo.operations` garantiza que
+    # el cambio se persista al hacer commit.
+    import copy as _copy
+    ops = _copy.deepcopy(wo.operations or [])
     if not ops:
         return None
     target = None

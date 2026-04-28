@@ -33,6 +33,16 @@ const ACTION_COLORS = {
   CERRADO: 'bg-slate-200 text-slate-800 border border-slate-300',
   FAST_TRACK_PROGRAMADO: 'bg-red-50 text-red-700 border border-red-200',
   CLASSIFY: 'bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200',
+  // SP5 — eventos de regla de negocio
+  BLOCKED_FAILURE_LOAD: 'bg-rose-100 text-rose-800 border border-rose-300 font-bold',  // SF-570
+  EXPRESS_PM03_CONVERSION: 'bg-purple-100 text-purple-800 border border-purple-300',   // SF-569
+  FINAL_NOTIFICATION_AUTO: 'bg-emerald-100 text-emerald-800 border border-emerald-300', // SF-572
+};
+
+const ACTION_LABELS = {
+  BLOCKED_FAILURE_LOAD: '🚫 Falla bloqueada en OT programada',
+  EXPRESS_PM03_CONVERSION: '⚡ Aviso → PM03 express',
+  FINAL_NOTIFICATION_AUTO: '✅ Notificación FINAL automática',
 };
 
 const ENTITY_ICONS = {
@@ -79,6 +89,7 @@ export default function AuditLogPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [actionFilter, setActionFilter] = useState(''); // chip filter para SP5 events
 
   const fetchLog = useCallback(async () => {
     try {
@@ -109,6 +120,7 @@ export default function AuditLogPage() {
     }
     if (dateFrom && e.timestamp && e.timestamp < dateFrom) return false;
     if (dateTo && e.timestamp && e.timestamp > dateTo + 'T23:59:59') return false;
+    if (actionFilter && e.action !== actionFilter) return false;
     return true;
   });
 
@@ -217,6 +229,24 @@ export default function AuditLogPage() {
             {filtered.length} {lang === 'es' ? 'registros' : 'entries'}
           </span>
         </div>
+
+        {/* SP5 — chips de filtro rápido para eventos de regla de negocio */}
+        <div className="flex flex-wrap gap-2 mt-2 px-1">
+          <span className="text-xs text-gray-500 self-center">SP5 events:</span>
+          {[
+            { v: '', l: 'Todos', cls: 'bg-gray-100 text-gray-700' },
+            { v: 'BLOCKED_FAILURE_LOAD', l: '🚫 SF-570 bloqueos', cls: 'bg-rose-100 text-rose-800' },
+            { v: 'EXPRESS_PM03_CONVERSION', l: '⚡ SF-569 conversiones', cls: 'bg-purple-100 text-purple-800' },
+            { v: 'FINAL_NOTIFICATION_AUTO', l: '✅ SF-572 finales auto', cls: 'bg-emerald-100 text-emerald-800' },
+          ].map(({ v, l, cls }) => (
+            <button
+              key={v || 'all'}
+              onClick={() => setActionFilter(v)}
+              className={`text-xs px-2 py-1 rounded-full border ${cls} ${actionFilter === v ? 'ring-2 ring-offset-1 ring-blue-400' : 'opacity-70 hover:opacity-100'}`}>
+              {l}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Log entries */}
@@ -247,8 +277,8 @@ export default function AuditLogPage() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className={getActionColor(entry.action)}>
-                        {entry.action}
+                      <Badge className={getActionColor(entry.action)} title={entry.action}>
+                        {ACTION_LABELS[entry.action] || entry.action}
                       </Badge>
                       <span className="text-sm font-medium text-gray-900">
                         {ENTITY_LABELS[entry.entity_type] || entry.entity_type}

@@ -12,8 +12,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import {
   listManagedWOs, updateManagedWO, completeManagedWO, closeManagedWO,
   updateManagedWOProgress, verifyCloseManagedWO, suggestFailureFields,
-  notifyManagedWOPartial,
 } from '../api';
+import PartialNotifyModal from '../components/PartialNotifyModal';
 import * as api from '../api';
 
 // Fase 7 Jorge 2026-04-21 — grabar nota de voz en el cierre + transcribir.
@@ -103,6 +103,8 @@ export default function Execution() {
   const { t } = useLanguage();
   const toast = useToast();
   const [view, setView] = useState('today');
+  // SF-572 — modal notificación parcial
+  const [partialModal, setPartialModal] = useState(null); // { wo, op, opIndex }
   // Jorge SF-525: nav entre semanas (W18, W17, W19…) con historial en bandeja ejecución
   const [weekOffset, setWeekOffset] = useState(0); // 0=semana actual, -1=anterior, +1=siguiente
   // Jorge 2026-04-23: modal Cancelar/Reprogramar OT con motivo obligatorio
@@ -864,30 +866,8 @@ export default function Execution() {
                                     {/* SF-572 — notif parcial multi-turno con histórico técnico+turno+HH */}
                                     {wo.status === 'EN_EJECUCION' && (
                                       <button
-                                        title="Notificación parcial (técnico + turno + HH)"
-                                        onClick={async () => {
-                                          const tech = window.prompt('Técnico (id o nombre):');
-                                          if (!tech) return;
-                                          const shift = window.prompt('Turno (day / night):', 'day');
-                                          if (!shift) return;
-                                          const hStr = window.prompt(`HH parciales para "${(op.description || '').slice(0, 40)}":`, '1');
-                                          const h = parseFloat(hStr || '');
-                                          if (!h || h <= 0) return;
-                                          try {
-                                            const res = await notifyManagedWOPartial(wo.wo_id, {
-                                              op_seq: op.op_number || op.seq || (i + 1),
-                                              hours: h,
-                                              technician_id: tech.trim(),
-                                              shift: shift.trim(),
-                                            });
-                                            if (res.final_auto_triggered) {
-                                              toast.success('✓ Todas las ops al 100% — Notificación FINAL automática');
-                                            } else {
-                                              toast.success('Parcial registrada');
-                                            }
-                                            loadData();
-                                          } catch (e) { toast.error('Error: ' + (e.message || e)); }
-                                        }}
+                                        title="Notificación parcial (modal: técnico+turno+HH)"
+                                        onClick={() => setPartialModal({ wo, op, opIndex: i })}
                                         className="text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded p-0.5 text-[11px]">
                                         📋
                                       </button>
@@ -2120,6 +2100,17 @@ export default function Execution() {
           </div>
         );
       })()}
+
+      {/* SF-572 — modal notificación parcial multi-turno */}
+      <PartialNotifyModal
+        open={!!partialModal}
+        onClose={() => setPartialModal(null)}
+        wo={partialModal?.wo}
+        op={partialModal?.op}
+        opIndex={partialModal?.opIndex}
+        plantId={plant}
+        onSuccess={() => loadData()}
+      />
     </div>
   );
 }

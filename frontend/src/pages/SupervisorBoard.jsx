@@ -6,6 +6,7 @@ import { Calendar, Grid3x3, FileText, ChevronLeft, ChevronRight, RefreshCw } fro
 import * as api from '../api';
 import { useToast } from '../components/Toast';
 import SmartAssignModal from '../components/SmartAssignModal';
+import CancelWOModal from '../components/CancelWOModal';
 
 // Helpers de semana ISO
 function startOfWeek(d) {
@@ -48,8 +49,9 @@ export default function SupervisorBoard() {
   const [loading, setLoading] = useState(false);
   // SF-568 — Smart Assignment IA modal
   const [smartAssign, setSmartAssign] = useState(null); // { specialty, plannedHours, opSeq } | null
-  // SF-579 — OTs absorbidas por la OT PM03 actual
+  // SF-579 — OTs absorbidas por la OT PM03 actual + modal cancel
   const [absorbed, setAbsorbed] = useState([]);
+  const [cancelModalWO, setCancelModalWO] = useState(null);
 
   useEffect(() => {
     if (!selectedWO || selectedWO.wo_type !== 'PM03') { setAbsorbed([]); return; }
@@ -274,6 +276,13 @@ export default function SupervisorBoard() {
               <button onClick={() => navigate('/execution')} className="text-xs px-3 py-1.5 rounded bg-emerald-700 text-white hover:bg-emerald-800">
                 Abrir en Ejecución
               </button>
+              {!['CERRADO', 'CANCELADO'].includes(selectedWO.status) && (
+                <button
+                  onClick={() => setCancelModalWO({ ...selectedWO, plant_id: plant })}
+                  className="text-xs px-3 py-1.5 rounded bg-red-50 text-red-700 border border-red-200 hover:bg-red-100">
+                  Cancelar OT
+                </button>
+              )}
               <button onClick={() => setView('day')} className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted">
                 Volver
               </button>
@@ -434,6 +443,14 @@ export default function SupervisorBoard() {
           </div>
         </div>
       )}
+
+      {/* SF-579 — Cancel modal con tipología (ABSORBED / NOT_NEEDED / OTHER) */}
+      <CancelWOModal
+        open={!!cancelModalWO}
+        onClose={() => setCancelModalWO(null)}
+        wo={cancelModalWO}
+        onSuccess={() => { fetchWOs(); setSelectedWO(null); setView('day'); }}
+      />
 
       {/* SF-568 — Smart Assignment IA modal */}
       <SmartAssignModal

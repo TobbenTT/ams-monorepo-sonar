@@ -1763,6 +1763,29 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
 
               {/* HEADER */}
               <div className="border-b px-6 py-4 rounded-t-2xl">
+                {/* SF-570 — banner: si esta es una OT programada (PM01/PM02), recordar que las fallas
+                    deben crearse como OT PM03 nueva. El backend ya bloquea con 409, este banner
+                    es preventivo para evitar que el usuario lo intente. */}
+                {['PM01', 'PM02'].includes(wo.wo_type) && !['CERRADO', 'CANCELADO'].includes(wo.status) && (
+                  <div className="mb-3 p-2.5 rounded-lg bg-amber-50 border border-amber-300 flex items-center gap-3">
+                    <span className="text-base">⚠</span>
+                    <p className="text-xs text-amber-800 flex-1">
+                      <strong>Esta es una OT programada ({wo.wo_type}).</strong>{' '}
+                      Para atender una falla del equipo no use esta OT — debe crear una OT PM03 nueva
+                      para no contaminar las estadísticas de cumplimiento/adherencia.
+                    </p>
+                    {wo.work_request_id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(`/work-management?tab=identification&openWr=${encodeURIComponent(wo.work_request_id)}`, '_blank', 'noopener,noreferrer');
+                        }}
+                        className="text-[11px] px-2 py-1 rounded bg-rose-600 text-white hover:bg-rose-700 whitespace-nowrap">
+                        Crear OT PM03
+                      </button>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-3">

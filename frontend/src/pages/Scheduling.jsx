@@ -4,6 +4,7 @@ import { CritBadge, LoadingSpinner } from '../components/Shared';
 import { useWebSocket } from '../hooks/useWebSocket';
 import LiveIndicator from '../components/LiveIndicator';
 import { useToast } from '../components/Toast';
+import CancelWOModal from '../components/CancelWOModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../api';
@@ -305,7 +306,7 @@ function OCRClosureModal({ order, t, onClose, onSubmit }) {
 }
 
 /* ───── Work Order Detail Modal ───── */
-function WODetailModal({ order, t, onClose, onClosureClick }) {
+function WODetailModal({ order, t, onClose, onClosureClick, onCancelClick }) {
   // Handle both shapes: inbox `order` (id, type, description, equipment, ...) and
   // managed WO (wo_id, wo_number, wo_type, description, equipment_tag, ...).
   const isManaged = !!order.wo_id || !!order.wo_number;
@@ -503,6 +504,13 @@ function WODetailModal({ order, t, onClose, onClosureClick }) {
             {onClosureClick && status !== 'COMPLETED' && status !== 'CLOSED' && status !== 'CERRADO' && (
               <button onClick={() => onClosureClick(order)} className="flex-1 py-2.5 bg-[#1B5E20] hover:bg-[#2E7D32] text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
                 <Camera size={16} /> Close with OCR
+              </button>
+            )}
+            {/* SF-579 — Cancelar con tipología (incluye absorción por PM03) */}
+            {onCancelClick && !['CERRADO', 'CANCELADO', 'CLOSED', 'COMPLETED'].includes(status) && (
+              <button onClick={() => onCancelClick(order)}
+                className="px-3 py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-xl font-semibold text-sm hover:bg-red-100">
+                Cancelar OT
               </button>
             )}
           </div>
@@ -3623,6 +3631,7 @@ export default function Scheduling() {
   const [tab, setTab] = useState(user?.role === 'tecnico' ? 'inbox' : 'schedule');
   const [detailOrder, setDetailOrder] = useState(null);
   const [closureOrder, setClosureOrder] = useState(null);
+  const [cancelOrder, setCancelOrder] = useState(null); // SF-579 — modal cancel con tipología
   const [generating, setGenerating] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -4589,8 +4598,17 @@ export default function Scheduling() {
       {/* Modals */}
       {detailOrder && (
         <WODetailModal order={detailOrder} t={t} onClose={() => setDetailOrder(null)}
-          onClosureClick={(o) => { setDetailOrder(null); setClosureOrder(o); }} />
+          onClosureClick={(o) => { setDetailOrder(null); setClosureOrder(o); }}
+          onCancelClick={(o) => { setCancelOrder({ ...o, plant_id: plant }); setDetailOrder(null); }} />
       )}
+      {/* SF-579 — Cancel modal con tipología */}
+      <CancelWOModal
+        open={!!cancelOrder}
+        onClose={() => setCancelOrder(null)}
+        wo={cancelOrder}
+        onSuccess={() => loadCalendarData()}
+      />
+
       {closureOrder && (
         <OCRClosureModal order={closureOrder} t={t} onClose={() => setClosureOrder(null)} onSubmit={handleClosureSubmit} />
       )}

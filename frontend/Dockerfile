@@ -5,6 +5,10 @@ FROM node:22-alpine AS build
 WORKDIR /app
 # apk upgrade para parchear paquetes Alpine en build stage también
 RUN apk upgrade --no-cache
+# David 2026-04-28: pasar VITE_SENTRY_DSN como build arg para que Sentry
+# se inicialice en producción. Si no se pasa, queda no-op.
+ARG VITE_SENTRY_DSN=""
+ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
 COPY package*.json ./
 RUN npm ci
 COPY . .

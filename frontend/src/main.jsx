@@ -1,6 +1,7 @@
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmDialog';
@@ -10,6 +11,29 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { LoadingSpinner } from './components/Shared';
 import { installOfflineSync } from './offlineSync';
 import './styles/index.css';
+
+// David 2026-04-28: Sentry frontend — captura errores no-handled y los manda
+// a sentry.io. DSN viene de VITE_SENTRY_DSN en build (Docker arg). Si no hay
+// DSN configurado (dev local), Sentry queda en no-op silently.
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || '';
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: import.meta.env.MODE || 'production',
+    integrations: [Sentry.browserTracingIntegration()],
+    tracesSampleRate: 0.1, // 10% de transacciones para no quemar quota
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 0.5, // 50% de errores con session replay
+    beforeSend(event) {
+      // No mandar request bodies con secrets potenciales
+      if (event.request?.headers) {
+        delete event.request.headers['Authorization'];
+        delete event.request.headers['X-API-Key'];
+      }
+      return event;
+    },
+  });
+}
 
 // Install offline queue drainer — triggered on 'online' event + periodic checks.
 installOfflineSync();

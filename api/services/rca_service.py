@@ -209,6 +209,89 @@ def get_rca_summary(db: Session, plant_id: str | None = None) -> dict:
     }
 
 
+def push_defect_to_fmeca(db: Session, analysis_id: str) -> dict | None:
+    """Cierra el ciclo Defect Elimination → FMECA: cuando un RCA llega a COMPLETED
+    o más, registra/actualiza el modo de falla en el FMECA worksheet del equipo
+    como evidencia de mitigación (source=DEFECT_ELIMINATION).
+
+    Idempotente: si ya existe una row con el mismo failure_mode + source_ref,
+    no la duplica — sólo actualiza el RPN-after.
+    """
+    from api.database.models import FMECAWorksheetModel
+    obj = db.query(RCAAnalysisModel).filter_by(analysis_id=analysis_id).first()
+    if not obj:
+        return None
+    if obj.status not in ("COMPLETED", "REVIEWED", "CONTROLLED", "CLOSED"):
+        return {"analysis_id": analysis_id, "skipped": True, "reason": "RCA aún no completado"}
+    if not obj.equipment_id:
+        return {"analysis_id": analysis_id, "skipped": True, "reason": "RCA sin equipment_id"}
+
+    # Failure mode = primer cause con score más alto, o event_description fallback
+    cause_effect = obj.cause_effect or {}
+    causes = cause_effect.get("causes") or []
+    if isinstance(causes, list) and causes:
+        primary = max(causes, key=lambda c: float(c.get("score", 0)) if isinstance(c, dict) else 0)
+        fm_label = (primary.get("description") if isinstance(primary, dict) else None) or str(primary)
+    else:
+        fm_label = obj.event_description or "Modo de falla detectado"
+    fm_label = str(fm_label)[:200]
+
+    # Buscar/crear worksheet para el equipo
+    ws = db.query(FMECAWorksheetModel).filter_by(equipment_id=obj.equipment_id).first()
+    if not ws:
+        ws = FMECAWorksheetModel(
+            equipment_id=obj.equipment_id,
+            equipment_tag=obj.equipment_id,
+            equipment_name=obj.equipment_id,
+            status="ACTIVE",
+            current_stage="STAGE_5_RPN",
+            rows=[],
+            analyst="DEFECT_ELIMINATION",
+        )
+        db.add(ws)
+        db.flush()
+
+    rows = list(ws.rows or [])
+    source_ref = f"RCA:{analysis_id}"
+    # Idempotencia
+    found_idx = next((i for i, r in enumerate(rows) if isinstance(r, dict) and r.get("source_ref") == source_ref), -1)
+    n_solutions = len(obj.solutions or [])
+    # RPN-before estimado: si no hay scoring previo, usar baseline 200 (medio-alto)
+    # RPN-after estimado: si hay solutions, reducir 60% (mitigation factor)
+    rpn_before = 200
+    rpn_after = max(20, int(rpn_before * 0.4)) if n_solutions > 0 else rpn_before
+
+    new_row = {
+        "failure_mode": fm_label,
+        "description": (obj.event_description or "")[:300],
+        "source": "DEFECT_ELIMINATION",
+        "source_ref": source_ref,
+        "rpn_before": rpn_before,
+        "rpn_after": rpn_after,
+        "mitigation_count": n_solutions,
+        "rca_status": obj.status,
+        "updated_at": datetime.now().isoformat(),
+    }
+    if found_idx >= 0:
+        rows[found_idx] = {**rows[found_idx], **new_row}
+        action = "UPDATED"
+    else:
+        rows.append(new_row)
+        action = "CREATED"
+    ws.rows = rows
+    log_action(db, "fmeca_worksheet", ws.worksheet_id, f"DE_LINK_{action}",
+               {"rca_id": analysis_id, "failure_mode": fm_label, "rpn_before": rpn_before, "rpn_after": rpn_after})
+    db.commit()
+    return {
+        "analysis_id": analysis_id,
+        "worksheet_id": ws.worksheet_id,
+        "action": action,
+        "failure_mode": fm_label,
+        "rpn_before": rpn_before,
+        "rpn_after": rpn_after,
+    }
+
+
 def push_solutions_to_capa(db: Session, analysis_id: str) -> dict | None:
     """Crea ImprovementAction rows a partir de obj.solutions. Idempotente."""
     from api.database.models import ImprovementActionModel

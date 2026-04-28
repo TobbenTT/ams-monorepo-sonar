@@ -91,6 +91,58 @@ export default function Planner() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Smart commands sin WR id: pull data real y devuelve contexto procesable.
+  async function smartCommand(lower) {
+    // "agenda" / "hoy" / "qué hago" → top 5 P1/P2 pendientes con HH y especialidad sugerida
+    if (lower.match(/agenda|qu[eé] hago|hoy|prioridades|priorit/)) {
+      try {
+        const wrs = await api.listWorkRequests();
+        const arr = Array.isArray(wrs) ? wrs : (wrs?.items || []);
+        const critical = arr
+          .filter(r => ['P1', 'P2'].includes(r.priority_code) && ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status))
+          .slice(0, 5);
+        if (critical.length === 0) return '✅ Sin avisos P1/P2 pendientes de validación. Foco: programación semanal.';
+        const lines = [`**📋 Top ${critical.length} prioridades hoy:**\n`];
+        critical.forEach((r, i) => {
+          const eq = r.equipment_tag || '—';
+          const desc = (r.problem_description?.original_text || r.problem_description || '').toString().slice(0, 60);
+          lines.push(`${i + 1}. **${r.priority_code}** ${r.request_id} · ${eq}\n   ${desc}`);
+        });
+        lines.push('\n💡 _Tip: pegá un WR-ID para ver recomendación completa con HH/fecha/recursos._');
+        return lines.join('\n');
+      } catch { return 'Error consultando avisos pendientes.'; }
+    }
+    // "backlog" o "carga" → resumen de backlog por prioridad
+    if (lower.match(/backlog|carga|pendientes/)) {
+      try {
+        const bl = await api.listBacklog();
+        const arr = Array.isArray(bl) ? bl : [];
+        const by = { P1: 0, P2: 0, P3: 0, P4: 0 };
+        arr.forEach(b => { const p = b.priority || b.priority_code || 'P3'; if (by[p] !== undefined) by[p]++; });
+        const totalHH = arr.reduce((s, b) => s + (parseFloat(b.estimated_hours) || 0), 0);
+        return `**📊 Backlog actual:** ${arr.length} ítems · ${totalHH.toFixed(0)}h\n\n` +
+               `🔴 P1: ${by.P1} · 🟠 P2: ${by.P2} · 🔵 P3: ${by.P3} · ⚪ P4: ${by.P4}\n\n` +
+               `💡 _Recomendación: priorizá P1/P2. Si hay >5 P1 sin validar, escalá supervisor._`;
+      } catch { return 'Error consultando backlog.'; }
+    }
+    // "técnicos" / "personal" → workforce disponible
+    if (lower.match(/t[eé]cnico|personal|workforce|equipo de/)) {
+      try {
+        const techs = await api.listTechnicians();
+        const arr = Array.isArray(techs) ? techs : (techs?.technicians || []);
+        const avail = arr.filter(t => t.available !== false);
+        const bySpec = {};
+        avail.forEach(t => { const s = t.specialty || 'OTRO'; bySpec[s] = (bySpec[s] || 0) + 1; });
+        const lines = [`**👷 Personal disponible:** ${avail.length}/${arr.length}\n`];
+        Object.entries(bySpec).sort((a, b) => b[1] - a[1]).forEach(([s, n]) => {
+          lines.push(`• **${s}**: ${n}`);
+        });
+        return lines.join('\n');
+      } catch { return 'Error consultando técnicos.'; }
+    }
+    return null;
+  }
+
   async function send(text) {
     const userText = (text ?? input).trim();
     if (!userText) return;
@@ -112,9 +164,10 @@ export default function Planner() {
         response = `${t('planner.wrNotFound') || 'No se encontró la solicitud'} **${wrId}**. ${t('planner.checkId') || 'Verifica el ID e intenta de nuevo.'}`;
       }
     } else {
-      response = getKeywordResponse(userText, t);
+      // Intentar smart command primero (data real)
+      response = await smartCommand(userText.toLowerCase());
+      if (!response) response = getKeywordResponse(userText, t);
       if (!response) {
-        // Enrich default response with real counts
         const defaultMsg = t('planner.responses.default') || '';
         response = defaultMsg
           .replace('{backlog}', String(backlogCount))

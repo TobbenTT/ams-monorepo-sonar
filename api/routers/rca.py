@@ -85,6 +85,17 @@ def push_to_capa(analysis_id: str, db: Session = Depends(get_db)):
     return result
 
 
+@router.post("/analyses/{analysis_id}/push-to-fmeca")
+def push_to_fmeca(analysis_id: str, db: Session = Depends(get_db)):
+    """Cierra el ciclo Defect Elimination → FMECA: registra el modo de falla
+    en el worksheet del equipo con RPN-before/after como evidencia de mitigación.
+    Sólo aplica cuando el RCA está COMPLETED o más avanzado. Idempotente."""
+    result = rca_service.push_defect_to_fmeca(db, analysis_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="RCA analysis not found")
+    return result
+
+
 # ── Planning KPIs ─────────────────────────────────────────────────────
 
 @router.post("/planning-kpis/calculate")

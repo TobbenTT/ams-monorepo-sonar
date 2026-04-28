@@ -195,6 +195,8 @@ export const getCriticality = (id) => get(`/criticality/${id}`);
 export const approveCriticality = (id) => put(`/criticality/${id}/approve`);
 export const listCriticalityByPlant = (plantId) => get('/criticality/by-plant', { plant_id: plantId });
 export const pushRcaToCapa = (id) => post(`/rca/analyses/${id}/push-to-capa`, {});
+// Defect Elimination → FMECA: registra modo de falla mitigado en worksheet del equipo
+export const pushRcaToFmeca = (id) => post(`/rca/analyses/${id}/push-to-fmeca`, {});
 
 // ── FMEA ──
 export const listFunctions = (nodeId) => get('/fmea/functions', { node_id: nodeId });

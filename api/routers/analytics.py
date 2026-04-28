@@ -234,7 +234,10 @@ def get_analytics_page_data(
     avg_avail = round(total_avail / n_eq, 1)
     avg_oee = round(total_oee / n_eq, 1)
 
-    # ── Failure modes pareto (from FMECA rows) ──
+    # ── Failure modes pareto ──
+    # Fuente 1: FMECA worksheets (modos teóricos definidos por ingeniería).
+    # Fuente 2 (fallback): Work Requests con AI classification — extrae el failure_type
+    # de los avisos reales de campo. Útil cuando FMECA aún no se cargó (planta nueva).
     node_ids = [n.node_id for n in nodes]
     worksheets = db.query(FMECAWorksheetModel).filter(
         FMECAWorksheetModel.equipment_id.in_(node_ids)
@@ -244,6 +247,16 @@ def get_analytics_page_data(
         for row in (ws.rows or []):
             mode = row.get("failure_mode") or row.get("description", "Unknown")
             fm_counts[mode] = fm_counts.get(mode, 0) + 1
+    # Fallback: si FMECA está vacío, usar failure_type de WRs reales
+    if not fm_counts:
+        from api.database.models import WorkRequestModel
+        wr_q = db.query(WorkRequestModel).filter(WorkRequestModel.plant_id == plant_id) if plant_id else db.query(WorkRequestModel)
+        for wr in wr_q.limit(500).all():
+            ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+            mode = (ai.get("failure_type") or ai.get("failure_class") or "").strip()
+            if not mode:
+                continue
+            fm_counts[mode[:25]] = fm_counts.get(mode[:25], 0) + 1
     pareto = sorted(fm_counts.items(), key=lambda x: x[1], reverse=True)
     total_fm = sum(c for _, c in pareto) or 1
     cum = 0

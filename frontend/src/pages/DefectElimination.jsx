@@ -171,7 +171,7 @@ export default function DefectElimination() {
 
   return (
     <div className="min-h-screen bg-muted p-6">
-      <div className="mb-4"><DevBanner>Módulo Defect Elimination (pivot reliability). Workflow RCA → solución → tracking está funcional; métricas agregadas e integración con FMECA se están construyendo.</DevBanner></div>
+      <div className="mb-4"><DevBanner>Módulo Defect Elimination — workflow RCA → solución → tracking funcional. Linkage a FMECA via botón "Push → FMECA" cuando el RCA llega a COMPLETED (registra RPN before/after).</DevBanner></div>
       {/* Header */}
       <div className="bg-gradient-to-r from-rose-800 to-rose-700 rounded-2xl px-8 py-6 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-lg">
         <div className="flex items-center gap-3">
@@ -353,6 +353,27 @@ export default function DefectElimination() {
                       >
                         {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
                         {advancing ? t('defectElimination.advancing') : t('defectElimination.advanceStage')}
+                      </button>
+                    )}
+                    {/* Defect Elimination → FMECA: cierre del ciclo RCM. Visible si el RCA
+                        está COMPLETED o más; registra el modo de falla con RPN before/after
+                        en el worksheet del equipo como evidencia de mitigación. */}
+                    {selected.analysis_id && ['COMPLETED', 'REVIEWED', 'CONTROLLED', 'CLOSED'].includes(selected.status) && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await api.pushRcaToFmeca(selected.analysis_id);
+                            if (res?.skipped) {
+                              toast.warning(res.reason || 'No aplicable');
+                            } else {
+                              toast.success(`FMECA ${res.action === 'CREATED' ? 'creada' : 'actualizada'}: RPN ${res.rpn_before} → ${res.rpn_after}`);
+                            }
+                          } catch (e) { toast.error('Error: ' + (e.message || '')); }
+                        }}
+                        title="Registrar mitigación en FMECA del equipo (cierra ciclo RCM)"
+                        className="flex items-center gap-1.5 bg-purple-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow hover:bg-purple-700 transition-colors"
+                      >
+                        <Target className="w-3.5 h-3.5" /> Push → FMECA
                       </button>
                     )}
                     <Target className="w-6 h-6 text-rose-400 mt-1" />

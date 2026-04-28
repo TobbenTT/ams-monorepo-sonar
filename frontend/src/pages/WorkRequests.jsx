@@ -276,6 +276,7 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRe
 
 /* ─── Detail Modal (expanded + editable for supervisor) ─── */
 function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, onGoToOT, onToggleFullScreen, isFullScreen, userRole, t, _isInCarousel, _isDuplicate }) {
+  const toast = useToast();
   if (!item) return null;
   const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(item.status);
   const isValidated = ['VALIDATED', 'APROBADO'].includes(item.status);

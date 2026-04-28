@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Calendar, Grid3x3, FileText, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import * as api from '../api';
-import toast from 'react-hot-toast';
+import { useToast } from '../components/Toast';
 
 // Helpers de semana ISO
 function startOfWeek(d) {
@@ -38,6 +38,7 @@ const STATUS_BADGE = {
 export default function SupervisorBoard() {
   const { plant } = useOutletContext();
   const navigate = useNavigate();
+  const toast = useToast();
   const [view, setView] = useState('week'); // week | day | detail
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => new Date());

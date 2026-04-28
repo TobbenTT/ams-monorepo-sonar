@@ -1369,8 +1369,15 @@ function DetailCard({ icon: Icon, label, value, children }) {
 function normalizeWR(wr) {
   const cls = typeof wr.ai_classification === 'string' ? (() => { try { return JSON.parse(wr.ai_classification); } catch { return {}; } })() : (wr.ai_classification || {});
   const desc = typeof wr.problem_description === 'string' ? (() => { try { return JSON.parse(wr.problem_description); } catch { return {}; } })() : (wr.problem_description || {});
+  // Aviso # legible: AV-NNNNN cuando hay aviso_number, fallback a UUID corto.
+  const aviso_n = wr.aviso_number || null;
+  const display_id = aviso_n
+    ? `AV-${String(aviso_n).padStart(5, '0')}`
+    : (wr.request_id || wr.id || '').slice(0, 8);
   return {
     id: wr.request_id || wr.id,
+    aviso_number: aviso_n,
+    display_id,
     equipment_tag: wr.equipment_tag || '',
     equipment_name: cls.wo_title || wr.equipment_name || wr.equipment_tag || '',
     wo_title: cls.wo_title || desc.wo_title || '',
@@ -2150,7 +2157,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                             <span title={t('workRequests.duplicateWarning')} className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
                           )}
                           {/* Jorge 2026-04-23 17:38: quitar prefijo "WR-" del número de aviso */}
-                          <p className="font-mono text-xs text-muted-foreground">{String(req.id || '').replace(/^WR-?/i, '')}</p>
+                          {/* Mostrar AV-NNNNN si hay aviso_number, sino UUID corto */}
+                          <p className="font-mono text-xs text-muted-foreground" title={req.id}>{req.display_id || String(req.id || '').slice(0, 8)}</p>
                           {isFastTrackWR && (
                             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
                               <Zap size={8} /> FT

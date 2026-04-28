@@ -438,6 +438,12 @@ def _pick_materials(equip_tag, problem):
     return clean[:6]
 
 
+def _next_aviso_number(db) -> int:
+    """Devuelve el siguiente número correlativo de Aviso."""
+    r = db.execute(text("SELECT COALESCE(MAX(aviso_number), 0) + 1 FROM work_requests")).scalar()
+    return int(r or 1)
+
+
 def _generate_wr_and_wo(db, idx, workers, now):
     """Genera 1 WR + 1 OT con estados distribuidos."""
     equip = random.choice(EQUIPMENT_CATALOG)
@@ -454,6 +460,7 @@ def _generate_wr_and_wo(db, idx, workers, now):
     prod_impact = "HIGH" if priority == "P1" else "MEDIUM" if priority == "P2" else "LOW"
 
     wr = WorkRequestModel(
+        aviso_number=_next_aviso_number(db),
         equipment_id=equip_tag,
         equipment_tag=equip_tag,
         equipment_confidence=round(random.uniform(0.85, 0.99), 2),
@@ -752,6 +759,7 @@ def seed_standalone_wrs(db, count_pending=20, count_approved=10, count_rejected=
             rejection_reason = None
 
         wr = WorkRequestModel(
+            aviso_number=_next_aviso_number(db),
             equipment_id=equip_tag,
             equipment_tag=equip_tag,
             equipment_confidence=round(random.uniform(0.80, 0.98), 2),

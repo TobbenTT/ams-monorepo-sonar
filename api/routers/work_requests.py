@@ -204,6 +204,7 @@ def list_work_requests(status: str | None = None, plant_id: str | None = None, l
             photos = [d.get("data", "") for d in docs if isinstance(d, dict) and d.get("type") == "photo" and d.get("data")]
         results.append({
             "request_id": wr.request_id,
+            "aviso_number": getattr(wr, "aviso_number", None),
             "wo_number": wo_map.get(wr.request_id, ""),
             "status": wr.status,
             "equipment_tag": wr.equipment_tag,
@@ -314,6 +315,7 @@ def get_work_request(request_id: str, db: Session = Depends(get_db)):
     pd = wr.problem_description if isinstance(wr.problem_description, dict) else (_json.loads(wr.problem_description) if isinstance(wr.problem_description, str) else {})
     return {
         "request_id": wr.request_id,
+        "aviso_number": getattr(wr, "aviso_number", None),
         "source_capture_id": wr.source_capture_id,
         "status": wr.status,
         "equipment_id": wr.equipment_id,

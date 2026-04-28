@@ -268,8 +268,12 @@ def process_capture(db: Session, data: dict) -> dict:
                 except Exception as exc:
                     logger.warning("LLM enhancer skipped: %s", exc)
 
+            # Aviso # correlativo legible (AV-NNNNN)
+            from sqlalchemy import text as _text
+            _next_av = db.execute(_text("SELECT COALESCE(MAX(aviso_number), 0) + 1 FROM work_requests")).scalar() or 1
             wr_model = WorkRequestModel(
                 request_id=wr.request_id,
+                aviso_number=int(_next_av),
                 source_capture_id=capture_id,
                 status=wr.status.value,
                 equipment_id=wr.equipment_identification.equipment_id,

@@ -119,6 +119,8 @@ def _run_column_migrations():
         # SF-579 — cancelación con tipología (ABSORBED / NOT_NEEDED / OTHER)
         ("managed_work_orders", "cancellation_type", "VARCHAR(20)", None),
         ("managed_work_orders", "absorbed_by_wo_id", "VARCHAR(50)", None),
+        # Aviso # legible (correlativo) — para mostrar AV-NNNNN en vez de UUID
+        ("work_requests", "aviso_number", "INTEGER", None),
     ]
 
     with engine.begin() as conn:

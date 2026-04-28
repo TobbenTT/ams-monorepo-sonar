@@ -21,6 +21,15 @@ const PRIORITY_COLORS = {
 // Jorge 2026-04-23: P4 = Parada de Plantas (no 'Low').
 const PRIORITY_LABELS = { P1: '<24h', P2: '<7d', P3: '>7d', P4: 'Parada de Plantas' };
 
+// David 2026-04-28: lista canónica de disciplinas que Jorge usa en planta.
+// Usadas como op.specialty para que el subtotal por disciplina agrupe bien y
+// el desglose HH del card del scheduling (ExpandedWOCard) matchee con la
+// specialty del técnico asignado. Antes "Mechanical" hardcoded en + Add.
+const DISCIPLINAS_OP = [
+  'Mecánico', 'Eléctrico', 'Instrumentista', 'Soldador',
+  'Lubricador', 'Civil', 'Predictivo', 'Helper', 'Otro',
+];
+
 // Jorge SF-515 — Notificación HH: pestaña visible solo en EN_EJECUCION donde
 // el supervisor captura valores reales (puesto trabajo, HH, inicio/fin)
 // antes de cerrar. Fin real = inicio + duración, editable manualmente.
@@ -2073,7 +2082,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             </button>
                           );
                         })()}
-                        <button type="button" onClick={() => setEditOps(prev => [...prev, { type: 'INT', description: '', specialty: 'Mechanical', quantity: 1, hours: 4 }])}
+                        <button type="button" onClick={() => setEditOps(prev => [...prev, { type: 'INT', description: '', specialty: '', quantity: 1, hours: 4 }])}
                           className="text-xs px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">+ Add</button>
                         {/* Jorge SF-559 — toggle vista plana / agrupada por especialidad */}
                         <div className="ml-2 inline-flex items-center gap-0.5 border border-gray-300 rounded-lg overflow-hidden">
@@ -2179,14 +2188,20 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 </span>
                               )}
                               <span className="flex-1 text-sm font-medium text-gray-800 truncate">{op.description ? op.description.replace(/^\d+[\.\)]\s*/, '').substring(0, 60) + (op.description.length > 60 ? '...' : '') : <span className="text-gray-400 italic">No description</span>}</span>
-                              {/* Jorge 2026-04-24 item 28: especialidad editable inline (antes readonly) */}
+                              {/* Jorge 2026-04-24 item 28: especialidad editable inline.
+                                  David 2026-04-28: cambiado de WORK_CENTERS (códigos SAP) a
+                                  disciplinas canónicas que el planner entiende. */}
                               <select value={op.specialty || ''}
                                 onClick={e => e.stopPropagation()}
                                 onChange={e => { e.stopPropagation(); const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
                                 className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium border border-blue-200 hover:bg-blue-100">
-                                {(wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : WORK_CENTERS).map(w => (
-                                  <option key={w.value} value={w.value}>{w.value}</option>
+                                <option value="">— sin disciplina —</option>
+                                {DISCIPLINAS_OP.map(d => (
+                                  <option key={d} value={d}>{d}</option>
                                 ))}
+                                {op.specialty && !DISCIPLINAS_OP.includes(op.specialty) && (
+                                  <option value={op.specialty}>{op.specialty} (legacy)</option>
+                                )}
                               </select>
                               <span className="text-[10px] text-gray-500">{op.quantity || 1}p</span>
                               <span className="text-[10px] text-gray-500">{op.hours || 0}h</span>
@@ -2217,12 +2232,29 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                   {/* Jorge (2026-04-20): especialidad = puesto de trabajo de mantenedor
                                       (WORK_CENTERS filtrados por planning_group, códigos P/M). */}
                                   <div className="flex items-center gap-1">
-                                    <label className="text-[10px] text-gray-500">Especialidad:</label>
+                                    <label className="text-[10px] text-gray-500">Disciplina:</label>
                                     <select value={op.specialty || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
                                       className="text-xs border rounded px-2 py-1 max-w-[180px]">
                                       <option value="">— Seleccionar —</option>
+                                      {/* David 2026-04-28: disciplinas canónicas que Jorge usa.
+                                          Antes mostraba códigos work_center (PASMEC01) que el planner
+                                          no entendía y solo aparecía 1 opción si planning_group filtraba. */}
+                                      {DISCIPLINAS_OP.map(d => (
+                                        <option key={d} value={d}>{d}</option>
+                                      ))}
+                                      {/* Si la OT ya tiene un valor que NO está en la lista canónica
+                                          (legacy), lo mostramos para no perderlo. */}
+                                      {op.specialty && !DISCIPLINAS_OP.includes(op.specialty) && (
+                                        <option value={op.specialty}>{op.specialty} (legacy)</option>
+                                      )}
+                                    </select>
+                                    {/* Work center especifico (codigo SAP), opcional avanzado */}
+                                    <select value={op.work_center || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], work_center: e.target.value}; setEditOps(n); }}
+                                      title="Work center SAP especifico (opcional)"
+                                      className="text-[10px] border rounded px-1 py-1 max-w-[140px] text-gray-500">
+                                      <option value="">WC SAP (opc.)</option>
                                       {(wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : WORK_CENTERS).map(w => (
-                                        <option key={w.value} value={w.value}>{w.value} — {w.label}</option>
+                                        <option key={w.value} value={w.value}>{w.value}</option>
                                       ))}
                                     </select>
                                   </div>

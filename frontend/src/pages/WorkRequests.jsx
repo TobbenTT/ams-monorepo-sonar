@@ -1680,8 +1680,14 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             const wo = await api.createWOFromWR({ work_request_id: id });
             setWrsWithOT(prev => new Set([...prev, id]));
             toast.success('FAST TRACK: WO ' + (wo.wo_number || '') + ' created — available in Planning');
-          } catch {
-            toast.success(t('workRequests.validatedNoOT') || 'Request approved. Error creating WO — create it manually.');
+          } catch (err) {
+            // David 2026-04-28: toast de error real (antes decía "success" en verde
+            // aunque la OT no se creó — Jorge lo reportó). Detalle del backend si lo trae.
+            const detail = err?.message || '';
+            toast.error(
+              `Aviso aprobado pero NO se pudo crear la OT: ${detail || 'error backend'}. Crearla manualmente desde Work Orders.`,
+              9000
+            );
           }
         } else {
           // Clean confirmation. The Planning tab badge counter already signals that

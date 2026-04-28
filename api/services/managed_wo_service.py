@@ -468,8 +468,18 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
     # Ver transcripción 2026-04-21 13:23 línea ~46-54, 683-708.
     wo_type_map = {"P1": "PM03", "P2": "PM03", "P3": "PM01", "P4": "PM01"}
     text_to_pm = {"CORRECTIVO": "PM01", "PREVENTIVO": "PM02", "PREDICTIVO": "PM03", "MEJORA": "PM03"}
-    raw_type = ai.get("work_order_type", "")
-    wo_type = text_to_pm.get(raw_type, raw_type) if raw_type and not raw_type.startswith("PM") else (raw_type or wo_type_map.get(wr.priority_code, "PM01"))
+    # David 2026-04-28: la prioridad del aviso DOMINA sobre la sugerencia IA.
+    # Antes, si la IA clasificaba como "PREVENTIVO" / "PM02" un aviso P1/P2 fast-track,
+    # el wo_type quedaba PM02 y reventaba contra el bloqueo SF-533 → 409 → "Failed
+    # to create WO — create it manually". Para WRs siempre derivamos del priority_code.
+    wo_type = wo_type_map.get(wr.priority_code, "PM01")
+    # Solo si la IA explícitamente devolvió un PMxx que coincide con la prioridad
+    # respetamos el tipo IA (caso defensivo).
+    raw_type = ai.get("work_order_type", "") if isinstance(ai, dict) else ""
+    if raw_type and raw_type.startswith("PM") and raw_type != "PM02":
+        wo_type = raw_type
+    elif raw_type in text_to_pm and text_to_pm[raw_type] != "PM02":
+        wo_type = text_to_pm[raw_type]
 
     # Use explicit plant_id from request, then AI classification, then fallback
     plant = plant_id or ai.get("plant_id") or "GOLDFIELDS-SN"

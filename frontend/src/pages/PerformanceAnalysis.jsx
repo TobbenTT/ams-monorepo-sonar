@@ -1670,6 +1670,20 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         <p className="text-[10px] text-gray-500 italic mt-2">
           Jorge 2026-04-28 17:56: "si la estrategia se definió cada 3 meses y ahora se ejecuta cada 2 meses, hay que ajustar la estrategia o hay un problema en el material/operación".
         </p>
+        {strategyMismatches.length > 0 && (
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => navigate('/strategy')}
+              className="text-xs px-3 py-1.5 rounded bg-amber-600 text-white hover:bg-amber-700">
+              ↗ Ajustar estrategias en Strategy module
+            </button>
+            <button
+              onClick={() => navigate('/rca')}
+              className="text-xs px-3 py-1.5 rounded bg-rose-600 text-white hover:bg-rose-700">
+              ↗ Abrir RCA por falla crónica subyacente
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── KPIs de Costo + clases de gasto ── */}
@@ -1798,6 +1812,13 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         <p className="text-[10px] text-gray-500 italic mt-3">
           Jorge 2026-04-28 17:56: "no se hizo porque [repuesto/operaciones/servicio externo/herramienta descalibrada]". La IA lee comments de notificación y clasifica las causas.
         </p>
+        {nonComplianceCauses.length > 0 && (
+          <button
+            onClick={() => navigate('/improvement-actions?source=performance_analysis&category=ExecutionFailure')}
+            className="mt-3 text-xs px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700">
+            ↗ Crear acciones de mejora desde estas causas
+          </button>
+        )}
       </div>
 
       {/* ── Consumo de repuestos ── */}

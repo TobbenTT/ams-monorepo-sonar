@@ -370,7 +370,10 @@ def create_app() -> FastAPI:
         _stamp = str(os.path.getmtime(__file__))
     _build_hash = _hashlib.md5(_stamp.encode()).hexdigest()[:12]
 
-    @app.get("/health")
+    # David 2026-04-28: agregar HEAD para que UptimeRobot Free (que solo manda
+    # HEAD, no GET) marque el monitor como Up. Sin esto: 405 Method Not Allowed
+    # → falsa alerta de downtime aunque la app esté sana.
+    @app.api_route("/health", methods=["GET", "HEAD"])
     def health():
         from sqlalchemy import text
         from api.database.connection import SessionLocal

@@ -130,6 +130,9 @@ export default function Execution() {
   const [savingMat, setSavingMat] = useState(false);
   // Jorge 2026-04-22 #9: Avisos pendientes de aprobación por supervisor
   const [pendingWRs, setPendingWRs] = useState([]);
+  // CE9 Tanda C-EXT (2026-04-28): asignar/desasignar mantenedores desde la OT
+  const [technicians, setTechnicians] = useState([]);
+  const [assignPickerWO, setAssignPickerWO] = useState(null); // wo siendo editado
   // SF-566 C6 Tanda C (2026-04-28): validation gate antes de EN_EJECUCION
   // para PM03 fast-track. Supervisor confirma explícitamente que revisó
   // operaciones + materiales antes de pasar a ejecución.
@@ -162,6 +165,39 @@ export default function Execution() {
   };
 
   useEffect(() => { loadData(); }, [plant]);
+  // CE9: cargar técnicos del plant para el picker de asignación
+  useEffect(() => {
+    api.listTechnicians({ plant_id: plant }).then(res => {
+      setTechnicians(Array.isArray(res) ? res : (res?.technicians || []));
+    }).catch(() => setTechnicians([]));
+  }, [plant]);
+
+  // CE9 Tanda C-EXT: asignar/desasignar mantenedor en una OT
+  const handleAssignWorker = async (wo, tech) => {
+    const current = Array.isArray(wo.assigned_workers) ? wo.assigned_workers : [];
+    const exists = current.some(w => (w.worker_id || w.id) === (tech.worker_id || tech.id));
+    if (exists) { toast.info(`${tech.name} ya está asignado`); return; }
+    const next = [...current, {
+      worker_id: tech.worker_id || tech.id,
+      name: tech.name,
+      specialty: tech.specialty || 'OTRO',
+    }];
+    try {
+      await updateManagedWO(wo.wo_id, { assigned_workers: next });
+      toast.success(`+ ${tech.name} asignado a ${wo.wo_number}`);
+      loadData();
+    } catch (e) { toast.error('Error: ' + (e.message || e)); }
+  };
+  const handleRemoveWorker = async (wo, workerId) => {
+    const current = Array.isArray(wo.assigned_workers) ? wo.assigned_workers : [];
+    const removed = current.find(w => (w.worker_id || w.id) === workerId);
+    const next = current.filter(w => (w.worker_id || w.id) !== workerId);
+    try {
+      await updateManagedWO(wo.wo_id, { assigned_workers: next });
+      toast.success(`− ${removed?.name || 'Técnico'} desasignado`);
+      loadData();
+    } catch (e) { toast.error('Error: ' + (e.message || e)); }
+  };
   useWebSocket(plant, useCallback((msg) => {
     if (msg.event?.startsWith('wo_')) loadData();
   }, []));
@@ -931,6 +967,41 @@ export default function Execution() {
                             <Play size={14} /> Start Execution
                           </button>
                         )}
+                        {/* CE4 Tanda C-EXT (Jorge 2026-04-28 12:32): warning
+                            si el avance no avanza al ritmo del tiempo planificado.
+                            Si %tiempo > %avance + 25 → algo va mal.
+                            Si terminó (100%) pero tomó >120% del tiempo plan → over.
+                            Si terminó muy rápido (<60% tiempo) → revisar. */}
+                        {isExec && (() => {
+                          const plannedHours = parseFloat(wo.estimated_hours) || 0;
+                          const actualHours = parseFloat(wo.actual_hours) || 0;
+                          if (plannedHours <= 0) return null;
+                          // Estimar % tiempo transcurrido desde actual_start
+                          let timePctElapsed = 0;
+                          if (wo.actual_start) {
+                            const elapsedMs = Date.now() - new Date(wo.actual_start).getTime();
+                            const elapsedH = elapsedMs / (1000 * 60 * 60);
+                            timePctElapsed = Math.min(100, Math.round((elapsedH / plannedHours) * 100));
+                          }
+                          const lag = timePctElapsed - pct;
+                          if (lag > 25) {
+                            return (
+                              <span title={`Llevas ${timePctElapsed}% del tiempo y solo ${pct}% de avance. Algo se está retrasando.`}
+                                className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-red-100 text-red-700 border border-red-300 animate-pulse">
+                                ⚠️ Retraso {lag}%
+                              </span>
+                            );
+                          }
+                          if (lag > 10) {
+                            return (
+                              <span title={`Tiempo ${timePctElapsed}% / Avance ${pct}%`}
+                                className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-100 text-amber-700 border border-amber-300">
+                                Atrás del plan
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                         {/* CE3 Tanda C-EXT (Jorge 2026-04-28 12:32):
                             antes solo botones 25/50/75/100 fijos. Ahora input
                             libre 0-100 + chevrones rápidos. El supervisor
@@ -973,17 +1044,120 @@ export default function Execution() {
                         )}
                       </div>
 
-                      {/* Workers */}
-                      {(wo.assigned_workers || []).length > 0 && (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Users size={14} className="text-muted-foreground" />
-                          {wo.assigned_workers.map((w, i) => (
-                            <span key={i} className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-lg border border-blue-200 dark:border-blue-700">
-                              {w.name} ({w.specialty})
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {/* Workers — CE9 Tanda C-EXT (Jorge 2026-04-28 12:32):
+                          asignar/desasignar mantenedores desde la propia OT.
+                          Cada chip tiene X para quitar; botón "+ Asignar" abre
+                          picker filtrado por specialty de las ops de la OT. */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Users size={14} className="text-muted-foreground" />
+                        {(wo.assigned_workers || []).length === 0 && (
+                          <span className="text-[11px] text-amber-600 italic">⚠️ Sin técnicos asignados</span>
+                        )}
+                        {(wo.assigned_workers || []).map((w, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-lg border border-blue-200 dark:border-blue-700">
+                            {w.name} <span className="opacity-70">({w.specialty})</span>
+                            {wo.status !== 'CERRADO' && (
+                              <button
+                                onClick={() => handleRemoveWorker(wo, w.worker_id || w.id)}
+                                title="Desasignar"
+                                className="ml-0.5 opacity-60 hover:opacity-100 hover:text-red-600">
+                                <X size={11} />
+                              </button>
+                            )}
+                          </span>
+                        ))}
+                        {wo.status !== 'CERRADO' && wo.status !== 'CANCELADO' && (
+                          <button
+                            onClick={() => setAssignPickerWO(assignPickerWO?.wo_id === wo.wo_id ? null : wo)}
+                            className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-dashed border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                            + Asignar
+                          </button>
+                        )}
+                      </div>
+                      {/* Picker inline cuando se hace click en + Asignar */}
+                      {assignPickerWO?.wo_id === wo.wo_id && (() => {
+                        // Filtrar técnicos: por specialty de las ops + plant + disponibles
+                        const opSpecs = new Set((ops || [])
+                          .map(op => (op.specialty || op.work_center || '').toUpperCase())
+                          .filter(Boolean));
+                        const assignedIds = new Set((wo.assigned_workers || []).map(w => w.worker_id || w.id));
+                        const matchSpec = (s) => {
+                          if (opSpecs.size === 0) return true;
+                          const u = (s || '').toUpperCase();
+                          for (const target of opSpecs) {
+                            if (u === target) return true;
+                            if (u.length >= 3 && target.includes(u.slice(0, 3))) return true;
+                            if (target.length >= 3 && u.includes(target.slice(0, 3))) return true;
+                          }
+                          return false;
+                        };
+                        const matched = technicians.filter(t =>
+                          !assignedIds.has(t.worker_id || t.id) &&
+                          matchSpec(t.specialty)
+                        );
+                        const others = technicians.filter(t =>
+                          !assignedIds.has(t.worker_id || t.id) &&
+                          !matchSpec(t.specialty)
+                        );
+                        return (
+                          <div className="bg-card border border-emerald-300 dark:border-emerald-700 rounded-lg p-2 mt-1 max-h-64 overflow-y-auto">
+                            <div className="flex items-center justify-between mb-2 sticky top-0 bg-card pb-1 border-b border-border">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                                Asignar técnico {opSpecs.size > 0 && `· filtro: ${[...opSpecs].join(', ')}`}
+                              </span>
+                              <button onClick={() => setAssignPickerWO(null)} className="text-muted-foreground hover:text-foreground">
+                                <X size={12} />
+                              </button>
+                            </div>
+                            {matched.length === 0 && others.length === 0 ? (
+                              <p className="text-[11px] text-muted-foreground italic py-2 px-1">
+                                No hay técnicos disponibles para asignar
+                              </p>
+                            ) : (
+                              <>
+                                {matched.length > 0 && (
+                                  <div className="space-y-0.5">
+                                    {matched.map(t => (
+                                      <button key={t.worker_id || t.id}
+                                        onClick={() => { handleAssignWorker(wo, t); setAssignPickerWO(null); }}
+                                        className="w-full flex items-center gap-2 text-left text-xs px-2 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                                        <span className="text-emerald-600">●</span>
+                                        <span className="font-semibold flex-1">{t.name}</span>
+                                        <span className="text-[10px] text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 px-1.5 rounded">
+                                          {t.specialty || 'OTRO'}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground">{t.shift || 'day'}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                {others.length > 0 && (
+                                  <>
+                                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-2 pt-2 border-t border-border">
+                                      Otras especialidades · asignar bajo tu responsabilidad
+                                    </div>
+                                    <div className="space-y-0.5 mt-1">
+                                      {others.slice(0, 8).map(t => (
+                                        <button key={t.worker_id || t.id}
+                                          onClick={() => { handleAssignWorker(wo, t); setAssignPickerWO(null); }}
+                                          className="w-full flex items-center gap-2 text-left text-xs px-2 py-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 opacity-70">
+                                          <span className="text-amber-600">○</span>
+                                          <span className="flex-1">{t.name}</span>
+                                          <span className="text-[10px] text-muted-foreground">{t.specialty || 'OTRO'}</span>
+                                          <span className="text-[10px] text-muted-foreground">{t.shift || 'day'}</span>
+                                        </button>
+                                      ))}
+                                      {others.length > 8 && (
+                                        <p className="text-[10px] text-muted-foreground px-2 py-1 italic">+{others.length - 8} más…</p>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Operations checklist + notificación HH por operación (Jorge #7) */}
                       {ops.length > 0 && (

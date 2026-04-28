@@ -5,6 +5,7 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Calendar, Grid3x3, FileText, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import * as api from '../api';
 import { useToast } from '../components/Toast';
+import SmartAssignModal from '../components/SmartAssignModal';
 
 // Helpers de semana ISO
 function startOfWeek(d) {
@@ -45,6 +46,8 @@ export default function SupervisorBoard() {
   const [selectedWO, setSelectedWO] = useState(null);
   const [wos, setWos] = useState([]);
   const [loading, setLoading] = useState(false);
+  // SF-568 — Smart Assignment IA modal
+  const [smartAssign, setSmartAssign] = useState(null); // { specialty, plannedHours, opSeq } | null
 
   const fetchWOs = () => {
     setLoading(true);
@@ -300,6 +303,7 @@ export default function SupervisorBoard() {
                     <th className="px-2 py-1.5 text-right">HH real</th>
                     <th className="px-2 py-1.5 text-right">% avance</th>
                     <th className="px-2 py-1.5 text-left">Estado</th>
+                    <th className="px-2 py-1.5 text-center">IA</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -312,10 +316,22 @@ export default function SupervisorBoard() {
                       <td className="px-2 py-1.5 text-right">{(op.actual_hours || 0).toFixed(1)}</td>
                       <td className="px-2 py-1.5 text-right">{(op.completion_pct || 0).toFixed(0)}%</td>
                       <td className="px-2 py-1.5">{op.status || 'PENDING'}</td>
+                      <td className="px-2 py-1.5 text-center">
+                        <button
+                          onClick={() => setSmartAssign({
+                            specialty: op.specialty || selectedWO.work_center || 'Mecánico',
+                            plannedHours: parseFloat(op.planned_hours || op.estimated_hours || op.duration || 1),
+                            opSeq: op.op_number || (i + 1),
+                          })}
+                          title="Smart Assignment IA — sugiere técnicos rankeados"
+                          className="text-[11px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 hover:bg-purple-200">
+                          🤖
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {(!selectedWO.operations || selectedWO.operations.length === 0) && (
-                    <tr><td colSpan={7} className="text-center text-muted-foreground py-3">Sin operaciones</td></tr>
+                    <tr><td colSpan={8} className="text-center text-muted-foreground py-3">Sin operaciones</td></tr>
                   )}
                 </tbody>
               </table>
@@ -354,6 +370,34 @@ export default function SupervisorBoard() {
           </div>
         </div>
       )}
+
+      {/* SF-568 — Smart Assignment IA modal */}
+      <SmartAssignModal
+        open={!!smartAssign}
+        onClose={() => setSmartAssign(null)}
+        plantId={plant}
+        specialty={smartAssign?.specialty}
+        shift={selectedWO?.shift || 'day'}
+        plannedHours={smartAssign?.plannedHours || 1}
+        excludeWorkerIds={(selectedWO?.assigned_workers || []).map(w => w.worker_id || w.id).filter(Boolean)}
+        onSelect={async (cand) => {
+          if (!selectedWO) return;
+          try {
+            const next = [...(selectedWO.assigned_workers || []), {
+              worker_id: cand.worker_id,
+              name: cand.name,
+              specialty: cand.specialty,
+              shift: cand.shift,
+            }];
+            await api.updateManagedWO(selectedWO.wo_id, { assigned_workers: next });
+            toast.success(`Asignado: ${cand.name} (score ${cand.score.toFixed(0)})`);
+            fetchWOs();
+            setSelectedWO(prev => prev ? { ...prev, assigned_workers: next } : prev);
+          } catch (e) {
+            toast.error('Error asignando: ' + (e.message || ''));
+          }
+        }}
+      />
     </div>
   );
 }

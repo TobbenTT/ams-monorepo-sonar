@@ -12,6 +12,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import {
   listManagedWOs, updateManagedWO, completeManagedWO, closeManagedWO,
   updateManagedWOProgress, verifyCloseManagedWO, suggestFailureFields,
+  notifyManagedWOPartial,
 } from '../api';
 import * as api from '../api';
 
@@ -858,27 +859,62 @@ export default function Execution() {
                                     className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 cursor-help">
                                     ↻ ⚠
                                   </span>
-                                ) : !notified ? (
-                                  <button
-                                    title="Reprogramar esta operación (no se ejecutó)"
-                                    onClick={() => {
-                                      const reason = window.prompt(
-                                        `Reprogramar operación "${(op.description || '').slice(0, 50)}"\n\n` +
-                                        `Motivo (obligatorio):`
-                                      );
-                                      if (!reason || !reason.trim()) return;
-                                      saveOp({
-                                        reprogrammed: true,
-                                        reprogram_reason: reason.trim(),
-                                        reprogram_at: new Date().toISOString(),
-                                      });
-                                      toast.success(`Operación marcada para reprogramar`);
-                                    }}
-                                    className="text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded p-0.5">
-                                    ↻
-                                  </button>
                                 ) : (
-                                  <span className="text-muted-foreground text-[10px]">—</span>
+                                  <div className="flex items-center justify-center gap-1">
+                                    {/* SF-572 — notif parcial multi-turno con histórico técnico+turno+HH */}
+                                    {wo.status === 'EN_EJECUCION' && (
+                                      <button
+                                        title="Notificación parcial (técnico + turno + HH)"
+                                        onClick={async () => {
+                                          const tech = window.prompt('Técnico (id o nombre):');
+                                          if (!tech) return;
+                                          const shift = window.prompt('Turno (day / night):', 'day');
+                                          if (!shift) return;
+                                          const hStr = window.prompt(`HH parciales para "${(op.description || '').slice(0, 40)}":`, '1');
+                                          const h = parseFloat(hStr || '');
+                                          if (!h || h <= 0) return;
+                                          try {
+                                            const res = await notifyManagedWOPartial(wo.wo_id, {
+                                              op_seq: op.op_number || op.seq || (i + 1),
+                                              hours: h,
+                                              technician_id: tech.trim(),
+                                              shift: shift.trim(),
+                                            });
+                                            if (res.final_auto_triggered) {
+                                              toast.success('✓ Todas las ops al 100% — Notificación FINAL automática');
+                                            } else {
+                                              toast.success('Parcial registrada');
+                                            }
+                                            loadData();
+                                          } catch (e) { toast.error('Error: ' + (e.message || e)); }
+                                        }}
+                                        className="text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded p-0.5 text-[11px]">
+                                        📋
+                                      </button>
+                                    )}
+                                    {!notified ? (
+                                      <button
+                                        title="Reprogramar esta operación (no se ejecutó)"
+                                        onClick={() => {
+                                          const reason = window.prompt(
+                                            `Reprogramar operación "${(op.description || '').slice(0, 50)}"\n\n` +
+                                            `Motivo (obligatorio):`
+                                          );
+                                          if (!reason || !reason.trim()) return;
+                                          saveOp({
+                                            reprogrammed: true,
+                                            reprogram_reason: reason.trim(),
+                                            reprogram_at: new Date().toISOString(),
+                                          });
+                                          toast.success(`Operación marcada para reprogramar`);
+                                        }}
+                                        className="text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded p-0.5">
+                                        ↻
+                                      </button>
+                                    ) : (
+                                      <span className="text-muted-foreground text-[10px]">—</span>
+                                    )}
+                                  </div>
                                 )}
                               </td>
                             </tr>

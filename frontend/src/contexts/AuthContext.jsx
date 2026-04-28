@@ -14,8 +14,25 @@ async function fetchMe(token) {
     return res.json();
 }
 
+// David 2026-04-28: persistir el user en localStorage para que wsSingleton.js
+// lo lea y mande user_id al server. Antes el WS conectaba como user=None y
+// la detección de sesión compartida + audit trail no atribuían eventos.
+const USER_KEY = 'user';
+function persistUser(u) {
+    try {
+        if (u) localStorage.setItem(USER_KEY, JSON.stringify(u));
+        else localStorage.removeItem(USER_KEY);
+    } catch { /* ignore quota */ }
+}
+function readPersistedUser() {
+    try {
+        const raw = localStorage.getItem(USER_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+}
+
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => readPersistedUser());
     const [token, setToken] = useState(() => localStorage.getItem('access_token'));
     const [loading, setLoading] = useState(true);
 
@@ -23,11 +40,16 @@ export function AuthProvider({ children }) {
         let cancelled = false;
         if (token) {
             fetchMe(token)
-                .then(u => { if (!cancelled) setUser(u); })
+                .then(u => {
+                    if (cancelled) return;
+                    setUser(u);
+                    persistUser(u);
+                })
                 .catch(() => {
                     if (cancelled) return;
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
+                    persistUser(null);
                     setToken(null);
                     setUser(null);
                 })
@@ -51,6 +73,7 @@ export function AuthProvider({ children }) {
         const data = await res.json();
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
+        persistUser(data.user);
         setToken(data.access_token);
         setUser(data.user);
         return data.user;
@@ -59,6 +82,7 @@ export function AuthProvider({ children }) {
     const logout = useCallback(() => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        persistUser(null);
         setToken(null);
         setUser(null);
     }, []);
@@ -76,12 +100,16 @@ export function AuthProvider({ children }) {
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
         setToken(data.access_token);
-        if (data.user) setUser(data.user);
+        if (data.user) {
+            setUser(data.user);
+            persistUser(data.user);
+        }
         return data.access_token;
     }, [logout]);
 
     const setUserData = useCallback((data) => {
         setUser(data);
+        persistUser(data);
     }, []);
 
     const hasRole = useCallback((...roles) => {

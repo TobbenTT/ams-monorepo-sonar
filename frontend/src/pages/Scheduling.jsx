@@ -3281,25 +3281,41 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
       {/* Jorge 2026-04-27 (reunión 18:06): HH desglose por disciplina + duración real.
           Antes el resumen mostraba sólo total HH y leía 16h como puro mecánico aunque
           tuviera 8h mecánico + 8h eléctrico. Ahora calculamos por op.specialty.
-          Duración = serie + max(paralelos por grupo) — misma fórmula que Planning. */}
-      {ops.length > 0 && (() => {
+          Duración = serie + max(paralelos por grupo) — misma fórmula que Planning.
+          David 2026-04-28: Si ops está vacío (OT sin operaciones definidas), igual
+          mostramos un desglose usando wo.estimated_hours + wo.work_center/specialty. */}
+      {(() => {
         const byDiscipline = {};
         let totalHH = 0;
-        for (const op of ops) {
-          const spec = (op.specialty || op.work_center || wo.work_center || 'OTRO').toUpperCase();
-          const qty = parseInt(op.quantity) || 1;
-          const hh = (parseFloat(op.hours) || 0) * qty;
-          byDiscipline[spec] = (byDiscipline[spec] || 0) + hh;
-          totalHH += hh;
-        }
-        const serieHrs = ops.filter(o => !o.parallel).reduce((s, o) => s + (parseFloat(o.hours) || 0), 0);
+        let serieHrs = 0;
         const parGroups = {};
-        ops.filter(o => o.parallel).forEach(o => {
-          const g = o.parallel_group || 'A';
-          parGroups[g] = Math.max(parGroups[g] || 0, parseFloat(o.hours) || 0);
-        });
+        if (ops.length > 0) {
+          for (const op of ops) {
+            const spec = (op.specialty || op.work_center || wo.work_center || 'OTRO').toUpperCase();
+            const qty = parseInt(op.quantity) || 1;
+            const hh = (parseFloat(op.hours) || 0) * qty;
+            byDiscipline[spec] = (byDiscipline[spec] || 0) + hh;
+            totalHH += hh;
+            if (op.parallel) {
+              const g = op.parallel_group || 'A';
+              parGroups[g] = Math.max(parGroups[g] || 0, parseFloat(op.hours) || 0);
+            } else {
+              serieHrs += parseFloat(op.hours) || 0;
+            }
+          }
+        } else {
+          // Fallback: sin operaciones, usar HH total de la OT y specialty del work_center.
+          const fallbackHH = parseFloat(wo.estimated_hours) || 0;
+          const fallbackSpec = (wo.work_center || wo.specialty || 'OTRO').toUpperCase();
+          if (fallbackHH > 0) {
+            byDiscipline[fallbackSpec] = fallbackHH;
+            totalHH = fallbackHH;
+            serieHrs = fallbackHH;
+          }
+        }
         const parallelHrs = Object.values(parGroups).reduce((s, v) => s + v, 0);
         const duration = serieHrs + parallelHrs;
+        if (totalHH === 0) return null;
         const entries = Object.entries(byDiscipline).sort((a, b) => b[1] - a[1]);
         return (
           <div className="px-3 pb-2 grid grid-cols-2 gap-2 text-[10.5px]">
@@ -3312,7 +3328,9 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
               <div className="font-semibold text-foreground tabular-nums">{totalHH.toFixed(1)}h</div>
             </div>
             <div className="col-span-2 bg-muted/40 rounded p-1.5">
-              <div className="text-[9px] font-bold uppercase text-muted-foreground mb-1">HH por disciplina</div>
+              <div className="text-[9px] font-bold uppercase text-muted-foreground mb-1">
+                HH por disciplina {ops.length === 0 && <span className="text-amber-600 normal-case font-normal">· estimado (sin ops definidas)</span>}
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {entries.map(([spec, hh]) => {
                   const tone = specTone(spec);

@@ -63,7 +63,20 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         "wo_type": wo.wo_type,
         "priority_code": wo.priority_code,
         "work_class": wo.work_class,
-        "operations": wo.operations or [],
+        # David 2026-04-28: backfill defensivo — OTs históricas con operations=[]
+        # se sintetizan a 1 op para que el card desglose HH/disciplina correctamente.
+        "operations": (wo.operations if wo.operations else ([{
+            "op_number": 1,
+            "description": (wo.description or "Intervención")[:200],
+            "op_type": "INT",
+            "specialty": (wo.work_center or "Mecánico"),
+            "quantity": 1,
+            "duration": float(wo.estimated_hours or 4.0),
+            "estimated_hours": float(wo.estimated_hours or 4.0),
+            "hours": float(wo.estimated_hours or 4.0),
+            "planned_hours": float(wo.estimated_hours or 4.0),
+            "_synthetic": True,
+        }] if (wo.estimated_hours or 0) > 0 else [])),
         "materials": wo.materials or [],
         "tools": wo.tools or [],
         "documents": wo.documents or [],
@@ -265,7 +278,20 @@ def create_work_order(
         planned_by=planned_by,
         estimated_hours=estimated_hours,
         budget_amount=auto_budget,
-        operations=operations or [],
+        # David 2026-04-28 (Jorge bug "Sin operaciones definidas" en OT 49.5h):
+        # garantizar que TODA OT tenga al menos 1 operación con la HH del estimate.
+        # Antes podía quedar [] si el caller no pasaba operations → la card del
+        # tablero mostraba "Sin operaciones" sin desglose.
+        operations=(operations if operations else [{
+            "op_number": 1,
+            "description": (description or "Intervención")[:200],
+            "op_type": "INT",
+            "specialty": (wc or "Mecánico"),
+            "quantity": 1,
+            "duration": float(estimated_hours or 4.0),
+            "estimated_hours": float(estimated_hours or 4.0),
+            "planned_hours": float(estimated_hours or 4.0),
+        }]),
         materials=materials or [],
         tools=tools or [],
         is_fast_track=is_fast_track,

@@ -476,7 +476,7 @@ export const getGantt = (id) => get(`/scheduling/programs/${id}/gantt`);
 export const publishProgram = (id) => put(`/scheduling/programs/${id}/publish`);
 export const materialCheck = (id) => get(`/scheduling/programs/${id}/material-check`);
 export const hhBalance = (id) => get(`/scheduling/programs/${id}/hh-balance`);
-export const hhBalanceLive = (plantId) => get('/scheduling/hh-balance-live', { plant_id: plantId });
+export const hhBalanceLive = (plantId, weekStart) => get('/scheduling/hh-balance-live', { plant_id: plantId, week_start: weekStart });
 export const autoGenerateTasks = (plantId) => post('/execution/auto-generate-tasks', { plant_id: plantId });
 export const materialsLive = (plantId) => get('/scheduling/materials-live', { plant_id: plantId });
 export const updateMaterialCollection = (woId, data) => put(`/scheduling/materials/${woId}/collection-status`, data);

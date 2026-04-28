@@ -521,6 +521,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   // Jorge 2026-04-27 (reunión 18:06) — filtro fechas entry pedido para Planning.
   const [woDateFrom, setWoDateFrom] = useState('');
   const [woDateTo, setWoDateTo] = useState('');
+  // SF-557 B3 (2026-04-27): multi-select + bulk status change
+  const [selectedWoIds, setSelectedWoIds] = useState(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const filteredWOs = useMemo(() => {
     let wos = managedWOs;
@@ -1117,6 +1120,40 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 <button onClick={() => { setWoSearch(""); setWoStatusFilter("All"); setWoPriorityFilter([]); setWoTypeFilter("All"); setWoDateFrom(""); setWoDateTo(""); }}
                   className="text-xs text-gray-500 hover:text-red-500 px-2 py-2 border border-gray-200 rounded-lg">Clear</button>
               )}
+              {/* SF-557: bulk action — pasar OTs seleccionadas a En Programación */}
+              {selectedWoIds.size > 0 && (
+                <div className="flex items-center gap-2 ml-auto">
+                  <span className="text-xs font-semibold text-blue-700">{selectedWoIds.size} sel.</span>
+                  <button onClick={() => setSelectedWoIds(new Set())}
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1.5 border border-gray-200 rounded-lg">
+                    Limpiar
+                  </button>
+                  <button disabled={bulkBusy}
+                    onClick={async () => {
+                      const ids = Array.from(selectedWoIds);
+                      const eligible = filteredWOs.filter(w => ids.includes(w.wo_id) && ['PLANIFICADO', 'LIBERADO', 'CREADO'].includes((w.status || '').toUpperCase()));
+                      if (eligible.length === 0) {
+                        toast.error('Ninguna seleccionada está en estado PLANIFICADO/LIBERADO/CREADO');
+                        return;
+                      }
+                      if (!window.confirm(`¿Pasar ${eligible.length} OT(s) a "En Programación"? El audit trail registra el cambio.`)) return;
+                      setBulkBusy(true);
+                      const results = await Promise.allSettled(
+                        eligible.map(w => api.updateManagedWO(w.wo_id, { status: 'EN_PROGRAMACION' }))
+                      );
+                      const ok = results.filter(r => r.status === 'fulfilled').length;
+                      const failed = eligible.length - ok;
+                      if (failed === 0) toast.success(`✓ ${ok} OT(s) → En Programación`);
+                      else toast.error(`${ok} ok · ${failed} fallaron`);
+                      setSelectedWoIds(new Set());
+                      setBulkBusy(false);
+                      fetchData();
+                    }}
+                    className="text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+                    {bulkBusy ? 'Procesando…' : '→ En Programación'}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* AI ranking controls (visible once the user has run Priorizar con IA) */}
@@ -1153,6 +1190,16 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/50">
+                    <th className="px-3 py-3 w-8">
+                      <input type="checkbox"
+                        checked={filteredWOs.length > 0 && filteredWOs.every(w => selectedWoIds.has(w.wo_id))}
+                        onChange={e => {
+                          if (e.target.checked) setSelectedWoIds(new Set(filteredWOs.map(w => w.wo_id)));
+                          else setSelectedWoIds(new Set());
+                        }}
+                        title="Seleccionar todas (filtradas)"
+                        className="cursor-pointer" />
+                    </th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">WO Number</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
                     {/* Jorge 2026-04-24 14:18: columna "Equipment" reemplazada por TL + TAG */}
@@ -1193,7 +1240,20 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     const s = SAP_STATUS[wo.status] || { label: wo.status, color: 'bg-gray-100 text-gray-600' };
                     const pColor = { P1: 'text-red-600 font-bold', P2: 'text-orange-600 font-semibold', P3: 'text-yellow-600', P4: 'text-blue-600' };
                     return (
-                      <tr key={wo.wo_id || i} className="border-b border-gray-50 hover:bg-blue-50/40 transition-colors cursor-pointer" onClick={() => setSelectedOT(wo)}>
+                      <tr key={wo.wo_id || i} className={`border-b border-gray-50 hover:bg-blue-50/40 transition-colors cursor-pointer ${selectedWoIds.has(wo.wo_id) ? 'bg-blue-50/60' : ''}`} onClick={() => setSelectedOT(wo)}>
+                        <td className="px-3 py-3 w-8" onClick={e => e.stopPropagation()}>
+                          <input type="checkbox"
+                            checked={selectedWoIds.has(wo.wo_id)}
+                            onChange={e => {
+                              setSelectedWoIds(prev => {
+                                const n = new Set(prev);
+                                if (e.target.checked) n.add(wo.wo_id);
+                                else n.delete(wo.wo_id);
+                                return n;
+                              });
+                            }}
+                            className="cursor-pointer" />
+                        </td>
                         <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{wo.wo_number}</td>
                         <td className="px-4 py-3">
                           <span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded">{TYPE_LABEL[wo.wo_type] || wo.wo_type || '—'}</span>

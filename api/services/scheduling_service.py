@@ -402,8 +402,9 @@ def _program_to_dict(model: WeeklyProgramModel) -> dict:
     }
 
 
-def hh_balance_from_wos(db: Session, plant_id: str) -> dict:
-    """Compute HH balance directly from managed_work_orders (not from program backlog)."""
+def hh_balance_from_wos(db: Session, plant_id: str, week_start: str | None = None) -> dict:
+    """Compute HH balance directly from managed_work_orders (not from program backlog).
+    week_start: ISO date "YYYY-MM-DD" — if provided, returns per-day HH breakdown for that week."""
     workers = db.query(WorkforceModel).filter(
         WorkforceModel.plant_id == plant_id,
         WorkforceModel.available == True,
@@ -464,6 +465,31 @@ def hh_balance_from_wos(db: Session, plant_id: str) -> dict:
             "utilization_pct": round((asgn / cap * 100), 1) if cap > 0 else 0,
         })
 
+    # B3-6 Jorge 2026-04-27: per-day HH para el gráfico de curva vs meta 80%.
+    by_day = []
+    if week_start:
+        from datetime import datetime, timedelta
+        try:
+            ws = datetime.fromisoformat(week_start).date()
+            daily_capacity = total_capacity / 7.0  # rough — capacity is weekly
+            for i in range(7):
+                d = ws + timedelta(days=i)
+                day_assigned = sum(
+                    (wo.estimated_hours or 4) for wo in wos
+                    if wo.planned_start and (
+                        wo.planned_start.date() == d if hasattr(wo.planned_start, 'date') else str(wo.planned_start)[:10] == d.isoformat()
+                    )
+                )
+                by_day.append({
+                    "date": d.isoformat(),
+                    "weekday": d.strftime("%a"),
+                    "assigned": round(day_assigned, 1),
+                    "capacity": round(daily_capacity, 1),
+                    "utilization_pct": round((day_assigned / daily_capacity * 100), 1) if daily_capacity > 0 else 0,
+                })
+        except Exception:
+            by_day = []
+
     return {
         "capacity": total_capacity,
         "assigned": round(total_assigned, 1),
@@ -472,6 +498,7 @@ def hh_balance_from_wos(db: Session, plant_id: str) -> dict:
         "worker_count": len(workers),
         "wo_count": len(wos),
         "by_specialty": by_specialty,
+        "by_day": by_day,
     }
 
 

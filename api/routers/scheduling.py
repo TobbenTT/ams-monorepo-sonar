@@ -115,9 +115,11 @@ def hh_balance(program_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/hh-balance-live")
-def hh_balance_live(plant_id: str = "OCP-JFC1", db: Session = Depends(get_db)):
-    """HH balance from actual scheduled WOs (not from program backlog)."""
-    return scheduling_service.hh_balance_from_wos(db, plant_id)
+def hh_balance_live(plant_id: str = "OCP-JFC1", week_start: str = "", db: Session = Depends(get_db)):
+    """HH balance from actual scheduled WOs (not from program backlog).
+    Optional week_start (YYYY-MM-DD) returns also per-day HH for the 7-day window.
+    """
+    return scheduling_service.hh_balance_from_wos(db, plant_id, week_start=week_start or None)
 
 
 @router.get("/materials-live")

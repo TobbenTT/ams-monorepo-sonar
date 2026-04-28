@@ -83,14 +83,21 @@ function getCapacitySettings() {
   try {
     const plantId = localStorage.getItem('selected_plant') || 'OCP-JFC1';
     const s = JSON.parse(localStorage.getItem(`ocp_settings_${plantId}`) || localStorage.getItem('ocp_settings') || '{}');
+    // B3-4 Jorge 2026-04-27: shiftType determina duración de turno
+    // 'day_night' = 12h cada turno; 'abc_8h' = 3 turnos de 8h (subterránea)
+    const shiftType = s.shiftType || 'day_night';
+    const shiftDurationHours = shiftType === 'abc_8h' ? 8 : (s.nominalHoursPerShift || 12);
     return {
       effectiveHours: s.effectiveHoursPerShift || 10,
+      shiftDurationHours,
+      shiftType,
+      mineType: s.mineType || 'plant',
       schedulingPct: s.schedulingPercent || 80,
       weekStartDay: s.weekStartDay ?? 1,
       dayShiftCount: s.dayShiftCount ?? null,   // explicit day-shift staffing (Jorge)
       nightShiftCount: s.nightShiftCount ?? null, // explicit night-shift staffing
     };
-  } catch { return { effectiveHours: 10, schedulingPct: 80, dayShiftCount: null, nightShiftCount: null }; }
+  } catch { return { effectiveHours: 10, shiftDurationHours: 12, shiftType: 'day_night', mineType: 'plant', schedulingPct: 80, dayShiftCount: null, nightShiftCount: null }; }
 }
 function useCapacitySettings() {
   const [cap, setCap] = useState(getCapacitySettings);
@@ -593,6 +600,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   const [hoverWO, setHoverWO] = useState(null);
   const [reserveConfirm, setReserveConfirm] = useState(null); // { drafts, alreadyReserved } | null
   const [reserving, setReserving] = useState(false);
+  // SF-562 B3 (2026-04-27): wizard A/B para distribuir saldo HH cuando OT > turno
+  // { wo, tech, dayDate, shift, overflow } | null
+  const [shiftOverflowWizard, setShiftOverflowWizard] = useState(null);
 
   const days = useMemo(() => {
     const result = [];
@@ -1293,6 +1303,36 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                     : 'No hay OTs en esta semana para reservar');
                   return;
                 }
+                // B3-7 Jorge 2026-04-27: bloqueo duro >100% al reservar la semana.
+                // Antes el gate sólo aplicaba al drag de nuevas OTs; al reservar en
+                // bulk podía dejar técnicos sobre capacidad. Ahora si algún técnico
+                // queda >HOURS_PER_WEEK, abortamos la reserva y listamos los conflictos.
+                const techLoad = {};
+                drafts.forEach(wo => {
+                  const ws = Array.isArray(wo.assigned_workers) ? wo.assigned_workers : [];
+                  if (ws.length === 0) return;
+                  const perWorker = (parseFloat(wo.estimated_hours) || 0) / ws.length;
+                  ws.forEach(w => {
+                    const id = w.worker_id || w.id;
+                    if (!id) return;
+                    techLoad[id] = (techLoad[id] || 0) + perWorker;
+                  });
+                });
+                const overloaded = Object.entries(techLoad)
+                  .filter(([, h]) => h > HOURS_PER_WEEK)
+                  .map(([id, h]) => {
+                    const tech = technicians.find(t => (t.worker_id || t.id) === id);
+                    return { name: tech?.name || id, h: Math.round(h) };
+                  });
+                if (overloaded.length > 0) {
+                  const list = overloaded.slice(0, 3).map(o => `${o.name} (${o.h}h)`).join(', ');
+                  const more = overloaded.length > 3 ? ` y ${overloaded.length - 3} más` : '';
+                  toast.error(
+                    `⛔ No se puede reservar: ${overloaded.length} técnico(s) sobre capacidad ${Math.round(HOURS_PER_WEEK)}h — ${list}${more}. Saca tareas o redistribuí antes.`,
+                    9000
+                  );
+                  return;
+                }
                 setReserveConfirm({ drafts, alreadyReserved });
               }}
               className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"
@@ -1695,6 +1735,72 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
           </div>
         )}
       </div>
+
+      {/* SF-562 wizard A/B: distribución del saldo de HH cuando OT > turno */}
+      {shiftOverflowWizard && (() => {
+        const w = shiftOverflowWizard;
+        const nextDay = new Date(w.dayDate); nextDay.setDate(nextDay.getDate() + 1);
+        const otherShift = w.shift === 'night' ? 'day' : 'night';
+        const handleChoice = async (choice) => {
+          const note = choice === 'A'
+            ? `Saldo ${w.overflow.toFixed(1)}h → turno ${otherShift} del ${toDateStr(w.dayDate)} (revisar técnico noche disponible)`
+            : choice === 'B'
+            ? `Saldo ${w.overflow.toFixed(1)}h → mismo técnico ${w.tech.name} día siguiente ${toDateStr(nextDay)}`
+            : `Saldo ${w.overflow.toFixed(1)}h → manejado manualmente por el planificador`;
+          try {
+            await api.updateManagedWO(w.wo.wo_id, {
+              shift_overflow_plan: { choice, note, overflow_hours: w.overflow, decided_at: new Date().toISOString() },
+              notes: note,
+            });
+            toast.success(`✓ ${w.wo.wo_number} · ${note}`, 6000);
+          } catch { toast.error('Error registrando plan de saldo'); }
+          setShiftOverflowWizard(null);
+        };
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShiftOverflowWizard(null)} />
+            <div className="relative z-10 bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="p-5 border-b border-border bg-amber-50 dark:bg-amber-900/20">
+                <h3 className="text-lg font-bold text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                  <AlertTriangle size={20} /> Saldo de HH a distribuir
+                </h3>
+                <p className="text-sm text-amber-800 dark:text-amber-300 mt-1">
+                  <strong>{w.wo.wo_number}</strong> dura <strong>{w.woHours}h</strong> y el turno son <strong>{w.shiftHours}h</strong>.
+                  Quedan <strong>{w.overflow.toFixed(1)}h</strong> sin asignar.
+                </p>
+              </div>
+              <div className="p-5 space-y-2">
+                <button onClick={() => handleChoice('A')}
+                  className="w-full text-left p-3 rounded-xl border-2 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                  <div className="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                    {w.shift === 'day' ? '🌙' : '☀️'} A · Saldo al turno {otherShift === 'night' ? 'noche' : 'día'} del mismo día
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    El técnico de {otherShift === 'night' ? 'noche' : 'día'} continúa las {w.overflow.toFixed(1)}h restantes el {toDateStr(w.dayDate)}.
+                  </div>
+                </button>
+                <button onClick={() => handleChoice('B')}
+                  className="w-full text-left p-3 rounded-xl border-2 border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                  <div className="font-bold text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                    📅 B · Saldo al mismo técnico día siguiente
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {w.tech.name} retoma las {w.overflow.toFixed(1)}h el {toDateStr(nextDay)} tras su descanso.
+                  </div>
+                </button>
+                <button onClick={() => handleChoice('manual')}
+                  className="w-full text-left p-3 rounded-xl border border-border hover:bg-muted transition-colors">
+                  <div className="font-semibold text-foreground">↪ Manejar manualmente</div>
+                  <div className="text-xs text-muted-foreground mt-1">El planificador asignará el saldo arrastrando manualmente.</div>
+                </button>
+              </div>
+              <div className="p-3 border-t border-border bg-muted/20 text-[10px] text-muted-foreground text-center">
+                La decisión queda registrada en notas de la OT (`shift_overflow_plan`). El split físico de la OT se hará en una próxima iteración.
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Floating tooltip */}
       {hoverWO && (
@@ -2465,18 +2571,31 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
 function HHBalanceTab({ programId, t, plantId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  // B3-6 Jorge 2026-04-27: filtro semana propio + gráfico curva vs meta 80%
+  const [weekStart, setWeekStart] = useState(() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day; // Monday
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  });
+  const TARGET_PCT = 80;
 
   useEffect(() => {
     setLoading(true);
-    // Use live endpoint that reads from actual scheduled WOs
-    api.hhBalanceLive(plantId)
+    api.hhBalanceLive(plantId, weekStart)
       .then(setData)
       .catch(() => {
-        // Fallback to program-based if live fails
         if (programId) api.hhBalance(programId).then(setData).catch(() => {});
       })
       .finally(() => setLoading(false));
-  }, [plantId, programId]);
+  }, [plantId, programId, weekStart]);
+
+  const shiftWeek = (deltaDays) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + deltaDays);
+    setWeekStart(d.toISOString().slice(0, 10));
+  };
 
   if (loading) return <div className="py-10 flex justify-center"><LoadingSpinner /></div>;
   if (!data) return (
@@ -2541,6 +2660,82 @@ function HHBalanceTab({ programId, t, plantId }) {
               <p className="text-[10px] text-emerald-600 uppercase font-semibold">Available</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* B3-6 Jorge 2026-04-27: gráfico curva HH vs meta 80% por día de semana */}
+      <div className="bg-card border border-border rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-foreground">Curva HH semanal · meta {TARGET_PCT}%</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={() => shiftWeek(-7)} className="p-1 rounded border border-border hover:bg-muted">
+              <ChevronLeft size={14} />
+            </button>
+            <span className="text-xs font-mono text-muted-foreground">Semana del {weekStart}</span>
+            <button onClick={() => shiftWeek(7)} className="p-1 rounded border border-border hover:bg-muted">
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+        {(() => {
+          const byDay = data.by_day || [];
+          if (byDay.length === 0) return <p className="text-xs text-muted-foreground italic">No hay datos para esta semana.</p>;
+          const W = 700, H = 180, PAD = 32;
+          const maxCap = Math.max(...byDay.map(d => d.capacity), 1);
+          const maxAssgn = Math.max(...byDay.map(d => d.assigned), 1);
+          const yMax = Math.max(maxCap, maxAssgn) * 1.1;
+          const xStep = (W - 2 * PAD) / Math.max(1, byDay.length - 1);
+          const yScale = (v) => H - PAD - ((v / yMax) * (H - 2 * PAD));
+          const targetY = yScale((TARGET_PCT / 100) * (byDay[0]?.capacity || 0));
+          const points = byDay.map((d, i) => `${PAD + i * xStep},${yScale(d.assigned)}`).join(' ');
+          return (
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[180px]">
+              {/* Grid */}
+              {[0, 0.25, 0.5, 0.75, 1].map((p, i) => (
+                <line key={i} x1={PAD} x2={W - PAD} y1={yScale(yMax * p)} y2={yScale(yMax * p)}
+                  stroke="#e5e7eb" strokeDasharray="3 3" />
+              ))}
+              {/* Capacity bars */}
+              {byDay.map((d, i) => (
+                <rect key={`cap-${i}`} x={PAD + i * xStep - 14} y={yScale(d.capacity)}
+                  width="28" height={H - PAD - yScale(d.capacity)}
+                  fill="#cbd5e1" opacity="0.4" />
+              ))}
+              {/* Target line (80% of daily capacity, average) */}
+              <line x1={PAD} x2={W - PAD} y1={targetY} y2={targetY}
+                stroke="#10b981" strokeDasharray="4 2" strokeWidth="2" />
+              <text x={W - PAD - 4} y={targetY - 4} fontSize="10" fill="#10b981" textAnchor="end" fontWeight="bold">
+                Meta {TARGET_PCT}%
+              </text>
+              {/* Assigned line */}
+              <polyline fill="none" stroke="#2563eb" strokeWidth="2.5" points={points} />
+              {/* Points + labels */}
+              {byDay.map((d, i) => {
+                const x = PAD + i * xStep;
+                const y = yScale(d.assigned);
+                const over = d.utilization_pct > 100;
+                return (
+                  <g key={i}>
+                    <circle cx={x} cy={y} r="4" fill={over ? '#ef4444' : d.utilization_pct >= TARGET_PCT ? '#10b981' : '#f59e0b'} />
+                    <text x={x} y={y - 8} fontSize="10" textAnchor="middle" fill="#374151" fontWeight="bold">
+                      {d.assigned}h
+                    </text>
+                    <text x={x} y={H - 8} fontSize="10" textAnchor="middle" fill="#6b7280">
+                      {d.weekday}
+                    </text>
+                  </g>
+                );
+              })}
+              {/* Y-axis labels */}
+              <text x={4} y={yScale(yMax)} fontSize="9" fill="#6b7280">{Math.round(yMax)}h</text>
+              <text x={4} y={yScale(0) - 2} fontSize="9" fill="#6b7280">0h</text>
+            </svg>
+          );
+        })()}
+        <div className="flex items-center gap-4 text-[10px] text-muted-foreground mt-2">
+          <span className="flex items-center gap-1"><span className="w-3 h-1 bg-blue-600 inline-block" /> Asignado</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-1 bg-emerald-500 inline-block" style={{ borderTop: '2px dashed #10b981' }} /> Meta {TARGET_PCT}%</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-slate-300 inline-block opacity-40" /> Capacidad</span>
         </div>
       </div>
 
@@ -3426,11 +3621,12 @@ export default function Scheduling() {
     const woHours = parseFloat(wo.estimated_hours) || 0;
     if (woHours > shiftHours) {
       const overflow = woHours - shiftHours;
-      toast.info(
-        `⚠️ ${wo.wo_number} dura ${woHours}h > ${shiftHours}h del turno. ` +
-        `Las ${overflow.toFixed(1)}h restantes deberás reasignarlas al turno siguiente o al día siguiente.`,
-        8000
-      );
+      // SF-562: en lugar de sólo avisar, abrimos wizard A/B después de programar.
+      // Lo programamos primero (parte fits) y luego pedimos al planner qué hacer
+      // con el saldo (turno noche, día siguiente, o ignorar).
+      setTimeout(() => {
+        setShiftOverflowWizard({ wo, tech, dayDate, shift, overflow, shiftHours, woHours });
+      }, 400);
     }
     const scheduled = {
       ...wo,

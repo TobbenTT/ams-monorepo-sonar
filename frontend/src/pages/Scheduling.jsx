@@ -3332,10 +3332,18 @@ function SupportEquipmentTab({ plantId, t }) {
 // Positioned absolute over its cell so it can overflow to show full operation
 // list, materials status and an "Open WO" shortcut. Requested-By: Jorge Cabezas.
 function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
+  // David 2026-04-28 (Jorge captura): work_centers como "PMEC", "MCAMEC01", etc
+  // (códigos SAP que embeben la disciplina). El matching anterior por prefijo 3
+  // no detectaba "PMEC" como MEC porque "PME" != "MEC". Ahora buscamos cualquier
+  // substring de la canónica dentro del raw, y viceversa. Más tolerante.
   const specTone = (specRaw) => {
     const s = (specRaw || '').toUpperCase();
-    const hit = Object.entries(SPEC_BADGE).find(([k]) => s.startsWith(k.slice(0, 3)) || k.startsWith(s.slice(0, 3)));
-    return hit ? hit[1] : { label: (s || '—').slice(0,4), bg: 'bg-slate-100 text-slate-700' };
+    if (!s) return { label: '—', bg: 'bg-slate-100 text-slate-700' };
+    const hit = Object.entries(SPEC_BADGE).find(([k]) => {
+      const kPrefix = k.slice(0, 3);
+      return s.includes(kPrefix) || k.includes(s.slice(0, 3));
+    });
+    return hit ? hit[1] : { label: s.slice(0, 4), bg: 'bg-slate-100 text-slate-700' };
   };
   const woSpec = specTone(wo.work_center || wo.specialty);
   const prioTone = wo.priority_code === 'P1' ? 'bg-red-500 text-white'
@@ -3344,7 +3352,13 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
     : 'bg-gray-400 text-white';
   const timeRange = shift?.id === 'night' ? '19:00–07:00' : '07:00–19:00';
   const crewSize = Array.isArray(wo.assigned_workers) ? wo.assigned_workers.length : 0;
-  const matsReady = Array.isArray(wo.materials) && wo.materials.length > 0 && wo.materials.every(m => (m?.status || 'ready').toLowerCase() === 'ready' || m?.ready);
+  // David 2026-04-28: light dict envía materials_count + reservation_code aunque
+  // no incluya el array completo. El badge "Materials ready RES-xxx" debe
+  // aparecer siempre que la OT tenga reserva confirmada y conteo > 0.
+  const matsCount = Array.isArray(wo.materials) ? wo.materials.length : (wo.materials_count || 0);
+  const matsReady = (Array.isArray(wo.materials) && wo.materials.length > 0
+    && wo.materials.every(m => (m?.status || 'ready').toLowerCase() === 'ready' || m?.ready))
+    || (matsCount > 0 && !!wo.reservation_code);
   return (
     <div
       onClick={e => e.stopPropagation()}

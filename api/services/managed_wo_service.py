@@ -554,7 +554,47 @@ def _to_light_dict(wo: ManagedWorkOrderModel) -> dict:
     Contains only the fields that the scheduling panel, planning list, and execution
     inbox actually read. Any view needing operations/materials/history should fetch
     the full WO via GET /{wo_id}.
+
+    David 2026-04-28 (Jorge captura "OPERATIONS · 0"): el card del scheduling
+    espera operations + reservation_code para renderizar HH-by-discipline y
+    el badge RES-xxx. Antes light dict los omitía; el card mostraba "Sin
+    operaciones definidas" aunque la OT tuviera estimated_hours. Ahora
+    incluimos operations slim (solo campos que el card lee) + reservation_code.
     """
+    # Operations slim: solo campos usados por ExpandedWOCard (description,
+    # specialty, hours, quantity, parallel, parallel_group, work_center).
+    raw_ops = wo.operations if isinstance(wo.operations, list) else []
+    if raw_ops:
+        ops_slim = [
+            {
+                "description": (op.get("description") or op.get("task") or "")[:120] if isinstance(op, dict) else "",
+                "specialty": op.get("specialty") if isinstance(op, dict) else None,
+                "work_center": op.get("work_center") if isinstance(op, dict) else None,
+                "hours": op.get("hours") if isinstance(op, dict) else None,
+                "quantity": op.get("quantity", 1) if isinstance(op, dict) else 1,
+                "parallel": op.get("parallel", False) if isinstance(op, dict) else False,
+                "parallel_group": op.get("parallel_group") if isinstance(op, dict) else None,
+            }
+            for op in raw_ops[:20]  # cap a 20 ops para mantener slim
+        ]
+    elif (wo.estimated_hours or 0) > 0:
+        # Sintético: 1 op con la HH del WO + work_center como specialty.
+        # Para que el card siempre tenga algo que mostrar.
+        ops_slim = [{
+            "description": (wo.description or "Intervención")[:120],
+            "specialty": wo.work_center or "Mecánico",
+            "work_center": wo.work_center,
+            "hours": float(wo.estimated_hours or 0),
+            "quantity": 1,
+            "parallel": False,
+            "parallel_group": None,
+            "_synthetic": True,
+        }]
+    else:
+        ops_slim = []
+    # Materials slim: el card sólo necesita el reservation_code y count para
+    # mostrar 'Materials ready RES-xxx'. La lista completa se carga al expandir.
+    raw_mats = wo.materials if isinstance(wo.materials, list) else []
     return {
         "wo_id": wo.wo_id,
         "wo_number": wo.wo_number,
@@ -575,6 +615,9 @@ def _to_light_dict(wo: ManagedWorkOrderModel) -> dict:
         "shift": getattr(wo, "shift", "day") or "day",
         "planning_group": getattr(wo, "planning_group", None),
         "work_center": getattr(wo, "work_center", None),
+        "operations": ops_slim,
+        "materials_count": len(raw_mats),
+        "reservation_code": getattr(wo, "reservation_code", None),
         "created_at": wo.created_at.isoformat() if wo.created_at else None,
     }
 

@@ -2,14 +2,104 @@
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
-from api.dependencies.auth import get_current_user
+from api.dependencies.auth import get_current_user, require_role
 from api.services import assignment_service
 
 router = APIRouter(prefix="/assignments", tags=["assignments"], dependencies=[Depends(get_current_user)])
+
+
+# D1 Tanda D (David 2026-04-28, Magda transcript): carga masiva de Team via Excel.
+# Pedido por Jorge para arranque Goldfields formal — no manual user-by-user.
+@router.post("/import-team-excel")
+async def import_team_excel(
+    file: UploadFile = File(...),
+    plant_id: str = "OCP-JFC1",
+    user=Depends(require_role("admin", "manager")),
+    db: Session = Depends(get_db),
+):
+    """Import workforce from Excel.
+    Columns expected: name, specialty, shift, shift_pattern, shift_cycle_start, skills, certifications.
+    Returns: { created, skipped, errors[], total }.
+    """
+    import io as _io
+    import openpyxl
+    from api.database.models import WorkforceModel
+
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Archivo debe ser .xlsx")
+
+    contents = await file.read()
+    try:
+        wb = openpyxl.load_workbook(_io.BytesIO(contents), data_only=True)
+        ws = wb.active
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"No se pudo leer el Excel: {e}")
+
+    # Header row
+    headers = []
+    for cell in ws[1]:
+        if cell.value:
+            headers.append(str(cell.value).strip().lower())
+        else:
+            headers.append("")
+    required = {"name", "specialty"}
+    missing = required - set(headers)
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Faltan columnas obligatorias: {', '.join(missing)}")
+
+    def col(row, name):
+        try:
+            idx = headers.index(name)
+            v = row[idx].value
+            return str(v).strip() if v is not None else ""
+        except ValueError:
+            return ""
+
+    created = 0
+    skipped = 0
+    errors = []
+    for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):
+        if not any(cell.value for cell in row):
+            continue
+        name = col(row, "name")
+        if not name:
+            errors.append(f"fila {row_idx}: sin nombre")
+            continue
+        # Skip if exists by name + plant
+        existing = db.query(WorkforceModel).filter(
+            WorkforceModel.plant_id == plant_id,
+            WorkforceModel.name == name,
+        ).first()
+        if existing:
+            skipped += 1
+            continue
+        skills_str = col(row, "skills")
+        certs_str = col(row, "certifications")
+        worker = WorkforceModel(
+            plant_id=plant_id,
+            name=name,
+            specialty=col(row, "specialty") or "OTRO",
+            shift=col(row, "shift") or "day",
+            shift_pattern=col(row, "shift_pattern") or "5x2",
+            shift_cycle_start=col(row, "shift_cycle_start") or None,
+            skills=[s.strip() for s in skills_str.split(",") if s.strip()] if skills_str else [],
+            certifications=[c.strip() for c in certs_str.split(",") if c.strip()] if certs_str else [],
+            available=True,
+        )
+        db.add(worker)
+        created += 1
+    db.commit()
+    return {
+        "ok": True,
+        "created": created,
+        "skipped": skipped,
+        "errors": errors,
+        "total": created + skipped + len(errors),
+    }
 
 
 @router.get("/technicians")

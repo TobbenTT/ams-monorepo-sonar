@@ -628,6 +628,24 @@ export const getDeliverable = (id) => get(`/deliverables/${id}`);
 
 // ── Assignments (GAP-W09) ──
 export const listTechnicians = (p) => get('/assignments/technicians', p);
+
+// D1 Tanda D: importar workforce desde Excel
+export async function importTeamExcel(file, plantId) {
+  const token = getToken();
+  const fd = new FormData();
+  fd.append('file', file);
+  const url = `${BASE}/assignments/import-team-excel?plant_id=${encodeURIComponent(plantId || 'OCP-JFC1')}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: fd,
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.detail || 'Error importing team');
+  }
+  return res.json();
+}
 export const assignWorkRequest = (id, d) => put(`/work-requests/${id}/assign`, d);
 export const optimizeAssignments = (d) => post('/assignments/optimize', d);
 export const getAssignmentSummary = (p) => get('/assignments/summary', p);

@@ -484,6 +484,28 @@ export default function TeamPage() {
             </h1>
             <p className="text-violet-100 text-sm mt-1">{t('team.subtitle')}</p>
           </div>
+          {/* D1 Tanda D — botón import Excel para carga masiva (Magda transcript). */}
+          <input type="file" id="team-excel-input" accept=".xlsx,.xls" style={{ display: 'none' }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                const res = await api.importTeamExcel(file, plant);
+                toast.success(`✓ Importados ${res.created} · saltados ${res.skipped}${res.errors?.length ? ` · ${res.errors.length} errores` : ''}`, 8000);
+                if (res.errors?.length) console.warn('Errores import:', res.errors);
+                fetchTeam();
+              } catch (err) {
+                toast.error(`Error: ${err.message}`);
+              }
+              e.target.value = '';
+            }} />
+          <Button
+            variant="outline"
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-white/30 flex items-center gap-2"
+            onClick={() => document.getElementById('team-excel-input')?.click()}
+            title="Importar técnicos desde Excel · columnas: name, specialty, shift, shift_pattern, shift_cycle_start, skills, certifications">
+            <Plus className="w-4 h-4" /> Importar Excel
+          </Button>
           <Button
             className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 flex items-center gap-2"
             onClick={() => setShowAddDialog(true)}

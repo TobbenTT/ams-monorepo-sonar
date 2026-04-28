@@ -1026,9 +1026,17 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                           e.stopPropagation();
                           try {
                             await api.updateManagedWO(wo.wo_id, { status: 'EN_PROGRAMACION' });
-                            toast.success(`${wo.wo_number} → en programación`);
+                            // Bug Jorge 2026-04-28: la OT desaparecía del filtro
+                            // "Planificadas" después del cambio y parecía que el botón
+                            // no hacía nada. Auto-switch al filtro donde ahora está
+                            // la OT + retry de refresh para asegurar que se ve.
+                            setStatusFilter('inSched');
+                            toast.success(`${wo.wo_number} → en programación · ahora visible en pestaña "En programación"`, 6000);
                             onRefresh?.();
-                          } catch { toast.error('Error cambiando estatus'); }
+                            setTimeout(() => onRefresh?.(), 1500);
+                          } catch (err) {
+                            toast.error(`Error cambiando estatus: ${err?.message || 'desconocido'}`, 8000);
+                          }
                         }}
                         title="Pasar a programación"
                         className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700">

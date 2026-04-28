@@ -529,6 +529,10 @@ class ManagedWorkOrderModel(Base):
     operations: Mapped[list | None] = mapped_column(JSON, nullable=True)   # [{seq, description, specialty, hours, status}]
     materials: Mapped[list | None] = mapped_column(JSON, nullable=True)    # [{code, description, qty_required, qty_available, reserved}]
     tools: Mapped[list | None] = mapped_column(JSON, nullable=True)        # [{tool_name, qty}]
+    # Equipos de apoyo arrastrados desde el aviso (grúa, mandil, scaffolding, etc).
+    # Jorge 2026-04-28 17:56: tienen que propagarse Aviso → OT → Execution → Reports.
+    # Lista de {tag, name, equipment_type?, hours?, notes?}
+    support_equipment: Mapped[list | None] = mapped_column(JSON, nullable=True)
     documents: Mapped[list | None] = mapped_column(JSON, nullable=True)    # [{name, url, type}]
     labour_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {total_hours, specialties: [{name, hours}]}
 

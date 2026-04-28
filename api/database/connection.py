@@ -121,6 +121,8 @@ def _run_column_migrations():
         ("managed_work_orders", "absorbed_by_wo_id", "VARCHAR(50)", None),
         # Aviso # legible (correlativo) — para mostrar AV-NNNNN en vez de UUID
         ("work_requests", "aviso_number", "INTEGER", None),
+        # Equipos de apoyo en OT (Jorge 2026-04-28 17:56) — propagar desde Aviso
+        ("managed_work_orders", "support_equipment", "TEXT", None),  # JSON
     ]
 
     with engine.begin() as conn:

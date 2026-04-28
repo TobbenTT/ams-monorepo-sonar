@@ -299,6 +299,7 @@ export default function SupervisorBoard() {
               { label: 'HH real', value: `${(selectedWO.actual_hours || 0).toFixed(1)}h` },
               { label: 'Centro', value: selectedWO.work_center || '—' },
               { label: 'Reserva', value: selectedWO.reservation_code || '—' },
+              { label: 'Eq. apoyo', value: (selectedWO.support_equipment || []).length > 0 ? `${(selectedWO.support_equipment || []).length} req.` : 'Ninguno' },
             ].map(({ label, value }) => (
               <div key={label} className="bg-muted/50 rounded-lg p-2 border border-border">
                 <p className="text-[10px] text-muted-foreground">{label}</p>
@@ -408,6 +409,37 @@ export default function SupervisorBoard() {
                   {(wos.find(w => w.wo_id === selectedWO.absorbed_by_wo_id) || {}).wo_number || selectedWO.absorbed_by_wo_id}
                 </button>
               </p>
+            </div>
+          )}
+
+          {/* Equipos de Apoyo (Jorge 2026-04-28 17:56) — propagados desde el Aviso */}
+          {(selectedWO.support_equipment || []).length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <span>🏗️</span> Equipos de Apoyo
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left font-semibold">Tag</th>
+                      <th className="px-2 py-1.5 text-left font-semibold">Descripción</th>
+                      <th className="px-2 py-1.5 text-left font-semibold">Tipo</th>
+                      <th className="px-2 py-1.5 text-right font-semibold">HH estim.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedWO.support_equipment.map((se, i) => (
+                      <tr key={i} className="border-b border-border">
+                        <td className="px-2 py-1.5 font-mono">{se.tag || '—'}</td>
+                        <td className="px-2 py-1.5">{se.name || se.description || '—'}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground">{se.equipment_type || '—'}</td>
+                        <td className="px-2 py-1.5 text-right">{se.hours || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 

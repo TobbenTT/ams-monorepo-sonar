@@ -585,6 +585,19 @@ def _generate_wr_and_wo(db, idx, workers, now):
     labor_cost = round(total_hh * 50, 2)
     material_cost = round(sum(m["quantity"] * m["unit_price"] for m in materials), 2)
 
+    # Equipos de apoyo (Jorge 2026-04-28 17:56) — algunas OTs requieren grúa, mandil, andamios
+    SUPPORT_EQUIPS_CATALOG = [
+        {"tag": "GRUA-50T-01", "name": "Grúa móvil 50T #1", "equipment_type": "MOBILE_CRANE", "hours": 4},
+        {"tag": "GRUA-100T-01", "name": "Grúa móvil 100T #1", "equipment_type": "MOBILE_CRANE", "hours": 6},
+        {"tag": "PUENTE-A-01", "name": "Puente grúa Área Molienda", "equipment_type": "BRIDGE_CRANE", "hours": 2},
+        {"tag": "MAN-HID-01", "name": "Mandil hidráulico", "equipment_type": "HYDRAULIC_TRUCK", "hours": 3},
+        {"tag": "AND-MOV-01", "name": "Andamio móvil 6m", "equipment_type": "SCAFFOLDING", "hours": 8},
+        {"tag": "MONT-15T-01", "name": "Montacargas 15T", "equipment_type": "FORKLIFT", "hours": 2},
+    ]
+    needs_support = ("sello" in problem.lower() or "rodamiento" in problem.lower()
+                     or "motor" in problem.lower() or equip_tag.startswith(("BRY", "PMP", "CRU"))
+                     or random.random() < 0.3)
+    support_equipment = random.sample(SUPPORT_EQUIPS_CATALOG, k=random.randint(1, 2)) if needs_support else []
     # Reservation code
     reservation_code = f"RES-{random.randint(700000, 999999)}" if status not in ("LIBERADO", "CREADO") else None
     if reservation_code:
@@ -621,6 +634,7 @@ def _generate_wr_and_wo(db, idx, workers, now):
         released_by="planificador_ocp" if status in ("PROGRAMADO", "EN_EJECUCION", "CERRADO") else None,
         released_at=created_at + timedelta(days=2) if status in ("PROGRAMADO", "EN_EJECUCION", "CERRADO") else None,
         reservation_code=reservation_code,
+        support_equipment=support_equipment,
         reservation_codes=[reservation_code] if reservation_code else None,
         created_at=created_at,
         updated_at=created_at + timedelta(days=random.randint(1, 7)),

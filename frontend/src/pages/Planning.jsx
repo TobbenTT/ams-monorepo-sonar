@@ -1737,6 +1737,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           { id: 'resumen', label: 'Summary', icon: Info },
           { id: 'operaciones', label: 'Operations', icon: List },
           { id: 'materiales', label: 'Materials', icon: Package },
+          { id: 'support_eq', label: 'Equipos Apoyo', icon: Wrench },
           { id: 'costos', label: 'Costs', icon: DollarSign },
           ...(isExec ? [{ id: 'notif_hh', label: 'Notif. HH', icon: Clock }] : []),
           ...(isClosed ? [{ id: 'post_review', label: 'Post-Review', icon: ClipboardCheck }] : []),
@@ -2768,6 +2769,52 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <p className="text-xs text-gray-700 whitespace-pre-line">{aiCloseResult.message}</p>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* EQUIPOS DE APOYO (Jorge 2026-04-28 17:56) — propagados desde Aviso */}
+                {otModalTab === 'support_eq' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        🏗️ Equipos de Apoyo
+                        <span className="text-xs font-normal text-gray-500">(arrastrados desde el aviso)</span>
+                      </h3>
+                    </div>
+                    {(wo.support_equipment || []).length === 0 ? (
+                      <div className="text-center text-sm text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed">
+                        No se requieren equipos de apoyo para esta OT.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto bg-amber-50/40 border border-amber-200 rounded-lg">
+                        <table className="w-full text-sm">
+                          <thead className="bg-amber-100/60 text-xs uppercase">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Tag</th>
+                              <th className="px-3 py-2 text-left">Descripción</th>
+                              <th className="px-3 py-2 text-left">Tipo</th>
+                              <th className="px-3 py-2 text-right">HH estimadas</th>
+                              <th className="px-3 py-2 text-left">Notas</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(wo.support_equipment || []).map((se, i) => (
+                              <tr key={i} className="border-t border-amber-100">
+                                <td className="px-3 py-2 font-mono text-xs">{se.tag || '—'}</td>
+                                <td className="px-3 py-2">{se.name || se.description || '—'}</td>
+                                <td className="px-3 py-2 text-xs text-amber-700">{se.equipment_type || '—'}</td>
+                                <td className="px-3 py-2 text-right">{se.hours || '—'}</td>
+                                <td className="px-3 py-2 text-xs text-gray-600">{se.notes || ''}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    <p className="text-[11px] text-gray-500">
+                      Estos equipos vienen del Aviso original y se reservan automáticamente al programar la OT.
+                      Si necesitas modificar, edita el Aviso de origen.
+                    </p>
                   </div>
                 )}
 

@@ -79,6 +79,7 @@ def _to_dict(wo: ManagedWorkOrderModel) -> dict:
         }] if (wo.estimated_hours or 0) > 0 else [])),
         "materials": wo.materials or [],
         "tools": wo.tools or [],
+        "support_equipment": getattr(wo, "support_equipment", None) or [],
         "documents": wo.documents or [],
         "labour_summary": wo.labour_summary or {},
         "planned_start": wo.planned_start.isoformat() if wo.planned_start else None,
@@ -537,6 +538,18 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
         technical_location=tl_from_wr,
     )
 
+    # Jorge 2026-04-28 17:56 — propagar equipos de apoyo del aviso a la OT.
+    # Antes se quedaban sólo en el WR y se perdían en planificación/ejecución/reportes.
+    wr_support = getattr(wr, "support_equipment", None)
+    if result and wr_support:
+        wo_obj = db.query(ManagedWorkOrderModel).filter(
+            ManagedWorkOrderModel.wo_id == result["wo_id"]
+        ).first()
+        if wo_obj:
+            wo_obj.support_equipment = wr_support
+            db.commit()
+            result["support_equipment"] = wr_support
+
     # Update WR status so it can't create duplicate WOs
     if result:
         wr.status = "OT_CREADA"
@@ -620,6 +633,7 @@ def _to_light_dict(wo: ManagedWorkOrderModel) -> dict:
         "operations": ops_slim,
         "materials_count": len(raw_mats),
         "reservation_code": getattr(wo, "reservation_code", None),
+        "support_equipment": getattr(wo, "support_equipment", None) or [],
         "cancellation_type": getattr(wo, "cancellation_type", None),
         "absorbed_by_wo_id": getattr(wo, "absorbed_by_wo_id", None),
         "created_at": wo.created_at.isoformat() if wo.created_at else None,
@@ -710,7 +724,7 @@ def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int
 
     updatable = [
         "description", "wo_type", "priority_code", "estimated_hours",
-        "operations", "materials", "tools", "documents", "labour_summary",
+        "operations", "materials", "tools", "support_equipment", "documents", "labour_summary",
         "planned_start", "planned_end", "actual_start", "actual_end",
         "risk_analysis", "budget_amount", "budget_approved",
         "labor_cost", "material_cost", "external_cost", "actual_total_cost", "actual_hours", "shift",

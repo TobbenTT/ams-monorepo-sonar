@@ -492,6 +492,23 @@ function WODetailModal({ order, t, onClose, onClosureClick, onCancelClick }) {
             </div>
           )}
 
+          {/* Equipos de Apoyo (Jorge 2026-04-28 17:56) — propagados desde el Aviso */}
+          {Array.isArray(order.support_equipment) && order.support_equipment.length > 0 && (
+            <div>
+              <div className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">🏗️ Equipos de Apoyo · {order.support_equipment.length}</div>
+              <div className="border border-amber-200 dark:border-amber-800 rounded-lg divide-y divide-amber-100 dark:divide-amber-900/40 text-[12px] bg-amber-50/40 dark:bg-amber-900/10">
+                {order.support_equipment.map((se, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-1.5">
+                    <span className="font-mono text-[10px] text-muted-foreground w-24 shrink-0 truncate">{se.tag || '—'}</span>
+                    <span className="flex-1 truncate">{se.name || se.description || '—'}</span>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-300">{se.equipment_type || ''}</span>
+                    <span className="tabular-nums text-muted-foreground">{se.hours ? `${se.hours}h` : ''}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2 pt-1">
             {isManaged && (
               <button

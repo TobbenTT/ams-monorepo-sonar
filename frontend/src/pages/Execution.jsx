@@ -2005,7 +2005,10 @@ export default function Execution() {
         const w = validateGate.wo;
         const ops = w.operations || [];
         const mats = w.materials || [];
-        const allChecked = gateChecks.ops && gateChecks.materials && gateChecks.safety;
+        const supportEq = w.support_equipment || [];
+        const supportRequired = supportEq.length > 0;
+        const supportOK = !supportRequired || gateChecks.support;
+        const allChecked = gateChecks.ops && gateChecks.materials && gateChecks.safety && supportOK;
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setValidateGate(null)} />
@@ -2054,6 +2057,21 @@ export default function Execution() {
                     </div>
                   )}
                 </div>
+                {/* Equipos de Apoyo: visible sólo si la OT los requiere */}
+                {supportRequired && (
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 mb-1">🏗️ Equipos de Apoyo · {supportEq.length}</div>
+                    <div className="text-xs space-y-1 max-h-24 overflow-y-auto bg-amber-50 dark:bg-amber-900/10 rounded p-2 border border-amber-200 dark:border-amber-800">
+                      {supportEq.map((se, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="font-mono text-amber-700 w-20 truncate">{se.tag || '—'}</span>
+                          <span className="flex-1 truncate">{se.name || se.description || '—'}</span>
+                          <span className="tabular-nums text-muted-foreground">{se.hours ? `${se.hours}h` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="border-t border-border pt-3 space-y-2">
                   <label className="flex items-start gap-2 cursor-pointer text-sm">
                     <input type="checkbox" checked={gateChecks.ops}
@@ -2073,6 +2091,17 @@ export default function Execution() {
                       className="mt-0.5 accent-emerald-600" />
                     <span>Verifiqué <strong>condiciones de seguridad</strong> (LOTO/perímetro/EPP) según procedimiento.</span>
                   </label>
+                  {/* Equipos de apoyo (Jorge 2026-04-28 17:56) — sólo si la OT los requiere */}
+                  {supportRequired && (
+                    <label className="flex items-start gap-2 cursor-pointer text-sm">
+                      <input type="checkbox" checked={!!gateChecks.support}
+                        onChange={e => setGateChecks(s => ({ ...s, support: e.target.checked }))}
+                        className="mt-0.5 accent-emerald-600" />
+                      <span>
+                        Confirmé <strong>equipos de apoyo</strong> disponibles ({supportEq.map(s => s.tag || s.name).filter(Boolean).join(', ')}).
+                      </span>
+                    </label>
+                  )}
                 </div>
               </div>
               <div className="p-3 border-t border-border flex gap-2 bg-muted/20">

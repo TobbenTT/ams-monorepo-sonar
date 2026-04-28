@@ -27,6 +27,7 @@ export default function Reliability() {
   const [kpis, setKpis] = useState([]);
   const [selectedEq, setSelectedEq] = useState(null);
   const [detailEq, setDetailEq] = useState(null);
+  const [failureEvents, setFailureEvents] = useState([]);
 
   const severityLabels = {
     minor: t('reliability.severityMinor'),
@@ -96,6 +97,28 @@ export default function Reliability() {
       })
       .catch(() => {});
   }, []);
+
+  // Load real failure events (PM03 work orders) for selected equipment
+  useEffect(() => {
+    if (!selectedEq?.equipment_tag) { setFailureEvents([]); return; }
+    api.listManagedWOs({ plant_id: plant, wo_type: 'PM03', equipment_tag: selectedEq.equipment_tag, limit: 50 })
+      .then((data) => {
+        const items = data?.items || (Array.isArray(data) ? data : []);
+        const evs = items
+          .filter(w => w.equipment_tag === selectedEq.equipment_tag)
+          .map(w => ({
+            wo_number: w.wo_number,
+            date: w.actual_end || w.actual_start || w.planned_start || w.created_at,
+            description: w.description || w.title || '—',
+            duration: w.actual_hours || w.estimated_hours || 0,
+            status: w.status,
+          }))
+          .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+          .slice(0, 10);
+        setFailureEvents(evs);
+      })
+      .catch(() => setFailureEvents([]));
+  }, [selectedEq?.equipment_tag, plant]);
 
   if (!selectedEq) {
     return (
@@ -254,14 +277,41 @@ export default function Reliability() {
         {/* Failure history — from API data */}
         <div className="bg-card rounded-xl border border-border shadow-sm p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">{t('reliability.failureHistory')}</h3>
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">{t('reliability.noFailures')}</p>
-            <div className="mt-3 pt-3 border-t border-border">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{t('reliability.totalFailures')}: <strong>{selectedEq.failures_ytd}</strong></span>
-                <span>{t('reliability.realMTBF')}: <strong>{selectedEq.mtbf} h</strong></span>
-                <span>{t('reliability.mttr')}: <strong>{selectedEq.mttr} h</strong></span>
-              </div>
+          {failureEvents.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">{t('reliability.noFailures')}</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto max-h-64 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-muted sticky top-0">
+                  <tr className="border-b border-border">
+                    <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">OT</th>
+                    <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">Fecha</th>
+                    <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">Descripción</th>
+                    <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">Hrs</th>
+                    <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {failureEvents.map(ev => (
+                    <tr key={ev.wo_number} className="border-b border-border hover:bg-muted">
+                      <td className="px-2 py-1.5 font-mono text-foreground">{ev.wo_number}</td>
+                      <td className="px-2 py-1.5 text-muted-foreground">{ev.date ? new Date(ev.date).toLocaleDateString() : '—'}</td>
+                      <td className="px-2 py-1.5 text-foreground truncate max-w-[200px]" title={ev.description}>{ev.description}</td>
+                      <td className="px-2 py-1.5 text-right font-medium">{Number(ev.duration || 0).toFixed(1)}</td>
+                      <td className="px-2 py-1.5 text-muted-foreground">{ev.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="mt-3 pt-3 border-t border-border">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{t('reliability.totalFailures')}: <strong>{selectedEq.failures_ytd}</strong></span>
+              <span>{t('reliability.realMTBF')}: <strong>{selectedEq.mtbf} h</strong></span>
+              <span>{t('reliability.mttr')}: <strong>{selectedEq.mttr} h</strong></span>
             </div>
           </div>
         </div>

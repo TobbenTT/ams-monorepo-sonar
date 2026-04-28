@@ -89,7 +89,12 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
 
   const [extForm, setExtForm] = useState({ service: '', vendor: '', vendor_other: '', contract_ref: '', specialty: '', specialty_other: '', estimated_cost: '', duration_days: '', notes: '' });
 
-  const SPECIAL_EQUIPMENT = [
+  // B3-FULL-3 Tanda B3 (David 2026-04-28, Magda transcript): conectar el dropdown
+  // de equipos de apoyo del aviso con el módulo Settings → Equipos. Antes era una
+  // lista hardcoded; ahora se carga del backend `listSupportEquipment(plantId)`
+  // y se mantiene un fallback con valores comunes si la cuenta del cliente todavía
+  // no tiene equipos configurados.
+  const SPECIAL_EQUIPMENT_FALLBACK = [
     'Grua 20 Ton', 'Grua 50 Ton', 'Grua Horquilla', 'Andamio Multidireccional',
     'Tubular Scaffold', 'Crane Truck', 'Lift Platform', 'MIG/MAG Welder',
     'TIG Welder', 'Arc Welder', 'Portable Compressor', 'Electric Generator',
@@ -99,6 +104,23 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     'Hydraulic Jack', 'Chain Hoist 5 Ton', 'Angle Grinder',
     'Magnetic Drill', 'Ultrasound Equipment', 'Gas Detector',
   ];
+  const [supportEquipmentList, setSupportEquipmentList] = useState(SPECIAL_EQUIPMENT_FALLBACK);
+  useEffect(() => {
+    const plantId = plant || localStorage.getItem('selected_plant') || 'OCP-JFC1';
+    api.listSupportEquipment(plantId)
+      .then(res => {
+        const items = Array.isArray(res) ? res : [];
+        const names = items
+          .filter(eq => eq.available !== false)
+          .map(eq => eq.name)
+          .filter(Boolean);
+        if (names.length > 0) setSupportEquipmentList(names);
+        // Si no hay equipos cargados en el módulo, mantenemos el fallback hardcoded
+        // para que la UI no quede vacía mientras el supervisor llena el catálogo.
+      })
+      .catch(() => { /* fallback ya seteado */ });
+  }, [plant]);
+  const SPECIAL_EQUIPMENT = supportEquipmentList;
 
   const RESOURCE_TYPES = [
     'Mechanical', 'Electrical', 'Instrumentation', 'Lubrication', 'Soldador',

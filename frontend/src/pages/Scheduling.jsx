@@ -3728,6 +3728,36 @@ export default function Scheduling() {
       toast.error(`⛔ ${tech.name} está en descanso/vacaciones (${tech.absence_reason || 'no disponible'}). No se puede asignar.`);
       return;
     }
+    // B3-FULL-2 Tanda B3 (David 2026-04-28, Magda transcript 392-394):
+    // Constraint exclusividad equipo apoyo simultáneo. Si la OT requiere un
+    // equipo (puente grúa, etc) y ya hay otra OT scheduled en el mismo
+    // día+turno usando el mismo equipo, advertir antes de programar.
+    const woEquip = Array.isArray(wo.support_equipment) ? wo.support_equipment : [];
+    if (woEquip.length > 0) {
+      const dayStr = toDateStr(dayDate);
+      const conflicts = scheduledWOs.filter(other => {
+        if (other.wo_id === wo.wo_id) return false;
+        const otherDay = other.planned_start ? String(other.planned_start).slice(0, 10) : null;
+        const otherShift = (other.shift || 'day').toLowerCase();
+        if (otherDay !== dayStr || otherShift !== shift) return false;
+        const otherEquip = Array.isArray(other.support_equipment) ? other.support_equipment : [];
+        return woEquip.some(eq => otherEquip.includes(eq));
+      });
+      if (conflicts.length > 0) {
+        const sharedEquip = woEquip.filter(eq =>
+          conflicts.some(c => (c.support_equipment || []).includes(eq))
+        );
+        const conflictNames = conflicts.slice(0, 3).map(c => c.wo_number).join(', ');
+        const proceed = window.confirm(
+          `⚠️ Conflicto de equipo de apoyo\n\n` +
+          `${wo.wo_number} requiere: ${sharedEquip.join(', ')}\n\n` +
+          `Ya está(n) programadas en el mismo día/turno con el mismo equipo:\n` +
+          `${conflictNames}${conflicts.length > 3 ? ` y ${conflicts.length - 3} más` : ''}\n\n` +
+          `Si el equipo es único (ej. puente grúa de un galpón), no podrá ejecutarse en paralelo. ¿Programar igual?`
+        );
+        if (!proceed) return;
+      }
+    }
     // SF-562: detectar OTs que exceden la duración del turno y advertir
     // que el saldo deberá redistribuirse (turno noche o día siguiente).
     // Día/Noche = 12h cada uno; subterránea A/B/C = 8h.

@@ -346,10 +346,20 @@ def _seed_users(db: Session) -> int:
     import secrets
     from api.services.auth_service import hash_password
 
+    # D3 Tanda D (David 2026-04-28, Jorge feedback "todos técnicos"): distribuir
+    # roles realistas para que el demo del cliente refleje una organización real.
+    # Plantas mineras típicas: 1 admin · 1-2 manager · 2-3 planner · 4-6 supervisor
+    # · 1-2 engineer · 15-25 técnicos. Aquí ponemos 1 de cada rol no-tecnico
+    # como semilla; el resto son técnicos que vienen del seed workforce.
     default_users = [
         {"username": "admin", "email": "admin@ocp.ma", "full_name": "Administrador Sistema", "role": "admin", "plant_id": None},
         {"username": "manager", "email": "manager@ocp.ma", "full_name": "Ahmed Mansouri", "role": "manager", "plant_id": "OCP-JFC1"},
         {"username": "planner", "email": "planner@ocp.ma", "full_name": "Fatima Benali", "role": "planner", "plant_id": "OCP-JFC1"},
+        {"username": "planner2", "email": "planner2@ocp.ma", "full_name": "Khalid El Idrissi", "role": "planner", "plant_id": "OCP-JFC1"},
+        {"username": "sup_mec", "email": "sup_mec@ocp.ma", "full_name": "Hassan Rahmouni", "role": "supervisor", "plant_id": "OCP-JFC1"},
+        {"username": "sup_elec", "email": "sup_elec@ocp.ma", "full_name": "Youssef Benkirane", "role": "supervisor", "plant_id": "OCP-JFC1"},
+        {"username": "sup_inst", "email": "sup_inst@ocp.ma", "full_name": "Karim Bouazizi", "role": "supervisor", "plant_id": "OCP-JFC1"},
+        {"username": "engineer", "email": "engineer@ocp.ma", "full_name": "Sara Alaoui", "role": "engineer", "plant_id": "OCP-JFC1"},
         {"username": "tecnico", "email": "tecnico@ocp.ma", "full_name": "Omar Tazi", "role": "tecnico", "plant_id": "OCP-JFC1"},
     ]
 

@@ -373,6 +373,77 @@ function WODetailModal({ order, t, onClose, onClosureClick }) {
             {order.reservation_code && <DetailCard label="Reserva" value={<span className="font-mono">{order.reservation_code}</span>} />}
           </div>
 
+          {/* David 2026-04-28 (Jorge bug 'cambio para el resumen'): desglose
+              Duración + Total HH + HH por disciplina, igual que ExpandedWOCard.
+              Si la OT no tiene operations, sintetizamos del wo.estimated_hours +
+              wo.work_center / specialty para que el card siempre informe. */}
+          {(() => {
+            const byDiscipline = {};
+            let totalHH = 0;
+            let serieHrs = 0;
+            const parGroups = {};
+            if (ops.length > 0) {
+              for (const op of ops) {
+                const spec = (op.specialty || op.work_center || order.work_center || 'OTRO').toUpperCase();
+                const qty = parseInt(op.quantity) || 1;
+                const hh = (parseFloat(op.hours) || 0) * qty;
+                byDiscipline[spec] = (byDiscipline[spec] || 0) + hh;
+                totalHH += hh;
+                if (op.parallel) {
+                  const g = op.parallel_group || 'A';
+                  parGroups[g] = Math.max(parGroups[g] || 0, parseFloat(op.hours) || 0);
+                } else {
+                  serieHrs += parseFloat(op.hours) || 0;
+                }
+              }
+            } else {
+              const fallbackHH = parseFloat(plannedHours) || 0;
+              const fallbackSpec = (order.work_center || order.specialty || 'OTRO').toUpperCase();
+              if (fallbackHH > 0) {
+                byDiscipline[fallbackSpec] = fallbackHH;
+                totalHH = fallbackHH;
+                serieHrs = fallbackHH;
+              }
+            }
+            const parallelHrs = Object.values(parGroups).reduce((s, v) => s + v, 0);
+            const duration = serieHrs + parallelHrs;
+            if (totalHH === 0) return null;
+            const entries = Object.entries(byDiscipline).sort((a, b) => b[1] - a[1]);
+            return (
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2.5">
+                  <div className="text-[10px] font-bold uppercase text-emerald-700 dark:text-emerald-300 tracking-wider">Duración</div>
+                  <div className="text-base font-bold text-foreground tabular-nums mt-0.5">{duration.toFixed(1)}h</div>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2.5">
+                  <div className="text-[10px] font-bold uppercase text-blue-700 dark:text-blue-300 tracking-wider">Total HH</div>
+                  <div className="text-base font-bold text-foreground tabular-nums mt-0.5">{totalHH.toFixed(1)}h</div>
+                </div>
+                <div className="bg-violet-50 dark:bg-violet-900/20 rounded-lg p-2.5">
+                  <div className="text-[10px] font-bold uppercase text-violet-700 dark:text-violet-300 tracking-wider">Crew</div>
+                  <div className="text-base font-bold text-foreground tabular-nums mt-0.5">{techs.length || '—'}</div>
+                </div>
+                <div className="col-span-3 bg-muted/40 rounded-lg p-2.5">
+                  <div className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider mb-1.5">
+                    HH por disciplina {ops.length === 0 && <span className="text-amber-600 normal-case font-normal">· estimado (sin ops definidas)</span>}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {entries.map(([spec, hh]) => {
+                      const tone = specToneLocal(spec);
+                      const pct = totalHH > 0 ? Math.round((hh / totalHH) * 100) : 0;
+                      return (
+                        <span key={spec} className={`text-[11px] font-semibold px-2 py-1 rounded ${tone.bg}`}>
+                          {tone.label} <span className="tabular-nums opacity-90">{hh.toFixed(1)}h</span>
+                          <span className="text-[9px] opacity-70 ml-1">({pct}%)</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {ops.length > 0 && (
             <div>
               <div className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">Operaciones · {ops.length}</div>
@@ -391,6 +462,15 @@ function WODetailModal({ order, t, onClose, onClosureClick }) {
                   );
                 })}
                 {ops.length > 12 && <div className="px-3 py-1.5 text-[11px] text-muted-foreground">+{ops.length - 12} más</div>}
+              </div>
+            </div>
+          )}
+          {ops.length === 0 && plannedHours > 0 && (
+            <div className="border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-amber-900/10 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+              <span className="text-base">⚠️</span>
+              <div className="flex-1">
+                <div className="font-semibold">Sin operaciones definidas</div>
+                <div className="opacity-80 mt-0.5">El desglose HH/disciplina arriba es estimado a partir de `estimated_hours` y `work_center`. Para ver detalle real, abrí la OT en Work Management y agregá operaciones.</div>
               </div>
             </div>
           )}

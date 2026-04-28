@@ -485,6 +485,27 @@ class WOCancelRequest(BaseModel):
     absorbed_by_wo_id: str | None = None
 
 
+@router.get("/{wo_id}/absorbed")
+def list_absorbed_wos(wo_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """SF-579 — Lista de OTs canceladas por absorción que apuntan a esta OT PM03."""
+    from api.database.models import ManagedWorkOrderModel
+    rows = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.absorbed_by_wo_id == wo_id,
+        ManagedWorkOrderModel.cancellation_type == "ABSORBED",
+    ).all()
+    return [{
+        "wo_id": w.wo_id,
+        "wo_number": w.wo_number,
+        "wo_type": w.wo_type,
+        "priority_code": w.priority_code,
+        "equipment_tag": w.equipment_tag,
+        "description": w.description,
+        "estimated_hours": w.estimated_hours,
+        "cancellation_reason": w.cancellation_reason,
+        "cancelled_at": w.updated_at.isoformat() if w.updated_at else None,
+    } for w in rows]
+
+
 @router.put("/{wo_id}/cancel")
 def cancel_work_order(
     wo_id: str,

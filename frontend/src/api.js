@@ -411,6 +411,8 @@ export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id
 export const notifyManagedWOPartial = (id, d) => post(`/managed-work-orders/${id}/notify-partial`, d);
 // SF-568 — Smart Assignment IA: ranking de técnicos por skill + HH disponibles
 export const rankTechniciansForOperation = (d) => post('/assignments/rank-for-operation', d);
+// SF-579 — listar OTs absorbidas por una OT PM03
+export const listAbsorbedWOs = (id) => get(`/managed-work-orders/${id}/absorbed`);
 export const verifyCloseManagedWO = (id, d) => post(`/managed-work-orders/${id}/verify-close`, d);
 export const getManagedWOStats = (p) => get('/managed-work-orders/stats', p);
 

@@ -48,6 +48,15 @@ export default function SupervisorBoard() {
   const [loading, setLoading] = useState(false);
   // SF-568 — Smart Assignment IA modal
   const [smartAssign, setSmartAssign] = useState(null); // { specialty, plannedHours, opSeq } | null
+  // SF-579 — OTs absorbidas por la OT PM03 actual
+  const [absorbed, setAbsorbed] = useState([]);
+
+  useEffect(() => {
+    if (!selectedWO || selectedWO.wo_type !== 'PM03') { setAbsorbed([]); return; }
+    api.listAbsorbedWOs(selectedWO.wo_id)
+      .then(r => setAbsorbed(Array.isArray(r) ? r : []))
+      .catch(() => setAbsorbed([]));
+  }, [selectedWO?.wo_id, selectedWO?.wo_type]);
 
   const fetchWOs = () => {
     setLoading(true);
@@ -337,6 +346,61 @@ export default function SupervisorBoard() {
               </table>
             </div>
           </div>
+
+          {/* SF-579 — OTs absorbidas (sólo si esta es PM03 y absorbió alguna) */}
+          {selectedWO.wo_type === 'PM03' && absorbed.length > 0 && (
+            <div className="mb-4 bg-rose-50 border border-rose-200 rounded-lg p-3">
+              <h3 className="text-sm font-semibold text-rose-800 mb-2 flex items-center gap-2">
+                <span className="text-base">↘</span> OTs absorbidas por esta PM03 ({absorbed.length})
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-rose-200 text-rose-700">
+                      <th className="px-2 py-1 text-left font-semibold">OT</th>
+                      <th className="px-2 py-1 text-left font-semibold">Tipo</th>
+                      <th className="px-2 py-1 text-left font-semibold">Descripción</th>
+                      <th className="px-2 py-1 text-right font-semibold">HH plan</th>
+                      <th className="px-2 py-1 text-left font-semibold">Cancelada</th>
+                      <th className="px-2 py-1 text-left font-semibold">Motivo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {absorbed.map(a => (
+                      <tr key={a.wo_id} className="border-b border-rose-100">
+                        <td className="px-2 py-1 font-mono">{a.wo_number}</td>
+                        <td className="px-2 py-1">{a.wo_type} · {a.priority_code}</td>
+                        <td className="px-2 py-1 truncate max-w-[200px]" title={a.description}>{a.description || '—'}</td>
+                        <td className="px-2 py-1 text-right">{(a.estimated_hours || 0).toFixed(1)}</td>
+                        <td className="px-2 py-1">{a.cancelled_at ? new Date(a.cancelled_at).toLocaleDateString() : '—'}</td>
+                        <td className="px-2 py-1 truncate max-w-[180px]" title={a.cancellation_reason}>{a.cancellation_reason || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[10px] text-rose-600 mt-1">
+                Estas OTs ya no aparecen en cumplimiento/adherencia (canceladas por absorción).
+              </p>
+            </div>
+          )}
+
+          {/* Si esta OT FUE absorbida, mostrar link a la PM03 absorbente */}
+          {selectedWO.absorbed_by_wo_id && (
+            <div className="mb-4 bg-amber-50 border border-amber-300 rounded-lg p-3">
+              <p className="text-xs text-amber-800">
+                <strong>OT cancelada por absorción.</strong> Absorbida por OT PM03 ID{' '}
+                <button
+                  onClick={() => {
+                    const target = wos.find(w => w.wo_id === selectedWO.absorbed_by_wo_id);
+                    if (target) setSelectedWO(target);
+                  }}
+                  className="font-mono underline hover:text-amber-900">
+                  {(wos.find(w => w.wo_id === selectedWO.absorbed_by_wo_id) || {}).wo_number || selectedWO.absorbed_by_wo_id}
+                </button>
+              </p>
+            </div>
+          )}
 
           {/* Materiales */}
           <div>

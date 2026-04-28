@@ -620,6 +620,8 @@ def _to_light_dict(wo: ManagedWorkOrderModel) -> dict:
         "operations": ops_slim,
         "materials_count": len(raw_mats),
         "reservation_code": getattr(wo, "reservation_code", None),
+        "cancellation_type": getattr(wo, "cancellation_type", None),
+        "absorbed_by_wo_id": getattr(wo, "absorbed_by_wo_id", None),
         "created_at": wo.created_at.isoformat() if wo.created_at else None,
     }
 

@@ -511,6 +511,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [showOTCreatedModal, setShowOTCreatedModal] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(null); // { woId, woNumber, status }
   const [cancelReason, setCancelReason] = useState('');
+  // CE2 Tanda C-EXT (Jorge 2026-04-28 12:32): motivo obligatorio al reprogramar
+  const [showRescheduleModal, setShowRescheduleModal] = useState(null);
+  const [rescheduleReason, setRescheduleReason] = useState('');
   const [savingOT, setSavingOT] = useState(false);
   const [expandedOps, setExpandedOps] = useState({});
   // Jorge SF-559 (2026-04-27): vista agrupada por especialidad con subtotales
@@ -915,7 +918,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       else if (ns === 'PLANIFICADO' || ns === 'APROBADO') upd = await api.planManagedWO(WO_ID);
       else if (ns === 'EN_PROGRAMACION') upd = await api.updateManagedWO(WO_ID, { status: 'EN_PROGRAMACION' });
       else if (ns === 'PROGRAMADO') upd = await api.scheduleManagedWO(WO_ID, {});
-      else if (ns === 'REPROGRAMADO') upd = await api.rescheduleManagedWO(WO_ID);
+      else if (ns === 'REPROGRAMADO') {
+        // CE2 Tanda C-EXT (Jorge 2026-04-28): motivo obligatorio
+        setOtActionLoading(null);
+        setShowRescheduleModal({ woId: WO_ID, woNumber: wo.wo_number, status: wo.status });
+        setRescheduleReason('');
+        return;
+      }
       else if (ns === 'EN_EJECUCION' || ns === 'EN_PROGRESO') upd = await api.startManagedWO(WO_ID);
       else if (ns === 'CERRADO') {
         const hours = parseFloat(execData.actual_hours) || wo.actual_hours || 0;
@@ -3155,6 +3164,51 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
               }}
                 className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed">
                 Confirm Cancellation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CE2 Tanda C-EXT — Reschedule WO con motivo obligatorio (Jorge 2026-04-28 12:32) */}
+      {showRescheduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowRescheduleModal(null)} />
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">↻</span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-1">Reprogramar OT</h3>
+            <p className="text-sm text-gray-500 text-center mb-4">{showRescheduleModal.woNumber}</p>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-4">
+              ⚠️ La OT vuelve a la bandeja del planificador. Quedará registrado el motivo en el audit trail para análisis de adherencia.
+            </p>
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">Motivo de reprogramación *</label>
+              <textarea value={rescheduleReason} onChange={e => setRescheduleReason(e.target.value)}
+                placeholder="Ej.: Sacrificada por falla P1 en otra área · Falta repuesto · Equipo no disponible..."
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30 min-h-[80px]" />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowRescheduleModal(null)}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button disabled={!rescheduleReason.trim()} onClick={async () => {
+                const { woId } = showRescheduleModal;
+                try {
+                  await api.rescheduleManagedWO(woId);
+                  // Log motivo en notes/audit
+                  try { await api.updateManagedWO(woId, { reschedule_reason: rescheduleReason.trim() }); } catch {}
+                  toast.success(`OT ${showRescheduleModal.woNumber} reprogramada · vuelve al planificador`);
+                  setShowRescheduleModal(null);
+                  setRescheduleReason('');
+                  setSelectedOT(null);
+                  fetchData();
+                } catch (e) { toast.error('Error: ' + (e.message || '')); }
+              }}
+                className="flex-1 py-2.5 px-4 text-sm font-semibold bg-amber-600 text-white rounded-xl hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                Confirmar Reprogramación
               </button>
             </div>
           </div>

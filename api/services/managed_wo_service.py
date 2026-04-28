@@ -690,7 +690,7 @@ def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int
         "risk_analysis", "budget_amount", "budget_approved",
         "labor_cost", "material_cost", "external_cost", "actual_total_cost", "actual_hours", "shift",
         "assigned_workers", "status", "planning_group", "work_center",
-        "reservation_code", "cancellation_reason", "completion_pct", "execution_notes",
+        "reservation_code", "cancellation_reason", "reschedule_reason", "completion_pct", "execution_notes",
         "start_location", "started_via",
         "contractor_crew_id",  # Group C #8
     ]

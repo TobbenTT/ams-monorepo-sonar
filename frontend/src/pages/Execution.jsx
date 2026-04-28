@@ -425,24 +425,104 @@ export default function Execution() {
         </div>
       </div>
 
-      {/* KPI Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        {[
-          { label: 'In Execution', value: kpis.exec, icon: Play, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200' },
-          { label: 'Scheduled', value: kpis.prog, icon: Calendar, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200' },
-          { label: 'Fast Track', value: kpis.fastTrack, icon: Zap, color: 'text-red-600 bg-red-50 dark:bg-red-900/20 border-red-200' },
-          { label: 'Completed', value: kpis.completed, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200' },
-          { label: 'Closed', value: kpis.closed, icon: FileText, color: 'text-gray-600 bg-gray-50 dark:bg-gray-800 border-gray-200' },
-          { label: 'Planned HH', value: kpis.totalPlannedHH.toFixed(0) + 'h', icon: Clock, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-200' },
-          { label: 'Actual HH', value: kpis.totalActualHH.toFixed(0) + 'h', icon: Timer, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 border-purple-200' },
-        ].map(k => (
-          <div key={k.label} className={`rounded-xl border p-3 ${k.color}`}>
-            <k.icon size={16} className="mb-1" />
-            <div className="text-xl font-extrabold">{k.value}</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{k.label}</div>
+      {/* CE5 Tanda C-EXT (Jorge 2026-04-28 12:32): 4 KPIs del supervisor según
+          la reunión. Antes 7 cards genéricos (counts puros). Ahora los 4 que
+          le miden la gestión: cumplimiento, adherencia, avisos atrasados,
+          OTs atrasadas. Los counts secundarios pasan a una segunda fila chica. */}
+      {(() => {
+        // Cumplimiento del programa = HH ejecutadas / HH planificadas (semana)
+        const allWOs = [...activeWOs, ...completedWOs, ...closedWOs];
+        const plannedHH = allWOs.reduce((s, w) => s + (parseFloat(w.estimated_hours) || 0), 0);
+        const actualHH = allWOs.reduce((s, w) => s + (parseFloat(w.actual_hours) || 0), 0);
+        const cumplimientoPct = plannedHH > 0 ? Math.round((actualHH / plannedHH) * 100) : 0;
+        // Adherencia = OTs cerradas en su día/turno planificado / OTs cerradas
+        const cerradas = closedWOs;
+        const adherentes = cerradas.filter(w => {
+          if (!w.planned_start || !w.actual_start) return false;
+          const ps = String(w.planned_start).slice(0, 10);
+          const as = String(w.actual_start).slice(0, 10);
+          return ps === as;
+        }).length;
+        const adherenciaPct = cerradas.length > 0 ? Math.round((adherentes / cerradas.length) * 100) : 0;
+        // Avisos atrasados = WRs pendientes >24h sin validar
+        const now = Date.now();
+        const avisosAtrasados = pendingWRs.filter(wr => {
+          if (!wr.created_at) return false;
+          const age = (now - new Date(wr.created_at).getTime()) / (1000 * 60 * 60);
+          return age > 24;
+        }).length;
+        // OTs atrasadas = en estado COMPLETADO/EN_EJECUCION sin notificar/cerrar +24h tras planned_end
+        const otsAtrasadas = activeWOs.filter(w => {
+          if (!w.planned_end) return false;
+          const end = new Date(w.planned_end).getTime();
+          if (isNaN(end)) return false;
+          const overdue = (now - end) / (1000 * 60 * 60);
+          return overdue > 24 && (w.status === 'EN_EJECUCION' || w.status === 'COMPLETADO');
+        }).length;
+        const tone = (pct, target = 80) =>
+          pct >= target ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200'
+          : pct >= target - 15 ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200'
+          : 'text-red-600 bg-red-50 dark:bg-red-900/20 border-red-200';
+        const countTone = (n) =>
+          n === 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200'
+          : n < 3 ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200'
+          : 'text-red-600 bg-red-50 dark:bg-red-900/20 border-red-200';
+        return (
+          <div className="space-y-2">
+            {/* Fila 1: 4 KPIs principales del supervisor */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className={`rounded-xl border p-4 ${tone(cumplimientoPct, 85)}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle size={18} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Cumplimiento programa</span>
+                </div>
+                <div className="text-3xl font-extrabold">{cumplimientoPct}%</div>
+                <div className="text-[10px] opacity-70 mt-1">{Math.round(actualHH)}h ejec / {Math.round(plannedHH)}h plan · meta 85%</div>
+              </div>
+              <div className={`rounded-xl border p-4 ${tone(adherenciaPct, 80)}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar size={18} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Adherencia programa</span>
+                </div>
+                <div className="text-3xl font-extrabold">{adherenciaPct}%</div>
+                <div className="text-[10px] opacity-70 mt-1">{adherentes} en día / {cerradas.length} cerradas · meta 80%</div>
+              </div>
+              <div className={`rounded-xl border p-4 ${countTone(avisosAtrasados)}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Inbox size={18} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Avisos atrasados</span>
+                </div>
+                <div className="text-3xl font-extrabold">{avisosAtrasados}</div>
+                <div className="text-[10px] opacity-70 mt-1">pendientes &gt;24h sin validar</div>
+              </div>
+              <div className={`rounded-xl border p-4 ${countTone(otsAtrasadas)}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle size={18} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">OTs atrasadas</span>
+                </div>
+                <div className="text-3xl font-extrabold">{otsAtrasadas}</div>
+                <div className="text-[10px] opacity-70 mt-1">vencidas &gt;24h sin notificar</div>
+              </div>
+            </div>
+            {/* Fila 2: counts secundarios (chicos) */}
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-[10px]">
+              {[
+                { label: 'In Execution', value: kpis.exec, color: 'text-amber-700 bg-amber-50/50' },
+                { label: 'Scheduled', value: kpis.prog, color: 'text-indigo-700 bg-indigo-50/50' },
+                { label: 'Fast Track', value: kpis.fastTrack, color: 'text-red-700 bg-red-50/50' },
+                { label: 'Completed', value: kpis.completed, color: 'text-emerald-700 bg-emerald-50/50' },
+                { label: 'Closed', value: kpis.closed, color: 'text-gray-700 bg-gray-50/50' },
+                { label: 'HH plan/real', value: `${kpis.totalPlannedHH.toFixed(0)}/${kpis.totalActualHH.toFixed(0)}h`, color: 'text-purple-700 bg-purple-50/50' },
+              ].map(k => (
+                <div key={k.label} className={`rounded-lg border border-border px-2 py-1 ${k.color}`}>
+                  <div className="font-bold tabular-nums">{k.value}</div>
+                  <div className="opacity-70 truncate">{k.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* View selector */}
       <div className="flex gap-1 border-b border-border">
@@ -851,13 +931,34 @@ export default function Execution() {
                             <Play size={14} /> Start Execution
                           </button>
                         )}
-                        {/* Progress buttons */}
-                        {isExec && [25, 50, 75, 100].map(p => (
-                          <button key={p} onClick={() => handleProgress(wo, p)}
-                            className={`px-3 py-2 text-xs font-bold rounded-lg border transition-all ${pct >= p ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-card text-foreground border-border hover:bg-emerald-50 hover:border-emerald-300 dark:hover:bg-emerald-900/20'}`}>
-                            {p}%
-                          </button>
-                        ))}
+                        {/* CE3 Tanda C-EXT (Jorge 2026-04-28 12:32):
+                            antes solo botones 25/50/75/100 fijos. Ahora input
+                            libre 0-100 + chevrones rápidos. El supervisor
+                            es quien actualiza el % (no el mantenedor). */}
+                        {isExec && (
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border bg-card">
+                            <span className="text-[10px] font-semibold text-muted-foreground uppercase">avance</span>
+                            <button onClick={() => handleProgress(wo, Math.max(0, pct - 5))}
+                              title="-5%" className="px-1.5 text-xs hover:bg-muted rounded">−</button>
+                            <input type="number" min="0" max="100" step="5" value={pct}
+                              onChange={e => {
+                                const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                                handleProgress(wo, v);
+                              }}
+                              className="w-12 text-xs font-bold text-center bg-transparent border border-border rounded px-1 py-0.5" />
+                            <span className="text-xs font-bold">%</span>
+                            <button onClick={() => handleProgress(wo, Math.min(100, pct + 5))}
+                              title="+5%" className="px-1.5 text-xs hover:bg-muted rounded">+</button>
+                            <span className="border-l border-border h-4 mx-0.5" />
+                            {[25, 50, 75, 100].map(p => (
+                              <button key={p} onClick={() => handleProgress(wo, p)}
+                                title={`Set ${p}%`}
+                                className={`px-2 text-[10px] font-bold rounded ${pct === p ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}>
+                                {p}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         {isExec && pct >= 50 && (
                           <button onClick={() => handleComplete(wo, wo.estimated_hours)}
                             className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">

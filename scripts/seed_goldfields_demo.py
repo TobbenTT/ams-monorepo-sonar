@@ -509,14 +509,23 @@ def _generate_wr_and_wo(db, idx, workers, now):
     ops_template = _pick_ops_template(equip_tag, problem)
     operations = [
         {
+            "op_number": op_idx + 1,
             "type": "INT",
+            "op_type": "INT",
             "description": op_desc,
             "specialty": spec,
             "quantity": qty,
             "hours": hrs,
+            "duration": hrs,
+            "planned_hours": hrs,
+            "estimated_hours": hrs,
+            "actual_hours": 0.0,
+            "completion_pct": 0.0,
+            "status": "PENDING",
+            "notifications": [],
             "parallel": False,
         }
-        for (op_desc, spec, hrs, qty) in ops_template
+        for op_idx, (op_desc, spec, hrs, qty) in enumerate(ops_template)
     ]
     total_hh = sum(o["hours"] * o["quantity"] for o in operations)
     materials = [
@@ -610,7 +619,7 @@ def _generate_wr_and_wo(db, idx, workers, now):
         updated_at=created_at + timedelta(days=random.randint(1, 7)),
     )
 
-    # Para CERRADO llenar actuals + firma
+    # Para CERRADO llenar actuals + firma + notificaciones parciales SP5 (SF-572)
     if status == "CERRADO":
         wo.actual_start = planned_start + timedelta(hours=random.randint(-2, 4))
         duration_actual = int(total_hh * random.uniform(0.85, 1.25))
@@ -627,12 +636,53 @@ def _generate_wr_and_wo(db, idx, workers, now):
             "Requirió tiempo adicional por imprevistos en desmontaje.",
             "OK — pruebas funcionales satisfactorias.",
         ])
-        # Update ops con actuals
+        # Supervisor validation pre-cierre (SF-573)
+        wo.supervisor_validated_by = "supervisor_ocp" if hasattr(wo, "supervisor_validated_by") else None
+        # Update ops con actuals + historial de notificaciones parciales (SF-572)
+        worker_names = [w["name"] for w in assigned_workers] or ["Juan Pérez Soto"]
         for op in wo.operations:
-            op["actual_hours"] = round(op["hours"] * random.uniform(0.9, 1.2), 2)
+            planned_h = float(op.get("planned_hours") or op.get("hours") or 0)
+            actual_h = round(planned_h * random.uniform(0.9, 1.2), 2)
+            op["actual_hours"] = actual_h
+            op["completion_pct"] = 100.0
+            op["status"] = "COMPLETED"
+            # Si el op es largo (>4h), simular 2-3 partials multi-turno
+            n_partials = 1 if planned_h <= 4 else random.randint(2, 3)
+            partial_h = round(actual_h / n_partials, 2)
+            op_notifs = []
+            for k in range(n_partials):
+                op_notifs.append({
+                    "type": "PARTIAL",
+                    "hours": partial_h if k < n_partials - 1 else round(actual_h - partial_h * (n_partials - 1), 2),
+                    "technician_id": random.choice(worker_names),
+                    "shift": random.choice(["day", "night"]),
+                    "note": None,
+                    "timestamp": (wo.actual_start + timedelta(hours=k * 4)).isoformat(),
+                    "user": "supervisor_ocp",
+                })
+            op["notifications"] = op_notifs
     elif status == "EN_EJECUCION":
         wo.actual_start = planned_start + timedelta(hours=random.randint(-2, 4))
         wo.completion_pct = random.choice([25, 40, 50, 65, 75])
+        # Algunas ops ya tienen partials; el resto pendientes
+        n_done = max(1, int(len(wo.operations) * (wo.completion_pct / 100)))
+        worker_names = [w["name"] for w in assigned_workers] or ["Juan Pérez Soto"]
+        for idx, op in enumerate(wo.operations):
+            if idx < n_done:
+                planned_h = float(op.get("planned_hours") or op.get("hours") or 0)
+                actual_h = round(planned_h * random.uniform(0.6, 1.0), 2)
+                op["actual_hours"] = actual_h
+                op["completion_pct"] = round(min(100, actual_h / planned_h * 100 if planned_h > 0 else 0), 1)
+                op["status"] = "COMPLETED" if op["completion_pct"] >= 100 else "IN_PROGRESS"
+                op["notifications"] = [{
+                    "type": "PARTIAL",
+                    "hours": actual_h,
+                    "technician_id": random.choice(worker_names),
+                    "shift": "day",
+                    "note": None,
+                    "timestamp": wo.actual_start.isoformat(),
+                    "user": "supervisor_ocp",
+                }]
 
     # execution_notes timeline
     notes = []
@@ -754,6 +804,47 @@ def seed_standalone_wrs(db, count_pending=20, count_approved=10, count_rejected=
     print(f"  ✓ {total} WRs standalone creados")
 
 
+def seed_absorbed_cancellations(db, n_links=8):
+    """SF-579 — Para demos de cancelación por absorción: toma N pares (PM01 PROGRAMADO,
+    PM03 cualquier estado) del mismo equipo y marca el PM01 como cancelado por
+    absorción apuntando al PM03. Esto hace visible el panel "OTs absorbidas" en
+    el detalle del PM03 + el banner ámbar en la PM01 cancelada."""
+    print(f"[absorbed] Creando {n_links} cancelaciones por absorción (SF-579)...")
+    pm03_active = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == PLANT,
+        ManagedWorkOrderModel.wo_type == "PM03",
+        ManagedWorkOrderModel.status.in_(("PROGRAMADO", "EN_EJECUCION", "CERRADO")),
+    ).all()
+    pm01_pending = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.plant_id == PLANT,
+        ManagedWorkOrderModel.wo_type == "PM01",
+        ManagedWorkOrderModel.status.in_(("PROGRAMADO", "PLANIFICADO", "EN_PROGRAMACION")),
+    ).all()
+    if not pm03_active or not pm01_pending:
+        print("  ! Sin candidatos suficientes")
+        return 0
+    created = 0
+    used_pm01 = set()
+    for absorber in pm03_active[:n_links]:
+        # Buscar PM01 mismo equipo o área
+        candidates = [w for w in pm01_pending
+                      if w.wo_id not in used_pm01 and (w.equipment_tag == absorber.equipment_tag or w.work_center == absorber.work_center)]
+        if not candidates:
+            candidates = [w for w in pm01_pending if w.wo_id not in used_pm01]
+        if not candidates:
+            continue
+        victim = random.choice(candidates)
+        victim.status = "CANCELADO"
+        victim.cancellation_type = "ABSORBED"
+        victim.absorbed_by_wo_id = absorber.wo_id
+        victim.cancellation_reason = f"Falla atendida en intervención no programada {absorber.wo_number} ({absorber.equipment_tag})"
+        used_pm01.add(victim.wo_id)
+        created += 1
+    db.commit()
+    print(f"  ✓ {created} OTs PM01 canceladas por absorción → PM03")
+    return created
+
+
 def seed_wos_and_wrs(db, count=100):
     print(f"[data] Creando {count} pares WR+OT realistas...")
     workers = db.query(WorkforceModel).filter(WorkforceModel.plant_id == PLANT).all()
@@ -790,6 +881,8 @@ def main():
         seed_materials(db)
         print()
         seed_wos_and_wrs(db, count=100)
+        print()
+        seed_absorbed_cancellations(db, n_links=8)
         print()
         seed_standalone_wrs(db)
         print("\n✅ Seed completado.")

@@ -241,6 +241,10 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     failureSymptom: '',
     failureObjectPart: '',
     failureCause: '',
+    // D4 Tanda D (David 2026-04-28, Jorge feedback "me falta esto del impacto"):
+    // impacto operacional separado de la prioridad. Drives FMECA criticality
+    // y matriz de priorización en Planning.
+    productionImpact: 'MEDIUM',
     resources: [],
     materials: [],
     specialEquipment: '',
@@ -1061,7 +1065,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const removeResource = (i) => setF('resources', form.resources.filter((_, idx) => idx !== i));
 
   // ── Materials CRUD ──
-  const addMaterial = () => setF('materials', [...form.materials, { sapId: '', quantity: '1', unit: 'UD', description: '' }]);
+  // D2 Tanda D (David 2026-04-28, Jorge transcript 956): permitir crear sub-reservas
+  // por material (reservation_code per item). Si null/vacio, comparte la reserva
+  // global del WO. Util cuando el planificador necesita separar repuestos en
+  // bodegas distintas o por tiempos de entrega.
+  const addMaterial = () => setF('materials', [...form.materials, { sapId: '', quantity: '1', unit: 'UD', description: '', reservation_code: '' }]);
   const updateMaterial = (i, fieldOrObj, value) => {
     const updated = [...form.materials];
     if (typeof fieldOrObj === 'object') {
@@ -1091,6 +1099,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
         plant_id: plant || 'OCP-JFC1',
         problem_description: form.whatHappens.trim(),
         priority: form.priority,
+        production_impact: form.productionImpact || 'MEDIUM',
         activity_class: form.activityClass || '',
         failure_category: form.failureCategory || '',
         failure_symptom: form.failureSymptom || '',
@@ -1456,6 +1465,31 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* D4 Tanda D — Impacto operacional separado de prioridad. Jorge:
+              "me falta esto del impacto". 4 niveles para FMECA + matriz prio. */}
+          <div className="border rounded-xl p-4">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+              Impacto operacional
+              <span className="ml-2 text-[10px] font-normal text-gray-400 normal-case">¿Cómo afecta la producción si no se atiende?</span>
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { value: 'CRITICAL', label: 'Crítico', desc: 'Para planta', color: '#dc2626', bg: '#fee2e2' },
+                { value: 'HIGH', label: 'Alto', desc: 'Reduce capacidad', color: '#ea580c', bg: '#ffedd5' },
+                { value: 'MEDIUM', label: 'Medio', desc: 'Afecta calidad', color: '#ca8a04', bg: '#fef3c7' },
+                { value: 'LOW', label: 'Bajo', desc: 'Sin impacto inmediato', color: '#2563eb', bg: '#dbeafe' },
+              ].map(imp => (
+                <button key={imp.value} type="button"
+                  onClick={() => setF('productionImpact', imp.value)}
+                  className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${form.productionImpact === imp.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
+                  style={{ borderColor: form.productionImpact === imp.value ? imp.color : '#e5e7eb', backgroundColor: form.productionImpact === imp.value ? imp.bg : 'transparent' }}>
+                  <div className="text-xs font-bold" style={{ color: imp.color }}>{imp.label}</div>
+                  <div className="text-[9px] text-gray-500 leading-tight">{imp.desc}</div>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -2043,7 +2077,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             ) : (
               <div className="space-y-2">
                 {form.materials.map((mat, i) => (
-                  <div key={i} className={"grid grid-cols-3 gap-2 p-2 rounded-lg " + (mat.isExternal ? "bg-purple-50/50 border border-purple-200" : "bg-gray-50")}>
+                  <div key={i} className={"space-y-1 p-2 rounded-lg " + (mat.isExternal ? "bg-purple-50/50 border border-purple-200" : "bg-gray-50")}>
+                  <div className="grid grid-cols-3 gap-2">
                     <div className="relative">
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
                       <input type="text" placeholder="Buscar material..." value={mat.sapId}
@@ -2085,6 +2120,17 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                         className={"flex-1 p-2 rounded-lg border text-xs " + (mat.sapId && mat.description ? "border-gray-100 bg-gray-50 text-gray-500 cursor-not-allowed" : "border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30")} />
                       <button onClick={() => removeMaterial(i)} className="px-1 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
                     </div>
+                  </div>
+                  {/* D2 Tanda D — reservation_code per material (sub-reserva).
+                      Si vacio, usa la reserva global del WO. */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div></div>
+                    <div></div>
+                    <input type="text" placeholder="Nº reserva (opcional)" value={mat.reservation_code || ''}
+                      onChange={e => updateMaterial(i, 'reservation_code', e.target.value)}
+                      title="Sub-reserva: si distinta a la reserva global del WO, este material va aparte"
+                      className="p-1.5 rounded border border-gray-200 text-[10px] font-mono bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500/30" />
+                  </div>
                   </div>
                 ))}
               </div>

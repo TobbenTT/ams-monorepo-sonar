@@ -305,6 +305,147 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
     });
   }, [wrs]);
 
+  // ── Fallas crónicas (Jorge 2026-04-28 17:56) ──
+  // "Si tienes 5 cambios de la misma pieza en una semana, eso puede ser un indicio
+  //  de falla crónica". Detector: agrupar WRs por equipo + parte_objeto/failure_mode
+  // y contar repeticiones en ventana 7 días.
+  const chronicFailures = useMemo(() => {
+    const WINDOW_DAYS = 7;
+    const groups = {};
+    wrs.forEach(wr => {
+      const tag = wr.equipment_tag;
+      const partObj = (wr.ai_classification?.part_object
+                    || wr.ai_classification?.failure_type
+                    || wr.failure_mode_detected
+                    || wr.problem_description?.failure_category
+                    || '').trim();
+      if (!tag || !partObj) return;
+      const key = `${tag}::${partObj}`;
+      if (!groups[key]) groups[key] = { tag, partObj, dates: [] };
+      groups[key].dates.push(new Date(wr.created_at || 0));
+    });
+    const chronic = [];
+    Object.values(groups).forEach(g => {
+      if (g.dates.length < 3) return;
+      g.dates.sort((a, b) => a - b);
+      // Sliding window: ¿hay ≥3 repeticiones en 7 días?
+      for (let i = 0; i < g.dates.length - 2; i++) {
+        const inWindow = g.dates.slice(i).filter(d => (d - g.dates[i]) / 86400000 <= WINDOW_DAYS);
+        if (inWindow.length >= 3) {
+          chronic.push({
+            equipment: g.tag,
+            criticality: criticalityMap[g.tag] || 'D',
+            failure_mode: g.partObj,
+            count_in_window: inWindow.length,
+            total_count: g.dates.length,
+            window_start: inWindow[0],
+            window_end: inWindow[inWindow.length - 1],
+          });
+          break;
+        }
+      }
+    });
+    return chronic.sort((a, b) => b.count_in_window - a.count_in_window).slice(0, 10);
+  }, [wrs, criticalityMap]);
+
+  // ── Prioridades mal asignadas (Jorge 2026-04-28 17:56) ──
+  // P1 sin atender en >24h, P2 sin atender en >7d, P3 cerrado en <2h (sub-priorizado),
+  // P4 sin esperar parada de planta. La IA detecta inconsistencias.
+  const priorityMismatches = useMemo(() => {
+    const mismatches = [];
+    const now = new Date();
+    wrs.forEach(wr => {
+      const created = new Date(wr.created_at || 0);
+      const ageHours = (now - created) / 3600000;
+      const status = wr.status;
+      const pri = wr.priority_code;
+      // P1 abierto >24h
+      if (pri === 'P1' && ageHours > 24 && !['CERRADO', 'CANCELADO', 'OT_CREADA'].includes(status)) {
+        mismatches.push({
+          aviso: wr.aviso_number ? `AV-${String(wr.aviso_number).padStart(5, '0')}` : (wr.request_id || '').slice(0, 8),
+          equipment: wr.equipment_tag,
+          actual_priority: pri,
+          issue: `P1 abierto ${Math.round(ageHours)}h (debería atenderse en <24h)`,
+          severity: 'high',
+          suggestion: 'Escalar al supervisor o reclasificar si ya no es P1',
+        });
+      }
+      // P2 abierto >7d
+      if (pri === 'P2' && ageHours > 168 && !['CERRADO', 'CANCELADO', 'OT_CREADA'].includes(status)) {
+        mismatches.push({
+          aviso: wr.aviso_number ? `AV-${String(wr.aviso_number).padStart(5, '0')}` : (wr.request_id || '').slice(0, 8),
+          equipment: wr.equipment_tag,
+          actual_priority: pri,
+          issue: `P2 abierto ${Math.round(ageHours/24)}d (debería atenderse en <7d)`,
+          severity: 'medium',
+          suggestion: 'Reclasificar a P3 o escalar urgencia',
+        });
+      }
+    });
+    // OTs con prioridad inconsistente con production_impact AI
+    wos.forEach(wo => {
+      const aiImpact = wo.production_impact || '';
+      if (aiImpact === 'HIGH' && wo.priority_code === 'P3') {
+        mismatches.push({
+          aviso: wo.wo_number,
+          equipment: wo.equipment_tag,
+          actual_priority: wo.priority_code,
+          issue: `Production impact HIGH pero prioridad P3`,
+          severity: 'medium',
+          suggestion: 'Considerar elevar a P2',
+        });
+      }
+      if (aiImpact === 'LOW' && wo.priority_code === 'P1') {
+        mismatches.push({
+          aviso: wo.wo_number,
+          equipment: wo.equipment_tag,
+          actual_priority: wo.priority_code,
+          issue: `Production impact LOW pero P1 (recurso elevado)`,
+          severity: 'low',
+          suggestion: 'Reclasificar a P3 si no hay riesgo de producción',
+        });
+      }
+    });
+    return mismatches.slice(0, 15);
+  }, [wrs, wos]);
+
+  // ── KPIs de Disciplina + Tiempos entre estados (Jorge 2026-04-28 17:56) ──
+  // Tiempo promedio: WR creado → revisado supervisor → OT → cerrado.
+  const disciplineKpis = useMemo(() => {
+    const stats = {
+      avg_wr_to_approve_h: 0,
+      avg_approve_to_ot_h: 0,
+      avg_planned_to_scheduled_h: 0,
+      avg_scheduled_to_executed_h: 0,
+      avg_ot_lifecycle_d: 0,
+      wrs_with_data: 0,
+      wos_with_data: 0,
+    };
+    const wrApproveDeltas = [];
+    wrs.forEach(wr => {
+      if (wr.created_at && wr.approved_at) {
+        const dt = (new Date(wr.approved_at) - new Date(wr.created_at)) / 3600000;
+        if (dt >= 0 && dt < 720) wrApproveDeltas.push(dt);
+      }
+    });
+    if (wrApproveDeltas.length > 0) {
+      stats.avg_wr_to_approve_h = Math.round(wrApproveDeltas.reduce((a, b) => a + b, 0) / wrApproveDeltas.length * 10) / 10;
+      stats.wrs_with_data = wrApproveDeltas.length;
+    }
+    const woDeltas = [];
+    wos.forEach(wo => {
+      if (wo.created_at && wo.actual_end) {
+        const dt = (new Date(wo.actual_end) - new Date(wo.created_at)) / 86400000;
+        if (dt >= 0 && dt < 365) woDeltas.push(dt);
+      }
+    });
+    if (woDeltas.length > 0) {
+      stats.avg_ot_lifecycle_d = Math.round(woDeltas.reduce((a, b) => a + b, 0) / woDeltas.length * 10) / 10;
+      stats.wos_with_data = woDeltas.length;
+    }
+    return stats;
+  }, [wrs, wos]);
+
   // ── KPIs de Resultados por equipo (Jorge 2026-04-28 17:56) ──
   // MTBF = horas operativas / # fallas. MTTR = horas reparación / # reparaciones.
   // Disponibilidad = MTBF / (MTBF + MTTR) * 100.
@@ -358,6 +499,269 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       })
       .slice(0, 15);
   }, [wos, criticalityMap]);
+
+  // ── Análisis de Dotación + brechas de especialidad (Jorge 2026-04-28 17:56) ──
+  const dotacionAnalysis = useMemo(() => {
+    // HH usadas por especialidad de la operación (de wos.operations)
+    const usedBySpec = {};
+    let totalUsed = 0;
+    wos.forEach(w => {
+      (w.operations || []).forEach(op => {
+        const spec = (op.specialty || w.work_center || 'OTRO').toUpperCase();
+        const hh = (parseFloat(op.actual_hours) || parseFloat(op.hours) || 0) * (parseInt(op.quantity) || 1);
+        usedBySpec[spec] = (usedBySpec[spec] || 0) + hh;
+        totalUsed += hh;
+      });
+    });
+    // HH usadas en críticos vs no-críticos
+    let usedCritical = 0;
+    let usedNonCritical = 0;
+    wos.forEach(w => {
+      const tag = w.equipment_tag;
+      const crit = criticalityMap[tag] || 'D';
+      const total = (w.operations || []).reduce((s, op) => {
+        return s + (parseFloat(op.actual_hours) || parseFloat(op.hours) || 0) * (parseInt(op.quantity) || 1);
+      }, 0);
+      if (['A', 'B'].includes(crit)) usedCritical += total;
+      else usedNonCritical += total;
+    });
+    return {
+      bySpec: Object.entries(usedBySpec).sort((a, b) => b[1] - a[1]).slice(0, 8),
+      totalUsed: Math.round(totalUsed),
+      usedCritical: Math.round(usedCritical),
+      usedNonCritical: Math.round(usedNonCritical),
+      pctCritical: totalUsed > 0 ? Math.round(usedCritical / totalUsed * 100) : 0,
+    };
+  }, [wos, criticalityMap]);
+
+  // ── Jack-Knife Diagram (Jorge 2026-04-28 17:56) ──
+  // 4 cuadrantes: agudo (alta MTTR baja frecuencia) / crónico (alta frecuencia baja MTTR)
+  // / agudo+crónico / OK. Calcular por equipo del último mes.
+  const jackKnifeData = useMemo(() => {
+    const byEq = {};
+    wos.filter(w => w.status === 'CERRADO' && w.equipment_tag).forEach(w => {
+      const tag = w.equipment_tag;
+      if (!byEq[tag]) byEq[tag] = { count: 0, total_hours: 0 };
+      byEq[tag].count++;
+      byEq[tag].total_hours += parseFloat(w.actual_hours) || 0;
+    });
+    const points = Object.entries(byEq).map(([tag, m]) => ({
+      equipment: tag,
+      criticality: criticalityMap[tag] || 'D',
+      frequency: m.count,
+      avg_repair_hours: m.count > 0 ? Math.round(m.total_hours / m.count * 10) / 10 : 0,
+    }));
+    // Medianas para los thresholds
+    const freqs = points.map(p => p.frequency).sort((a, b) => a - b);
+    const hours = points.map(p => p.avg_repair_hours).sort((a, b) => a - b);
+    const medFreq = freqs.length > 0 ? freqs[Math.floor(freqs.length / 2)] : 1;
+    const medHours = hours.length > 0 ? hours[Math.floor(hours.length / 2)] : 4;
+    return points.map(p => {
+      const isHighFreq = p.frequency > medFreq;
+      const isHighHours = p.avg_repair_hours > medHours;
+      let quadrant = 'OK';
+      if (isHighFreq && isHighHours) quadrant = 'AGUDO_CRONICO';
+      else if (isHighFreq) quadrant = 'CRONICO';
+      else if (isHighHours) quadrant = 'AGUDO';
+      return { ...p, quadrant };
+    }).sort((a, b) => {
+      // priority: AGUDO_CRONICO > AGUDO > CRONICO > OK
+      const order = { AGUDO_CRONICO: 4, AGUDO: 3, CRONICO: 2, OK: 1 };
+      return (order[b.quadrant] - order[a.quadrant]) || (b.frequency - a.frequency);
+    }).slice(0, 12);
+  }, [wos, criticalityMap]);
+
+  // ── Comparativa OTs similares (Jorge 2026-04-28 17:56) ──
+  // Por tipo de trabajo (description normalizada): mejor / promedio / peor caso
+  // Solo equipos críticos A/B.
+  const otComparativa = useMemo(() => {
+    const groups = {};
+    wos.filter(w => w.status === 'CERRADO' && w.actual_hours).forEach(w => {
+      const crit = criticalityMap[w.equipment_tag] || 'D';
+      if (!['A', 'B'].includes(crit)) return; // sólo críticos
+      // Normalizar descripción: tomar primeras 3 palabras
+      const desc = (w.description || '').toLowerCase().split(/\s+/).slice(0, 3).join(' ');
+      const key = `${desc}::${(w.work_center || '').toUpperCase()}`;
+      if (!groups[key]) groups[key] = { desc, work_center: w.work_center, items: [] };
+      groups[key].items.push({
+        wo_number: w.wo_number,
+        equipment: w.equipment_tag,
+        planned_hours: parseFloat(w.estimated_hours) || 0,
+        actual_hours: parseFloat(w.actual_hours) || 0,
+      });
+    });
+    return Object.values(groups)
+      .filter(g => g.items.length >= 3) // al menos 3 ejemplos
+      .map(g => {
+        const sorted = [...g.items].sort((a, b) => a.actual_hours - b.actual_hours);
+        const avg = sorted.reduce((s, x) => s + x.actual_hours, 0) / sorted.length;
+        return {
+          desc: g.desc,
+          work_center: g.work_center,
+          count: sorted.length,
+          best: sorted[0],
+          worst: sorted[sorted.length - 1],
+          avg: Math.round(avg * 10) / 10,
+          spread: Math.round((sorted[sorted.length - 1].actual_hours - sorted[0].actual_hours) * 10) / 10,
+        };
+      })
+      .sort((a, b) => b.spread - a.spread)
+      .slice(0, 8);
+  }, [wos, criticalityMap]);
+
+  // ── Close-the-loop tracking (Jorge 2026-04-28 17:56) ──
+  // Acciones de mejora abiertas / vencidas / cerradas. Warning si abierta+vencida =
+  // problema sigue ocurriendo, no se cerró el ciclo.
+  const closeTheLoop = useMemo(() => {
+    const now = new Date();
+    const open = improvementActions.filter(a => !['COMPLETED', 'CLOSED', 'DONE'].includes((a.status || '').toUpperCase()));
+    const overdue = open.filter(a => {
+      if (!a.target_date) return false;
+      return new Date(a.target_date) < now;
+    });
+    const closed = improvementActions.filter(a => ['COMPLETED', 'CLOSED', 'DONE'].includes((a.status || '').toUpperCase()));
+    return {
+      total: improvementActions.length,
+      open: open.length,
+      overdue: overdue.length,
+      closed: closed.length,
+      open_pct: improvementActions.length > 0 ? Math.round(open.length / improvementActions.length * 100) : 0,
+      overdue_actions: overdue.slice(0, 8).map(a => ({
+        title: a.title || '—',
+        category: a.category || '—',
+        target_date: a.target_date,
+        days_overdue: a.target_date ? Math.round((now - new Date(a.target_date)) / 86400000) : 0,
+        equipment: a.equipment_tag || '—',
+        priority: a.priority || 'MEDIUM',
+      })),
+    };
+  }, [improvementActions]);
+
+  // ── Cruce con estrategia (Jorge 2026-04-28 17:56) ──
+  // PM01/PM02 ejecutadas vs su frecuencia planeada. Si una pauta cada 3 meses se ejecuta
+  // cada 2 meses sostenidamente → estrategia desactualizada.
+  const strategyMismatches = useMemo(() => {
+    // Agrupar PM01 (preventivos) cerrados por equipo+description, y ver cadencia real
+    const groups = {};
+    wos.filter(w => w.wo_type === 'PM01' && w.status === 'CERRADO' && w.equipment_tag && w.actual_end).forEach(w => {
+      const desc = (w.description || '').toLowerCase().split(/\s+/).slice(0, 3).join(' ');
+      const key = `${w.equipment_tag}::${desc}`;
+      if (!groups[key]) groups[key] = { tag: w.equipment_tag, desc, dates: [] };
+      groups[key].dates.push(new Date(w.actual_end));
+    });
+    const mismatches = [];
+    Object.values(groups).forEach(g => {
+      if (g.dates.length < 3) return; // necesitamos ≥3 ejecuciones para inferir cadencia
+      g.dates.sort((a, b) => a - b);
+      const intervals = [];
+      for (let i = 1; i < g.dates.length; i++) {
+        intervals.push((g.dates[i] - g.dates[i - 1]) / 86400000);
+      }
+      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      // Heurística: si intervalo promedio < 60d (típica trimestral o más larga) marcar
+      if (avgInterval > 0 && avgInterval < 60) {
+        mismatches.push({
+          equipment: g.tag,
+          description: g.desc,
+          executions: g.dates.length,
+          avg_interval_days: Math.round(avgInterval),
+          suggestion: avgInterval < 30
+            ? 'Frecuencia muy alta — revisar si la estrategia debería ser más espaciada o si hay falla crónica'
+            : 'Cadencia más alta de lo típico — verificar si la estrategia está bien calibrada',
+        });
+      }
+    });
+    return mismatches.sort((a, b) => a.avg_interval_days - b.avg_interval_days).slice(0, 8);
+  }, [wos]);
+
+  // ── KPIs de Costo + clases de gasto (Jorge 2026-04-28 17:56) ──
+  const costKpis = useMemo(() => {
+    let totalLabor = 0, totalMaterial = 0, totalExternal = 0, totalActual = 0, totalBudget = 0;
+    const byCenter = {};
+    wos.forEach(w => {
+      totalLabor += parseFloat(w.labor_cost) || 0;
+      totalMaterial += parseFloat(w.material_cost) || 0;
+      totalExternal += parseFloat(w.external_cost) || 0;
+      totalActual += parseFloat(w.actual_total_cost) || 0;
+      totalBudget += parseFloat(w.budget_amount) || 0;
+      const center = w.work_center || 'OTRO';
+      if (!byCenter[center]) byCenter[center] = { plan: 0, real: 0 };
+      byCenter[center].plan += parseFloat(w.budget_amount) || 0;
+      byCenter[center].real += parseFloat(w.actual_total_cost) || 0;
+    });
+    return {
+      totalLabor: Math.round(totalLabor),
+      totalMaterial: Math.round(totalMaterial),
+      totalExternal: Math.round(totalExternal),
+      totalActual: Math.round(totalActual),
+      totalBudget: Math.round(totalBudget),
+      variance_pct: totalBudget > 0 ? Math.round((totalActual - totalBudget) / totalBudget * 100) : 0,
+      byCenter: Object.entries(byCenter).sort((a, b) => b[1].real - a[1].real).slice(0, 8),
+    };
+  }, [wos]);
+
+  // ── Catálogo de falla: tendencias parte/síntoma/causa (Jorge 17:56) ──
+  const failureCatalogTrends = useMemo(() => {
+    const partObj = {};
+    const symptoms = {};
+    const causes = {};
+    wrs.forEach(wr => {
+      const ai = wr.ai_classification || {};
+      const pd = wr.problem_description || {};
+      const part = (ai.part_object || ai.failure_class || '').trim();
+      const sympt = (ai.symptom || pd.failure_mode_detected || '').trim();
+      const cause = (ai.probable_cause || pd.cause || '').trim();
+      if (part) partObj[part] = (partObj[part] || 0) + 1;
+      if (sympt) symptoms[sympt] = (symptoms[sympt] || 0) + 1;
+      if (cause) causes[cause] = (causes[cause] || 0) + 1;
+    });
+    const top = (obj, n = 5) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n);
+    return { parts: top(partObj), symptoms: top(symptoms), causes: top(causes) };
+  }, [wrs]);
+
+  // ── Causas de no-cumplimiento (Jorge 17:56) ──
+  // Lee execution_notes y notes en operations buscando patrones "no se hizo porque..."
+  const nonComplianceCauses = useMemo(() => {
+    const patterns = [
+      { regex: /repuesto.*no\s+(corresp|disponible|llegó)/i, label: 'Repuesto incorrecto/sin stock' },
+      { regex: /operaci(ón|on).*no\s+(entreg|liber)/i, label: 'Operaciones no entregó equipo' },
+      { regex: /servicio\s+externo.*no\s+lleg/i, label: 'Servicio externo no llegó' },
+      { regex: /herramienta.*(descalibr|no\s+estaba|falt)/i, label: 'Herramienta especial faltante/descalibrada' },
+      { regex: /grúa|grua|equipo\s+de\s+apoyo/i, label: 'Equipo de apoyo no disponible' },
+      { regex: /tiempo\s+insuficiente|no\s+alcanc/i, label: 'Ventana de tiempo insuficiente' },
+      { regex: /seguridad|loto|epp/i, label: 'Bloqueo por seguridad / LOTO' },
+    ];
+    const counts = {};
+    wos.forEach(w => {
+      const allText = [
+        ...(w.execution_notes || []).map(n => n.note || n.text || ''),
+        ...(w.operations || []).map(op => op.notif_notes || op.notes || ''),
+        w.closure_notes || '',
+        w.cancellation_reason || '',
+      ].join(' ');
+      patterns.forEach(p => {
+        if (p.regex.test(allText)) counts[p.label] = (counts[p.label] || 0) + 1;
+      });
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [wos]);
+
+  // ── Consumo de repuestos + predicción quiebre stock (Jorge 17:56) ──
+  // Ranking de materiales más consumidos en período. Sin conexión a bodega real,
+  // usamos materials de las OTs como proxy del consumo.
+  const sparePartsConsumption = useMemo(() => {
+    const counts = {};
+    wos.forEach(w => {
+      (w.materials || []).forEach(m => {
+        const code = m.code || m.sap_id || m.sapId || '';
+        if (!code) return;
+        if (!counts[code]) counts[code] = { code, description: m.description || '', total_qty: 0, ot_count: 0, unit: m.unit || 'UN' };
+        counts[code].total_qty += parseInt(m.quantity) || 0;
+        counts[code].ot_count++;
+      });
+    });
+    return Object.values(counts).sort((a, b) => b.total_qty - a.total_qty).slice(0, 10);
+  }, [wos]);
 
   // ── Análisis Plan vs Real usando notificación (CE1) ──
   const planVsReal = useMemo(() => {
@@ -876,6 +1280,566 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         <p className="text-[10px] text-gray-500 italic mt-2">
           MTBF = horas operativas / fallas. MTTR = HH reparación / # reparaciones cerradas. Disponibilidad = MTBF / (MTBF + MTTR) × 100.
           Críticos A/B aparecen primero. Disponibilidad &lt;90% en rojo (acción inmediata), 90-95% ámbar.
+        </p>
+      </div>
+
+      {/* ── Fallas crónicas (ventana 7 días, ≥3 repeticiones mismo equipo+modo) ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            🔥 Fallas Crónicas detectadas
+          </h3>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-rose-100 text-rose-700">
+            {chronicFailures.length} casos · ventana 7d
+          </span>
+        </div>
+        {chronicFailures.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin fallas crónicas detectadas — ningún equipo+modo se repite ≥3 veces en 7 días.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-rose-50">
+                <tr>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Crit.</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Modo de falla</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">En 7d</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Total</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Período</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chronicFailures.map((c, i) => {
+                  const critTone = c.criticality === 'A' ? 'bg-red-600 text-white' :
+                                    c.criticality === 'B' ? 'bg-orange-500 text-white' :
+                                    c.criticality === 'C' ? 'bg-amber-300 text-amber-900' :
+                                    'bg-gray-200 text-gray-700';
+                  return (
+                    <tr key={i} className="border-t border-gray-100 hover:bg-rose-50/30">
+                      <td className="px-2 py-2 text-center">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${critTone}`}>{c.criticality}</span>
+                      </td>
+                      <td className="px-2 py-2 font-mono text-blue-700">{c.equipment}</td>
+                      <td className="px-2 py-2 text-gray-800">{c.failure_mode}</td>
+                      <td className="px-2 py-2 text-center font-bold text-rose-700">{c.count_in_window}</td>
+                      <td className="px-2 py-2 text-center text-gray-600">{c.total_count}</td>
+                      <td className="px-2 py-2 text-[10px] text-gray-500">
+                        {new Date(c.window_start).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })} →
+                        {' '}{new Date(c.window_end).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: "5 cambios de la misma pieza en 1 semana = falla crónica". Acción: revisar estrategia (¿está cubierto? ¿la frecuencia es la correcta?), abrir RCA, considerar cambio de material o procedimiento.
+        </p>
+      </div>
+
+      {/* ── Prioridades mal asignadas ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            ⚖️ Prioridades inconsistentes
+          </h3>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+            {priorityMismatches.length} avisos/OTs
+          </span>
+        </div>
+        {priorityMismatches.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Todas las prioridades son consistentes con el SLA y con el production_impact.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-amber-50">
+                <tr>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">ID</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Pri.</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Inconsistencia</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Sugerencia IA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {priorityMismatches.map((pm, i) => (
+                  <tr key={i} className={`border-t border-gray-100 hover:bg-amber-50/30 ${pm.severity === 'high' ? 'bg-red-50/40' : ''}`}>
+                    <td className="px-2 py-2 font-mono text-xs">{pm.aviso}</td>
+                    <td className="px-2 py-2 font-mono text-blue-700">{pm.equipment}</td>
+                    <td className="px-2 py-2 text-center font-bold">{pm.actual_priority}</td>
+                    <td className="px-2 py-2 text-gray-700 text-xs">{pm.issue}</td>
+                    <td className="px-2 py-2 text-gray-600 text-xs italic">{pm.suggestion}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: "P1 = inmediata o &lt;24h. P2 = &lt;7d. P3 = cualquier día. P4 = sólo en parada de planta". La IA detecta avisos vencidos sin atender + production_impact desalineado con prioridad.
+        </p>
+      </div>
+
+      {/* ── KPIs Disciplina + Tiempos entre estados ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-3">
+          ⏱️ KPIs de Disciplina · Tiempos entre estados
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <div className="text-[10px] uppercase font-bold text-blue-700 mb-1">Aviso → Aprobado</div>
+            <div className="text-2xl font-bold tabular-nums">{disciplineKpis.avg_wr_to_approve_h}h</div>
+            <div className="text-[10px] text-gray-500 mt-1">{disciplineKpis.wrs_with_data} avisos analizados</div>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+            <div className="text-[10px] uppercase font-bold text-purple-700 mb-1">OT lifecycle</div>
+            <div className="text-2xl font-bold tabular-nums">{disciplineKpis.avg_ot_lifecycle_d}d</div>
+            <div className="text-[10px] text-gray-500 mt-1">{disciplineKpis.wos_with_data} OTs cerradas</div>
+          </div>
+          <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+            <div className="text-[10px] uppercase font-bold text-emerald-700 mb-1">SLA Aviso (objetivo)</div>
+            <div className="text-2xl font-bold tabular-nums">≤4h</div>
+            <div className="text-[10px] text-gray-500 mt-1">supervisor revisa y aprueba</div>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+            <div className="text-[10px] uppercase font-bold text-amber-700 mb-1">SLA OT (objetivo)</div>
+            <div className="text-2xl font-bold tabular-nums">≤14d</div>
+            <div className="text-[10px] text-gray-500 mt-1">creación → cierre</div>
+          </div>
+        </div>
+        <p className="text-[10px] text-gray-500 italic mt-3">
+          Jorge 2026-04-28 17:56: "el aviso no puede estar eternamente esperando, le golpea al supervisor; la OT no puede estar mucho tiempo en bandeja del planificador si los repuestos están". Estos KPIs miden la <strong>disciplina del flujo</strong>.
+        </p>
+      </div>
+
+      {/* ── Análisis de Dotación + brechas ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-3">
+          👷 Dotación y brechas de especialidad
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+            <div className="text-[10px] uppercase font-bold text-emerald-700 mb-1">HH en críticos A/B</div>
+            <div className="text-2xl font-bold tabular-nums">{dotacionAnalysis.usedCritical}h</div>
+            <div className="text-[10px] text-gray-500 mt-1">{dotacionAnalysis.pctCritical}% del total</div>
+          </div>
+          <div className="bg-gray-100 rounded-lg p-3 border border-gray-200">
+            <div className="text-[10px] uppercase font-bold text-gray-700 mb-1">HH en no-críticos C/D</div>
+            <div className="text-2xl font-bold tabular-nums">{dotacionAnalysis.usedNonCritical}h</div>
+            <div className="text-[10px] text-gray-500 mt-1">{100 - dotacionAnalysis.pctCritical}% del total</div>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <div className="text-[10px] uppercase font-bold text-blue-700 mb-1">Total HH ejecutadas</div>
+            <div className="text-2xl font-bold tabular-nums">{dotacionAnalysis.totalUsed}h</div>
+            <div className="text-[10px] text-gray-500 mt-1">en período analizado</div>
+          </div>
+        </div>
+        {dotacionAnalysis.bySpec.length > 0 && (
+          <div>
+            <h4 className="text-xs font-bold text-gray-600 mb-2">HH por especialidad</h4>
+            <div className="space-y-1.5">
+              {dotacionAnalysis.bySpec.map(([spec, hh]) => {
+                const pct = Math.round(hh / dotacionAnalysis.totalUsed * 100);
+                return (
+                  <div key={spec} className="flex items-center gap-2">
+                    <span className="text-xs font-mono w-32 truncate">{spec}</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div className="h-2 bg-blue-500" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs tabular-nums w-16 text-right">{Math.round(hh)}h</span>
+                    <span className="text-[10px] text-gray-500 tabular-nums w-10 text-right">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-3">
+          Jorge 2026-04-28 17:56: "estamos usando más HH en críticos vs no-críticos? ¿brechas hidráulico/neumático?". Si la mayoría de HH no van a equipos críticos = recurso mal asignado.
+        </p>
+      </div>
+
+      {/* ── Jack-Knife Diagram ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            🔪 Jack-Knife Diagram (4 cuadrantes)
+          </h3>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+            {jackKnifeData.length} equipos
+          </span>
+        </div>
+        {jackKnifeData.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin OTs cerradas suficientes para clasificar.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-purple-50">
+                <tr>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Crit.</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Frecuencia</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">HH/repar.</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Cuadrante</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jackKnifeData.map(p => {
+                  const qTone = p.quadrant === 'AGUDO_CRONICO' ? 'bg-red-600 text-white' :
+                                 p.quadrant === 'AGUDO' ? 'bg-orange-500 text-white' :
+                                 p.quadrant === 'CRONICO' ? 'bg-amber-400 text-amber-900' :
+                                 'bg-emerald-100 text-emerald-700';
+                  const qLabel = p.quadrant === 'AGUDO_CRONICO' ? '🚨 Agudo+Crónico' :
+                                  p.quadrant === 'AGUDO' ? '⚠ Agudo' :
+                                  p.quadrant === 'CRONICO' ? '🔁 Crónico' : '✓ OK';
+                  const critTone = p.criticality === 'A' ? 'bg-red-600 text-white' :
+                                    p.criticality === 'B' ? 'bg-orange-500 text-white' :
+                                    p.criticality === 'C' ? 'bg-amber-300 text-amber-900' :
+                                    'bg-gray-200 text-gray-700';
+                  return (
+                    <tr key={p.equipment} className="border-t border-gray-100 hover:bg-purple-50/30">
+                      <td className="px-2 py-2 text-center">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${critTone}`}>{p.criticality}</span>
+                      </td>
+                      <td className="px-2 py-2 font-mono text-blue-700">{p.equipment}</td>
+                      <td className="px-2 py-2 text-center font-bold">{p.frequency}</td>
+                      <td className="px-2 py-2 text-center tabular-nums">{p.avg_repair_hours}h</td>
+                      <td className="px-2 py-2 text-center">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${qTone}`}>{qLabel}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: <strong>Agudo</strong>= pocas fallas pero largas (catastróficas, 2-3 días). <strong>Crónico</strong>= muchas fallas cortas (horas). <strong>Agudo+Crónico</strong>= prioridad #1 para RCA.
+        </p>
+      </div>
+
+      {/* ── Comparativa OTs similares (sólo críticos A/B) ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            📈 Comparativa OTs similares (mejor / promedio / peor caso)
+          </h3>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-cyan-100 text-cyan-700">
+            {otComparativa.length} grupos · sólo críticos A/B
+          </span>
+        </div>
+        {otComparativa.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin grupos suficientes (≥3 OTs cerradas mismo trabajo, mismo work_center) en críticos.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-cyan-50">
+                <tr>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Trabajo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">N° OTs</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-emerald-700">Mejor</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-blue-700">Promedio</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-red-700">Peor</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-amber-700">Spread</th>
+                </tr>
+              </thead>
+              <tbody>
+                {otComparativa.map((g, i) => (
+                  <tr key={i} className="border-t border-gray-100 hover:bg-cyan-50/30">
+                    <td className="px-2 py-2 text-gray-800 max-w-[250px] truncate" title={g.desc}>{g.desc}</td>
+                    <td className="px-2 py-2 text-center">{g.count}</td>
+                    <td className="px-2 py-2 text-center text-emerald-700 font-bold tabular-nums">
+                      {g.best.actual_hours}h<div className="text-[9px] text-gray-500 font-normal">{g.best.wo_number}</div>
+                    </td>
+                    <td className="px-2 py-2 text-center text-blue-700 font-bold tabular-nums">{g.avg}h</td>
+                    <td className="px-2 py-2 text-center text-red-700 font-bold tabular-nums">
+                      {g.worst.actual_hours}h<div className="text-[9px] text-gray-500 font-normal">{g.worst.wo_number}</div>
+                    </td>
+                    <td className="px-2 py-2 text-center text-amber-700 font-bold tabular-nums">+{g.spread}h</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: "cambio de motor: 60h, 55h, 70h. Mejor 55, promedio 50, peor 70 — ¿qué hicimos distinto en peor? Identificar oportunidades para los críticos". Spread alto = oportunidad de estandarizar.
+        </p>
+      </div>
+
+      {/* ── Close-the-loop tracking (acciones RCA/CAPA abiertas/vencidas/cerradas) ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-3">
+          🔄 Close-the-loop tracking de acciones
+        </h3>
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <div className="text-[10px] uppercase font-bold text-blue-700">Total acciones</div>
+            <div className="text-2xl font-bold tabular-nums">{closeTheLoop.total}</div>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+            <div className="text-[10px] uppercase font-bold text-amber-700">Abiertas</div>
+            <div className="text-2xl font-bold tabular-nums">{closeTheLoop.open}</div>
+            <div className="text-[10px] text-gray-500">{closeTheLoop.open_pct}% del total</div>
+          </div>
+          <div className={`rounded-lg p-3 border ${closeTheLoop.overdue > 0 ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
+            <div className={`text-[10px] uppercase font-bold ${closeTheLoop.overdue > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+              {closeTheLoop.overdue > 0 ? '⚠ Vencidas' : '✓ Sin vencidas'}
+            </div>
+            <div className="text-2xl font-bold tabular-nums">{closeTheLoop.overdue}</div>
+            <div className="text-[10px] text-gray-500">expuestos a recurrencia</div>
+          </div>
+        </div>
+        {closeTheLoop.overdue_actions.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-red-50">
+                <tr>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Título acción</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Categoría</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Vencida hace</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Pri.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {closeTheLoop.overdue_actions.map((a, i) => (
+                  <tr key={i} className="border-t border-gray-100 bg-red-50/40 hover:bg-red-100/30">
+                    <td className="px-2 py-2 text-gray-800 max-w-[300px] truncate" title={a.title}>{a.title}</td>
+                    <td className="px-2 py-2 text-gray-600">{a.category}</td>
+                    <td className="px-2 py-2 font-mono text-blue-700">{a.equipment}</td>
+                    <td className="px-2 py-2 text-center font-bold text-red-700">{a.days_overdue}d</td>
+                    <td className="px-2 py-2 text-center text-xs">{a.priority}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: "una cosa es el análisis, otra cosa es la acción, y otra cosa es que la acción se haga y se cierre. Mientras no se cierre, seguimos expuestos a que la falla siga ocurriendo".
+        </p>
+      </div>
+
+      {/* ── Cruce con Estrategia ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-3">
+          📅 Cruce con Estrategia (frecuencia real vs planificada)
+        </h3>
+        {strategyMismatches.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin desviaciones de cadencia detectadas en mantenimientos preventivos.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-amber-50">
+                <tr>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Trabajo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Ejecuciones</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Cadencia real</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Sugerencia IA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {strategyMismatches.map((s, i) => (
+                  <tr key={i} className="border-t border-gray-100 hover:bg-amber-50/30">
+                    <td className="px-2 py-2 font-mono text-blue-700">{s.equipment}</td>
+                    <td className="px-2 py-2 text-gray-800 max-w-[200px] truncate">{s.description}</td>
+                    <td className="px-2 py-2 text-center font-bold">{s.executions}</td>
+                    <td className="px-2 py-2 text-center font-bold text-amber-700 tabular-nums">{s.avg_interval_days}d</td>
+                    <td className="px-2 py-2 text-gray-600 text-xs italic">{s.suggestion}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: "si la estrategia se definió cada 3 meses y ahora se ejecuta cada 2 meses, hay que ajustar la estrategia o hay un problema en el material/operación".
+        </p>
+      </div>
+
+      {/* ── KPIs de Costo + clases de gasto ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-3">
+          💰 Costos y clases de gasto
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+          <div className="bg-blue-50 rounded-lg p-2 border border-blue-200 text-center">
+            <div className="text-[10px] uppercase font-bold text-blue-700">Mano de obra</div>
+            <div className="text-lg font-bold tabular-nums">${costKpis.totalLabor.toLocaleString()}</div>
+          </div>
+          <div className="bg-emerald-50 rounded-lg p-2 border border-emerald-200 text-center">
+            <div className="text-[10px] uppercase font-bold text-emerald-700">Materiales</div>
+            <div className="text-lg font-bold tabular-nums">${costKpis.totalMaterial.toLocaleString()}</div>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-2 border border-amber-200 text-center">
+            <div className="text-[10px] uppercase font-bold text-amber-700">Servicios ext.</div>
+            <div className="text-lg font-bold tabular-nums">${costKpis.totalExternal.toLocaleString()}</div>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-2 border border-purple-200 text-center">
+            <div className="text-[10px] uppercase font-bold text-purple-700">Total real</div>
+            <div className="text-lg font-bold tabular-nums">${costKpis.totalActual.toLocaleString()}</div>
+          </div>
+          <div className={`rounded-lg p-2 border text-center ${Math.abs(costKpis.variance_pct) <= 10 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+            <div className="text-[10px] uppercase font-bold text-gray-700">Desv. presupuesto</div>
+            <div className={`text-lg font-bold tabular-nums ${Math.abs(costKpis.variance_pct) <= 10 ? 'text-emerald-700' : 'text-red-700'}`}>
+              {costKpis.variance_pct > 0 ? '+' : ''}{costKpis.variance_pct}%
+            </div>
+          </div>
+        </div>
+        {costKpis.byCenter.length > 0 && (
+          <div>
+            <h4 className="text-xs font-bold text-gray-600 mb-2">Por work center (plan vs real)</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-2 py-1.5 font-bold">Work Center</th>
+                    <th className="text-right px-2 py-1.5 font-bold">Plan</th>
+                    <th className="text-right px-2 py-1.5 font-bold">Real</th>
+                    <th className="text-right px-2 py-1.5 font-bold">Desv.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {costKpis.byCenter.map(([c, m]) => {
+                    const dev = m.plan > 0 ? Math.round((m.real - m.plan) / m.plan * 100) : 0;
+                    return (
+                      <tr key={c} className="border-t border-gray-100">
+                        <td className="px-2 py-1.5 font-mono">{c}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums">${Math.round(m.plan).toLocaleString()}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums font-bold">${Math.round(m.real).toLocaleString()}</td>
+                        <td className={`px-2 py-1.5 text-right tabular-nums font-bold ${Math.abs(dev) <= 10 ? 'text-emerald-700' : 'text-red-700'}`}>{dev > 0 ? '+' : ''}{dev}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: "centro de costo asocia el equipo, las clases de gasto sub-clasifican (repuesto/servicio/insumo)". Conexión SAP en Phase 2.
+        </p>
+      </div>
+
+      {/* ── Catálogo de falla: tendencias ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-3">
+          📚 Catálogo de falla — tendencias parte / síntoma / causa
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[
+            { title: 'Top Partes Objeto', data: failureCatalogTrends.parts, color: 'bg-blue-50 border-blue-200', tone: 'text-blue-700' },
+            { title: 'Top Síntomas', data: failureCatalogTrends.symptoms, color: 'bg-amber-50 border-amber-200', tone: 'text-amber-700' },
+            { title: 'Top Causas', data: failureCatalogTrends.causes, color: 'bg-rose-50 border-rose-200', tone: 'text-rose-700' },
+          ].map(({ title, data, color, tone }) => (
+            <div key={title} className={`rounded-lg p-3 border ${color}`}>
+              <div className={`text-[10px] uppercase font-bold mb-2 ${tone}`}>{title}</div>
+              {data.length === 0 ? (
+                <p className="text-xs text-gray-500 italic">Sin data suficiente</p>
+              ) : (
+                <ul className="space-y-1">
+                  {data.map(([label, count], i) => (
+                    <li key={i} className="flex items-center justify-between text-xs">
+                      <span className="truncate flex-1" title={label}>{label}</span>
+                      <span className="ml-2 font-bold tabular-nums">{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-gray-500 italic mt-3">
+          Jorge 2026-04-28 17:56: "lo más importante es la información que arroje en parte_objeto, síntomas y causas. Si se repiten varias partes/síntomas/causas → priorizar por repetibilidad y abrir RCA/FMECA".
+        </p>
+      </div>
+
+      {/* ── Causas de no-cumplimiento ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-3">
+          🚧 Causas de no-cumplimiento de OTs
+        </h3>
+        {nonComplianceCauses.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin causas de no-cumplimiento registradas en notes.
+          </p>
+        ) : (
+          <div className="space-y-1.5">
+            {nonComplianceCauses.map(([cause, count], i) => {
+              const max = nonComplianceCauses[0][1];
+              const pct = max > 0 ? (count / max) * 100 : 0;
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs flex-1 truncate">{cause}</span>
+                  <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div className="h-2 bg-red-500" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-xs font-bold tabular-nums w-10 text-right">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-3">
+          Jorge 2026-04-28 17:56: "no se hizo porque [repuesto/operaciones/servicio externo/herramienta descalibrada]". La IA lee comments de notificación y clasifica las causas.
+        </p>
+      </div>
+
+      {/* ── Consumo de repuestos ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            📦 Consumo de repuestos (top 10)
+          </h3>
+          <span className="text-xs text-gray-500 italic">
+            Phase 2: conexión bodega para predicción quiebre stock
+          </span>
+        </div>
+        {sparePartsConsumption.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">
+            Sin consumo de materiales registrado.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-emerald-50">
+                <tr>
+                  <th className="text-left px-2 py-1.5 font-bold">Código SAP</th>
+                  <th className="text-left px-2 py-1.5 font-bold">Descripción</th>
+                  <th className="text-center px-2 py-1.5 font-bold">Total cantidad</th>
+                  <th className="text-center px-2 py-1.5 font-bold">N° OTs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sparePartsConsumption.map((m, i) => (
+                  <tr key={i} className="border-t border-gray-100 hover:bg-emerald-50/30">
+                    <td className="px-2 py-1.5 font-mono">{m.code}</td>
+                    <td className="px-2 py-1.5 max-w-[300px] truncate" title={m.description}>{m.description || '—'}</td>
+                    <td className="px-2 py-1.5 text-center font-bold tabular-nums">{m.total_qty} {m.unit}</td>
+                    <td className="px-2 py-1.5 text-center text-gray-600">{m.ot_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: "comparar consumo del mes vs promedio histórico (5→20 = anomalía). Detectar quiebre stock antes de que ocurra. Ajustar presupuesto si filtros pasan de 10000h a 8000h".
         </p>
       </div>
 

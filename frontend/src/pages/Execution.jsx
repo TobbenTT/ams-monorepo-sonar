@@ -419,6 +419,13 @@ export default function Execution() {
   // Fase Jorge 2026-04-21 — vista Fallas separa las OTs PM03 (correctivo
   // de falla, P1/P2) que llegan directo al supervisor bypass-planning.
   const failureWOs = activeWOs.filter(w => (w.wo_type === 'PM03') || (w.priority_code === 'P1' || w.priority_code === 'P2'));
+  // CE1 Tanda C-EXT (Jorge 2026-04-28 12:32): pestaña Notificación.
+  // OTs candidatas a notificar = en EN_EJECUCION o COMPLETADO (cerradas no).
+  // El mantenedor carga HH real + cantidad real por cada operación. Banner de
+  // notificación parcial vs final automático según ops con actual_hours > 0.
+  const notifWOs = [...activeWOs, ...completedWOs].filter(w =>
+    ['EN_EJECUCION', 'COMPLETADO'].includes(w.status) && Array.isArray(w.operations) && w.operations.length > 0
+  );
   // SF-566 Tanda C (Jorge transcript 2026-04-27): supervisor distingue
   // PROGRAMADO (sale de Scheduling) vs NO PROGRAMADO (PM03 P1/P2 fallas).
   const VIEWS = [
@@ -426,6 +433,7 @@ export default function Execution() {
     { id: 'programado', label: '📅 Programado', icon: Calendar, count: activeWOs.filter(w => w.wo_type !== 'PM03' && !['P1', 'P2'].includes(w.priority_code)).length },
     { id: 'failures', label: '🚨 No Programado (PM03)', icon: AlertTriangle, count: failureWOs.length },
     { id: 'avisos', label: '📨 Avisos', icon: Inbox, count: pendingWRs.length },
+    { id: 'notif', label: '📝 Notificación', icon: FileText, count: notifWOs.length },
     { id: 'close', label: 'Bandeja de Cierre', icon: CheckCircle, count: completedWOs.length },
     { id: 'week', label: 'Semana', icon: Calendar, count: activeWOs.length },
     { id: 'summary', label: 'Resumen', icon: BarChart2, count: closedWOs.length },
@@ -697,6 +705,209 @@ export default function Execution() {
           </div>
         );
       })()}
+
+      {/* ═══ NOTIFICACIÓN VIEW — CE1 Tanda C-EXT (Jorge 2026-04-28 12:32) ═══
+          Mantenedor (o supervisor) carga HH real + cantidad real por cada
+          operación de cada OT en ejecución/completada. Sistema detecta
+          automáticamente si es notificación parcial (faltan ops) o final.
+          Audit alimenta análisis de desempeño (último módulo). */}
+      {view === 'notif' && (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50/40 dark:bg-purple-900/10 p-3">
+            <div className="flex items-center gap-2 text-purple-800 dark:text-purple-300 font-bold text-sm mb-1">
+              <FileText size={14} /> Notificación · captura HH real por operación
+            </div>
+            <p className="text-[11px] text-purple-700 dark:text-purple-200">
+              Para cada operación ingresá <strong>cantidad real</strong> de personas y <strong>horas reales</strong>.
+              Cuando todas las ops de la OT están notificadas, el sistema marca automáticamente como <em>notificación final</em>.
+            </p>
+          </div>
+          {notifWOs.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <FileText size={40} className="text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-muted-foreground">Sin OTs en ejecución para notificar</p>
+              <p className="text-xs text-muted-foreground mt-1">Las OTs aparecen acá una vez que pasan a EN_EJECUCION</p>
+            </div>
+          ) : (
+            notifWOs.map(wo => {
+              const ops = Array.isArray(wo.operations) ? wo.operations : [];
+              const opsNotif = ops.filter(op => (parseFloat(op.actual_hours) || 0) > 0);
+              const isPartial = opsNotif.length > 0 && opsNotif.length < ops.length;
+              const isFinal = opsNotif.length === ops.length && ops.length > 0;
+              const totalPlannedHH = ops.reduce((s, op) => s + (parseFloat(op.hours) || 0) * (parseInt(op.quantity) || 1), 0);
+              const totalActualHH = ops.reduce((s, op) => s + (parseFloat(op.actual_hours) || 0) * (parseInt(op.actual_quantity) || 0), 0);
+              const variance = totalActualHH - totalPlannedHH;
+              const variancePct = totalPlannedHH > 0 ? Math.round((variance / totalPlannedHH) * 100) : 0;
+              return (
+                <div key={wo.wo_id} className={`bg-card border-2 rounded-xl p-4 shadow-sm ${isFinal ? 'border-emerald-300 dark:border-emerald-700' : isPartial ? 'border-amber-300 dark:border-amber-700' : 'border-border'}`}>
+                  {/* Header de la OT */}
+                  <div className="flex items-center gap-3 mb-3 flex-wrap">
+                    <div className={`text-[10px] font-bold px-1.5 py-1 rounded ${PRIO_STYLE[wo.priority_code] || PRIO_STYLE.P3}`}>
+                      {wo.priority_code}
+                    </div>
+                    <span className="font-mono text-sm font-bold">{wo.wo_number}</span>
+                    <span className="text-xs text-muted-foreground">{wo.equipment_tag}</span>
+                    <span className="flex-1 text-sm font-medium">{wo.description}</span>
+                    {/* Banner parcial / final */}
+                    {isFinal ? (
+                      <span className="text-[10px] font-bold px-2 py-1 rounded bg-emerald-600 text-white">
+                        ✓ Notificación FINAL
+                      </span>
+                    ) : isPartial ? (
+                      <span className="text-[10px] font-bold px-2 py-1 rounded bg-amber-500 text-white">
+                        ⏳ PARCIAL · {opsNotif.length}/{ops.length}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-1 rounded bg-gray-300 text-gray-700">
+                        Sin notificar
+                      </span>
+                    )}
+                  </div>
+                  {/* Resumen HH plan vs real */}
+                  <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-2 text-center">
+                      <div className="text-[10px] uppercase font-bold text-blue-700">HH Planificadas</div>
+                      <div className="text-lg font-bold tabular-nums">{totalPlannedHH.toFixed(1)}h</div>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded p-2 text-center">
+                      <div className="text-[10px] uppercase font-bold text-purple-700">HH Reales</div>
+                      <div className="text-lg font-bold tabular-nums">{totalActualHH.toFixed(1)}h</div>
+                    </div>
+                    <div className={`rounded p-2 text-center ${
+                      Math.abs(variancePct) > 20 ? 'bg-red-50 dark:bg-red-900/20' :
+                      Math.abs(variancePct) > 10 ? 'bg-amber-50 dark:bg-amber-900/20' :
+                      'bg-emerald-50 dark:bg-emerald-900/20'}`}>
+                      <div className="text-[10px] uppercase font-bold">Desviación</div>
+                      <div className="text-lg font-bold tabular-nums">
+                        {variance >= 0 ? '+' : ''}{variance.toFixed(1)}h ({variancePct >= 0 ? '+' : ''}{variancePct}%)
+                      </div>
+                    </div>
+                  </div>
+                  {/* Tabla de operaciones para notificar */}
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/40">
+                        <tr>
+                          <th className="text-left px-2 py-1.5 font-semibold text-muted-foreground">#</th>
+                          <th className="text-left px-2 py-1.5 font-semibold text-muted-foreground">Op</th>
+                          <th className="text-left px-2 py-1.5 font-semibold text-muted-foreground">Spec</th>
+                          <th className="text-center px-2 py-1.5 font-semibold text-muted-foreground">Cant. plan</th>
+                          <th className="text-center px-2 py-1.5 font-semibold text-muted-foreground">Hrs plan</th>
+                          <th className="text-center px-2 py-1.5 font-semibold text-purple-700">Cant. real</th>
+                          <th className="text-center px-2 py-1.5 font-semibold text-purple-700">Hrs reales</th>
+                          <th className="text-center px-2 py-1.5 font-semibold text-muted-foreground">HH real</th>
+                          <th className="text-left px-2 py-1.5 font-semibold text-muted-foreground">Notas</th>
+                          <th className="text-center px-2 py-1.5 font-semibold text-muted-foreground">↻</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ops.map((op, i) => {
+                          const aQty = parseFloat(op.actual_quantity) || 0;
+                          const aHours = parseFloat(op.actual_hours) || 0;
+                          const aHH = aQty * aHours;
+                          const notified = aHours > 0;
+                          const saveOp = async (patch) => {
+                            const nextOps = ops.map((o, idx) => idx === i ? { ...o, ...patch } : o);
+                            try {
+                              await updateManagedWO(wo.wo_id, { operations: nextOps });
+                              loadData();
+                            } catch (e) { toast.error('Error: ' + (e.message || e)); }
+                          };
+                          return (
+                            <tr key={i} className={`border-t border-border/40 ${notified ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : ''}`}>
+                              <td className="px-2 py-1.5 font-mono text-muted-foreground">{String((i+1)*10).padStart(4, '0')}</td>
+                              <td className="px-2 py-1.5 truncate max-w-[200px]">{op.description || op.task || '—'}</td>
+                              <td className="px-2 py-1.5 text-[10px]">{op.specialty || '—'}</td>
+                              <td className="px-2 py-1.5 text-center tabular-nums text-muted-foreground">{op.quantity || 1}</td>
+                              <td className="px-2 py-1.5 text-center tabular-nums text-muted-foreground">{op.hours || 0}</td>
+                              <td className="px-2 py-1.5 text-center">
+                                <input type="number" min="0" step="1" defaultValue={aQty || ''}
+                                  placeholder={String(op.quantity || 1)}
+                                  onBlur={(e) => {
+                                    const v = parseFloat(e.target.value);
+                                    if (!isNaN(v) && v !== aQty) saveOp({ actual_quantity: v });
+                                  }}
+                                  className="w-12 text-center bg-card border border-border rounded px-1 py-0.5 text-xs" />
+                              </td>
+                              <td className="px-2 py-1.5 text-center">
+                                <input type="number" min="0" step="0.25" defaultValue={aHours || ''}
+                                  placeholder={String(op.hours || 0)}
+                                  onBlur={(e) => {
+                                    const v = parseFloat(e.target.value);
+                                    if (!isNaN(v) && v !== aHours) saveOp({ actual_hours: v });
+                                  }}
+                                  className="w-14 text-center bg-card border border-border rounded px-1 py-0.5 text-xs font-semibold" />
+                              </td>
+                              <td className="px-2 py-1.5 text-center font-bold tabular-nums">
+                                {notified ? aHH.toFixed(1) : <span className="text-muted-foreground">—</span>}
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <input type="text" defaultValue={op.notif_notes || ''}
+                                  placeholder="comentarios..."
+                                  onBlur={(e) => {
+                                    if (e.target.value !== (op.notif_notes || '')) saveOp({ notif_notes: e.target.value });
+                                  }}
+                                  className="w-full bg-card border border-border rounded px-1 py-0.5 text-xs" />
+                              </td>
+                              {/* CE7 Tanda C-EXT: reprogramar operación individual.
+                                  Marca op.reprogrammed=true + razón. El planner ve la
+                                  bandera en Planning y decide moverla a OT futura. */}
+                              <td className="px-2 py-1.5 text-center">
+                                {op.reprogrammed ? (
+                                  <span title={op.reprogram_reason || 'Reprogramada'}
+                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 cursor-help">
+                                    ↻ ⚠
+                                  </span>
+                                ) : !notified ? (
+                                  <button
+                                    title="Reprogramar esta operación (no se ejecutó)"
+                                    onClick={() => {
+                                      const reason = window.prompt(
+                                        `Reprogramar operación "${(op.description || '').slice(0, 50)}"\n\n` +
+                                        `Motivo (obligatorio):`
+                                      );
+                                      if (!reason || !reason.trim()) return;
+                                      saveOp({
+                                        reprogrammed: true,
+                                        reprogram_reason: reason.trim(),
+                                        reprogram_at: new Date().toISOString(),
+                                      });
+                                      toast.success(`Operación marcada para reprogramar`);
+                                    }}
+                                    className="text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded p-0.5">
+                                    ↻
+                                  </button>
+                                ) : (
+                                  <span className="text-muted-foreground text-[10px]">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Acciones — al cerrar la OT desde acá si está final */}
+                  {isFinal && wo.status !== 'CERRADO' && (
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => openClosure(wo)}
+                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1">
+                        <CheckCircle size={14} /> Validar y cerrar OT (firma supervisor)
+                      </button>
+                    </div>
+                  )}
+                  {isPartial && (
+                    <div className="text-[10.5px] text-amber-700 dark:text-amber-300 italic mt-2">
+                      Faltan {ops.length - opsNotif.length} operación(es) por notificar antes de cerrar la OT.
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
 
       {/* ═══ NO PROGRAMADO VIEW (PM03 / P1-P2) — SF-566 Tanda C ═══
           Antes label "Failures" — renombrado a la terminología SAP PM

@@ -1114,14 +1114,28 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
         wo_title: form.woTitle || '',
         estimated_duration: parseFloat(form.estimatedDuration) || 4,
         materials: (form.materials || []).filter(m => typeof m === 'object' ? (m.sapId || m.description) : m),
-        resources: (form.resources || []).map(r => typeof r === 'string' ? r : `${r.type || ''} x${r.quantity || 1} (${r.hours || 0}h)`).filter(Boolean),
+        // BUG fix 2026-04-29: enviar resources como OBJETOS (type/quantity/hours) y no como strings.
+        // El backend create_from_work_request los lee con res.get('type') y si es string los descarta
+        // → la OT quedaba con ops genéricas MECHANICAL legacy en vez de Lubrication+Instrumentation.
+        resources: (form.resources || [])
+          .filter(r => r && (typeof r === 'string' ? r.trim() : (r.type || r.quantity)))
+          .map(r => typeof r === 'string'
+            ? { type: r, quantity: 1, hours: 1 }
+            : { type: r.type || '', quantity: parseInt(r.quantity) || 1, hours: parseFloat(r.hours) || 1, op_type: r.op_type || 'INT' }),
+        // BUG fix 2026-04-29: support_equipment como objetos. Algunas entries vienen como strings
+        // legacy ("Grua Horquilla"), otras como objetos {tag, name, equipment_type}. Normalizar todo a objeto.
+        support_equipment: (form.supportEquipment || [])
+          .filter(s => s && (typeof s === 'string' ? s.trim() : (s.tag || s.name)))
+          .map(s => typeof s === 'string'
+            ? { tag: s, name: s, equipment_type: 'OTHER', hours: 1 }
+            : { tag: s.tag || s.name || '', name: s.name || s.tag || '', equipment_type: s.equipment_type || 'OTHER', hours: parseFloat(s.hours) || 1, notes: s.notes || '' }),
         documents: [
           ...photos.map((data, i) => ({ name: `foto_${i + 1}.jpg`, data, type: 'photo' })),
           ...attachments.map(att => ({ name: att.name, data: att.data, type: 'file' })),
         ],
         circumstances: form.circumstances || '',
         reported_by: form.reportedBy || '',
-        support_equipment: form.supportEquipment || [],
+        // support_equipment ya se enviou normalizado arriba — no duplicar
         technical_location: form.technicalLocationCode || '',
         notification_type: form.notificationClass || 'A1',
         aviso_coding: form.avisoCoding || '',

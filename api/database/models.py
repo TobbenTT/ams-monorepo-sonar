@@ -9,7 +9,7 @@ from datetime import datetime, date
 
 from sqlalchemy import (
     String, Integer, Float, Boolean, Text, DateTime, Date,
-    ForeignKey, JSON, Index,
+    ForeignKey, JSON, Index, event,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -504,6 +504,19 @@ class WorkRequestModel(Base):
         Index("ix_work_requests_priority", "priority_code"),
         Index("ix_work_requests_equipment", "equipment_tag"),
     )
+
+
+# Auto-asignar aviso_number antes de insert si no está seteado.
+# Garantiza AV-NNNNN legible en TODOS los paths de creación (UI, voice, drone, sync, captures).
+@event.listens_for(WorkRequestModel, "before_insert")
+def _auto_assign_aviso_number(mapper, connection, target):
+    if getattr(target, "aviso_number", None) is None:
+        try:
+            from sqlalchemy import text as _text
+            row = connection.execute(_text("SELECT COALESCE(MAX(aviso_number), 0) + 1 FROM work_requests")).scalar()
+            target.aviso_number = int(row or 1)
+        except Exception:
+            pass
 
 
 # ── Managed Work Orders (Jorge Phase 2 — full OT lifecycle) ─────────

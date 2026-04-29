@@ -1387,11 +1387,19 @@ function DetailCard({ icon: Icon, label, value, children }) {
 function normalizeWR(wr) {
   const cls = typeof wr.ai_classification === 'string' ? (() => { try { return JSON.parse(wr.ai_classification); } catch { return {}; } })() : (wr.ai_classification || {});
   const desc = typeof wr.problem_description === 'string' ? (() => { try { return JSON.parse(wr.problem_description); } catch { return {}; } })() : (wr.problem_description || {});
-  // Aviso # legible: AV-NNNNN cuando hay aviso_number, fallback a UUID corto.
+  // Aviso # legible: AV-NNNNN cuando hay aviso_number, fallback a request_id completo
+  // (que ya es "WR-2026-NNNNN" en formato sequencial). Antes se hacía slice(0,8) que
+  // truncaba "WR-2026-NNNNN" a "WR-2026-" — bug visual del 2026-04-29.
   const aviso_n = wr.aviso_number || null;
-  const display_id = aviso_n
-    ? `AV-${String(aviso_n).padStart(5, '0')}`
-    : (wr.request_id || wr.id || '').slice(0, 8);
+  const rawId = wr.request_id || wr.id || '';
+  let display_id;
+  if (aviso_n) {
+    display_id = `AV-${String(aviso_n).padStart(5, '0')}`;
+  } else if (rawId.startsWith('WR-')) {
+    display_id = rawId; // ya legible: WR-2026-NNNNN
+  } else {
+    display_id = rawId.slice(0, 8); // UUID fallback
+  }
   return {
     id: wr.request_id || wr.id,
     aviso_number: aviso_n,

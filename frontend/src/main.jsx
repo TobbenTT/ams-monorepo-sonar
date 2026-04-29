@@ -41,7 +41,7 @@ installOfflineSync();
 // Jorge 2026-04-23: cache-bust one-shot. Si la versión guardada no coincide,
 // limpiamos Cache Storage + Service Worker + localStorage efímero y forzamos
 // hard reload una sola vez por versión. Dispara al cargar la app.
-const CACHE_BUST_VERSION = '2026-04-28-22-team-colors-match-scheduling';
+const CACHE_BUST_VERSION = '2026-04-29-23-team-colors-force-refresh';
 (async () => {
   try {
     const prev = localStorage.getItem('ocp_cache_version');

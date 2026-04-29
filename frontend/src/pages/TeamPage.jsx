@@ -775,7 +775,9 @@ export default function TeamPage() {
                         {member.role ? roleLabel(member.role) : t('team.noRole')}
                       </Badge>
                       {member.specialty && (() => {
-                        // Mismos colores que Scheduling (SPEC_BADGE) para coherencia visual.
+                        // Mismos colores que Scheduling SPEC_BADGE. Uso <span> en vez de
+                        // <Badge> para evitar conflicto con bg-primary del default variant
+                        // (twMerge a veces no resuelve correctamente).
                         const s = (member.specialty || '').toUpperCase();
                         const tone =
                           s.includes('MEC') ? 'bg-green-100 text-green-800 border-green-300' :
@@ -787,7 +789,6 @@ export default function TeamPage() {
                           s.includes('CIVIL') ? 'bg-stone-100 text-stone-800 border-stone-300' :
                           s.includes('PRED') ? 'bg-blue-100 text-blue-800 border-blue-300' :
                           'bg-gray-100 text-gray-800 border-gray-300';
-                        // Label corto canonical (3-4 letras como Scheduling)
                         const label =
                           s.includes('MEC') ? 'MEC' :
                           s.includes('ELEC') ? 'ELEC' :
@@ -800,13 +801,15 @@ export default function TeamPage() {
                           s.includes('PRED') ? 'PRED' :
                           (s || '?').slice(0, 4);
                         return (
-                          <Badge className={`text-xs font-bold ${tone}`} title={member.specialty}>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-bold ${tone}`}
+                            title={member.specialty}
+                          >
                             {label}
-                          </Badge>
+                          </span>
                         );
                       })()}
                       {member.shift && (() => {
-                        // Mismos tonos que Scheduling: día amber (☀️), noche indigo (🌙)
                         const s = String(member.shift || '').toLowerCase();
                         const isNight = s.includes('night') || s.includes('noche') || s === 'n';
                         const isDay = s.includes('day') || s.includes('día') || s.includes('dia') || s.includes('morning') || s === 'd';
@@ -816,9 +819,9 @@ export default function TeamPage() {
                           ? 'bg-amber-100 text-amber-800 border-amber-300'
                           : 'bg-gray-100 text-gray-700 border-gray-300';
                         return (
-                          <Badge className={`text-xs font-semibold ${tone}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${tone}`}>
                             {isNight ? '🌙 Noche' : isDay ? '☀️ Día' : member.shift}
-                          </Badge>
+                          </span>
                         );
                       })()}
                     </div>

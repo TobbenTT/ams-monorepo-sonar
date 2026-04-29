@@ -695,6 +695,19 @@ export const importUpload = async (file, source, plantId) => {
   return res.json();
 };
 
+export const importJigsawExcel = async (file) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  const token = localStorage.getItem('token');
+  const res = await fetch((window.__API_BASE || '/api') + '/analytics/import-jigsaw-excel', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+    body: fd,
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || res.statusText); }
+  return res.json();
+};
+
 // ── OR Projects (CORTEX OR System) ──
 export const createORProject = (d) => post('/or/projects', d);
 export const listORProjects = () => get('/or/projects');

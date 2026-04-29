@@ -2,9 +2,11 @@
 
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 import time
+import tempfile
+import os
 
 # Simple in-memory cache for expensive endpoints
 _cache = {}
@@ -81,6 +83,168 @@ def predict_failure(data: WeibullPredictRequest, db: Session = Depends(get_db)):
 @router.post("/variance-detect")
 def detect_variance(data: VarianceDetectRequest):
     return analytics_service.detect_variance(data.snapshots)
+
+
+@router.post("/import-jigsaw-excel")
+async def import_jigsaw_excel(file: UploadFile = File(...)):
+    """Sube Excel Jigsaw (Pareto histórico o Jack-Knife) y devuelve datasets
+    listos para alimentar las secciones Pareto + Jack-Knife de PerformanceAnalysis.
+
+    Detecta automáticamente el formato:
+    - Sheet1 con headers en row 15+ (cols flota/equipo/tiempo/estado/sistema/horas) → Pareto sept 2010
+    - Hojas CAM*/PALAS/etc con cols Tiempo/Tiempo Final/.../Equipo/Estado → Jack-Knife abril 2010
+
+    Agrupa por **sistema** (no por equipo) — Jorge demo siempre razona sobre sistemas.
+    """
+    try:
+        import xlrd
+    except ImportError:
+        raise HTTPException(500, "xlrd no instalado en backend")
+    name = (file.filename or "").lower()
+    ext = ".xls" if name.endswith(".xls") else (".xlsx" if name.endswith(".xlsx") else ".xls")
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext, dir="/tmp")
+    try:
+        tmp.write(await file.read())
+        tmp.close()
+        wb = xlrd.open_workbook(tmp.name)
+        # Acumular por sistema: {sistema: {hours, count}}
+        agg = {}
+        events = 0
+        sheets_used = []
+
+        # ── Formato A: Sheet1 long-form (Pareto sept 2010) ──
+        if "Sheet1" in wb.sheet_names():
+            s = wb.sheet_by_name("Sheet1")
+            for r in range(15, s.nrows):
+                row = [s.cell_value(r, c) for c in range(s.ncols)]
+                if not row[0] or not row[1]:
+                    continue
+                state = str(row[6] or "")
+                sistema = str(row[7] or "").strip()
+                if not sistema:
+                    continue
+                # Sólo no planificadas para Pareto/JackKnife (Jorge: "fallas")
+                if "no planif" not in state.lower():
+                    continue
+                try:
+                    hours = float(row[13]) if row[13] else 0
+                except (ValueError, TypeError):
+                    hours = 0
+                if hours <= 0:
+                    continue
+                if sistema not in agg:
+                    agg[sistema] = {"hours": 0.0, "count": 0}
+                agg[sistema]["hours"] += hours
+                agg[sistema]["count"] += 1
+                events += 1
+            if events > 0:
+                sheets_used.append("Sheet1")
+
+        # ── Formato B: hojas CAM*/PALAS/DMM* (Jack-Knife abril 2010) ──
+        if events == 0:
+            for sn in wb.sheet_names():
+                if sn.startswith("Jack Knife") or sn in ("Flota Servicio", "L1350.", "Sheet1"):
+                    continue
+                s = wb.sheet_by_name(sn)
+                if s.nrows < 2:
+                    continue
+                for r in range(1, s.nrows):
+                    row = [s.cell_value(r, c) for c in range(s.ncols)]
+                    try:
+                        hours = float(row[5]) if row[5] else 0
+                        estado = str(row[7] or "").strip().lower()
+                        sistema = (str(row[9]).strip() if len(row) > 9 else "")
+                    except (ValueError, IndexError):
+                        continue
+                    if not sistema or hours <= 0:
+                        continue
+                    if estado != "mantencion":  # sólo no planificadas
+                        continue
+                    if sistema not in agg:
+                        agg[sistema] = {"hours": 0.0, "count": 0}
+                    agg[sistema]["hours"] += hours
+                    agg[sistema]["count"] += 1
+                    events += 1
+                sheets_used.append(sn)
+
+        if events == 0:
+            raise HTTPException(400, "No se detectaron eventos de Mantención No Planificada en el Excel.")
+
+        # ── Construir Pareto (byCount + byHours) ──
+        def build_pareto(key):
+            sorted_items = sorted(agg.items(), key=lambda kv: kv[1][key], reverse=True)
+            total = sum(v[key] for _, v in sorted_items) or 1
+            cum = 0.0
+            out = []
+            for sistema, v in sorted_items[:15]:
+                val = round(v[key] * 10) / 10
+                pct = round(v[key] / total * 1000) / 10
+                cum = min(100.0, cum + pct)
+                out.append({
+                    "mode": sistema,
+                    "value": val,
+                    "pct": pct,
+                    "cumPct": round(cum * 10) / 10,
+                    "inTop80": cum <= 80,
+                    "count" if key == "count" else "hours": val,
+                })
+            return out
+
+        pareto = {
+            "byCount": build_pareto("count"),
+            "byHours": build_pareto("hours"),
+        }
+
+        # ── Construir Jack-Knife (por sistema) ──
+        points = []
+        for sistema, v in agg.items():
+            mttr = round(v["hours"] / v["count"] * 100) / 100 if v["count"] > 0 else 0
+            points.append({
+                "equipment": sistema,  # JackKnifeSection usa "equipment" como label
+                "criticality": "—",
+                "frequency": v["count"],
+                "total_hours": round(v["hours"] * 10) / 10,
+                "mttr": mttr,
+            })
+        total_paradas = sum(p["frequency"] for p in points)
+        total_tiempo = sum(p["total_hours"] for p in points)
+        n_razones = max(1, len(points))
+        threshold_mttr = round(total_tiempo / total_paradas * 100) / 100 if total_paradas > 0 else 0
+        threshold_freq = round(total_paradas / n_razones * 10) / 10
+        for p in points:
+            high_freq = p["frequency"] > threshold_freq
+            high_mttr = p["mttr"] > threshold_mttr
+            if high_freq and high_mttr:
+                p["quadrant"] = "GRAVE_CRONICO"
+            elif high_mttr:
+                p["quadrant"] = "GRAVE"
+            elif high_freq:
+                p["quadrant"] = "CRONICO"
+            else:
+                p["quadrant"] = "LEVE"
+        order = {"GRAVE_CRONICO": 4, "GRAVE": 3, "CRONICO": 2, "LEVE": 1}
+        points.sort(key=lambda p: (order[p["quadrant"]], p["frequency"]), reverse=True)
+
+        return {
+            "filename": file.filename,
+            "events": events,
+            "sheets_used": sheets_used,
+            "n_sistemas": len(agg),
+            "pareto": pareto,
+            "jackKnife": {
+                "items": points[:25],
+                "thresholdMttr": threshold_mttr,
+                "thresholdFreq": threshold_freq,
+                "totalParadas": total_paradas,
+                "totalTiempo": round(total_tiempo * 10) / 10,
+                "nRazones": n_razones,
+            },
+        }
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
 
 
 @router.get("/variance-alerts")

@@ -66,6 +66,12 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
   // Jorge 2026-04-28 17:56: Bad Actors deben cruzarse con lista de equipos críticos.
   // Mapa equipment_tag → criticality (A/B/C/D) leído desde hierarchy_nodes.
   const [criticalityMap, setCriticalityMap] = useState({});
+  // Jigsaw Excel import (Jorge transcript 2026-04-29 13:44 línea 305-307:
+  // "hay que tomarlo y hacer que el sistema ocupe la teoría, incluso puede usar
+  //  la data que está ahí, y hay data y excel con datos, para que corra los paretos")
+  const [importedJigsaw, setImportedJigsaw] = useState(null);
+  const [importingJigsaw, setImportingJigsaw] = useState(false);
+  const [importJigsawError, setImportJigsawError] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -1440,8 +1446,28 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         </p>
       </div>
 
+      {/* ── Carga de Excel histórico Jigsaw (Jorge 2026-04-29 13:44 línea 305-307) ── */}
+      <JigsawImportBanner
+        imported={importedJigsaw}
+        loading={importingJigsaw}
+        error={importJigsawError}
+        onUpload={async (file) => {
+          setImportJigsawError(null);
+          setImportingJigsaw(true);
+          try {
+            const r = await api.importJigsawExcel(file);
+            setImportedJigsaw(r);
+          } catch (e) {
+            setImportJigsawError(e.message || 'Error al importar');
+          } finally {
+            setImportingJigsaw(false);
+          }
+        }}
+        onClear={() => { setImportedJigsaw(null); setImportJigsawError(null); }}
+      />
+
       {/* ── Pareto de modos de falla (Jorge 2026-04-29 13:44) ── */}
-      <ParetoSection data={failureModePareto} />
+      <ParetoSection data={importedJigsaw?.pareto || failureModePareto} sourceLabel={importedJigsaw ? `📂 Excel: ${importedJigsaw.filename}` : null} />
 
 
       {/* ── KPIs de Resultados por equipo (Jorge 2026-04-28 17:56) ── */}
@@ -1826,7 +1852,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       </div>
 
       {/* ── Jack-Knife Diagram (Jorge transcript 2026-04-29 13:44) ── */}
-      <JackKnifeSection data={jackKnifeData} />
+      <JackKnifeSection data={importedJigsaw?.jackKnife || jackKnifeData} sourceLabel={importedJigsaw ? `📂 Excel: ${importedJigsaw.filename}` : null} />
 
 
       {/* ── Comparativa OTs similares (sólo críticos A/B) ── */}
@@ -2423,7 +2449,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
 // ──────────────────────────────────────────────────────────────────────────
 // Jorge transcript 2026-04-29 13:44 — Jack-Knife scatter chart
 // ──────────────────────────────────────────────────────────────────────────
-function JackKnifeSection({ data }) {
+function JackKnifeSection({ data, sourceLabel }) {
   const [logScale, setLogScale] = useState(false);
   const items = data?.items || [];
   const tFreq = data?.thresholdFreq || 0;
@@ -2441,6 +2467,7 @@ function JackKnifeSection({ data }) {
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
           🔪 Jack-Knife Diagram (4 cuadrantes)
+          {sourceLabel && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">{sourceLabel}</span>}
         </h3>
         <div className="flex items-center gap-2">
           <button onClick={() => setLogScale(!logScale)}
@@ -2594,7 +2621,7 @@ function JackKnifeSection({ data }) {
 // ──────────────────────────────────────────────────────────────────────────
 // SF-582 / Jorge transcript 2026-04-29 13:44 — Pareto con gráfico dual-axis
 // ──────────────────────────────────────────────────────────────────────────
-function ParetoSection({ data }) {
+function ParetoSection({ data, sourceLabel }) {
   const [mode, setMode] = useState('byCount'); // 'byCount' | 'byHours'
   const items = data?.[mode] || [];
   const top80Count = items.filter(f => f.inTop80).length;
@@ -2613,6 +2640,7 @@ function ParetoSection({ data }) {
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
           📊 Pareto modos de falla (80/20) · {mode === 'byHours' ? 'por tiempo' : 'por frecuencia'}
+          {sourceLabel && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">{sourceLabel}</span>}
         </h3>
         <div className="flex items-center gap-2">
           <div className="flex items-center rounded-lg border border-border overflow-hidden">
@@ -2676,6 +2704,58 @@ function ParetoSection({ data }) {
       <p className="text-[10px] text-gray-500 italic mt-3">
         Jorge transcript 2026-04-29 13:44: "El dato puede ser frecuencia o tiempo de detención. El 80% de las fallas concentradas en pocos sistemas — donde hay que enfocar al ingeniero de confiabilidad". Barras rojas = modos en el top 80%, línea azul = % acumulado, referencia 80%.
       </p>
+    </div>
+  );
+}
+
+function JigsawImportBanner({ imported, loading, error, onUpload, onClear }) {
+  const [drag, setDrag] = useState(false);
+  const handleFile = (file) => {
+    if (!file) return;
+    const ok = /\.(xls|xlsx)$/i.test(file.name);
+    if (!ok) return;
+    onUpload(file);
+  };
+  return (
+    <div className={`rounded-xl border p-4 ${imported ? 'bg-emerald-50 border-emerald-200' : 'bg-indigo-50 border-indigo-200'}`}>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex-1 min-w-[260px]">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            📂 Cargar Excel Jigsaw histórico (Pareto + Jack-Knife sobre data real)
+          </h3>
+          <p className="text-[11px] text-gray-600 mt-1">
+            Sube un Excel Jigsaw (formato hoja <code className="font-mono">Sheet1</code> long-form, o hojas <code className="font-mono">CAM797*/PALAS/...</code>). El sistema agrupa por <strong>sistema</strong>, calcula thresholds Jorge (MTTR=Σh/Σparadas, Frec=Σparadas/n) y reemplaza los gráficos Pareto + Jack-Knife abajo con esos números.
+          </p>
+          {imported && (
+            <div className="mt-2 text-xs text-emerald-800 bg-white/60 rounded-md px-2 py-1 inline-flex flex-wrap gap-x-3 gap-y-0.5">
+              <span><strong>{imported.filename}</strong></span>
+              <span>· {imported.events} eventos</span>
+              <span>· {imported.n_sistemas} sistemas</span>
+              <span>· hojas: {imported.sheets_used.join(', ')}</span>
+            </div>
+          )}
+          {error && (
+            <p className="text-xs text-red-700 mt-2 bg-red-50 border border-red-200 rounded px-2 py-1">⚠ {error}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <label
+            onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+            onDragLeave={() => setDrag(false)}
+            onDrop={(e) => { e.preventDefault(); setDrag(false); handleFile(e.dataTransfer.files?.[0]); }}
+            className={`cursor-pointer text-xs font-semibold px-4 py-2 rounded-md border-2 border-dashed ${drag ? 'border-indigo-500 bg-white' : 'border-indigo-300 bg-white/70'} text-indigo-700 hover:bg-white`}
+          >
+            {loading ? 'Procesando...' : (imported ? 'Cambiar archivo' : 'Seleccionar / arrastrar .xls')}
+            <input type="file" accept=".xls,.xlsx" className="hidden" disabled={loading}
+              onChange={(e) => handleFile(e.target.files?.[0])} />
+          </label>
+          {imported && (
+            <button onClick={onClear} className="text-xs px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700">
+              ✕ Volver a OTs sistema
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

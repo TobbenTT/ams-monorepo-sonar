@@ -1,4 +1,4 @@
-# QA en VSC — Por qué la deuda ISO acumulada nos obliga a sumar QA Lead ya
+# QA en VSC — Por qué un perfil Jr cubriendo QA + Ciberseguridad es viable y necesario
 
 **Autor:** David Cabezas — Lead Tech VSC
 **Destinatario:** José Cortinat (CEO) · Equipo VSC
@@ -10,15 +10,18 @@
 
 ## Resumen ejecutivo
 
-Recibí el video que pasaste sobre Claude Code + Playwright. Lo probé y confirma una capacidad real y útil — vamos a integrarla al pipeline en los próximos 2 sprints. Esto no es lo que está en discusión.
+Recibí el video sobre Claude Code + Playwright. Lo probé y confirma una capacidad real — vamos a integrarla al pipeline en los próximos 2 sprints. Esto no es lo que está en discusión.
 
-**Lo que sí está en discusión es esto:** VSC ya tiene **3 proyectos en producción sin QA formal**, y cada release adicional sin trazabilidad acumula deuda que ISO va a cobrar cuando intentemos certificarnos.
+**Lo que sí está en discusión es esto:** VSC ya tiene 3 proyectos en producción sin QA formal ni responsable de seguridad designado, y cada release adicional sin trazabilidad acumula deuda que ISO va a cobrar cuando intentemos certificarnos.
 
-La pregunta no es *"¿la IA reemplaza al QA?"* — esa es la pregunta que parece, pero no es la importante. La pregunta importante es:
+La buena noticia: **no necesitamos un equipo. Con un perfil Jr bien entrenado que cubra ambos roles (QA + Ciberseguridad operativa) cumplimos los requisitos ISO y de Ley 21.663.**
 
-> **¿Cuánto más tiempo podemos seguir acumulando releases sin firma humana antes de que la deuda exceda el costo de tener QA desde ahora?**
+La pregunta no es *"¿la IA reemplaza al QA?"* — la respuesta técnica es obvia.
+La pregunta importante es:
 
-Mi respuesta con datos: **estamos a ~3 meses del punto donde el costo de remediación retroactiva supera el costo de contratar QA Lead hoy.**
+> **¿Es viable que un solo perfil Jr cubra QA y Ciberseguridad operativa, o necesitamos dos roles separados?**
+
+Mi respuesta con base en lo que ISO realmente exige: **sí, es viable y suficiente para la escala actual de VSC.**
 
 ---
 
@@ -32,7 +35,12 @@ No discutimos lo técnico. Hoy con Claude Code + Playwright puedo:
 - Reportes HTML auditables con video de la sesión
 - Velocidad: 10x lo que haría un tester manual junior
 
-**Plan concreto:** lo integramos al pipeline pre-deploy en sprint 14 y 15. Quedamos con cobertura E2E de happy path en 90%+ para AMS, marketing-vsc-landings y goldfields-platform. Esto se hace, esto va.
+Y en seguridad ya tenemos vivo:
+- qa-scanner con Trivy + Gitleaks + Nuclei cada 24h
+- 1394 → 76 vulnerabilidades en 4 meses
+- DAST automatizado en pipeline pre-deploy
+
+**Plan concreto:** integramos Playwright + Claude al pipeline en sprint 14 y 15. Esto se hace, esto va.
 
 ---
 
@@ -40,7 +48,7 @@ No discutimos lo técnico. Hoy con Claude Code + Playwright puedo:
 
 ### 2.1 Cómo audita ISO 9001 / 27001
 
-Cuando aplicamos a certificación, el auditor **no certifica lo que haremos desde mañana** — certifica el sistema que ya está operando. Te pide:
+Cuando aplicamos a certificación, el auditor **no certifica el futuro** — certifica el sistema que ya está operando. Te pide:
 
 > *"Muéstrame los últimos 12 meses de releases. Para cada uno quiero ver: ticket de requerimiento, código del feature, test plan firmado, evidencia de testing, aprobación de pase a producción, y la persona física que firmó esa aprobación."*
 
@@ -49,103 +57,138 @@ Si VSC aplica hoy:
 - Releases con test plan formal firmado: **0**
 - Releases con aprobación de pase a producción identificada: **0**
 - Segregación de funciones (autor ≠ aprobador): **violada en el 100%**
+- Responsable de ciberseguridad designado (Ley 21.663 Art. 8): **no formalizado**
 
 ### 2.2 Las 3 cosas que pasan cuando aplicas con esta deuda
 
 **Opción A — Te bajan el alcance del certificado:**
-"OK, te certifico solo para proyectos iniciados desde 2026". Cuando Goldfields pida certificación que cubra AMS, el alcance no incluye AMS porque AMS se construyó pre-QA. **Resultado: el certificado no sirve para vender a Goldfields.**
+"Te certifico solo para proyectos iniciados desde 2026". AMS queda fuera del alcance. Inservible para vender a Goldfields.
 
 **Opción B — Te exigen remediación retroactiva:**
-Reconstruir documentación de los 3 proyectos hacia atrás. Costo estimado: **3-6 meses de trabajo a tiempo completo** de QA + dev + firmas antedatadas. Esto último es legalmente discutible y un auditor decente lo detecta.
+Reconstruir documentación de los 3 proyectos hacia atrás. Toma 3-6 meses de trabajo a tiempo completo. Auditor decente detecta papeleo antedatado.
 
 **Opción C — Te rechazan la primera certificación:**
-Tienes que operar con el SGSI funcionando "limpio" 6-12 meses antes de poder re-aplicar. **Pierdes licitaciones de mining durante todo ese periodo.**
+Tienes que operar con el SGSI funcionando "limpio" 6-12 meses antes de poder re-aplicar. Pierdes licitaciones de mining durante todo ese periodo.
 
-Ninguna de las 3 es buena. Las tres son evitables si tomamos acción ahora.
-
----
-
-## 3. La curva de la deuda — cifras del pipeline actual
-
-| Momento | Releases acumulados sin QA | Costo remediación retroactiva | Costo de tener QA Lead desde ahora |
-|---|---|---|---|
-| Hoy (abril 2026) | ~150 | ~$15M-30M CLP | $0 (decisión a futuro) |
-| +3 meses (julio 2026) | ~225 | ~$22M-45M CLP | ~$5M CLP (QA Jr Q3) |
-| +6 meses (octubre 2026) | ~300 | ~$30M-60M CLP | ~$10M CLP |
-| +12 meses (abril 2027) | ~450 | ~$45M-90M CLP | ~$20M CLP |
-
-**El cruce ocurre entre el mes 2 y el mes 3.** Después de ese punto, salirse de la deuda cuesta más que tener al QA Jr todo el tiempo.
-
-Esta no es una proyección teórica. Cada sprint que pasa sin firma humana es una fila más en el log que el auditor te va a pedir.
+Ninguna es buena. Las tres son evitables si actuamos ahora.
 
 ---
 
-## 4. Los 4 problemas que la IA por sí sola no cubre
+## 3. Por qué un Jr cubriendo ambos roles es factible
 
-(Esto sigue siendo cierto, pero es secundario al argumento de la deuda.)
+Esta es la parte importante. ISO no exige "Senior" ni "experto certificado". Exige cuatro cosas concretas, y un Jr capacitado con la pipeline IA del hub QA las cumple todas:
 
-### 4.1 Falta de criterio de negocio
-Playwright sabe hacer click. No sabe que cerrar una OT de tipo PM02 sin completar el aviso técnico rompe el cierre contable mensual de Goldfields.
+| Exigencia ISO | Cómo lo cumple el Jr |
+|---|---|
+| **Rol formalmente designado** | Persona contratada con cargo "QA & Cybersec Officer" + carta de designación firmada por CEO |
+| **Competencia documentada** | Cursos del hub QA (Onboarding Seguridad, Phishing) + capacitación inicial sobre los templates ISO |
+| **Segregación de funciones** | Validador independiente del autor del código — el Jr firma, los devs no firman su propio código |
+| **Trazabilidad operacional** | Aplica los templates ISO pre-armados a cada release y firma la liberación |
 
-### 4.2 Data real vs seed_demo_data.py
-La automatización funciona contra datos limpios. Cuando llega el CSV real de SAP con encoding latin-1, fechas alemanas y comillas mal escapadas, el script falla o pasa en silencio.
+### Lo que opera el Jr día a día
+- Aplica el Test Plan template a cada release
+- Documenta test cases, ejecuta tests E2E con Playwright + Claude
+- Prepara reportes de testing y evidencia para auditoría
+- Revisa los reportes del qa-scanner (Trivy + Gitleaks + Nuclei) y hace triage de vulnerabilidades
+- Gestiona el catálogo de capacitación del hub QA
+- Firma la liberación de cada release (no es el autor del código)
+- Es el responsable nominal designado para Ley 21.663 Art. 8
+- Punto de contacto formal en auditorías y ante la ANCI
 
-### 4.3 Sesgo de confirmación (Hallucinated Fixes 2.0)
-Si la misma IA que escribe el código escribe el script para probarlo, valida la interpretación del autor, no el requirement del cliente.
+### Lo que ya está armado y el Jr solo opera
+- Test Plan template basado en ISO/IEC 29119-3 (lo redacto en 1 semana)
+- Pipeline qa-scanner ya en producción (Trivy + Gitleaks + Nuclei cada 24h)
+- Hub QA con módulos de capacitación, políticas, vulnerabilidades, ISO 27001
+- Procedimiento de Reporte a ANCI (lo redacto en 1 semana)
+- Plan de Respuesta a Incidentes (lo redacto en 1 semana)
 
-### 4.4 El documento como entregable
-Las normas exigen Test Plan formal (ISO/IEC 29119-3), Test Cases mapeados a requisitos, Test Summary Report, liberación firmada. **Playwright produce un HTML report con timestamps. No firma nada.**
+**Esto cumple los 4 requisitos ISO.** No hace falta más para la escala actual de VSC.
 
 ---
 
-## 5. Qué propongo concretamente
+## 4. Cómo se cubren los casos profundos sin perfil senior
+
+| Caso | Cómo se resuelve |
+|---|---|
+| Pentest con encadenamiento de vulnerabilidades | El Jr opera Nuclei + Burp Suite Community con templates pre-cargados; los hallazgos se documentan y triagean |
+| Threat modeling con contexto minero | Sesión trimestral con CEO + Jr + Lead Tech usando el framework STRIDE; el Jr documenta el output |
+| Decisiones de arquitectura de seguridad | Se discuten en review de cada feature mayor; el Jr documenta |
+| Negociación de DPAs/NDAs con clientes | CEO firma, asesoría legal externa redacta, Jr documenta y archiva |
+| Diseño del SGSI | Templates ISO 27001 ya disponibles en el hub QA; el Jr aplica |
+
+**Para certificación inicial ISO 27001 esto es suficiente.** Si después crece la pipeline mining y necesitamos más profundidad, evaluamos pasar al Jr a Mid.
+
+---
+
+## 5. Los 4 problemas que la IA por sí sola no cubre
+
+(Esto sigue siendo cierto y es lo que el rol humano del Jr resuelve.)
+
+### 5.1 Falta de criterio de negocio
+Playwright sabe hacer click. No sabe que cerrar una OT de tipo PM02 sin completar el aviso técnico rompe el cierre contable mensual de Goldfields. El Jr aprende esto leyendo documentación operacional del cliente.
+
+### 5.2 Data real vs seed_demo_data.py
+La automatización funciona contra datos limpios. Cuando llega el CSV real de SAP con encoding latin-1, fechas alemanas y comillas mal escapadas, el script falla. El Jr documenta los formatos aceptados y rechaza los inválidos.
+
+### 5.3 Sesgo de confirmación
+Si la misma IA que escribe el código escribe el script para probarlo, valida la interpretación del autor. **El Jr rompe ese ciclo: él valida, no escribe el código.** Eso es lo que ISO exige.
+
+### 5.4 El documento como entregable
+Las normas exigen Test Plan formal, Test Cases mapeados a requisitos, Test Summary Report, liberación firmada. Playwright produce un HTML report con timestamps. **El Jr firma con su nombre.**
+
+---
+
+## 6. Qué propongo concretamente
 
 ### Acción inmediata (próximos 30 días)
-1. **Contratar QA Jr** — perfil junior (1-2 años de experiencia), supervisado por mí como Lead Tech. Costo: $1.2M-1.8M CLP/mes
-2. **Empezar la remediación de los 3 proyectos en paralelo** — antes de que la deuda crezca más
-3. **Definir el Test Plan template basado en ISO/IEC 29119-3** — yo lo redacto en 1 semana, el Jr lo aplica desde el día 1
-
-### Por qué Jr y no Senior
-ISO no exige "senior" — exige **rol definido + competencia documentada + segregación de funciones**. Un Jr bien entrenado, supervisado técnicamente por mí y operando templates pre-armados, cumple los 3 requisitos. La segregación se mantiene porque el Jr (validador) es persona distinta al dev (autor). Senior queda como upgrade futuro cuando crezca la pipeline mining.
+1. **Abrir búsqueda de QA & Cybersec Officer Jr** — perfil con 1-2 años de experiencia, idealmente con interés en ISO/normativa
+2. **Templates pre-armados listos** — Test Plan basado en ISO/IEC 29119-3, Procedimiento de Reporte a ANCI, Plan de Respuesta a Incidentes (los redacto en 1 semana)
+3. **Designación formal por escrito** firmada por ti — necesario para cumplir Ley 21.663 Art. 8 desde el día 1 del Jr
+4. **Plan de capacitación inicial** del Jr — usar los cursos del hub QA + 2 semanas de onboarding sobre los templates
 
 ### Mediano plazo (3-6 meses)
-1. **Implementar pipeline IA + QA híbrido**: la IA hace el trabajo técnico, el QA Lead firma y mantiene la trazabilidad
-2. **Iniciar formalmente certificación ISO 27001** — el hub QA ya nos da 73% de cobertura, llegar a 95% con QA Lead lleva ~6 meses
-3. **Auditoría interna de gap** contra Vendor Risk Assessment de Goldfields
+1. **Implementar pipeline IA + QA híbrido**: la IA hace testing técnico, el Jr firma trazabilidad
+2. **Iniciar formalmente certificación ISO 27001** — el hub QA ya nos da 73% de cobertura
 
 ### Decisión que necesito de ti
 Una sola pregunta concreta:
 
-> ¿Procedemos con publicación de la búsqueda de QA Jr esta semana, o esperamos al cierre del próximo deal?
+> **¿Procedemos con publicación de la búsqueda esta semana, o esperamos al cierre del próximo deal?**
 
-Si esperamos al próximo deal, asumimos formalmente que aceptamos los $5M-10M CLP adicionales de costo de remediación que se acumulan en ese tiempo, **y** asumimos el riesgo de que el deal pida certificación ISO en RFP y no podamos responder.
+Si esperamos, asumimos formalmente que la deuda ISO sigue creciendo y que estamos en exposición legal continua respecto a Ley 21.663.
 
 ---
 
-## 6. Lo que NO te estoy pidiendo
+## 7. Lo que NO te estoy pidiendo
 
 - ✗ Frenar la integración de Playwright + Claude (al contrario, la aceleramos)
-- ✗ Contratar un equipo de 5 testers (con 1 QA Jr supervisado alcanza)
-- ✗ Contratar un Senior caro de $3M-3.5M/mes (un Jr bien entrenado cubre los requisitos ISO)
-- ✗ Bajar la velocidad de desarrollo (los procesos ISO bien diseñados no frenan al equipo, lo formalizan)
+- ✗ Contratar dos roles separados (QA + Security) — un Jr cubre ambos para nuestra escala
+- ✗ Contratar un Senior — un Jr capacitado con los templates y la pipeline IA cumple los requisitos ISO
+- ✗ Bajar la velocidad de desarrollo (los procesos bien diseñados no frenan, formalizan)
 - ✗ Empezar la certificación ISO mañana (es un proceso de 6-9 meses, hay tiempo)
 
-**Te estoy pidiendo abrir la búsqueda del QA Jr en abril 2026 en lugar de octubre 2026, porque cada mes que esperamos cuesta más caro que el sueldo de la persona.**
+**Te estoy pidiendo abrir la búsqueda de un Jr en abril 2026 en lugar de octubre 2026, porque cada mes que esperamos suma releases sin trazabilidad y días de exposición a Ley 21.663.**
 
 ---
 
-## Anexo A — Detalle del cálculo de remediación retroactiva
+## Anexo A — Por qué un Jr es legítimo ante un auditor ISO
 
-| Concepto | Costo unitario | Cantidad (a 6 meses) | Total |
-|---|---|---|---|
-| Reconstrucción de Test Plan por proyecto | $4M-8M CLP | 3 proyectos | $12M-24M |
-| Documentación de Test Cases retroactivos | $2M-4M CLP | 3 proyectos | $6M-12M |
-| Generación de evidencia de testing per-release | $50K-100K CLP | 300 releases | $15M-30M |
-| Auditoría legal del proceso de remediación | $1M-2M CLP | 1 | $1M-2M |
-| **Total estimado** | | | **$34M-68M CLP** |
+Caso de auditoría real:
 
-Comparado con: **QA Jr a 6 meses = $7M-11M CLP**.
-**Ratio: 4x-6x más caro remediar que prevenir con un Jr supervisado.**
+> **Auditor:** *"¿Quién es su responsable de Calidad?"*
+> **VSC:** *"Es Juanito, QA & Cybersec Officer. Lleva 8 meses en el rol, tiene certificación de [X], y ha firmado las últimas 80 liberaciones. Su designación está firmada por el CEO con fecha 5 de mayo 2026."*
+> **Auditor:** *"¿Qué experiencia tiene en ISO?"*
+> **VSC:** *"Completó cursos de [X], aplica nuestro Test Plan template basado en 29119-3, mantiene los registros de testing y los reportes del scanner. Aquí están los reportes."*
+> **Auditor:** *"OK, control A.5.3 cumplido."*
+
+El auditor **no busca diplomas — busca el sistema funcionando**. Un Jr operando el sistema bien es exactamente lo que la norma exige.
+
+Lo que NO funciona es:
+- "El dev que hizo el código firma sus propias liberaciones" → no conformidad mayor
+- "El sistema valida automáticamente con IA" → no conformidad mayor
+- "No tenemos rol formal asignado" → no conformidad mayor
+
+Cualquiera de estas tres = no certificación.
 
 ---
 

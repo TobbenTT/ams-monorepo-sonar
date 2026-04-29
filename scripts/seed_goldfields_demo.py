@@ -1114,6 +1114,7 @@ def seed_pa_demo_patterns(db):
             created = now - timedelta(days=20 - k * 1.2)  # ~1 día entre cada uno
             wr = WorkRequestModel(
                 aviso_number=_next_aviso_number(db),
+                plant_id=PLANT,
                 equipment_id=tag,
                 equipment_tag=tag,
                 resolution_method="MANUAL",

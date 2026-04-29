@@ -1,5 +1,5 @@
 # La deuda silenciosa
-## Por qué cada release sin QA es una factura que ISO va a cobrar
+## Por qué un perfil Jr cubriendo QA + Ciberseguridad es viable y necesario
 
 **David Cabezas — Lead Tech VSC · 2026-04**
 
@@ -13,9 +13,9 @@
 (Esa pregunta tiene respuesta técnica obvia — la IA acelera, pero no firma)
 
 **Es:**
-> *"¿Cuánto cuesta seguir acumulando releases sin QA antes de que ISO nos pida la trazabilidad?"*
+> *"¿Es viable que un solo perfil Jr cubra QA + Ciberseguridad operativa para nuestra escala?"*
 
-Esta pregunta tiene una respuesta numérica. Y los números no son cómodos.
+**Mi respuesta basada en lo que ISO realmente exige: sí.**
 
 ---
 
@@ -41,6 +41,8 @@ Lo que sigue es lo que la demo no muestra:
 │  0 con test plan formal firmado         │
 │  0 con aprobación de pase identificada  │
 │  0 con segregación de funciones         │
+│  540 días sin responsable designado     │
+│  (Ley 21.663 Art. 8)                    │
 └──────────────────────────────────────────┘
 ```
 
@@ -60,8 +62,9 @@ Te pide:
 - Test plan firmado → ¿quién y cuándo?
 - Aprobación de pase a producción → **nombre de la persona**
 - Segregación de funciones → autor ≠ aprobador
+- Responsable de ciberseguridad → **nombre + designación formal**
 
-**Si no puedes mostrar esto para los últimos 12 meses, el certificado no avanza.**
+**Si no puedes mostrar esto para los últimos 12 meses, ni el certificado ISO ni el cumplimiento de Ley 21.663 avanzan.**
 
 ---
 
@@ -71,7 +74,7 @@ Te pide:
 "Te certifico solo desde 2026". AMS queda fuera del alcance. Inservible para vender a Goldfields.
 
 **Opción B — Remediación retroactiva:**
-3-6 meses reconstruyendo papeleo. Costo: $34M-68M CLP. Auditor decente lo detecta.
+3-6 meses reconstruyendo papeleo. Auditor decente lo detecta como antedatado.
 
 **Opción C — Te rechazan:**
 6-12 meses operando "limpio" antes de re-aplicar. Pierdes licitaciones todo ese tiempo.
@@ -80,115 +83,101 @@ Te pide:
 
 ---
 
-## Slide 6 · La curva de la deuda
-
-```
-Costo CLP
-   ↑
-   │                                              ╱── Remediación
-80M┤                                          ╱
-   │                                      ╱
-60M┤                                  ╱
-   │                              ╱
-40M┤                          ╱
-   │                      ╱
-20M┤  ◄── Decisión   ╱
-   │       hoy   ╱
- 0 ┤_________╱_______..............................→ QA Jr contratado ahora
-   0     3 meses   6 meses     9 meses    12 meses
-```
-
-**Cruce:** mes 2-3 con QA Jr ($1.5M/mes). Después de ese punto, salirse cuesta más que tener QA todo el tiempo.
-
----
-
-## Slide 7 · Lo que también acumulamos del lado seguridad
-
-**Ley 21.663 (Marco de Ciberseguridad, vigente 2024):**
-- Art. 8: obligación de tener responsable de ciberseguridad designado
-- VSC opera con datos confidenciales de mining = **540 días en incumplimiento acumulado**
-- Multas: hasta 20.000 UTM (~$1.300M CLP)
-
-**Ley 21.719 (Datos Personales, entra 2026):**
-- Obligación de DPO si manejas datos sensibles
-- Plazo de adecuación corriendo
-
-**No es prevención. Es exposición legal activa hoy.**
-
----
-
-## Slide 8 · El argumento legal — "Cada Dev con su IA Playwright"
+## Slide 6 · Lo que ISO realmente exige (no lo que asumimos)
 
 **ISO 27001 control A.5.3 — Segregación de Funciones:**
-> *"Las tareas y áreas de responsabilidad en conflicto deben estar segregadas para reducir las oportunidades de modificación o uso indebido no autorizado."*
+> *"Las tareas y áreas de responsabilidad en conflicto deben estar segregadas."*
+
+**ISO 27001 control A.6.1 — Roles y responsabilidades:**
+> *"La organización debe establecer y comunicar las responsabilidades y autoridades para los roles relevantes."*
+
+**Ley 21.663 Art. 8:**
+> *"Las instituciones obligadas deberán contar con personal designado para la gestión de la ciberseguridad."*
+
+**Ninguna dice "Senior". Ninguna dice "experto certificado". Dicen "rol designado, competente, segregado del autor del código".**
+
+---
+
+## Slide 7 · Por qué un Jr cubre ambos roles
+
+| Función | Quién la hace |
+|---|---|
+| Tests automatizados E2E | IA (Playwright + Claude) |
+| Operar Test Plan template | **QA & Cybersec Officer Jr** |
+| Firmar liberaciones | **Jr (validador, no autor)** |
+| Operar reportes scanner Trivy/Gitleaks/Nuclei | **Jr** |
+| Responder a ANCI ante incidentes | **Jr designado** |
+| Pentest continuo con Nuclei + Burp | **Jr** sobre la pipeline ya armada |
+| Threat modeling trimestral | CEO + Jr (sesión STRIDE) |
+| Decisiones de arquitectura de seguridad | Documentadas en review de cada feature |
+
+**Un solo Jr opera todo el día a día con los templates y la pipeline ya armadas.**
+
+---
+
+## Slide 8 · Lo que NO funciona — "cada dev con su IA"
 
 **Si Dev escribe código + configura IA + acepta resultado IA + aprueba merge:**
 = **una sola entidad de responsabilidad**
 = **No conformidad mayor en auditoría ISO 27001**
 
-La IA es la herramienta del dev. No una entidad independiente. **Para el auditor, sigue siendo el creador validándose a sí mismo.**
+La IA es la herramienta del dev. No una entidad independiente.
+**Para el auditor, sigue siendo el creador validándose a sí mismo.**
+
+**El Jr rompe ese ciclo:** él valida, no escribe el código. Eso es lo que ISO exige, no más.
 
 ---
 
 ## Slide 9 · Mi propuesta concreta
 
-### **QA Jr — abril 2026**
-- 1 persona, perfil junior (1-2 años de experiencia)
-- Supervisado técnicamente por Lead Tech (yo)
-- Responsabilidades: aplicar Test Plan template, documentar test cases, firmar liberaciones
-- Costo: **$1.2M-1.8M CLP/mes**
+### **QA & Cybersec Officer Jr — abril 2026**
 
-### **Security Lead — mayo 2026**
-- 1 persona, idealmente part-time / contractor con experiencia
-- Responsabilidades: cumplimiento Ley 21.663, threat modeling, firma DPAs
-- Costo: **$1.5M-2.5M CLP/mes part-time**
+**Un solo perfil cubriendo ambos roles** operando los templates y la pipeline IA ya armadas.
 
-### **Total mensual:** $2.7M-4.3M CLP
-### **Vs costo de remediación retroactiva en 12 meses:** $34M-68M CLP
+Responsabilidades operacionales:
+- Aplicar Test Plan template a cada release
+- Firmar liberaciones (validador independiente)
+- Operar reportes del qa-scanner (Trivy + Gitleaks + Nuclei)
+- Responsable nominal de Ley 21.663 Art. 8
+- Punto de contacto en auditorías
+- Triage de vulnerabilidades + gestión del SGSI
 
-**Ratio 8x-25x: prevenir con Jr supervisado es radicalmente más barato que remediar.**
+**Tiempo estimado de búsqueda:** 30-45 días.
+**Time to ISO compliance una vez incorporado:** 6-9 meses.
 
 ---
 
 ## Slide 10 · La decisión que necesito de ti
 
-**Dos preguntas concretas:**
+**Una pregunta concreta:**
 
-1. **¿Abrimos las búsquedas de QA Jr y Security Lead esta semana?**
-   - Sí → publicación en LinkedIn / Get on Board / Trabajando.com en 7 días
-   - No → asumimos formalmente $5M-10M CLP adicionales de deuda hasta la próxima decisión
+> **¿Abrimos la búsqueda de QA & Cybersec Officer Jr esta semana, o esperamos al cierre del próximo deal?**
 
-2. **¿Quieres que asuma el rol nominal de Security Lead temporalmente** mientras buscamos al externo (90 días máx)?
-   - Sí → carta de designación + adendum salarial → cumplimos Ley 21.663 desde la próxima semana
-   - No → quedamos en exposición legal hasta tener al contractor
+- **Sí** → publicación en LinkedIn / Get on Board / Trabajando.com en 7 días
+- **No** → asumimos formalmente que la deuda ISO sigue creciendo y que estamos en exposición continua a Ley 21.663
 
 ---
 
 ## Slide 11 · Lo que NO te estoy pidiendo
 
 - ✗ Frenar la integración de Claude + Playwright (al contrario, la aceleramos)
-- ✗ Contratar equipos de QA o seguridad (1 persona en cada rol alcanza)
-- ✗ Empezar la certificación ISO mañana (es proceso de 6-9 meses, hay tiempo)
-- ✗ Bajar la velocidad de desarrollo (los procesos bien diseñados no frenan, formalizan)
+- ✗ Contratar dos roles separados (QA y Security)
+- ✗ Contratar a un experto Senior
+- ✗ Empezar la certificación ISO mañana (es proceso de 6-9 meses)
+- ✗ Bajar la velocidad de desarrollo
 
-**Te estoy pidiendo abrir las dos búsquedas en abril 2026 en lugar de octubre 2026.**
-**Diferencia: $20M-40M CLP en deuda evitada + cumplimiento legal inmediato.**
-
-**Costo total mensual del plan: $2.7M-4.3M CLP** (similar a contratar un dev junior).
-**Costo de no hacerlo: $34M-68M CLP de remediación + multas Ley 21.663 hasta $1.300M CLP.**
+**Te estoy pidiendo abrir UNA búsqueda esta semana** para un perfil Jr que cubra QA + Ciberseguridad operativa, supervisado técnicamente por mí.
 
 ---
 
 ## Slide 12 · Cierre
 
-**La automatización con IA no es la pregunta — es nuestra ventaja competitiva.**
+**La automatización con IA es nuestra ventaja — la mantenemos y la potenciamos.**
 
-**La pregunta es esta:**
+**Lo que falta es la firma humana que las normas ISO y la Ley 21.663 exigen, y que un perfil Jr supervisado puede entregar.**
 
-¿Vamos a operar 12 meses más sin QA y Security formales, sabiendo que cada release es una factura que ISO eventualmente nos va a cobrar?
+¿Vamos a operar otros 6 meses sin responsable designado, sabiendo que cada release suma deuda y cada día suma exposición legal?
 
-O preferimos pagar el costo conocido ahora ($4M-6M/mes) y entrar a las licitaciones de mining con el papeleo en regla.
-
-**No hay tercera opción.** O acumulamos deuda, o la prevenimos.
+¿O abrimos la búsqueda esta semana?
 
 — **David Cabezas**, Lead Tech VSC

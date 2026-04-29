@@ -200,6 +200,19 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRe
     if (safeIdx >= visible.length - 1) setIdx(Math.max(0, safeIdx - 1));
   };
 
+  // Negative-pair memory: persiste el dismiss en backend para que la IA no
+  // vuelva a sugerir esta combinación.
+  const dismissAndLearn = async () => {
+    const wrA = current.id || current.request_id;
+    const wrB = dup.request_id || dup.id;
+    if (wrA && wrB) {
+      try {
+        await api.dismissDuplicatePair({ wr_a_id: wrA, wr_b_id: wrB, plant_id: current.plant_id });
+      } catch { /* silencioso */ }
+    }
+    dismissOne();
+  };
+
   return (
     <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 space-y-3">
       {/* Header */}
@@ -243,7 +256,7 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRe
 
         {/* Duplicate */}
         <div className="bg-amber-50 rounded-lg border-2 border-amber-300 p-2.5 relative">
-          <button onClick={dismissOne} className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors" title="Not a duplicate">
+          <button onClick={dismissAndLearn} className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white border border-gray-200 hover:bg-emerald-50 hover:border-emerald-300 flex items-center justify-center text-gray-400 hover:text-emerald-600 transition-colors" title="No es duplicado · la IA aprende y no vuelve a sugerirlo">
             <X size={10} />
           </button>
           <div className="text-[10px] font-bold text-amber-700 uppercase mb-1.5">Duplicate #{safeIdx + 1}</div>
@@ -254,9 +267,14 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRe
               <span className={`text-[10px] font-bold ${dup.priority === 'P1' ? 'text-red-600' : dup.priority === 'P2' ? 'text-orange-600' : 'text-gray-500'}`}>{dup.priority || 'P3'}</span>
               <span className={`text-[10px] font-bold ${dup.status === 'APROBADO' ? 'text-green-600' : 'text-gray-500'}`}>{dup.status}</span>
             </div>
-            <button onClick={() => onViewDuplicate(dup)} className="text-[10px] px-2 py-0.5 rounded bg-amber-200 text-amber-800 hover:bg-amber-300 font-semibold">
-              View
-            </button>
+            <div className="flex gap-1">
+              <button onClick={() => onViewDuplicate(dup)} className="text-[10px] px-2 py-0.5 rounded bg-amber-200 text-amber-800 hover:bg-amber-300 font-semibold">
+                View
+              </button>
+              <button onClick={dismissAndLearn} className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-semibold border border-emerald-300" title="No es duplicado — la IA aprende">
+                ✓ No dup
+              </button>
+            </div>
           </div>
         </div>
       </div>

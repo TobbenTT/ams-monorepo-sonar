@@ -991,6 +991,104 @@ def duplicate_check(
     )
 
 
+class SapSyncQueueRequest(BaseModel):
+    entity_type: str = "managed_work_order"
+    entity_id: str
+    direction: str = "OUTBOUND"  # INBOUND | OUTBOUND
+    payload: dict | None = None
+
+
+@router.post("/agentic/sap-sync/queue")
+def sap_sync_queue(
+    data: SapSyncQueueRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """SF-591 (Phase 2 stub) — Encola un evento de sincronización SAP.
+    El conector real (RFC/OData) no está activo. Esto persiste el evento en
+    sap_sync_log con status=PENDING para que el worker lo procese cuando
+    Goldfields entregue credenciales."""
+    from api.database.models import SapSyncLogModel
+    log = SapSyncLogModel(
+        entity_type=data.entity_type,
+        entity_id=data.entity_id,
+        status="PENDING",
+        payload={"direction": data.direction, **(data.payload or {})},
+    )
+    db.add(log)
+    db.commit()
+    return {
+        "id": log.id,
+        "status": "PENDING",
+        "message": "Evento encolado. Se procesará cuando se active el conector SAP real (Phase 2).",
+    }
+
+
+@router.get("/agentic/sap-sync/queue")
+def sap_sync_queue_list(
+    db: Session = Depends(get_db),
+    limit: int = 50,
+    user=Depends(get_current_user),
+):
+    """Lista los últimos N eventos en la cola sap_sync_log."""
+    from api.database.models import SapSyncLogModel
+    rows = db.query(SapSyncLogModel).order_by(SapSyncLogModel.created_at.desc()).limit(limit).all()
+    return {
+        "phase": "PHASE_2",
+        "connector_active": False,
+        "message": "Conector SAP no activo. Eventos quedan PENDING hasta integración real.",
+        "items": [
+            {
+                "id": r.id,
+                "entity_type": r.entity_type,
+                "entity_id": r.entity_id,
+                "status": r.status,
+                "attempts": r.attempts,
+                "last_error": r.last_error,
+                "sap_ref": r.sap_ref,
+                "payload": r.payload,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.get("/agentic/sap-sync/health")
+def sap_sync_health(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Health check del conector SAP. Devuelve status de Phase 2 + estadísticas cola."""
+    from api.database.models import SapSyncLogModel
+    pending = db.query(SapSyncLogModel).filter(SapSyncLogModel.status == "PENDING").count()
+    sent = db.query(SapSyncLogModel).filter(SapSyncLogModel.status == "SENT").count()
+    failed = db.query(SapSyncLogModel).filter(SapSyncLogModel.status == "FAILED").count()
+    return {
+        "phase": "PHASE_2",
+        "connector_active": False,
+        "endpoints": {
+            "inbound_costs": "stub",  # MM costs
+            "inbound_strategies": "stub",  # PM plans
+            "inbound_technical_locations": "stub",  # IH08
+            "outbound_findings": "stub",  # IA hallazgos → SAP MoC
+            "outbound_strategy_updates": "stub",
+            "outbound_fmeca_rpn": "stub",
+        },
+        "pending_count": pending,
+        "sent_count": sent,
+        "failed_count": failed,
+        "blockers": [
+            "Credenciales SAP del cliente (RFC user, hostname, certificados)",
+            "Decidir transporte: PyRFC clásico vs OData REST",
+            "Definir módulos PM activos (IK17, IW31/IW32, IH08, EK01)",
+            "Mapeo de campos OCP → SAP (Custom Z-tables si aplica)",
+        ],
+        "estimated_effort_hours": 60,
+    }
+
+
 class CostAnalysisRequest(BaseModel):
     plant_id: str | None = None
 

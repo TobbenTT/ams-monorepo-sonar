@@ -830,6 +830,10 @@ export const autoTriggerRcaFromClusters = (d) => post('/agentic/auto-trigger-rca
 export const stockForecast = (d) => post('/agentic/stock-forecast', d);
 // SF-588: análisis costos por UT + clase de gasto (drill-down jerárquico)
 export const costAnalysis = (d) => post('/agentic/cost-analysis', d);
+// SF-591: SAP sync (Phase 2 stub honest)
+export const sapSyncHealth = () => get('/agentic/sap-sync/health');
+export const sapSyncQueueList = (p) => get('/agentic/sap-sync/queue', p);
+export const sapSyncQueueAdd = (d) => post('/agentic/sap-sync/queue', d);
 export const agenticPlannerAutofill = (d) => post('/agentic/planner-autofill', d);
 export const adviseRCMStrategy = (d) => post('/agentic/rcm-advisor', d);
 export const voiceCapture = (d) => post('/agentic/voice-capture', d);

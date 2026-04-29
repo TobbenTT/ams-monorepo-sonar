@@ -281,6 +281,26 @@ def push_defect_to_fmeca(db: Session, analysis_id: str) -> dict | None:
     ws.rows = rows
     log_action(db, "fmeca_worksheet", ws.worksheet_id, f"DE_LINK_{action}",
                {"rca_id": analysis_id, "failure_mode": fm_label, "rpn_before": rpn_before, "rpn_after": rpn_after})
+    # SF-591: encolar para SAP sync (Phase 2)
+    try:
+        from api.database.models import SapSyncLogModel
+        sync = SapSyncLogModel(
+            entity_type="fmeca_finding",
+            entity_id=ws.worksheet_id,
+            status="PENDING",
+            payload={
+                "direction": "OUTBOUND",
+                "source": "DEFECT_ELIMINATION",
+                "rca_id": analysis_id,
+                "equipment_id": obj.equipment_id,
+                "failure_mode": fm_label,
+                "rpn_before": rpn_before,
+                "rpn_after": rpn_after,
+            },
+        )
+        db.add(sync)
+    except Exception:
+        pass
     db.commit()
     return {
         "analysis_id": analysis_id,

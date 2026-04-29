@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Package, Gauge, Shield, ShoppingCart, DollarSign, Database,
   AlertTriangle, Clock, CheckCircle, XCircle, Thermometer, Activity, Droplets,
   Zap, BarChart3, ChevronRight, Search, Filter, Warehouse } from 'lucide-react';
-import { listMaintenancePlans, getEquipmentBOM, listMeasuringPoints, listPermits, listPurchaseReqs, listCostCenters, listSettlementRules, listInventory } from '../api';
+import { listMaintenancePlans, getEquipmentBOM, listMeasuringPoints, listPermits, listPurchaseReqs, listCostCenters, listSettlementRules, listInventory, sapSyncHealth, sapSyncQueueList, sapSyncQueueAdd } from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
@@ -14,6 +14,7 @@ const TABS = [
   { id: 'purchase', label: 'Requisitions', icon: ShoppingCart, sap: 'ME51N' },
   { id: 'costs', label: 'Cost Centers', icon: DollarSign, sap: 'KO88' },
   { id: 'inventory', label: 'Inventory', icon: Warehouse, sap: 'MM60' },
+  { id: 'sync', label: 'Sync Bidireccional (SF-591)', icon: Database, sap: 'Phase 2' },
 ];
 
 const STATUS_COLORS = {
@@ -446,6 +447,130 @@ export default function SapPmPage() {
           </table>
         </div>
       )}
+      {/* SF-591 — Sync bidireccional SAP (Phase 2 stub honest) */}
+      {!loading && tab === 'sync' && (
+        <SapSyncPanel />
+      )}
+    </div>
+  );
+}
+
+function SapSyncPanel() {
+  const [health, setHealth] = useState(null);
+  const [queue, setQueue] = useState([]);
+  useEffect(() => {
+    sapSyncHealth().then(setHealth).catch(() => setHealth(null));
+    sapSyncQueueList({ limit: 50 }).then(r => setQueue(r?.items || [])).catch(() => setQueue([]));
+  }, []);
+  return (
+    <div className="space-y-4">
+      {/* Banner Phase 2 */}
+      <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-5">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-8 h-8 text-amber-600 flex-shrink-0 mt-1" />
+          <div className="flex-1">
+            <h3 className="text-base font-bold text-amber-900 mb-1">Integración SAP bidireccional — Phase 2</h3>
+            <p className="text-sm text-amber-800 mb-2">
+              <strong>Conector SAP no activo.</strong> Los hallazgos de la IA (fallas crónicas, FMECA, RCA, cambios de estrategia)
+              se encolan localmente en <code className="bg-amber-100 px-1 rounded">sap_sync_log</code> con status PENDING.
+              Cuando se active la integración real, el worker procesará la cola.
+            </p>
+            <div className="text-xs text-amber-700 mt-3 space-y-1">
+              <strong>Bloqueadores para activación:</strong>
+              <ul className="list-disc list-inside space-y-0.5 ml-2">
+                {(health?.blockers || []).map((b, i) => <li key={i}>{b}</li>)}
+              </ul>
+              <p className="mt-2"><strong>Esfuerzo estimado:</strong> {health?.estimated_effort_hours || 60}h una vez recibidas credenciales.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Endpoints status */}
+      <div className="bg-white rounded-xl border p-5">
+        <h3 className="text-sm font-bold text-gray-800 mb-3">Endpoints planificados</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="border-l-4 border-blue-400 bg-blue-50/40 rounded-r-lg p-3">
+            <h4 className="text-xs font-bold text-blue-800 uppercase mb-2">⬇ Inbound (SAP → MAGEAM)</h4>
+            <ul className="text-xs space-y-1.5 text-gray-700">
+              <li>📋 <strong>Costos plan/real</strong> por OT (BAPI_PROD_ORDER_GET_DETAIL)</li>
+              <li>📅 <strong>Estrategias mantenimiento</strong> (IK17 / IP10)</li>
+              <li>🏭 <strong>Ubicaciones técnicas</strong> + maestros equipos (IH08)</li>
+              <li>💰 <strong>Centros de costo</strong> (KS03)</li>
+              <li>📦 <strong>Inventario MM</strong> (MMBE / MM60)</li>
+            </ul>
+          </div>
+          <div className="border-l-4 border-rose-400 bg-rose-50/40 rounded-r-lg p-3">
+            <h4 className="text-xs font-bold text-rose-800 uppercase mb-2">⬆ Outbound (MAGEAM → SAP)</h4>
+            <ul className="text-xs space-y-1.5 text-gray-700">
+              <li>🔥 <strong>Fallas crónicas</strong> → Avisos QM</li>
+              <li>📊 <strong>FMECA RPN</strong> → Maestro equipo (Z-table)</li>
+              <li>📝 <strong>RCA findings</strong> → MoC</li>
+              <li>♻️ <strong>Strategy updates</strong> (frecuencia ajustada)</li>
+              <li>💸 <strong>Cierre OT</strong> con HH/material reales</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Estadísticas cola */}
+      <div className="bg-white rounded-xl border p-5">
+        <h3 className="text-sm font-bold text-gray-800 mb-3">Cola de sincronización</h3>
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+            <div className="text-[10px] uppercase font-bold text-amber-700">Pending</div>
+            <div className="text-2xl font-bold tabular-nums">{health?.pending_count ?? 0}</div>
+          </div>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+            <div className="text-[10px] uppercase font-bold text-emerald-700">Sent</div>
+            <div className="text-2xl font-bold tabular-nums">{health?.sent_count ?? 0}</div>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+            <div className="text-[10px] uppercase font-bold text-red-700">Failed</div>
+            <div className="text-2xl font-bold tabular-nums">{health?.failed_count ?? 0}</div>
+          </div>
+        </div>
+        {queue.length === 0 ? (
+          <p className="text-xs text-gray-500 italic text-center py-4">Cola vacía. Los eventos de sync aparecerán aquí cuando la IA detecte hallazgos para SAP.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 py-1.5 text-left font-bold">ID</th>
+                  <th className="px-2 py-1.5 text-left font-bold">Entidad</th>
+                  <th className="px-2 py-1.5 text-left font-bold">Status</th>
+                  <th className="px-2 py-1.5 text-center font-bold">Intentos</th>
+                  <th className="px-2 py-1.5 text-left font-bold">Creado</th>
+                  <th className="px-2 py-1.5 text-left font-bold">SAP Ref</th>
+                </tr>
+              </thead>
+              <tbody>
+                {queue.slice(0, 20).map(e => {
+                  const tone = e.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
+                               e.status === 'SENT' ? 'bg-emerald-100 text-emerald-800' :
+                               e.status === 'FAILED' ? 'bg-red-100 text-red-800' :
+                               'bg-gray-100 text-gray-700';
+                  return (
+                    <tr key={e.id} className="border-t border-gray-100">
+                      <td className="px-2 py-1.5 font-mono">#{e.id}</td>
+                      <td className="px-2 py-1.5">{e.entity_type}: {(e.entity_id || '').slice(0, 16)}</td>
+                      <td className="px-2 py-1.5"><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${tone}`}>{e.status}</span></td>
+                      <td className="px-2 py-1.5 text-center">{e.attempts}</td>
+                      <td className="px-2 py-1.5 text-gray-500">{e.created_at ? new Date(e.created_at).toLocaleDateString() : '—'}</td>
+                      <td className="px-2 py-1.5 font-mono text-gray-500">{e.sap_ref || '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <p className="text-[11px] text-gray-500 italic">
+        Jorge transcript 2026-04-28 17:56: "claro, si la herramienta se puede [conectar] con un ERP, no hay que cargarla con datos manualmente. Lo mismo la estrategia". Esta es la base — endpoints stub + queue persistente. Cuando Goldfields entregue credenciales SAP, el worker pasa de stub a real sin cambios en el resto de la app (los hallazgos ya se encolan).
+      </p>
     </div>
   );
 }

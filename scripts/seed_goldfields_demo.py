@@ -1094,6 +1094,158 @@ def seed_wos_and_wrs(db, count=100):
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════
 
+def seed_pa_demo_patterns(db):
+    """Inyecta patrones detectables por las secciones de PerformanceAnalysis:
+    - Fallas crónicas (≥3 WRs mismo equipo+modo en 7d)
+    - Cruce con estrategia (PM01 cerrados con cadencia <60d)
+    - Causas de no-cumplimiento (closure_notes con patrones "no se hizo porque...")
+    """
+    print("[PA patterns] Inyectando casos demo para secciones vacías...")
+    now = datetime.utcnow()
+    chronic_specs = [
+        ("PMP-AGUA-01", "Vibración axial bomba"),
+        ("THK-CNC-01", "Falla torque rastrillo"),
+        ("CVY-CV-001", "Patinado correa transportadora"),
+    ]
+    chronic_count = 0
+    for tag, mode in chronic_specs:
+        # 4 avisos del mismo equipo+modo en 5 días (entra en ventana 7d)
+        for k in range(4):
+            created = now - timedelta(days=20 - k * 1.2)  # ~1 día entre cada uno
+            wr = WorkRequestModel(
+                aviso_number=_next_aviso_number(db),
+                equipment_id=tag,
+                equipment_tag=tag,
+                resolution_method="MANUAL",
+                status="APROBADO",
+                problem_description={
+                    "whatHappens": mode,
+                    "failure_mode_detected": mode,
+                    "failure_category": mode,
+                    "wo_title": f"{tag} — {mode}",
+                },
+                ai_classification={
+                    "failure_mode": mode,
+                    "failure_type": mode,
+                    "part_object": mode,
+                    "suggested_specialty": "MECANICO",
+                    "estimated_hours": 4,
+                    "confidence": 0.92,
+                    "probable_cause": f"Repetición sospechosa — posible falla crónica ({mode})",
+                    "production_impact": "MEDIUM",
+                    "priority_suggested": "P2",
+                },
+                priority_code="P2",
+                work_class="NO_PROGRAMADO",
+                created_by="admin",
+                reported_by="mantenedor_turno",
+                reported_at=created,
+                circumstances=f"Repetición #{k+1} del mismo modo en pocos días",
+                planning_group="MEC",
+                work_center="MEC",
+                created_at=created,
+                approved_at=created + timedelta(hours=2),
+                approval_comment="Aprobado — flag de potencial falla crónica",
+            )
+            db.add(wr)
+            chronic_count += 1
+    db.flush()
+
+    # ── Strategy mismatches: 3 equipos con PM01 cerrados cadencia 30d ──
+    strategy_specs = [
+        ("PMP-SL-HP-002", "Inspección rodamiento bomba"),
+        ("VLV-PN-MM-08", "Lubricación válvula neumática"),
+        ("MOL-CCO-01", "Cambio liners molino"),
+    ]
+    strategy_count = 0
+    for tag, desc in strategy_specs:
+        # 4 PM01 cerradas a 30, 60, 90, 120 días atrás → cadencia 30d (umbral <60)
+        for k in range(4):
+            actual_end = now - timedelta(days=30 * (4 - k))
+            actual_start = actual_end - timedelta(hours=4)
+            wo = ManagedWorkOrderModel(
+                wo_number=f"OT-PM-STRAT-{tag[:6]}-{k:02d}",
+                plant_id=PLANT,
+                equipment_id=tag,
+                equipment_tag=tag,
+                description=desc,
+                wo_type="PM01",
+                priority_code="P3",
+                work_class="PROGRAMADO",
+                operations=[{
+                    "op_number": 1, "description": desc, "specialty": "Mecánico",
+                    "op_type": "INT", "quantity": 1, "duration": 4, "estimated_hours": 4,
+                    "planned_hours": 4, "actual_hours": 4.2, "completion_pct": 100.0,
+                    "status": "COMPLETED", "notifications": [],
+                }],
+                materials=[], estimated_hours=4, actual_hours=4.2,
+                status="CERRADO", planning_group="MEC", work_center="MEC",
+                planned_start=actual_start, planned_end=actual_end,
+                actual_start=actual_start, actual_end=actual_end,
+                completion_pct=100.0, closed_by="supervisor_ocp",
+                closed_at=actual_end, closed_by_signature="Ricardo Valdés",
+                closure_notes="OK — preventivo programado ejecutado.",
+                planned_by="planificador_ocp", released_by="planificador_ocp",
+                released_at=actual_start - timedelta(days=1),
+                labor_cost=400000, material_cost=80000,
+                actual_total_cost=480000, budget_amount=528000, budget_approved=True,
+                created_at=actual_start - timedelta(days=2),
+                updated_at=actual_end,
+            )
+            db.add(wo)
+            strategy_count += 1
+    db.flush()
+
+    # ── Non-compliance: 3 OTs con closure_notes que matchean los patrones ──
+    nc_specs = [
+        ("CRU-CON-HP-01", "Cambio camisa cono", "No se hizo porque repuesto no llegó del proveedor a tiempo"),
+        ("BRY-SAG-ML-002", "Inspección rodamiento secundario", "Operaciones no liberó el equipo, producción no podía parar"),
+        ("PMP-REL-01", "Servicio externo bomba relave", "Servicio externo no llegó — reagendado para próxima semana"),
+    ]
+    nc_count = 0
+    for tag, desc, note in nc_specs:
+        actual_end = now - timedelta(days=random.randint(5, 25))
+        actual_start = actual_end - timedelta(hours=2)
+        wo = ManagedWorkOrderModel(
+            wo_number=f"OT-NC-{tag[:6]}-{random.randint(100,999)}",
+            plant_id=PLANT,
+            equipment_id=tag, equipment_tag=tag,
+            description=desc, wo_type="PM01",
+            priority_code="P3", work_class="PROGRAMADO",
+            operations=[{
+                "op_number": 1, "description": desc, "specialty": "Mecánico",
+                "op_type": "INT", "quantity": 1, "duration": 2, "estimated_hours": 2,
+                "planned_hours": 2, "actual_hours": 0.5, "completion_pct": 25.0,
+                "status": "COMPLETED",
+                "notif_notes": note,
+                "notifications": [{
+                    "type": "PARTIAL", "hours": 0.5,
+                    "technician_id": "Juan Pérez Soto", "shift": "day",
+                    "note": note, "timestamp": actual_start.isoformat(),
+                    "user": "supervisor_ocp",
+                }],
+            }],
+            materials=[], estimated_hours=2, actual_hours=0.5,
+            status="CERRADO", planning_group="MEC", work_center="MEC",
+            planned_start=actual_start, planned_end=actual_end,
+            actual_start=actual_start, actual_end=actual_end,
+            completion_pct=25.0, closed_by="supervisor_ocp",
+            closed_at=actual_end, closed_by_signature="Ricardo Valdés",
+            closure_notes=note,
+            execution_notes=[{"note": note, "timestamp": actual_start.isoformat(), "user": "supervisor_ocp"}],
+            planned_by="planificador_ocp", released_by="planificador_ocp",
+            released_at=actual_start - timedelta(days=1),
+            labor_cost=80000, material_cost=0,
+            actual_total_cost=80000, budget_amount=200000, budget_approved=True,
+            created_at=actual_start - timedelta(days=2),
+            updated_at=actual_end,
+        )
+        db.add(wo)
+        nc_count += 1
+    db.commit()
+    print(f"  ✓ {chronic_count} WRs (3 clusters fallas crónicas) + {strategy_count} OTs PM01 (3 cadencias desviadas) + {nc_count} OTs no-cumplimiento")
+
+
 def main():
     print("╔════════════════════════════════════════════════╗")
     print("║  SEED DEMO · GOLDFIELDS SALARES NORTE          ║")
@@ -1117,6 +1269,8 @@ def main():
         seed_fmeca_worksheets(db)
         print()
         seed_standalone_wrs(db)
+        print()
+        seed_pa_demo_patterns(db)
         print("\n✅ Seed completado.")
     except Exception as e:
         db.rollback()

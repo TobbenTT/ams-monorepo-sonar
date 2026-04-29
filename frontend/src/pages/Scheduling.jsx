@@ -1663,13 +1663,41 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                               const cellWOs = grid[cellKey] || [];
                               const isTarget = dropTarget === cellKey && dragWO;
                               const shiftBg = shift.id === 'night' ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : '';
-                              if (offShift) {
+                              // Jorge 2026-04-29: técnico de noche no puede asignarse al día (y viceversa).
+                              // Bloquea el drop + visual diferenciado para que no haya confusión.
+                              const techShiftU = (tech.shift || '').toUpperCase();
+                              const techIsNight = techShiftU === 'NIGHT' || techShiftU === 'NOCHE';
+                              const techIsDay = techShiftU === 'DAY' || techShiftU === 'MORNING' || techShiftU === 'AFTERNOON' || !techShiftU;
+                              const wrongShift = (techIsNight && shift.id === 'day') || (techIsDay && shift.id === 'night');
+                              if (offShift || wrongShift) {
+                                const reason = offShift
+                                  ? `Off-shift (${tech.shift_pattern || 'patrón no definido'})`
+                                  : `Técnico de turno ${techIsNight ? 'noche' : 'día'} — no se puede asignar al ${shift.id === 'night' ? 'turno noche' : 'turno día'}`;
+                                const tone = wrongShift
+                                  ? 'bg-rose-50/40 dark:bg-rose-900/15'
+                                  : 'bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.03)_4px,rgba(0,0,0,0.03)_8px)] dark:bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(255,255,255,0.04)_4px,rgba(255,255,255,0.04)_8px)]';
                                 return (
                                   <td key={`${d.str}-${shift.id}`}
-                                    className="px-1 py-1 border-r border-border/50 align-top bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.03)_4px,rgba(0,0,0,0.03)_8px)] dark:bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(255,255,255,0.04)_4px,rgba(255,255,255,0.04)_8px)]"
+                                    className={`px-1 py-1 border-r border-border/50 align-top ${tone} cursor-not-allowed`}
                                     style={{ minHeight: 70, minWidth: 120 }}
-                                    title={`Off-shift (${tech.shift_pattern || 'patrón no definido'})`}>
-                                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-semibold text-center mt-4">OFF</div>
+                                    title={reason}
+                                    onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'none'; }}
+                                    onDrop={e => {
+                                      e.preventDefault();
+                                      if (dragWO) {
+                                        toast({
+                                          kind: 'error',
+                                          text: wrongShift
+                                            ? `${tech.name} es de turno ${techIsNight ? 'noche' : 'día'} · no se puede asignar al ${shift.id}`
+                                            : 'Off-shift: técnico no disponible este día'
+                                        });
+                                        setDragWO(null);
+                                        setDropTarget(null);
+                                      }
+                                    }}>
+                                    <div className={`text-[9px] uppercase tracking-wider font-semibold text-center mt-4 ${wrongShift ? 'text-rose-600/70' : 'text-muted-foreground/60'}`}>
+                                      {wrongShift ? (techIsNight ? '🌙 NOCHE' : '☀️ DÍA') : 'OFF'}
+                                    </div>
                                   </td>
                                 );
                               }

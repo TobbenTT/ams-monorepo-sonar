@@ -698,10 +698,10 @@ export const importUpload = async (file, source, plantId) => {
 export const importJigsawExcel = async (file) => {
   const fd = new FormData();
   fd.append('file', file);
-  const token = localStorage.getItem('token');
-  const res = await fetch((window.__API_BASE || '/api') + '/analytics/import-jigsaw-excel', {
+  const token = getToken();
+  const res = await fetch(BASE + '/analytics/import-jigsaw-excel', {
     method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token },
+    headers: token ? { 'Authorization': 'Bearer ' + token } : {},
     body: fd,
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || res.statusText); }

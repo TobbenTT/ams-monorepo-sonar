@@ -93,12 +93,12 @@ Costo CLP
 40M┤                          ╱
    │                      ╱
 20M┤  ◄── Decisión   ╱
-   │       hoy   ╱──────────────────── QA Lead contratado ahora
- 0 ┤_________╱______________________________________→ Tiempo
+   │       hoy   ╱
+ 0 ┤_________╱_______..............................→ QA Jr contratado ahora
    0     3 meses   6 meses     9 meses    12 meses
 ```
 
-**Cruce:** mes 4-5. Después de ese punto, salirse cuesta más que tener QA todo el tiempo.
+**Cruce:** mes 2-3 con QA Jr ($1.5M/mes). Después de ese punto, salirse cuesta más que tener QA todo el tiempo.
 
 ---
 
@@ -132,20 +132,21 @@ La IA es la herramienta del dev. No una entidad independiente. **Para el auditor
 
 ## Slide 9 · Mi propuesta concreta
 
-### **QA Lead — abril 2026**
-- 1 persona, perfil senior
-- Responsabilidades: Test Plan formal, validación independiente, firma de liberación
-- Costo: $2.5M-3.5M CLP/mes
+### **QA Jr — abril 2026**
+- 1 persona, perfil junior (1-2 años de experiencia)
+- Supervisado técnicamente por Lead Tech (yo)
+- Responsabilidades: aplicar Test Plan template, documentar test cases, firmar liberaciones
+- Costo: **$1.2M-1.8M CLP/mes**
 
 ### **Security Lead — mayo 2026**
-- 1 persona, idealmente part-time / contractor
+- 1 persona, idealmente part-time / contractor con experiencia
 - Responsabilidades: cumplimiento Ley 21.663, threat modeling, firma DPAs
-- Costo: $1.5M-2.5M CLP/mes part-time
+- Costo: **$1.5M-2.5M CLP/mes part-time**
 
-### **Total mensual:** $4M-6M CLP
+### **Total mensual:** $2.7M-4.3M CLP
 ### **Vs costo de remediación retroactiva en 12 meses:** $34M-68M CLP
 
-**Ratio 6x-12x: prevenir es más barato que remediar.**
+**Ratio 8x-25x: prevenir con Jr supervisado es radicalmente más barato que remediar.**
 
 ---
 
@@ -153,7 +154,7 @@ La IA es la herramienta del dev. No una entidad independiente. **Para el auditor
 
 **Dos preguntas concretas:**
 
-1. **¿Abrimos las búsquedas de QA Lead y Security Lead esta semana?**
+1. **¿Abrimos las búsquedas de QA Jr y Security Lead esta semana?**
    - Sí → publicación en LinkedIn / Get on Board / Trabajando.com en 7 días
    - No → asumimos formalmente $5M-10M CLP adicionales de deuda hasta la próxima decisión
 
@@ -172,6 +173,9 @@ La IA es la herramienta del dev. No una entidad independiente. **Para el auditor
 
 **Te estoy pidiendo abrir las dos búsquedas en abril 2026 en lugar de octubre 2026.**
 **Diferencia: $20M-40M CLP en deuda evitada + cumplimiento legal inmediato.**
+
+**Costo total mensual del plan: $2.7M-4.3M CLP** (similar a contratar un dev junior).
+**Costo de no hacerlo: $34M-68M CLP de remediación + multas Ley 21.663 hasta $1.300M CLP.**
 
 ---
 

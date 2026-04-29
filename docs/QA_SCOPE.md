@@ -70,11 +70,11 @@ Ninguna de las 3 es buena. Las tres son evitables si tomamos acción ahora.
 | Momento | Releases acumulados sin QA | Costo remediación retroactiva | Costo de tener QA Lead desde ahora |
 |---|---|---|---|
 | Hoy (abril 2026) | ~150 | ~$15M-30M CLP | $0 (decisión a futuro) |
-| +3 meses (julio 2026) | ~225 | ~$22M-45M CLP | ~$10M CLP (sueldo Q3) |
-| +6 meses (octubre 2026) | ~300 | ~$30M-60M CLP | ~$20M CLP |
-| +12 meses (abril 2027) | ~450 | ~$45M-90M CLP | ~$40M CLP |
+| +3 meses (julio 2026) | ~225 | ~$22M-45M CLP | ~$5M CLP (QA Jr Q3) |
+| +6 meses (octubre 2026) | ~300 | ~$30M-60M CLP | ~$10M CLP |
+| +12 meses (abril 2027) | ~450 | ~$45M-90M CLP | ~$20M CLP |
 
-**El cruce ocurre entre el mes 4 y el mes 5.** Después de ese punto, salirse de la deuda cuesta más que tener al QA todo el tiempo.
+**El cruce ocurre entre el mes 2 y el mes 3.** Después de ese punto, salirse de la deuda cuesta más que tener al QA Jr todo el tiempo.
 
 Esta no es una proyección teórica. Cada sprint que pasa sin firma humana es una fila más en el log que el auditor te va a pedir.
 
@@ -101,9 +101,12 @@ Las normas exigen Test Plan formal (ISO/IEC 29119-3), Test Cases mapeados a requ
 ## 5. Qué propongo concretamente
 
 ### Acción inmediata (próximos 30 días)
-1. **Contratar QA Lead** — perfil senior, idealmente con experiencia en SAP/minería. Costo: $2.5M-3.5M CLP/mes
+1. **Contratar QA Jr** — perfil junior (1-2 años de experiencia), supervisado por mí como Lead Tech. Costo: $1.2M-1.8M CLP/mes
 2. **Empezar la remediación de los 3 proyectos en paralelo** — antes de que la deuda crezca más
-3. **Definir el Test Plan template basado en ISO/IEC 29119-3** — yo lo redacto en 1 semana
+3. **Definir el Test Plan template basado en ISO/IEC 29119-3** — yo lo redacto en 1 semana, el Jr lo aplica desde el día 1
+
+### Por qué Jr y no Senior
+ISO no exige "senior" — exige **rol definido + competencia documentada + segregación de funciones**. Un Jr bien entrenado, supervisado técnicamente por mí y operando templates pre-armados, cumple los 3 requisitos. La segregación se mantiene porque el Jr (validador) es persona distinta al dev (autor). Senior queda como upgrade futuro cuando crezca la pipeline mining.
 
 ### Mediano plazo (3-6 meses)
 1. **Implementar pipeline IA + QA híbrido**: la IA hace el trabajo técnico, el QA Lead firma y mantiene la trazabilidad
@@ -113,7 +116,7 @@ Las normas exigen Test Plan formal (ISO/IEC 29119-3), Test Cases mapeados a requ
 ### Decisión que necesito de ti
 Una sola pregunta concreta:
 
-> ¿Procedemos con publicación de la búsqueda de QA Lead esta semana, o esperamos al cierre del próximo deal?
+> ¿Procedemos con publicación de la búsqueda de QA Jr esta semana, o esperamos al cierre del próximo deal?
 
 Si esperamos al próximo deal, asumimos formalmente que aceptamos los $5M-10M CLP adicionales de costo de remediación que se acumulan en ese tiempo, **y** asumimos el riesgo de que el deal pida certificación ISO en RFP y no podamos responder.
 
@@ -122,11 +125,12 @@ Si esperamos al próximo deal, asumimos formalmente que aceptamos los $5M-10M CL
 ## 6. Lo que NO te estoy pidiendo
 
 - ✗ Frenar la integración de Playwright + Claude (al contrario, la aceleramos)
-- ✗ Contratar un equipo de 5 testers (con 1 QA Lead alcanza)
+- ✗ Contratar un equipo de 5 testers (con 1 QA Jr supervisado alcanza)
+- ✗ Contratar un Senior caro de $3M-3.5M/mes (un Jr bien entrenado cubre los requisitos ISO)
 - ✗ Bajar la velocidad de desarrollo (los procesos ISO bien diseñados no frenan al equipo, lo formalizan)
 - ✗ Empezar la certificación ISO mañana (es un proceso de 6-9 meses, hay tiempo)
 
-**Te estoy pidiendo abrir la búsqueda del QA Lead en abril 2026 en lugar de octubre 2026, porque cada mes que esperamos cuesta más caro que el sueldo de la persona.**
+**Te estoy pidiendo abrir la búsqueda del QA Jr en abril 2026 en lugar de octubre 2026, porque cada mes que esperamos cuesta más caro que el sueldo de la persona.**
 
 ---
 
@@ -140,8 +144,8 @@ Si esperamos al próximo deal, asumimos formalmente que aceptamos los $5M-10M CL
 | Auditoría legal del proceso de remediación | $1M-2M CLP | 1 | $1M-2M |
 | **Total estimado** | | | **$34M-68M CLP** |
 
-Comparado con: **QA Lead a 6 meses = $15M-21M CLP**.
-**Ratio: 2.2x-3.2x más caro remediar que prevenir.**
+Comparado con: **QA Jr a 6 meses = $7M-11M CLP**.
+**Ratio: 4x-6x más caro remediar que prevenir con un Jr supervisado.**
 
 ---
 

@@ -162,7 +162,7 @@ Responsabilidades operacionales:
 
 - ✗ Frenar la integración de Claude + Playwright (al contrario, la aceleramos)
 - ✗ Contratar dos roles separados (QA y Security)
-- ✗ Contratar a un experto Senior
+- ✗ Contratar a un experto Senior (un Jr sobre la pipeline IA ya armada cumple)
 - ✗ Empezar la certificación ISO mañana (es proceso de 6-9 meses)
 - ✗ Bajar la velocidad de desarrollo
 
@@ -174,7 +174,7 @@ Responsabilidades operacionales:
 
 **La automatización con IA es nuestra ventaja — la mantenemos y la potenciamos.**
 
-**Lo que falta es la firma humana que las normas ISO y la Ley 21.663 exigen, y que un perfil Jr supervisado puede entregar.**
+**Lo que falta es la firma humana que las normas ISO y la Ley 21.663 exigen, y que un perfil Jr operando los templates y la pipeline ya armadas puede entregar.**
 
 ¿Vamos a operar otros 6 meses sin responsable designado, sabiendo que cada release suma deuda y cada día suma exposición legal?
 

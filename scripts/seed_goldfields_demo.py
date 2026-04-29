@@ -1114,7 +1114,6 @@ def seed_pa_demo_patterns(db):
             created = now - timedelta(days=20 - k * 1.2)  # ~1 día entre cada uno
             wr = WorkRequestModel(
                 aviso_number=_next_aviso_number(db),
-                plant_id=PLANT,
                 equipment_id=tag,
                 equipment_tag=tag,
                 resolution_method="MANUAL",
@@ -1135,6 +1134,7 @@ def seed_pa_demo_patterns(db):
                     "probable_cause": f"Repetición sospechosa — posible falla crónica ({mode})",
                     "production_impact": "MEDIUM",
                     "priority_suggested": "P2",
+                    "plant_id": PLANT,
                 },
                 priority_code="P2",
                 work_class="NO_PROGRAMADO",

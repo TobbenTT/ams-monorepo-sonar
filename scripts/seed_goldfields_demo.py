@@ -539,8 +539,21 @@ def _generate_wr_and_wo(db, idx, workers, now):
         for op_idx, (op_desc, spec, hrs, qty) in enumerate(ops_template)
     ]
     total_hh = sum(o["hours"] * o["quantity"] for o in operations)
+    # SF-588 — clasificar cada material por clase de gasto SAP
+    def _cost_element_of(desc):
+        d = (desc or "").lower()
+        if any(k in d for k in ("aceite", "grasa", "lubric", "oil")): return "INSUMO_LUBRICANTE"
+        if any(k in d for k in ("filtro", "cinta", "polin", "manguera", "racor", "perno", "tuerca")): return "REPUESTO_CONSUMIBLE"
+        if any(k in d for k in ("rodamiento", "sello", "kit", "liner", "coraza", "impeller")): return "REPUESTO_CRITICO"
+        if any(k in d for k in ("contactor", "fusible", "relé", "sensor", "transmisor", "válvula")): return "REPUESTO_ELECTRICO"
+        if any(k in d for k in ("herramienta", "andamio", "grúa", "mandil")): return "HERRAMIENTA_EQUIPO"
+        return "REPUESTO_CONSUMIBLE"
     materials = [
-        {"code": m[0], "sap_id": m[0], "sapId": m[0], "description": m[1], "unit": m[2], "quantity": m[3], "unit_price": m[4]}
+        {
+            "code": m[0], "sap_id": m[0], "sapId": m[0],
+            "description": m[1], "unit": m[2], "quantity": m[3], "unit_price": m[4],
+            "cost_element": _cost_element_of(m[1]),
+        }
         for m in _pick_materials(equip_tag, problem)
     ]
 

@@ -834,6 +834,12 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
         wo.closed_at = datetime.now()
         if "actual_hours" in kwargs:
             wo.actual_hours = kwargs["actual_hours"]
+        # SF-589: descontar stock de bodega al cerrar (idempotente)
+        try:
+            from api.services.stock_forecast_service import consume_stock_on_close
+            consume_stock_on_close(db, wo)
+        except Exception:
+            pass
         # Jorge 2026-04-23 (reunión 17:38): al cerrar la OT, auto-cerrar el aviso vinculado.
         # Evita que el supervisor tenga que cerrar ambos por separado (como en SAP).
         if wo.work_request_id:

@@ -826,6 +826,10 @@ export const linkWRAsDuplicate = (id, d) => put(`/work-requests/${id}/link-dupli
 export const dismissDuplicatePair = (d) => post('/agentic/duplicate-dismiss', d);
 // Auto-trigger RCA: detecta clusters por equipo+modo y crea RCAs automáticamente
 export const autoTriggerRcaFromClusters = (d) => post('/agentic/auto-trigger-rca', d);
+// SF-589: predicción quiebre stock (consumo histórico + demanda planificada vs stock disponible)
+export const stockForecast = (d) => post('/agentic/stock-forecast', d);
+// SF-588: análisis costos por UT + clase de gasto (drill-down jerárquico)
+export const costAnalysis = (d) => post('/agentic/cost-analysis', d);
 export const agenticPlannerAutofill = (d) => post('/agentic/planner-autofill', d);
 export const adviseRCMStrategy = (d) => post('/agentic/rcm-advisor', d);
 export const voiceCapture = (d) => post('/agentic/voice-capture', d);

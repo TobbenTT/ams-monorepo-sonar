@@ -58,6 +58,11 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
   });
 
   const [backendKpis, setBackendKpis] = useState(null);
+  // SF-589 stock forecast (cargado al montar la página)
+  const [stockForecastData, setStockForecastData] = useState(null);
+  // SF-588 cost analysis por UT + cost element
+  const [costAnalysisData, setCostAnalysisData] = useState(null);
+  const [expandedNodes, setExpandedNodes] = useState(new Set());
   // Jorge 2026-04-28 17:56: Bad Actors deben cruzarse con lista de equipos críticos.
   // Mapa equipment_tag → criticality (A/B/C/D) leído desde hierarchy_nodes.
   const [criticalityMap, setCriticalityMap] = useState({});
@@ -88,6 +93,14 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       setCriticalityMap(map);
       setLoading(false);
     });
+    // SF-589: stock forecast en paralelo (no bloquea loading)
+    api.stockForecast({ plant_id: plant, lookback_days: 90, horizon_days: 60 })
+      .then(res => setStockForecastData(res))
+      .catch(() => setStockForecastData(null));
+    // SF-588: cost analysis jerárquico
+    api.costAnalysis({ plant_id: plant })
+      .then(res => setCostAnalysisData(res))
+      .catch(() => setCostAnalysisData(null));
   }, [plant]);
 
   // ── KPI Calculations — prefer backend when available ──
@@ -1862,46 +1875,199 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         )}
       </div>
 
-      {/* ── Consumo de repuestos ── */}
+      {/* ── SF-588: Costos drill-down por UT + clase de gasto ── */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-            📦 Consumo de repuestos (top 10)
+            🌳 SF-588 · Costos por Ubicación Técnica + Clase de gasto
           </h3>
-          <span className="text-xs text-gray-500 italic">
-            Phase 2: conexión bodega para predicción quiebre stock
-          </span>
+          {costAnalysisData?.summary_by_element?.length > 0 && (
+            <div className="text-xs text-gray-500">
+              {costAnalysisData.summary_by_element.length} clases de gasto
+            </div>
+          )}
         </div>
-        {sparePartsConsumption.length === 0 ? (
-          <p className="text-sm text-gray-400 italic text-center py-4">
-            Sin consumo de materiales registrado.
-          </p>
+        {!costAnalysisData ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">Cargando análisis…</p>
+        ) : (
+          <>
+            {/* Resumen por clase de gasto */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+              {(costAnalysisData.summary_by_element || []).slice(0, 8).map(e => {
+                const elTone = {
+                  'REPUESTO_CONSUMIBLE': 'bg-emerald-50 border-emerald-200 text-emerald-800',
+                  'REPUESTO_CRITICO': 'bg-red-50 border-red-200 text-red-800',
+                  'REPUESTO_ELECTRICO': 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                  'INSUMO_LUBRICANTE': 'bg-blue-50 border-blue-200 text-blue-800',
+                  'HERRAMIENTA_EQUIPO': 'bg-orange-50 border-orange-200 text-orange-800',
+                  'MANO_DE_OBRA': 'bg-purple-50 border-purple-200 text-purple-800',
+                  'SERVICIO_EXTERNO': 'bg-rose-50 border-rose-200 text-rose-800',
+                }[e.element] || 'bg-gray-50 border-gray-200 text-gray-700';
+                return (
+                  <div key={e.element} className={`rounded-lg p-2 border text-center ${elTone}`}>
+                    <div className="text-[10px] uppercase font-bold leading-tight">{e.label}</div>
+                    <div className="text-base font-bold tabular-nums mt-1">${Math.round(e.real).toLocaleString()}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Drill-down tree */}
+            {(costAnalysisData.tree || []).length === 0 ? (
+              <p className="text-xs text-gray-400 italic text-center py-3">Sin nodos de jerarquía con costos.</p>
+            ) : (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-bold">Ubicación Técnica</th>
+                      <th className="text-center px-2 py-2 font-bold">Tipo</th>
+                      <th className="text-right px-2 py-2 font-bold">Plan</th>
+                      <th className="text-right px-2 py-2 font-bold">Real</th>
+                      <th className="text-right px-2 py-2 font-bold">Desv.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const rows = [];
+                      const renderNode = (node, depth) => {
+                        if (!node) return;
+                        const id = node.node_id;
+                        const isExpanded = expandedNodes.has(id);
+                        const hasChildren = (node.children || []).length > 0;
+                        const dev = node.variance_pct;
+                        const devTone = Math.abs(dev) <= 10 ? 'text-emerald-700' : 'text-red-700';
+                        rows.push(
+                          <tr key={id} className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                              onClick={() => {
+                                if (!hasChildren) return;
+                                const next = new Set(expandedNodes);
+                                if (next.has(id)) next.delete(id); else next.add(id);
+                                setExpandedNodes(next);
+                              }}>
+                            <td className="px-3 py-2" style={{ paddingLeft: 12 + depth * 20 }}>
+                              {hasChildren ? (
+                                <span className="inline-block w-4 text-center text-gray-400">
+                                  {isExpanded ? '▼' : '▶'}
+                                </span>
+                              ) : <span className="inline-block w-4" />}
+                              <span className="font-semibold ml-1">{node.name}</span>
+                              <span className="ml-2 text-[10px] text-gray-500 font-mono">{node.code}</span>
+                              {node.criticality && ['A', 'B'].includes(node.criticality) && (
+                                <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">{node.criticality}</span>
+                              )}
+                            </td>
+                            <td className="px-2 py-2 text-center text-gray-500 text-[10px]">{node.node_type}</td>
+                            <td className="px-2 py-2 text-right tabular-nums">${Math.round(node.total_plan).toLocaleString()}</td>
+                            <td className="px-2 py-2 text-right tabular-nums font-bold">${Math.round(node.total_real).toLocaleString()}</td>
+                            <td className={`px-2 py-2 text-right tabular-nums font-bold ${devTone}`}>{dev > 0 ? '+' : ''}{dev}%</td>
+                          </tr>
+                        );
+                        // Sub-row con desglose por elemento si está expandido
+                        if (isExpanded && (node.by_element || []).length > 0) {
+                          rows.push(
+                            <tr key={id + '-elems'} className="bg-gray-50/50">
+                              <td colSpan={5} style={{ paddingLeft: 32 + depth * 20 }} className="px-3 py-2">
+                                <div className="flex flex-wrap gap-2">
+                                  {(node.by_element || []).map(e => (
+                                    <span key={e.element} className="inline-flex items-center px-2 py-0.5 rounded bg-white border border-gray-200 text-[11px]">
+                                      <span className="text-gray-600">{e.label}:</span>
+                                      <span className="font-bold ml-1">${Math.round(e.real).toLocaleString()}</span>
+                                      <span className="text-gray-400 ml-1">({e.wo_count} OT)</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                          (node.children || []).forEach(c => renderNode(c, depth + 1));
+                        }
+                      };
+                      (costAnalysisData.tree || []).forEach(r => renderNode(r, 0));
+                      return rows;
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge 2026-04-28 17:56: "centro de costo asocia el equipo, las clases de gasto sub-clasifican (repuesto/servicio/insumo/lubricante)". Click en una fila con ▶ para expandir y ver el desglose por clase de gasto.
+        </p>
+      </div>
+
+      {/* ── SF-589: Predicción de quiebre de stock IA ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            📦 SF-589 · Predicción de quiebre stock IA
+          </h3>
+          {stockForecastData?.summary && (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-bold">{stockForecastData.summary.critical_count} críticos</span>
+              <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-700 font-bold">{stockForecastData.summary.high_count} altos</span>
+              <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-bold">{stockForecastData.summary.medium_count} medios</span>
+            </div>
+          )}
+        </div>
+        {!stockForecastData ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">Cargando forecast…</p>
+        ) : stockForecastData.items.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">Sin data de inventario o consumo histórico.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-emerald-50">
                 <tr>
-                  <th className="text-left px-2 py-1.5 font-bold">Código SAP</th>
+                  <th className="text-center px-2 py-1.5 font-bold">Riesgo</th>
+                  <th className="text-left px-2 py-1.5 font-bold">SAP code</th>
                   <th className="text-left px-2 py-1.5 font-bold">Descripción</th>
-                  <th className="text-center px-2 py-1.5 font-bold">Total cantidad</th>
-                  <th className="text-center px-2 py-1.5 font-bold">N° OTs</th>
+                  <th className="text-right px-2 py-1.5 font-bold">Stock disp.</th>
+                  <th className="text-right px-2 py-1.5 font-bold">Reservado</th>
+                  <th className="text-right px-2 py-1.5 font-bold">Consumo/día</th>
+                  <th className="text-right px-2 py-1.5 font-bold">Cobertura</th>
+                  <th className="text-right px-2 py-1.5 font-bold">Demanda 30d</th>
+                  <th className="text-right px-2 py-1.5 font-bold">Sugerido OC</th>
                 </tr>
               </thead>
               <tbody>
-                {sparePartsConsumption.map((m, i) => (
-                  <tr key={i} className="border-t border-gray-100 hover:bg-emerald-50/30">
-                    <td className="px-2 py-1.5 font-mono">{m.code}</td>
-                    <td className="px-2 py-1.5 max-w-[300px] truncate" title={m.description}>{m.description || '—'}</td>
-                    <td className="px-2 py-1.5 text-center font-bold tabular-nums">{m.total_qty} {m.unit}</td>
-                    <td className="px-2 py-1.5 text-center text-gray-600">{m.ot_count}</td>
-                  </tr>
-                ))}
+                {stockForecastData.items.slice(0, 15).map((it, i) => {
+                  const tone = it.risk_level === 'CRITICAL' ? 'bg-red-100 text-red-800 border-red-300' :
+                                it.risk_level === 'HIGH' ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                                it.risk_level === 'MEDIUM' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                it.risk_level === 'UNKNOWN' ? 'bg-gray-100 text-gray-700 border-gray-300' :
+                                'bg-emerald-100 text-emerald-800 border-emerald-300';
+                  const rowTint = it.risk_level === 'CRITICAL' ? 'bg-red-50/40' :
+                                   it.risk_level === 'HIGH' ? 'bg-orange-50/40' : '';
+                  return (
+                    <tr key={i} className={`border-t border-gray-100 ${rowTint} hover:bg-emerald-50/30`}>
+                      <td className="px-2 py-1.5 text-center">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${tone}`}>{it.risk_level}</span>
+                      </td>
+                      <td className="px-2 py-1.5 font-mono">{it.material_code}</td>
+                      <td className="px-2 py-1.5 max-w-[240px] truncate" title={it.description}>{it.description || '—'}</td>
+                      <td className="px-2 py-1.5 text-right font-bold">{it.stock_available}</td>
+                      <td className="px-2 py-1.5 text-right text-gray-500">{it.stock_reserved}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.daily_avg_consumption}</td>
+                      <td className={`px-2 py-1.5 text-right font-bold tabular-nums ${it.coverage_days != null && it.coverage_days < 14 ? 'text-red-600' : it.coverage_days != null && it.coverage_days < 30 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {it.coverage_days != null ? `${it.coverage_days}d` : '—'}
+                      </td>
+                      <td className={`px-2 py-1.5 text-right ${it.will_break_30d ? 'text-red-600 font-bold' : ''}`}>
+                        {it.planned_demand_30d}
+                        {it.will_break_30d && <span className="ml-1 text-[10px]">⚠</span>}
+                      </td>
+                      <td className={`px-2 py-1.5 text-right font-bold ${it.suggested_order_qty > 0 ? 'text-blue-700' : 'text-gray-400'}`}>
+                        {it.suggested_order_qty > 0 ? `+${it.suggested_order_qty}` : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
         <p className="text-[10px] text-gray-500 italic mt-2">
-          Jorge 2026-04-28 17:56: "comparar consumo del mes vs promedio histórico (5→20 = anomalía). Detectar quiebre stock antes de que ocurra. Ajustar presupuesto si filtros pasan de 10000h a 8000h".
+          Jorge 2026-04-28 17:56: la IA cruza consumo histórico (90d) + demanda planificada (60d) vs stock disponible. <strong>Cobertura</strong>= stock_disp / consumo_diario_promedio. <strong>Sugerido OC</strong>= cantidad para llegar a 60 días de cobertura. Riesgo: 🔴 CRITICAL &lt;7d · 🟠 HIGH &lt;14d · 🟡 MEDIUM &lt;30d · 🟢 LOW ≥30d. Cuando una OT cierra, se descuenta stock automáticamente de bodega.
         </p>
       </div>
 

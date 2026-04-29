@@ -1619,17 +1619,32 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                     const hours = tech._aggregated
                       ? (tech._tech_ids || []).reduce((s, id) => s + (techHours[id] || 0), 0)
                       : (techHours[tech.worker_id] || 0);
+                    const shiftU = (tech.shift || '').toUpperCase();
+                    const isNightTech = shiftU === 'NIGHT' || shiftU === 'NOCHE';
+                    const rowTint = isNightTech
+                      ? 'bg-indigo-50/30 dark:bg-indigo-900/10 hover:bg-indigo-50/60'
+                      : 'hover:bg-muted/10';
                     return (
                       <tr key={tech.worker_id}
                         style={{ contentVisibility: 'auto', containIntrinsicSize: '0 70px' }}
-                        className="border-t border-border hover:bg-muted/10 transition-colors">
-                        <td className="px-3 py-2.5 border-r border-border align-top">
+                        className={`border-t border-border transition-colors ${rowTint}`}>
+                        <td className={`px-3 py-2.5 border-r border-border align-top ${isNightTech ? 'border-l-2 border-l-indigo-400' : 'border-l-2 border-l-amber-300'}`}>
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-sm text-foreground">{tech.name}</span>
                             {(() => {
                               const s = (tech.shift || '').toUpperCase();
-                              if (s === 'NIGHT' || s === 'NOCHE') return <span title="Turno noche" className="text-[10px]">🌙</span>;
-                              if (s === 'DAY' || s === 'MORNING' || s === 'AFTERNOON' || !s) return <span title="Turno día" className="text-[10px]">☀️</span>;
+                              const isNight = s === 'NIGHT' || s === 'NOCHE';
+                              const isDay = s === 'DAY' || s === 'MORNING' || s === 'AFTERNOON' || !s;
+                              if (isNight) return (
+                                <span title="Turno noche" className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 border border-indigo-300 dark:bg-indigo-900/40 dark:text-indigo-200">
+                                  🌙 N
+                                </span>
+                              );
+                              if (isDay) return (
+                                <span title="Turno día" className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/40 dark:text-amber-200">
+                                  ☀️ D
+                                </span>
+                              );
                               return null;
                             })()}
                           </div>

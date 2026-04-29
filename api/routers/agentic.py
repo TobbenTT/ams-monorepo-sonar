@@ -991,6 +991,47 @@ def duplicate_check(
     )
 
 
+class CostAnalysisRequest(BaseModel):
+    plant_id: str | None = None
+
+
+@router.post("/agentic/cost-analysis")
+def cost_analysis_endpoint(
+    data: CostAnalysisRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """SF-588 — Subclasificación gastos por UT + clase de gasto. Drill-down jerárquico."""
+    from api.services.cost_analysis_service import cost_analysis
+    return cost_analysis(db=db, plant_id=data.plant_id)
+
+
+class StockForecastRequest(BaseModel):
+    plant_id: str | None = None
+    lookback_days: int = Field(default=90, ge=7, le=365)
+    horizon_days: int = Field(default=60, ge=7, le=180)
+
+
+@router.post("/agentic/stock-forecast")
+def stock_forecast(
+    data: StockForecastRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """SF-589 — Predicción de quiebre de stock por IA.
+
+    Cruza consumo histórico (lookback_days) + demanda planificada (horizon_days)
+    contra stock disponible. Devuelve ranking por riesgo + sugerencia de orden compra.
+    """
+    from api.services.stock_forecast_service import forecast_stock
+    return forecast_stock(
+        db=db,
+        plant_id=data.plant_id,
+        lookback_days=data.lookback_days,
+        horizon_days=data.horizon_days,
+    )
+
+
 class AutoRCATriggerRequest(BaseModel):
     plant_id: str
     window_days: int = Field(default=30, ge=7, le=180)

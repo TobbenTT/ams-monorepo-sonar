@@ -13,6 +13,7 @@ import { usePermissions } from '../hooks/usePermissions';
 
 const navItems = [
     { path: '/', icon: Home, labelKey: 'nav.dashboard', module: 'dashboard', exact: true },
+    { path: '/agentic-capabilities', icon: Target, labelKey: '✨ Agentic Capabilities', module: 'agentic-capabilities' },
     { path: '/work-orders', icon: Wrench, labelKey: 'nav.workOrders', module: 'work-orders' },
     { path: '/work-management', icon: Briefcase, labelKey: 'nav.workManagement', module: 'work-management' },
     { path: '/failures-events', icon: AlertTriangle, labelKey: 'nav.failuresEvents', module: 'failures-events' },

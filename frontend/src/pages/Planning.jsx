@@ -2772,18 +2772,29 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   </div>
                 )}
 
-                {/* EQUIPOS DE APOYO (Jorge 2026-04-28 17:56) — propagados desde Aviso */}
+                {/* EQUIPOS DE APOYO (Jorge 2026-04-28 17:56) — propagados desde Aviso + editables */}
                 {otModalTab === 'support_eq' && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                         🏗️ Equipos de Apoyo
-                        <span className="text-xs font-normal text-gray-500">(arrastrados desde el aviso)</span>
+                        <span className="text-xs font-normal text-gray-500">(arrastrados del aviso, editables)</span>
                       </h3>
+                      <button type="button"
+                        onClick={async () => {
+                          const next = [...(wo.support_equipment || []), { tag: '', name: '', equipment_type: 'MOBILE_CRANE', hours: 1, notes: '' }];
+                          try {
+                            const updated = await api.updateManagedWO(wo.wo_id, { support_equipment: next });
+                            setSelectedOT(updated);
+                          } catch (e) { toast.error('Error: ' + (e.message || '')); }
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 font-semibold">
+                        + Agregar Equipo
+                      </button>
                     </div>
                     {(wo.support_equipment || []).length === 0 ? (
                       <div className="text-center text-sm text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed">
-                        No se requieren equipos de apoyo para esta OT.
+                        No se requieren equipos de apoyo para esta OT. Click "+ Agregar Equipo" si necesitas grúa, mandil, andamio, etc.
                       </div>
                     ) : (
                       <div className="overflow-x-auto bg-amber-50/40 border border-amber-200 rounded-lg">
@@ -2793,27 +2804,79 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               <th className="px-3 py-2 text-left">Tag</th>
                               <th className="px-3 py-2 text-left">Descripción</th>
                               <th className="px-3 py-2 text-left">Tipo</th>
-                              <th className="px-3 py-2 text-right">HH estimadas</th>
+                              <th className="px-3 py-2 text-right">HH</th>
                               <th className="px-3 py-2 text-left">Notas</th>
+                              <th className="px-3 py-2"></th>
                             </tr>
                           </thead>
                           <tbody>
-                            {(wo.support_equipment || []).map((se, i) => (
-                              <tr key={i} className="border-t border-amber-100">
-                                <td className="px-3 py-2 font-mono text-xs">{se.tag || '—'}</td>
-                                <td className="px-3 py-2">{se.name || se.description || '—'}</td>
-                                <td className="px-3 py-2 text-xs text-amber-700">{se.equipment_type || '—'}</td>
-                                <td className="px-3 py-2 text-right">{se.hours || '—'}</td>
-                                <td className="px-3 py-2 text-xs text-gray-600">{se.notes || ''}</td>
-                              </tr>
-                            ))}
+                            {(wo.support_equipment || []).map((se, i) => {
+                              const updateField = async (field, value) => {
+                                const next = (wo.support_equipment || []).map((x, idx) =>
+                                  idx === i ? { ...x, [field]: value } : x
+                                );
+                                try {
+                                  const updated = await api.updateManagedWO(wo.wo_id, { support_equipment: next });
+                                  setSelectedOT(updated);
+                                } catch (e) { toast.error('Error: ' + (e.message || '')); }
+                              };
+                              const removeRow = async () => {
+                                if (!confirm(`Quitar equipo de apoyo "${se.name || se.tag}"?`)) return;
+                                const next = (wo.support_equipment || []).filter((_, idx) => idx !== i);
+                                try {
+                                  const updated = await api.updateManagedWO(wo.wo_id, { support_equipment: next });
+                                  setSelectedOT(updated);
+                                } catch (e) { toast.error('Error: ' + (e.message || '')); }
+                              };
+                              return (
+                                <tr key={i} className="border-t border-amber-100">
+                                  <td className="px-3 py-2">
+                                    <input type="text" defaultValue={se.tag || ''}
+                                      onBlur={e => e.target.value !== (se.tag || '') && updateField('tag', e.target.value)}
+                                      placeholder="GRUA-50T-01"
+                                      className="w-32 font-mono text-xs border border-gray-300 rounded px-2 py-1" />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input type="text" defaultValue={se.name || se.description || ''}
+                                      onBlur={e => e.target.value !== (se.name || se.description || '') && updateField('name', e.target.value)}
+                                      placeholder="Grúa móvil 50T"
+                                      className="w-full text-sm border border-gray-300 rounded px-2 py-1" />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <select defaultValue={se.equipment_type || 'MOBILE_CRANE'}
+                                      onChange={e => updateField('equipment_type', e.target.value)}
+                                      className="text-xs border border-gray-300 rounded px-1 py-1">
+                                      <option value="MOBILE_CRANE">Grúa móvil</option>
+                                      <option value="BRIDGE_CRANE">Puente grúa</option>
+                                      <option value="HYDRAULIC_TRUCK">Mandil hidráulico</option>
+                                      <option value="SCAFFOLDING">Andamio</option>
+                                      <option value="FORKLIFT">Montacargas</option>
+                                      <option value="OTHER">Otro</option>
+                                    </select>
+                                  </td>
+                                  <td className="px-3 py-2 text-right">
+                                    <input type="number" min="0" step="0.5" defaultValue={se.hours || ''}
+                                      onBlur={e => parseFloat(e.target.value) !== (parseFloat(se.hours) || 0) && updateField('hours', parseFloat(e.target.value) || 0)}
+                                      className="w-16 text-right border border-gray-300 rounded px-2 py-1" />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input type="text" defaultValue={se.notes || ''}
+                                      onBlur={e => e.target.value !== (se.notes || '') && updateField('notes', e.target.value)}
+                                      placeholder="comentarios..."
+                                      className="w-full text-xs border border-gray-300 rounded px-2 py-1" />
+                                  </td>
+                                  <td className="px-3 py-2 text-center">
+                                    <button onClick={removeRow} className="text-red-500 hover:text-red-700 text-xs">✕</button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
                     )}
                     <p className="text-[11px] text-gray-500">
-                      Estos equipos vienen del Aviso original y se reservan automáticamente al programar la OT.
-                      Si necesitas modificar, edita el Aviso de origen.
+                      Equipos heredados del aviso. Editar/agregar/quitar afecta sólo a esta OT (el aviso original queda intacto).
                     </p>
                   </div>
                 )}

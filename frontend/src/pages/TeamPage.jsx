@@ -335,6 +335,34 @@ export default function TeamPage() {
     percentage: team.length > 0 ? Math.round((count / team.length) * 100) : 0,
   }));
 
+  // Distribución por especialidad real (Jorge 2026-04-28: Team mostraba solo
+  // "Technician" mientras Scheduling mostraba MEC/ELEC/INST. Ahora se ve la
+  // especialidad real del workforce.)
+  const specialtyCounts = team.reduce((acc, m) => {
+    const spec = (m.specialty || '').toUpperCase().trim();
+    if (!spec) return acc;
+    // Normalizar a 3 letras canónicas
+    let canonical = 'OTRO';
+    if (spec.includes('MEC')) canonical = 'MECÁNICO';
+    else if (spec.includes('ELEC')) canonical = 'ELÉCTRICO';
+    else if (spec.includes('INST')) canonical = 'INSTRUMENTISTA';
+    else if (spec.includes('SOLD') || spec.includes('WELD')) canonical = 'SOLDADOR';
+    else if (spec.includes('LUBR')) canonical = 'LUBRICADOR';
+    else if (spec.includes('CIVIL')) canonical = 'CIVIL';
+    else if (spec.includes('PRED')) canonical = 'PREDICTIVO';
+    else if (spec.includes('HID') || spec.includes('HYD')) canonical = 'HIDRÁULICO';
+    else canonical = spec.slice(0, 14);
+    acc[canonical] = (acc[canonical] || 0) + 1;
+    return acc;
+  }, {});
+  const specialtyDistribution = Object.entries(specialtyCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([spec, count]) => ({
+      specialty: spec,
+      count,
+      percentage: team.length > 0 ? Math.round((count / team.length) * 100) : 0,
+    }));
+
   // ── View Profile ───────────────────────────────────────────────────
   const openProfile = (member) => {
     setProfileMember(member);
@@ -559,28 +587,63 @@ export default function TeamPage() {
         </Card>
       </div>
 
-      {/* Role Distribution */}
-      {roleDistribution.length > 0 && (
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">{t('team.roleDistribution')}</h3>
-          <div className="space-y-3">
-            {roleDistribution.map((item) => (
-              <div key={item.role}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium">{roleLabel(item.role)}</span>
-                  <span className="text-sm text-gray-600">{t('team.membersCount', { count: item.count, percentage: item.percentage })}</span>
+      {/* Role Distribution + Specialty Distribution side-by-side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {roleDistribution.length > 0 && (
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4">{t('team.roleDistribution')}</h3>
+            <div className="space-y-3">
+              {roleDistribution.map((item) => (
+                <div key={item.role}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium">{roleLabel(item.role)}</span>
+                    <span className="text-sm text-gray-600">{t('team.membersCount', { count: item.count, percentage: item.percentage })}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`${ROLE_BAR_COLORS[item.role] || 'bg-gray-500'} h-2 rounded-full transition-all`}
+                      style={{ width: `${item.percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`${ROLE_BAR_COLORS[item.role] || 'bg-gray-500'} h-2 rounded-full transition-all`}
-                    style={{ width: `${item.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Specialty Distribution (Jorge 2026-04-28 — coincide con Scheduling) */}
+        {specialtyDistribution.length > 0 && (
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4">Distribución por Especialidad</h3>
+            <div className="space-y-3">
+              {specialtyDistribution.map((item) => {
+                const colorMap = {
+                  'MECÁNICO': 'bg-amber-500',
+                  'ELÉCTRICO': 'bg-yellow-500',
+                  'INSTRUMENTISTA': 'bg-blue-500',
+                  'SOLDADOR': 'bg-orange-500',
+                  'LUBRICADOR': 'bg-emerald-500',
+                  'CIVIL': 'bg-stone-500',
+                  'PREDICTIVO': 'bg-purple-500',
+                  'HIDRÁULICO': 'bg-cyan-500',
+                };
+                const barColor = colorMap[item.specialty] || 'bg-gray-500';
+                return (
+                  <div key={item.specialty}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">{item.specialty}</span>
+                      <span className="text-sm text-gray-600">{item.count} ({item.percentage}%)</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className={`${barColor} h-2 rounded-full transition-all`} style={{ width: `${item.percentage}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+      </div>
 
       {/* Member Cards */}
       {/* Fase 3 Jorge 2026-04-21 — toggle vista tabla / cards + filtros */}
@@ -686,9 +749,33 @@ export default function TeamPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">{member.full_name || member.username}</h3>
-                    <Badge className={`${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-800'} text-xs`}>
-                      {member.role ? roleLabel(member.role) : t('team.noRole')}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                      <Badge className={`${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-800'} text-xs`}>
+                        {member.role ? roleLabel(member.role) : t('team.noRole')}
+                      </Badge>
+                      {member.specialty && (() => {
+                        const s = (member.specialty || '').toUpperCase();
+                        const tone =
+                          s.includes('MEC') ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                          s.includes('ELEC') ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                          s.includes('INST') ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                          s.includes('SOLD') ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                          s.includes('LUBR') ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                          s.includes('CIVIL') ? 'bg-stone-100 text-stone-800 border-stone-300' :
+                          s.includes('PRED') ? 'bg-purple-100 text-purple-800 border-purple-300' :
+                          'bg-gray-100 text-gray-800 border-gray-300';
+                        return (
+                          <Badge className={`text-xs ${tone}`}>
+                            🔧 {member.specialty}
+                          </Badge>
+                        );
+                      })()}
+                      {member.shift && (
+                        <Badge className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
+                          {member.shift === 'day' ? '☀️ Día' : member.shift === 'night' ? '🌙 Noche' : member.shift}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <Badge className={member.is_active

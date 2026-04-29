@@ -414,7 +414,9 @@ def get_analytics_page_data(
     # Fallback: si FMECA está vacío, usar failure_type de WRs reales
     if not fm_counts:
         from api.database.models import WorkRequestModel
-        wr_q = db.query(WorkRequestModel).filter(WorkRequestModel.plant_id == plant_id) if plant_id else db.query(WorkRequestModel)
+        wr_q = db.query(WorkRequestModel)
+        if plant_id:
+            wr_q = wr_q.filter(WorkRequestModel.ai_classification.like(f"%{plant_id}%"))
         for wr in wr_q.limit(500).all():
             ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
             mode = (ai.get("failure_type") or ai.get("failure_class") or "").strip()

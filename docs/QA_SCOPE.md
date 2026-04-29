@@ -1,6 +1,6 @@
 # QA en VSC — Por qué un perfil Jr cubriendo QA + Ciberseguridad es viable y necesario
 
-**Autor:** David Cabezas — Lead Tech VSC
+**Autor:** David Cabezas — VSC
 **Destinatario:** José Cortinat (CEO) · Equipo VSC
 **Fecha:** 2026-04
 **Contexto:** Plataforma AMS · 3 proyectos en producción · pipeline mining (Goldfields, Codelco)
@@ -111,7 +111,7 @@ Esta es la parte importante. ISO no exige "Senior" ni "experto certificado". Exi
 | Caso | Cómo se resuelve |
 |---|---|
 | Pentest con encadenamiento de vulnerabilidades | El Jr opera Nuclei + Burp Suite Community con templates pre-cargados; los hallazgos se documentan y triagean |
-| Threat modeling con contexto minero | Sesión trimestral con CEO + Jr + Lead Tech usando el framework STRIDE; el Jr documenta el output |
+| Threat modeling con contexto minero | Sesión trimestral con CEO + Jr usando el framework STRIDE; el Jr documenta el output |
 | Decisiones de arquitectura de seguridad | Se discuten en review de cada feature mayor; el Jr documenta |
 | Negociación de DPAs/NDAs con clientes | CEO firma, asesoría legal externa redacta, Jr documenta y archiva |
 | Diseño del SGSI | Templates ISO 27001 ya disponibles en el hub QA; el Jr aplica |
@@ -171,7 +171,76 @@ Si esperamos, asumimos formalmente que la deuda ISO sigue creciendo y que estamo
 
 ---
 
-## Anexo A — Por qué un Jr es legítimo ante un auditor ISO
+## Anexo A — Semana típica del QA & Cybersec Officer Jr
+
+Para que quede claro qué hace exactamente la persona, este es un día tipo y semana tipo:
+
+### Tareas diarias (lunes a viernes)
+
+| Bloque | Hora | Actividad |
+|---|---|---|
+| 1 | 09:00 - 09:30 | Revisar reportes overnight del qa-scanner (Trivy + Gitleaks + Nuclei). Triage de vulnerabilidades nuevas. |
+| 2 | 09:30 - 10:00 | Standup con equipo dev. Identificar releases listos para firma. |
+| 3 | 10:00 - 12:30 | Aplicar Test Plan a releases pendientes. Ejecutar tests E2E con Playwright + Claude. Documentar resultados. |
+| 4 | 12:30 - 13:30 | Firma de liberaciones aprobadas (validador independiente). |
+| 5 | 14:30 - 16:30 | Documentación ISO de releases firmados (Test Summary Report, evidencia, registro en hub QA). |
+| 6 | 16:30 - 18:00 | Tareas asignadas según día (ver tabla siguiente). |
+
+### Foco específico por día
+
+| Día | Foco principal de la tarde (16:30-18:00) |
+|---|---|
+| **Lunes** | Planning semanal · Revisar backlog de defectos abiertos · Priorizar trabajo |
+| **Martes** | Mantenimiento del SGSI · Actualizar políticas y procedimientos en hub QA |
+| **Miércoles** | Capacitación usuarios · Asignar cursos pendientes · Revisar quizzes y certificados externos |
+| **Jueves** | Auditoría interna · Verificar trazabilidad de releases de la semana · Detectar gaps |
+| **Viernes** | Reporte semanal a CEO · Métricas del SGSI · Cierre de defectos · Prep semana siguiente |
+
+### Tareas semanales (en bloque dedicado de la tarde según día)
+
+- **Lunes:** revisión de tickets de incidentes abiertos · plan semanal con devs
+- **Martes:** revisión de inventario de activos (hub QA) · actualización de matriz de riesgos
+- **Miércoles:** revisión de capacitaciones pendientes por usuario · seguimiento de certificaciones externas
+- **Jueves:** muestreo aleatorio de 5 releases recientes para verificar evidencia completa
+- **Viernes:** generación de dashboard semanal · backup de evidencias · reporte ejecutivo
+
+### Tareas mensuales
+
+- Métricas del SGSI (cobertura ISO, vulnerabilidades pendientes, capacitaciones completadas)
+- Revisión y actualización del catálogo de capacitación
+- Simulacro mensual del Plan de Respuesta a Incidentes (1 vez al mes, 1-2 horas)
+- Reporte mensual a CEO
+
+### Tareas trimestrales
+
+- Sesión de threat modeling con CEO usando framework STRIDE (3-4 horas)
+- Revisión completa del SGSI: políticas, procedimientos, matriz de riesgos
+- Auditoría interna de cumplimiento ISO 27001 (muestreo de 20% de releases del trimestre)
+- Plan de capacitación trimestral
+
+### Tareas anuales
+
+- Auditoría externa ISO 27001 (preparación + acompañamiento al auditor)
+- Renovación de certificaciones de capacitación obligatoria de todo el personal
+- Revisión y firma del SGSI completo
+- Plan de adecuación normativa para cambios legales (Ley 21.719, etc.)
+
+### Distribución de carga estimada
+
+```
+Tests + firma de releases     ████████████████████████  35%
+Triage scanner + seguridad    ████████████████          22%
+Documentación ISO             ██████████████            18%
+Capacitación / catálogo       ██████                    10%
+Auditoría interna             █████                      8%
+Reportes + reuniones          ████                       7%
+```
+
+**Total: 40h/semana en estado de régimen.** Justifica perfil full-time.
+
+---
+
+## Anexo B — Por qué un Jr es legítimo ante un auditor ISO
 
 Caso de auditoría real:
 
@@ -192,4 +261,4 @@ Cualquiera de estas tres = no certificación.
 
 ---
 
-— **David Cabezas**, Lead Tech VSC
+— **David Cabezas**, VSC

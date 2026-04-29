@@ -1,7 +1,7 @@
 # La deuda silenciosa
 ## Por qué un perfil Jr cubriendo QA + Ciberseguridad es viable y necesario
 
-**David Cabezas — Lead Tech VSC · 2026-04**
+**David Cabezas — VSC · 2026-04**
 
 ---
 
@@ -147,7 +147,33 @@ Responsabilidades operacionales:
 
 ---
 
-## Slide 10 · La decisión que necesito de ti
+## Slide 10 · Una semana típica del QA & Cybersec Jr
+
+**Diaria (lunes a viernes):**
+- 09:00 — Triage scanner (Trivy/Gitleaks/Nuclei)
+- 09:30 — Standup con devs
+- 10:00 — Tests E2E con Playwright + Claude
+- 12:30 — Firma de liberaciones
+- 14:30 — Documentación ISO
+
+**Foco por día (tarde):**
+| Día | Tarea |
+|---|---|
+| Lun | Planning · backlog defectos |
+| Mar | SGSI · políticas |
+| Mié | Capacitación · catálogo |
+| Jue | Auditoría interna |
+| Vie | Reporte ejecutivo + métricas |
+
+**Mensual:** simulacro de incidentes · métricas SGSI
+**Trimestral:** threat modeling STRIDE con CEO
+**Anual:** auditoría externa ISO 27001
+
+**Carga total: ~40h/semana → full-time justificado**
+
+---
+
+## Slide 11 · La decisión que necesito de ti
 
 **Una pregunta concreta:**
 
@@ -158,7 +184,7 @@ Responsabilidades operacionales:
 
 ---
 
-## Slide 11 · Lo que NO te estoy pidiendo
+## Slide 12 · Lo que NO te estoy pidiendo
 
 - ✗ Frenar la integración de Claude + Playwright (al contrario, la aceleramos)
 - ✗ Contratar dos roles separados (QA y Security)
@@ -170,7 +196,7 @@ Responsabilidades operacionales:
 
 ---
 
-## Slide 12 · Cierre
+## Slide 13 · Cierre
 
 **La automatización con IA es nuestra ventaja — la mantenemos y la potenciamos.**
 
@@ -180,4 +206,4 @@ Responsabilidades operacionales:
 
 ¿O abrimos la búsqueda esta semana?
 
-— **David Cabezas**, Lead Tech VSC
+— **David Cabezas**, VSC

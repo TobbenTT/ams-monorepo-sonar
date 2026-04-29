@@ -1,0 +1,412 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - navigation "Main navigation" [ref=e4]:
+      - generic [ref=e5]:
+        - img "MagEAM" [ref=e159]
+        - paragraph [ref=e6]: Reliability Platform
+      - navigation [ref=e7]:
+        - generic [ref=e8]:
+          - link "Dashboard" [ref=e9] [cursor=pointer]:
+            - /url: /
+            - img [ref=e10]
+            - generic [ref=e13]: Dashboard
+          - link "✨ Agentic Capabilities" [ref=e14] [cursor=pointer]:
+            - /url: /agentic-capabilities
+            - img [ref=e15]
+            - generic [ref=e19]: ✨ Agentic Capabilities
+          - link "WOs & Notifications" [ref=e20] [cursor=pointer]:
+            - /url: /work-orders
+            - img [ref=e21]
+            - generic [ref=e23]: WOs & Notifications
+          - link "Work Management" [ref=e24] [cursor=pointer]:
+            - /url: /work-management
+            - img [ref=e25]
+            - generic [ref=e28]: Work Management
+          - link "Failures & Events" [ref=e29] [cursor=pointer]:
+            - /url: /failures-events
+            - img [ref=e30]
+            - generic [ref=e32]: Failures & Events
+          - link "Improvement Actions" [ref=e33] [cursor=pointer]:
+            - /url: /improvement-actions
+            - img [ref=e34]
+            - generic [ref=e37]: Improvement Actions
+          - link "Criticality" [ref=e38] [cursor=pointer]:
+            - /url: /criticality
+            - img [ref=e39]
+            - generic [ref=e42]: Criticality
+          - link "FMECA" [ref=e43] [cursor=pointer]:
+            - /url: /fmeca
+            - img [ref=e44]
+            - generic [ref=e48]: FMECA
+          - link "RCA" [ref=e49] [cursor=pointer]:
+            - /url: /rca
+            - img [ref=e50]
+            - generic [ref=e53]: RCA
+          - link "Reliability" [ref=e54] [cursor=pointer]:
+            - /url: /reliability
+            - img [ref=e55]
+            - generic [ref=e57]: Reliability
+          - link "Analytics" [ref=e58] [cursor=pointer]:
+            - /url: /analytics
+            - img [ref=e59]
+            - generic [ref=e61]: Analytics
+          - link "Reports" [ref=e62] [cursor=pointer]:
+            - /url: /reports
+            - img [ref=e63]
+            - generic [ref=e66]: Reports
+          - link "Team" [ref=e67] [cursor=pointer]:
+            - /url: /team
+            - img [ref=e68]
+            - generic [ref=e73]: Team
+          - link "Settings" [ref=e74] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e75]
+            - generic [ref=e78]: Settings
+          - link "SAP PM" [ref=e79] [cursor=pointer]:
+            - /url: /sap-pm
+            - img [ref=e80]
+            - generic [ref=e84]: SAP PM
+          - link "Data Import" [ref=e85] [cursor=pointer]:
+            - /url: /data-import
+            - img [ref=e86]
+            - generic [ref=e89]: Data Import
+          - link "Audit Log" [ref=e90] [cursor=pointer]:
+            - /url: /audit-log
+            - img [ref=e91]
+            - generic [ref=e94]: Audit Log
+      - generic [ref=e95]:
+        - button "AS Administrador Sistema Administrator" [ref=e96] [cursor=pointer]:
+          - generic [ref=e98]: AS
+          - generic [ref=e99]:
+            - generic [ref=e100]: Administrador Sistema
+            - generic [ref=e101]: Administrator
+        - generic [ref=e102]:
+          - button "Sign Out" [ref=e103]:
+            - img [ref=e104]
+            - generic [ref=e107]: Sign Out
+          - button [ref=e108]:
+            - img [ref=e109]
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e115]:
+            - img [ref=e116]
+            - textbox "Search modules..." [ref=e119]
+          - generic [ref=e120]:
+            - button "🇬🇧 EN" [ref=e122]:
+              - img [ref=e123]
+              - generic [ref=e126]: 🇬🇧 EN
+            - button "Switch to dark mode" [ref=e127]:
+              - img [ref=e128]
+            - generic "Tiempo real activo · última señal hace 7s" [ref=e160]:
+              - img [ref=e131]
+              - generic [ref=e135]: Sync hace 7s
+            - button "9+" [ref=e161]:
+              - img [ref=e138]
+              - generic [ref=e162]: 9+
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - img [ref=e143]
+            - combobox [ref=e145]:
+              - generic: GOLDFIELDS-SN — Goldfields - Salares Norte
+              - img
+          - generic [ref=e146]:
+            - img [ref=e147]
+            - combobox [ref=e149]:
+              - generic: Last 30 Days
+              - img
+        - generic [ref=e150]:
+          - generic [ref=e151]: "Analysis Level:"
+          - generic [ref=e152]:
+            - button "Executive View" [ref=e153]
+            - button "Tactical Operations View" [ref=e154]
+      - main [ref=e155]:
+        - generic [ref=e163]:
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - heading "Data Import" [level=1] [ref=e166]
+              - paragraph [ref=e167]: Importar datos desde archivos Excel/CSV a la base de datos
+            - button "Actualizar" [ref=e168]:
+              - img
+              - text: Actualizar
+          - generic [ref=e169]:
+            - heading "1. Cargar Archivo" [level=2] [ref=e170]:
+              - img [ref=e171]
+              - text: 1. Cargar Archivo
+            - generic [ref=e175] [cursor=pointer]:
+              - img [ref=e176]
+              - paragraph [ref=e179]: Arrastra un archivo aqui o haz clic para seleccionar
+              - paragraph [ref=e180]: "Formatos: .xlsx, .csv"
+          - generic [ref=e181]:
+            - heading "Historial de Importaciones" [level=2] [ref=e182]
+            - paragraph [ref=e183]: No hay importaciones registradas
+          - generic [ref=e184]:
+            - heading "Tablas en la Base de Datos (88)" [level=2] [ref=e185]:
+              - img [ref=e186]
+              - text: Tablas en la Base de Datos (88)
+            - generic [ref=e188]:
+              - generic [ref=e189]:
+                - generic [ref=e190]: activity_classes
+                - generic [ref=e191]: "16"
+              - generic [ref=e192]:
+                - generic [ref=e193]: agentic_executions
+                - generic [ref=e194]: "21"
+              - generic [ref=e195]:
+                - generic [ref=e196]: ai_feedback
+                - generic [ref=e197]: "0"
+              - generic [ref=e198]:
+                - generic [ref=e199]: ai_interactions
+                - generic [ref=e200]: "0"
+              - generic [ref=e201]:
+                - generic [ref=e202]: ai_sessions
+                - generic [ref=e203]: "12"
+              - generic [ref=e204]:
+                - generic [ref=e205]: annual_budget_capex
+                - generic [ref=e206]: "26"
+              - generic [ref=e207]:
+                - generic [ref=e208]: annual_budget_equipment
+                - generic [ref=e209]: "4311"
+              - generic [ref=e210]:
+                - generic [ref=e211]: annual_budget_executive
+                - generic [ref=e212]: "31"
+              - generic [ref=e213]:
+                - generic [ref=e214]: annual_budget_kpi_targets
+                - generic [ref=e215]: "39"
+              - generic [ref=e216]:
+                - generic [ref=e217]: annual_budget_maintenance
+                - generic [ref=e218]: "225"
+              - generic [ref=e219]:
+                - generic [ref=e220]: annual_budget_opex
+                - generic [ref=e221]: "147"
+              - generic [ref=e222]:
+                - generic [ref=e223]: annual_budget_production
+                - generic [ref=e224]: "18"
+              - generic [ref=e225]:
+                - generic [ref=e226]: audit_log
+                - generic [ref=e227]: "0"
+              - generic [ref=e228]:
+                - generic [ref=e229]: backlog_items
+                - generic [ref=e230]: "0"
+              - generic [ref=e231]:
+                - generic [ref=e232]: bom_items
+                - generic [ref=e233]: "2304"
+              - generic [ref=e234]:
+                - generic [ref=e235]: capa_items
+                - generic [ref=e236]: "0"
+              - generic [ref=e237]:
+                - generic [ref=e238]: contractor_crews
+                - generic [ref=e239]: "0"
+              - generic [ref=e240]:
+                - generic [ref=e241]: contractors
+                - generic [ref=e242]: "0"
+              - generic [ref=e243]:
+                - generic [ref=e244]: cost_centers
+                - generic [ref=e245]: "10"
+              - generic [ref=e246]:
+                - generic [ref=e247]: criticality_assessments
+                - generic [ref=e248]: "1240"
+              - generic [ref=e249]:
+                - generic [ref=e250]: data_import_log
+                - generic [ref=e251]: "0"
+              - generic [ref=e252]:
+                - generic [ref=e253]: de_kpi_snapshots
+                - generic [ref=e254]: "0"
+              - generic [ref=e255]:
+                - generic [ref=e256]: dedup_negative_pairs
+                - generic [ref=e257]: "0"
+              - generic [ref=e258]:
+                - generic [ref=e259]: deliverables
+                - generic [ref=e260]: "0"
+              - generic [ref=e261]:
+                - generic [ref=e262]: detailed_feedback
+                - generic [ref=e263]: "1"
+              - generic [ref=e264]:
+                - generic [ref=e265]: equipment_3d_models
+                - generic [ref=e266]: "0"
+              - generic [ref=e267]:
+                - generic [ref=e268]: equipment_handovers
+                - generic [ref=e269]: "8"
+              - generic [ref=e270]:
+                - generic [ref=e271]: execution_checklists
+                - generic [ref=e272]: "1"
+              - generic [ref=e273]:
+                - generic [ref=e274]: expert_cards
+                - generic [ref=e275]: "0"
+              - generic [ref=e276]:
+                - generic [ref=e277]: expert_consultations
+                - generic [ref=e278]: "0"
+              - generic [ref=e279]:
+                - generic [ref=e280]: expert_contributions
+                - generic [ref=e281]: "0"
+              - generic [ref=e282]:
+                - generic [ref=e283]: failure_catalog
+                - generic [ref=e284]: "8233"
+              - generic [ref=e285]:
+                - generic [ref=e286]: failure_modes
+                - generic [ref=e287]: "172344"
+              - generic [ref=e288]:
+                - generic [ref=e289]: failure_predictions
+                - generic [ref=e290]: "0"
+              - generic [ref=e291]:
+                - generic [ref=e292]: field_captures
+                - generic [ref=e293]: "0"
+              - generic [ref=e294]:
+                - generic [ref=e295]: fmeca_worksheets
+                - generic [ref=e296]: "4"
+              - generic [ref=e297]:
+                - generic [ref=e298]: functional_failures
+                - generic [ref=e299]: "594"
+              - generic [ref=e300]:
+                - generic [ref=e301]: functions
+                - generic [ref=e302]: "24"
+              - generic [ref=e303]:
+                - generic [ref=e304]: health_scores
+                - generic [ref=e305]: "100"
+              - generic [ref=e306]:
+                - generic [ref=e307]: hierarchy_nodes
+                - generic [ref=e308]: "10168"
+              - generic [ref=e309]:
+                - generic [ref=e310]: import_history
+                - generic [ref=e311]: "0"
+              - generic [ref=e312]:
+                - generic [ref=e313]: improvement_actions
+                - generic [ref=e314]: "12"
+              - generic [ref=e315]:
+                - generic [ref=e316]: inventory_items
+                - generic [ref=e317]: "8409"
+              - generic [ref=e318]:
+                - generic [ref=e319]: kpi_metrics
+                - generic [ref=e320]: "210"
+              - generic [ref=e321]:
+                - generic [ref=e322]: maintenance_plans
+                - generic [ref=e323]: "2973"
+              - generic [ref=e324]:
+                - generic [ref=e325]: maintenance_tasks
+                - generic [ref=e326]: "5"
+              - generic [ref=e327]:
+                - generic [ref=e328]: managed_work_orders
+                - generic [ref=e329]: "115"
+              - generic [ref=e330]:
+                - generic [ref=e331]: measurement_readings
+                - generic [ref=e332]: "0"
+              - generic [ref=e333]:
+                - generic [ref=e334]: measuring_points
+                - generic [ref=e335]: "3227"
+              - generic [ref=e336]:
+                - generic [ref=e337]: moc_requests
+                - generic [ref=e338]: "0"
+              - generic [ref=e339]:
+                - generic [ref=e340]: notifications
+                - generic [ref=e341]: "6402"
+              - generic [ref=e342]:
+                - generic [ref=e343]: optimized_backlogs
+                - generic [ref=e344]: "0"
+              - generic [ref=e345]:
+                - generic [ref=e346]: or_deliverables
+                - generic [ref=e347]: "0"
+              - generic [ref=e348]:
+                - generic [ref=e349]: or_projects
+                - generic [ref=e350]: "0"
+              - generic [ref=e351]:
+                - generic [ref=e352]: permits_to_work
+                - generic [ref=e353]: "350"
+              - generic [ref=e354]:
+                - generic [ref=e355]: planner_recommendations
+                - generic [ref=e356]: "0"
+              - generic [ref=e357]:
+                - generic [ref=e358]: planning_kpi_snapshots
+                - generic [ref=e359]: "0"
+              - generic [ref=e360]:
+                - generic [ref=e361]: plants
+                - generic [ref=e362]: "4"
+              - generic [ref=e363]:
+                - generic [ref=e364]: post_maintenance_reviews
+                - generic [ref=e365]: "0"
+              - generic [ref=e366]:
+                - generic [ref=e367]: purchase_requisitions
+                - generic [ref=e368]: "8"
+              - generic [ref=e369]:
+                - generic [ref=e370]: rbi_assessments
+                - generic [ref=e371]: "0"
+              - generic [ref=e372]:
+                - generic [ref=e373]: rca_analyses
+                - generic [ref=e374]: "6"
+              - generic [ref=e375]:
+                - generic [ref=e376]: reports
+                - generic [ref=e377]: "8"
+              - generic [ref=e378]:
+                - generic [ref=e379]: responsible_work_posts
+                - generic [ref=e380]: "14"
+              - generic [ref=e381]:
+                - generic [ref=e382]: sap_materials
+                - generic [ref=e383]: "11458"
+              - generic [ref=e384]:
+                - generic [ref=e385]: sap_sync_log
+                - generic [ref=e386]: "0"
+              - generic [ref=e387]:
+                - generic [ref=e388]: sap_upload_packages
+                - generic [ref=e389]: "0"
+              - generic [ref=e390]:
+                - generic [ref=e391]: settlement_rules
+                - generic [ref=e392]: "5"
+              - generic [ref=e393]:
+                - generic [ref=e394]: shutdown_calendar
+                - generic [ref=e395]: "76"
+              - generic [ref=e396]:
+                - generic [ref=e397]: shutdown_events
+                - generic [ref=e398]: "0"
+              - generic [ref=e399]:
+                - generic [ref=e400]: spare_part_analyses
+                - generic [ref=e401]: "0"
+              - generic [ref=e402]:
+                - generic [ref=e403]: support_equipment
+                - generic [ref=e404]: "0"
+              - generic [ref=e405]:
+                - generic [ref=e406]: sync_conflicts
+                - generic [ref=e407]: "0"
+              - generic [ref=e408]:
+                - generic [ref=e409]: time_logs
+                - generic [ref=e410]: "0"
+              - generic [ref=e411]:
+                - generic [ref=e412]: troubleshooting_diagnostics
+                - generic [ref=e413]: "0"
+              - generic [ref=e414]:
+                - generic [ref=e415]: troubleshooting_sessions
+                - generic [ref=e416]: "0"
+              - generic [ref=e417]:
+                - generic [ref=e418]: user_feedback
+                - generic [ref=e419]: "0"
+              - generic [ref=e420]:
+                - generic [ref=e421]: users
+                - generic [ref=e422]: "15"
+              - generic [ref=e423]:
+                - generic [ref=e424]: variance_alerts
+                - generic [ref=e425]: "0"
+              - generic [ref=e426]:
+                - generic [ref=e427]: warehouses
+                - generic [ref=e428]: "6"
+              - generic [ref=e429]:
+                - generic [ref=e430]: weekly_programs
+                - generic [ref=e431]: "26"
+              - generic [ref=e432]:
+                - generic [ref=e433]: work_assignments
+                - generic [ref=e434]: "198"
+              - generic [ref=e435]:
+                - generic [ref=e436]: work_centers
+                - generic [ref=e437]: "27"
+              - generic [ref=e438]:
+                - generic [ref=e439]: work_orders
+                - generic [ref=e440]: "11248"
+              - generic [ref=e441]:
+                - generic [ref=e442]: work_packages
+                - generic [ref=e443]: "3229"
+              - generic [ref=e444]:
+                - generic [ref=e445]: work_permits
+                - generic [ref=e446]: "5"
+              - generic [ref=e447]:
+                - generic [ref=e448]: work_requests
+                - generic [ref=e449]: "152"
+              - generic [ref=e450]:
+                - generic [ref=e451]: workforce
+                - generic [ref=e452]: "35"
+  - status

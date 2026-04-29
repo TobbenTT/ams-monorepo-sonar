@@ -228,9 +228,9 @@ export const pushFmecaToBacklog = (id) => post(`/fmea/fmeca/worksheets/${id}/pus
 export const listFmecaSuggestions = (plantId, limit) => get('/fmea/fmeca/suggestions', { plant_id: plantId, limit: limit || 20 });
 
 // ── Tasks ──
-export const createTask = (d) => post('/tasks', d);
+export const createTask = (d) => post('/tasks/', d);
 export const getTask = (id) => get(`/tasks/${id}`);
-export const listTasks = (p) => get('/tasks', p);
+export const listTasks = (p) => get('/tasks/', p);
 
 // ── Work Packages ──
 export const createWorkPackage = (d) => post('/work-packages', d);
@@ -359,8 +359,8 @@ export const rescheduleStale = (plantId) => post(`/analytics-dash/reschedule-sta
 export const sapSyncWO = (id) => post(`/managed-work-orders/${id}/sap-sync`);
 export const getSapSyncStatus = (id) => get(`/managed-work-orders/${id}/sap-sync`);
 // Group C #8 — contractors & crews
-export const listContractors = (plantId) => get('/contractors', { plant_id: plantId });
-export const createContractor = (data) => post('/contractors', data);
+export const listContractors = (plantId) => get('/contractors/', { plant_id: plantId });
+export const createContractor = (data) => post('/contractors/', data);
 export const listContractorCrews = (contractorId) => get(`/contractors/${contractorId}/crews`);
 export const createContractorCrew = (contractorId, data) => post(`/contractors/${contractorId}/crews`, data);
 export const listAllCrews = (plantId) => get('/contractors/crews/all', { plant_id: plantId });

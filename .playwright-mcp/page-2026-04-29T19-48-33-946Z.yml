@@ -1,0 +1,1883 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation "Main navigation" [ref=e4]:
+        - generic [ref=e5]:
+          - img "MagEAM" [ref=e159]
+          - paragraph [ref=e6]: Reliability Platform
+        - navigation [ref=e7]:
+          - generic [ref=e8]:
+            - link "Dashboard" [ref=e9] [cursor=pointer]:
+              - /url: /
+              - img [ref=e10]
+              - generic [ref=e13]: Dashboard
+            - link "✨ Agentic Capabilities" [ref=e14] [cursor=pointer]:
+              - /url: /agentic-capabilities
+              - img [ref=e15]
+              - generic [ref=e19]: ✨ Agentic Capabilities
+            - link "WOs & Notifications" [ref=e20] [cursor=pointer]:
+              - /url: /work-orders
+              - img [ref=e21]
+              - generic [ref=e23]: WOs & Notifications
+            - link "Work Management" [ref=e24] [cursor=pointer]:
+              - /url: /work-management
+              - img [ref=e25]
+              - generic [ref=e28]: Work Management
+            - link "Failures & Events" [ref=e29] [cursor=pointer]:
+              - /url: /failures-events
+              - img [ref=e30]
+              - generic [ref=e32]: Failures & Events
+            - link "Improvement Actions" [ref=e33] [cursor=pointer]:
+              - /url: /improvement-actions
+              - img [ref=e34]
+              - generic [ref=e37]: Improvement Actions
+            - link "Criticality" [ref=e38] [cursor=pointer]:
+              - /url: /criticality
+              - img [ref=e39]
+              - generic [ref=e42]: Criticality
+            - link "FMECA" [ref=e43] [cursor=pointer]:
+              - /url: /fmeca
+              - img [ref=e44]
+              - generic [ref=e48]: FMECA
+            - link "RCA" [ref=e49] [cursor=pointer]:
+              - /url: /rca
+              - img [ref=e50]
+              - generic [ref=e53]: RCA
+            - link "Reliability" [ref=e54] [cursor=pointer]:
+              - /url: /reliability
+              - img [ref=e55]
+              - generic [ref=e57]: Reliability
+            - link "Analytics" [ref=e58] [cursor=pointer]:
+              - /url: /analytics
+              - img [ref=e59]
+              - generic [ref=e61]: Analytics
+            - link "Reports" [ref=e62] [cursor=pointer]:
+              - /url: /reports
+              - img [ref=e63]
+              - generic [ref=e66]: Reports
+            - link "Team" [ref=e67] [cursor=pointer]:
+              - /url: /team
+              - img [ref=e68]
+              - generic [ref=e73]: Team
+            - link "Settings" [ref=e74] [cursor=pointer]:
+              - /url: /settings
+              - img [ref=e75]
+              - generic [ref=e78]: Settings
+            - link "SAP PM" [ref=e79] [cursor=pointer]:
+              - /url: /sap-pm
+              - img [ref=e80]
+              - generic [ref=e84]: SAP PM
+            - link "Data Import" [ref=e85] [cursor=pointer]:
+              - /url: /data-import
+              - img [ref=e86]
+              - generic [ref=e89]: Data Import
+            - link "Audit Log" [ref=e90] [cursor=pointer]:
+              - /url: /audit-log
+              - img [ref=e91]
+              - generic [ref=e94]: Audit Log
+        - generic [ref=e95]:
+          - button "AS Administrador Sistema Administrator" [ref=e96] [cursor=pointer]:
+            - generic [ref=e98]: AS
+            - generic [ref=e99]:
+              - generic [ref=e100]: Administrador Sistema
+              - generic [ref=e101]: Administrator
+          - generic [ref=e102]:
+            - button "Sign Out" [ref=e103]:
+              - img [ref=e104]
+              - generic [ref=e107]: Sign Out
+            - button [ref=e108]:
+              - img [ref=e109]
+      - generic [ref=e111]:
+        - banner [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e115]:
+              - img [ref=e116]
+              - textbox "Search modules..." [ref=e119]
+            - generic [ref=e120]:
+              - button "🇬🇧 EN" [ref=e122]:
+                - img [ref=e123]
+                - generic [ref=e126]: 🇬🇧 EN
+              - button "Switch to dark mode" [ref=e127]:
+                - img [ref=e128]
+              - generic "Tiempo real activo · última señal ahora" [ref=e160]:
+                - img [ref=e131]
+                - generic [ref=e135]: Sync ahora
+              - button "9+" [ref=e161]:
+                - img [ref=e138]
+                - generic [ref=e162]: 9+
+          - generic [ref=e141]:
+            - generic [ref=e142]:
+              - img [ref=e143]
+              - combobox [ref=e145]:
+                - generic: GOLDFIELDS-SN — Goldfields - Salares Norte
+                - img
+            - generic [ref=e146]:
+              - img [ref=e147]
+              - combobox [ref=e149]:
+                - generic: Last 30 Days
+                - img
+          - generic [ref=e150]:
+            - generic [ref=e151]: "Analysis Level:"
+            - generic [ref=e152]:
+              - button "Executive View" [ref=e153]
+              - button "Tactical Operations View" [ref=e154]
+        - main [ref=e155]:
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - heading "Reliability Engineering" [level=1] [ref=e165]
+              - paragraph [ref=e166]: Weibull analysis, MTBF/MTTR, fleet availability
+              - generic [ref=e168]:
+                - img [ref=e169]
+                - generic [ref=e171]: En desarrollo
+                - generic [ref=e172]: ·
+                - generic [ref=e173]: Weibull β/η y agregados de sitio se están calibrando con datos reales de planta. Valores actuales mezclan histórico real + estimaciones.
+            - generic [ref=e174]:
+              - generic [ref=e175]: "Equipment:"
+              - button "GF-SN-1000-1200-1210-1210SY0001" [ref=e176]
+              - button "GF-SN-1000-1200-1210-1210TK0080" [ref=e177]
+              - button "GF-SN-1000-1200-1210-1210TK0007" [ref=e178]
+              - button "GF-SN-1000-1200-1210-1210XP0018" [ref=e179]
+              - button "GF-SN-1000-1200-12ER-1210UP0001" [ref=e180]
+              - button "GF-SN-2000-2100-2110-2110CN0022" [ref=e181]
+              - button "GF-SN-1000-1200-1210-1210XP0021" [ref=e182]
+              - button "GF-SN-2000-2100-2110-2110BN0004" [ref=e183]
+              - button "GF-SN-1000-1200-12ER-1210SC0001" [ref=e184]
+              - button "GF-SN-1000-1200-1210-1210XP0016" [ref=e185]
+              - button "GF-SN-1000-1200-12ER-1210JP0001" [ref=e186]
+              - button "GF-SN-1000-1200-1210-1210TK0057" [ref=e187]
+              - button "GF-SN-1000-1200-1210-1210WT0002" [ref=e188]
+              - button "GF-SN-1000-1200-1210-1210TK0003" [ref=e189]
+              - button "GF-SN-2000-2100-2110-2110BN0001" [ref=e190]
+              - button "GF-SN-1000-1200-1210-1210XP0017" [ref=e191]
+              - button "GF-SN-1000-1200-1210-1210US0001" [ref=e192]
+              - button "GF-SN-1000-1200-1210-1210TK0058" [ref=e193]
+              - button "GF-SN-1000-1200-1210-1210XP0020" [ref=e194]
+              - button "GF-SN-1000-1200-1210-1210TK0006" [ref=e195]
+              - button "GF-SN-1000-1200-12ER-1210JX0001" [ref=e196]
+              - button "GF-SN-1000-1200-12ER-1210ZM0001" [ref=e197]
+              - button "GF-SN-1000-1200-1210-1210CP0001" [ref=e198]
+              - button "GF-SN-1000-1200-1210-1210XP0005" [ref=e199]
+              - button "GF-SN-1000-1200-12ER-1210FS0001" [ref=e200]
+              - button "GF-SN-2000-2100-2110-2110CN0003" [ref=e201]
+              - button "GF-SN-1000-1200-1210-1210RD0003" [ref=e202]
+              - button "GF-SN-1000-1200-1210-1210XP0022" [ref=e203]
+              - button "GF-SN-1000-1200-1210-1210XP0003" [ref=e204]
+              - button "GF-SN-2000-2100-2110-2110CP0001" [ref=e205]
+              - button "GF-SN-2000-2100-2100-2100US0001" [ref=e206]
+              - button "GF-SN-1000-1200-12ER-1210DP0002" [ref=e207]
+              - button "GF-SN-1000-1200-12ER-1210DX0001" [ref=e208]
+              - button "GF-SN-1000-1200-1210-1210XP0019" [ref=e209]
+              - button "GF-SN-1000-1200-12ER-1210CC0001" [ref=e210]
+              - button "GF-SN-1000-1200-1210-1210CT0001" [ref=e211]
+              - button "GF-SN-1000-1200-1210-1210TK0056" [ref=e212]
+              - button "GF-SN-1000-1200-1210-1210EF0005" [ref=e213]
+              - button "GF-SN-1000-1200-1210-1210HE0022" [ref=e214]
+              - button "GF-SN-1000-1200-1210-1210XP0004" [ref=e215]
+              - button "GF-SN-1000-1200-12ER-1210MC0011" [ref=e216]
+              - button "GF-SN-1000-1200-12ER-1210AC0001" [ref=e217]
+              - button "GF-SN-1000-1200-12ER-1210LX0001" [ref=e218]
+              - button "GF-SN-1000-1200-1210-1210HE0005" [ref=e219]
+              - button "GF-SN-1000-1200-1210-1210TK0060" [ref=e220]
+              - button "GF-SN-1000-1200-12ER-1210DP0001" [ref=e221]
+              - button "GF-SN-1000-1200-1210-1210SU0002" [ref=e222]
+              - button "GF-SN-1000-1200-1210-1210TK0059" [ref=e223]
+              - button "GF-SN-1000-1200-1210-1210SY0002" [ref=e224]
+              - button "GF-SN-2000-2100-2110-2110AR0003" [ref=e225]
+              - button "GF-SN-1000-1200-1210-1210EF0019" [ref=e226]
+              - button "GF-SN-1000-1200-1210-1210TK0001" [ref=e227]
+              - button "GF-SN-1000-1200-12ER-1210FD0001" [ref=e228]
+              - button "GF-SN-1000-1200-1210-1210TK0002" [ref=e229]
+              - button "GF-SN-1000-1200-1210-1210SU0001" [ref=e230]
+              - button "GF-SN-1000-1200-1210-1210AR0001" [ref=e231]
+              - button "GF-SN-1000-1200-1210-1210XP0023" [ref=e232]
+              - button "GF-SN-1000-1200-12ER-1210LP0001" [ref=e233]
+              - button "GF-SN-1000-1200-1210-1210EF0014" [ref=e234]
+              - button "GF-SN-1000-1200-1210-1210TK0090" [ref=e235]
+              - button "GF-SN-1000-1200-1210-1210PU0012" [ref=e236]
+              - button "GF-SN-1000-1200-1210-1210EF0002" [ref=e237]
+              - button "GF-SN-1000-1200-1210-1210PU0016" [ref=e238]
+              - button "GF-SN-1000-1200-1210-1210AR0002" [ref=e239]
+              - button "GF-SN-1000-1200-1210-1210RD0004" [ref=e240]
+              - button "GF-SN-1000-1200-1210-1210EF0004" [ref=e241]
+              - button "GF-SN-1000-1200-1210-1210HE0003" [ref=e242]
+              - button "GF-SN-1000-1200-1210-1210CP0002" [ref=e243]
+              - button "GF-SN-1000-1200-1210-1210HE0102" [ref=e244]
+              - button "GF-SN-1000-1200-1210-1210PU0010" [ref=e245]
+              - button "GF-SN-1000-1200-1210-1210RD0006" [ref=e246]
+              - button "GF-SN-1000-1200-1210-1210PK0001" [ref=e247]
+              - button "GF-SN-1000-1200-1210-1210HE0021" [ref=e248]
+              - button "GF-SN-1000-1200-1210-1210EF0011" [ref=e249]
+              - button "GF-SN-1000-1200-1210-1210HE0006" [ref=e250]
+              - button "GF-SN-1000-1200-1210-1210DR0002" [ref=e251]
+              - button "GF-SN-1000-1200-1210-1210DR0001" [ref=e252]
+              - button "GF-SN-1000-1200-1210-1210EF0017" [ref=e253]
+              - button "GF-SN-1000-1200-1210-1210ST0008" [ref=e254]
+              - button "GF-SN-1000-1200-1210-1210EF0001" [ref=e255]
+              - button "GF-SN-1000-1200-1210-1210EF0018" [ref=e256]
+              - button "GF-SN-1000-1200-1210-1210RD0002" [ref=e257]
+              - button "GF-SN-1000-1200-1210-1210EF0015" [ref=e258]
+              - button "GF-SN-1000-1200-1210-1210CN0001" [ref=e259]
+              - button "GF-SN-1000-1200-1210-1210RD0005" [ref=e260]
+              - button "GF-SN-1000-1200-1210-1210EF0012" [ref=e261]
+              - button "GF-SN-1000-1200-1210-1210EF0016" [ref=e262]
+              - button "GF-SN-1000-1200-1210-1210EF0003" [ref=e263]
+              - button "GF-SN-1000-1200-1210-1210HE0002" [ref=e264]
+              - button "GF-SN-1000-1200-1210-1210PU0042" [ref=e265]
+              - button "GF-SN-1000-1200-1210-1210RD0001" [ref=e266]
+              - button "GF-SN-1000-1200-1210-1210HE0001" [ref=e267]
+              - button "GF-SN-1000-1200-1210-1210PU0041" [ref=e268]
+              - button "GF-SN-1000-1200-1210-1210FA0001" [ref=e269]
+              - button "GF-SN-1000-1200-1210-1210PK0002" [ref=e270]
+              - button "GF-SN-1000-1200-1210-1210EF0020" [ref=e271]
+              - button "GF-SN-1000-1200-1210-1210FP0001" [ref=e272]
+              - button "GF-SN-1000-1200-1210-1210EF0013" [ref=e273]
+              - button "GF-SN-1000-1200-1210-1210HE0004" [ref=e274]
+              - button "GF-SN-1000-1200-1210-1210PU0009" [ref=e275]
+            - generic [ref=e276]:
+              - generic [ref=e277]:
+                - generic [ref=e278]:
+                  - generic [ref=e279]:
+                    - img [ref=e280]
+                    - generic [ref=e282]: Selected Equipment
+                  - heading "Ducha y lava ojos emergencia" [level=2] [ref=e283]
+                  - paragraph [ref=e284]: GF-SN-1000-1200-1210-1210SY0001
+                - generic [ref=e286]:
+                  - img [ref=e287]
+                  - text: Stable
+              - generic [ref=e288]:
+                - generic [ref=e289]:
+                  - paragraph [ref=e290]: MTBF
+                  - paragraph [ref=e291]: 8.8 h
+                  - paragraph [ref=e292]: Mean time between failures
+                - generic [ref=e293]:
+                  - paragraph [ref=e294]: MTTR
+                  - paragraph [ref=e295]: 11.5 h
+                  - paragraph [ref=e296]: Mean time to repair
+                - generic [ref=e297]:
+                  - paragraph [ref=e298]: Availability
+                  - paragraph [ref=e299]: 80.8%
+                  - paragraph [ref=e300]: Mechanical availability
+                - generic [ref=e301]:
+                  - paragraph [ref=e302]: OEE
+                  - paragraph [ref=e303]: 61.1%
+                  - paragraph [ref=e304]: Overall efficiency
+                - generic [ref=e305]:
+                  - paragraph [ref=e306]: Weibull β
+                  - paragraph [ref=e307]: "2"
+                  - paragraph [ref=e308]: Shape factor
+                - generic [ref=e309]:
+                  - paragraph [ref=e310]: Weibull η
+                  - paragraph [ref=e311]: 8.8 h
+                  - paragraph [ref=e312]: Characteristic life
+              - generic [ref=e313]:
+                - generic [ref=e314]: "Failures YTD:"
+                - generic [ref=e315]: 0 failures
+                - generic [ref=e316]: "Wear-out (β > 1): Increasing failure rate"
+            - generic [ref=e317]:
+              - generic [ref=e318]:
+                - generic [ref=e319]:
+                  - heading "Reliability R(t)" [level=3] [ref=e320]
+                  - generic [ref=e321]: Weibull β=2, Weibull η=8.8h
+                - application [ref=e324]:
+                  - generic [ref=e341]:
+                    - generic [ref=e342]:
+                      - generic [ref=e344]: "1"
+                      - generic [ref=e346]: "2"
+                      - generic [ref=e348]: "2"
+                      - generic [ref=e350]: "3"
+                      - generic [ref=e352]: "4"
+                      - generic [ref=e354]: "5"
+                      - generic [ref=e356]: "6"
+                      - generic [ref=e358]: "6"
+                      - generic [ref=e360]: "7"
+                      - generic [ref=e362]: "8"
+                      - generic [ref=e364]: "9"
+                      - generic [ref=e366]: "10"
+                      - generic [ref=e368]: "10"
+                      - generic [ref=e370]: "11"
+                      - generic [ref=e372]: "12"
+                      - generic [ref=e374]: "13"
+                      - generic [ref=e376]: "13"
+                      - generic [ref=e378]: "14"
+                      - generic [ref=e380]: "15"
+                      - generic [ref=e382]: "16"
+                    - generic [ref=e383]: Time (h)
+                    - generic [ref=e384]:
+                      - generic [ref=e386]: 0%
+                      - generic [ref=e388]: 25%
+                      - generic [ref=e390]: 50%
+                      - generic [ref=e392]: 75%
+                      - generic [ref=e394]: 100%
+                - generic [ref=e395]:
+                  - text: R(t) = e
+                  - superscript [ref=e396]:
+                    - text: "-(t/η)"
+                    - superscript [ref=e397]: β
+                  - text: — Survival probability up to t hours
+              - generic [ref=e398]:
+                - generic [ref=e399]:
+                  - heading "Hazard h(t)" [level=3] [ref=e400]
+                  - generic [ref=e401]: Increasing rate — wear-out
+                - application [ref=e404]:
+                  - generic [ref=e419]:
+                    - generic [ref=e420]:
+                      - generic [ref=e422]: "1"
+                      - generic [ref=e424]: "2"
+                      - generic [ref=e426]: "2"
+                      - generic [ref=e428]: "3"
+                      - generic [ref=e430]: "4"
+                      - generic [ref=e432]: "5"
+                      - generic [ref=e434]: "6"
+                      - generic [ref=e436]: "6"
+                      - generic [ref=e438]: "7"
+                      - generic [ref=e440]: "8"
+                      - generic [ref=e442]: "9"
+                      - generic [ref=e444]: "10"
+                      - generic [ref=e446]: "10"
+                      - generic [ref=e448]: "11"
+                      - generic [ref=e450]: "12"
+                      - generic [ref=e452]: "13"
+                      - generic [ref=e454]: "13"
+                      - generic [ref=e456]: "14"
+                      - generic [ref=e458]: "15"
+                      - generic [ref=e460]: "16"
+                    - generic [ref=e461]: Time (h)
+                    - generic [ref=e462]:
+                      - generic [ref=e464]: "0"
+                      - generic [ref=e466]: "0.15"
+                      - generic [ref=e468]: "0.3"
+                      - generic [ref=e470]: "0.45"
+                      - generic [ref=e472]: "0.6"
+                - generic [ref=e473]:
+                  - text: h(t) = (β/η)·(t/η)
+                  - superscript [ref=e474]: β-1
+                  - text: — Instantaneous failure rate at time t
+              - generic [ref=e475]:
+                - heading "Failure History" [level=3] [ref=e476]
+                - paragraph [ref=e478]: No failures recorded this year
+                - generic [ref=e480]:
+                  - generic [ref=e481]:
+                    - text: "Total failures:"
+                    - strong [ref=e482]: "0"
+                  - generic [ref=e483]:
+                    - text: "Actual MTBF:"
+                    - strong [ref=e484]: 8.8 h
+                  - generic [ref=e485]:
+                    - text: "MTTR:"
+                    - strong [ref=e486]: 11.5 h
+              - generic [ref=e487]:
+                - heading "Fleet Summary" [level=3] [ref=e488]
+                - table [ref=e490]:
+                  - rowgroup [ref=e491]:
+                    - row "Equipment MTBF Availability OEE β Failures Trend" [ref=e492]:
+                      - columnheader "Equipment" [ref=e493]
+                      - columnheader "MTBF" [ref=e494]
+                      - columnheader "Availability" [ref=e495]
+                      - columnheader "OEE" [ref=e496]
+                      - columnheader "β" [ref=e497]
+                      - columnheader "Failures" [ref=e498]
+                      - columnheader "Trend" [ref=e499]
+                  - rowgroup [ref=e500]:
+                    - row "GF-SN-1000-1200-1210-1210SY0001 Ducha y 8.8 h 80.8% 61.1% 2 0 Stable" [ref=e501] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210SY0001 Ducha y" [ref=e502]:
+                        - generic [ref=e503]: GF-SN-1000-1200-1210-1210SY0001
+                        - generic [ref=e504]: Ducha y
+                      - cell "8.8 h" [ref=e505]
+                      - cell "80.8%" [ref=e506]:
+                        - generic [ref=e507]: 80.8%
+                      - cell "61.1%" [ref=e508]:
+                        - generic [ref=e509]: 61.1%
+                      - cell "2" [ref=e510]
+                      - cell "0" [ref=e511]
+                      - cell "Stable" [ref=e512]:
+                        - generic [ref=e513]:
+                          - img [ref=e514]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0080 Estanque agua 30.8 h 83.5% 61.8% 2 0 Stable" [ref=e515] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0080 Estanque agua" [ref=e516]:
+                        - generic [ref=e517]: GF-SN-1000-1200-1210-1210TK0080
+                        - generic [ref=e518]: Estanque agua
+                      - cell "30.8 h" [ref=e519]
+                      - cell "83.5%" [ref=e520]:
+                        - generic [ref=e521]: 83.5%
+                      - cell "61.8%" [ref=e522]:
+                        - generic [ref=e523]: 61.8%
+                      - cell "2" [ref=e524]
+                      - cell "0" [ref=e525]
+                      - cell "Stable" [ref=e526]:
+                        - generic [ref=e527]:
+                          - img [ref=e528]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0007 Estanque diario 30.6 h 87.2% 61% 2 0 Stable" [ref=e529] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0007 Estanque diario" [ref=e530]:
+                        - generic [ref=e531]: GF-SN-1000-1200-1210-1210TK0007
+                        - generic [ref=e532]: Estanque diario
+                      - cell "30.6 h" [ref=e533]
+                      - cell "87.2%" [ref=e534]:
+                        - generic [ref=e535]: 87.2%
+                      - cell "61%" [ref=e536]:
+                        - generic [ref=e537]: 61%
+                      - cell "2" [ref=e538]
+                      - cell "0" [ref=e539]
+                      - cell "Stable" [ref=e540]:
+                        - generic [ref=e541]:
+                          - img [ref=e542]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210XP0018 Monitor lavado 30.9 h 86.1% 63.7% 2 0 Stable" [ref=e543] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0018 Monitor lavado" [ref=e544]:
+                        - generic [ref=e545]: GF-SN-1000-1200-1210-1210XP0018
+                        - generic [ref=e546]: Monitor lavado
+                      - cell "30.9 h" [ref=e547]
+                      - cell "86.1%" [ref=e548]:
+                        - generic [ref=e549]: 86.1%
+                      - cell "63.7%" [ref=e550]:
+                        - generic [ref=e551]: 63.7%
+                      - cell "2" [ref=e552]
+                      - cell "0" [ref=e553]
+                      - cell "Stable" [ref=e554]:
+                        - generic [ref=e555]:
+                          - img [ref=e556]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210UP0001 UPS 25.1 h 85.2% 65.8% 2 0 Stable" [ref=e557] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210UP0001 UPS" [ref=e558]:
+                        - generic [ref=e559]: GF-SN-1000-1200-12ER-1210UP0001
+                        - generic [ref=e560]: UPS
+                      - cell "25.1 h" [ref=e561]
+                      - cell "85.2%" [ref=e562]:
+                        - generic [ref=e563]: 85.2%
+                      - cell "65.8%" [ref=e564]:
+                        - generic [ref=e565]: 65.8%
+                      - cell "2" [ref=e566]
+                      - cell "0" [ref=e567]
+                      - cell "Stable" [ref=e568]:
+                        - generic [ref=e569]:
+                          - img [ref=e570]
+                          - text: Stable
+                    - row "GF-SN-2000-2100-2110-2110CN0022 Puente grúa 57.2 h 81.7% 67.4% 2 0 Stable" [ref=e571] [cursor=pointer]:
+                      - cell "GF-SN-2000-2100-2110-2110CN0022 Puente grúa" [ref=e572]:
+                        - generic [ref=e573]: GF-SN-2000-2100-2110-2110CN0022
+                        - generic [ref=e574]: Puente grúa
+                      - cell "57.2 h" [ref=e575]
+                      - cell "81.7%" [ref=e576]:
+                        - generic [ref=e577]: 81.7%
+                      - cell "67.4%" [ref=e578]:
+                        - generic [ref=e579]: 67.4%
+                      - cell "2" [ref=e580]
+                      - cell "0" [ref=e581]
+                      - cell "Stable" [ref=e582]:
+                        - generic [ref=e583]:
+                          - img [ref=e584]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210XP0021 Monitor lavado 58.5 h 84.5% 65.5% 2 0 Stable" [ref=e585] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0021 Monitor lavado" [ref=e586]:
+                        - generic [ref=e587]: GF-SN-1000-1200-1210-1210XP0021
+                        - generic [ref=e588]: Monitor lavado
+                      - cell "58.5 h" [ref=e589]
+                      - cell "84.5%" [ref=e590]:
+                        - generic [ref=e591]: 84.5%
+                      - cell "65.5%" [ref=e592]:
+                        - generic [ref=e593]: 65.5%
+                      - cell "2" [ref=e594]
+                      - cell "0" [ref=e595]
+                      - cell "Stable" [ref=e596]:
+                        - generic [ref=e597]:
+                          - img [ref=e598]
+                          - text: Stable
+                    - row "GF-SN-2000-2100-2110-2110BN0004 Tolva receptor 45.8 h 87.9% 63.5% 2 0 Stable" [ref=e599] [cursor=pointer]:
+                      - cell "GF-SN-2000-2100-2110-2110BN0004 Tolva receptor" [ref=e600]:
+                        - generic [ref=e601]: GF-SN-2000-2100-2110-2110BN0004
+                        - generic [ref=e602]: Tolva receptor
+                      - cell "45.8 h" [ref=e603]
+                      - cell "87.9%" [ref=e604]:
+                        - generic [ref=e605]: 87.9%
+                      - cell "63.5%" [ref=e606]:
+                        - generic [ref=e607]: 63.5%
+                      - cell "2" [ref=e608]
+                      - cell "0" [ref=e609]
+                      - cell "Stable" [ref=e610]:
+                        - generic [ref=e611]:
+                          - img [ref=e612]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210SC0001 Panel sistema 48.4 h 86.9% 64.6% 2 0 Stable" [ref=e613] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210SC0001 Panel sistema" [ref=e614]:
+                        - generic [ref=e615]: GF-SN-1000-1200-12ER-1210SC0001
+                        - generic [ref=e616]: Panel sistema
+                      - cell "48.4 h" [ref=e617]
+                      - cell "86.9%" [ref=e618]:
+                        - generic [ref=e619]: 86.9%
+                      - cell "64.6%" [ref=e620]:
+                        - generic [ref=e621]: 64.6%
+                      - cell "2" [ref=e622]
+                      - cell "0" [ref=e623]
+                      - cell "Stable" [ref=e624]:
+                        - generic [ref=e625]:
+                          - img [ref=e626]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210XP0016 Unidad re-potabilizadora 53.9 h 91.5% 60.9% 2 0 Stable" [ref=e627] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0016 Unidad re-potabilizadora" [ref=e628]:
+                        - generic [ref=e629]: GF-SN-1000-1200-1210-1210XP0016
+                        - generic [ref=e630]: Unidad re-potabilizadora
+                      - cell "53.9 h" [ref=e631]
+                      - cell "91.5%" [ref=e632]:
+                        - generic [ref=e633]: 91.5%
+                      - cell "60.9%" [ref=e634]:
+                        - generic [ref=e635]: 60.9%
+                      - cell "2" [ref=e636]
+                      - cell "0" [ref=e637]
+                      - cell "Stable" [ref=e638]:
+                        - generic [ref=e639]:
+                          - img [ref=e640]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210JP0001 Tablero distribución 9.3 h 91.8% 68.4% 2 0 Stable" [ref=e641] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210JP0001 Tablero distribución" [ref=e642]:
+                        - generic [ref=e643]: GF-SN-1000-1200-12ER-1210JP0001
+                        - generic [ref=e644]: Tablero distribución
+                      - cell "9.3 h" [ref=e645]
+                      - cell "91.8%" [ref=e646]:
+                        - generic [ref=e647]: 91.8%
+                      - cell "68.4%" [ref=e648]:
+                        - generic [ref=e649]: 68.4%
+                      - cell "2" [ref=e650]
+                      - cell "0" [ref=e651]
+                      - cell "Stable" [ref=e652]:
+                        - generic [ref=e653]:
+                          - img [ref=e654]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0057 Estanque aceite 29.6 h 85.6% 74.2% 2 0 Stable" [ref=e655] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0057 Estanque aceite" [ref=e656]:
+                        - generic [ref=e657]: GF-SN-1000-1200-1210-1210TK0057
+                        - generic [ref=e658]: Estanque aceite
+                      - cell "29.6 h" [ref=e659]
+                      - cell "85.6%" [ref=e660]:
+                        - generic [ref=e661]: 85.6%
+                      - cell "74.2%" [ref=e662]:
+                        - generic [ref=e663]: 74.2%
+                      - cell "2" [ref=e664]
+                      - cell "0" [ref=e665]
+                      - cell "Stable" [ref=e666]:
+                        - generic [ref=e667]:
+                          - img [ref=e668]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210WT0002 Planta limpieza 10.5 h 91.9% 69.3% 2 0 Stable" [ref=e669] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210WT0002 Planta limpieza" [ref=e670]:
+                        - generic [ref=e671]: GF-SN-1000-1200-1210-1210WT0002
+                        - generic [ref=e672]: Planta limpieza
+                      - cell "10.5 h" [ref=e673]
+                      - cell "91.9%" [ref=e674]:
+                        - generic [ref=e675]: 91.9%
+                      - cell "69.3%" [ref=e676]:
+                        - generic [ref=e677]: 69.3%
+                      - cell "2" [ref=e678]
+                      - cell "0" [ref=e679]
+                      - cell "Stable" [ref=e680]:
+                        - generic [ref=e681]:
+                          - img [ref=e682]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0003 Estanque aceite 28.1 h 88.2% 72.7% 2 0 Stable" [ref=e683] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0003 Estanque aceite" [ref=e684]:
+                        - generic [ref=e685]: GF-SN-1000-1200-1210-1210TK0003
+                        - generic [ref=e686]: Estanque aceite
+                      - cell "28.1 h" [ref=e687]
+                      - cell "88.2%" [ref=e688]:
+                        - generic [ref=e689]: 88.2%
+                      - cell "72.7%" [ref=e690]:
+                        - generic [ref=e691]: 72.7%
+                      - cell "2" [ref=e692]
+                      - cell "0" [ref=e693]
+                      - cell "Stable" [ref=e694]:
+                        - generic [ref=e695]:
+                          - img [ref=e696]
+                          - text: Stable
+                    - row "GF-SN-2000-2100-2110-2110BN0001 Tolva room 7.5 h 98.9% 64.1% 2 0 Stable" [ref=e697] [cursor=pointer]:
+                      - cell "GF-SN-2000-2100-2110-2110BN0001 Tolva room" [ref=e698]:
+                        - generic [ref=e699]: GF-SN-2000-2100-2110-2110BN0001
+                        - generic [ref=e700]: Tolva room
+                      - cell "7.5 h" [ref=e701]
+                      - cell "98.9%" [ref=e702]:
+                        - generic [ref=e703]: 98.9%
+                      - cell "64.1%" [ref=e704]:
+                        - generic [ref=e705]: 64.1%
+                      - cell "2" [ref=e706]
+                      - cell "0" [ref=e707]
+                      - cell "Stable" [ref=e708]:
+                        - generic [ref=e709]:
+                          - img [ref=e710]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210XP0017 Hidro pack 36.7 h 83.3% 78.2% 2 0 Stable" [ref=e711] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0017 Hidro pack" [ref=e712]:
+                        - generic [ref=e713]: GF-SN-1000-1200-1210-1210XP0017
+                        - generic [ref=e714]: Hidro pack
+                      - cell "36.7 h" [ref=e715]
+                      - cell "83.3%" [ref=e716]:
+                        - generic [ref=e717]: 83.3%
+                      - cell "78.2%" [ref=e718]:
+                        - generic [ref=e719]: 78.2%
+                      - cell "2" [ref=e720]
+                      - cell "0" [ref=e721]
+                      - cell "Stable" [ref=e722]:
+                        - generic [ref=e723]:
+                          - img [ref=e724]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210US0001 Subestación unitaria 17.4 h 88.6% 75.5% 2 0 Stable" [ref=e725] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210US0001 Subestación unitaria" [ref=e726]:
+                        - generic [ref=e727]: GF-SN-1000-1200-1210-1210US0001
+                        - generic [ref=e728]: Subestación unitaria
+                      - cell "17.4 h" [ref=e729]
+                      - cell "88.6%" [ref=e730]:
+                        - generic [ref=e731]: 88.6%
+                      - cell "75.5%" [ref=e732]:
+                        - generic [ref=e733]: 75.5%
+                      - cell "2" [ref=e734]
+                      - cell "0" [ref=e735]
+                      - cell "Stable" [ref=e736]:
+                        - generic [ref=e737]:
+                          - img [ref=e738]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0058 Estanque aceite 46 h 93.4% 69.5% 2 0 Stable" [ref=e739] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0058 Estanque aceite" [ref=e740]:
+                        - generic [ref=e741]: GF-SN-1000-1200-1210-1210TK0058
+                        - generic [ref=e742]: Estanque aceite
+                      - cell "46 h" [ref=e743]
+                      - cell "93.4%" [ref=e744]:
+                        - generic [ref=e745]: 93.4%
+                      - cell "69.5%" [ref=e746]:
+                        - generic [ref=e747]: 69.5%
+                      - cell "2" [ref=e748]
+                      - cell "0" [ref=e749]
+                      - cell "Stable" [ref=e750]:
+                        - generic [ref=e751]:
+                          - img [ref=e752]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210XP0020 Monitor lavado 33.5 h 89.5% 75.5% 2 0 Stable" [ref=e753] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0020 Monitor lavado" [ref=e754]:
+                        - generic [ref=e755]: GF-SN-1000-1200-1210-1210XP0020
+                        - generic [ref=e756]: Monitor lavado
+                      - cell "33.5 h" [ref=e757]
+                      - cell "89.5%" [ref=e758]:
+                        - generic [ref=e759]: 89.5%
+                      - cell "75.5%" [ref=e760]:
+                        - generic [ref=e761]: 75.5%
+                      - cell "2" [ref=e762]
+                      - cell "0" [ref=e763]
+                      - cell "Stable" [ref=e764]:
+                        - generic [ref=e765]:
+                          - img [ref=e766]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0006 Estanque aceite 49.5 h 89.2% 75.2% 2 0 Stable" [ref=e767] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0006 Estanque aceite" [ref=e768]:
+                        - generic [ref=e769]: GF-SN-1000-1200-1210-1210TK0006
+                        - generic [ref=e770]: Estanque aceite
+                      - cell "49.5 h" [ref=e771]
+                      - cell "89.2%" [ref=e772]:
+                        - generic [ref=e773]: 89.2%
+                      - cell "75.2%" [ref=e774]:
+                        - generic [ref=e775]: 75.2%
+                      - cell "2" [ref=e776]
+                      - cell "0" [ref=e777]
+                      - cell "Stable" [ref=e778]:
+                        - generic [ref=e779]:
+                          - img [ref=e780]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210JX0001 Transformador distribución 54.4 h 85.5% 79.1% 2 0 Stable" [ref=e781] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210JX0001 Transformador distribución" [ref=e782]:
+                        - generic [ref=e783]: GF-SN-1000-1200-12ER-1210JX0001
+                        - generic [ref=e784]: Transformador distribución
+                      - cell "54.4 h" [ref=e785]
+                      - cell "85.5%" [ref=e786]:
+                        - generic [ref=e787]: 85.5%
+                      - cell "79.1%" [ref=e788]:
+                        - generic [ref=e789]: 79.1%
+                      - cell "2" [ref=e790]
+                      - cell "0" [ref=e791]
+                      - cell "Stable" [ref=e792]:
+                        - generic [ref=e793]:
+                          - img [ref=e794]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210ZM0001 Unidad presurización 9.1 h 84.3% 83.7% 2 0 Stable" [ref=e795] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210ZM0001 Unidad presurización" [ref=e796]:
+                        - generic [ref=e797]: GF-SN-1000-1200-12ER-1210ZM0001
+                        - generic [ref=e798]: Unidad presurización
+                      - cell "9.1 h" [ref=e799]
+                      - cell "84.3%" [ref=e800]:
+                        - generic [ref=e801]: 84.3%
+                      - cell "83.7%" [ref=e802]:
+                        - generic [ref=e803]: 83.7%
+                      - cell "2" [ref=e804]
+                      - cell "0" [ref=e805]
+                      - cell "Stable" [ref=e806]:
+                        - generic [ref=e807]:
+                          - img [ref=e808]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210CP0001 Compresor de 23.9 h 80.8% 76.1% 2 0 DEGRADING" [ref=e809] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210CP0001 Compresor de" [ref=e810]:
+                        - generic [ref=e811]: GF-SN-1000-1200-1210-1210CP0001
+                        - generic [ref=e812]: Compresor de
+                      - cell "23.9 h" [ref=e813]
+                      - cell "80.8%" [ref=e814]:
+                        - generic [ref=e815]: 80.8%
+                      - cell "76.1%" [ref=e816]:
+                        - generic [ref=e817]: 76.1%
+                      - cell "2" [ref=e818]
+                      - cell "0" [ref=e819]
+                      - cell "DEGRADING" [ref=e820]:
+                        - generic [ref=e821]:
+                          - img [ref=e822]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210XP0005 Estación modular 36.3 h 82.4% 84.1% 2 0 Stable" [ref=e823] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0005 Estación modular" [ref=e824]:
+                        - generic [ref=e825]: GF-SN-1000-1200-1210-1210XP0005
+                        - generic [ref=e826]: Estación modular
+                      - cell "36.3 h" [ref=e827]
+                      - cell "82.4%" [ref=e828]:
+                        - generic [ref=e829]: 82.4%
+                      - cell "84.1%" [ref=e830]:
+                        - generic [ref=e831]: 84.1%
+                      - cell "2" [ref=e832]
+                      - cell "0" [ref=e833]
+                      - cell "Stable" [ref=e834]:
+                        - generic [ref=e835]:
+                          - img [ref=e836]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210FS0001 Sistema supresión 54.7 h 95.1% 70.3% 2 0 Stable" [ref=e837] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210FS0001 Sistema supresión" [ref=e838]:
+                        - generic [ref=e839]: GF-SN-1000-1200-12ER-1210FS0001
+                        - generic [ref=e840]: Sistema supresión
+                      - cell "54.7 h" [ref=e841]
+                      - cell "95.1%" [ref=e842]:
+                        - generic [ref=e843]: 95.1%
+                      - cell "70.3%" [ref=e844]:
+                        - generic [ref=e845]: 70.3%
+                      - cell "2" [ref=e846]
+                      - cell "0" [ref=e847]
+                      - cell "Stable" [ref=e848]:
+                        - generic [ref=e849]:
+                          - img [ref=e850]
+                          - text: Stable
+                    - row "GF-SN-2000-2100-2110-2110CN0003 Puente grúa 57.3 h 81.9% 84% 2 0 Stable" [ref=e851] [cursor=pointer]:
+                      - cell "GF-SN-2000-2100-2110-2110CN0003 Puente grúa" [ref=e852]:
+                        - generic [ref=e853]: GF-SN-2000-2100-2110-2110CN0003
+                        - generic [ref=e854]: Puente grúa
+                      - cell "57.3 h" [ref=e855]
+                      - cell "81.9%" [ref=e856]:
+                        - generic [ref=e857]: 81.9%
+                      - cell "84%" [ref=e858]:
+                        - generic [ref=e859]: 84%
+                      - cell "2" [ref=e860]
+                      - cell "0" [ref=e861]
+                      - cell "Stable" [ref=e862]:
+                        - generic [ref=e863]:
+                          - img [ref=e864]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210RD0003 Puerta Taller 54.9 h 83% 90.2% 2 0 DEGRADING" [ref=e865] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210RD0003 Puerta Taller" [ref=e866]:
+                        - generic [ref=e867]: GF-SN-1000-1200-1210-1210RD0003
+                        - generic [ref=e868]: Puerta Taller
+                      - cell "54.9 h" [ref=e869]
+                      - cell "83%" [ref=e870]:
+                        - generic [ref=e871]: 83%
+                      - cell "90.2%" [ref=e872]:
+                        - generic [ref=e873]: 90.2%
+                      - cell "2" [ref=e874]
+                      - cell "0" [ref=e875]
+                      - cell "DEGRADING" [ref=e876]:
+                        - generic [ref=e877]:
+                          - img [ref=e878]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210XP0022 Monitor lavado 13.5 h 85.5% 84.7% 2 0 Stable" [ref=e879] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0022 Monitor lavado" [ref=e880]:
+                        - generic [ref=e881]: GF-SN-1000-1200-1210-1210XP0022
+                        - generic [ref=e882]: Monitor lavado
+                      - cell "13.5 h" [ref=e883]
+                      - cell "85.5%" [ref=e884]:
+                        - generic [ref=e885]: 85.5%
+                      - cell "84.7%" [ref=e886]:
+                        - generic [ref=e887]: 84.7%
+                      - cell "2" [ref=e888]
+                      - cell "0" [ref=e889]
+                      - cell "Stable" [ref=e890]:
+                        - generic [ref=e891]:
+                          - img [ref=e892]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210XP0003 Estación modular 37.7 h 84.4% 84.7% 2 0 Stable" [ref=e893] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0003 Estación modular" [ref=e894]:
+                        - generic [ref=e895]: GF-SN-1000-1200-1210-1210XP0003
+                        - generic [ref=e896]: Estación modular
+                      - cell "37.7 h" [ref=e897]
+                      - cell "84.4%" [ref=e898]:
+                        - generic [ref=e899]: 84.4%
+                      - cell "84.7%" [ref=e900]:
+                        - generic [ref=e901]: 84.7%
+                      - cell "2" [ref=e902]
+                      - cell "0" [ref=e903]
+                      - cell "Stable" [ref=e904]:
+                        - generic [ref=e905]:
+                          - img [ref=e906]
+                          - text: Stable
+                    - row "GF-SN-2000-2100-2110-2110CP0001 Caja HMI 16.3 h 90.5% 80.5% 2 0 Stable" [ref=e907] [cursor=pointer]:
+                      - cell "GF-SN-2000-2100-2110-2110CP0001 Caja HMI" [ref=e908]:
+                        - generic [ref=e909]: GF-SN-2000-2100-2110-2110CP0001
+                        - generic [ref=e910]: Caja HMI
+                      - cell "16.3 h" [ref=e911]
+                      - cell "90.5%" [ref=e912]:
+                        - generic [ref=e913]: 90.5%
+                      - cell "80.5%" [ref=e914]:
+                        - generic [ref=e915]: 80.5%
+                      - cell "2" [ref=e916]
+                      - cell "0" [ref=e917]
+                      - cell "Stable" [ref=e918]:
+                        - generic [ref=e919]:
+                          - img [ref=e920]
+                          - text: Stable
+                    - row "GF-SN-2000-2100-2100-2100US0001 Subestación unitaria 5.8 h 88.6% 83.5% 2 0 Stable" [ref=e921] [cursor=pointer]:
+                      - cell "GF-SN-2000-2100-2100-2100US0001 Subestación unitaria" [ref=e922]:
+                        - generic [ref=e923]: GF-SN-2000-2100-2100-2100US0001
+                        - generic [ref=e924]: Subestación unitaria
+                      - cell "5.8 h" [ref=e925]
+                      - cell "88.6%" [ref=e926]:
+                        - generic [ref=e927]: 88.6%
+                      - cell "83.5%" [ref=e928]:
+                        - generic [ref=e929]: 83.5%
+                      - cell "2" [ref=e930]
+                      - cell "0" [ref=e931]
+                      - cell "Stable" [ref=e932]:
+                        - generic [ref=e933]:
+                          - img [ref=e934]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210DP0002 Tablero distribución 30.1 h 87.8% 82.9% 2 0 Stable" [ref=e935] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210DP0002 Tablero distribución" [ref=e936]:
+                        - generic [ref=e937]: GF-SN-1000-1200-12ER-1210DP0002
+                        - generic [ref=e938]: Tablero distribución
+                      - cell "30.1 h" [ref=e939]
+                      - cell "87.8%" [ref=e940]:
+                        - generic [ref=e941]: 87.8%
+                      - cell "82.9%" [ref=e942]:
+                        - generic [ref=e943]: 82.9%
+                      - cell "2" [ref=e944]
+                      - cell "0" [ref=e945]
+                      - cell "Stable" [ref=e946]:
+                        - generic [ref=e947]:
+                          - img [ref=e948]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210DX0001 Transformador distribución 51.8 h 96.3% 73.3% 2 0 Stable" [ref=e949] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210DX0001 Transformador distribución" [ref=e950]:
+                        - generic [ref=e951]: GF-SN-1000-1200-12ER-1210DX0001
+                        - generic [ref=e952]: Transformador distribución
+                      - cell "51.8 h" [ref=e953]
+                      - cell "96.3%" [ref=e954]:
+                        - generic [ref=e955]: 96.3%
+                      - cell "73.3%" [ref=e956]:
+                        - generic [ref=e957]: 73.3%
+                      - cell "2" [ref=e958]
+                      - cell "0" [ref=e959]
+                      - cell "Stable" [ref=e960]:
+                        - generic [ref=e961]:
+                          - img [ref=e962]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210XP0019 Monitor lavado 22.3 h 98.4% 74.1% 2 0 Stable" [ref=e963] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0019 Monitor lavado" [ref=e964]:
+                        - generic [ref=e965]: GF-SN-1000-1200-1210-1210XP0019
+                        - generic [ref=e966]: Monitor lavado
+                      - cell "22.3 h" [ref=e967]
+                      - cell "98.4%" [ref=e968]:
+                        - generic [ref=e969]: 98.4%
+                      - cell "74.1%" [ref=e970]:
+                        - generic [ref=e971]: 74.1%
+                      - cell "2" [ref=e972]
+                      - cell "0" [ref=e973]
+                      - cell "Stable" [ref=e974]:
+                        - generic [ref=e975]:
+                          - img [ref=e976]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210CC0001 Tablero de 22.7 h 93.3% 80% 2 0 Stable" [ref=e977] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210CC0001 Tablero de" [ref=e978]:
+                        - generic [ref=e979]: GF-SN-1000-1200-12ER-1210CC0001
+                        - generic [ref=e980]: Tablero de
+                      - cell "22.7 h" [ref=e981]
+                      - cell "93.3%" [ref=e982]:
+                        - generic [ref=e983]: 93.3%
+                      - cell "80%" [ref=e984]:
+                        - generic [ref=e985]: 80%
+                      - cell "2" [ref=e986]
+                      - cell "0" [ref=e987]
+                      - cell "Stable" [ref=e988]:
+                        - generic [ref=e989]:
+                          - img [ref=e990]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210CT0001 Sistema CCTV 50.9 h 86.8% 83.5% 2 0 Stable" [ref=e991] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210CT0001 Sistema CCTV" [ref=e992]:
+                        - generic [ref=e993]: GF-SN-1000-1200-1210-1210CT0001
+                        - generic [ref=e994]: Sistema CCTV
+                      - cell "50.9 h" [ref=e995]
+                      - cell "86.8%" [ref=e996]:
+                        - generic [ref=e997]: 86.8%
+                      - cell "83.5%" [ref=e998]:
+                        - generic [ref=e999]: 83.5%
+                      - cell "2" [ref=e1000]
+                      - cell "0" [ref=e1001]
+                      - cell "Stable" [ref=e1002]:
+                        - generic [ref=e1003]:
+                          - img [ref=e1004]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0056 Estanque diario 43.6 h 80.2% 93.2% 2 0 Stable" [ref=e1005] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0056 Estanque diario" [ref=e1006]:
+                        - generic [ref=e1007]: GF-SN-1000-1200-1210-1210TK0056
+                        - generic [ref=e1008]: Estanque diario
+                      - cell "43.6 h" [ref=e1009]
+                      - cell "80.2%" [ref=e1010]:
+                        - generic [ref=e1011]: 80.2%
+                      - cell "93.2%" [ref=e1012]:
+                        - generic [ref=e1013]: 93.2%
+                      - cell "2" [ref=e1014]
+                      - cell "0" [ref=e1015]
+                      - cell "Stable" [ref=e1016]:
+                        - generic [ref=e1017]:
+                          - img [ref=e1018]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210EF0005 Extractor taller 13.4 h 90.2% 87.3% 2 0 Stable" [ref=e1019] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0005 Extractor taller" [ref=e1020]:
+                        - generic [ref=e1021]: GF-SN-1000-1200-1210-1210EF0005
+                        - generic [ref=e1022]: Extractor taller
+                      - cell "13.4 h" [ref=e1023]
+                      - cell "90.2%" [ref=e1024]:
+                        - generic [ref=e1025]: 90.2%
+                      - cell "87.3%" [ref=e1026]:
+                        - generic [ref=e1027]: 87.3%
+                      - cell "2" [ref=e1028]
+                      - cell "0" [ref=e1029]
+                      - cell "Stable" [ref=e1030]:
+                        - generic [ref=e1031]:
+                          - img [ref=e1032]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210HE0022 Calefactor eléctrico 18 h 95.2% 66.2% 2 0 DEGRADING" [ref=e1033] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210HE0022 Calefactor eléctrico" [ref=e1034]:
+                        - generic [ref=e1035]: GF-SN-1000-1200-1210-1210HE0022
+                        - generic [ref=e1036]: Calefactor eléctrico
+                      - cell "18 h" [ref=e1037]
+                      - cell "95.2%" [ref=e1038]:
+                        - generic [ref=e1039]: 95.2%
+                      - cell "66.2%" [ref=e1040]:
+                        - generic [ref=e1041]: 66.2%
+                      - cell "2" [ref=e1042]
+                      - cell "0" [ref=e1043]
+                      - cell "DEGRADING" [ref=e1044]:
+                        - generic [ref=e1045]:
+                          - img [ref=e1046]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210XP0004 Estación modular 56.4 h 90.3% 82.7% 2 0 Stable" [ref=e1047] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0004 Estación modular" [ref=e1048]:
+                        - generic [ref=e1049]: GF-SN-1000-1200-1210-1210XP0004
+                        - generic [ref=e1050]: Estación modular
+                      - cell "56.4 h" [ref=e1051]
+                      - cell "90.3%" [ref=e1052]:
+                        - generic [ref=e1053]: 90.3%
+                      - cell "82.7%" [ref=e1054]:
+                        - generic [ref=e1055]: 82.7%
+                      - cell "2" [ref=e1056]
+                      - cell "0" [ref=e1057]
+                      - cell "Stable" [ref=e1058]:
+                        - generic [ref=e1059]:
+                          - img [ref=e1060]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210MC0011 Centro control 24.4 h 91.8% 83.7% 2 0 Stable" [ref=e1061] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210MC0011 Centro control" [ref=e1062]:
+                        - generic [ref=e1063]: GF-SN-1000-1200-12ER-1210MC0011
+                        - generic [ref=e1064]: Centro control
+                      - cell "24.4 h" [ref=e1065]
+                      - cell "91.8%" [ref=e1066]:
+                        - generic [ref=e1067]: 91.8%
+                      - cell "83.7%" [ref=e1068]:
+                        - generic [ref=e1069]: 83.7%
+                      - cell "2" [ref=e1070]
+                      - cell "0" [ref=e1071]
+                      - cell "Stable" [ref=e1072]:
+                        - generic [ref=e1073]:
+                          - img [ref=e1074]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210AC0001 Unidad aire 21.4 h 99% 77.1% 2 0 Stable" [ref=e1075] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210AC0001 Unidad aire" [ref=e1076]:
+                        - generic [ref=e1077]: GF-SN-1000-1200-12ER-1210AC0001
+                        - generic [ref=e1078]: Unidad aire
+                      - cell "21.4 h" [ref=e1079]
+                      - cell "99%" [ref=e1080]:
+                        - generic [ref=e1081]: 99%
+                      - cell "77.1%" [ref=e1082]:
+                        - generic [ref=e1083]: 77.1%
+                      - cell "2" [ref=e1084]
+                      - cell "0" [ref=e1085]
+                      - cell "Stable" [ref=e1086]:
+                        - generic [ref=e1087]:
+                          - img [ref=e1088]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210LX0001 Transformador distribución 41.2 h 90.8% 84% 2 0 Stable" [ref=e1089] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210LX0001 Transformador distribución" [ref=e1090]:
+                        - generic [ref=e1091]: GF-SN-1000-1200-12ER-1210LX0001
+                        - generic [ref=e1092]: Transformador distribución
+                      - cell "41.2 h" [ref=e1093]
+                      - cell "90.8%" [ref=e1094]:
+                        - generic [ref=e1095]: 90.8%
+                      - cell "84%" [ref=e1096]:
+                        - generic [ref=e1097]: 84%
+                      - cell "2" [ref=e1098]
+                      - cell "0" [ref=e1099]
+                      - cell "Stable" [ref=e1100]:
+                        - generic [ref=e1101]:
+                          - img [ref=e1102]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210HE0005 Calefactor eléctrico 20.2 h 94.7% 82.3% 2 0 Improving" [ref=e1103] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210HE0005 Calefactor eléctrico" [ref=e1104]:
+                        - generic [ref=e1105]: GF-SN-1000-1200-1210-1210HE0005
+                        - generic [ref=e1106]: Calefactor eléctrico
+                      - cell "20.2 h" [ref=e1107]
+                      - cell "94.7%" [ref=e1108]:
+                        - generic [ref=e1109]: 94.7%
+                      - cell "82.3%" [ref=e1110]:
+                        - generic [ref=e1111]: 82.3%
+                      - cell "2" [ref=e1112]
+                      - cell "0" [ref=e1113]
+                      - cell "Improving" [ref=e1114]:
+                        - generic [ref=e1115]:
+                          - img [ref=e1116]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210TK0060 Estanque diario 5.8 h 85.2% 94.1% 2 0 Stable" [ref=e1119] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0060 Estanque diario" [ref=e1120]:
+                        - generic [ref=e1121]: GF-SN-1000-1200-1210-1210TK0060
+                        - generic [ref=e1122]: Estanque diario
+                      - cell "5.8 h" [ref=e1123]
+                      - cell "85.2%" [ref=e1124]:
+                        - generic [ref=e1125]: 85.2%
+                      - cell "94.1%" [ref=e1126]:
+                        - generic [ref=e1127]: 94.1%
+                      - cell "2" [ref=e1128]
+                      - cell "0" [ref=e1129]
+                      - cell "Stable" [ref=e1130]:
+                        - generic [ref=e1131]:
+                          - img [ref=e1132]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210DP0001 Tablero distribución 48.6 h 82.9% 93.8% 2 0 Stable" [ref=e1133] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210DP0001 Tablero distribución" [ref=e1134]:
+                        - generic [ref=e1135]: GF-SN-1000-1200-12ER-1210DP0001
+                        - generic [ref=e1136]: Tablero distribución
+                      - cell "48.6 h" [ref=e1137]
+                      - cell "82.9%" [ref=e1138]:
+                        - generic [ref=e1139]: 82.9%
+                      - cell "93.8%" [ref=e1140]:
+                        - generic [ref=e1141]: 93.8%
+                      - cell "2" [ref=e1142]
+                      - cell "0" [ref=e1143]
+                      - cell "Stable" [ref=e1144]:
+                        - generic [ref=e1145]:
+                          - img [ref=e1146]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210SU0002 Sumidero agua-aceite 23.6 h 85.3% 93.3% 2 0 Stable" [ref=e1147] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210SU0002 Sumidero agua-aceite" [ref=e1148]:
+                        - generic [ref=e1149]: GF-SN-1000-1200-1210-1210SU0002
+                        - generic [ref=e1150]: Sumidero agua-aceite
+                      - cell "23.6 h" [ref=e1151]
+                      - cell "85.3%" [ref=e1152]:
+                        - generic [ref=e1153]: 85.3%
+                      - cell "93.3%" [ref=e1154]:
+                        - generic [ref=e1155]: 93.3%
+                      - cell "2" [ref=e1156]
+                      - cell "0" [ref=e1157]
+                      - cell "Stable" [ref=e1158]:
+                        - generic [ref=e1159]:
+                          - img [ref=e1160]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0059 Estanque agua 45.6 h 91.2% 86.6% 2 0 Stable" [ref=e1161] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0059 Estanque agua" [ref=e1162]:
+                        - generic [ref=e1163]: GF-SN-1000-1200-1210-1210TK0059
+                        - generic [ref=e1164]: Estanque agua
+                      - cell "45.6 h" [ref=e1165]
+                      - cell "91.2%" [ref=e1166]:
+                        - generic [ref=e1167]: 91.2%
+                      - cell "86.6%" [ref=e1168]:
+                        - generic [ref=e1169]: 86.6%
+                      - cell "2" [ref=e1170]
+                      - cell "0" [ref=e1171]
+                      - cell "Stable" [ref=e1172]:
+                        - generic [ref=e1173]:
+                          - img [ref=e1174]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210SY0002 Ducha y 36 h 93.3% 86.8% 2 0 Stable" [ref=e1175] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210SY0002 Ducha y" [ref=e1176]:
+                        - generic [ref=e1177]: GF-SN-1000-1200-1210-1210SY0002
+                        - generic [ref=e1178]: Ducha y
+                      - cell "36 h" [ref=e1179]
+                      - cell "93.3%" [ref=e1180]:
+                        - generic [ref=e1181]: 93.3%
+                      - cell "86.8%" [ref=e1182]:
+                        - generic [ref=e1183]: 86.8%
+                      - cell "2" [ref=e1184]
+                      - cell "0" [ref=e1185]
+                      - cell "Stable" [ref=e1186]:
+                        - generic [ref=e1187]:
+                          - img [ref=e1188]
+                          - text: Stable
+                    - row "GF-SN-2000-2100-2110-2110AR0003 Acumulador de 6.4 h 90.7% 92% 2 0 Stable" [ref=e1189] [cursor=pointer]:
+                      - cell "GF-SN-2000-2100-2110-2110AR0003 Acumulador de" [ref=e1190]:
+                        - generic [ref=e1191]: GF-SN-2000-2100-2110-2110AR0003
+                        - generic [ref=e1192]: Acumulador de
+                      - cell "6.4 h" [ref=e1193]
+                      - cell "90.7%" [ref=e1194]:
+                        - generic [ref=e1195]: 90.7%
+                      - cell "92%" [ref=e1196]:
+                        - generic [ref=e1197]: 92%
+                      - cell "2" [ref=e1198]
+                      - cell "0" [ref=e1199]
+                      - cell "Stable" [ref=e1200]:
+                        - generic [ref=e1201]:
+                          - img [ref=e1202]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210EF0019 Extractor aire 59.2 h 94.9% 75.9% 2 0 DEGRADING" [ref=e1203] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0019 Extractor aire" [ref=e1204]:
+                        - generic [ref=e1205]: GF-SN-1000-1200-1210-1210EF0019
+                        - generic [ref=e1206]: Extractor aire
+                      - cell "59.2 h" [ref=e1207]
+                      - cell "94.9%" [ref=e1208]:
+                        - generic [ref=e1209]: 94.9%
+                      - cell "75.9%" [ref=e1210]:
+                        - generic [ref=e1211]: 75.9%
+                      - cell "2" [ref=e1212]
+                      - cell "0" [ref=e1213]
+                      - cell "DEGRADING" [ref=e1214]:
+                        - generic [ref=e1215]:
+                          - img [ref=e1216]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210TK0001 Estanque aceite 6.4 h 92.9% 93.5% 2 0 Stable" [ref=e1217] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0001 Estanque aceite" [ref=e1218]:
+                        - generic [ref=e1219]: GF-SN-1000-1200-1210-1210TK0001
+                        - generic [ref=e1220]: Estanque aceite
+                      - cell "6.4 h" [ref=e1221]
+                      - cell "92.9%" [ref=e1222]:
+                        - generic [ref=e1223]: 92.9%
+                      - cell "93.5%" [ref=e1224]:
+                        - generic [ref=e1225]: 93.5%
+                      - cell "2" [ref=e1226]
+                      - cell "0" [ref=e1227]
+                      - cell "Stable" [ref=e1228]:
+                        - generic [ref=e1229]:
+                          - img [ref=e1230]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210FD0001 Sistema detección 39.7 h 99% 86.1% 2 0 Stable" [ref=e1231] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210FD0001 Sistema detección" [ref=e1232]:
+                        - generic [ref=e1233]: GF-SN-1000-1200-12ER-1210FD0001
+                        - generic [ref=e1234]: Sistema detección
+                      - cell "39.7 h" [ref=e1235]
+                      - cell "99%" [ref=e1236]:
+                        - generic [ref=e1237]: 99%
+                      - cell "86.1%" [ref=e1238]:
+                        - generic [ref=e1239]: 86.1%
+                      - cell "2" [ref=e1240]
+                      - cell "0" [ref=e1241]
+                      - cell "Stable" [ref=e1242]:
+                        - generic [ref=e1243]:
+                          - img [ref=e1244]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0002 Estanque aceite 38 h 98.7% 87.4% 2 0 Stable" [ref=e1245] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0002 Estanque aceite" [ref=e1246]:
+                        - generic [ref=e1247]: GF-SN-1000-1200-1210-1210TK0002
+                        - generic [ref=e1248]: Estanque aceite
+                      - cell "38 h" [ref=e1249]
+                      - cell "98.7%" [ref=e1250]:
+                        - generic [ref=e1251]: 98.7%
+                      - cell "87.4%" [ref=e1252]:
+                        - generic [ref=e1253]: 87.4%
+                      - cell "2" [ref=e1254]
+                      - cell "0" [ref=e1255]
+                      - cell "Stable" [ref=e1256]:
+                        - generic [ref=e1257]:
+                          - img [ref=e1258]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210SU0001 Piscina agua 26.7 h 80.5% 82.5% 2 0 Improving" [ref=e1259] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210SU0001 Piscina agua" [ref=e1260]:
+                        - generic [ref=e1261]: GF-SN-1000-1200-1210-1210SU0001
+                        - generic [ref=e1262]: Piscina agua
+                      - cell "26.7 h" [ref=e1263]
+                      - cell "80.5%" [ref=e1264]:
+                        - generic [ref=e1265]: 80.5%
+                      - cell "82.5%" [ref=e1266]:
+                        - generic [ref=e1267]: 82.5%
+                      - cell "2" [ref=e1268]
+                      - cell "0" [ref=e1269]
+                      - cell "Improving" [ref=e1270]:
+                        - generic [ref=e1271]:
+                          - img [ref=e1272]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210AR0001 Acumulador de 40.2 h 85.2% 67.8% 2 0 DEGRADING" [ref=e1275] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210AR0001 Acumulador de" [ref=e1276]:
+                        - generic [ref=e1277]: GF-SN-1000-1200-1210-1210AR0001
+                        - generic [ref=e1278]: Acumulador de
+                      - cell "40.2 h" [ref=e1279]
+                      - cell "85.2%" [ref=e1280]:
+                        - generic [ref=e1281]: 85.2%
+                      - cell "67.8%" [ref=e1282]:
+                        - generic [ref=e1283]: 67.8%
+                      - cell "2" [ref=e1284]
+                      - cell "0" [ref=e1285]
+                      - cell "DEGRADING" [ref=e1286]:
+                        - generic [ref=e1287]:
+                          - img [ref=e1288]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210XP0023 Monitor lavado 55.7 h 96.7% 90.2% 2 0 Stable" [ref=e1289] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210XP0023 Monitor lavado" [ref=e1290]:
+                        - generic [ref=e1291]: GF-SN-1000-1200-1210-1210XP0023
+                        - generic [ref=e1292]: Monitor lavado
+                      - cell "55.7 h" [ref=e1293]
+                      - cell "96.7%" [ref=e1294]:
+                        - generic [ref=e1295]: 96.7%
+                      - cell "90.2%" [ref=e1296]:
+                        - generic [ref=e1297]: 90.2%
+                      - cell "2" [ref=e1298]
+                      - cell "0" [ref=e1299]
+                      - cell "Stable" [ref=e1300]:
+                        - generic [ref=e1301]:
+                          - img [ref=e1302]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-12ER-1210LP0001 Tablero distribución 30.1 h 99% 89.9% 2 0 Stable" [ref=e1303] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-12ER-1210LP0001 Tablero distribución" [ref=e1304]:
+                        - generic [ref=e1305]: GF-SN-1000-1200-12ER-1210LP0001
+                        - generic [ref=e1306]: Tablero distribución
+                      - cell "30.1 h" [ref=e1307]
+                      - cell "99%" [ref=e1308]:
+                        - generic [ref=e1309]: 99%
+                      - cell "89.9%" [ref=e1310]:
+                        - generic [ref=e1311]: 89.9%
+                      - cell "2" [ref=e1312]
+                      - cell "0" [ref=e1313]
+                      - cell "Stable" [ref=e1314]:
+                        - generic [ref=e1315]:
+                          - img [ref=e1316]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210EF0014 Extractor aire 43.9 h 81.3% 61.1% 2 0 Stable" [ref=e1317] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0014 Extractor aire" [ref=e1318]:
+                        - generic [ref=e1319]: GF-SN-1000-1200-1210-1210EF0014
+                        - generic [ref=e1320]: Extractor aire
+                      - cell "43.9 h" [ref=e1321]
+                      - cell "81.3%" [ref=e1322]:
+                        - generic [ref=e1323]: 81.3%
+                      - cell "61.1%" [ref=e1324]:
+                        - generic [ref=e1325]: 61.1%
+                      - cell "2" [ref=e1326]
+                      - cell "0" [ref=e1327]
+                      - cell "Stable" [ref=e1328]:
+                        - generic [ref=e1329]:
+                          - img [ref=e1330]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210TK0090 Estanque refrigerante 42.8 h 95.4% 93.2% 2 0 Stable" [ref=e1331] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210TK0090 Estanque refrigerante" [ref=e1332]:
+                        - generic [ref=e1333]: GF-SN-1000-1200-1210-1210TK0090
+                        - generic [ref=e1334]: Estanque refrigerante
+                      - cell "42.8 h" [ref=e1335]
+                      - cell "95.4%" [ref=e1336]:
+                        - generic [ref=e1337]: 95.4%
+                      - cell "93.2%" [ref=e1338]:
+                        - generic [ref=e1339]: 93.2%
+                      - cell "2" [ref=e1340]
+                      - cell "0" [ref=e1341]
+                      - cell "Stable" [ref=e1342]:
+                        - generic [ref=e1343]:
+                          - img [ref=e1344]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210PU0012 Bomba distribución 35.5 h 92.6% 73.3% 2 0 Stable" [ref=e1345] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210PU0012 Bomba distribución" [ref=e1346]:
+                        - generic [ref=e1347]: GF-SN-1000-1200-1210-1210PU0012
+                        - generic [ref=e1348]: Bomba distribución
+                      - cell "35.5 h" [ref=e1349]
+                      - cell "92.6%" [ref=e1350]:
+                        - generic [ref=e1351]: 92.6%
+                      - cell "73.3%" [ref=e1352]:
+                        - generic [ref=e1353]: 73.3%
+                      - cell "2" [ref=e1354]
+                      - cell "0" [ref=e1355]
+                      - cell "Stable" [ref=e1356]:
+                        - generic [ref=e1357]:
+                          - img [ref=e1358]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210EF0002 Extractor taller 7.6 h 91.9% 87.7% 2 0 Improving" [ref=e1359] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0002 Extractor taller" [ref=e1360]:
+                        - generic [ref=e1361]: GF-SN-1000-1200-1210-1210EF0002
+                        - generic [ref=e1362]: Extractor taller
+                      - cell "7.6 h" [ref=e1363]
+                      - cell "91.9%" [ref=e1364]:
+                        - generic [ref=e1365]: 91.9%
+                      - cell "87.7%" [ref=e1366]:
+                        - generic [ref=e1367]: 87.7%
+                      - cell "2" [ref=e1368]
+                      - cell "0" [ref=e1369]
+                      - cell "Improving" [ref=e1370]:
+                        - generic [ref=e1371]:
+                          - img [ref=e1372]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210PU0016 Bomba distribución 16.6 h 91.5% 71.3% 2 0 Stable" [ref=e1375] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210PU0016 Bomba distribución" [ref=e1376]:
+                        - generic [ref=e1377]: GF-SN-1000-1200-1210-1210PU0016
+                        - generic [ref=e1378]: Bomba distribución
+                      - cell "16.6 h" [ref=e1379]
+                      - cell "91.5%" [ref=e1380]:
+                        - generic [ref=e1381]: 91.5%
+                      - cell "71.3%" [ref=e1382]:
+                        - generic [ref=e1383]: 71.3%
+                      - cell "2" [ref=e1384]
+                      - cell "0" [ref=e1385]
+                      - cell "Stable" [ref=e1386]:
+                        - generic [ref=e1387]:
+                          - img [ref=e1388]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210AR0002 Acumulador de 10.2 h 91.4% 79.6% 2 0 Improving" [ref=e1389] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210AR0002 Acumulador de" [ref=e1390]:
+                        - generic [ref=e1391]: GF-SN-1000-1200-1210-1210AR0002
+                        - generic [ref=e1392]: Acumulador de
+                      - cell "10.2 h" [ref=e1393]
+                      - cell "91.4%" [ref=e1394]:
+                        - generic [ref=e1395]: 91.4%
+                      - cell "79.6%" [ref=e1396]:
+                        - generic [ref=e1397]: 79.6%
+                      - cell "2" [ref=e1398]
+                      - cell "0" [ref=e1399]
+                      - cell "Improving" [ref=e1400]:
+                        - generic [ref=e1401]:
+                          - img [ref=e1402]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210RD0004 Puerta Taller 20.1 h 85.4% 69.5% 2 0 Stable" [ref=e1405] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210RD0004 Puerta Taller" [ref=e1406]:
+                        - generic [ref=e1407]: GF-SN-1000-1200-1210-1210RD0004
+                        - generic [ref=e1408]: Puerta Taller
+                      - cell "20.1 h" [ref=e1409]
+                      - cell "85.4%" [ref=e1410]:
+                        - generic [ref=e1411]: 85.4%
+                      - cell "69.5%" [ref=e1412]:
+                        - generic [ref=e1413]: 69.5%
+                      - cell "2" [ref=e1414]
+                      - cell "0" [ref=e1415]
+                      - cell "Stable" [ref=e1416]:
+                        - generic [ref=e1417]:
+                          - img [ref=e1418]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210EF0004 Extractor taller 5.2 h 93.7% 94% 2 0 Improving" [ref=e1419] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0004 Extractor taller" [ref=e1420]:
+                        - generic [ref=e1421]: GF-SN-1000-1200-1210-1210EF0004
+                        - generic [ref=e1422]: Extractor taller
+                      - cell "5.2 h" [ref=e1423]
+                      - cell "93.7%" [ref=e1424]:
+                        - generic [ref=e1425]: 93.7%
+                      - cell "94%" [ref=e1426]:
+                        - generic [ref=e1427]: 94%
+                      - cell "2" [ref=e1428]
+                      - cell "0" [ref=e1429]
+                      - cell "Improving" [ref=e1430]:
+                        - generic [ref=e1431]:
+                          - img [ref=e1432]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210HE0003 Calefactor eléctrico 41.7 h 97.7% 63.6% 2 0 Stable" [ref=e1435] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210HE0003 Calefactor eléctrico" [ref=e1436]:
+                        - generic [ref=e1437]: GF-SN-1000-1200-1210-1210HE0003
+                        - generic [ref=e1438]: Calefactor eléctrico
+                      - cell "41.7 h" [ref=e1439]
+                      - cell "97.7%" [ref=e1440]:
+                        - generic [ref=e1441]: 97.7%
+                      - cell "63.6%" [ref=e1442]:
+                        - generic [ref=e1443]: 63.6%
+                      - cell "2" [ref=e1444]
+                      - cell "0" [ref=e1445]
+                      - cell "Stable" [ref=e1446]:
+                        - generic [ref=e1447]:
+                          - img [ref=e1448]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210CP0002 Compresor de 24.9 h 81.3% 83.1% 2 0 Stable" [ref=e1449] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210CP0002 Compresor de" [ref=e1450]:
+                        - generic [ref=e1451]: GF-SN-1000-1200-1210-1210CP0002
+                        - generic [ref=e1452]: Compresor de
+                      - cell "24.9 h" [ref=e1453]
+                      - cell "81.3%" [ref=e1454]:
+                        - generic [ref=e1455]: 81.3%
+                      - cell "83.1%" [ref=e1456]:
+                        - generic [ref=e1457]: 83.1%
+                      - cell "2" [ref=e1458]
+                      - cell "0" [ref=e1459]
+                      - cell "Stable" [ref=e1460]:
+                        - generic [ref=e1461]:
+                          - img [ref=e1462]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210HE0102 Calefactor eléctrico 48.3 h 96.6% 90.1% 2 0 Stable" [ref=e1463] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210HE0102 Calefactor eléctrico" [ref=e1464]:
+                        - generic [ref=e1465]: GF-SN-1000-1200-1210-1210HE0102
+                        - generic [ref=e1466]: Calefactor eléctrico
+                      - cell "48.3 h" [ref=e1467]
+                      - cell "96.6%" [ref=e1468]:
+                        - generic [ref=e1469]: 96.6%
+                      - cell "90.1%" [ref=e1470]:
+                        - generic [ref=e1471]: 90.1%
+                      - cell "2" [ref=e1472]
+                      - cell "0" [ref=e1473]
+                      - cell "Stable" [ref=e1474]:
+                        - generic [ref=e1475]:
+                          - img [ref=e1476]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210PU0010 Bomba agua 41.5 h 86% 89.7% 2 0 DEGRADING" [ref=e1477] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210PU0010 Bomba agua" [ref=e1478]:
+                        - generic [ref=e1479]: GF-SN-1000-1200-1210-1210PU0010
+                        - generic [ref=e1480]: Bomba agua
+                      - cell "41.5 h" [ref=e1481]
+                      - cell "86%" [ref=e1482]:
+                        - generic [ref=e1483]: 86%
+                      - cell "89.7%" [ref=e1484]:
+                        - generic [ref=e1485]: 89.7%
+                      - cell "2" [ref=e1486]
+                      - cell "0" [ref=e1487]
+                      - cell "DEGRADING" [ref=e1488]:
+                        - generic [ref=e1489]:
+                          - img [ref=e1490]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210RD0006 Puerta Taller 5.3 h 94.3% 89.9% 2 0 Improving" [ref=e1491] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210RD0006 Puerta Taller" [ref=e1492]:
+                        - generic [ref=e1493]: GF-SN-1000-1200-1210-1210RD0006
+                        - generic [ref=e1494]: Puerta Taller
+                      - cell "5.3 h" [ref=e1495]
+                      - cell "94.3%" [ref=e1496]:
+                        - generic [ref=e1497]: 94.3%
+                      - cell "89.9%" [ref=e1498]:
+                        - generic [ref=e1499]: 89.9%
+                      - cell "2" [ref=e1500]
+                      - cell "0" [ref=e1501]
+                      - cell "Improving" [ref=e1502]:
+                        - generic [ref=e1503]:
+                          - img [ref=e1504]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210PK0001 Paquete microfiltrado 15.6 h 96.4% 93.8% 2 0 Stable" [ref=e1507] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210PK0001 Paquete microfiltrado" [ref=e1508]:
+                        - generic [ref=e1509]: GF-SN-1000-1200-1210-1210PK0001
+                        - generic [ref=e1510]: Paquete microfiltrado
+                      - cell "15.6 h" [ref=e1511]
+                      - cell "96.4%" [ref=e1512]:
+                        - generic [ref=e1513]: 96.4%
+                      - cell "93.8%" [ref=e1514]:
+                        - generic [ref=e1515]: 93.8%
+                      - cell "2" [ref=e1516]
+                      - cell "0" [ref=e1517]
+                      - cell "Stable" [ref=e1518]:
+                        - generic [ref=e1519]:
+                          - img [ref=e1520]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210HE0021 Calefactor eléctrico 48.8 h 97.1% 67.4% 2 0 DEGRADING" [ref=e1521] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210HE0021 Calefactor eléctrico" [ref=e1522]:
+                        - generic [ref=e1523]: GF-SN-1000-1200-1210-1210HE0021
+                        - generic [ref=e1524]: Calefactor eléctrico
+                      - cell "48.8 h" [ref=e1525]
+                      - cell "97.1%" [ref=e1526]:
+                        - generic [ref=e1527]: 97.1%
+                      - cell "67.4%" [ref=e1528]:
+                        - generic [ref=e1529]: 67.4%
+                      - cell "2" [ref=e1530]
+                      - cell "0" [ref=e1531]
+                      - cell "DEGRADING" [ref=e1532]:
+                        - generic [ref=e1533]:
+                          - img [ref=e1534]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210EF0011 Extractor taller 50.7 h 81.1% 90.7% 2 0 Stable" [ref=e1535] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0011 Extractor taller" [ref=e1536]:
+                        - generic [ref=e1537]: GF-SN-1000-1200-1210-1210EF0011
+                        - generic [ref=e1538]: Extractor taller
+                      - cell "50.7 h" [ref=e1539]
+                      - cell "81.1%" [ref=e1540]:
+                        - generic [ref=e1541]: 81.1%
+                      - cell "90.7%" [ref=e1542]:
+                        - generic [ref=e1543]: 90.7%
+                      - cell "2" [ref=e1544]
+                      - cell "0" [ref=e1545]
+                      - cell "Stable" [ref=e1546]:
+                        - generic [ref=e1547]:
+                          - img [ref=e1548]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210HE0006 Calefactor eléctrico 57 h 82.8% 61.3% 2 0 DEGRADING" [ref=e1549] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210HE0006 Calefactor eléctrico" [ref=e1550]:
+                        - generic [ref=e1551]: GF-SN-1000-1200-1210-1210HE0006
+                        - generic [ref=e1552]: Calefactor eléctrico
+                      - cell "57 h" [ref=e1553]
+                      - cell "82.8%" [ref=e1554]:
+                        - generic [ref=e1555]: 82.8%
+                      - cell "61.3%" [ref=e1556]:
+                        - generic [ref=e1557]: 61.3%
+                      - cell "2" [ref=e1558]
+                      - cell "0" [ref=e1559]
+                      - cell "DEGRADING" [ref=e1560]:
+                        - generic [ref=e1561]:
+                          - img [ref=e1562]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210DR0002 Secador de 8.6 h 90.8% 85.1% 2 0 DEGRADING" [ref=e1563] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210DR0002 Secador de" [ref=e1564]:
+                        - generic [ref=e1565]: GF-SN-1000-1200-1210-1210DR0002
+                        - generic [ref=e1566]: Secador de
+                      - cell "8.6 h" [ref=e1567]
+                      - cell "90.8%" [ref=e1568]:
+                        - generic [ref=e1569]: 90.8%
+                      - cell "85.1%" [ref=e1570]:
+                        - generic [ref=e1571]: 85.1%
+                      - cell "2" [ref=e1572]
+                      - cell "0" [ref=e1573]
+                      - cell "DEGRADING" [ref=e1574]:
+                        - generic [ref=e1575]:
+                          - img [ref=e1576]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210DR0001 Secador de 25.9 h 92.2% 79.5% 2 0 Improving" [ref=e1577] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210DR0001 Secador de" [ref=e1578]:
+                        - generic [ref=e1579]: GF-SN-1000-1200-1210-1210DR0001
+                        - generic [ref=e1580]: Secador de
+                      - cell "25.9 h" [ref=e1581]
+                      - cell "92.2%" [ref=e1582]:
+                        - generic [ref=e1583]: 92.2%
+                      - cell "79.5%" [ref=e1584]:
+                        - generic [ref=e1585]: 79.5%
+                      - cell "2" [ref=e1586]
+                      - cell "0" [ref=e1587]
+                      - cell "Improving" [ref=e1588]:
+                        - generic [ref=e1589]:
+                          - img [ref=e1590]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210EF0017 Extractor aire 29.7 h 85.3% 68.7% 2 0 DEGRADING" [ref=e1593] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0017 Extractor aire" [ref=e1594]:
+                        - generic [ref=e1595]: GF-SN-1000-1200-1210-1210EF0017
+                        - generic [ref=e1596]: Extractor aire
+                      - cell "29.7 h" [ref=e1597]
+                      - cell "85.3%" [ref=e1598]:
+                        - generic [ref=e1599]: 85.3%
+                      - cell "68.7%" [ref=e1600]:
+                        - generic [ref=e1601]: 68.7%
+                      - cell "2" [ref=e1602]
+                      - cell "0" [ref=e1603]
+                      - cell "DEGRADING" [ref=e1604]:
+                        - generic [ref=e1605]:
+                          - img [ref=e1606]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210ST0008 Compuerta agua 20 h 87.4% 83.4% 2 0 Improving" [ref=e1607] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210ST0008 Compuerta agua" [ref=e1608]:
+                        - generic [ref=e1609]: GF-SN-1000-1200-1210-1210ST0008
+                        - generic [ref=e1610]: Compuerta agua
+                      - cell "20 h" [ref=e1611]
+                      - cell "87.4%" [ref=e1612]:
+                        - generic [ref=e1613]: 87.4%
+                      - cell "83.4%" [ref=e1614]:
+                        - generic [ref=e1615]: 83.4%
+                      - cell "2" [ref=e1616]
+                      - cell "0" [ref=e1617]
+                      - cell "Improving" [ref=e1618]:
+                        - generic [ref=e1619]:
+                          - img [ref=e1620]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210EF0001 Extractor taller 46 h 94.2% 75% 2 0 DEGRADING" [ref=e1623] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0001 Extractor taller" [ref=e1624]:
+                        - generic [ref=e1625]: GF-SN-1000-1200-1210-1210EF0001
+                        - generic [ref=e1626]: Extractor taller
+                      - cell "46 h" [ref=e1627]
+                      - cell "94.2%" [ref=e1628]:
+                        - generic [ref=e1629]: 94.2%
+                      - cell "75%" [ref=e1630]:
+                        - generic [ref=e1631]: 75%
+                      - cell "2" [ref=e1632]
+                      - cell "0" [ref=e1633]
+                      - cell "DEGRADING" [ref=e1634]:
+                        - generic [ref=e1635]:
+                          - img [ref=e1636]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210EF0018 Extractor aire 34.7 h 81.8% 86.4% 2 0 DEGRADING" [ref=e1637] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0018 Extractor aire" [ref=e1638]:
+                        - generic [ref=e1639]: GF-SN-1000-1200-1210-1210EF0018
+                        - generic [ref=e1640]: Extractor aire
+                      - cell "34.7 h" [ref=e1641]
+                      - cell "81.8%" [ref=e1642]:
+                        - generic [ref=e1643]: 81.8%
+                      - cell "86.4%" [ref=e1644]:
+                        - generic [ref=e1645]: 86.4%
+                      - cell "2" [ref=e1646]
+                      - cell "0" [ref=e1647]
+                      - cell "DEGRADING" [ref=e1648]:
+                        - generic [ref=e1649]:
+                          - img [ref=e1650]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210RD0002 Puerta Taller 55.5 h 82.5% 76.3% 2 0 DEGRADING" [ref=e1651] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210RD0002 Puerta Taller" [ref=e1652]:
+                        - generic [ref=e1653]: GF-SN-1000-1200-1210-1210RD0002
+                        - generic [ref=e1654]: Puerta Taller
+                      - cell "55.5 h" [ref=e1655]
+                      - cell "82.5%" [ref=e1656]:
+                        - generic [ref=e1657]: 82.5%
+                      - cell "76.3%" [ref=e1658]:
+                        - generic [ref=e1659]: 76.3%
+                      - cell "2" [ref=e1660]
+                      - cell "0" [ref=e1661]
+                      - cell "DEGRADING" [ref=e1662]:
+                        - generic [ref=e1663]:
+                          - img [ref=e1664]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210EF0015 Extractor aire 56.5 h 89% 87.5% 2 0 DEGRADING" [ref=e1665] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0015 Extractor aire" [ref=e1666]:
+                        - generic [ref=e1667]: GF-SN-1000-1200-1210-1210EF0015
+                        - generic [ref=e1668]: Extractor aire
+                      - cell "56.5 h" [ref=e1669]
+                      - cell "89%" [ref=e1670]:
+                        - generic [ref=e1671]: 89%
+                      - cell "87.5%" [ref=e1672]:
+                        - generic [ref=e1673]: 87.5%
+                      - cell "2" [ref=e1674]
+                      - cell "0" [ref=e1675]
+                      - cell "DEGRADING" [ref=e1676]:
+                        - generic [ref=e1677]:
+                          - img [ref=e1678]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210CN0001 Puente grúa 5.4 h 93.3% 71.9% 2 0 Improving" [ref=e1679] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210CN0001 Puente grúa" [ref=e1680]:
+                        - generic [ref=e1681]: GF-SN-1000-1200-1210-1210CN0001
+                        - generic [ref=e1682]: Puente grúa
+                      - cell "5.4 h" [ref=e1683]
+                      - cell "93.3%" [ref=e1684]:
+                        - generic [ref=e1685]: 93.3%
+                      - cell "71.9%" [ref=e1686]:
+                        - generic [ref=e1687]: 71.9%
+                      - cell "2" [ref=e1688]
+                      - cell "0" [ref=e1689]
+                      - cell "Improving" [ref=e1690]:
+                        - generic [ref=e1691]:
+                          - img [ref=e1692]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210RD0005 Puerta Taller 8.5 h 90.3% 74.6% 2 0 Stable" [ref=e1695] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210RD0005 Puerta Taller" [ref=e1696]:
+                        - generic [ref=e1697]: GF-SN-1000-1200-1210-1210RD0005
+                        - generic [ref=e1698]: Puerta Taller
+                      - cell "8.5 h" [ref=e1699]
+                      - cell "90.3%" [ref=e1700]:
+                        - generic [ref=e1701]: 90.3%
+                      - cell "74.6%" [ref=e1702]:
+                        - generic [ref=e1703]: 74.6%
+                      - cell "2" [ref=e1704]
+                      - cell "0" [ref=e1705]
+                      - cell "Stable" [ref=e1706]:
+                        - generic [ref=e1707]:
+                          - img [ref=e1708]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210EF0012 Extractor taller 31.1 h 85% 90.5% 2 0 Improving" [ref=e1709] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0012 Extractor taller" [ref=e1710]:
+                        - generic [ref=e1711]: GF-SN-1000-1200-1210-1210EF0012
+                        - generic [ref=e1712]: Extractor taller
+                      - cell "31.1 h" [ref=e1713]
+                      - cell "85%" [ref=e1714]:
+                        - generic [ref=e1715]: 85%
+                      - cell "90.5%" [ref=e1716]:
+                        - generic [ref=e1717]: 90.5%
+                      - cell "2" [ref=e1718]
+                      - cell "0" [ref=e1719]
+                      - cell "Improving" [ref=e1720]:
+                        - generic [ref=e1721]:
+                          - img [ref=e1722]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210EF0016 Extractor aire 52.5 h 92.4% 82.6% 2 0 DEGRADING" [ref=e1725] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0016 Extractor aire" [ref=e1726]:
+                        - generic [ref=e1727]: GF-SN-1000-1200-1210-1210EF0016
+                        - generic [ref=e1728]: Extractor aire
+                      - cell "52.5 h" [ref=e1729]
+                      - cell "92.4%" [ref=e1730]:
+                        - generic [ref=e1731]: 92.4%
+                      - cell "82.6%" [ref=e1732]:
+                        - generic [ref=e1733]: 82.6%
+                      - cell "2" [ref=e1734]
+                      - cell "0" [ref=e1735]
+                      - cell "DEGRADING" [ref=e1736]:
+                        - generic [ref=e1737]:
+                          - img [ref=e1738]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210EF0003 Extractor taller 52.3 h 93.7% 83.9% 2 0 DEGRADING" [ref=e1739] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0003 Extractor taller" [ref=e1740]:
+                        - generic [ref=e1741]: GF-SN-1000-1200-1210-1210EF0003
+                        - generic [ref=e1742]: Extractor taller
+                      - cell "52.3 h" [ref=e1743]
+                      - cell "93.7%" [ref=e1744]:
+                        - generic [ref=e1745]: 93.7%
+                      - cell "83.9%" [ref=e1746]:
+                        - generic [ref=e1747]: 83.9%
+                      - cell "2" [ref=e1748]
+                      - cell "0" [ref=e1749]
+                      - cell "DEGRADING" [ref=e1750]:
+                        - generic [ref=e1751]:
+                          - img [ref=e1752]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210HE0002 Calefactor eléctrico 19.6 h 96.7% 90.8% 2 0 Stable" [ref=e1753] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210HE0002 Calefactor eléctrico" [ref=e1754]:
+                        - generic [ref=e1755]: GF-SN-1000-1200-1210-1210HE0002
+                        - generic [ref=e1756]: Calefactor eléctrico
+                      - cell "19.6 h" [ref=e1757]
+                      - cell "96.7%" [ref=e1758]:
+                        - generic [ref=e1759]: 96.7%
+                      - cell "90.8%" [ref=e1760]:
+                        - generic [ref=e1761]: 90.8%
+                      - cell "2" [ref=e1762]
+                      - cell "0" [ref=e1763]
+                      - cell "Stable" [ref=e1764]:
+                        - generic [ref=e1765]:
+                          - img [ref=e1766]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210PU0042 Bomba descarga 31.1 h 81.4% 74.5% 2 0 Improving" [ref=e1767] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210PU0042 Bomba descarga" [ref=e1768]:
+                        - generic [ref=e1769]: GF-SN-1000-1200-1210-1210PU0042
+                        - generic [ref=e1770]: Bomba descarga
+                      - cell "31.1 h" [ref=e1771]
+                      - cell "81.4%" [ref=e1772]:
+                        - generic [ref=e1773]: 81.4%
+                      - cell "74.5%" [ref=e1774]:
+                        - generic [ref=e1775]: 74.5%
+                      - cell "2" [ref=e1776]
+                      - cell "0" [ref=e1777]
+                      - cell "Improving" [ref=e1778]:
+                        - generic [ref=e1779]:
+                          - img [ref=e1780]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210RD0001 Puerta Taller 42.8 h 96.3% 91% 2 0 DEGRADING" [ref=e1783] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210RD0001 Puerta Taller" [ref=e1784]:
+                        - generic [ref=e1785]: GF-SN-1000-1200-1210-1210RD0001
+                        - generic [ref=e1786]: Puerta Taller
+                      - cell "42.8 h" [ref=e1787]
+                      - cell "96.3%" [ref=e1788]:
+                        - generic [ref=e1789]: 96.3%
+                      - cell "91%" [ref=e1790]:
+                        - generic [ref=e1791]: 91%
+                      - cell "2" [ref=e1792]
+                      - cell "0" [ref=e1793]
+                      - cell "DEGRADING" [ref=e1794]:
+                        - generic [ref=e1795]:
+                          - img [ref=e1796]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210HE0001 Calefactor eléctrico 40.5 h 97.7% 92.8% 2 0 Stable" [ref=e1797] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210HE0001 Calefactor eléctrico" [ref=e1798]:
+                        - generic [ref=e1799]: GF-SN-1000-1200-1210-1210HE0001
+                        - generic [ref=e1800]: Calefactor eléctrico
+                      - cell "40.5 h" [ref=e1801]
+                      - cell "97.7%" [ref=e1802]:
+                        - generic [ref=e1803]: 97.7%
+                      - cell "92.8%" [ref=e1804]:
+                        - generic [ref=e1805]: 92.8%
+                      - cell "2" [ref=e1806]
+                      - cell "0" [ref=e1807]
+                      - cell "Stable" [ref=e1808]:
+                        - generic [ref=e1809]:
+                          - img [ref=e1810]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210PU0041 Bomba alimentación 41.5 h 81.8% 93.3% 2 0 Improving" [ref=e1811] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210PU0041 Bomba alimentación" [ref=e1812]:
+                        - generic [ref=e1813]: GF-SN-1000-1200-1210-1210PU0041
+                        - generic [ref=e1814]: Bomba alimentación
+                      - cell "41.5 h" [ref=e1815]
+                      - cell "81.8%" [ref=e1816]:
+                        - generic [ref=e1817]: 81.8%
+                      - cell "93.3%" [ref=e1818]:
+                        - generic [ref=e1819]: 93.3%
+                      - cell "2" [ref=e1820]
+                      - cell "0" [ref=e1821]
+                      - cell "Improving" [ref=e1822]:
+                        - generic [ref=e1823]:
+                          - img [ref=e1824]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210FA0001 Ventilador inyección 32.9 h 81.3% 62.4% 2 0 Stable" [ref=e1827] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210FA0001 Ventilador inyección" [ref=e1828]:
+                        - generic [ref=e1829]: GF-SN-1000-1200-1210-1210FA0001
+                        - generic [ref=e1830]: Ventilador inyección
+                      - cell "32.9 h" [ref=e1831]
+                      - cell "81.3%" [ref=e1832]:
+                        - generic [ref=e1833]: 81.3%
+                      - cell "62.4%" [ref=e1834]:
+                        - generic [ref=e1835]: 62.4%
+                      - cell "2" [ref=e1836]
+                      - cell "0" [ref=e1837]
+                      - cell "Stable" [ref=e1838]:
+                        - generic [ref=e1839]:
+                          - img [ref=e1840]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210PK0002 Paquete microfiltrado 58.4 h 98.3% 69.3% 2 0 Improving" [ref=e1841] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210PK0002 Paquete microfiltrado" [ref=e1842]:
+                        - generic [ref=e1843]: GF-SN-1000-1200-1210-1210PK0002
+                        - generic [ref=e1844]: Paquete microfiltrado
+                      - cell "58.4 h" [ref=e1845]
+                      - cell "98.3%" [ref=e1846]:
+                        - generic [ref=e1847]: 98.3%
+                      - cell "69.3%" [ref=e1848]:
+                        - generic [ref=e1849]: 69.3%
+                      - cell "2" [ref=e1850]
+                      - cell "0" [ref=e1851]
+                      - cell "Improving" [ref=e1852]:
+                        - generic [ref=e1853]:
+                          - img [ref=e1854]
+                          - text: Improving
+                    - row "GF-SN-1000-1200-1210-1210EF0020 Extractor aire 21.3 h 91% 79% 2 0 DEGRADING" [ref=e1857] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0020 Extractor aire" [ref=e1858]:
+                        - generic [ref=e1859]: GF-SN-1000-1200-1210-1210EF0020
+                        - generic [ref=e1860]: Extractor aire
+                      - cell "21.3 h" [ref=e1861]
+                      - cell "91%" [ref=e1862]:
+                        - generic [ref=e1863]: 91%
+                      - cell "79%" [ref=e1864]:
+                        - generic [ref=e1865]: 79%
+                      - cell "2" [ref=e1866]
+                      - cell "0" [ref=e1867]
+                      - cell "DEGRADING" [ref=e1868]:
+                        - generic [ref=e1869]:
+                          - img [ref=e1870]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210FP0001 Sistema contraincendios 39.1 h 91.1% 78.3% 2 0 Stable" [ref=e1871] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210FP0001 Sistema contraincendios" [ref=e1872]:
+                        - generic [ref=e1873]: GF-SN-1000-1200-1210-1210FP0001
+                        - generic [ref=e1874]: Sistema contraincendios
+                      - cell "39.1 h" [ref=e1875]
+                      - cell "91.1%" [ref=e1876]:
+                        - generic [ref=e1877]: 91.1%
+                      - cell "78.3%" [ref=e1878]:
+                        - generic [ref=e1879]: 78.3%
+                      - cell "2" [ref=e1880]
+                      - cell "0" [ref=e1881]
+                      - cell "Stable" [ref=e1882]:
+                        - generic [ref=e1883]:
+                          - img [ref=e1884]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210EF0013 Extractor aire 40.7 h 89.8% 64.2% 2 0 DEGRADING" [ref=e1885] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210EF0013 Extractor aire" [ref=e1886]:
+                        - generic [ref=e1887]: GF-SN-1000-1200-1210-1210EF0013
+                        - generic [ref=e1888]: Extractor aire
+                      - cell "40.7 h" [ref=e1889]
+                      - cell "89.8%" [ref=e1890]:
+                        - generic [ref=e1891]: 89.8%
+                      - cell "64.2%" [ref=e1892]:
+                        - generic [ref=e1893]: 64.2%
+                      - cell "2" [ref=e1894]
+                      - cell "0" [ref=e1895]
+                      - cell "DEGRADING" [ref=e1896]:
+                        - generic [ref=e1897]:
+                          - img [ref=e1898]
+                          - text: DEGRADING
+                    - row "GF-SN-1000-1200-1210-1210HE0004 Calefactor eléctrico 16.6 h 93.1% 89.9% 2 0 Stable" [ref=e1899] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210HE0004 Calefactor eléctrico" [ref=e1900]:
+                        - generic [ref=e1901]: GF-SN-1000-1200-1210-1210HE0004
+                        - generic [ref=e1902]: Calefactor eléctrico
+                      - cell "16.6 h" [ref=e1903]
+                      - cell "93.1%" [ref=e1904]:
+                        - generic [ref=e1905]: 93.1%
+                      - cell "89.9%" [ref=e1906]:
+                        - generic [ref=e1907]: 89.9%
+                      - cell "2" [ref=e1908]
+                      - cell "0" [ref=e1909]
+                      - cell "Stable" [ref=e1910]:
+                        - generic [ref=e1911]:
+                          - img [ref=e1912]
+                          - text: Stable
+                    - row "GF-SN-1000-1200-1210-1210PU0009 Bomba agua 11.4 h 83.6% 61.6% 2 0 Stable" [ref=e1913] [cursor=pointer]:
+                      - cell "GF-SN-1000-1200-1210-1210PU0009 Bomba agua" [ref=e1914]:
+                        - generic [ref=e1915]: GF-SN-1000-1200-1210-1210PU0009
+                        - generic [ref=e1916]: Bomba agua
+                      - cell "11.4 h" [ref=e1917]
+                      - cell "83.6%" [ref=e1918]:
+                        - generic [ref=e1919]: 83.6%
+                      - cell "61.6%" [ref=e1920]:
+                        - generic [ref=e1921]: 61.6%
+                      - cell "2" [ref=e1922]
+                      - cell "0" [ref=e1923]
+                      - cell "Stable" [ref=e1924]:
+                        - generic [ref=e1925]:
+                          - img [ref=e1926]
+                          - text: Stable
+                - paragraph [ref=e1927]: Click a row to analyze that equipment
+    - status
+  - generic [ref=e1928]: "0.15"

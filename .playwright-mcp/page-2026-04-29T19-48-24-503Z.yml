@@ -1,0 +1,206 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - navigation "Main navigation" [ref=e4]:
+      - generic [ref=e5]:
+        - img "MagEAM" [ref=e159]
+        - paragraph [ref=e6]: Reliability Platform
+      - navigation [ref=e7]:
+        - generic [ref=e8]:
+          - link "Dashboard" [ref=e9] [cursor=pointer]:
+            - /url: /
+            - img [ref=e10]
+            - generic [ref=e13]: Dashboard
+          - link "✨ Agentic Capabilities" [ref=e14] [cursor=pointer]:
+            - /url: /agentic-capabilities
+            - img [ref=e15]
+            - generic [ref=e19]: ✨ Agentic Capabilities
+          - link "WOs & Notifications" [ref=e20] [cursor=pointer]:
+            - /url: /work-orders
+            - img [ref=e21]
+            - generic [ref=e23]: WOs & Notifications
+          - link "Work Management" [ref=e24] [cursor=pointer]:
+            - /url: /work-management
+            - img [ref=e25]
+            - generic [ref=e28]: Work Management
+          - link "Failures & Events" [ref=e29] [cursor=pointer]:
+            - /url: /failures-events
+            - img [ref=e30]
+            - generic [ref=e32]: Failures & Events
+          - link "Improvement Actions" [ref=e33] [cursor=pointer]:
+            - /url: /improvement-actions
+            - img [ref=e34]
+            - generic [ref=e37]: Improvement Actions
+          - link "Criticality" [ref=e38] [cursor=pointer]:
+            - /url: /criticality
+            - img [ref=e39]
+            - generic [ref=e42]: Criticality
+          - link "FMECA" [ref=e43] [cursor=pointer]:
+            - /url: /fmeca
+            - img [ref=e44]
+            - generic [ref=e48]: FMECA
+          - link "RCA" [ref=e49] [cursor=pointer]:
+            - /url: /rca
+            - img [ref=e50]
+            - generic [ref=e53]: RCA
+          - link "Reliability" [ref=e54] [cursor=pointer]:
+            - /url: /reliability
+            - img [ref=e55]
+            - generic [ref=e57]: Reliability
+          - link "Analytics" [ref=e58] [cursor=pointer]:
+            - /url: /analytics
+            - img [ref=e59]
+            - generic [ref=e61]: Analytics
+          - link "Reports" [ref=e62] [cursor=pointer]:
+            - /url: /reports
+            - img [ref=e63]
+            - generic [ref=e66]: Reports
+          - link "Team" [ref=e67] [cursor=pointer]:
+            - /url: /team
+            - img [ref=e68]
+            - generic [ref=e73]: Team
+          - link "Settings" [ref=e74] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e75]
+            - generic [ref=e78]: Settings
+          - link "SAP PM" [ref=e79] [cursor=pointer]:
+            - /url: /sap-pm
+            - img [ref=e80]
+            - generic [ref=e84]: SAP PM
+          - link "Data Import" [ref=e85] [cursor=pointer]:
+            - /url: /data-import
+            - img [ref=e86]
+            - generic [ref=e89]: Data Import
+          - link "Audit Log" [ref=e90] [cursor=pointer]:
+            - /url: /audit-log
+            - img [ref=e91]
+            - generic [ref=e94]: Audit Log
+      - generic [ref=e95]:
+        - button "AS Administrador Sistema Administrator" [ref=e96] [cursor=pointer]:
+          - generic [ref=e98]: AS
+          - generic [ref=e99]:
+            - generic [ref=e100]: Administrador Sistema
+            - generic [ref=e101]: Administrator
+        - generic [ref=e102]:
+          - button "Sign Out" [ref=e103]:
+            - img [ref=e104]
+            - generic [ref=e107]: Sign Out
+          - button [ref=e108]:
+            - img [ref=e109]
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e115]:
+            - img [ref=e116]
+            - textbox "Search modules..." [ref=e119]
+          - generic [ref=e120]:
+            - button "🇬🇧 EN" [ref=e122]:
+              - img [ref=e123]
+              - generic [ref=e126]: 🇬🇧 EN
+            - button "Switch to dark mode" [ref=e127]:
+              - img [ref=e128]
+            - generic "Tiempo real activo · última señal ahora" [ref=e160]:
+              - img [ref=e131]
+              - generic [ref=e135]: Sync ahora
+            - button "9+" [ref=e161]:
+              - img [ref=e138]
+              - generic [ref=e162]: 9+
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - img [ref=e143]
+            - combobox [ref=e145]:
+              - generic: GOLDFIELDS-SN — Goldfields - Salares Norte
+              - img
+          - generic [ref=e146]:
+            - img [ref=e147]
+            - combobox [ref=e149]:
+              - generic: Last 30 Days
+              - img
+        - generic [ref=e150]:
+          - generic [ref=e151]: "Analysis Level:"
+          - generic [ref=e152]:
+            - button "Executive View" [ref=e153]
+            - button "Tactical Operations View" [ref=e154]
+      - main [ref=e155]:
+        - generic [ref=e163]:
+          - generic [ref=e164]:
+            - img [ref=e165]
+            - generic [ref=e167]: En desarrollo
+            - generic [ref=e168]: ·
+            - generic [ref=e169]: RCA operativo — 5M (Ishikawa) + solutions + push-to-CAPA + integración FMECA (botón "Crear FMECA" arrastra causas y soluciones). Plantillas avanzadas (5-Why / Fault-Tree) en iteración.
+          - generic [ref=e170]:
+            - generic [ref=e171]:
+              - img [ref=e173]
+              - generic [ref=e176]:
+                - heading "Análisis de Causa Raíz" [level=1] [ref=e177]
+                - paragraph [ref=e178]: Identifica, analiza y elimina las causas raíz de fallas
+            - button "Nuevo RCA" [ref=e179]:
+              - img [ref=e180]
+              - text: Nuevo RCA
+          - generic [ref=e181]:
+            - button "0 Identificada" [ref=e182]:
+              - img [ref=e184]
+              - generic [ref=e188]: "0"
+              - generic [ref=e189]: Identificada
+            - button "0 Analizando" [ref=e190]:
+              - img [ref=e192]
+              - generic [ref=e195]: "0"
+              - generic [ref=e196]: Analizando
+            - button "0 Implementando" [ref=e197]:
+              - img [ref=e199]
+              - generic [ref=e201]: "0"
+              - generic [ref=e202]: Implementando
+            - button "0 Controlada" [ref=e203]:
+              - img [ref=e205]
+              - generic [ref=e207]: "0"
+              - generic [ref=e208]: Controlada
+            - button "0 Cerrada" [ref=e209]:
+              - img [ref=e211]
+              - generic [ref=e214]: "0"
+              - generic [ref=e215]: Cerrada
+          - generic [ref=e217]:
+            - img [ref=e218]
+            - textbox "Buscar eventos RCA…" [ref=e221]
+          - generic [ref=e222]:
+            - generic [ref=e223] [cursor=pointer]:
+              - img [ref=e225]
+              - generic [ref=e229]:
+                - paragraph [ref=e230]: Empalmes de cinta fallando antes de tiempo
+                - paragraph [ref=e231]: CVY-CV-001 · Created 26/4/2026
+              - generic [ref=e232]: Identificada
+              - img [ref=e233]
+            - generic [ref=e235] [cursor=pointer]:
+              - img [ref=e237]
+              - generic [ref=e241]:
+                - paragraph [ref=e242]: Vibración elevada en cone crusher
+                - paragraph [ref=e243]: CRU-CON-HP-01 · Created 22/4/2026
+              - generic [ref=e244]: Identificada
+              - img [ref=e245]
+            - generic [ref=e247] [cursor=pointer]:
+              - img [ref=e249]
+              - generic [ref=e253]:
+                - paragraph [ref=e254]: Bajo rendimiento del molino de bolas
+                - paragraph [ref=e255]: BRY-BAL-ML-001 · Created 9/4/2026
+              - generic [ref=e256]: Identificada
+              - img [ref=e257]
+            - generic [ref=e259] [cursor=pointer]:
+              - img [ref=e261]
+              - generic [ref=e265]:
+                - paragraph [ref=e266]: Sobrecalentamiento sostenido en motor
+                - paragraph [ref=e267]: PMP-SL-HP-001 · Created 30/3/2026
+              - generic [ref=e268]: Identificada
+              - img [ref=e269]
+            - generic [ref=e271] [cursor=pointer]:
+              - img [ref=e273]
+              - generic [ref=e277]:
+                - paragraph [ref=e278]: Falla recurrente en sello de trunnion bearing
+                - paragraph [ref=e279]: BRY-SAG-ML-001 · Created 15/3/2026
+              - generic [ref=e280]: Identificada
+              - img [ref=e281]
+            - generic [ref=e283] [cursor=pointer]:
+              - img [ref=e285]
+              - generic [ref=e289]:
+                - paragraph [ref=e290]: Falla en interruptor MT recurrente
+                - paragraph [ref=e291]: SUB-MT-P01 · Created 28/2/2026
+              - generic [ref=e292]: Identificada
+              - img [ref=e293]
+  - status

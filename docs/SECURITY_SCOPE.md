@@ -1,6 +1,6 @@
 # Seguridad en VSC — Por qué necesitamos responsable nominal designado y por qué un Jr puede asumirlo
 
-**Autor:** David Cabezas — Lead Tech VSC
+**Autor:** David Cabezas — VSC
 **Destinatario:** José Cortinat (CEO) · Equipo VSC
 **Fecha:** 2026-04
 **Contexto:** 3 proyectos en producción · datos confidenciales de clientes · Ley 21.663 vigente · Ley 21.719 entra 2026
@@ -177,7 +177,7 @@ La ANCI **no busca expertos certificados** en una empresa de la escala de VSC. B
 2. Que tenga competencia para el rol (formación + supervisión)
 3. Que el rol esté funcionando (canal activo, registros, simulacros)
 
-Un Jr con designación formal + capacitación inicial + supervisión del Lead Tech cumple los 3 puntos.
+Un Jr con designación formal + capacitación inicial + templates pre-armados cumple los 3 puntos.
 
 Lo que NO funciona es:
 - "Lo gestiona la IA" → incumplimiento
@@ -188,4 +188,4 @@ Lo que NO funciona es:
 
 ---
 
-— **David Cabezas**, Lead Tech VSC
+— **David Cabezas**, VSC

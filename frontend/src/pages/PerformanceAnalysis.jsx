@@ -864,6 +864,28 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => {
+              import('../components/PerformanceReports').then(m => {
+                m.openPostMaintenanceReport({
+                  plant_id: plant,
+                  period_label: 'Últimos 30 días',
+                  badActors: recurringFailures,
+                  retrabajos: reworkEvents,
+                  pareto: failureModePareto,
+                  equipKpis: equipmentResultsKpis,
+                  chronic: chronicFailures,
+                  priorityIssues: priorityMismatches,
+                  discipline: disciplineKpis,
+                  closeTheLoop,
+                  strategy: strategyMismatches,
+                  dotacion: dotacionAnalysis,
+                });
+              });
+            }}
+            className="flex items-center gap-1 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm hover:bg-rose-700">
+            📄 Reporte Post-Mantenimiento (PDF)
+          </button>
           <button onClick={() => setShowMeetingForm(true)} className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
             <Calendar size={16} /> Reunion de Desempeno
           </button>
@@ -1062,6 +1084,25 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
           <span className="text-xs font-bold px-2 py-1 rounded-full bg-red-100 text-red-700">
             {recurringFailures.length} bad actors
           </span>
+          <button
+            onClick={async () => {
+              try {
+                const res = await api.autoTriggerRcaFromClusters({ plant_id: plant, window_days: 30, min_occurrences: 3, dry_run: true });
+                if (res.new_rca_candidates === 0) {
+                  toast?.info ? toast.info('Todos los clusters ya tienen RCA activo') : alert('Todos los clusters ya tienen RCA activo');
+                  return;
+                }
+                if (!confirm(`Detectados ${res.new_rca_candidates} clusters sin RCA. ¿Crear RCAs automáticos?`)) return;
+                const r = await api.autoTriggerRcaFromClusters({ plant_id: plant, window_days: 30, min_occurrences: 3, dry_run: false });
+                toast?.success ? toast.success(`${r.rcas_created} RCAs creados`) : alert(`${r.rcas_created} RCAs creados`);
+                navigate('/rca');
+              } catch (e) {
+                toast?.error ? toast.error('Error: ' + (e.message || '')) : alert('Error: ' + (e.message || ''));
+              }
+            }}
+            className="ml-2 text-xs px-2 py-1 rounded bg-rose-600 text-white hover:bg-rose-700">
+            🤖 Auto-generar RCAs (clusters)
+          </button>
         </div>
         {recurringFailures.length === 0 ? (
           <p className="text-sm text-gray-400 italic text-center py-4">

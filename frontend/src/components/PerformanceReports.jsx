@@ -317,3 +317,108 @@ ${footer()}
 
   openInNewWindow(html, 'adherencia-cumplimiento');
 }
+
+
+// ─────────────────────────────────────────────────────────────────────
+// Post-Mantenimiento (todo en uno, Jorge 2026-04-28 17:56)
+// Combina Bad Actors x criticidad + Retrabajos + Pareto + KPIs Resultados +
+// Fallas crónicas + Prioridades + Disciplina + Close-the-loop + Estrategia.
+// ─────────────────────────────────────────────────────────────────────
+export function openPostMaintenanceReport(data) {
+  if (!data) return;
+  const { plant_id, period_label, badActors, retrabajos, pareto, equipKpis, chronic, priorityIssues, discipline, closeTheLoop, strategy, dotacion } = data;
+
+  const sect = (title, rows, headers) => `
+    <h2>${esc(title)}</h2>
+    ${rows.length === 0 ? '<p style="color:#9ca3af;font-style:italic;">Sin data disponible.</p>' :
+      `<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px;">
+         <thead><tr style="background:#f3f4f6;">${headers.map(h => `<th style="padding:6px;text-align:left;border:1px solid #e5e7eb;">${esc(h)}</th>`).join('')}</tr></thead>
+         <tbody>${rows.map(r => `<tr>${r.map(c => `<td style="padding:6px;border:1px solid #e5e7eb;">${esc(String(c))}</td>`).join('')}</tr>`).join('')}</tbody>
+       </table>`
+    }`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte Post-Mantenimiento — ${esc(plant_id)}</title>
+${commonStyles()}
+</head><body>
+${header('Reporte Post-Mantenimiento — Análisis de Desempeño', 'Generado por la IA según especificación Jorge 2026-04-28 17:56', plant_id, period_label)}
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="l">Bad Actors críticos</div><div class="v">${(badActors || []).filter(b => ['A', 'B'].includes(b.criticality)).length}</div></div>
+  <div class="kpi"><div class="l">Retrabajos &lt;24h</div><div class="v">${(retrabajos || []).length}</div></div>
+  <div class="kpi"><div class="l">Fallas crónicas</div><div class="v">${(chronic || []).length}</div></div>
+  <div class="kpi"><div class="l">Prioridades inconsistentes</div><div class="v">${(priorityIssues || []).length}</div></div>
+  <div class="kpi"><div class="l">Acciones vencidas</div><div class="v">${closeTheLoop?.overdue || 0}</div></div>
+  <div class="kpi"><div class="l">Cadencias desviadas (estrategia)</div><div class="v">${(strategy || []).length}</div></div>
+</div>
+
+${sect('Bad Actors × Equipos críticos',
+  (badActors || []).slice(0, 10).map(b => [b.criticality || '—', b.equipment, b.count, b.span_days + 'd', (b.modes || []).join(', ').slice(0, 60)]),
+  ['Crit.', 'Equipo', 'Fallas', 'Período', 'Modos'])}
+
+${sect('Retrabajos / Reprocesos detectados',
+  (retrabajos || []).slice(0, 10).map(r => [r.equipment, r.previous_wo, (r.new_wr || '').slice(0, 10), r.hours_gap + 'h', r.new_priority || '—', (r.new_description || '').slice(0, 60)]),
+  ['Equipo', 'OT cerrada', 'Aviso nuevo', 'Δ horas', 'Pri.', 'Descripción'])}
+
+${sect('Pareto modos de falla (80/20)',
+  (pareto || []).slice(0, 10).map(p => [p.mode, p.count, p.pct + '%', p.cumPct + '%', p.inTop20 ? '✓ TOP' : '']),
+  ['Modo', 'N°', '%', 'Cum %', 'Top 80'])}
+
+${sect('KPIs Resultados (Disp · MTBF · MTTR)',
+  (equipKpis || []).slice(0, 10).map(k => [k.criticality, k.equipment, k.failures, (k.mtbf != null ? k.mtbf + 'h' : '—'), (k.mttr > 0 ? k.mttr + 'h' : '—'), (k.availability != null ? k.availability + '%' : '—')]),
+  ['Crit.', 'Equipo', 'Fallas (30d)', 'MTBF', 'MTTR', 'Disp.'])}
+
+${sect('Fallas crónicas (≥3 reps en 7d)',
+  (chronic || []).slice(0, 10).map(c => [c.criticality, c.equipment, c.failure_mode, c.count_in_window, c.total_count]),
+  ['Crit.', 'Equipo', 'Modo', 'En 7d', 'Total'])}
+
+${sect('Prioridades inconsistentes',
+  (priorityIssues || []).slice(0, 10).map(p => [p.aviso, p.equipment, p.actual_priority, p.issue, p.suggestion]),
+  ['ID', 'Equipo', 'Pri.', 'Inconsistencia', 'Sugerencia IA'])}
+
+<h2>Disciplina · tiempos entre estados</h2>
+<div class="kpi-grid">
+  <div class="kpi"><div class="l">Aviso → Aprobado (avg)</div><div class="v">${discipline?.avg_wr_to_approve_h || 0}h</div></div>
+  <div class="kpi"><div class="l">OT lifecycle (avg)</div><div class="v">${discipline?.avg_ot_lifecycle_d || 0}d</div></div>
+  <div class="kpi"><div class="l">Avisos analizados</div><div class="v">${discipline?.wrs_with_data || 0}</div></div>
+  <div class="kpi"><div class="l">OTs cerradas</div><div class="v">${discipline?.wos_with_data || 0}</div></div>
+</div>
+
+${sect('Acciones de mejora vencidas (close-the-loop)',
+  (closeTheLoop?.overdue_actions || []).slice(0, 10).map(a => [a.title.slice(0, 60), a.category, a.equipment, a.days_overdue + 'd', a.priority]),
+  ['Acción', 'Categoría', 'Equipo', 'Días vencida', 'Pri.'])}
+
+${sect('Cruce con estrategia (cadencia real vs esperada)',
+  (strategy || []).slice(0, 10).map(s => [s.equipment, s.description, s.executions, s.avg_interval_days + 'd', s.suggestion]),
+  ['Equipo', 'Trabajo', 'Ejec.', 'Cadencia real', 'Sugerencia'])}
+
+<h2>Análisis de Dotación</h2>
+<p style="font-size:11px;line-height:1.6;">
+  HH en críticos A/B: <b>${dotacion?.usedCritical || 0}h</b> (${dotacion?.pctCritical || 0}% del total).
+  HH en no-críticos C/D: <b>${dotacion?.usedNonCritical || 0}h</b>.
+  Total HH ejecutadas en período: <b>${dotacion?.totalUsed || 0}h</b>.
+</p>
+${sect('HH por especialidad',
+  (dotacion?.bySpec || []).map(([s, h]) => [s, Math.round(h) + 'h', dotacion.totalUsed > 0 ? Math.round(h / dotacion.totalUsed * 100) + '%' : '—']),
+  ['Especialidad', 'HH', '% del total'])}
+
+<h2 style="margin-top:24px;">Conclusiones y acciones recomendadas</h2>
+<ul style="font-size:11px;line-height:1.8;padding-left:20px;color:#374151;">
+  ${(badActors || []).filter(b => ['A', 'B'].includes(b.criticality)).slice(0, 3).map(b =>
+    `<li>📍 <b>${esc(b.equipment)}</b> (crítico ${esc(b.criticality)}) tiene ${b.count} fallas en ${b.span_days}d → abrir RCA prioritario.</li>`
+  ).join('')}
+  ${(retrabajos || []).slice(0, 2).map(r =>
+    `<li>🔁 Retrabajo en <b>${esc(r.equipment)}</b> (${r.hours_gap}h tras intervención previa) → revisar calidad del proceso.</li>`
+  ).join('')}
+  ${(closeTheLoop?.overdue || 0) > 0 ?
+    `<li>⚠ Hay <b>${closeTheLoop.overdue}</b> acciones de mejora vencidas — equipos siguen expuestos a recurrencia. Escalar al ingeniero de confiabilidad.</li>` : ''}
+  ${(priorityIssues || []).filter(p => p.severity === 'high').slice(0, 2).map(p =>
+    `<li>⚖️ <b>${esc(p.aviso)}</b> tiene prioridad inconsistente → ${esc(p.suggestion)}.</li>`
+  ).join('')}
+</ul>
+
+${footer()}
+</body></html>`;
+
+  openInNewWindow(html, 'post-mantenimiento');
+}
+

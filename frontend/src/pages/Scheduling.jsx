@@ -5,6 +5,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import LiveIndicator from '../components/LiveIndicator';
 import { useToast } from '../components/Toast';
 import CancelWOModal from '../components/CancelWOModal';
+import SmartAssignModal from '../components/SmartAssignModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../api';
@@ -3679,6 +3680,7 @@ export default function Scheduling() {
   const [detailOrder, setDetailOrder] = useState(null);
   const [closureOrder, setClosureOrder] = useState(null);
   const [cancelOrder, setCancelOrder] = useState(null); // SF-579 — modal cancel con tipología
+  const [smartAssignFor, setSmartAssignFor] = useState(null); // {specialty, plannedHours, woId, opSeq, currentWorkerId}
   const [generating, setGenerating] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -4656,6 +4658,20 @@ export default function Scheduling() {
         onSuccess={() => loadCalendarData()}
       />
 
+      {/* SF-568 — Smart Assign modal en wizard Auto-Level */}
+      <SmartAssignModal
+        open={!!smartAssignFor}
+        onClose={() => setSmartAssignFor(null)}
+        plantId={plant}
+        specialty={smartAssignFor?.specialty}
+        shift="day"
+        plannedHours={smartAssignFor?.plannedHours || 1}
+        excludeWorkerIds={[]}
+        onSelect={(c) => {
+          toast({ kind: 'info', text: `Candidato sugerido: ${c.name} (score ${c.score.toFixed(0)}). Aplicar reasignación manualmente desde la OT.` });
+        }}
+      />
+
       {closureOrder && (
         <OCRClosureModal order={closureOrder} t={t} onClose={() => setClosureOrder(null)} onSubmit={handleClosureSubmit} />
       )}
@@ -4893,6 +4909,16 @@ export default function Scheduling() {
                     <span className="flex-1 text-gray-700 dark:text-gray-300">{a.worker_name}</span>
                     <span className="text-xs text-gray-500">{a.day}</span>
                     <span className="text-xs font-semibold text-gray-600">{a.hours}h</span>
+                    <button
+                      title="Ver ranking IA de candidatos para esta asignación"
+                      onClick={() => setSmartAssignFor({
+                        specialty: a.specialty || a.work_center || 'Mecánico',
+                        plannedHours: parseFloat(a.hours) || 1,
+                        currentWorker: a.worker_name,
+                      })}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 hover:bg-purple-200">
+                      🧠 IA
+                    </button>
                   </div>
                 ))}
               </div>

@@ -96,8 +96,31 @@ export default function Login() {
             </div>
 
             {/* Right Panel - Login Form */}
-            <div className="flex-1 flex items-center justify-center p-6 bg-background lg:rounded-l-[2rem]">
+            <div className="flex-1 flex items-center justify-center p-4 sm:p-6 bg-background lg:rounded-l-[2rem]">
                 <div className="w-full max-w-md">
+                    {/* D5 Mobile: branding hero arriba (visible solo en mobile) */}
+                    <div className="lg:hidden -mx-4 -mt-4 mb-6 px-6 py-8 bg-gradient-to-br from-[#064e3b] via-[#047857] to-[#059669] rounded-b-[2rem] shadow-lg text-white">
+                        <div className="flex items-center justify-center mb-3">
+                            <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-20 w-auto drop-shadow-lg" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-center mb-1">{t('login.title')}</h1>
+                        <p className="text-emerald-100 text-xs text-center">{t('login.subtitle')}</p>
+                        <div className="grid grid-cols-3 gap-2 mt-5 text-center">
+                            <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+                                <Shield className="w-4 h-4 mx-auto mb-1" />
+                                <div className="text-[9px] font-semibold leading-tight">Confiabilidad</div>
+                            </div>
+                            <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+                                <Wrench className="w-4 h-4 mx-auto mb-1" />
+                                <div className="text-[9px] font-semibold leading-tight">Mantención</div>
+                            </div>
+                            <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+                                <BarChart3 className="w-4 h-4 mx-auto mb-1" />
+                                <div className="text-[9px] font-semibold leading-tight">Analítica</div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Language Selector */}
                     <div className="flex justify-end mb-4">
                         <div className="flex items-center gap-1 bg-muted rounded-lg p-1 border border-border">
@@ -118,10 +141,7 @@ export default function Login() {
                         </div>
                     </div>
 
-                    {/* Mobile logo */}
-                    <div className="lg:hidden flex items-center justify-center mb-8">
-                        <img src="/MAGEAM_LOGO.png" alt="MagEAM" className="h-32 w-auto" />
-                    </div>
+                    {/* Mobile logo (REMOVIDO - ya está arriba en hero) */}
 
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-foreground">{t('auth.welcome')}</h2>

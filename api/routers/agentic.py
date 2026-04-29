@@ -964,6 +964,7 @@ class DuplicateCheckRequest(BaseModel):
     equipment_tag: str | None = Field(default=None, max_length=50)
     plant_id: str = Field(default="OCP-JFC1", max_length=50)
     priority: str | None = Field(default=None, max_length=4)  # P1/P2/P3/P4 — severity filter
+    candidate_wr_id: str | None = Field(default=None, max_length=50)  # para negative-pair memory
     lookback_days: int = Field(default=14, ge=1, le=60)
     threshold: float = Field(default=0.55, ge=0.1, le=0.99)
 
@@ -975,7 +976,8 @@ def duplicate_check(
     user=Depends(get_current_user),
 ):
     """SF-213 — look for likely duplicate WRs before creation. Excluye estados terminales,
-    aplica time-decay exponencial (7d) y filtro de severidad ±2 niveles."""
+    aplica time-decay exponencial (7d) y filtro de severidad ±2 niveles. Si se pasa
+    candidate_wr_id, también excluye pares dismisseados previamente (negative-pair memory)."""
     from api.services.agentic_duplicate_check_service import check_duplicates
     return check_duplicates(
         db=db,
@@ -983,9 +985,172 @@ def duplicate_check(
         equipment_tag=data.equipment_tag,
         plant_id=data.plant_id,
         priority=data.priority,
+        candidate_wr_id=getattr(data, "candidate_wr_id", None),
         lookback_days=data.lookback_days,
         threshold=data.threshold,
     )
+
+
+class AutoRCATriggerRequest(BaseModel):
+    plant_id: str
+    window_days: int = Field(default=30, ge=7, le=180)
+    min_occurrences: int = Field(default=3, ge=2, le=10)
+    dry_run: bool = False  # si true, sólo lista candidatos sin crear RCAs
+
+
+@router.post("/agentic/auto-trigger-rca")
+def auto_trigger_rca(
+    data: AutoRCATriggerRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Cluster por modo de falla + auto-RCA trigger.
+
+    Agrupa WRs por (equipment_tag, failure_type) en ventana N días. Para cada
+    cluster con ≥min_occurrences, verifica si ya existe un RCA OPEN/ACTIVO para
+    ese equipo+modo. Si no, crea uno automáticamente con 5W2H prefilled.
+
+    Devuelve la lista de RCAs creados (o candidatos si dry_run=true).
+    """
+    from api.database.models import WorkRequestModel, RCAAnalysisModel
+    from datetime import datetime as _dt, timedelta as _td
+
+    cutoff = _dt.now() - _td(days=data.window_days)
+    wrs = db.query(WorkRequestModel).filter(
+        WorkRequestModel.plant_id == data.plant_id,
+        WorkRequestModel.created_at >= cutoff,
+    ).all()
+
+    # Cluster por (equipment_tag, failure_mode normalizado)
+    clusters = {}
+    for wr in wrs:
+        if not wr.equipment_tag:
+            continue
+        ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+        pd = wr.problem_description if isinstance(wr.problem_description, dict) else {}
+        mode = (ai.get("failure_type") or ai.get("failure_class")
+                or pd.get("failure_mode_detected") or "").strip()[:80]
+        if not mode:
+            continue
+        key = f"{wr.equipment_tag}::{mode.lower()}"
+        if key not in clusters:
+            clusters[key] = {"equipment_tag": wr.equipment_tag, "mode": mode, "wrs": [], "first_date": None}
+        clusters[key]["wrs"].append(wr)
+        d = wr.created_at
+        if d and (clusters[key]["first_date"] is None or d < clusters[key]["first_date"]):
+            clusters[key]["first_date"] = d
+
+    qualifying = [c for c in clusters.values() if len(c["wrs"]) >= data.min_occurrences]
+
+    # Excluir clusters que ya tengan RCA activo para mismo equipo+modo
+    existing_rcas = db.query(RCAAnalysisModel).filter(
+        RCAAnalysisModel.plant_id == data.plant_id,
+        RCAAnalysisModel.status.in_(("OPEN", "UNDER_INVESTIGATION", "COMPLETED", "REVIEWED")),
+    ).all()
+    has_rca = set()
+    for r in existing_rcas:
+        if r.equipment_id and r.event_description:
+            has_rca.add(f"{r.equipment_id}::{r.event_description.lower()[:80]}")
+
+    candidates = []
+    for c in qualifying:
+        cluster_key = f"{c['equipment_tag']}::{c['mode'].lower()}"
+        already_tracked = any(cluster_key.startswith(k.split('::')[0] + '::') and c['mode'].lower()[:30] in k for k in has_rca)
+        if already_tracked:
+            continue
+        candidates.append(c)
+
+    if data.dry_run:
+        return {
+            "plant_id": data.plant_id,
+            "window_days": data.window_days,
+            "total_clusters": len(clusters),
+            "qualifying_clusters": len(qualifying),
+            "new_rca_candidates": len(candidates),
+            "candidates": [{
+                "equipment_tag": c["equipment_tag"],
+                "failure_mode": c["mode"],
+                "occurrences": len(c["wrs"]),
+                "first_seen": c["first_date"].isoformat() if c["first_date"] else None,
+            } for c in candidates],
+        }
+
+    # Crear RCAs
+    created = []
+    for c in candidates:
+        rca = RCAAnalysisModel(
+            event_description=f"Falla recurrente: {c['mode']}",
+            plant_id=data.plant_id,
+            equipment_id=c["equipment_tag"],
+            level="LEVEL_1",
+            status="OPEN",
+            team_members=["Ingeniero Confiabilidad", "Supervisor Mecánico"],
+            analysis_5w2h={
+                "what": f"{c['mode']} recurrente",
+                "when": c["first_date"].isoformat() if c["first_date"] else _dt.now().isoformat(),
+                "where": c["equipment_tag"],
+                "who": "Auto-detectado por IA",
+                "why": f"{len(c['wrs'])} avisos en últimos {data.window_days} días — patrón crónico",
+                "how": "Cluster automático por (equipo, modo de falla)",
+                "how_much": "Pendiente cuantificar impacto",
+            },
+            cause_effect={"causes": []},
+            solutions=[],
+        )
+        db.add(rca)
+        db.flush()
+        try:
+            from api.services.audit_service import log_action
+            log_action(db, "rca", rca.analysis_id, "AUTO_TRIGGERED",
+                       payload={"trigger": "chronic_cluster", "wrs_count": len(c["wrs"]),
+                                "equipment": c["equipment_tag"], "mode": c["mode"]})
+        except Exception:
+            pass
+        created.append({
+            "analysis_id": rca.analysis_id,
+            "equipment": c["equipment_tag"],
+            "failure_mode": c["mode"],
+            "occurrences": len(c["wrs"]),
+        })
+    db.commit()
+    return {
+        "plant_id": data.plant_id,
+        "window_days": data.window_days,
+        "rcas_created": len(created),
+        "created": created,
+    }
+
+
+class DismissDupRequest(BaseModel):
+    wr_a_id: str
+    wr_b_id: str
+    plant_id: str | None = None
+
+
+@router.post("/agentic/duplicate-dismiss")
+def dismiss_duplicate_pair(
+    data: DismissDupRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Persiste un par WR como NO duplicado. La IA no lo volverá a sugerir."""
+    from api.database.models import DedupNegativePairModel
+    # Idempotente
+    existing = db.query(DedupNegativePairModel).filter(
+        ((DedupNegativePairModel.wr_a_id == data.wr_a_id) & (DedupNegativePairModel.wr_b_id == data.wr_b_id))
+        | ((DedupNegativePairModel.wr_a_id == data.wr_b_id) & (DedupNegativePairModel.wr_b_id == data.wr_a_id))
+    ).first()
+    if existing:
+        return {"id": existing.id, "status": "already_dismissed"}
+    pair = DedupNegativePairModel(
+        wr_a_id=data.wr_a_id,
+        wr_b_id=data.wr_b_id,
+        plant_id=data.plant_id,
+        dismissed_by=getattr(user, "user_id", "") or "system",
+    )
+    db.add(pair)
+    db.commit()
+    return {"id": pair.id, "status": "dismissed"}
 
 
 # ── WR Router auto-fill passthrough (SF-212) ─────────────────────────────

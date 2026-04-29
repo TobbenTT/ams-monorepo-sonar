@@ -1026,6 +1026,19 @@ class DetailedFeedbackModel(Base):
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
+class DedupNegativePairModel(Base):
+    """SF-213 mejora: cuando un usuario marca "no es duplicado" entre dos WRs,
+    persiste el par para que la IA no vuelva a sugerirlo. Aprendizaje ligero."""
+    __tablename__ = "dedup_negative_pairs"
+
+    id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    wr_a_id: Mapped[str] = mapped_column(String(50), index=True)
+    wr_b_id: Mapped[str] = mapped_column(String(50), index=True)
+    plant_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    dismissed_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
 class FMECAWorksheetModel(Base):
     __tablename__ = "fmeca_worksheets"
 

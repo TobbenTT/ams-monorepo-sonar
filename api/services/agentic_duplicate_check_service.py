@@ -60,6 +60,7 @@ def check_duplicates(
     equipment_tag: str | None = None,
     plant_id: str | None = None,
     priority: str | None = None,
+    candidate_wr_id: str | None = None,
     lookback_days: int = 14,
     threshold: float = 0.55,
     limit: int = 5,
@@ -82,6 +83,20 @@ def check_duplicates(
         q = q.filter(WorkRequestModel.equipment_tag == equipment_tag)
     candidates = q.order_by(WorkRequestModel.created_at.desc()).limit(200).all()
 
+    # Negative-pair memory: filtrar pares dismisseados previamente
+    excluded_pair_ids: set = set()
+    if candidate_wr_id:
+        try:
+            from api.database.models import DedupNegativePairModel
+            pairs = db.query(DedupNegativePairModel).filter(
+                ((DedupNegativePairModel.wr_a_id == candidate_wr_id) |
+                 (DedupNegativePairModel.wr_b_id == candidate_wr_id))
+            ).all()
+            for p in pairs:
+                excluded_pair_ids.add(p.wr_a_id if p.wr_a_id != candidate_wr_id else p.wr_b_id)
+        except Exception:
+            pass
+
     # Severity filter: limit to ±2 priority levels (P1≈P3 OK, P1↔P4 no)
     PRI_NUM = {"P1": 1, "P2": 2, "P3": 3, "P4": 4}
     incoming_pri = PRI_NUM.get((priority or "").upper())
@@ -89,6 +104,8 @@ def check_duplicates(
     now = datetime.now()
     scored = []
     for wr in candidates:
+        if wr.request_id in excluded_pair_ids:
+            continue  # negative-pair memory
         # Severity filter
         if incoming_pri is not None:
             wr_pri = PRI_NUM.get((wr.priority_code or "").upper())

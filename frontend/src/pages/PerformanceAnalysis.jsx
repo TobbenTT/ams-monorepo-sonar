@@ -433,28 +433,75 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       avg_ot_lifecycle_d: 0,
       wrs_with_data: 0,
       wos_with_data: 0,
+      // Jorge SF-585: identificación de outliers (>2σ)
+      wr_outliers: [],
+      wo_outliers: [],
+      wr_threshold_h: 0,
+      wo_threshold_d: 0,
     };
     const wrApproveDeltas = [];
+    const wrApproveMap = []; // [{ wr, dt_h }]
     wrs.forEach(wr => {
       if (wr.created_at && wr.approved_at) {
         const dt = (new Date(wr.approved_at) - new Date(wr.created_at)) / 3600000;
-        if (dt >= 0 && dt < 720) wrApproveDeltas.push(dt);
+        if (dt >= 0 && dt < 720) {
+          wrApproveDeltas.push(dt);
+          wrApproveMap.push({ wr, dt });
+        }
       }
     });
     if (wrApproveDeltas.length > 0) {
-      stats.avg_wr_to_approve_h = Math.round(wrApproveDeltas.reduce((a, b) => a + b, 0) / wrApproveDeltas.length * 10) / 10;
+      const avg = wrApproveDeltas.reduce((a, b) => a + b, 0) / wrApproveDeltas.length;
+      const variance = wrApproveDeltas.reduce((s, x) => s + Math.pow(x - avg, 2), 0) / wrApproveDeltas.length;
+      const stdev = Math.sqrt(variance);
+      const threshold = avg + 2 * stdev;
+      stats.avg_wr_to_approve_h = Math.round(avg * 10) / 10;
       stats.wrs_with_data = wrApproveDeltas.length;
+      stats.wr_threshold_h = Math.round(threshold * 10) / 10;
+      stats.wr_outliers = wrApproveMap
+        .filter(m => m.dt > threshold)
+        .sort((a, b) => b.dt - a.dt)
+        .slice(0, 8)
+        .map(m => ({
+          aviso: m.wr.aviso_number ? `AV-${String(m.wr.aviso_number).padStart(5, '0')}` : (m.wr.request_id || '').slice(0, 8),
+          request_id: m.wr.request_id || m.wr.id,
+          equipment: m.wr.equipment_tag,
+          priority: m.wr.priority_code,
+          dt_h: Math.round(m.dt * 10) / 10,
+          deviation_x: Math.round((m.dt - avg) / stdev * 10) / 10,
+        }));
     }
     const woDeltas = [];
+    const woMap = [];
     wos.forEach(wo => {
       if (wo.created_at && wo.actual_end) {
         const dt = (new Date(wo.actual_end) - new Date(wo.created_at)) / 86400000;
-        if (dt >= 0 && dt < 365) woDeltas.push(dt);
+        if (dt >= 0 && dt < 365) {
+          woDeltas.push(dt);
+          woMap.push({ wo, dt });
+        }
       }
     });
     if (woDeltas.length > 0) {
-      stats.avg_ot_lifecycle_d = Math.round(woDeltas.reduce((a, b) => a + b, 0) / woDeltas.length * 10) / 10;
+      const avg = woDeltas.reduce((a, b) => a + b, 0) / woDeltas.length;
+      const variance = woDeltas.reduce((s, x) => s + Math.pow(x - avg, 2), 0) / woDeltas.length;
+      const stdev = Math.sqrt(variance);
+      const threshold = avg + 2 * stdev;
+      stats.avg_ot_lifecycle_d = Math.round(avg * 10) / 10;
       stats.wos_with_data = woDeltas.length;
+      stats.wo_threshold_d = Math.round(threshold * 10) / 10;
+      stats.wo_outliers = woMap
+        .filter(m => m.dt > threshold)
+        .sort((a, b) => b.dt - a.dt)
+        .slice(0, 8)
+        .map(m => ({
+          wo_number: m.wo.wo_number,
+          wo_id: m.wo.wo_id,
+          equipment: m.wo.equipment_tag,
+          priority: m.wo.priority_code,
+          dt_d: Math.round(m.dt * 10) / 10,
+          deviation_x: Math.round((m.dt - avg) / stdev * 10) / 10,
+        }));
     }
     return stats;
   }, [wrs, wos]);
@@ -512,6 +559,122 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       })
       .slice(0, 15);
   }, [wos, criticalityMap]);
+
+  // ── Correlación reliability ↔ avisos (Jorge SF-586) ──
+  // "la IA valida si un equipo con baja confiabilidad tiene correlación directa
+  //  con el volumen de avisos o la duración de las paradas".
+  // Cruza equipmentResultsKpis (Disp/MTBF/MTTR) con count de WRs por equipo.
+  const reliabilityAvisoCorrelation = useMemo(() => {
+    const wrsByEq = {};
+    wrs.forEach(wr => {
+      const t = wr.equipment_tag;
+      if (!t) return;
+      wrsByEq[t] = (wrsByEq[t] || 0) + 1;
+    });
+    const avg_avisos = Object.values(wrsByEq).reduce((s, v) => s + v, 0) / (Object.keys(wrsByEq).length || 1);
+    const insights = [];
+    equipmentResultsKpis.forEach(eq => {
+      const avisos = wrsByEq[eq.equipment] || 0;
+      // Insight: baja disponibilidad (<90%) + muchos avisos (>avg) → consistente
+      // baja disp + pocos avisos → inconsistencia (¿paradas no reportadas?)
+      // alta disp + muchos avisos → ruido (¿avisos triviales?)
+      let kind = null;
+      let severity = 'info';
+      let message = '';
+      if (eq.availability != null && eq.availability < 90 && avisos > avg_avisos * 1.5) {
+        kind = 'consistent_bad';
+        severity = 'high';
+        message = `Baja disponibilidad (${eq.availability}%) + ${avisos} avisos (${Math.round(avisos / avg_avisos * 100)}% del promedio) → consistente. Priorizar RCA.`;
+      } else if (eq.availability != null && eq.availability < 90 && avisos < avg_avisos * 0.5) {
+        kind = 'unreported';
+        severity = 'medium';
+        message = `Baja disponibilidad (${eq.availability}%) PERO sólo ${avisos} avisos. ¿Paradas no reportadas en avisos? Verificar disciplina.`;
+      } else if (eq.availability != null && eq.availability >= 95 && avisos > avg_avisos * 2) {
+        kind = 'noise';
+        severity = 'low';
+        message = `Alta disponibilidad (${eq.availability}%) PERO ${avisos} avisos. ¿Avisos triviales o duplicados? Revisar dedup.`;
+      } else if (eq.mtbf != null && eq.mtbf < 100 && avisos > 3) {
+        kind = 'short_mtbf';
+        severity = 'high';
+        message = `MTBF muy bajo (${eq.mtbf}h) + ${avisos} avisos. Equipo crítico en deterioro acelerado.`;
+      }
+      if (kind) {
+        insights.push({
+          equipment: eq.equipment,
+          criticality: eq.criticality,
+          availability: eq.availability,
+          mtbf: eq.mtbf,
+          mttr: eq.mttr,
+          avisos,
+          avg_avisos: Math.round(avg_avisos * 10) / 10,
+          kind,
+          severity,
+          message,
+        });
+      }
+    });
+    // Ordenar por severity (high primero) y por avisos desc
+    const sevOrder = { high: 3, medium: 2, low: 1, info: 0 };
+    return insights.sort((a, b) => {
+      const ds = (sevOrder[b.severity] || 0) - (sevOrder[a.severity] || 0);
+      if (ds !== 0) return ds;
+      return b.avisos - a.avisos;
+    });
+  }, [equipmentResultsKpis, wrs]);
+
+  // ── Reporte equipos de apoyo: incidencia + tiempo perdido (Jorge SF-584) ──
+  const supportEquipmentReport = useMemo(() => {
+    const stats = {};
+    let total_ots_with_eq = 0;
+    let total_ots_blocked = 0;
+    let total_hours_lost = 0;
+    wos.forEach(w => {
+      const supportEq = w.support_equipment || [];
+      if (supportEq.length === 0) return;
+      total_ots_with_eq++;
+      supportEq.forEach(se => {
+        const tag = se.tag || se.name || 'OTRO';
+        if (!stats[tag]) stats[tag] = {
+          tag,
+          name: se.name || tag,
+          equipment_type: se.equipment_type || '',
+          ot_count: 0,
+          total_hours: 0,
+          ots_with_delay: 0,
+          ots_with_no_compliance: 0,
+        };
+        stats[tag].ot_count++;
+        stats[tag].total_hours += parseFloat(se.hours || 0);
+        // ¿Esta OT tuvo problema de no-cumplimiento atribuible al eq apoyo?
+        const allText = [
+          ...(w.execution_notes || []).map(n => n.note || ''),
+          ...(w.operations || []).map(op => op.notif_notes || ''),
+          w.closure_notes || '',
+          w.cancellation_reason || '',
+        ].join(' ').toLowerCase();
+        if (/grúa|grua|equipo\s+de\s+apoyo|herramienta.*falt/.test(allText)) {
+          stats[tag].ots_with_no_compliance++;
+          total_ots_blocked++;
+          // Estimar tiempo perdido: diff entre estimated_hours y actual_hours
+          const estimated = parseFloat(w.estimated_hours || 0);
+          const actual = parseFloat(w.actual_hours || 0);
+          const lost = Math.max(0, actual - estimated);
+          stats[tag].total_hours += lost;
+          total_hours_lost += lost;
+        }
+        // ¿OT con delay? actual_hours vs estimated >25%
+        if (w.actual_hours && w.estimated_hours && w.actual_hours > w.estimated_hours * 1.25) {
+          stats[tag].ots_with_delay++;
+        }
+      });
+    });
+    return {
+      total_ots_with_eq,
+      total_ots_blocked,
+      total_hours_lost: Math.round(total_hours_lost),
+      items: Object.values(stats).sort((a, b) => b.ot_count - a.ot_count).slice(0, 10),
+    };
+  }, [wos]);
 
   // ── Análisis de Dotación + brechas de especialidad (Jorge 2026-04-28 17:56) ──
   const dotacionAnalysis = useMemo(() => {
@@ -1147,8 +1310,9 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                     <td className="px-2 py-2 text-center">
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${critTone}`}>{rf.criticality}</span>
                     </td>
-                    <td className="px-2 py-2 font-mono text-blue-700">
-                      {rf.equipment}
+                    <td className="px-2 py-2">
+                      <button onClick={() => navigate(`/fmeca?equipment=${encodeURIComponent(rf.equipment)}`)}
+                        className="font-mono text-blue-700 hover:underline">{rf.equipment}</button>
                       {rf.isCritical && <span className="ml-1 text-[10px] text-red-600 font-bold">⚠ CRÍTICO</span>}
                     </td>
                     <td className="px-2 py-2 text-center">
@@ -1219,8 +1383,14 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                 {reworkEvents.map((rw, i) => (
                   <tr key={i} className="border-t border-gray-100 hover:bg-rose-50/30">
                     <td className="px-2 py-2 font-mono text-blue-700">{rw.equipment}</td>
-                    <td className="px-2 py-2 font-mono text-gray-600">{rw.previous_wo}</td>
-                    <td className="px-2 py-2 font-mono text-gray-600">{(rw.new_wr || '').slice(0, 10)}</td>
+                    <td className="px-2 py-2">
+                      <button onClick={() => navigate(`/work-management?tab=planning&openWoNumber=${rw.previous_wo}`)}
+                        className="font-mono text-blue-700 hover:underline">{rw.previous_wo}</button>
+                    </td>
+                    <td className="px-2 py-2">
+                      <button onClick={() => navigate(`/work-management?tab=identification&openWr=${encodeURIComponent(rw.new_wr || '')}`)}
+                        className="font-mono text-blue-700 hover:underline">{(rw.new_wr || '').slice(0, 10)}</button>
+                    </td>
                     <td className="px-2 py-2 text-center">
                       <span className={`font-bold px-1.5 py-0.5 rounded ${rw.hours_gap < 4 ? 'bg-red-200 text-red-800' : rw.hours_gap < 12 ? 'bg-orange-200 text-orange-800' : 'bg-amber-100 text-amber-700'}`}>
                         {rw.hours_gap}h
@@ -1470,6 +1640,142 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         <p className="text-[10px] text-gray-500 italic mt-3">
           Jorge 2026-04-28 17:56: "el aviso no puede estar eternamente esperando, le golpea al supervisor; la OT no puede estar mucho tiempo en bandeja del planificador si los repuestos están". Estos KPIs miden la <strong>disciplina del flujo</strong>.
         </p>
+
+        {/* SF-585 — Outliers >2σ */}
+        {(disciplineKpis.wr_outliers.length > 0 || disciplineKpis.wo_outliers.length > 0) && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            {disciplineKpis.wr_outliers.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <h4 className="text-xs font-bold text-red-800 mb-2 flex items-center gap-1">
+                  ⚠ Outliers Avisos (&gt;2σ del promedio · umbral {disciplineKpis.wr_threshold_h}h)
+                </h4>
+                <div className="space-y-1">
+                  {disciplineKpis.wr_outliers.map((o, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs bg-white rounded px-2 py-1">
+                      <button onClick={() => navigate(`/work-management?tab=identification&openWr=${encodeURIComponent(o.request_id)}`)}
+                        className="font-mono font-bold text-blue-700 hover:underline">{o.aviso}</button>
+                      <span className="font-mono text-gray-600">{o.equipment}</span>
+                      <span className="text-[10px] px-1 py-0.5 rounded bg-gray-100">{o.priority}</span>
+                      <span className="ml-auto font-bold text-red-700 tabular-nums">{o.dt_h}h ({o.deviation_x}σ)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {disciplineKpis.wo_outliers.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <h4 className="text-xs font-bold text-red-800 mb-2 flex items-center gap-1">
+                  ⚠ Outliers OTs (&gt;2σ del promedio · umbral {disciplineKpis.wo_threshold_d}d)
+                </h4>
+                <div className="space-y-1">
+                  {disciplineKpis.wo_outliers.map((o, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs bg-white rounded px-2 py-1">
+                      <button onClick={() => navigate(`/work-management?tab=planning&openWo=${o.wo_id}`)}
+                        className="font-mono font-bold text-blue-700 hover:underline">{o.wo_number}</button>
+                      <span className="font-mono text-gray-600">{o.equipment}</span>
+                      <span className="text-[10px] px-1 py-0.5 rounded bg-gray-100">{o.priority}</span>
+                      <span className="ml-auto font-bold text-red-700 tabular-nums">{o.dt_d}d ({o.deviation_x}σ)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── SF-586 Correlación reliability ↔ avisos ── */}
+      {reliabilityAvisoCorrelation.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+              🔗 Insights cruzados: Confiabilidad ↔ Volumen Avisos
+            </h3>
+            <span className="text-xs font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+              {reliabilityAvisoCorrelation.length} insights IA
+            </span>
+          </div>
+          <div className="space-y-2">
+            {reliabilityAvisoCorrelation.slice(0, 10).map((ins, i) => {
+              const tone = ins.severity === 'high' ? 'bg-red-50 border-red-300 text-red-900' :
+                           ins.severity === 'medium' ? 'bg-amber-50 border-amber-300 text-amber-900' :
+                           'bg-blue-50 border-blue-200 text-blue-900';
+              const icon = ins.kind === 'consistent_bad' ? '🔴' :
+                           ins.kind === 'unreported' ? '⚠' :
+                           ins.kind === 'noise' ? '🔁' :
+                           ins.kind === 'short_mtbf' ? '⏱' : 'ℹ';
+              return (
+                <div key={i} className={`rounded-lg border p-2.5 ${tone}`}>
+                  <div className="flex items-start gap-2">
+                    <span className="text-base">{icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono font-bold">{ins.equipment}</span>
+                        {ins.criticality && ['A', 'B'].includes(ins.criticality) && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-600 text-white">CRÍTICO {ins.criticality}</span>
+                        )}
+                        <span className="text-[10px] text-gray-600">Disp: {ins.availability ?? '—'}% · MTBF: {ins.mtbf ?? '—'}h · Avisos: {ins.avisos}</span>
+                      </div>
+                      <p className="text-xs">{ins.message}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-gray-500 italic mt-3">
+            Jorge SF-586: "la IA valida si un equipo con baja confiabilidad tiene correlación directa con el volumen de avisos o duración de paradas". Detecta 4 patrones: consistente (bajo+muchos), no-reportado (bajo+pocos), ruido (alto+muchos), MTBF corto.
+          </p>
+        </div>
+      )}
+
+      {/* ── SF-584 Reporte equipos de apoyo: incidencia + tiempo perdido ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            🏗️ SF-584 · Incidencia equipos de apoyo + tiempo perdido
+          </h3>
+          <div className="flex gap-2 text-xs">
+            <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-bold">{supportEquipmentReport.total_ots_with_eq} OTs requirieron eq apoyo</span>
+            <span className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-bold">{supportEquipmentReport.total_ots_blocked} con problema</span>
+            <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-bold">{supportEquipmentReport.total_hours_lost}h perdidas</span>
+          </div>
+        </div>
+        {supportEquipmentReport.items.length === 0 ? (
+          <p className="text-sm text-gray-400 italic text-center py-4">Sin equipos de apoyo en OTs analizadas.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-blue-50">
+                <tr>
+                  <th className="text-left px-2 py-1.5 font-bold">Tag</th>
+                  <th className="text-left px-2 py-1.5 font-bold">Descripción</th>
+                  <th className="text-left px-2 py-1.5 font-bold">Tipo</th>
+                  <th className="text-center px-2 py-1.5 font-bold">N° OTs</th>
+                  <th className="text-center px-2 py-1.5 font-bold">HH usadas</th>
+                  <th className="text-center px-2 py-1.5 font-bold">OTs con delay</th>
+                  <th className="text-center px-2 py-1.5 font-bold">OTs bloqueadas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supportEquipmentReport.items.map((it, i) => (
+                  <tr key={i} className="border-t border-gray-100 hover:bg-blue-50/30">
+                    <td className="px-2 py-1.5 font-mono">{it.tag}</td>
+                    <td className="px-2 py-1.5 max-w-[200px] truncate" title={it.name}>{it.name}</td>
+                    <td className="px-2 py-1.5 text-gray-600">{it.equipment_type}</td>
+                    <td className="px-2 py-1.5 text-center font-bold">{it.ot_count}</td>
+                    <td className="px-2 py-1.5 text-center tabular-nums">{Math.round(it.total_hours)}h</td>
+                    <td className={`px-2 py-1.5 text-center font-bold ${it.ots_with_delay > 0 ? 'text-amber-700' : 'text-gray-400'}`}>{it.ots_with_delay}</td>
+                    <td className={`px-2 py-1.5 text-center font-bold ${it.ots_with_no_compliance > 0 ? 'text-red-700' : 'text-gray-400'}`}>{it.ots_with_no_compliance}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[10px] text-gray-500 italic mt-2">
+          Jorge SF-584: "Reporte de incidencia de equipos de apoyo (cuántas OTs se vieron afectadas y cuánto tiempo se perdió)". OTs bloqueadas = comments mencionan grúa/herramienta faltante. Tiempo perdido = HH actual − estimated cuando hay match.
+        </p>
       </div>
 
       {/* ── Análisis de Dotación + brechas ── */}
@@ -1614,11 +1920,17 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                     <td className="px-2 py-2 text-gray-800 max-w-[250px] truncate" title={g.desc}>{g.desc}</td>
                     <td className="px-2 py-2 text-center">{g.count}</td>
                     <td className="px-2 py-2 text-center text-emerald-700 font-bold tabular-nums">
-                      {g.best.actual_hours}h<div className="text-[9px] text-gray-500 font-normal">{g.best.wo_number}</div>
+                      {g.best.actual_hours}h
+                      <div className="text-[9px] text-gray-500 font-normal">
+                        <button onClick={() => navigate(`/work-management?tab=planning&openWoNumber=${g.best.wo_number}`)} className="hover:underline">{g.best.wo_number}</button>
+                      </div>
                     </td>
                     <td className="px-2 py-2 text-center text-blue-700 font-bold tabular-nums">{g.avg}h</td>
                     <td className="px-2 py-2 text-center text-red-700 font-bold tabular-nums">
-                      {g.worst.actual_hours}h<div className="text-[9px] text-gray-500 font-normal">{g.worst.wo_number}</div>
+                      {g.worst.actual_hours}h
+                      <div className="text-[9px] text-gray-500 font-normal">
+                        <button onClick={() => navigate(`/work-management?tab=planning&openWoNumber=${g.worst.wo_number}`)} className="hover:underline">{g.worst.wo_number}</button>
+                      </div>
                     </td>
                     <td className="px-2 py-2 text-center text-amber-700 font-bold tabular-nums">+{g.spread}h</td>
                   </tr>

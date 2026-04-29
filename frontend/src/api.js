@@ -411,6 +411,9 @@ export const addManagedWONote = (id, d) => post(`/managed-work-orders/${id}/note
 export const updateManagedWOProgress = (id, d) => put(`/managed-work-orders/${id}/progress`, d);
 // SF-572 — notificación parcial multi-turno (acumula HH por op; auto-final cuando todas 100%)
 export const notifyManagedWOPartial = (id, d) => post(`/managed-work-orders/${id}/notify-partial`, d);
+// Equipos de apoyo: endpoint dedicado sin optimistic lock (Jorge 2026-04-28)
+export const updateWOSupportEquipment = (id, supportEquipment) =>
+  put(`/managed-work-orders/${id}/support-equipment`, { support_equipment: supportEquipment });
 // SF-568 — Smart Assignment IA: ranking de técnicos por skill + HH disponibles
 export const rankTechniciansForOperation = (d) => post('/assignments/rank-for-operation', d);
 // SF-579 — listar OTs absorbidas por una OT PM03

@@ -506,6 +506,33 @@ def list_absorbed_wos(wo_id: str, db: Session = Depends(get_db), user=Depends(ge
     } for w in rows]
 
 
+class WOSupportEquipUpdate(BaseModel):
+    model_config = {"extra": "ignore"}
+    support_equipment: list = []
+
+
+@router.put("/{wo_id}/support-equipment")
+def update_support_equipment(
+    wo_id: str,
+    data: WOSupportEquipUpdate,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update support_equipment list directly (bypass optimistic lock).
+    Jorge 2026-04-28: equipos de apoyo son metadata accesoria que no debería
+    bloquearse por concurrencia (otros campos sí)."""
+    from api.database.models import ManagedWorkOrderModel
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        raise HTTPException(status_code=404, detail="WO not found")
+    if wo.status in ("CERRADO", "CANCELADO"):
+        raise HTTPException(status_code=400, detail="WO already closed/cancelled")
+    wo.support_equipment = data.support_equipment or []
+    db.commit()
+    db.refresh(wo)
+    return managed_wo_service._to_dict(wo)
+
+
 @router.put("/{wo_id}/cancel")
 def cancel_work_order(
     wo_id: str,

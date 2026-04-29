@@ -2784,7 +2784,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         onClick={async () => {
                           const next = [...(wo.support_equipment || []), { tag: '', name: '', equipment_type: 'MOBILE_CRANE', hours: 1, notes: '' }];
                           try {
-                            const updated = await api.updateManagedWO(wo.wo_id, { support_equipment: next });
+                            const updated = await api.updateWOSupportEquipment(wo.wo_id, next);
                             setSelectedOT(updated);
                           } catch (e) { toast.error('Error: ' + (e.message || '')); }
                         }}

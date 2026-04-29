@@ -294,9 +294,29 @@ export default function TeamPage() {
       ]);
       const userList = Array.isArray(users) ? users : [];
       const techList = Array.isArray(techs) ? techs : techs?.technicians || [];
-      // Merge: add workforce technicians that aren't already in users
-      const userNames = new Set(userList.map(u => (u.full_name || u.username || '').toLowerCase()));
-      const extraTechs = techList.filter(t => !userNames.has((t.name || '').toLowerCase())).map(t => ({
+      // Mapa por nombre normalizado para enriquecer userList con workforce data
+      const techByName = new Map(
+        techList.map(t => [(t.name || '').toLowerCase().trim(), t])
+      );
+      // Enriquecer userList con specialty/shift/skills del workforce si match por nombre
+      const enrichedUsers = userList.map(u => {
+        const name = (u.full_name || u.username || '').toLowerCase().trim();
+        const tech = techByName.get(name);
+        if (tech) {
+          return {
+            ...u,
+            specialty: u.specialty || tech.specialty || '',
+            shift: u.shift || tech.shift || '',
+            shift_pattern: u.shift_pattern || tech.shift_pattern || '',
+            shift_cycle_start: u.shift_cycle_start || tech.shift_cycle_start || '',
+            skills: u.skills || tech.skills || [],
+            worker_id: u.worker_id || tech.worker_id,
+          };
+        }
+        return u;
+      });
+      const userNames = new Set(userList.map(u => (u.full_name || u.username || '').toLowerCase().trim()));
+      const extraTechs = techList.filter(t => !userNames.has((t.name || '').toLowerCase().trim())).map(t => ({
         user_id: t.worker_id,
         worker_id: t.worker_id,
         username: t.name?.toLowerCase().replace(/\s+/g, '.') || t.worker_id,
@@ -312,7 +332,7 @@ export default function TeamPage() {
         skills: t.skills || [],
         _source: 'workforce',
       }));
-      setTeam([...userList, ...extraTechs]);
+      setTeam([...enrichedUsers, ...extraTechs]);
     } catch (err) {
       setError(err.message || t('team.failedToLoad'));
     } finally {
@@ -770,11 +790,21 @@ export default function TeamPage() {
                           </Badge>
                         );
                       })()}
-                      {member.shift && (
-                        <Badge className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
-                          {member.shift === 'day' ? '☀️ Día' : member.shift === 'night' ? '🌙 Noche' : member.shift}
-                        </Badge>
-                      )}
+                      {member.shift && (() => {
+                        const s = String(member.shift || '').toLowerCase();
+                        const isNight = s.includes('night') || s.includes('noche') || s === 'n';
+                        const isDay = s.includes('day') || s.includes('día') || s.includes('dia') || s.includes('morning') || s === 'd';
+                        const tone = isNight
+                          ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
+                          : isDay
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-gray-50 text-gray-700 border-gray-200';
+                        return (
+                          <Badge className={`text-xs ${tone}`}>
+                            {isNight ? '🌙 Noche' : isDay ? '☀️ Día' : member.shift}
+                          </Badge>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

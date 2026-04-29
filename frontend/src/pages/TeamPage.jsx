@@ -637,14 +637,15 @@ export default function TeamPage() {
             <h3 className="font-semibold mb-4">Distribución por Especialidad</h3>
             <div className="space-y-3">
               {specialtyDistribution.map((item) => {
+                // Mismos tonos que Scheduling SPEC_BADGE (versión 500 para barras)
                 const colorMap = {
-                  'MECÁNICO': 'bg-amber-500',
+                  'MECÁNICO': 'bg-green-500',
                   'ELÉCTRICO': 'bg-yellow-500',
-                  'INSTRUMENTISTA': 'bg-blue-500',
-                  'SOLDADOR': 'bg-orange-500',
-                  'LUBRICADOR': 'bg-emerald-500',
+                  'INSTRUMENTISTA': 'bg-purple-500',
+                  'SOLDADOR': 'bg-red-500',
+                  'LUBRICADOR': 'bg-orange-500',
                   'CIVIL': 'bg-stone-500',
-                  'PREDICTIVO': 'bg-purple-500',
+                  'PREDICTIVO': 'bg-blue-500',
                   'HIDRÁULICO': 'bg-cyan-500',
                 };
                 const barColor = colorMap[item.specialty] || 'bg-gray-500';
@@ -774,33 +775,48 @@ export default function TeamPage() {
                         {member.role ? roleLabel(member.role) : t('team.noRole')}
                       </Badge>
                       {member.specialty && (() => {
+                        // Mismos colores que Scheduling (SPEC_BADGE) para coherencia visual.
                         const s = (member.specialty || '').toUpperCase();
                         const tone =
-                          s.includes('MEC') ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                          s.includes('MEC') ? 'bg-green-100 text-green-800 border-green-300' :
                           s.includes('ELEC') ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
-                          s.includes('INST') ? 'bg-blue-100 text-blue-800 border-blue-300' :
-                          s.includes('SOLD') ? 'bg-orange-100 text-orange-800 border-orange-300' :
-                          s.includes('LUBR') ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                          s.includes('INST') ? 'bg-purple-100 text-purple-800 border-purple-300' :
+                          s.includes('SOLD') || s.includes('WELD') ? 'bg-red-100 text-red-800 border-red-300' :
+                          s.includes('HID') || s.includes('HYD') ? 'bg-cyan-100 text-cyan-800 border-cyan-300' :
+                          s.includes('LUBR') ? 'bg-orange-100 text-orange-800 border-orange-300' :
                           s.includes('CIVIL') ? 'bg-stone-100 text-stone-800 border-stone-300' :
-                          s.includes('PRED') ? 'bg-purple-100 text-purple-800 border-purple-300' :
+                          s.includes('PRED') ? 'bg-blue-100 text-blue-800 border-blue-300' :
                           'bg-gray-100 text-gray-800 border-gray-300';
+                        // Label corto canonical (3-4 letras como Scheduling)
+                        const label =
+                          s.includes('MEC') ? 'MEC' :
+                          s.includes('ELEC') ? 'ELEC' :
+                          s.includes('INST') ? 'INST' :
+                          s.includes('SOLD') ? 'SOLD' :
+                          s.includes('WELD') ? 'WELD' :
+                          s.includes('HID') || s.includes('HYD') ? 'HID' :
+                          s.includes('LUBR') ? 'LUBR' :
+                          s.includes('CIVIL') ? 'CIVIL' :
+                          s.includes('PRED') ? 'PRED' :
+                          (s || '?').slice(0, 4);
                         return (
-                          <Badge className={`text-xs ${tone}`}>
-                            🔧 {member.specialty}
+                          <Badge className={`text-xs font-bold ${tone}`} title={member.specialty}>
+                            {label}
                           </Badge>
                         );
                       })()}
                       {member.shift && (() => {
+                        // Mismos tonos que Scheduling: día amber (☀️), noche indigo (🌙)
                         const s = String(member.shift || '').toLowerCase();
                         const isNight = s.includes('night') || s.includes('noche') || s === 'n';
                         const isDay = s.includes('day') || s.includes('día') || s.includes('dia') || s.includes('morning') || s === 'd';
                         const tone = isNight
                           ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
                           : isDay
-                          ? 'bg-amber-50 text-amber-700 border-amber-200'
-                          : 'bg-gray-50 text-gray-700 border-gray-200';
+                          ? 'bg-amber-100 text-amber-800 border-amber-300'
+                          : 'bg-gray-100 text-gray-700 border-gray-300';
                         return (
-                          <Badge className={`text-xs ${tone}`}>
+                          <Badge className={`text-xs font-semibold ${tone}`}>
                             {isNight ? '🌙 Noche' : isDay ? '☀️ Día' : member.shift}
                           </Badge>
                         );

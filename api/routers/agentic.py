@@ -1156,7 +1156,7 @@ def auto_trigger_rca(
 
     cutoff = _dt.now() - _td(days=data.window_days)
     wrs = db.query(WorkRequestModel).filter(
-        WorkRequestModel.plant_id == data.plant_id,
+        WorkRequestModel.ai_classification.like(f"%{data.plant_id}%"),
         WorkRequestModel.created_at >= cutoff,
     ).all()
 

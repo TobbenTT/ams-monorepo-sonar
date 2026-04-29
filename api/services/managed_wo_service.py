@@ -541,14 +541,23 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
     # Jorge 2026-04-28 17:56 — propagar equipos de apoyo del aviso a la OT.
     # Antes se quedaban sólo en el WR y se perdían en planificación/ejecución/reportes.
     wr_support = getattr(wr, "support_equipment", None)
-    if result and wr_support:
+    wr_circ = getattr(wr, "circumstances", None)
+    if result and (wr_support or wr_circ):
         wo_obj = db.query(ManagedWorkOrderModel).filter(
             ManagedWorkOrderModel.wo_id == result["wo_id"]
         ).first()
         if wo_obj:
-            wo_obj.support_equipment = wr_support
+            if wr_support:
+                wo_obj.support_equipment = wr_support
+                result["support_equipment"] = wr_support
+            if wr_circ:
+                # Append circumstances + working conditions del aviso a la descripción de la OT
+                # para que sean visibles en la lista de OTs y detalle (no se pierden en ejecución/reportes).
+                base_desc = wo_obj.description or ""
+                if wr_circ not in base_desc:
+                    wo_obj.description = (base_desc + "\n\n— Circunstancias del aviso —\n" + wr_circ).strip()[:1900]
+                    result["description"] = wo_obj.description
             db.commit()
-            result["support_equipment"] = wr_support
 
     # Update WR status so it can't create duplicate WOs
     if result:

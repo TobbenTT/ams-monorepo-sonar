@@ -446,8 +446,9 @@ def convert_wr_to_pm03(
         db.refresh(wr)
     # 3. Crear OT
     from api.services import managed_wo_service
+    wr_plant = (wr.ai_classification or {}).get("plant_id") if isinstance(wr.ai_classification, dict) else None
     result = managed_wo_service.create_from_work_request(
-        db, request_id, planned_by=getattr(user, "user_id", ""), plant_id=wr.plant_id,
+        db, request_id, planned_by=getattr(user, "user_id", ""), plant_id=wr_plant,
     )
     if not result:
         raise HTTPException(status_code=400, detail="Failed to create PM03 from WR")
@@ -1972,7 +1973,7 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
         notification_type=data.notification_type or "A1",
         reported_by=data.reported_by or None,
         reported_at=now if data.reported_by else None,
-        circumstances=data.circumstances or None,
+        circumstances=("\n".join(filter(None, [data.circumstances, ("Working conditions: " + data.work_conditions) if data.work_conditions else None]))) or None,
         support_equipment=[{"tag": s} for s in data.support_equipment] if data.support_equipment else None,
         documents=data.documents if data.documents else None,
         created_at=now,

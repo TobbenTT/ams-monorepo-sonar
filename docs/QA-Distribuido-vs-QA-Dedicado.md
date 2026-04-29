@@ -1,233 +1,190 @@
-# QA Distribuido vs QA Dedicado
-## Por qué "cada dev con su IA Playwright" nos saca de las licitaciones mineras
+# La deuda silenciosa
+## Por qué cada release sin QA es una factura que ISO va a cobrar
 
 **David Cabezas — Lead Tech VSC · 2026-04**
 
-> Cada `---` marca una nueva slide para conversión a pptx con `pandoc -t pptx` o similar.
+---
+
+## Slide 1 · La pregunta correcta
+
+**No es:**
+> *"¿La IA reemplaza al QA?"*
+
+(Esa pregunta tiene respuesta técnica obvia — la IA acelera, pero no firma)
+
+**Es:**
+> *"¿Cuánto cuesta seguir acumulando releases sin QA antes de que ISO nos pida la trazabilidad?"*
+
+Esta pregunta tiene una respuesta numérica. Y los números no son cómodos.
 
 ---
 
-## Slide 1 · La pregunta de José
+## Slide 2 · El video que pasó José
 
-> *"Si Claude + Playwright ya hace clicks, escribe tests E2E y autocorrige el código solo… ¿para qué necesitamos un QA dedicado? Que cada dev pruebe su propio código con su agente IA y listo."*
+**Confirmado:** Claude Code + Playwright es brutal. Lo probé.
+**Confirmado:** lo metemos al pipeline en sprint 14 y 15.
+**Confirmado:** vamos 10x más rápido en testing técnico.
 
-**La respuesta corta:** porque las normas ISO que nos exigen Goldfields y Codelco lo prohíben.
+**Esto no es lo que está en discusión.**
 
-**La respuesta larga es esta presentación.**
-
----
-
-## Slide 2 · Concedo lo técnico — la IA es brutal
-
-| Capacidad | Hace 1 año | Hoy con Playwright + Claude |
-|---|---|---|
-| Tests E2E de UI | Manual / Selenium frágil | Autónomo, autorregenerativo |
-| Detección de regresión visual | No existía low-budget | Screenshot diff + LLM judge |
-| Cobertura de happy path | 30% manual | 90% automatizado |
-| Velocidad de iteración | Días | Minutos |
-
-**No vamos a discutir esto — es real, es nuestro, ya lo usamos.**
-
-La pregunta no es si la IA puede hacer testing.
-La pregunta es **si "cada dev con su IA" pasa una auditoría minera.**
+Lo que sigue es lo que la demo no muestra:
+**lo que pasa cuando llega el auditor de Goldfields a pedirnos los últimos 12 meses de releases firmados.**
 
 ---
 
-## Slide 3 · El mito a destruir — "Cada dev con su agente IA"
-
-**Lo que parece pasar:**
-- Dev A escribe feature → Dev A escribe Playwright tests → ✓ pasan
-- Dev B escribe feature → Dev B escribe Playwright tests → ✓ pasan
-- Velocidad: 10x. Costos: bajos. Cobertura: alta.
-
-**Lo que realmente pasa:**
-
-1. **Tests aislados por dev** → cada agente tiene su contexto, sus mocks, sus assumptions
-2. **Sin regresión cruzada** → Dev A cambia auth, los tests de Dev B no se vuelven a correr
-3. **Sin mantenimiento centralizado** → 47 suites, 47 estilos, 47 fragilidades
-4. **El sesgo del autor** → cada dev programa su test para validar lo que él entendió, no lo que el cliente pidió
-5. **Falla silenciosa** → cuando un test rompe en CI, el dev autor lo "arregla" relajando el assert
-
-**Resultado a 6 meses:** mucho test, poca cobertura real, ninguna confianza.
-
----
-
-## Slide 4 · El argumento legal — "¿Es obligatorio tener QA?"
-
-**Pregunta a abogado chileno:** ¿Hay ley que obligue a contratar un QA con título?
-**Respuesta:** No.
-
-**Pregunta a Goldfields / Codelco:** ¿Pueden ser nuestros proveedores sin certificación ISO ni SDLC auditable?
-**Respuesta:** **No, descalificación inmediata.**
-
-Las normas ISO no son leyes — son **contratos B2B de confianza**.
-Las mineras te las exigen porque manejan infraestructura crítica.
-Si tu software falla, ellos pierden millones o tienen accidentes.
-
-**Sin certificación ISO 9001 + 27001, VSC no entra en el short-list de proveedores de minera grande. Punto.**
-
----
-
-## Slide 5 · Segregación de Funciones (ISO 27001 A.5.3)
-
-**Texto literal de la norma 2022:**
-
-> "Los deberes y áreas de responsabilidad en conflicto deben estar segregados para reducir las oportunidades de modificación o uso indebido no autorizado o no intencional de los activos de la organización."
-
-**Traducción al SDLC:**
-- Quien escribe el código **no puede ser** quien aprueba su pase a producción
-- Aplica también si la herramienta es una IA: la IA es la herramienta del dev, no una entidad independiente
-- El control se chequea en auditoría con evidencia documentada de quién aprobó qué release
-
-**Caso "cada dev con su IA":**
-- Dev escribe código + Dev configura IA + Dev acepta resultado IA + Dev aprueba merge
-- **= 1 sola entidad de responsabilidad**
-- = NO conformidad mayor en auditoría ISO 27001
-
----
-
-## Slide 6 · Validación Objetiva (ISO 9001 cl. 8.6)
-
-**Cláusula 8.6 — Liberación de productos y servicios:**
-
-> "La organización debe implementar las disposiciones planificadas, en las etapas adecuadas, para verificar que se cumplen los requisitos del producto y del servicio."
-
-**Principio del conflicto de interés:**
-
-> *"No puedes calificar tu propio examen."*
-
-**Por qué importa:**
-- El dev programa pensando en el "Happy Path" (lo que él imaginó)
-- Si él mismo escribe el test, programa al bot para seguir ese mismo camino
-- La validación pierde objetividad — no busca romper, busca demostrar
-- El QA actúa como "abogado del diablo" + representante del usuario final
-
-**El sesgo no es por mala intención — es estructural. Por eso la norma lo prohíbe explícitamente.**
-
----
-
-## Slide 7 · "Todos responsables" = "Nadie responsable"
-
-**Escenario en Vendor Risk Assessment de Goldfields:**
-
-> Auditor: *"Estamos viendo el incidente de producción del 12-marzo. ¿Quién aprobó este pase a producción?"*
->
-> VSC: *"Cada dev probó su parte con su agente IA antes del deploy."*
->
-> Auditor: *"Pregunto quién aprobó la liberación. Necesito un nombre."*
->
-> VSC: *"…el dev que hizo la feature, supongo."*
->
-> Auditor: **No conformidad mayor — falta de SDLC auditable.**
-
-**Las ISO exigen:**
-- Un **owner identificable** del SGC (Sistema de Gestión de Calidad)
-- Un **owner identificable** del SGSI (Sistema de Gestión de Seguridad)
-- Trazabilidad completa: requisito → código → test → liberación → firmante
-
-**Diluir la responsabilidad entre devs y agentes IA = la auditoría falla en 30 segundos.**
-
----
-
-## Slide 8 · Lo que pierdes sin QA dedicado
-
-| Consecuencia | Impacto en VSC |
-|---|---|
-| No conformidad ISO 9001 / 27001 | -65% pipeline (pierdes mining como vertical) |
-| Vendor Risk Assessment fallido | Salida del short-list de Goldfields/Codelco |
-| Sin Test Plan formal firmado | RFPs corporativos rechazados en filtro |
-| Sin segregación de funciones | Imposible certificar ISO 27001 |
-| Sin owner identificable | Riesgo legal directo al CEO (Ley 21.663) |
-| Tests fragmentados sin cross-regression | Bugs en producción = penalizaciones contractuales |
-
-**Estimación financiera:**
-- Costo de NO contratar QA: ahorro de ~$36M CLP/año en sueldo
-- Costo perdido por no entrar a mining: $50M-150M CLP/año por deal × 2-3 deals que NO firmaremos
-- **Ratio: pierdes 4-12x lo que ahorras**
-
----
-
-## Slide 9 · Lo que ganas con QA dedicado
-
-| Función | Quién la hace |
-|---|---|
-| Tests automatizados E2E | IA (Playwright + Claude) — sin cambios |
-| Mantenimiento de suite centralizada | QA Lead — define estándares, owner único |
-| Test Plan formal por release | QA Lead — firma, presenta a auditores |
-| Validación independiente | QA Lead — aprueba o veta releases |
-| Triage de defectos detectados por usuario | QA Lead — prioriza, escala |
-| Aprobación de pase a producción | QA Lead (firmado, con cargo) |
-| Punto de contacto en auditorías | QA Lead — habla el lenguaje ISO |
-
-**No es un equipo de 5 personas. Es 1 persona que firma.**
-
----
-
-## Slide 10 · Modelo propuesto — Híbrido humano + IA
+## Slide 3 · El estado actual de VSC
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  CAPA 1 — AUTOMATIZACIÓN (ya existe)               │
-│  - Playwright + Claude para E2E                     │
-│  - Trivy + Gitleaks + Nuclei en pipeline           │
-│  - Coverage objetivo 85%+ unit + integration       │
-│  - Velocidad: 10x equipo manual                     │
-└─────────────────────────────────────────────────────┘
-                         ↓
-┌─────────────────────────────────────────────────────┐
-│  CAPA 2 — QA LEAD HUMANO (lo que falta)            │
-│  - 1 persona, rol QA Lead                          │
-│  - Diseña Test Plan formal (ISO/IEC 29119-3)       │
-│  - Firma liberaciones (ISO 9001 cl. 8.6)           │
-│  - Independiente del equipo de desarrollo          │
-│  - Costo: $2.5M-3.5M CLP/mes                       │
-└─────────────────────────────────────────────────────┘
-                         ↓
-┌─────────────────────────────────────────────────────┐
-│  CAPA 3 — SEGREGACIÓN NATURAL (proceso)            │
-│  - Dev autor no aprueba su propio merge            │
-│  - QA firma la liberación a producción             │
-│  - Auditor externo anual (muestreo de releases)    │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│  3 proyectos en producción              │
+│  ~150 releases en últimos 12 meses      │
+│  0 con test plan formal firmado         │
+│  0 con aprobación de pase identificada  │
+│  0 con segregación de funciones         │
+└──────────────────────────────────────────┘
 ```
+
+Cada release que se mergeó sin firma humana es una entrada en el log que no podremos auditar.
+
+**No es deuda técnica — es deuda regulatoria.** Crece sola, no se va sola.
 
 ---
 
-## Slide 11 · Resumen ejecutivo para José
+## Slide 4 · Cómo audita ISO 9001 / 27001
 
-**Lo que NO estoy proponiendo:**
-- ✗ Reemplazar la IA con humanos haciendo clicks
-- ✗ Contratar un equipo de 5 testers manuales
-- ✗ Frenar la velocidad de desarrollo
+El auditor **no certifica el futuro**. Certifica **lo que ya está operando**.
 
-**Lo que SÍ estoy proponiendo:**
-- ✓ Mantener al 100% la automatización con IA (es nuestra ventaja)
-- ✓ Sumar **1 QA Lead humano** que firme y dé independencia objetiva
-- ✓ Habilitar certificación ISO y entrada a clientes mining
+Te pide:
+- Ticket del requerimiento → ¿existe?
+- Código del feature → ¿está versionado?
+- Test plan firmado → ¿quién y cuándo?
+- Aprobación de pase a producción → **nombre de la persona**
+- Segregación de funciones → autor ≠ aprobador
 
-**Decisión binaria:**
+**Si no puedes mostrar esto para los últimos 12 meses, el certificado no avanza.**
 
-| Sin QA Lead | Con QA Lead |
-|---|---|
-| Ahorras ~$36M CLP/año | Inviertes ~$36M CLP/año |
-| Quedas fuera de mining | Eligible para Goldfields, Codelco, BHP |
-| Tope de pipeline ~$200M CLP | Pipeline potencial $500M-1.000M CLP |
-| Riesgo legal en CEO (Ley 21.663) | Riesgo distribuido a rol designado |
+---
 
-**Recomendación:** contratar QA Lead en Q3 2026 antes de las próximas licitaciones de Codelco.
+## Slide 5 · Las 3 cosas que pasan si aplicamos hoy
+
+**Opción A — Te bajan el alcance:**
+"Te certifico solo desde 2026". AMS queda fuera del alcance. Inservible para vender a Goldfields.
+
+**Opción B — Remediación retroactiva:**
+3-6 meses reconstruyendo papeleo. Costo: $34M-68M CLP. Auditor decente lo detecta.
+
+**Opción C — Te rechazan:**
+6-12 meses operando "limpio" antes de re-aplicar. Pierdes licitaciones todo ese tiempo.
+
+**Las 3 son evitables si actuamos ahora.**
+
+---
+
+## Slide 6 · La curva de la deuda
+
+```
+Costo CLP
+   ↑
+   │                                              ╱── Remediación
+80M┤                                          ╱
+   │                                      ╱
+60M┤                                  ╱
+   │                              ╱
+40M┤                          ╱
+   │                      ╱
+20M┤  ◄── Decisión   ╱
+   │       hoy   ╱──────────────────── QA Lead contratado ahora
+ 0 ┤_________╱______________________________________→ Tiempo
+   0     3 meses   6 meses     9 meses    12 meses
+```
+
+**Cruce:** mes 4-5. Después de ese punto, salirse cuesta más que tener QA todo el tiempo.
+
+---
+
+## Slide 7 · Lo que también acumulamos del lado seguridad
+
+**Ley 21.663 (Marco de Ciberseguridad, vigente 2024):**
+- Art. 8: obligación de tener responsable de ciberseguridad designado
+- VSC opera con datos confidenciales de mining = **540 días en incumplimiento acumulado**
+- Multas: hasta 20.000 UTM (~$1.300M CLP)
+
+**Ley 21.719 (Datos Personales, entra 2026):**
+- Obligación de DPO si manejas datos sensibles
+- Plazo de adecuación corriendo
+
+**No es prevención. Es exposición legal activa hoy.**
+
+---
+
+## Slide 8 · El argumento legal — "Cada Dev con su IA Playwright"
+
+**ISO 27001 control A.5.3 — Segregación de Funciones:**
+> *"Las tareas y áreas de responsabilidad en conflicto deben estar segregadas para reducir las oportunidades de modificación o uso indebido no autorizado."*
+
+**Si Dev escribe código + configura IA + acepta resultado IA + aprueba merge:**
+= **una sola entidad de responsabilidad**
+= **No conformidad mayor en auditoría ISO 27001**
+
+La IA es la herramienta del dev. No una entidad independiente. **Para el auditor, sigue siendo el creador validándose a sí mismo.**
+
+---
+
+## Slide 9 · Mi propuesta concreta
+
+### **QA Lead — abril 2026**
+- 1 persona, perfil senior
+- Responsabilidades: Test Plan formal, validación independiente, firma de liberación
+- Costo: $2.5M-3.5M CLP/mes
+
+### **Security Lead — mayo 2026**
+- 1 persona, idealmente part-time / contractor
+- Responsabilidades: cumplimiento Ley 21.663, threat modeling, firma DPAs
+- Costo: $1.5M-2.5M CLP/mes part-time
+
+### **Total mensual:** $4M-6M CLP
+### **Vs costo de remediación retroactiva en 12 meses:** $34M-68M CLP
+
+**Ratio 6x-12x: prevenir es más barato que remediar.**
+
+---
+
+## Slide 10 · La decisión que necesito de ti
+
+**Dos preguntas concretas:**
+
+1. **¿Abrimos las búsquedas de QA Lead y Security Lead esta semana?**
+   - Sí → publicación en LinkedIn / Get on Board / Trabajando.com en 7 días
+   - No → asumimos formalmente $5M-10M CLP adicionales de deuda hasta la próxima decisión
+
+2. **¿Quieres que asuma el rol nominal de Security Lead temporalmente** mientras buscamos al externo (90 días máx)?
+   - Sí → carta de designación + adendum salarial → cumplimos Ley 21.663 desde la próxima semana
+   - No → quedamos en exposición legal hasta tener al contractor
+
+---
+
+## Slide 11 · Lo que NO te estoy pidiendo
+
+- ✗ Frenar la integración de Claude + Playwright (al contrario, la aceleramos)
+- ✗ Contratar equipos de QA o seguridad (1 persona en cada rol alcanza)
+- ✗ Empezar la certificación ISO mañana (es proceso de 6-9 meses, hay tiempo)
+- ✗ Bajar la velocidad de desarrollo (los procesos bien diseñados no frenan, formalizan)
+
+**Te estoy pidiendo abrir las dos búsquedas en abril 2026 en lugar de octubre 2026.**
+**Diferencia: $20M-40M CLP en deuda evitada + cumplimiento legal inmediato.**
 
 ---
 
 ## Slide 12 · Cierre
 
-**La pregunta inicial era equivocada.**
+**La automatización con IA no es la pregunta — es nuestra ventaja competitiva.**
 
-No es *"¿reemplaza la IA al QA?"* — es *"¿la IA cumple las normas que las mineras nos exigen?"*
+**La pregunta es esta:**
 
-**La IA hace el trabajo técnico mejor que un humano. Pero no firma, no responde, no aporta independencia, y no pasa una auditoría ISO.**
+¿Vamos a operar 12 meses más sin QA y Security formales, sabiendo que cada release es una factura que ISO eventualmente nos va a cobrar?
 
-Para vender a mineras necesitamos las dos cosas:
-- La velocidad de la IA (la tenemos)
-- La firma del humano (nos falta)
+O preferimos pagar el costo conocido ahora ($4M-6M/mes) y entrar a las licitaciones de mining con el papeleo en regla.
+
+**No hay tercera opción.** O acumulamos deuda, o la prevenimos.
 
 — **David Cabezas**, Lead Tech VSC

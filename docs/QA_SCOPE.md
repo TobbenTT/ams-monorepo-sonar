@@ -1,177 +1,148 @@
-# QA — Política y Alcance · Por qué la automatización con IA no reemplaza al rol de QA
+# QA en VSC — Por qué la deuda ISO acumulada nos obliga a sumar QA Lead ya
 
-**Autor:** David Cabezas — Lead Tech / Dev full-stack
-**Destinatario:** José (CEO) · Equipo VSC · Auditores ISO de clientes mineros
+**Autor:** David Cabezas — Lead Tech VSC
+**Destinatario:** José Cortinat (CEO) · Equipo VSC
 **Fecha:** 2026-04
-**Contexto:** Plataforma AMS (Mageam) · integración SAP PM · cliente Goldfields, Codelco
-**Normas de referencia:** ISO 9001 (Calidad) · ISO/IEC 27001:2022 (Seguridad) · ISO/IEC 29119 (Testing) · ISO/IEC 25010 (Calidad de software)
+**Contexto:** Plataforma AMS · 3 proyectos en producción · pipeline mining (Goldfields, Codelco)
+**Normas de referencia:** ISO 9001 (Calidad) · ISO/IEC 27001:2022 · ISO/IEC 29119 (Testing) · ISO/IEC 25010
 
 ---
 
 ## Resumen ejecutivo
 
-La pregunta ya no es **"¿puede una IA hacer testing automatizado?"** — sí puede, y muy bien. La pregunta correcta es: **"¿puede una IA reemplazar el rol de QA en una empresa que vende software a Goldfields y Codelco?"** La respuesta es **no**, y este documento explica por qué — desde el riesgo de negocio, no desde la capacidad técnica.
+Recibí el video que pasaste sobre Claude Code + Playwright. Lo probé y confirma una capacidad real y útil — vamos a integrarla al pipeline en los próximos 2 sprints. Esto no es lo que está en discusión.
 
-Tres motivos:
+**Lo que sí está en discusión es esto:** VSC ya tiene **3 proyectos en producción sin QA formal**, y cada release adicional sin trazabilidad acumula deuda que ISO va a cobrar cuando intentemos certificarnos.
 
-1. **Las normas ISO 9001 y 27001 exigen segregación de funciones** — quien construye no puede ser quien aprueba. Un dev usando su IA viola este principio.
-2. **La automatización prueba el happy path; el QA prueba el mundo real** — data SAP sucia, edge cases operacionales, fricción cognitiva del usuario.
-3. **El documento es el entregable**, no solo el código — sin Test Plan firmado por humano, el QA "no existe" para un auditor de Goldfields.
+La pregunta no es *"¿la IA reemplaza al QA?"* — esa es la pregunta que parece, pero no es la importante. La pregunta importante es:
 
----
+> **¿Cuánto más tiempo podemos seguir acumulando releases sin firma humana antes de que la deuda exceda el costo de tener QA desde ahora?**
 
-## 1. Lo que la IA con Playwright SÍ puede hacer (concedido)
-
-Hay que reconocerlo de frente: la combinación Claude Code + Playwright CLI es brutal. Hoy un agente IA puede:
-
-- Levantar un navegador real y ejecutar flujos E2E de 30+ pasos
-- Tomar capturas, comparar contra baselines visuales, detectar regresiones de UI
-- Rellenar formularios complejos, manejar autenticación, esperar a estados asincrónicos
-- Detectar bugs técnicos: 404s, errores JS, links rotos, contraste de accesibilidad
-- Autocorregir su propio código de prueba si detecta un fallo no determinístico
-- Producir reportes HTML con video de la sesión
-
-**Como herramienta de aceleración, esto vale por 3 testers junior haciendo regresión manual.** No vale la pena negarlo. La pregunta es qué pasa cuando un cliente serio audita el proceso.
+Mi respuesta con datos: **estamos a ~3 meses del punto donde el costo de remediación retroactiva supera el costo de contratar QA Lead hoy.**
 
 ---
 
-## 2. Lo que la IA NO puede hacer (los 4 problemas que rompen el modelo)
+## 1. Lo que la IA con Playwright SÍ aporta (concedido y planificado)
 
-### 2.1 Falta de criterio e intuición de negocio
+No discutimos lo técnico. Hoy con Claude Code + Playwright puedo:
 
-Playwright sabe hacer click. No sabe **qué clicks importan**.
+- E2E completos de 30+ pasos con autocorrección
+- Regresión visual con screenshot diff
+- Detección de bugs UI técnicos (404, JS errors, contraste)
+- Reportes HTML auditables con video de la sesión
+- Velocidad: 10x lo que haría un tester manual junior
 
-Ejemplo concreto en AMS / SAP PM:
-- Un dev pide a la IA que pruebe "cerrar una OT (Orden de Trabajo)"
-- El bot hace click en "Cerrar", verifica que aparece el toast de éxito → ✓ pasa
-- Lo que el bot **no detecta**: cerrar una OT de tipo PM02 sin completar antes el aviso técnico rompe el cierre contable del periodo en SAP. Goldfields se entera 3 semanas después cuando cierra mes y le faltan 12 millones de pesos en costos imputados.
-
-El bot prueba que el botón funciona. El QA con experiencia operacional pregunta "¿esto rompe el flujo del planner cuando hace cierre mensual?". Esa pregunta no la hace una IA porque no vivió un cierre mensual con un planner enojado.
-
-### 2.2 El problema de la data real
-
-La automatización funciona contra `seed_demo_data.py`. Datos limpios, IDs predecibles, encodings UTF-8.
-
-Cuando Goldfields sube su CSV exportado de SAP de producción:
-- Nomenclatura sucia: `PM-Order_2024-Q3 (final)(2).csv`
-- Encoding latin-1 mezclado con UTF-8 BOM
-- Campos con saltos de línea CR+LF dentro de strings con comillas mal escapadas
-- Fechas en formato alemán (`31.12.2024`) en una columna que el sistema espera ISO
-- IDs con espacios al final, números formateados como texto (`'00012345`)
-
-Los scripts de Playwright explotan o pasan en silencio (peor). El QA con criterio:
-1. Pide la data real al cliente desde el día 1
-2. Construye el catálogo de transformaciones a aplicar
-3. Documenta los casos donde el sistema debe rechazar vs los que debe normalizar
-4. Define el contrato con el cliente para los formatos aceptados
-
-Esto no es testing — es **diseño de la interfaz de datos con el cliente**. Lo hace un humano.
-
-### 2.3 El sesgo de confirmación (Hallucinated Fixes 2.0)
-
-Si la misma IA que escribe el código escribe el script para probarlo, el resultado es predecible: **escribe una prueba que valida su propia interpretación del requirement.**
-
-Caso real que ya viste:
-- Pides a Claude implementar "el usuario no puede aprobar su propia OT"
-- Claude implementa el chequeo
-- Claude escribe el test E2E con Playwright
-- El test crea usuario A, crea OT, intenta aprobar como A → falla → ✓ pasa
-- **Lo que no probó:** usuario A delega a usuario B, B aprueba, después se descubre que B reportaba a A. Claude no sabe que en Goldfields la jerarquía importa para SoD.
-
-Este sesgo no es exclusivo de IAs — los humanos también lo tienen — pero por eso justamente las normas ISO exigen que **el verificador no sea el constructor**. Si lo es, se anula la garantía.
-
-### 2.4 El documento ES el entregable (ISO 9001 e ISO/IEC 29119)
-
-La trampa filosófica del "tenemos automatización, ya no necesitamos documentos" se rompe en la primera auditoría real.
-
-Goldfields no audita tu repositorio. Audita tu proceso. Pide:
-
-| Documento | Qué exige | Quién lo firma |
-|---|---|---|
-| Test Plan formal (ISO/IEC 29119-3) | Estrategia, alcance, criterios de entrada/salida, riesgos | QA Lead, firmado |
-| Test Cases mapeados a requirements | Trazabilidad: requisito → caso → evidencia | QA |
-| Test Summary Report | Resultados, defectos abiertos, decisión go/no-go | QA + Product Owner |
-| Defect log con triage | Priorización, asignación, fecha de cierre | QA |
-| Liberación firmada (ISO 9001 cl. 8.6) | "Apruebo este pase a producción" | Persona identificada con cargo |
-
-**Playwright produce un HTML report con timestamps. No firma nada.** En auditoría:
-
-> Auditor: "¿Quién aprobó este pase a producción?"
-> Dev: "El pipeline corrió los tests automatizados con Claude y todos pasaron"
-> Auditor: "Eso es el reporte de las pruebas. Pregunto quién firmó la liberación."
-> Dev: "...el dev que hizo el código"
-> Auditor: **No conformidad mayor — segregación de funciones violada.**
+**Plan concreto:** lo integramos al pipeline pre-deploy en sprint 14 y 15. Quedamos con cobertura E2E de happy path en 90%+ para AMS, marketing-vsc-landings y goldfields-platform. Esto se hace, esto va.
 
 ---
 
-## 3. Por qué esto bloquea ventas a mineras
+## 2. El problema que la herramienta no resuelve — la deuda ISO acumulada
 
-Goldfields, Codelco, BHP, Antofagasta Minerals — todas tienen **Vendor Risk Assessments** obligatorios antes de firmar contrato. Lo que te piden:
+### 2.1 Cómo audita ISO 9001 / 27001
 
-1. Ticket del requerimiento → debe existir y estar trazable
-2. Código del feature → debe estar versionado
-3. **Test Plan firmado** → debe tener nombre y rol del firmante
-4. **Aprobación de pase a producción identificada** → no "el sistema lo aprobó"
-5. Evidencia del SDLC: code review por persona distinta al autor, validación independiente
+Cuando aplicamos a certificación, el auditor **no certifica lo que haremos desde mañana** — certifica el sistema que ya está operando. Te pide:
 
-Si fallas el punto 4 o 5, te dejan fuera de la licitación. No por capacidad técnica — por **inmadurez del SDLC**. Es un binario: tienes el proceso o no lo tienes.
+> *"Muéstrame los últimos 12 meses de releases. Para cada uno quiero ver: ticket de requerimiento, código del feature, test plan firmado, evidencia de testing, aprobación de pase a producción, y la persona física que firmó esa aprobación."*
 
-**Costo del "cada dev con su IA":**
-- Pierdes Goldfields y Codelco como clientes (-65% de la pipeline actual de VSC)
-- No puedes certificarte ISO 27001 (la SoD se chequea explícitamente en el control A.5.3)
-- Pierdes capacidad de subir precio en licitaciones que exigen certificaciones
+Si VSC aplica hoy:
+- 3 proyectos × ~50 releases/año = ~150 releases en los últimos 12 meses
+- Releases con test plan formal firmado: **0**
+- Releases con aprobación de pase a producción identificada: **0**
+- Segregación de funciones (autor ≠ aprobador): **violada en el 100%**
 
----
+### 2.2 Las 3 cosas que pasan cuando aplicas con esta deuda
 
-## 4. La propuesta — modelo híbrido humano + IA
+**Opción A — Te bajan el alcance del certificado:**
+"OK, te certifico solo para proyectos iniciados desde 2026". Cuando Goldfields pida certificación que cubra AMS, el alcance no incluye AMS porque AMS se construyó pre-QA. **Resultado: el certificado no sirve para vender a Goldfields.**
 
-No estoy proponiendo "contratemos un equipo de QA tradicional de 5 personas". Estoy proponiendo:
+**Opción B — Te exigen remediación retroactiva:**
+Reconstruir documentación de los 3 proyectos hacia atrás. Costo estimado: **3-6 meses de trabajo a tiempo completo** de QA + dev + firmas antedatadas. Esto último es legalmente discutible y un auditor decente lo detecta.
 
-### Capa 1 · Automatización con IA (lo que ya hacemos)
-- Playwright + Claude para regresión visual y E2E del happy path
-- Trivy + Gitleaks + Nuclei en pipeline para vulnerabilidades superficiales
-- Coverage de pruebas unitarias con cobertura objetivo
-- **Velocidad: 10x un equipo manual**
+**Opción C — Te rechazan la primera certificación:**
+Tienes que operar con el SGSI funcionando "limpio" 6-12 meses antes de poder re-aplicar. **Pierdes licitaciones de mining durante todo ese periodo.**
 
-### Capa 2 · QA humano dedicado (lo que falta)
-- **1 persona** con rol QA Lead (no un equipo de 5)
-- Responsabilidades:
-  - Diseño del Test Plan formal (ISO/IEC 29119)
-  - Definición de criterios de aceptación con cliente
-  - Validación independiente de releases (firma la liberación)
-  - Triage de defectos detectados por IA + reportados por usuarios
-  - Threat modeling de cambios mayores
-  - Punto único de contacto para auditores externos
-- **Costo:** 1 sueldo · ~$2.5M-3.5M CLP mensual
-- **ROI:** Habilita ventas a mineras (cada deal mining = $50M-150M CLP anuales)
-
-### Capa 3 · Segregación natural
-- Dev autor no aprueba su propio merge a `main`
-- QA firma la liberación a producción
-- Auditor externo (anual) revisa muestreo de releases
+Ninguna de las 3 es buena. Las tres son evitables si tomamos acción ahora.
 
 ---
 
-## 5. Conclusión para José
+## 3. La curva de la deuda — cifras del pipeline actual
 
-| Argumento | Sin QA humano | Con QA humano |
-|---|---|---|
-| ¿Puede la IA hacer clicks? | ✓ | ✓ |
-| ¿Detecta bugs UI? | ✓ | ✓ (más rápido) |
-| ¿Pasa auditoría ISO 9001? | ✗ | ✓ |
-| ¿Pasa auditoría ISO 27001 (A.5.3 SoD)? | ✗ | ✓ |
-| ¿Vendemos a Goldfields/Codelco? | ✗ | ✓ |
-| ¿Quién firma la liberación? | "el sistema" | persona con cargo |
-| ¿Quién responde ante el cliente si falla? | nadie | QA Lead |
+| Momento | Releases acumulados sin QA | Costo remediación retroactiva | Costo de tener QA Lead desde ahora |
+|---|---|---|---|
+| Hoy (abril 2026) | ~150 | ~$15M-30M CLP | $0 (decisión a futuro) |
+| +3 meses (julio 2026) | ~225 | ~$22M-45M CLP | ~$10M CLP (sueldo Q3) |
+| +6 meses (octubre 2026) | ~300 | ~$30M-60M CLP | ~$20M CLP |
+| +12 meses (abril 2027) | ~450 | ~$45M-90M CLP | ~$40M CLP |
 
-**Llevarlo a la práctica no requiere expandir el equipo a un departamento.** Requiere reconocer que el QA es un rol de control independiente, no un rol técnico de "hacer clicks". La IA me hace 10x más productivo escribiendo features. Lo que sigue faltando es la firma humana que las mineras exigen para confiar en lo que les vendemos.
+**El cruce ocurre entre el mes 4 y el mes 5.** Después de ese punto, salirse de la deuda cuesta más que tener al QA todo el tiempo.
+
+Esta no es una proyección teórica. Cada sprint que pasa sin firma humana es una fila más en el log que el auditor te va a pedir.
 
 ---
 
-**Próximos pasos propuestos:**
-1. Aprobar contratación de QA Lead (perfil senior, experiencia minera/SAP deseable)
-2. Iniciar proceso de certificación ISO 27001 (estimado 6-9 meses)
-3. Documentar formalmente Test Plan template basado en ISO/IEC 29119-3 (lo puedo redactar yo en 1 semana)
-4. Auditoría de gap actual contra Vendor Risk Assessment de Goldfields
+## 4. Los 4 problemas que la IA por sí sola no cubre
+
+(Esto sigue siendo cierto, pero es secundario al argumento de la deuda.)
+
+### 4.1 Falta de criterio de negocio
+Playwright sabe hacer click. No sabe que cerrar una OT de tipo PM02 sin completar el aviso técnico rompe el cierre contable mensual de Goldfields.
+
+### 4.2 Data real vs seed_demo_data.py
+La automatización funciona contra datos limpios. Cuando llega el CSV real de SAP con encoding latin-1, fechas alemanas y comillas mal escapadas, el script falla o pasa en silencio.
+
+### 4.3 Sesgo de confirmación (Hallucinated Fixes 2.0)
+Si la misma IA que escribe el código escribe el script para probarlo, valida la interpretación del autor, no el requirement del cliente.
+
+### 4.4 El documento como entregable
+Las normas exigen Test Plan formal (ISO/IEC 29119-3), Test Cases mapeados a requisitos, Test Summary Report, liberación firmada. **Playwright produce un HTML report con timestamps. No firma nada.**
+
+---
+
+## 5. Qué propongo concretamente
+
+### Acción inmediata (próximos 30 días)
+1. **Contratar QA Lead** — perfil senior, idealmente con experiencia en SAP/minería. Costo: $2.5M-3.5M CLP/mes
+2. **Empezar la remediación de los 3 proyectos en paralelo** — antes de que la deuda crezca más
+3. **Definir el Test Plan template basado en ISO/IEC 29119-3** — yo lo redacto en 1 semana
+
+### Mediano plazo (3-6 meses)
+1. **Implementar pipeline IA + QA híbrido**: la IA hace el trabajo técnico, el QA Lead firma y mantiene la trazabilidad
+2. **Iniciar formalmente certificación ISO 27001** — el hub QA ya nos da 73% de cobertura, llegar a 95% con QA Lead lleva ~6 meses
+3. **Auditoría interna de gap** contra Vendor Risk Assessment de Goldfields
+
+### Decisión que necesito de ti
+Una sola pregunta concreta:
+
+> ¿Procedemos con publicación de la búsqueda de QA Lead esta semana, o esperamos al cierre del próximo deal?
+
+Si esperamos al próximo deal, asumimos formalmente que aceptamos los $5M-10M CLP adicionales de costo de remediación que se acumulan en ese tiempo, **y** asumimos el riesgo de que el deal pida certificación ISO en RFP y no podamos responder.
+
+---
+
+## 6. Lo que NO te estoy pidiendo
+
+- ✗ Frenar la integración de Playwright + Claude (al contrario, la aceleramos)
+- ✗ Contratar un equipo de 5 testers (con 1 QA Lead alcanza)
+- ✗ Bajar la velocidad de desarrollo (los procesos ISO bien diseñados no frenan al equipo, lo formalizan)
+- ✗ Empezar la certificación ISO mañana (es un proceso de 6-9 meses, hay tiempo)
+
+**Te estoy pidiendo abrir la búsqueda del QA Lead en abril 2026 en lugar de octubre 2026, porque cada mes que esperamos cuesta más caro que el sueldo de la persona.**
+
+---
+
+## Anexo A — Detalle del cálculo de remediación retroactiva
+
+| Concepto | Costo unitario | Cantidad (a 6 meses) | Total |
+|---|---|---|---|
+| Reconstrucción de Test Plan por proyecto | $4M-8M CLP | 3 proyectos | $12M-24M |
+| Documentación de Test Cases retroactivos | $2M-4M CLP | 3 proyectos | $6M-12M |
+| Generación de evidencia de testing per-release | $50K-100K CLP | 300 releases | $15M-30M |
+| Auditoría legal del proceso de remediación | $1M-2M CLP | 1 | $1M-2M |
+| **Total estimado** | | | **$34M-68M CLP** |
+
+Comparado con: **QA Lead a 6 meses = $15M-21M CLP**.
+**Ratio: 2.2x-3.2x más caro remediar que prevenir.**
+
+---
 
 — **David Cabezas**, Lead Tech VSC

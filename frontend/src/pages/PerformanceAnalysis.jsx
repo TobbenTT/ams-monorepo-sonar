@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, ComposedChart, ScatterChart, Scatter, ZAxis, ReferenceLine } from 'recharts';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
@@ -295,10 +295,15 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
     return events.sort((a, b) => b.new_wr_date - a.new_wr_date).slice(0, 15);
   }, [wos, wrs]);
 
-  // ── Pareto de modos de falla (Jorge 2026-04-28 17:56) ──
-  // 80/20: qué pocos modos generan la mayoría de las fallas
+  // ── Pareto de modos de falla (Jorge 2026-04-29 13:44 + 04-28 17:56) ──
+  // 80/20: qué pocos modos generan la mayoría de las fallas. Variantes:
+  //   - byCount: frecuencia (cantidad de avisos)
+  //   - byHours: tiempo total (HH actual de OTs cerradas asociadas) — Jorge insistió
+  //     "el dato puede ser frecuencia o tiempo de detención"
+  // Cruce con avisos: ¿los avisos que generamos están en los sistemas del 80%?
   const failureModePareto = useMemo(() => {
     const counts = {};
+    const hours = {};
     wrs.forEach(wr => {
       const mode = (wr.ai_classification?.failure_type
                   || wr.ai_classification?.failure_class
@@ -307,16 +312,27 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                   || '').trim();
       if (!mode) return;
       counts[mode] = (counts[mode] || 0) + 1;
+      // Acumular HH de OTs derivadas (cuando WR ya tiene wo_id linkeada)
+      const linkedWO = wos.find(w => w.work_request_id === wr.request_id);
+      if (linkedWO) {
+        hours[mode] = (hours[mode] || 0) + (parseFloat(linkedWO.actual_hours || linkedWO.estimated_hours) || 0);
+      }
     });
-    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    const total = sorted.reduce((s, [, c]) => s + c, 0) || 1;
-    let cumPct = 0;
-    return sorted.slice(0, 10).map(([mode, count]) => {
-      const pct = Math.round(count / total * 100);
-      cumPct += pct;
-      return { mode, count, pct, cumPct: Math.min(100, cumPct), inTop20: cumPct <= 80 };
-    });
-  }, [wrs]);
+    const buildPareto = (data) => {
+      const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
+      const total = sorted.reduce((s, [, v]) => s + v, 0) || 1;
+      let cumPct = 0;
+      return sorted.slice(0, 10).map(([mode, value]) => {
+        const pct = Math.round(value / total * 1000) / 10; // 1 decimal
+        cumPct = Math.min(100, cumPct + pct);
+        return { mode, value: Math.round(value * 10) / 10, pct, cumPct: Math.round(cumPct * 10) / 10, inTop80: cumPct <= 80 };
+      });
+    };
+    return {
+      byCount: buildPareto(counts).map(p => ({ ...p, count: p.value })),
+      byHours: buildPareto(hours).map(p => ({ ...p, hours: p.value })),
+    };
+  }, [wrs, wos]);
 
   // ── Fallas crónicas (Jorge 2026-04-28 17:56) ──
   // "Si tienes 5 cambios de la misma pieza en una semana, eso puede ser un indicio
@@ -710,9 +726,15 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
     };
   }, [wos, criticalityMap]);
 
-  // ── Jack-Knife Diagram (Jorge 2026-04-28 17:56) ──
-  // 4 cuadrantes: agudo (alta MTTR baja frecuencia) / crónico (alta frecuencia baja MTTR)
-  // / agudo+crónico / OK. Calcular por equipo del último mes.
+  // ── Jack-Knife Diagram (Jorge transcript 2026-04-29 13:44) ──
+  // 4 cuadrantes con thresholds según fórmula explicada por Jorge:
+  //   eje Y (MTTR) threshold = SUM(tiempos_paradas) / total_paradas
+  //   eje X (frecuencia) threshold = SUM(num_paradas) / total_razones (n_sistemas/equipos)
+  // Cuadrantes:
+  //   GRAVE: pocas paradas pero alto MTTR (mantenibilidad deficiente)
+  //   CRONICO: muchas paradas con bajo MTTR (confiabilidad baja)
+  //   GRAVE_CRONICO: muchas + altas (atacar disponibilidad)
+  //   LEVE: bajas en ambos (no priorizar)
   const jackKnifeData = useMemo(() => {
     const byEq = {};
     wos.filter(w => w.status === 'CERRADO' && w.equipment_tag).forEach(w => {
@@ -725,26 +747,35 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       equipment: tag,
       criticality: criticalityMap[tag] || 'D',
       frequency: m.count,
-      avg_repair_hours: m.count > 0 ? Math.round(m.total_hours / m.count * 10) / 10 : 0,
+      total_hours: Math.round(m.total_hours * 10) / 10,
+      mttr: m.count > 0 ? Math.round(m.total_hours / m.count * 10) / 10 : 0,
     }));
-    // Medianas para los thresholds
-    const freqs = points.map(p => p.frequency).sort((a, b) => a - b);
-    const hours = points.map(p => p.avg_repair_hours).sort((a, b) => a - b);
-    const medFreq = freqs.length > 0 ? freqs[Math.floor(freqs.length / 2)] : 1;
-    const medHours = hours.length > 0 ? hours[Math.floor(hours.length / 2)] : 4;
-    return points.map(p => {
-      const isHighFreq = p.frequency > medFreq;
-      const isHighHours = p.avg_repair_hours > medHours;
-      let quadrant = 'OK';
-      if (isHighFreq && isHighHours) quadrant = 'AGUDO_CRONICO';
+    // Jorge fórmula: thresholds = sum/total, no medianas
+    const totalParadas = points.reduce((s, p) => s + p.frequency, 0);
+    const totalTiempo = points.reduce((s, p) => s + p.total_hours, 0);
+    const nRazones = Math.max(1, points.length);
+    const thresholdMttr = totalParadas > 0 ? Math.round(totalTiempo / totalParadas * 10) / 10 : 0;
+    const thresholdFreq = Math.round(totalParadas / nRazones * 10) / 10;
+    const itemsClassified = points.map(p => {
+      const isHighFreq = p.frequency > thresholdFreq;
+      const isHighMttr = p.mttr > thresholdMttr;
+      let quadrant = 'LEVE';
+      if (isHighFreq && isHighMttr) quadrant = 'GRAVE_CRONICO';
+      else if (isHighMttr) quadrant = 'GRAVE';
       else if (isHighFreq) quadrant = 'CRONICO';
-      else if (isHighHours) quadrant = 'AGUDO';
       return { ...p, quadrant };
-    }).sort((a, b) => {
-      // priority: AGUDO_CRONICO > AGUDO > CRONICO > OK
-      const order = { AGUDO_CRONICO: 4, AGUDO: 3, CRONICO: 2, OK: 1 };
-      return (order[b.quadrant] - order[a.quadrant]) || (b.frequency - a.frequency);
-    }).slice(0, 12);
+    });
+    return {
+      items: itemsClassified.sort((a, b) => {
+        const order = { GRAVE_CRONICO: 4, GRAVE: 3, CRONICO: 2, LEVE: 1 };
+        return (order[b.quadrant] - order[a.quadrant]) || (b.frequency - a.frequency);
+      }).slice(0, 25),
+      thresholdMttr,
+      thresholdFreq,
+      totalParadas,
+      totalTiempo,
+      nRazones,
+    };
   }, [wos, criticalityMap]);
 
   // ── Comparativa OTs similares (Jorge 2026-04-28 17:56) ──
@@ -1048,7 +1079,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                   period_label: 'Últimos 30 días',
                   badActors: recurringFailures,
                   retrabajos: reworkEvents,
-                  pareto: failureModePareto,
+                  pareto: failureModePareto?.byCount || [],
                   equipKpis: equipmentResultsKpis,
                   chronic: chronicFailures,
                   priorityIssues: priorityMismatches,
@@ -1409,40 +1440,9 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         </p>
       </div>
 
-      {/* ── Pareto de modos de falla (Jorge 2026-04-28 17:56) ── */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-            📊 Pareto de modos de falla (80/20)
-          </h3>
-          <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700">
-            {failureModePareto.filter(f => f.inTop20).length} modos = 80% fallas
-          </span>
-        </div>
-        {failureModePareto.length === 0 ? (
-          <p className="text-sm text-gray-400 italic text-center py-4">
-            Sin data de modos de falla suficiente.
-          </p>
-        ) : (
-          <div className="space-y-1.5">
-            {failureModePareto.map((fm, i) => (
-              <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${fm.inTop20 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
-                <span className="font-mono text-[10px] w-6 text-gray-500">#{i + 1}</span>
-                <span className="flex-1 text-xs font-medium text-gray-800 truncate" title={fm.mode}>{fm.mode}</span>
-                <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
-                  <div className={`h-2 ${fm.inTop20 ? 'bg-red-500' : 'bg-gray-400'}`} style={{ width: `${fm.pct}%` }} />
-                </div>
-                <span className="text-xs font-bold tabular-nums w-12 text-right">{fm.count}</span>
-                <span className="text-[10px] text-gray-500 tabular-nums w-12 text-right">{fm.pct}%</span>
-                <span className="text-[10px] font-bold text-gray-700 tabular-nums w-12 text-right">{fm.cumPct}%</span>
-              </div>
-            ))}
-          </div>
-        )}
-        <p className="text-[10px] text-gray-500 italic mt-2">
-          Jorge 2026-04-28 17:56: el 20% de los modos genera el 80% de las fallas. Foco del ingeniero de confiabilidad debe estar en los modos en rojo. Cumulative% acumula al 80% en los top.
-        </p>
-      </div>
+      {/* ── Pareto de modos de falla (Jorge 2026-04-29 13:44) ── */}
+      <ParetoSection data={failureModePareto} />
+
 
       {/* ── KPIs de Resultados por equipo (Jorge 2026-04-28 17:56) ── */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -1825,67 +1825,9 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         </p>
       </div>
 
-      {/* ── Jack-Knife Diagram ── */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-            🔪 Jack-Knife Diagram (4 cuadrantes)
-          </h3>
-          <span className="text-xs font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
-            {jackKnifeData.length} equipos
-          </span>
-        </div>
-        {jackKnifeData.length === 0 ? (
-          <p className="text-sm text-gray-400 italic text-center py-4">
-            Sin OTs cerradas suficientes para clasificar.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-purple-50">
-                <tr>
-                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Crit.</th>
-                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
-                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Frecuencia</th>
-                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">HH/repar.</th>
-                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Cuadrante</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jackKnifeData.map(p => {
-                  const qTone = p.quadrant === 'AGUDO_CRONICO' ? 'bg-red-600 text-white' :
-                                 p.quadrant === 'AGUDO' ? 'bg-orange-500 text-white' :
-                                 p.quadrant === 'CRONICO' ? 'bg-amber-400 text-amber-900' :
-                                 'bg-emerald-100 text-emerald-700';
-                  const qLabel = p.quadrant === 'AGUDO_CRONICO' ? '🚨 Agudo+Crónico' :
-                                  p.quadrant === 'AGUDO' ? '⚠ Agudo' :
-                                  p.quadrant === 'CRONICO' ? '🔁 Crónico' : '✓ OK';
-                  const critTone = p.criticality === 'A' ? 'bg-red-600 text-white' :
-                                    p.criticality === 'B' ? 'bg-orange-500 text-white' :
-                                    p.criticality === 'C' ? 'bg-amber-300 text-amber-900' :
-                                    'bg-gray-200 text-gray-700';
-                  return (
-                    <tr key={p.equipment} className="border-t border-gray-100 hover:bg-purple-50/30">
-                      <td className="px-2 py-2 text-center">
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${critTone}`}>{p.criticality}</span>
-                      </td>
-                      <td className="px-2 py-2 font-mono text-blue-700">{p.equipment}</td>
-                      <td className="px-2 py-2 text-center font-bold">{p.frequency}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{p.avg_repair_hours}h</td>
-                      <td className="px-2 py-2 text-center">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${qTone}`}>{qLabel}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <p className="text-[10px] text-gray-500 italic mt-2">
-          Jorge 2026-04-28 17:56: <strong>Agudo</strong>= pocas fallas pero largas (catastróficas, 2-3 días). <strong>Crónico</strong>= muchas fallas cortas (horas). <strong>Agudo+Crónico</strong>= prioridad #1 para RCA.
-        </p>
-      </div>
+      {/* ── Jack-Knife Diagram (Jorge transcript 2026-04-29 13:44) ── */}
+      <JackKnifeSection data={jackKnifeData} />
+
 
       {/* ── Comparativa OTs similares (sólo críticos A/B) ── */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -2473,6 +2415,267 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+// Jorge transcript 2026-04-29 13:44 — Jack-Knife scatter chart
+// ──────────────────────────────────────────────────────────────────────────
+function JackKnifeSection({ data }) {
+  const [logScale, setLogScale] = useState(false);
+  const items = data?.items || [];
+  const tFreq = data?.thresholdFreq || 0;
+  const tMttr = data?.thresholdMttr || 0;
+  // Recharts ScatterChart data
+  const scatterByQuadrant = {
+    LEVE: items.filter(p => p.quadrant === 'LEVE'),
+    CRONICO: items.filter(p => p.quadrant === 'CRONICO'),
+    GRAVE: items.filter(p => p.quadrant === 'GRAVE'),
+    GRAVE_CRONICO: items.filter(p => p.quadrant === 'GRAVE_CRONICO'),
+  };
+  const fmtPoint = (arr) => arr.map(p => ({ x: p.frequency, y: p.mttr, equipment: p.equipment, criticality: p.criticality }));
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+          🔪 Jack-Knife Diagram (4 cuadrantes)
+        </h3>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setLogScale(!logScale)}
+            className={`text-xs px-3 py-1 rounded border font-semibold ${logScale ? 'bg-purple-600 text-white border-purple-700' : 'bg-white text-gray-700 border-gray-300'}`}>
+            Escala log {logScale ? 'ON' : 'OFF'}
+          </button>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+            {items.length} equipos
+          </span>
+        </div>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-sm text-gray-400 italic text-center py-4">
+          Sin OTs cerradas suficientes para clasificar.
+        </p>
+      ) : (
+        <>
+          {/* Thresholds banner */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 text-xs">
+            <div className="bg-purple-50 rounded p-2 text-center border border-purple-200">
+              <div className="text-[10px] uppercase font-bold text-purple-700">Threshold MTTR (eje Y)</div>
+              <div className="text-base font-bold tabular-nums">{tMttr}h</div>
+              <div className="text-[9px] text-gray-500">Σtiempo / Σparadas</div>
+            </div>
+            <div className="bg-purple-50 rounded p-2 text-center border border-purple-200">
+              <div className="text-[10px] uppercase font-bold text-purple-700">Threshold Frec (eje X)</div>
+              <div className="text-base font-bold tabular-nums">{tFreq}</div>
+              <div className="text-[9px] text-gray-500">Σparadas / n_equipos</div>
+            </div>
+            <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+              <div className="text-[10px] uppercase font-bold text-gray-700">Total paradas</div>
+              <div className="text-base font-bold tabular-nums">{data.totalParadas}</div>
+            </div>
+            <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+              <div className="text-[10px] uppercase font-bold text-gray-700">Total tiempo</div>
+              <div className="text-base font-bold tabular-nums">{Math.round(data.totalTiempo)}h</div>
+            </div>
+          </div>
+          {/* Scatter chart */}
+          <ResponsiveContainer width="100%" height={320}>
+            <ScatterChart margin={{ top: 20, right: 40, bottom: 60, left: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" dataKey="x" name="Frecuencia" scale={logScale ? 'log' : 'linear'} domain={['auto', 'auto']}
+                tick={{ fontSize: 10 }}
+                label={{ value: 'N° paradas (frecuencia)', position: 'insideBottom', offset: -8, fontSize: 11 }} />
+              <YAxis type="number" dataKey="y" name="MTTR (h)" scale={logScale ? 'log' : 'linear'} domain={['auto', 'auto']}
+                tick={{ fontSize: 10 }}
+                label={{ value: 'MTTR (h)', angle: -90, position: 'insideLeft', fontSize: 11 }} />
+              <ZAxis range={[80, 80]} />
+              <Tooltip cursor={{ strokeDasharray: '3 3' }}
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const p = payload[0].payload;
+                  return (
+                    <div className="bg-white border border-gray-300 rounded p-2 text-xs shadow">
+                      <div className="font-mono font-bold">{p.equipment}</div>
+                      <div>Criticidad: {p.criticality}</div>
+                      <div>Frec: {p.x}</div>
+                      <div>MTTR: {p.y}h</div>
+                    </div>
+                  );
+                }} />
+              <ReferenceLine x={tFreq} stroke="#6b21a8" strokeDasharray="4 4" />
+              <ReferenceLine y={tMttr} stroke="#6b21a8" strokeDasharray="4 4" />
+              <Scatter name="LEVE" data={fmtPoint(scatterByQuadrant.LEVE)} fill="#10b981" />
+              <Scatter name="CRÓNICO" data={fmtPoint(scatterByQuadrant.CRONICO)} fill="#f59e0b" />
+              <Scatter name="GRAVE" data={fmtPoint(scatterByQuadrant.GRAVE)} fill="#f97316" />
+              <Scatter name="GRAVE+CRÓNICO" data={fmtPoint(scatterByQuadrant.GRAVE_CRONICO)} fill="#dc2626" />
+            </ScatterChart>
+          </ResponsiveContainer>
+          {/* Quadrant legend */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-[10px]">
+            <div className="bg-emerald-50 rounded p-2 border border-emerald-200">
+              <div className="font-bold text-emerald-800">✓ LEVE (no priorizar)</div>
+              <div className="text-emerald-700">Pocas paradas + MTTR bajo</div>
+              <div className="font-bold mt-1">{scatterByQuadrant.LEVE.length} equipos</div>
+            </div>
+            <div className="bg-amber-50 rounded p-2 border border-amber-200">
+              <div className="font-bold text-amber-800">🔁 CRÓNICO</div>
+              <div className="text-amber-700">Muchas paradas + MTTR bajo · confiabilidad baja</div>
+              <div className="font-bold mt-1">{scatterByQuadrant.CRONICO.length} equipos</div>
+            </div>
+            <div className="bg-orange-50 rounded p-2 border border-orange-200">
+              <div className="font-bold text-orange-800">⚠ GRAVE</div>
+              <div className="text-orange-700">Pocas paradas + MTTR alto · mantenibilidad deficiente</div>
+              <div className="font-bold mt-1">{scatterByQuadrant.GRAVE.length} equipos</div>
+            </div>
+            <div className="bg-red-50 rounded p-2 border border-red-300">
+              <div className="font-bold text-red-800">🚨 GRAVE+CRÓNICO</div>
+              <div className="text-red-700">Disponibilidad afectada · prioridad #1</div>
+              <div className="font-bold mt-1">{scatterByQuadrant.GRAVE_CRONICO.length} equipos</div>
+            </div>
+          </div>
+          {/* Tabla equipo más críticos */}
+          <div className="overflow-x-auto mt-3">
+            <table className="w-full text-xs">
+              <thead className="bg-purple-50">
+                <tr>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Crit.</th>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-700">Equipo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Frec</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Σ Tiempo</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">MTTR</th>
+                  <th className="text-center px-2 py-1.5 font-bold text-gray-700">Cuadrante</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.slice(0, 12).map(p => {
+                  const qTone = p.quadrant === 'GRAVE_CRONICO' ? 'bg-red-600 text-white' :
+                                 p.quadrant === 'GRAVE' ? 'bg-orange-500 text-white' :
+                                 p.quadrant === 'CRONICO' ? 'bg-amber-400 text-amber-900' :
+                                 'bg-emerald-100 text-emerald-700';
+                  const qLabel = p.quadrant === 'GRAVE_CRONICO' ? '🚨 Grave+Crónico' :
+                                  p.quadrant === 'GRAVE' ? '⚠ Grave' :
+                                  p.quadrant === 'CRONICO' ? '🔁 Crónico' : '✓ Leve';
+                  const critTone = p.criticality === 'A' ? 'bg-red-600 text-white' :
+                                    p.criticality === 'B' ? 'bg-orange-500 text-white' :
+                                    p.criticality === 'C' ? 'bg-amber-300 text-amber-900' :
+                                    'bg-gray-200 text-gray-700';
+                  return (
+                    <tr key={p.equipment} className="border-t border-gray-100 hover:bg-purple-50/30">
+                      <td className="px-2 py-2 text-center">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${critTone}`}>{p.criticality}</span>
+                      </td>
+                      <td className="px-2 py-2 font-mono text-blue-700">{p.equipment}</td>
+                      <td className="px-2 py-2 text-center font-bold">{p.frequency}</td>
+                      <td className="px-2 py-2 text-center tabular-nums">{p.total_hours}h</td>
+                      <td className="px-2 py-2 text-center tabular-nums">{p.mttr}h</td>
+                      <td className="px-2 py-2 text-center">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${qTone}`}>{qLabel}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+      <p className="text-[10px] text-gray-500 italic mt-3">
+        Jorge transcript 2026-04-29 13:44: thresholds calculados según fórmula textual ·
+        <strong> MTTR threshold</strong> = Σtiempo_paradas / Σparadas ·
+        <strong> Frec threshold</strong> = Σparadas / n_razones ·
+        <strong> Escala log</strong> = transforma curvas de no-disponibilidad en líneas rectas (útil para ver clusters densos).
+      </p>
+    </div>
+  );
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+// SF-582 / Jorge transcript 2026-04-29 13:44 — Pareto con gráfico dual-axis
+// ──────────────────────────────────────────────────────────────────────────
+function ParetoSection({ data }) {
+  const [mode, setMode] = useState('byCount'); // 'byCount' | 'byHours'
+  const items = data?.[mode] || [];
+  const top80Count = items.filter(f => f.inTop80).length;
+  const valueLabel = mode === 'byHours' ? 'Horas detención' : 'Frecuencia';
+  const valueKey = mode === 'byHours' ? 'hours' : 'count';
+  // Adaptar para recharts ComposedChart
+  const chartData = items.map(it => ({
+    name: it.mode.length > 18 ? it.mode.slice(0, 18) + '…' : it.mode,
+    fullName: it.mode,
+    [valueKey]: it.value,
+    cumPct: it.cumPct,
+    inTop80: it.inTop80,
+  }));
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+          📊 Pareto modos de falla (80/20) · {mode === 'byHours' ? 'por tiempo' : 'por frecuencia'}
+        </h3>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border border-border overflow-hidden">
+            <button onClick={() => setMode('byCount')}
+              className={`px-3 py-1 text-xs font-semibold ${mode === 'byCount' ? 'bg-amber-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+              N° fallas
+            </button>
+            <button onClick={() => setMode('byHours')}
+              className={`px-3 py-1 text-xs font-semibold ${mode === 'byHours' ? 'bg-amber-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+              Horas detención
+            </button>
+          </div>
+          <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+            {top80Count} modos = 80%
+          </span>
+        </div>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-sm text-gray-400 italic text-center py-4">
+          {mode === 'byHours' ? 'Sin OTs cerradas con HH para calcular tiempo.' : 'Sin data de modos de falla suficiente.'}
+        </p>
+      ) : (
+        <>
+          {/* Gráfico dual-axis: barras (frecuencia/horas) + línea (% acumulado) */}
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} tick={{ fontSize: 10 }} height={60} />
+              <YAxis yAxisId="left" tick={{ fontSize: 10 }} label={{ value: valueLabel, angle: -90, position: 'insideLeft', fontSize: 10 }} />
+              <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 10 }} label={{ value: '% acumulado', angle: 90, position: 'insideRight', fontSize: 10 }} />
+              <Tooltip
+                formatter={(value, name, p) => {
+                  if (name === '% acum') return `${value}%`;
+                  return mode === 'byHours' ? `${value}h` : value;
+                }}
+                labelFormatter={(label, p) => p?.[0]?.payload?.fullName || label}
+              />
+              <Bar yAxisId="left" dataKey={valueKey} name={valueLabel}>
+                {chartData.map((entry, idx) => (
+                  <Cell key={idx} fill={entry.inTop80 ? '#dc2626' : '#9ca3af'} />
+                ))}
+              </Bar>
+              <Line yAxisId="right" type="monotone" dataKey="cumPct" name="% acum" stroke="#1d4ed8" strokeWidth={2} dot={{ r: 3 }} />
+              <ReferenceLine yAxisId="right" y={80} stroke="#dc2626" strokeDasharray="4 4" label={{ value: '80%', position: 'right', fontSize: 10, fill: '#dc2626' }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+          {/* Tabla detallada debajo del gráfico */}
+          <div className="space-y-1 mt-3">
+            {items.map((fm, i) => (
+              <div key={i} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs ${fm.inTop80 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+                <span className="font-mono text-[10px] w-6 text-gray-500">#{i + 1}</span>
+                <span className="flex-1 font-medium text-gray-800 truncate" title={fm.mode}>{fm.mode}</span>
+                <span className="font-bold tabular-nums w-16 text-right">{fm.value}{mode === 'byHours' ? 'h' : ''}</span>
+                <span className="text-[10px] text-gray-500 tabular-nums w-12 text-right">{fm.pct}%</span>
+                <span className="text-[10px] font-bold text-gray-700 tabular-nums w-12 text-right">{fm.cumPct}%</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      <p className="text-[10px] text-gray-500 italic mt-3">
+        Jorge transcript 2026-04-29 13:44: "El dato puede ser frecuencia o tiempo de detención. El 80% de las fallas concentradas en pocos sistemas — donde hay que enfocar al ingeniero de confiabilidad". Barras rojas = modos en el top 80%, línea azul = % acumulado, referencia 80%.
+      </p>
     </div>
   );
 }

@@ -360,7 +360,7 @@ ${sect('Retrabajos / Reprocesos detectados',
   ['Equipo', 'OT cerrada', 'Aviso nuevo', 'Δ horas', 'Pri.', 'Descripción'])}
 
 ${sect('Pareto modos de falla (80/20)',
-  (pareto || []).slice(0, 10).map(p => [p.mode, p.count, p.pct + '%', p.cumPct + '%', p.inTop20 ? '✓ TOP' : '']),
+  (pareto || []).slice(0, 10).map(p => [p.mode, p.count ?? p.value, p.pct + '%', p.cumPct + '%', (p.inTop80 ?? p.inTop20) ? '✓ TOP' : '']),
   ['Modo', 'N°', '%', 'Cum %', 'Top 80'])}
 
 ${sect('KPIs Resultados (Disp · MTBF · MTTR)',

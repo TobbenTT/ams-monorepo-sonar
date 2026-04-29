@@ -105,6 +105,7 @@ const FailuresEvents = lazyRetry(() => import('./pages/FailuresEvents'));
 const ImprovementActionsPage = lazyRetry(() => import('./pages/ImprovementActionsPage'));
 const AnalyticsPage = lazyRetry(() => import('./pages/AnalyticsPage'));
 const ReportsPage = lazyRetry(() => import('./pages/ReportsPage'));
+const PerformanceAnalysis = lazyRetry(() => import('./pages/PerformanceAnalysis'));
 const TeamPage = lazyRetry(() => import('./pages/TeamPage'));
 const SettingsPage = lazyRetry(() => import('./pages/SettingsPage'));
 const ContractorsPage = lazyRetry(() => import('./pages/ContractorsPage'));
@@ -202,6 +203,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="improvement-actions" element={<S><ImprovementActionsPage /></S>} />
                                     <Route path="analytics" element={<P roles={MGMT}><S><AnalyticsPage /></S></P>} />
                                     <Route path="reports" element={<S><ReportsPage /></S>} />
+                                    <Route path="performance-analysis" element={<S><PerformanceAnalysis /></S>} />
                                     <Route path="team" element={<P roles={['admin', 'manager', 'planner']}><S><TeamPage /></S></P>} />
                                     <Route path="settings" element={<S><SettingsPage /></S>} />
                                     {/* Route feedback-admin removida 2026-04-23 */}

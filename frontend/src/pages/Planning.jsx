@@ -2244,32 +2244,32 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 <div className="hidden">
                                 </div>
                                 <div className="flex items-center gap-3 flex-wrap">
-                                  {/* Jorge (2026-04-20): especialidad = puesto de trabajo de mantenedor
-                                      (WORK_CENTERS filtrados por planning_group, códigos P/M). */}
+                                  {/* Jorge 2026-04-30: solo Puesto de Trabajo (código SAP).
+                                      La descripción/disciplina se deriva del WC en el otro extremo
+                                      (lista de operaciones, header card). Antes había 2 selects
+                                      redundantes: Disciplina + WC SAP. */}
                                   <div className="flex items-center gap-1">
-                                    <label className="text-[10px] text-gray-500">Disciplina:</label>
-                                    <select value={op.specialty || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], specialty: e.target.value}; setEditOps(n); }}
-                                      className="text-xs border rounded px-2 py-1 max-w-[180px]">
-                                      <option value="">— Seleccionar —</option>
-                                      {/* David 2026-04-28: disciplinas canónicas que Jorge usa.
-                                          Antes mostraba códigos work_center (PASMEC01) que el planner
-                                          no entendía y solo aparecía 1 opción si planning_group filtraba. */}
-                                      {DISCIPLINAS_OP.map(d => (
-                                        <option key={d} value={d}>{d}</option>
-                                      ))}
-                                      {/* Si la OT ya tiene un valor que NO está en la lista canónica
-                                          (legacy), lo mostramos para no perderlo. */}
-                                      {op.specialty && !DISCIPLINAS_OP.includes(op.specialty) && (
-                                        <option value={op.specialty}>{op.specialty} (legacy)</option>
-                                      )}
-                                    </select>
-                                    {/* Work center especifico (codigo SAP), opcional avanzado */}
-                                    <select value={op.work_center || ''} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], work_center: e.target.value}; setEditOps(n); }}
-                                      title="Work center SAP especifico (opcional)"
-                                      className="text-[10px] border rounded px-1 py-1 max-w-[140px] text-gray-500">
-                                      <option value="">WC SAP (opc.)</option>
+                                    <label className="text-[10px] text-gray-500">Puesto de trabajo:</label>
+                                    <select
+                                      value={op.work_center || ''}
+                                      onChange={e => {
+                                        const wcVal = e.target.value;
+                                        const wcMeta = WORK_CENTERS.find(w => w.value === wcVal);
+                                        const n = [...editOps];
+                                        // Persistir work_center + sincronizar specialty con la descripción canónica
+                                        // para que el otro extremo (subtotal, header) muestre algo legible.
+                                        n[idx] = {
+                                          ...n[idx],
+                                          work_center: wcVal,
+                                          specialty: wcMeta ? wcMeta.label : (n[idx].specialty || ''),
+                                        };
+                                        setEditOps(n);
+                                      }}
+                                      title="Código SAP del puesto de trabajo. La descripción se autocompleta abajo."
+                                      className="text-xs border rounded px-2 py-1 max-w-[260px]">
+                                      <option value="">— Seleccionar puesto —</option>
                                       {(wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : WORK_CENTERS).map(w => (
-                                        <option key={w.value} value={w.value}>{w.value}</option>
+                                        <option key={w.value} value={w.value}>{w.value} · {w.label}</option>
                                       ))}
                                     </select>
                                   </div>

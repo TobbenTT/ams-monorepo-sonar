@@ -102,6 +102,8 @@ function TechFields({ member, onSaved }) {
       const updated = await api.updateTechnician(workerId, form);
       onSaved && onSaved(updated);
       setEditing(false);
+      // Notify other pages (Scheduling, SmartAssign) to refresh their cache
+      try { window.dispatchEvent(new CustomEvent('workforce:updated', { detail: { workerId, ...form } })); } catch {}
     } catch (e) {
       alert('Error: ' + (e.message || 'no se pudo guardar'));
     } finally {

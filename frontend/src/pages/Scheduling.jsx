@@ -3897,7 +3897,14 @@ export default function Scheduling() {
   useEffect(() => {
     const h = () => loadCalendarData();
     window.addEventListener('wo:created', h);
-    return () => window.removeEventListener('wo:created', h);
+    // Bug 2026-04-30: cuando el supervisor edita perfil de un técnico (cambio
+    // de turno/especialidad/skills), invalidar cache + recargar.
+    const hWf = () => { techsCacheRef.current = []; loadCalendarData(); };
+    window.addEventListener('workforce:updated', hWf);
+    return () => {
+      window.removeEventListener('wo:created', h);
+      window.removeEventListener('workforce:updated', hWf);
+    };
   }, [plant]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track blocked support equipment to warn planner during Auto-Level

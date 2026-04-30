@@ -642,17 +642,44 @@ ${materials.length ? `<div class="section">
                 {['P1', 'P2', 'P3', 'P4'].map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             ) : (
-              <div className="flex items-center gap-1">
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
-                  {item.priority_requested}
-                </span>
-                {item.priority_requested !== item.priority_suggested && (
-                  <>
-                    <span className="text-amber-500 text-xs">→</span>
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_suggested)}`}>
-                      {item.priority_suggested}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
+                    {item.priority_requested}
+                  </span>
+                  {item.priority_requested !== item.priority_suggested && (
+                    <>
+                      <span className="text-amber-500 text-xs">→</span>
+                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_suggested)}`}>
+                        {item.priority_suggested}
+                      </span>
+                    </>
+                  )}
+                  {item.priority_bumped_by_ai && item.priority_user && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300">
+                      🤖 IA subió {item.priority_user}→{item.priority_requested}
                     </span>
-                  </>
+                  )}
+                </div>
+                {item.priority_bumped_by_ai && item.ai_priority_reason && (
+                  <div className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 rounded px-2 py-1 leading-snug">
+                    <strong>¿Por qué subió la IA?</strong> {item.ai_priority_reason}
+                  </div>
+                )}
+                {!item.priority_bumped_by_ai && item.ai_priority_reason && (
+                  <div className="text-[10px] text-gray-600 italic leading-snug">
+                    IA confirmó {item.priority_requested}: {item.ai_priority_reason}
+                  </div>
+                )}
+                {(item.ai_suggested_action || item.ai_work_conditions) && (
+                  <div className="mt-1 text-[10px] text-gray-700 space-y-0.5">
+                    {item.ai_suggested_action && (
+                      <div><span className="font-semibold">🤖 Acción IA:</span> {item.ai_suggested_action}</div>
+                    )}
+                    {item.ai_work_conditions && (
+                      <div><span className="font-semibold">🛡 Condiciones IA:</span> {item.ai_work_conditions}</div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -1422,6 +1449,9 @@ function normalizeWR(wr) {
     priority_user: cls.priority_user || null,
     priority_bumped_by_ai: cls.priority_bumped_by_ai === true,
     ai_source: cls.source || '',
+    ai_priority_reason: cls.ai_priority_reason || '',
+    ai_suggested_action: cls.ai_suggested_action || '',
+    ai_work_conditions: cls.ai_work_conditions || '',
     failure_description: desc.original_text || desc.structured_description || wr.failure_description || (typeof wr.problem_description === 'string' ? wr.problem_description : '') || '',
     original_text: desc.original_text || '',
     technical_location: desc.technical_location || desc.technical_location_code || cls.technical_location || '',

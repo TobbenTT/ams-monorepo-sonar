@@ -80,6 +80,7 @@ Responde SOLO con un JSON con estas claves exactas:
   "failure_cause": "copia exacta de uno de los valores de causas del catalogo",
   "suggested_action": "acción de mantenimiento recomendada (max 80 chars, texto libre)",
   "priority": "P1, P2, P3 o P4",
+  "priority_reason": "explicación corta (max 140 chars) de por qué corresponde esa prioridad — citar señales del texto del usuario (ej: 'menciona humo y emergencia → riesgo HSE inmediato → P1')",
   "activity_class": "uno de: EM, UC, PR, PM",
   "work_conditions": "condiciones de seguridad necesarias para ejecutar el trabajo (max 100 chars, ej: Equipo bloqueado LOTO, area despejada, permiso trabajo en caliente)"
 }}"""
@@ -112,12 +113,15 @@ def _fallback_classify(raw_text: str) -> dict:
     elif any(k in text_lower for k in ("sensor", "transmisor", "plc", "señal", "senal", "calibr")):
         category = "INSTRUMENTACION"
 
-    # Detect priority
+    # Detect priority + reason (heurística keyword si no hay Claude)
     priority = "P3"
-    if any(k in text_lower for k in ("emergencia", "peligro", "incendio", "explosion", "emergency", "danger", "fire")):
+    priority_reason = "Sin señales de urgencia explícitas — prioridad estándar P3."
+    if any(k in text_lower for k in ("emergencia", "peligro", "incendio", "explosion", "emergency", "danger", "fire", "humo")):
         priority = "P1"
+        priority_reason = "Texto menciona emergencia/peligro/humo/explosión → riesgo HSE inmediato → P1."
     elif any(k in text_lower for k in ("urgente", "critico", "crítico", "parado", "parada", "urgent", "critical")):
         priority = "P2"
+        priority_reason = "Texto menciona urgencia/equipo parado → impacto operacional alto → P2."
 
     # Detect symptom
     symptom = "DESGASTE VISIBLE"
@@ -141,6 +145,7 @@ def _fallback_classify(raw_text: str) -> dict:
         "failure_cause": "DESGASTE",
         "suggested_action": "Inspeccionar y evaluar condicion del componente",
         "priority": priority,
+        "priority_reason": priority_reason,
         "activity_class": activity_class,
         "work_conditions": "Equipo bloqueado LOTO, area despejada",
         "estimated_duration": 4.0,

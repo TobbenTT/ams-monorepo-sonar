@@ -1992,6 +1992,7 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
             "ai_suggested_action": ai_enrichment.get("suggested_action"),
             "ai_work_conditions": ai_enrichment.get("work_conditions"),
             "ai_activity_class": ai_enrichment.get("activity_class"),
+            "ai_priority_reason": ai_enrichment.get("priority_reason"),
             "recommended_priority": final_pri,
             "plant_id": data.plant_id,
             "equipment_name": data.equipment_name,

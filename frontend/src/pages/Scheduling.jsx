@@ -3438,6 +3438,11 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
     : 'bg-gray-400 text-white';
   const timeRange = shift?.id === 'night' ? '19:00–07:00' : '07:00–19:00';
   const crewSize = Array.isArray(wo.assigned_workers) ? wo.assigned_workers.length : 0;
+  // Crew requerido = máximo `quantity` entre las ops (op que pide más personas).
+  // Si una op pide 3 mecánicos en simultáneo, el crew real son 3.
+  const requiredCrew = Array.isArray(wo.operations)
+    ? wo.operations.reduce((max, op) => Math.max(max, parseInt(op?.quantity) || 1), 1)
+    : 1;
   // David 2026-04-28: light dict envía materials_count + reservation_code aunque
   // no incluya el array completo. El badge "Materials ready RES-xxx" debe
   // aparecer siempre que la OT tenga reserva confirmada y conteo > 0.
@@ -3476,7 +3481,13 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
         <div className="flex items-center gap-3 text-[10.5px] text-muted-foreground">
           <span className="inline-flex items-center gap-1"><Clock size={11} /> {timeRange}</span>
           <span className="inline-flex items-center gap-1 font-semibold text-foreground">{wo.estimated_hours || 0}h</span>
-          {crewSize > 0 && <span className="inline-flex items-center gap-1"><Users size={11} /> {crewSize} crew</span>}
+          {(crewSize > 0 || requiredCrew > 1) && (
+            <span className={`inline-flex items-center gap-1 ${crewSize < requiredCrew ? 'text-amber-700 font-bold' : ''}`}
+              title={crewSize < requiredCrew ? `Falta crew: la OT pide ${requiredCrew} personas en simultáneo, hay ${crewSize}` : 'Crew completo'}>
+              <Users size={11} /> {crewSize}/{requiredCrew} crew
+              {crewSize < requiredCrew && <span className="text-amber-600">⚠</span>}
+            </span>
+          )}
         </div>
       </div>
       {/* Jorge 2026-04-27 (reunión 18:06): HH desglose por disciplina + duración real.
@@ -3606,12 +3617,26 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
           if (opsInfo.count === 0 && workers.length === 0) return;
           rows.push({ spec: specUp, ops: opsInfo, workers });
         });
-        if (rows.length === 0) return null;
+        // Bug 2026-04-30: si op.specialty="MECH" y worker.specialty="MECANICO",
+        // ambos entran a allSpecs → 2 filas, una con ops sin workers y otra
+        // con workers sin ops, pero el matching prefix los junta y aparecen
+        // duplicados. Dedup: si una fila tiene 0 ops y todos sus workers ya
+        // aparecen en OTRA fila con ops>0, descartarla.
+        const workersInOpsRows = new Set();
+        rows.forEach(r => {
+          if (r.ops.count > 0) r.workers.forEach(w => workersInOpsRows.add(w.worker_id || w.name));
+        });
+        const dedupedRows = rows.filter(r => {
+          if (r.ops.count > 0) return true;
+          if (r.workers.length === 0) return true;
+          return r.workers.some(w => !workersInOpsRows.has(w.worker_id || w.name));
+        });
+        if (dedupedRows.length === 0) return null;
         return (
           <div className="px-3 pb-2">
             <div className="text-[9.5px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">Asignación por disciplina</div>
             <div className="space-y-1">
-              {rows.map(({ spec, ops: o, workers }) => {
+              {dedupedRows.map(({ spec, ops: o, workers }) => {
                 const tone = specTone(spec);
                 const matched = workers.length > 0;
                 const needsTech = o.count > 0 && !matched;

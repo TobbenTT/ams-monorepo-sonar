@@ -609,7 +609,7 @@ ${materials.length ? `<div class="section">
         </div>
 
         {/* AI Priority Suggestion Banner — Jorge: la IA sugiere, el usuario decide */}
-        {item.priority_bumped_by_ai && item.ai_priority_pending && onAIPriorityDecision && (
+        {item.ai_priority_pending && onAIPriorityDecision && (
           <div className="mx-6 my-3 rounded-xl border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-fuchsia-50 overflow-hidden shadow-sm">
             <div className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2">
               <Brain className="w-4 h-4" />
@@ -714,15 +714,15 @@ ${materials.length ? `<div class="section">
                       </span>
                     </>
                   )}
-                  {item.priority_bumped_by_ai && item.priority_user && (
+                  {item.ai_priority_pending && item.priority_suggested && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300">
-                      🤖 IA sugiere {item.priority_user || item.priority_requested}→{item.priority_suggested}
+                      🤖 IA sugiere {item.priority_suggested}
                     </span>
                   )}
                 </div>
-                {item.priority_bumped_by_ai && item.ai_priority_reason && !item.ai_priority_pending && (
+                {item.ai_priority_reason && !item.ai_priority_pending && (
                   <div className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 rounded px-2 py-1 leading-snug">
-                    <strong>¿Por qué subió la IA?</strong> {safeStr(item.ai_priority_reason)}
+                    <strong>IA:</strong> {safeStr(item.ai_priority_reason)}
                     {item.ai_priority_decision && (
                       <div className="mt-1 text-[9px] italic text-purple-600">
                         {item.ai_priority_decision === 'accepted' ? '✓ Sugerencia aceptada' : '✗ Sugerencia rechazada'}
@@ -730,7 +730,7 @@ ${materials.length ? `<div class="section">
                     )}
                   </div>
                 )}
-                {!item.priority_bumped_by_ai && item.ai_priority_reason && (
+                {item.ai_priority_reason && !item.priority_suggested && (
                   <div className="text-[10px] text-gray-600 italic leading-snug">
                     IA confirmó {item.priority_requested}: {safeStr(item.ai_priority_reason)}
                   </div>
@@ -1660,6 +1660,13 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
     const h = () => refreshList();
     window.addEventListener('ws:reconnected', h);
     return () => window.removeEventListener('ws:reconnected', h);
+  }, [plantId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fallback: escuchar evento custom wr:created (de FailureCapture) cuando WS no está disponible
+  useEffect(() => {
+    const h = () => refreshList();
+    window.addEventListener('wr:created', h);
+    return () => window.removeEventListener('wr:created', h);
   }, [plantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Refresh data when tab becomes active

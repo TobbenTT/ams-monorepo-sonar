@@ -1149,6 +1149,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       const wrId = res?.request_id || res?.work_request_id || '';
       setCreatedWRId(wrId);
       toast.success('Notification created: ' + wrId);
+      // Disparar evento para que WorkRequests refresque aunque WS esté desconectado
+      try { window.dispatchEvent(new CustomEvent('wr:created', { detail: { wrId } })); } catch {}
       // Jorge 2026-04-27: refrescar badge counts del WM al toque + retry 1.5s
       // por si el backend tarda en commitear. La pestaña Identification se
       // refresca sola por el WS broadcast wr_created.

@@ -313,6 +313,10 @@ export const ragKbCurator = (d) => post('/rag/kb-curator', d);
 // ── Programmer Agent (Jorge Excel r49 #8 + #11) ──
 export const programmerEquipmentAvailability = (params) => get('/programmer-agent/equipment-availability', params);
 export const programmerWeeklyReport = (params) => get('/programmer-agent/weekly-report', params);
+
+// ── Supervisor Agent (Jorge Excel r64 #1 + #2) ──
+export const supervisorShiftReadiness = (d) => post('/supervisor-agent/shift-start-readiness', d);
+export const supervisorProdVsProgram = (d) => post('/supervisor-agent/production-vs-program', d);
 export const deleteWorkRequest = (id, data) => del(`/work-requests/${id}`, data);
 export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);
 export const startWorkRequest = (id) => put(`/work-requests/${id}/start`);

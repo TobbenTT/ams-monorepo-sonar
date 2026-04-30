@@ -69,6 +69,7 @@ from api.routers import (
     reports_export,
     rag,
     programmer_agent,
+    supervisor_agent,
 )
 
 # Optional modules — loaded only if their deps are installed. Missing deps won't crash startup.
@@ -277,6 +278,7 @@ def create_app() -> FastAPI:
     app.include_router(reports_export.router, prefix=prefix)
     app.include_router(rag.router, prefix=prefix)
     app.include_router(programmer_agent.router, prefix=prefix)
+    app.include_router(supervisor_agent.router, prefix=prefix)
     # Phase 3 — Modules 1-3
     app.include_router(capture.photos_router, prefix=prefix)  # public (no auth) — serves photos for <img> tags
     app.include_router(capture.router, prefix=prefix)

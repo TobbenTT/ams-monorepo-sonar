@@ -419,6 +419,7 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
                 "specialty": res.get("type", failure_type or "Mecánico"),
                 "quantity": qty,
                 "duration": dur,
+                "hours": dur,  # legacy field que el frontend Planning lee
                 "estimated_hours": qty * dur,
                 "planned_hours": qty * dur,
             })
@@ -436,6 +437,7 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
                     "specialty": res.get("type", failure_type or "Mecánico"),
                     "quantity": qty,
                     "duration": dur,
+                    "hours": dur,  # legacy field
                     "estimated_hours": qty * dur,
                     "planned_hours": qty * dur,
                 })

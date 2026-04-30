@@ -4,6 +4,7 @@ import { CritBadge, LoadingSpinner } from '../components/Shared';
 import { useWebSocket } from '../hooks/useWebSocket';
 import LiveIndicator from '../components/LiveIndicator';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import CancelWOModal from '../components/CancelWOModal';
 import SmartAssignModal from '../components/SmartAssignModal';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -1797,6 +1798,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                             shift={shift}
                                             onClose={toggleExpand}
                                             onOpen={() => { setExpandedWOs(prev => { const n = new Set(prev); n.delete(wo.wo_id); return n; }); if (onOpenDetail) onOpenDetail(wo); }}
+                                            onRefresh={onRefresh}
                                           />
                                         )}
                                       </div>
@@ -3402,7 +3404,9 @@ function SupportEquipmentTab({ plantId, t }) {
 // list, materials status and an "Open WO" shortcut. Requested-By: Jorge Cabezas.
 // 2026-04-28: Draggable. Click+drag en el header reposiciona el card libremente.
 //   Estado offset persistido en el componente; se reinicia al cerrar/reabrir.
-function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
+function ExpandedWOCard({ wo, ops, shift, onClose, onOpen, onRefresh }) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [drag, setDrag] = useState({ x: 0, y: 0, dragging: false, startX: 0, startY: 0 });
   const onHeaderMouseDown = (e) => {
     // Ignorar clicks en el botón de cerrar
@@ -3654,12 +3658,21 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
                               type="button"
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                if (!confirm(`Quitar ${w.name || w.worker_id} de ${wo.wo_number}?`)) return;
+                                const ok = await confirm({
+                                  title: `Quitar ${w.name || w.worker_id}`,
+                                  message: `¿Retirar a este técnico de ${wo.wo_number}? Los demás miembros del crew se mantienen.`,
+                                  variant: 'danger',
+                                  confirmText: 'Quitar',
+                                  cancelText: 'Cancelar',
+                                });
+                                if (!ok) return;
                                 const remaining = (wo.assigned_workers || []).filter(x => (x.worker_id || x.name) !== (w.worker_id || w.name));
                                 try {
                                   await api.updateManagedWO(wo.wo_id, { assigned_workers: remaining });
                                   toast.success(`✓ ${w.name} retirado de ${wo.wo_number}`);
-                                  window.dispatchEvent(new CustomEvent('wo:created'));  // reusamos para forzar refresh
+                                  // Refresh inmediato sin esperar al WS
+                                  if (onRefresh) onRefresh();
+                                  window.dispatchEvent(new CustomEvent('wo:created'));
                                 } catch (err) {
                                   toast.error('Error: ' + (err.message || ''));
                                 }

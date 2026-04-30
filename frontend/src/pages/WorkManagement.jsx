@@ -87,6 +87,13 @@ export default function WorkManagement() {
 
   useEffect(() => { refreshCounts(); }, [refreshCounts, refreshKey]);
 
+  // Si una OT se crea desde el modal Express → PM03 (custom event sin WS), refresh inmediato.
+  useEffect(() => {
+    const h = () => refreshCounts();
+    window.addEventListener('wo:created', h);
+    return () => window.removeEventListener('wo:created', h);
+  }, [refreshCounts]);
+
   // Jorge 2026-04-27: badges del WM se refrescan al toque cuando llegan
   // eventos wr_*/wo_* del backend (otros usuarios o creación local).
   const plantId = outletContext?.selectedPlant?.plant_id || outletContext?.selectedPlant || 'OCP-JFC1';

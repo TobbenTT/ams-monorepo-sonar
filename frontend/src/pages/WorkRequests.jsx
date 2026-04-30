@@ -1251,6 +1251,8 @@ ${materials.length ? `<div class="section">
                         estimated_hours: item.estimated_duration_hours || 4,
                       });
                       toast.success(`OT PM03 creada: ${wo.wo_number}`);
+                      // Disparar refresh en Planning/Scheduling/WorkManagement (no esperar al WS broadcast).
+                      try { window.dispatchEvent(new CustomEvent('wo:created', { detail: wo })); } catch {}
                       onClose && onClose();
                     } catch (e) {
                       toast.error('Error: ' + (e.message || ''));

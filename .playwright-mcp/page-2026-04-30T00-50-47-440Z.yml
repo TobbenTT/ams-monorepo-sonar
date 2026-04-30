@@ -1,0 +1,1511 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - navigation "Main navigation" [ref=e4]:
+      - generic [ref=e5]:
+        - img "MagEAM" [ref=e154]
+        - paragraph [ref=e6]: Reliability Platform
+      - navigation [ref=e7]:
+        - generic [ref=e8]:
+          - link "Dashboard" [ref=e9] [cursor=pointer]:
+            - /url: /
+            - img [ref=e10]
+            - generic [ref=e13]: Dashboard
+          - link "✨ Agentic Capabilities" [ref=e14] [cursor=pointer]:
+            - /url: /agentic-capabilities
+            - img [ref=e15]
+            - generic [ref=e19]: ✨ Agentic Capabilities
+          - link "WOs & Notifications" [ref=e20] [cursor=pointer]:
+            - /url: /work-orders
+            - img [ref=e21]
+            - generic [ref=e23]: WOs & Notifications
+          - link "Work Management" [ref=e24] [cursor=pointer]:
+            - /url: /work-management
+            - img [ref=e25]
+            - generic [ref=e28]: Work Management
+          - link "Failures & Events" [ref=e29] [cursor=pointer]:
+            - /url: /failures-events
+            - img [ref=e30]
+            - generic [ref=e32]: Failures & Events
+          - link "Improvement Actions" [ref=e33] [cursor=pointer]:
+            - /url: /improvement-actions
+            - img [ref=e34]
+            - generic [ref=e37]: Improvement Actions
+          - link "Criticality" [ref=e38] [cursor=pointer]:
+            - /url: /criticality
+            - img [ref=e39]
+            - generic [ref=e42]: Criticality
+          - link "FMECA" [ref=e43] [cursor=pointer]:
+            - /url: /fmeca
+            - img [ref=e44]
+            - generic [ref=e48]: FMECA
+          - link "RCA" [ref=e49] [cursor=pointer]:
+            - /url: /rca
+            - img [ref=e50]
+            - generic [ref=e53]: RCA
+          - link "Reliability" [ref=e54] [cursor=pointer]:
+            - /url: /reliability
+            - img [ref=e55]
+            - generic [ref=e57]: Reliability
+          - link "Analytics" [ref=e58] [cursor=pointer]:
+            - /url: /analytics
+            - img [ref=e59]
+            - generic [ref=e61]: Analytics
+          - link "Reports" [ref=e62] [cursor=pointer]:
+            - /url: /reports
+            - img [ref=e63]
+            - generic [ref=e66]: Reports
+          - link "Team" [ref=e67] [cursor=pointer]:
+            - /url: /team
+            - img [ref=e68]
+            - generic [ref=e73]: Team
+          - link "Settings" [ref=e74] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e75]
+            - generic [ref=e78]: Settings
+          - link "SAP PM" [ref=e79] [cursor=pointer]:
+            - /url: /sap-pm
+            - img [ref=e80]
+            - generic [ref=e84]: SAP PM
+          - link "Data Import" [ref=e85] [cursor=pointer]:
+            - /url: /data-import
+            - img [ref=e86]
+            - generic [ref=e89]: Data Import
+          - link "Audit Log" [ref=e90] [cursor=pointer]:
+            - /url: /audit-log
+            - img [ref=e91]
+            - generic [ref=e94]: Audit Log
+      - generic [ref=e95]:
+        - button "AS Administrador Sistema Administrator" [ref=e96] [cursor=pointer]:
+          - generic [ref=e98]: AS
+          - generic [ref=e99]:
+            - generic [ref=e100]: Administrador Sistema
+            - generic [ref=e101]: Administrator
+        - generic [ref=e102]:
+          - button "Sign Out" [ref=e103]:
+            - img [ref=e104]
+            - generic [ref=e107]: Sign Out
+          - button [ref=e108]:
+            - img [ref=e109]
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e115]:
+            - img [ref=e116]
+            - textbox "Search modules..." [ref=e119]
+          - generic [ref=e120]:
+            - button "🇬🇧 EN" [ref=e122]:
+              - img [ref=e123]
+              - generic [ref=e126]: 🇬🇧 EN
+            - button "Switch to dark mode" [ref=e127]:
+              - img [ref=e128]
+            - generic "Tiempo real activo · última señal hace 9s" [ref=e155]:
+              - img [ref=e131]
+              - generic [ref=e135]: Sync hace 9s
+            - button "9+" [ref=e156]:
+              - img [ref=e138]
+              - generic [ref=e157]: 9+
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - img [ref=e143]
+            - combobox [ref=e145]:
+              - generic: GOLDFIELDS-SN — Goldfields - Salares Norte
+              - img
+          - generic [ref=e146]:
+            - img [ref=e147]
+            - combobox [ref=e149]:
+              - generic: Last 30 Days
+              - img
+      - main [ref=e150]:
+        - generic [ref=e158]:
+          - generic [ref=e160]:
+            - heading "Work Management" [level=1] [ref=e161]
+            - paragraph [ref=e162]: Complete maintenance work lifecycle
+          - generic [ref=e164]:
+            - button "Failure Capture" [ref=e165]
+            - button "Identification40" [ref=e166]
+            - button "Planning126" [ref=e167]
+            - button "Scheduling28" [ref=e168]
+            - button "Execution" [ref=e169]
+          - generic [ref=e172]:
+            - generic [ref=e173]:
+              - generic [ref=e174]: Planner View
+              - generic [ref=e175]: Assign group, work center and create WOs
+              - button "Priorizar con IA" [ref=e176]:
+                - img [ref=e177]
+                - text: Priorizar con IA
+            - generic [ref=e180]:
+              - generic [ref=e181]:
+                - paragraph [ref=e182]: Creadas
+                - paragraph [ref=e183]: "8"
+              - generic [ref=e184]:
+                - paragraph [ref=e185]: Planificadas
+                - paragraph [ref=e186]: "1"
+              - generic [ref=e187]:
+                - paragraph [ref=e188]: Programadas
+                - paragraph [ref=e189]: "41"
+              - generic [ref=e190]:
+                - paragraph [ref=e191]: Cerradas
+                - paragraph [ref=e192]: "42"
+            - button "Work Orders (100)" [ref=e194]
+            - generic [ref=e195]:
+              - generic [ref=e196]:
+                - generic [ref=e197]:
+                  - heading "Work Orders" [level=3] [ref=e198]
+                  - generic [ref=e199]:
+                    - generic [ref=e200]: 100 / 100 OTs
+                    - button "Pasar a Excel" [ref=e201]:
+                      - img [ref=e202]
+                      - text: Pasar a Excel
+                - generic [ref=e205]:
+                  - generic [ref=e206]:
+                    - img [ref=e207]
+                    - textbox "Search WO number, equipment, description..." [ref=e210]
+                  - combobox [ref=e211]:
+                    - option "All Status" [selected]
+                    - option "Created"
+                    - option "Released"
+                    - option "Planned"
+                    - option "In Scheduling"
+                    - option "Scheduled"
+                    - option "In Execution"
+                    - option "Closed"
+                    - option "Cancelled"
+                  - generic [ref=e212]:
+                    - button "P1" [ref=e213]
+                    - button "P2" [ref=e214]
+                    - button "P3" [ref=e215]
+                    - button "P4" [ref=e216]
+                  - combobox [ref=e217]:
+                    - option "All Types" [selected]
+                    - option "PM01 - Programado"
+                    - option "PM02 - Planificado"
+                    - option "PM03 - No Programado (Falla)"
+                  - generic [ref=e218]:
+                    - textbox "Desde (fecha de creación)" [ref=e219]
+                    - generic [ref=e220]: →
+                    - textbox "Hasta (fecha de creación)" [ref=e221]
+              - table [ref=e223]:
+                - rowgroup [ref=e224]:
+                  - row "Seleccionar todas (filtradas) WO Number Type Ubic. Técnica / TAG Description Status Priority Fecha Creación Planned Date" [ref=e225]:
+                    - columnheader "Seleccionar todas (filtradas)" [ref=e226]:
+                      - checkbox "Seleccionar todas (filtradas)" [ref=e227] [cursor=pointer]
+                    - columnheader "WO Number" [ref=e228]
+                    - columnheader "Type" [ref=e229]
+                    - columnheader "Ubic. Técnica / TAG" [ref=e230]
+                    - columnheader "Description" [ref=e231]
+                    - columnheader "Status" [ref=e232]
+                    - columnheader "Priority" [ref=e233]
+                    - columnheader "Fecha Creación" [ref=e234]
+                    - columnheader "Planned Date" [ref=e235]
+                - rowgroup [ref=e236]:
+                  - 'row "OT-2026-50102 PM03 TL: PMP-SL-HP-002 TAG: PMP-SL-HP-002 Vibración en descanso motor. Durante el arranque. Vibración axial elevada en motor, rodamiento NDE deteriorado. Scheduled P2 30 abr 26 —" [ref=e237] [cursor=pointer]':
+                    - cell [ref=e238]:
+                      - checkbox [ref=e239]
+                    - cell "OT-2026-50102" [ref=e240]
+                    - cell "PM03" [ref=e241]
+                    - 'cell "TL: PMP-SL-HP-002 TAG: PMP-SL-HP-002" [ref=e242]':
+                      - generic [ref=e243]: "TL: PMP-SL-HP-002"
+                      - generic [ref=e244]: "TAG: PMP-SL-HP-002"
+                    - cell "Vibración en descanso motor. Durante el arranque. Vibración axial elevada en motor, rodamiento NDE deteriorado." [ref=e245]
+                    - cell "Scheduled" [ref=e246]
+                    - cell "P2" [ref=e247]
+                    - cell "30 abr 26" [ref=e248]
+                    - cell "—" [ref=e249]
+                    - cell [ref=e250]
+                  - 'row "OT-2026-50101 PM01 TAG: PMP-AGUA-01 — Circunstancias del aviso — Test circumstances Working conditions: LOTO bloqueo + área despejada + permiso trabajo en caliente Scheduled P2 30 abr 26 —" [ref=e251] [cursor=pointer]':
+                    - cell [ref=e252]:
+                      - checkbox [ref=e253]
+                    - cell "OT-2026-50101" [ref=e254]
+                    - cell "PM01" [ref=e255]
+                    - 'cell "TAG: PMP-AGUA-01" [ref=e256]':
+                      - generic [ref=e257]: "TAG: PMP-AGUA-01"
+                    - 'cell "— Circunstancias del aviso — Test circumstances Working conditions: LOTO bloqueo + área despejada + permiso trabajo en caliente" [ref=e258]'
+                    - cell "Scheduled" [ref=e259]
+                    - cell "P2" [ref=e260]
+                    - cell "30 abr 26" [ref=e261]
+                    - cell "—" [ref=e262]
+                    - cell [ref=e263]
+                  - 'row "OT-2026-50100 PM03 TL: MCC-ML-01 TAG: MCC-ML-01 Contactor pegado en partidor. Durante turno noche. Partidor de motor MCC-F15 no desengancha, reiniciar manualmente. Scheduled P2 30 abr 26 —" [ref=e264] [cursor=pointer]':
+                    - cell [ref=e265]:
+                      - checkbox [ref=e266]
+                    - cell "OT-2026-50100" [ref=e267]
+                    - cell "PM03" [ref=e268]
+                    - 'cell "TL: MCC-ML-01 TAG: MCC-ML-01" [ref=e269]':
+                      - generic [ref=e270]: "TL: MCC-ML-01"
+                      - generic [ref=e271]: "TAG: MCC-ML-01"
+                    - cell "Contactor pegado en partidor. Durante turno noche. Partidor de motor MCC-F15 no desengancha, reiniciar manualmente." [ref=e272]
+                    - cell "Scheduled" [ref=e273]
+                    - cell "P2" [ref=e274]
+                    - cell "30 abr 26" [ref=e275]
+                    - cell "—" [ref=e276]
+                    - cell [ref=e277]
+                  - 'row "OT-2026-50049 PM01 TAG: THK-REL-02 Corrosión en base de mecanismo — Espesador Relaves 02 · 90m Closed P4 29 abr 26 May 08" [ref=e278] [cursor=pointer]':
+                    - cell [ref=e279]:
+                      - checkbox [ref=e280]
+                    - cell "OT-2026-50049" [ref=e281]
+                    - cell "PM01" [ref=e282]
+                    - 'cell "TAG: THK-REL-02" [ref=e283]':
+                      - generic [ref=e284]: "TAG: THK-REL-02"
+                    - cell "Corrosión en base de mecanismo — Espesador Relaves 02 · 90m" [ref=e285]
+                    - cell "Closed" [ref=e286]
+                    - cell "P4" [ref=e287]
+                    - cell "29 abr 26" [ref=e288]
+                    - cell "May 08" [ref=e289]
+                    - cell [ref=e290]
+                  - 'row "OT-2026-50053 PM01 TAG: HID-CEN-01 Contaminación de aceite — Central Hidráulica Crusher Scheduled P3 28 abr 26 May 02" [ref=e291] [cursor=pointer]':
+                    - cell [ref=e292]:
+                      - checkbox [ref=e293]
+                    - cell "OT-2026-50053" [ref=e294]
+                    - cell "PM01" [ref=e295]
+                    - 'cell "TAG: HID-CEN-01" [ref=e296]':
+                      - generic [ref=e297]: "TAG: HID-CEN-01"
+                    - cell "Contaminación de aceite — Central Hidráulica Crusher" [ref=e298]
+                    - cell "Scheduled" [ref=e299]
+                    - cell "P3" [ref=e300]
+                    - cell "28 abr 26" [ref=e301]
+                    - cell "May 02" [ref=e302]
+                    - cell [ref=e303]
+                  - 'row "OT-2026-50068 PM01 TAG: PLC-FLT-01 Error CPU redundante — PLC Flotación · Rockwell Closed P3 28 abr 26 May 07" [ref=e304] [cursor=pointer]':
+                    - cell [ref=e305]:
+                      - checkbox [ref=e306]
+                    - cell "OT-2026-50068" [ref=e307]
+                    - cell "PM01" [ref=e308]
+                    - 'cell "TAG: PLC-FLT-01" [ref=e309]':
+                      - generic [ref=e310]: "TAG: PLC-FLT-01"
+                    - cell "Error CPU redundante — PLC Flotación · Rockwell" [ref=e311]
+                    - cell "Closed" [ref=e312]
+                    - cell "P3" [ref=e313]
+                    - cell "28 abr 26" [ref=e314]
+                    - cell "May 07" [ref=e315]
+                    - cell [ref=e316]
+                  - 'row "OT-2026-50065 PM03 TAG: TRF-PRI-01 Fuga de aceite — Transformador Principal 01 · 80MVA Closed P2 27 abr 26 May 03" [ref=e317] [cursor=pointer]':
+                    - cell [ref=e318]:
+                      - checkbox [ref=e319]
+                    - cell "OT-2026-50065" [ref=e320]
+                    - cell "PM03" [ref=e321]
+                    - 'cell "TAG: TRF-PRI-01" [ref=e322]':
+                      - generic [ref=e323]: "TAG: TRF-PRI-01"
+                    - cell "Fuga de aceite — Transformador Principal 01 · 80MVA" [ref=e324]
+                    - cell "Closed" [ref=e325]
+                    - cell "P2" [ref=e326]
+                    - cell "27 abr 26" [ref=e327]
+                    - cell "May 03" [ref=e328]
+                    - cell [ref=e329]
+                  - 'row "OT-2026-50060 PM01 TAG: CVY-CV-001 Polines trabados — Correa Principal CV-001 · 1800t/h Released P4 27 abr 26 —" [ref=e330] [cursor=pointer]':
+                    - cell [ref=e331]:
+                      - checkbox [ref=e332]
+                    - cell "OT-2026-50060" [ref=e333]
+                    - cell "PM01" [ref=e334]
+                    - 'cell "TAG: CVY-CV-001" [ref=e335]':
+                      - generic [ref=e336]: "TAG: CVY-CV-001"
+                    - cell "Polines trabados — Correa Principal CV-001 · 1800t/h" [ref=e337]
+                    - cell "Released" [ref=e338]
+                    - cell "P4" [ref=e339]
+                    - cell "27 abr 26" [ref=e340]
+                    - cell "—" [ref=e341]
+                    - cell [ref=e342]
+                  - 'row "OT-2026-50002 PM01 TAG: COM-AIRE-02 Temperatura descarga alta — Compresor Aire 02 · 1800cfm In Scheduling P3 26 abr 26 —" [ref=e343] [cursor=pointer]':
+                    - cell [ref=e344]:
+                      - checkbox [ref=e345]
+                    - cell "OT-2026-50002" [ref=e346]
+                    - cell "PM01" [ref=e347]
+                    - 'cell "TAG: COM-AIRE-02" [ref=e348]':
+                      - generic [ref=e349]: "TAG: COM-AIRE-02"
+                    - cell "Temperatura descarga alta — Compresor Aire 02 · 1800cfm" [ref=e350]
+                    - cell "In Scheduling" [ref=e351]
+                    - cell "P3" [ref=e352]
+                    - cell "26 abr 26" [ref=e353]
+                    - cell "—" [ref=e354]
+                    - cell [ref=e355]:
+                      - button "Reservar HH (pasa a PROGRAMADO)" [ref=e357]:
+                        - img [ref=e358]
+                  - 'row "OT-2026-50096 PM01 TAG: ANL-XRF-01 Calibración fuera de rango — Analizador XRF Courier In Execution P3 26 abr 26 May 09" [ref=e361] [cursor=pointer]':
+                    - cell [ref=e362]:
+                      - checkbox [ref=e363]
+                    - cell "OT-2026-50096" [ref=e364]
+                    - cell "PM01" [ref=e365]
+                    - 'cell "TAG: ANL-XRF-01" [ref=e366]':
+                      - generic [ref=e367]: "TAG: ANL-XRF-01"
+                    - cell "Calibración fuera de rango — Analizador XRF Courier" [ref=e368]
+                    - cell "In Execution" [ref=e369]
+                    - cell "P3" [ref=e370]
+                    - cell "26 abr 26" [ref=e371]
+                    - cell "May 09" [ref=e372]
+                    - cell [ref=e373]
+                  - 'row "OT-2026-50090 PM03 TAG: SUB-MT-P01 Alarma sobrecarga trafo — Subestación MT Planta 01 · 23kV Scheduled P1 26 abr 26 May 07" [ref=e374] [cursor=pointer]':
+                    - cell [ref=e375]:
+                      - checkbox [ref=e376]
+                    - cell "OT-2026-50090" [ref=e377]
+                    - cell "PM03" [ref=e378]
+                    - 'cell "TAG: SUB-MT-P01" [ref=e379]':
+                      - generic [ref=e380]: "TAG: SUB-MT-P01"
+                    - cell "Alarma sobrecarga trafo — Subestación MT Planta 01 · 23kV" [ref=e381]
+                    - cell "Scheduled" [ref=e382]
+                    - cell "P1" [ref=e383]
+                    - cell "26 abr 26" [ref=e384]
+                    - cell "May 07" [ref=e385]
+                    - cell [ref=e386]
+                  - 'row "OT-2026-50010 PM01 TAG: PMP-AGUA-01 Cavitación por baja succión — Bomba Agua Proceso 01 · 250kW Released P3 25 abr 26 —" [ref=e387] [cursor=pointer]':
+                    - cell [ref=e388]:
+                      - checkbox [ref=e389]
+                    - cell "OT-2026-50010" [ref=e390]
+                    - cell "PM01" [ref=e391]
+                    - 'cell "TAG: PMP-AGUA-01" [ref=e392]':
+                      - generic [ref=e393]: "TAG: PMP-AGUA-01"
+                    - cell "Cavitación por baja succión — Bomba Agua Proceso 01 · 250kW" [ref=e394]
+                    - cell "Released" [ref=e395]
+                    - cell "P3" [ref=e396]
+                    - cell "25 abr 26" [ref=e397]
+                    - cell "—" [ref=e398]
+                    - cell [ref=e399]
+                  - 'row "OT-2026-50089 PM01 TAG: PLC-FLT-01 Error CPU redundante — PLC Flotación · Rockwell Closed P3 25 abr 26 May 06" [ref=e400] [cursor=pointer]':
+                    - cell [ref=e401]:
+                      - checkbox [ref=e402]
+                    - cell "OT-2026-50089" [ref=e403]
+                    - cell "PM01" [ref=e404]
+                    - 'cell "TAG: PLC-FLT-01" [ref=e405]':
+                      - generic [ref=e406]: "TAG: PLC-FLT-01"
+                    - cell "Error CPU redundante — PLC Flotación · Rockwell" [ref=e407]
+                    - cell "Closed" [ref=e408]
+                    - cell "P3" [ref=e409]
+                    - cell "25 abr 26" [ref=e410]
+                    - cell "May 06" [ref=e411]
+                    - cell [ref=e412]
+                  - 'row "OT-2026-50019 PM01 TAG: PMP-SL-HP-002 Vibración en descanso motor — Bomba Slurry HP 002 · 650kW Closed P3 24 abr 26 Apr 29" [ref=e413] [cursor=pointer]':
+                    - cell [ref=e414]:
+                      - checkbox [ref=e415]
+                    - cell "OT-2026-50019" [ref=e416]
+                    - cell "PM01" [ref=e417]
+                    - 'cell "TAG: PMP-SL-HP-002" [ref=e418]':
+                      - generic [ref=e419]: "TAG: PMP-SL-HP-002"
+                    - cell "Vibración en descanso motor — Bomba Slurry HP 002 · 650kW" [ref=e420]
+                    - cell "Closed" [ref=e421]
+                    - cell "P3" [ref=e422]
+                    - cell "24 abr 26" [ref=e423]
+                    - cell "Apr 29" [ref=e424]
+                    - cell [ref=e425]
+                  - 'row "OT-2026-50052 PM01 TAG: THK-REL-02 Corrosión en base de mecanismo — Espesador Relaves 02 · 90m In Scheduling P4 23 abr 26 —" [ref=e426] [cursor=pointer]':
+                    - cell [ref=e427]:
+                      - checkbox [ref=e428]
+                    - cell "OT-2026-50052" [ref=e429]
+                    - cell "PM01" [ref=e430]
+                    - 'cell "TAG: THK-REL-02" [ref=e431]':
+                      - generic [ref=e432]: "TAG: THK-REL-02"
+                    - cell "Corrosión en base de mecanismo — Espesador Relaves 02 · 90m" [ref=e433]
+                    - cell "In Scheduling" [ref=e434]
+                    - cell "P4" [ref=e435]
+                    - cell "23 abr 26" [ref=e436]
+                    - cell "—" [ref=e437]
+                    - cell [ref=e438]:
+                      - button "Reservar HH (pasa a PROGRAMADO)" [ref=e440]:
+                        - img [ref=e441]
+                  - 'row "OT-2026-50084 PM03 TAG: SUB-MT-P01 Alarma sobrecarga trafo — Subestación MT Planta 01 · 23kV In Execution P1 23 abr 26 Apr 26" [ref=e444] [cursor=pointer]':
+                    - cell [ref=e445]:
+                      - checkbox [ref=e446]
+                    - cell "OT-2026-50084" [ref=e447]
+                    - cell "PM03" [ref=e448]
+                    - 'cell "TAG: SUB-MT-P01" [ref=e449]':
+                      - generic [ref=e450]: "TAG: SUB-MT-P01"
+                    - cell "Alarma sobrecarga trafo — Subestación MT Planta 01 · 23kV" [ref=e451]
+                    - cell "In Execution" [ref=e452]
+                    - cell "P1" [ref=e453]
+                    - cell "23 abr 26" [ref=e454]
+                    - cell "Apr 26" [ref=e455]
+                    - cell [ref=e456]
+                  - 'row "OT-2026-50032 PM03 TAG: SUB-AT-S01 Falla breaker MT — Subestación AT Mina · 220kV Scheduled P2 22 abr 26 May 04" [ref=e457] [cursor=pointer]':
+                    - cell [ref=e458]:
+                      - checkbox [ref=e459]
+                    - cell "OT-2026-50032" [ref=e460]
+                    - cell "PM03" [ref=e461]
+                    - 'cell "TAG: SUB-AT-S01" [ref=e462]':
+                      - generic [ref=e463]: "TAG: SUB-AT-S01"
+                    - cell "Falla breaker MT — Subestación AT Mina · 220kV" [ref=e464]
+                    - cell "Scheduled" [ref=e465]
+                    - cell "P2" [ref=e466]
+                    - cell "22 abr 26" [ref=e467]
+                    - cell "May 04" [ref=e468]
+                    - cell [ref=e469]
+                  - 'row "OT-2026-50055 PM01 TAG: COM-AIRE-02 Temperatura descarga alta — Compresor Aire 02 · 1800cfm Scheduled P3 22 abr 26 Apr 26" [ref=e470] [cursor=pointer]':
+                    - cell [ref=e471]:
+                      - checkbox [ref=e472]
+                    - cell "OT-2026-50055" [ref=e473]
+                    - cell "PM01" [ref=e474]
+                    - 'cell "TAG: COM-AIRE-02" [ref=e475]':
+                      - generic [ref=e476]: "TAG: COM-AIRE-02"
+                    - cell "Temperatura descarga alta — Compresor Aire 02 · 1800cfm" [ref=e477]
+                    - cell "Scheduled" [ref=e478]
+                    - cell "P3" [ref=e479]
+                    - cell "22 abr 26" [ref=e480]
+                    - cell "Apr 26" [ref=e481]
+                    - cell [ref=e482]
+                  - 'row "OT-2026-50038 PM01 TAG: PMP-REL-01 Cavitación por baja succión — Bomba Relaves 01 · 1200kW Closed P3 22 abr 26 Apr 29" [ref=e483] [cursor=pointer]':
+                    - cell [ref=e484]:
+                      - checkbox [ref=e485]
+                    - cell "OT-2026-50038" [ref=e486]
+                    - cell "PM01" [ref=e487]
+                    - 'cell "TAG: PMP-REL-01" [ref=e488]':
+                      - generic [ref=e489]: "TAG: PMP-REL-01"
+                    - cell "Cavitación por baja succión — Bomba Relaves 01 · 1200kW" [ref=e490]
+                    - cell "Closed" [ref=e491]
+                    - cell "P3" [ref=e492]
+                    - cell "22 abr 26" [ref=e493]
+                    - cell "Apr 29" [ref=e494]
+                    - cell [ref=e495]
+                  - 'row "OT-2026-50031 PM01 TAG: THK-REL-02 Corrosión en base de mecanismo — Espesador Relaves 02 · 90m Cancelled P4 22 abr 26 —" [ref=e496] [cursor=pointer]':
+                    - cell [ref=e497]:
+                      - checkbox [ref=e498]
+                    - cell "OT-2026-50031" [ref=e499]
+                    - cell "PM01" [ref=e500]
+                    - 'cell "TAG: THK-REL-02" [ref=e501]':
+                      - generic [ref=e502]: "TAG: THK-REL-02"
+                    - cell "Corrosión en base de mecanismo — Espesador Relaves 02 · 90m" [ref=e503]
+                    - cell "Cancelled" [ref=e504]
+                    - cell "P4" [ref=e505]
+                    - cell "22 abr 26" [ref=e506]
+                    - cell "—" [ref=e507]
+                    - cell [ref=e508]
+                  - 'row "OT-2026-50093 PM01 TAG: ANL-XRF-01 Calibración fuera de rango — Analizador XRF Courier Scheduled P3 21 abr 26 May 02" [ref=e509] [cursor=pointer]':
+                    - cell [ref=e510]:
+                      - checkbox [ref=e511]
+                    - cell "OT-2026-50093" [ref=e512]
+                    - cell "PM01" [ref=e513]
+                    - 'cell "TAG: ANL-XRF-01" [ref=e514]':
+                      - generic [ref=e515]: "TAG: ANL-XRF-01"
+                    - cell "Calibración fuera de rango — Analizador XRF Courier" [ref=e516]
+                    - cell "Scheduled" [ref=e517]
+                    - cell "P3" [ref=e518]
+                    - cell "21 abr 26" [ref=e519]
+                    - cell "May 02" [ref=e520]
+                    - cell [ref=e521]
+                  - 'row "OT-2026-50018 PM01 TAG: CVY-CV-002 Desgaste avanzado en cinta — Correa Secundaria CV-002 Closed P3 19 abr 26 May 02" [ref=e522] [cursor=pointer]':
+                    - cell [ref=e523]:
+                      - checkbox [ref=e524]
+                    - cell "OT-2026-50018" [ref=e525]
+                    - cell "PM01" [ref=e526]
+                    - 'cell "TAG: CVY-CV-002" [ref=e527]':
+                      - generic [ref=e528]: "TAG: CVY-CV-002"
+                    - cell "Desgaste avanzado en cinta — Correa Secundaria CV-002" [ref=e529]
+                    - cell "Closed" [ref=e530]
+                    - cell "P3" [ref=e531]
+                    - cell "19 abr 26" [ref=e532]
+                    - cell "May 02" [ref=e533]
+                    - cell [ref=e534]
+                  - 'row "OT-NC-CRU-CO-450 PM01 TAG: CRU-CON-HP-01 Cambio camisa cono Closed P3 18 abr 26 Apr 20" [ref=e535] [cursor=pointer]':
+                    - cell [ref=e536]:
+                      - checkbox [ref=e537]
+                    - cell "OT-NC-CRU-CO-450" [ref=e538]
+                    - cell "PM01" [ref=e539]
+                    - 'cell "TAG: CRU-CON-HP-01" [ref=e540]':
+                      - generic [ref=e541]: "TAG: CRU-CON-HP-01"
+                    - cell "Cambio camisa cono" [ref=e542]
+                    - cell "Closed" [ref=e543]
+                    - cell "P3" [ref=e544]
+                    - cell "18 abr 26" [ref=e545]
+                    - cell "Apr 20" [ref=e546]
+                    - cell [ref=e547]
+                  - 'row "OT-2026-50061 PM03 TAG: SUB-AT-S01 Falla breaker MT — Subestación AT Mina · 220kV Scheduled P2 18 abr 26 Apr 24" [ref=e548] [cursor=pointer]':
+                    - cell [ref=e549]:
+                      - checkbox [ref=e550]
+                    - cell "OT-2026-50061" [ref=e551]
+                    - cell "PM03" [ref=e552]
+                    - 'cell "TAG: SUB-AT-S01" [ref=e553]':
+                      - generic [ref=e554]: "TAG: SUB-AT-S01"
+                    - cell "Falla breaker MT — Subestación AT Mina · 220kV" [ref=e555]
+                    - cell "Scheduled" [ref=e556]
+                    - cell "P2" [ref=e557]
+                    - cell "18 abr 26" [ref=e558]
+                    - cell "Apr 24" [ref=e559]
+                    - cell [ref=e560]
+                  - 'row "OT-2026-50050 PM01 TAG: BRY-BAL-ML-001 Ruido anormal en reductor — Molino Bolas 01 · 26ft × 16MW Released P3 17 abr 26 —" [ref=e561] [cursor=pointer]':
+                    - cell [ref=e562]:
+                      - checkbox [ref=e563]
+                    - cell "OT-2026-50050" [ref=e564]
+                    - cell "PM01" [ref=e565]
+                    - 'cell "TAG: BRY-BAL-ML-001" [ref=e566]':
+                      - generic [ref=e567]: "TAG: BRY-BAL-ML-001"
+                    - cell "Ruido anormal en reductor — Molino Bolas 01 · 26ft × 16MW" [ref=e568]
+                    - cell "Released" [ref=e569]
+                    - cell "P3" [ref=e570]
+                    - cell "17 abr 26" [ref=e571]
+                    - cell "—" [ref=e572]
+                    - cell [ref=e573]
+                  - 'row "OT-2026-50021 PM03 TAG: THK-REL-02 Falla torque mecanismo rastrillo — Espesador Relaves 02 · 90m Scheduled P2 17 abr 26 Apr 29" [ref=e574] [cursor=pointer]':
+                    - cell [ref=e575]:
+                      - checkbox [ref=e576]
+                    - cell "OT-2026-50021" [ref=e577]
+                    - cell "PM03" [ref=e578]
+                    - 'cell "TAG: THK-REL-02" [ref=e579]':
+                      - generic [ref=e580]: "TAG: THK-REL-02"
+                    - cell "Falla torque mecanismo rastrillo — Espesador Relaves 02 · 90m" [ref=e581]
+                    - cell "Scheduled" [ref=e582]
+                    - cell "P2" [ref=e583]
+                    - cell "17 abr 26" [ref=e584]
+                    - cell "Apr 29" [ref=e585]
+                    - cell [ref=e586]
+                  - 'row "OT-2026-50012 PM03 TAG: THK-REL-02 Falla torque mecanismo rastrillo — Espesador Relaves 02 · 90m Scheduled P2 17 abr 26 Apr 22" [ref=e587] [cursor=pointer]':
+                    - cell [ref=e588]:
+                      - checkbox [ref=e589]
+                    - cell "OT-2026-50012" [ref=e590]
+                    - cell "PM03" [ref=e591]
+                    - 'cell "TAG: THK-REL-02" [ref=e592]':
+                      - generic [ref=e593]: "TAG: THK-REL-02"
+                    - cell "Falla torque mecanismo rastrillo — Espesador Relaves 02 · 90m" [ref=e594]
+                    - cell "Scheduled" [ref=e595]
+                    - cell "P2" [ref=e596]
+                    - cell "17 abr 26" [ref=e597]
+                    - cell "Apr 22" [ref=e598]
+                    - cell [ref=e599]
+                  - 'row "OT-NC-PMP-RE-268 PM01 TAG: PMP-REL-01 Servicio externo bomba relave Closed P3 16 abr 26 Apr 18" [ref=e600] [cursor=pointer]':
+                    - cell [ref=e601]:
+                      - checkbox [ref=e602]
+                    - cell "OT-NC-PMP-RE-268" [ref=e603]
+                    - cell "PM01" [ref=e604]
+                    - 'cell "TAG: PMP-REL-01" [ref=e605]':
+                      - generic [ref=e606]: "TAG: PMP-REL-01"
+                    - cell "Servicio externo bomba relave" [ref=e607]
+                    - cell "Closed" [ref=e608]
+                    - cell "P3" [ref=e609]
+                    - cell "16 abr 26" [ref=e610]
+                    - cell "Apr 18" [ref=e611]
+                    - cell [ref=e612]
+                  - 'row "OT-2026-50099 PM03 TAG: PMP-SL-HP-001 Fuga en sello mecánico — Bomba Slurry HP 001 · 650kW Closed P2 16 abr 26 Apr 25" [ref=e613] [cursor=pointer]':
+                    - cell [ref=e614]:
+                      - checkbox [ref=e615]
+                    - cell "OT-2026-50099" [ref=e616]
+                    - cell "PM03" [ref=e617]
+                    - 'cell "TAG: PMP-SL-HP-001" [ref=e618]':
+                      - generic [ref=e619]: "TAG: PMP-SL-HP-001"
+                    - cell "Fuga en sello mecánico — Bomba Slurry HP 001 · 650kW" [ref=e620]
+                    - cell "Closed" [ref=e621]
+                    - cell "P2" [ref=e622]
+                    - cell "16 abr 26" [ref=e623]
+                    - cell "Apr 25" [ref=e624]
+                    - cell [ref=e625]
+                  - 'row "OT-2026-50001 PM03 TAG: THK-REL-01 Falla torque mecanismo rastrillo — Espesador Relaves 01 · 90m Scheduled P2 16 abr 26 Apr 24" [ref=e626] [cursor=pointer]':
+                    - cell [ref=e627]:
+                      - checkbox [ref=e628]
+                    - cell "OT-2026-50001" [ref=e629]
+                    - cell "PM03" [ref=e630]
+                    - 'cell "TAG: THK-REL-01" [ref=e631]':
+                      - generic [ref=e632]: "TAG: THK-REL-01"
+                    - cell "Falla torque mecanismo rastrillo — Espesador Relaves 01 · 90m" [ref=e633]
+                    - cell "Scheduled" [ref=e634]
+                    - cell "P2" [ref=e635]
+                    - cell "16 abr 26" [ref=e636]
+                    - cell "Apr 24" [ref=e637]
+                    - cell [ref=e638]
+                  - 'row "OT-2026-50066 PM01 TAG: THK-CNC-01 Corrosión en base de mecanismo — Espesador Concentrado 01 · 40m In Execution P4 14 abr 26 Apr 23" [ref=e639] [cursor=pointer]':
+                    - cell [ref=e640]:
+                      - checkbox [ref=e641]
+                    - cell "OT-2026-50066" [ref=e642]
+                    - cell "PM01" [ref=e643]
+                    - 'cell "TAG: THK-CNC-01" [ref=e644]':
+                      - generic [ref=e645]: "TAG: THK-CNC-01"
+                    - cell "Corrosión en base de mecanismo — Espesador Concentrado 01 · 40m" [ref=e646]
+                    - cell "In Execution" [ref=e647]
+                    - cell "P4" [ref=e648]
+                    - cell "14 abr 26" [ref=e649]
+                    - cell "Apr 23" [ref=e650]
+                    - cell [ref=e651]
+                  - 'row "OT-2026-50015 PM01 TAG: DCS-PLT-01 Falla comunicación módulo — DCS Planta · Yokogawa Scheduled P3 13 abr 26 Apr 20" [ref=e652] [cursor=pointer]':
+                    - cell [ref=e653]:
+                      - checkbox [ref=e654]
+                    - cell "OT-2026-50015" [ref=e655]
+                    - cell "PM01" [ref=e656]
+                    - 'cell "TAG: DCS-PLT-01" [ref=e657]':
+                      - generic [ref=e658]: "TAG: DCS-PLT-01"
+                    - cell "Falla comunicación módulo — DCS Planta · Yokogawa" [ref=e659]
+                    - cell "Scheduled" [ref=e660]
+                    - cell "P3" [ref=e661]
+                    - cell "13 abr 26" [ref=e662]
+                    - cell "Apr 20" [ref=e663]
+                    - cell [ref=e664]
+                  - 'row "OT-2026-50009 PM01 TAG: FLT-CEL-RG-02 Desgaste de impulsor rotor — Celda Rougher 02 · 300m³ Closed P4 13 abr 26 Apr 21" [ref=e665] [cursor=pointer]':
+                    - cell [ref=e666]:
+                      - checkbox [ref=e667]
+                    - cell "OT-2026-50009" [ref=e668]
+                    - cell "PM01" [ref=e669]
+                    - 'cell "TAG: FLT-CEL-RG-02" [ref=e670]':
+                      - generic [ref=e671]: "TAG: FLT-CEL-RG-02"
+                    - cell "Desgaste de impulsor rotor — Celda Rougher 02 · 300m³" [ref=e672]
+                    - cell "Closed" [ref=e673]
+                    - cell "P4" [ref=e674]
+                    - cell "13 abr 26" [ref=e675]
+                    - cell "Apr 21" [ref=e676]
+                    - cell [ref=e677]
+                  - 'row "OT-2026-50079 PM01 TAG: CRU-GIR-01 Desgaste en manto y cóncavo — Chancador Giratorio 60×113 Closed P4 13 abr 26 Apr 19" [ref=e678] [cursor=pointer]':
+                    - cell [ref=e679]:
+                      - checkbox [ref=e680]
+                    - cell "OT-2026-50079" [ref=e681]
+                    - cell "PM01" [ref=e682]
+                    - 'cell "TAG: CRU-GIR-01" [ref=e683]':
+                      - generic [ref=e684]: "TAG: CRU-GIR-01"
+                    - cell "Desgaste en manto y cóncavo — Chancador Giratorio 60×113" [ref=e685]
+                    - cell "Closed" [ref=e686]
+                    - cell "P4" [ref=e687]
+                    - cell "13 abr 26" [ref=e688]
+                    - cell "Apr 19" [ref=e689]
+                    - cell [ref=e690]
+                  - 'row "OT-2026-50022 PM01 TAG: CVY-CV-003 Desgaste avanzado en cinta — Correa Stock Pile CV-003 In Scheduling P3 13 abr 26 —" [ref=e691] [cursor=pointer]':
+                    - cell [ref=e692]:
+                      - checkbox [ref=e693]
+                    - cell "OT-2026-50022" [ref=e694]
+                    - cell "PM01" [ref=e695]
+                    - 'cell "TAG: CVY-CV-003" [ref=e696]':
+                      - generic [ref=e697]: "TAG: CVY-CV-003"
+                    - cell "Desgaste avanzado en cinta — Correa Stock Pile CV-003" [ref=e698]
+                    - cell "In Scheduling" [ref=e699]
+                    - cell "P3" [ref=e700]
+                    - cell "13 abr 26" [ref=e701]
+                    - cell "—" [ref=e702]
+                    - cell [ref=e703]:
+                      - button "Reservar HH (pasa a PROGRAMADO)" [ref=e705]:
+                        - img [ref=e706]
+                  - 'row "OT-2026-50039 PM01 TAG: DCS-PLT-01 Falla comunicación módulo — DCS Planta · Yokogawa Closed P3 12 abr 26 Apr 17" [ref=e709] [cursor=pointer]':
+                    - cell [ref=e710]:
+                      - checkbox [ref=e711]
+                    - cell "OT-2026-50039" [ref=e712]
+                    - cell "PM01" [ref=e713]
+                    - 'cell "TAG: DCS-PLT-01" [ref=e714]':
+                      - generic [ref=e715]: "TAG: DCS-PLT-01"
+                    - cell "Falla comunicación módulo — DCS Planta · Yokogawa" [ref=e716]
+                    - cell "Closed" [ref=e717]
+                    - cell "P3" [ref=e718]
+                    - cell "12 abr 26" [ref=e719]
+                    - cell "Apr 17" [ref=e720]
+                    - cell [ref=e721]
+                  - 'row "OT-2026-50080 PM01 TAG: THK-REL-01 Corrosión en base de mecanismo — Espesador Relaves 01 · 90m Released P4 12 abr 26 —" [ref=e722] [cursor=pointer]':
+                    - cell [ref=e723]:
+                      - checkbox [ref=e724]
+                    - cell "OT-2026-50080" [ref=e725]
+                    - cell "PM01" [ref=e726]
+                    - 'cell "TAG: THK-REL-01" [ref=e727]':
+                      - generic [ref=e728]: "TAG: THK-REL-01"
+                    - cell "Corrosión en base de mecanismo — Espesador Relaves 01 · 90m" [ref=e729]
+                    - cell "Released" [ref=e730]
+                    - cell "P4" [ref=e731]
+                    - cell "12 abr 26" [ref=e732]
+                    - cell "—" [ref=e733]
+                    - cell [ref=e734]
+                  - 'row "OT-2026-50063 PM01 TAG: FLT-CEL-RG-01 Desgaste de impulsor rotor — Celda Rougher 01 · 300m³ Scheduled P4 12 abr 26 Apr 17" [ref=e735] [cursor=pointer]':
+                    - cell [ref=e736]:
+                      - checkbox [ref=e737]
+                    - cell "OT-2026-50063" [ref=e738]
+                    - cell "PM01" [ref=e739]
+                    - 'cell "TAG: FLT-CEL-RG-01" [ref=e740]':
+                      - generic [ref=e741]: "TAG: FLT-CEL-RG-01"
+                    - cell "Desgaste de impulsor rotor — Celda Rougher 01 · 300m³" [ref=e742]
+                    - cell "Scheduled" [ref=e743]
+                    - cell "P4" [ref=e744]
+                    - cell "12 abr 26" [ref=e745]
+                    - cell "Apr 17" [ref=e746]
+                    - cell [ref=e747]
+                  - 'row "OT-2026-50003 PM03 TAG: PMP-AGUA-01 Fuga en sello mecánico — Bomba Agua Proceso 01 · 250kW In Execution P2 11 abr 26 Apr 21" [ref=e748] [cursor=pointer]':
+                    - cell [ref=e749]:
+                      - checkbox [ref=e750]
+                    - cell "OT-2026-50003" [ref=e751]
+                    - cell "PM03" [ref=e752]
+                    - 'cell "TAG: PMP-AGUA-01" [ref=e753]':
+                      - generic [ref=e754]: "TAG: PMP-AGUA-01"
+                    - cell "Fuga en sello mecánico — Bomba Agua Proceso 01 · 250kW" [ref=e755]
+                    - cell "In Execution" [ref=e756]
+                    - cell "P2" [ref=e757]
+                    - cell "11 abr 26" [ref=e758]
+                    - cell "Apr 21" [ref=e759]
+                    - cell [ref=e760]
+                  - 'row "OT-2026-50070 PM01 TAG: PMP-SL-HP-002 Vibración en descanso motor — Bomba Slurry HP 002 · 650kW Released P3 10 abr 26 —" [ref=e761] [cursor=pointer]':
+                    - cell [ref=e762]:
+                      - checkbox [ref=e763]
+                    - cell "OT-2026-50070" [ref=e764]
+                    - cell "PM01" [ref=e765]
+                    - 'cell "TAG: PMP-SL-HP-002" [ref=e766]':
+                      - generic [ref=e767]: "TAG: PMP-SL-HP-002"
+                    - cell "Vibración en descanso motor — Bomba Slurry HP 002 · 650kW" [ref=e768]
+                    - cell "Released" [ref=e769]
+                    - cell "P3" [ref=e770]
+                    - cell "10 abr 26" [ref=e771]
+                    - cell "—" [ref=e772]
+                    - cell [ref=e773]
+                  - 'row "OT-2026-50045 PM01 TAG: CVY-CV-001 Desalineación de correa — Correa Principal CV-001 · 1800t/h Scheduled P3 09 abr 26 Apr 12" [ref=e774] [cursor=pointer]':
+                    - cell [ref=e775]:
+                      - checkbox [ref=e776]
+                    - cell "OT-2026-50045" [ref=e777]
+                    - cell "PM01" [ref=e778]
+                    - 'cell "TAG: CVY-CV-001" [ref=e779]':
+                      - generic [ref=e780]: "TAG: CVY-CV-001"
+                    - cell "Desalineación de correa — Correa Principal CV-001 · 1800t/h" [ref=e781]
+                    - cell "Scheduled" [ref=e782]
+                    - cell "P3" [ref=e783]
+                    - cell "09 abr 26" [ref=e784]
+                    - cell "Apr 12" [ref=e785]
+                    - cell [ref=e786]
+                  - 'row "OT-2026-50078 PM03 TAG: BRY-BAL-ML-001 Vibración anormal en pinion drive — Molino Bolas 01 · 26ft × 16MW Closed P2 09 abr 26 Apr 17" [ref=e787] [cursor=pointer]':
+                    - cell [ref=e788]:
+                      - checkbox [ref=e789]
+                    - cell "OT-2026-50078" [ref=e790]
+                    - cell "PM03" [ref=e791]
+                    - 'cell "TAG: BRY-BAL-ML-001" [ref=e792]':
+                      - generic [ref=e793]: "TAG: BRY-BAL-ML-001"
+                    - cell "Vibración anormal en pinion drive — Molino Bolas 01 · 26ft × 16MW" [ref=e794]
+                    - cell "Closed" [ref=e795]
+                    - cell "P2" [ref=e796]
+                    - cell "09 abr 26" [ref=e797]
+                    - cell "Apr 17" [ref=e798]
+                    - cell [ref=e799]
+                  - 'row "OT-2026-50046 PM01 TAG: CVY-CV-003 Polines trabados — Correa Stock Pile CV-003 In Execution P4 08 abr 26 Apr 22" [ref=e800] [cursor=pointer]':
+                    - cell [ref=e801]:
+                      - checkbox [ref=e802]
+                    - cell "OT-2026-50046" [ref=e803]
+                    - cell "PM01" [ref=e804]
+                    - 'cell "TAG: CVY-CV-003" [ref=e805]':
+                      - generic [ref=e806]: "TAG: CVY-CV-003"
+                    - cell "Polines trabados — Correa Stock Pile CV-003" [ref=e807]
+                    - cell "In Execution" [ref=e808]
+                    - cell "P4" [ref=e809]
+                    - cell "08 abr 26" [ref=e810]
+                    - cell "Apr 22" [ref=e811]
+                    - cell [ref=e812]
+                  - 'row "OT-2026-50016 PM01 TAG: TRF-PRI-01 Temperatura devanado alta — Transformador Principal 01 · 80MVA In Execution P3 08 abr 26 Apr 10" [ref=e813] [cursor=pointer]':
+                    - cell [ref=e814]:
+                      - checkbox [ref=e815]
+                    - cell "OT-2026-50016" [ref=e816]
+                    - cell "PM01" [ref=e817]
+                    - 'cell "TAG: TRF-PRI-01" [ref=e818]':
+                      - generic [ref=e819]: "TAG: TRF-PRI-01"
+                    - cell "Temperatura devanado alta — Transformador Principal 01 · 80MVA" [ref=e820]
+                    - cell "In Execution" [ref=e821]
+                    - cell "P3" [ref=e822]
+                    - cell "08 abr 26" [ref=e823]
+                    - cell "Apr 10" [ref=e824]
+                    - cell [ref=e825]
+                  - 'row "OT-2026-50081 PM01 TAG: BRY-SAG-ML-001 Temperatura alta en lubrication unit — Molino SAG 01 · 38ft × 20MW Cancelled P3 08 abr 26 —" [ref=e826] [cursor=pointer]':
+                    - cell [ref=e827]:
+                      - checkbox [ref=e828]
+                    - cell "OT-2026-50081" [ref=e829]
+                    - cell "PM01" [ref=e830]
+                    - 'cell "TAG: BRY-SAG-ML-001" [ref=e831]':
+                      - generic [ref=e832]: "TAG: BRY-SAG-ML-001"
+                    - cell "Temperatura alta en lubrication unit — Molino SAG 01 · 38ft × 20MW" [ref=e833]
+                    - cell "Cancelled" [ref=e834]
+                    - cell "P3" [ref=e835]
+                    - cell "08 abr 26" [ref=e836]
+                    - cell "—" [ref=e837]
+                    - cell [ref=e838]
+                  - 'row "OT-NC-BRY-SA-467 PM01 TAG: BRY-SAG-ML-002 Inspección rodamiento secundario Closed P3 07 abr 26 Apr 09" [ref=e839] [cursor=pointer]':
+                    - cell [ref=e840]:
+                      - checkbox [ref=e841]
+                    - cell "OT-NC-BRY-SA-467" [ref=e842]
+                    - cell "PM01" [ref=e843]
+                    - 'cell "TAG: BRY-SAG-ML-002" [ref=e844]':
+                      - generic [ref=e845]: "TAG: BRY-SAG-ML-002"
+                    - cell "Inspección rodamiento secundario" [ref=e846]
+                    - cell "Closed" [ref=e847]
+                    - cell "P3" [ref=e848]
+                    - cell "07 abr 26" [ref=e849]
+                    - cell "Apr 09" [ref=e850]
+                    - cell [ref=e851]
+                  - 'row "OT-2026-50085 PM03 TAG: CRU-CON-HP-02 Falla rodamiento eje excéntrico — Chancador Cónico HP800 02 Closed P1 07 abr 26 Apr 13" [ref=e852] [cursor=pointer]':
+                    - cell [ref=e853]:
+                      - checkbox [ref=e854]
+                    - cell "OT-2026-50085" [ref=e855]
+                    - cell "PM03" [ref=e856]
+                    - 'cell "TAG: CRU-CON-HP-02" [ref=e857]':
+                      - generic [ref=e858]: "TAG: CRU-CON-HP-02"
+                    - cell "Falla rodamiento eje excéntrico — Chancador Cónico HP800 02" [ref=e859]
+                    - cell "Closed" [ref=e860]
+                    - cell "P1" [ref=e861]
+                    - cell "07 abr 26" [ref=e862]
+                    - cell "Apr 13" [ref=e863]
+                    - cell [ref=e864]
+                  - 'row "OT-2026-50041 PM03 TAG: CRU-CON-HP-02 Falla rodamiento eje excéntrico — Chancador Cónico HP800 02 Scheduled P1 07 abr 26 Apr 21" [ref=e865] [cursor=pointer]':
+                    - cell [ref=e866]:
+                      - checkbox [ref=e867]
+                    - cell "OT-2026-50041" [ref=e868]
+                    - cell "PM03" [ref=e869]
+                    - 'cell "TAG: CRU-CON-HP-02" [ref=e870]':
+                      - generic [ref=e871]: "TAG: CRU-CON-HP-02"
+                    - cell "Falla rodamiento eje excéntrico — Chancador Cónico HP800 02" [ref=e872]
+                    - cell "Scheduled" [ref=e873]
+                    - cell "P1" [ref=e874]
+                    - cell "07 abr 26" [ref=e875]
+                    - cell "Apr 21" [ref=e876]
+                    - cell [ref=e877]
+                  - 'row "OT-2026-50082 PM01 TAG: THK-REL-01 Corrosión en base de mecanismo — Espesador Relaves 01 · 90m Cancelled P4 06 abr 26 —" [ref=e878] [cursor=pointer]':
+                    - cell [ref=e879]:
+                      - checkbox [ref=e880]
+                    - cell "OT-2026-50082" [ref=e881]
+                    - cell "PM01" [ref=e882]
+                    - 'cell "TAG: THK-REL-01" [ref=e883]':
+                      - generic [ref=e884]: "TAG: THK-REL-01"
+                    - cell "Corrosión en base de mecanismo — Espesador Relaves 01 · 90m" [ref=e885]
+                    - cell "Cancelled" [ref=e886]
+                    - cell "P4" [ref=e887]
+                    - cell "06 abr 26" [ref=e888]
+                    - cell "—" [ref=e889]
+                    - cell [ref=e890]
+                  - 'row "OT-2026-50044 PM01 TAG: CVY-CV-002 Desalineación de correa — Correa Secundaria CV-002 Scheduled P3 06 abr 26 Apr 12" [ref=e891] [cursor=pointer]':
+                    - cell [ref=e892]:
+                      - checkbox [ref=e893]
+                    - cell "OT-2026-50044" [ref=e894]
+                    - cell "PM01" [ref=e895]
+                    - 'cell "TAG: CVY-CV-002" [ref=e896]':
+                      - generic [ref=e897]: "TAG: CVY-CV-002"
+                    - cell "Desalineación de correa — Correa Secundaria CV-002" [ref=e898]
+                    - cell "Scheduled" [ref=e899]
+                    - cell "P3" [ref=e900]
+                    - cell "06 abr 26" [ref=e901]
+                    - cell "Apr 12" [ref=e902]
+                    - cell [ref=e903]
+                  - 'row "OT-2026-50074 PM01 TAG: PMP-SL-HP-002 Vibración en descanso motor — Bomba Slurry HP 002 · 650kW Scheduled P3 06 abr 26 Apr 10" [ref=e904] [cursor=pointer]':
+                    - cell [ref=e905]:
+                      - checkbox [ref=e906]
+                    - cell "OT-2026-50074" [ref=e907]
+                    - cell "PM01" [ref=e908]
+                    - 'cell "TAG: PMP-SL-HP-002" [ref=e909]':
+                      - generic [ref=e910]: "TAG: PMP-SL-HP-002"
+                    - cell "Vibración en descanso motor — Bomba Slurry HP 002 · 650kW" [ref=e911]
+                    - cell "Scheduled" [ref=e912]
+                    - cell "P3" [ref=e913]
+                    - cell "06 abr 26" [ref=e914]
+                    - cell "Apr 10" [ref=e915]
+                    - cell [ref=e916]
+                  - 'row "OT-2026-50071 PM01 TAG: CVY-CV-001 Desalineación de correa — Correa Principal CV-001 · 1800t/h Cancelled P3 05 abr 26 —" [ref=e917] [cursor=pointer]':
+                    - cell [ref=e918]:
+                      - checkbox [ref=e919]
+                    - cell "OT-2026-50071" [ref=e920]
+                    - cell "PM01" [ref=e921]
+                    - 'cell "TAG: CVY-CV-001" [ref=e922]':
+                      - generic [ref=e923]: "TAG: CVY-CV-001"
+                    - cell "Desalineación de correa — Correa Principal CV-001 · 1800t/h" [ref=e924]
+                    - cell "Cancelled" [ref=e925]
+                    - cell "P3" [ref=e926]
+                    - cell "05 abr 26" [ref=e927]
+                    - cell "—" [ref=e928]
+                    - cell [ref=e929]
+                  - 'row "OT-2026-50027 PM01 TAG: FLT-BCO-CND-01 Desgaste de impulsor rotor — Banco Columnas Cleaner Closed P4 05 abr 26 Apr 07" [ref=e930] [cursor=pointer]':
+                    - cell [ref=e931]:
+                      - checkbox [ref=e932]
+                    - cell "OT-2026-50027" [ref=e933]
+                    - cell "PM01" [ref=e934]
+                    - 'cell "TAG: FLT-BCO-CND-01" [ref=e935]':
+                      - generic [ref=e936]: "TAG: FLT-BCO-CND-01"
+                    - cell "Desgaste de impulsor rotor — Banco Columnas Cleaner" [ref=e937]
+                    - cell "Closed" [ref=e938]
+                    - cell "P4" [ref=e939]
+                    - cell "05 abr 26" [ref=e940]
+                    - cell "Apr 07" [ref=e941]
+                    - cell [ref=e942]
+                  - 'row "OT-2026-50011 PM01 TAG: HID-CEN-01 Contaminación de aceite — Central Hidráulica Crusher Planned P3 05 abr 26 —" [ref=e943] [cursor=pointer]':
+                    - cell [ref=e944]:
+                      - checkbox [ref=e945]
+                    - cell "OT-2026-50011" [ref=e946]
+                    - cell "PM01" [ref=e947]
+                    - 'cell "TAG: HID-CEN-01" [ref=e948]':
+                      - generic [ref=e949]: "TAG: HID-CEN-01"
+                    - cell "Contaminación de aceite — Central Hidráulica Crusher" [ref=e950]
+                    - cell "Planned" [ref=e951]
+                    - cell "P3" [ref=e952]
+                    - cell "05 abr 26" [ref=e953]
+                    - cell "—" [ref=e954]
+                    - cell [ref=e955]
+                  - 'row "OT-2026-50054 PM01 TAG: CRU-JAW-01 Desgaste en manto y cóncavo — Chancador Mandíbula 01 Cancelled P4 04 abr 26 Apr 18" [ref=e956] [cursor=pointer]':
+                    - cell [ref=e957]:
+                      - checkbox [ref=e958]
+                    - cell "OT-2026-50054" [ref=e959]
+                    - cell "PM01" [ref=e960]
+                    - 'cell "TAG: CRU-JAW-01" [ref=e961]':
+                      - generic [ref=e962]: "TAG: CRU-JAW-01"
+                    - cell "Desgaste en manto y cóncavo — Chancador Mandíbula 01" [ref=e963]
+                    - cell "Cancelled" [ref=e964]
+                    - cell "P4" [ref=e965]
+                    - cell "04 abr 26" [ref=e966]
+                    - cell "Apr 18" [ref=e967]
+                    - cell [ref=e968]
+                  - 'row "OT-2026-50017 PM03 TAG: CRU-JAW-01 Fuga hidráulica en ajuste — Chancador Mandíbula 01 Closed P2 04 abr 26 Apr 13" [ref=e969] [cursor=pointer]':
+                    - cell [ref=e970]:
+                      - checkbox [ref=e971]
+                    - cell "OT-2026-50017" [ref=e972]
+                    - cell "PM03" [ref=e973]
+                    - 'cell "TAG: CRU-JAW-01" [ref=e974]':
+                      - generic [ref=e975]: "TAG: CRU-JAW-01"
+                    - cell "Fuga hidráulica en ajuste — Chancador Mandíbula 01" [ref=e976]
+                    - cell "Closed" [ref=e977]
+                    - cell "P2" [ref=e978]
+                    - cell "04 abr 26" [ref=e979]
+                    - cell "Apr 13" [ref=e980]
+                    - cell [ref=e981]
+                  - 'row "OT-2026-50051 PM03 TAG: SUB-MT-P01 Falla breaker MT — Subestación MT Planta 01 · 23kV Scheduled P2 03 abr 26 Apr 16" [ref=e982] [cursor=pointer]':
+                    - cell [ref=e983]:
+                      - checkbox [ref=e984]
+                    - cell "OT-2026-50051" [ref=e985]
+                    - cell "PM03" [ref=e986]
+                    - 'cell "TAG: SUB-MT-P01" [ref=e987]':
+                      - generic [ref=e988]: "TAG: SUB-MT-P01"
+                    - cell "Falla breaker MT — Subestación MT Planta 01 · 23kV" [ref=e989]
+                    - cell "Scheduled" [ref=e990]
+                    - cell "P2" [ref=e991]
+                    - cell "03 abr 26" [ref=e992]
+                    - cell "Apr 16" [ref=e993]
+                    - cell [ref=e994]
+                  - 'row "OT-2026-50048 PM03 TAG: PMP-REL-01 Fuga en sello mecánico — Bomba Relaves 01 · 1200kW Closed P2 03 abr 26 Apr 10" [ref=e995] [cursor=pointer]':
+                    - cell [ref=e996]:
+                      - checkbox [ref=e997]
+                    - cell "OT-2026-50048" [ref=e998]
+                    - cell "PM03" [ref=e999]
+                    - 'cell "TAG: PMP-REL-01" [ref=e1000]':
+                      - generic [ref=e1001]: "TAG: PMP-REL-01"
+                    - cell "Fuga en sello mecánico — Bomba Relaves 01 · 1200kW" [ref=e1002]
+                    - cell "Closed" [ref=e1003]
+                    - cell "P2" [ref=e1004]
+                    - cell "03 abr 26" [ref=e1005]
+                    - cell "Apr 10" [ref=e1006]
+                    - cell [ref=e1007]
+                  - 'row "OT-2026-50024 PM03 TAG: THK-CNC-01 Falla torque mecanismo rastrillo — Espesador Concentrado 01 · 40m In Execution P2 02 abr 26 Apr 05" [ref=e1008] [cursor=pointer]':
+                    - cell [ref=e1009]:
+                      - checkbox [ref=e1010]
+                    - cell "OT-2026-50024" [ref=e1011]
+                    - cell "PM03" [ref=e1012]
+                    - 'cell "TAG: THK-CNC-01" [ref=e1013]':
+                      - generic [ref=e1014]: "TAG: THK-CNC-01"
+                    - cell "Falla torque mecanismo rastrillo — Espesador Concentrado 01 · 40m" [ref=e1015]
+                    - cell "In Execution" [ref=e1016]
+                    - cell "P2" [ref=e1017]
+                    - cell "02 abr 26" [ref=e1018]
+                    - cell "Apr 05" [ref=e1019]
+                    - cell [ref=e1020]
+                  - 'row "OT-2026-50097 PM01 TAG: BRY-SAG-ML-002 Ruido anormal en reductor — Molino SAG 02 · 38ft × 20MW Closed P3 02 abr 26 Apr 13" [ref=e1021] [cursor=pointer]':
+                    - cell [ref=e1022]:
+                      - checkbox [ref=e1023]
+                    - cell "OT-2026-50097" [ref=e1024]
+                    - cell "PM01" [ref=e1025]
+                    - 'cell "TAG: BRY-SAG-ML-002" [ref=e1026]':
+                      - generic [ref=e1027]: "TAG: BRY-SAG-ML-002"
+                    - cell "Ruido anormal en reductor — Molino SAG 02 · 38ft × 20MW" [ref=e1028]
+                    - cell "Closed" [ref=e1029]
+                    - cell "P3" [ref=e1030]
+                    - cell "02 abr 26" [ref=e1031]
+                    - cell "Apr 13" [ref=e1032]
+                    - cell [ref=e1033]
+                  - 'row "OT-2026-50095 PM01 TAG: HID-CEN-01 Contaminación de aceite — Central Hidráulica Crusher Cancelled P3 01 abr 26 Apr 11" [ref=e1034] [cursor=pointer]':
+                    - cell [ref=e1035]:
+                      - checkbox [ref=e1036]
+                    - cell "OT-2026-50095" [ref=e1037]
+                    - cell "PM01" [ref=e1038]
+                    - 'cell "TAG: HID-CEN-01" [ref=e1039]':
+                      - generic [ref=e1040]: "TAG: HID-CEN-01"
+                    - cell "Contaminación de aceite — Central Hidráulica Crusher" [ref=e1041]
+                    - cell "Cancelled" [ref=e1042]
+                    - cell "P3" [ref=e1043]
+                    - cell "01 abr 26" [ref=e1044]
+                    - cell "Apr 11" [ref=e1045]
+                    - cell [ref=e1046]
+                  - 'row "OT-2026-50091 PM03 TAG: PMP-AGUA-01 Fuga en sello mecánico — Bomba Agua Proceso 01 · 250kW Scheduled P2 01 abr 26 Apr 15" [ref=e1047] [cursor=pointer]':
+                    - cell [ref=e1048]:
+                      - checkbox [ref=e1049]
+                    - cell "OT-2026-50091" [ref=e1050]
+                    - cell "PM03" [ref=e1051]
+                    - 'cell "TAG: PMP-AGUA-01" [ref=e1052]':
+                      - generic [ref=e1053]: "TAG: PMP-AGUA-01"
+                    - cell "Fuga en sello mecánico — Bomba Agua Proceso 01 · 250kW" [ref=e1054]
+                    - cell "Scheduled" [ref=e1055]
+                    - cell "P2" [ref=e1056]
+                    - cell "01 abr 26" [ref=e1057]
+                    - cell "Apr 15" [ref=e1058]
+                    - cell [ref=e1059]
+                  - 'row "OT-2026-50042 PM01 TAG: PMP-SL-HP-002 Vibración en descanso motor — Bomba Slurry HP 002 · 650kW In Scheduling P3 01 abr 26 —" [ref=e1060] [cursor=pointer]':
+                    - cell [ref=e1061]:
+                      - checkbox [ref=e1062]
+                    - cell "OT-2026-50042" [ref=e1063]
+                    - cell "PM01" [ref=e1064]
+                    - 'cell "TAG: PMP-SL-HP-002" [ref=e1065]':
+                      - generic [ref=e1066]: "TAG: PMP-SL-HP-002"
+                    - cell "Vibración en descanso motor — Bomba Slurry HP 002 · 650kW" [ref=e1067]
+                    - cell "In Scheduling" [ref=e1068]
+                    - cell "P3" [ref=e1069]
+                    - cell "01 abr 26" [ref=e1070]
+                    - cell "—" [ref=e1071]
+                    - cell [ref=e1072]:
+                      - button "Reservar HH (pasa a PROGRAMADO)" [ref=e1074]:
+                        - img [ref=e1075]
+                  - 'row "OT-2026-50037 PM01 TAG: FLT-CEL-RG-02 Falla en válvula dart — Celda Rougher 02 · 300m³ Closed P3 01 abr 26 Apr 13" [ref=e1078] [cursor=pointer]':
+                    - cell [ref=e1079]:
+                      - checkbox [ref=e1080]
+                    - cell "OT-2026-50037" [ref=e1081]
+                    - cell "PM01" [ref=e1082]
+                    - 'cell "TAG: FLT-CEL-RG-02" [ref=e1083]':
+                      - generic [ref=e1084]: "TAG: FLT-CEL-RG-02"
+                    - cell "Falla en válvula dart — Celda Rougher 02 · 300m³" [ref=e1085]
+                    - cell "Closed" [ref=e1086]
+                    - cell "P3" [ref=e1087]
+                    - cell "01 abr 26" [ref=e1088]
+                    - cell "Apr 13" [ref=e1089]
+                    - cell [ref=e1090]
+                  - 'row "OT-2026-50023 PM03 TAG: SUB-AT-S01 Falla breaker MT — Subestación AT Mina · 220kV In Execution P2 01 abr 26 Apr 06" [ref=e1091] [cursor=pointer]':
+                    - cell [ref=e1092]:
+                      - checkbox [ref=e1093]
+                    - cell "OT-2026-50023" [ref=e1094]
+                    - cell "PM03" [ref=e1095]
+                    - 'cell "TAG: SUB-AT-S01" [ref=e1096]':
+                      - generic [ref=e1097]: "TAG: SUB-AT-S01"
+                    - cell "Falla breaker MT — Subestación AT Mina · 220kV" [ref=e1098]
+                    - cell "In Execution" [ref=e1099]
+                    - cell "P2" [ref=e1100]
+                    - cell "01 abr 26" [ref=e1101]
+                    - cell "Apr 06" [ref=e1102]
+                    - cell [ref=e1103]
+                  - 'row "OT-2026-50036 PM01 TAG: BRY-CYC-NST-01 Temperatura alta en lubrication unit — Nest Ciclones 01 · 10 × D26 In Execution P3 01 abr 26 Apr 09" [ref=e1104] [cursor=pointer]':
+                    - cell [ref=e1105]:
+                      - checkbox [ref=e1106]
+                    - cell "OT-2026-50036" [ref=e1107]
+                    - cell "PM01" [ref=e1108]
+                    - 'cell "TAG: BRY-CYC-NST-01" [ref=e1109]':
+                      - generic [ref=e1110]: "TAG: BRY-CYC-NST-01"
+                    - cell "Temperatura alta en lubrication unit — Nest Ciclones 01 · 10 × D26" [ref=e1111]
+                    - cell "In Execution" [ref=e1112]
+                    - cell "P3" [ref=e1113]
+                    - cell "01 abr 26" [ref=e1114]
+                    - cell "Apr 09" [ref=e1115]
+                    - cell [ref=e1116]
+                  - 'row "OT-2026-50043 PM01 TAG: PLC-FLT-01 Error CPU redundante — PLC Flotación · Rockwell Scheduled P3 01 abr 26 Apr 13" [ref=e1117] [cursor=pointer]':
+                    - cell [ref=e1118]:
+                      - checkbox [ref=e1119]
+                    - cell "OT-2026-50043" [ref=e1120]
+                    - cell "PM01" [ref=e1121]
+                    - 'cell "TAG: PLC-FLT-01" [ref=e1122]':
+                      - generic [ref=e1123]: "TAG: PLC-FLT-01"
+                    - cell "Error CPU redundante — PLC Flotación · Rockwell" [ref=e1124]
+                    - cell "Scheduled" [ref=e1125]
+                    - cell "P3" [ref=e1126]
+                    - cell "01 abr 26" [ref=e1127]
+                    - cell "Apr 13" [ref=e1128]
+                    - cell [ref=e1129]
+                  - 'row "OT-2026-50029 PM03 TAG: THK-CNC-01 Falla torque mecanismo rastrillo — Espesador Concentrado 01 · 40m Closed P2 31 mar 26 Apr 08" [ref=e1130] [cursor=pointer]':
+                    - cell [ref=e1131]:
+                      - checkbox [ref=e1132]
+                    - cell "OT-2026-50029" [ref=e1133]
+                    - cell "PM03" [ref=e1134]
+                    - 'cell "TAG: THK-CNC-01" [ref=e1135]':
+                      - generic [ref=e1136]: "TAG: THK-CNC-01"
+                    - cell "Falla torque mecanismo rastrillo — Espesador Concentrado 01 · 40m" [ref=e1137]
+                    - cell "Closed" [ref=e1138]
+                    - cell "P2" [ref=e1139]
+                    - cell "31 mar 26" [ref=e1140]
+                    - cell "Apr 08" [ref=e1141]
+                    - cell [ref=e1142]
+                  - 'row "OT-2026-50069 PM01 TAG: BRY-SAG-ML-002 Ruido anormal en reductor — Molino SAG 02 · 38ft × 20MW Closed P3 30 mar 26 Apr 13" [ref=e1143] [cursor=pointer]':
+                    - cell [ref=e1144]:
+                      - checkbox [ref=e1145]
+                    - cell "OT-2026-50069" [ref=e1146]
+                    - cell "PM01" [ref=e1147]
+                    - 'cell "TAG: BRY-SAG-ML-002" [ref=e1148]':
+                      - generic [ref=e1149]: "TAG: BRY-SAG-ML-002"
+                    - cell "Ruido anormal en reductor — Molino SAG 02 · 38ft × 20MW" [ref=e1150]
+                    - cell "Closed" [ref=e1151]
+                    - cell "P3" [ref=e1152]
+                    - cell "30 mar 26" [ref=e1153]
+                    - cell "Apr 13" [ref=e1154]
+                    - cell [ref=e1155]
+                  - 'row "OT-2026-50067 PM01 TAG: COM-AIRE-01 Temperatura descarga alta — Compresor Aire 01 · 1800cfm Closed P3 30 mar 26 Apr 08" [ref=e1156] [cursor=pointer]':
+                    - cell [ref=e1157]:
+                      - checkbox [ref=e1158]
+                    - cell "OT-2026-50067" [ref=e1159]
+                    - cell "PM01" [ref=e1160]
+                    - 'cell "TAG: COM-AIRE-01" [ref=e1161]':
+                      - generic [ref=e1162]: "TAG: COM-AIRE-01"
+                    - cell "Temperatura descarga alta — Compresor Aire 01 · 1800cfm" [ref=e1163]
+                    - cell "Closed" [ref=e1164]
+                    - cell "P3" [ref=e1165]
+                    - cell "30 mar 26" [ref=e1166]
+                    - cell "Apr 08" [ref=e1167]
+                    - cell [ref=e1168]
+                  - 'row "OT-2026-50062 PM03 TAG: COM-AIRE-02 Falla válvula admisión — Compresor Aire 02 · 1800cfm Scheduled P2 30 mar 26 Apr 05" [ref=e1169] [cursor=pointer]':
+                    - cell [ref=e1170]:
+                      - checkbox [ref=e1171]
+                    - cell "OT-2026-50062" [ref=e1172]
+                    - cell "PM03" [ref=e1173]
+                    - 'cell "TAG: COM-AIRE-02" [ref=e1174]':
+                      - generic [ref=e1175]: "TAG: COM-AIRE-02"
+                    - cell "Falla válvula admisión — Compresor Aire 02 · 1800cfm" [ref=e1176]
+                    - cell "Scheduled" [ref=e1177]
+                    - cell "P2" [ref=e1178]
+                    - cell "30 mar 26" [ref=e1179]
+                    - cell "Apr 05" [ref=e1180]
+                    - cell [ref=e1181]
+                  - 'row "OT-2026-50056 PM03 TAG: CRU-JAW-01 Falla rodamiento eje excéntrico — Chancador Mandíbula 01 Closed P1 29 mar 26 Apr 06" [ref=e1182] [cursor=pointer]':
+                    - cell [ref=e1183]:
+                      - checkbox [ref=e1184]
+                    - cell "OT-2026-50056" [ref=e1185]
+                    - cell "PM03" [ref=e1186]
+                    - 'cell "TAG: CRU-JAW-01" [ref=e1187]':
+                      - generic [ref=e1188]: "TAG: CRU-JAW-01"
+                    - cell "Falla rodamiento eje excéntrico — Chancador Mandíbula 01" [ref=e1189]
+                    - cell "Closed" [ref=e1190]
+                    - cell "P1" [ref=e1191]
+                    - cell "29 mar 26" [ref=e1192]
+                    - cell "Apr 06" [ref=e1193]
+                    - cell [ref=e1194]
+                  - 'row "OT-2026-50004 PM03 TAG: CRU-GIR-01 Fuga hidráulica en ajuste — Chancador Giratorio 60×113 In Execution P2 29 mar 26 Apr 08" [ref=e1195] [cursor=pointer]':
+                    - cell [ref=e1196]:
+                      - checkbox [ref=e1197]
+                    - cell "OT-2026-50004" [ref=e1198]
+                    - cell "PM03" [ref=e1199]
+                    - 'cell "TAG: CRU-GIR-01" [ref=e1200]':
+                      - generic [ref=e1201]: "TAG: CRU-GIR-01"
+                    - cell "Fuga hidráulica en ajuste — Chancador Giratorio 60×113" [ref=e1202]
+                    - cell "In Execution" [ref=e1203]
+                    - cell "P2" [ref=e1204]
+                    - cell "29 mar 26" [ref=e1205]
+                    - cell "Apr 08" [ref=e1206]
+                    - cell [ref=e1207]
+                  - 'row "OT-2026-50057 PM03 TAG: TRF-PRI-01 Fuga de aceite — Transformador Principal 01 · 80MVA Closed P2 28 mar 26 Apr 05" [ref=e1208] [cursor=pointer]':
+                    - cell [ref=e1209]:
+                      - checkbox [ref=e1210]
+                    - cell "OT-2026-50057" [ref=e1211]
+                    - cell "PM03" [ref=e1212]
+                    - 'cell "TAG: TRF-PRI-01" [ref=e1213]':
+                      - generic [ref=e1214]: "TAG: TRF-PRI-01"
+                    - cell "Fuga de aceite — Transformador Principal 01 · 80MVA" [ref=e1215]
+                    - cell "Closed" [ref=e1216]
+                    - cell "P2" [ref=e1217]
+                    - cell "28 mar 26" [ref=e1218]
+                    - cell "Apr 05" [ref=e1219]
+                    - cell [ref=e1220]
+                  - 'row "OT-2026-50094 PM03 TAG: CRU-CON-HP-02 Falla rodamiento eje excéntrico — Chancador Cónico HP800 02 In Execution P1 28 mar 26 Apr 07" [ref=e1221] [cursor=pointer]':
+                    - cell [ref=e1222]:
+                      - checkbox [ref=e1223]
+                    - cell "OT-2026-50094" [ref=e1224]
+                    - cell "PM03" [ref=e1225]
+                    - 'cell "TAG: CRU-CON-HP-02" [ref=e1226]':
+                      - generic [ref=e1227]: "TAG: CRU-CON-HP-02"
+                    - cell "Falla rodamiento eje excéntrico — Chancador Cónico HP800 02" [ref=e1228]
+                    - cell "In Execution" [ref=e1229]
+                    - cell "P1" [ref=e1230]
+                    - cell "28 mar 26" [ref=e1231]
+                    - cell "Apr 07" [ref=e1232]
+                    - cell [ref=e1233]
+                  - 'row "OT-PM-STRAT-PMP-SL-03 PM01 TAG: PMP-SL-HP-002 Inspección rodamiento bomba Closed P3 28 mar 26 Mar 30" [ref=e1234] [cursor=pointer]':
+                    - cell [ref=e1235]:
+                      - checkbox [ref=e1236]
+                    - cell "OT-PM-STRAT-PMP-SL-03" [ref=e1237]
+                    - cell "PM01" [ref=e1238]
+                    - 'cell "TAG: PMP-SL-HP-002" [ref=e1239]':
+                      - generic [ref=e1240]: "TAG: PMP-SL-HP-002"
+                    - cell "Inspección rodamiento bomba" [ref=e1241]
+                    - cell "Closed" [ref=e1242]
+                    - cell "P3" [ref=e1243]
+                    - cell "28 mar 26" [ref=e1244]
+                    - cell "Mar 30" [ref=e1245]
+                    - cell [ref=e1246]
+                  - 'row "OT-PM-STRAT-VLV-PN-03 PM01 TAG: VLV-PN-MM-08 Lubricación válvula neumática Closed P3 28 mar 26 Mar 30" [ref=e1247] [cursor=pointer]':
+                    - cell [ref=e1248]:
+                      - checkbox [ref=e1249]
+                    - cell "OT-PM-STRAT-VLV-PN-03" [ref=e1250]
+                    - cell "PM01" [ref=e1251]
+                    - 'cell "TAG: VLV-PN-MM-08" [ref=e1252]':
+                      - generic [ref=e1253]: "TAG: VLV-PN-MM-08"
+                    - cell "Lubricación válvula neumática" [ref=e1254]
+                    - cell "Closed" [ref=e1255]
+                    - cell "P3" [ref=e1256]
+                    - cell "28 mar 26" [ref=e1257]
+                    - cell "Mar 30" [ref=e1258]
+                    - cell [ref=e1259]
+                  - 'row "OT-PM-STRAT-MOL-CC-03 PM01 TAG: MOL-CCO-01 Cambio liners molino Closed P3 28 mar 26 Mar 30" [ref=e1260] [cursor=pointer]':
+                    - cell [ref=e1261]:
+                      - checkbox [ref=e1262]
+                    - cell "OT-PM-STRAT-MOL-CC-03" [ref=e1263]
+                    - cell "PM01" [ref=e1264]
+                    - 'cell "TAG: MOL-CCO-01" [ref=e1265]':
+                      - generic [ref=e1266]: "TAG: MOL-CCO-01"
+                    - cell "Cambio liners molino" [ref=e1267]
+                    - cell "Closed" [ref=e1268]
+                    - cell "P3" [ref=e1269]
+                    - cell "28 mar 26" [ref=e1270]
+                    - cell "Mar 30" [ref=e1271]
+                    - cell [ref=e1272]
+                  - 'row "OT-2026-50058 PM03 TAG: CVY-CV-002 Empalme deteriorado — Correa Secundaria CV-002 Closed P2 28 mar 26 Mar 30" [ref=e1273] [cursor=pointer]':
+                    - cell [ref=e1274]:
+                      - checkbox [ref=e1275]
+                    - cell "OT-2026-50058" [ref=e1276]
+                    - cell "PM03" [ref=e1277]
+                    - 'cell "TAG: CVY-CV-002" [ref=e1278]':
+                      - generic [ref=e1279]: "TAG: CVY-CV-002"
+                    - cell "Empalme deteriorado — Correa Secundaria CV-002" [ref=e1280]
+                    - cell "Closed" [ref=e1281]
+                    - cell "P2" [ref=e1282]
+                    - cell "28 mar 26" [ref=e1283]
+                    - cell "Mar 30" [ref=e1284]
+                    - cell [ref=e1285]
+                  - 'row "OT-2026-50077 PM03 TAG: CRU-CON-HP-01 Fuga hidráulica en ajuste — Chancador Cónico HP800 01 Closed P2 27 mar 26 Apr 05" [ref=e1286] [cursor=pointer]':
+                    - cell [ref=e1287]:
+                      - checkbox [ref=e1288]
+                    - cell "OT-2026-50077" [ref=e1289]
+                    - cell "PM03" [ref=e1290]
+                    - 'cell "TAG: CRU-CON-HP-01" [ref=e1291]':
+                      - generic [ref=e1292]: "TAG: CRU-CON-HP-01"
+                    - cell "Fuga hidráulica en ajuste — Chancador Cónico HP800 01" [ref=e1293]
+                    - cell "Closed" [ref=e1294]
+                    - cell "P2" [ref=e1295]
+                    - cell "27 mar 26" [ref=e1296]
+                    - cell "Apr 05" [ref=e1297]
+                    - cell [ref=e1298]
+                  - 'row "OT-2026-50033 PM03 TAG: CRU-CON-HP-01 Falla rodamiento eje excéntrico — Chancador Cónico HP800 01 In Execution P1 26 mar 26 Apr 06" [ref=e1299] [cursor=pointer]':
+                    - cell [ref=e1300]:
+                      - checkbox [ref=e1301]
+                    - cell "OT-2026-50033" [ref=e1302]
+                    - cell "PM03" [ref=e1303]
+                    - 'cell "TAG: CRU-CON-HP-01" [ref=e1304]':
+                      - generic [ref=e1305]: "TAG: CRU-CON-HP-01"
+                    - cell "Falla rodamiento eje excéntrico — Chancador Cónico HP800 01" [ref=e1306]
+                    - cell "In Execution" [ref=e1307]
+                    - cell "P1" [ref=e1308]
+                    - cell "26 mar 26" [ref=e1309]
+                    - cell "Apr 06" [ref=e1310]
+                    - cell [ref=e1311]
+                  - 'row "OT-2026-50035 PM01 TAG: CVY-CV-001 Polines trabados — Correa Principal CV-001 · 1800t/h Cancelled P4 26 mar 26 Mar 30" [ref=e1312] [cursor=pointer]':
+                    - cell [ref=e1313]:
+                      - checkbox [ref=e1314]
+                    - cell "OT-2026-50035" [ref=e1315]
+                    - cell "PM01" [ref=e1316]
+                    - 'cell "TAG: CVY-CV-001" [ref=e1317]':
+                      - generic [ref=e1318]: "TAG: CVY-CV-001"
+                    - cell "Polines trabados — Correa Principal CV-001 · 1800t/h" [ref=e1319]
+                    - cell "Cancelled" [ref=e1320]
+                    - cell "P4" [ref=e1321]
+                    - cell "26 mar 26" [ref=e1322]
+                    - cell "Mar 30" [ref=e1323]
+                    - cell [ref=e1324]
+                  - 'row "OT-2026-50072 PM03 TAG: SUB-MT-P01 Alarma sobrecarga trafo — Subestación MT Planta 01 · 23kV Scheduled P1 25 mar 26 Mar 30" [ref=e1325] [cursor=pointer]':
+                    - cell [ref=e1326]:
+                      - checkbox [ref=e1327]
+                    - cell "OT-2026-50072" [ref=e1328]
+                    - cell "PM03" [ref=e1329]
+                    - 'cell "TAG: SUB-MT-P01" [ref=e1330]':
+                      - generic [ref=e1331]: "TAG: SUB-MT-P01"
+                    - cell "Alarma sobrecarga trafo — Subestación MT Planta 01 · 23kV" [ref=e1332]
+                    - cell "Scheduled" [ref=e1333]
+                    - cell "P1" [ref=e1334]
+                    - cell "25 mar 26" [ref=e1335]
+                    - cell "Mar 30" [ref=e1336]
+                    - cell [ref=e1337]
+                  - 'row "OT-2026-50064 PM03 TAG: CRU-JAW-01 Fuga hidráulica en ajuste — Chancador Mandíbula 01 In Execution P2 25 mar 26 Apr 06" [ref=e1338] [cursor=pointer]':
+                    - cell [ref=e1339]:
+                      - checkbox [ref=e1340]
+                    - cell "OT-2026-50064" [ref=e1341]
+                    - cell "PM03" [ref=e1342]
+                    - 'cell "TAG: CRU-JAW-01" [ref=e1343]':
+                      - generic [ref=e1344]: "TAG: CRU-JAW-01"
+                    - cell "Fuga hidráulica en ajuste — Chancador Mandíbula 01" [ref=e1345]
+                    - cell "In Execution" [ref=e1346]
+                    - cell "P2" [ref=e1347]
+                    - cell "25 mar 26" [ref=e1348]
+                    - cell "Apr 06" [ref=e1349]
+                    - cell [ref=e1350]
+                  - 'row "OT-2026-50020 PM01 TAG: PMP-REL-01 Impulsor desgastado — Bomba Relaves 01 · 1200kW Released P4 25 mar 26 —" [ref=e1351] [cursor=pointer]':
+                    - cell [ref=e1352]:
+                      - checkbox [ref=e1353]
+                    - cell "OT-2026-50020" [ref=e1354]
+                    - cell "PM01" [ref=e1355]
+                    - 'cell "TAG: PMP-REL-01" [ref=e1356]':
+                      - generic [ref=e1357]: "TAG: PMP-REL-01"
+                    - cell "Impulsor desgastado — Bomba Relaves 01 · 1200kW" [ref=e1358]
+                    - cell "Released" [ref=e1359]
+                    - cell "P4" [ref=e1360]
+                    - cell "25 mar 26" [ref=e1361]
+                    - cell "—" [ref=e1362]
+                    - cell [ref=e1363]
+                  - 'row "OT-2026-50026 PM03 TAG: PMP-SL-HP-001 Fuga en sello mecánico — Bomba Slurry HP 001 · 650kW Closed P2 25 mar 26 Apr 04" [ref=e1364] [cursor=pointer]':
+                    - cell [ref=e1365]:
+                      - checkbox [ref=e1366]
+                    - cell "OT-2026-50026" [ref=e1367]
+                    - cell "PM03" [ref=e1368]
+                    - 'cell "TAG: PMP-SL-HP-001" [ref=e1369]':
+                      - generic [ref=e1370]: "TAG: PMP-SL-HP-001"
+                    - cell "Fuga en sello mecánico — Bomba Slurry HP 001 · 650kW" [ref=e1371]
+                    - cell "Closed" [ref=e1372]
+                    - cell "P2" [ref=e1373]
+                    - cell "25 mar 26" [ref=e1374]
+                    - cell "Apr 04" [ref=e1375]
+                    - cell [ref=e1376]
+                  - 'row "OT-2026-50075 PM01 TAG: FLT-BCO-CND-01 Falla en válvula dart — Banco Columnas Cleaner Cancelled P3 24 mar 26 Apr 06" [ref=e1377] [cursor=pointer]':
+                    - cell [ref=e1378]:
+                      - checkbox [ref=e1379]
+                    - cell "OT-2026-50075" [ref=e1380]
+                    - cell "PM01" [ref=e1381]
+                    - 'cell "TAG: FLT-BCO-CND-01" [ref=e1382]':
+                      - generic [ref=e1383]: "TAG: FLT-BCO-CND-01"
+                    - cell "Falla en válvula dart — Banco Columnas Cleaner" [ref=e1384]
+                    - cell "Cancelled" [ref=e1385]
+                    - cell "P3" [ref=e1386]
+                    - cell "24 mar 26" [ref=e1387]
+                    - cell "Apr 06" [ref=e1388]
+                    - cell [ref=e1389]
+                  - 'row "OT-2026-50087 PM01 TAG: CVY-CV-002 Desgaste avanzado en cinta — Correa Secundaria CV-002 Closed P3 24 mar 26 Apr 03" [ref=e1390] [cursor=pointer]':
+                    - cell [ref=e1391]:
+                      - checkbox [ref=e1392]
+                    - cell "OT-2026-50087" [ref=e1393]
+                    - cell "PM01" [ref=e1394]
+                    - 'cell "TAG: CVY-CV-002" [ref=e1395]':
+                      - generic [ref=e1396]: "TAG: CVY-CV-002"
+                    - cell "Desgaste avanzado en cinta — Correa Secundaria CV-002" [ref=e1397]
+                    - cell "Closed" [ref=e1398]
+                    - cell "P3" [ref=e1399]
+                    - cell "24 mar 26" [ref=e1400]
+                    - cell "Apr 03" [ref=e1401]
+                    - cell [ref=e1402]
+                  - 'row "OT-2026-50007 PM03 TAG: MCC-ML-01 Contactor pegado en partidor — MCC Molienda 01 Closed P2 24 mar 26 Apr 01" [ref=e1403] [cursor=pointer]':
+                    - cell [ref=e1404]:
+                      - checkbox [ref=e1405]
+                    - cell "OT-2026-50007" [ref=e1406]
+                    - cell "PM03" [ref=e1407]
+                    - 'cell "TAG: MCC-ML-01" [ref=e1408]':
+                      - generic [ref=e1409]: "TAG: MCC-ML-01"
+                    - cell "Contactor pegado en partidor — MCC Molienda 01" [ref=e1410]
+                    - cell "Closed" [ref=e1411]
+                    - cell "P2" [ref=e1412]
+                    - cell "24 mar 26" [ref=e1413]
+                    - cell "Apr 01" [ref=e1414]
+                    - cell [ref=e1415]
+                  - 'row "OT-2026-50088 PM01 TAG: THK-REL-02 Corrosión en base de mecanismo — Espesador Relaves 02 · 90m Closed P4 24 mar 26 Mar 28" [ref=e1416] [cursor=pointer]':
+                    - cell [ref=e1417]:
+                      - checkbox [ref=e1418]
+                    - cell "OT-2026-50088" [ref=e1419]
+                    - cell "PM01" [ref=e1420]
+                    - 'cell "TAG: THK-REL-02" [ref=e1421]':
+                      - generic [ref=e1422]: "TAG: THK-REL-02"
+                    - cell "Corrosión en base de mecanismo — Espesador Relaves 02 · 90m" [ref=e1423]
+                    - cell "Closed" [ref=e1424]
+                    - cell "P4" [ref=e1425]
+                    - cell "24 mar 26" [ref=e1426]
+                    - cell "Mar 28" [ref=e1427]
+                    - cell [ref=e1428]
+                  - 'row "OT-2026-50098 PM03 TAG: THK-REL-01 Falla torque mecanismo rastrillo — Espesador Relaves 01 · 90m Closed P2 24 mar 26 Apr 07" [ref=e1429] [cursor=pointer]':
+                    - cell [ref=e1430]:
+                      - checkbox [ref=e1431]
+                    - cell "OT-2026-50098" [ref=e1432]
+                    - cell "PM03" [ref=e1433]
+                    - 'cell "TAG: THK-REL-01" [ref=e1434]':
+                      - generic [ref=e1435]: "TAG: THK-REL-01"
+                    - cell "Falla torque mecanismo rastrillo — Espesador Relaves 01 · 90m" [ref=e1436]
+                    - cell "Closed" [ref=e1437]
+                    - cell "P2" [ref=e1438]
+                    - cell "24 mar 26" [ref=e1439]
+                    - cell "Apr 07" [ref=e1440]
+                    - cell [ref=e1441]
+                  - 'row "OT-2026-50086 PM03 TAG: SUB-AT-S01 Falla breaker MT — Subestación AT Mina · 220kV Closed P2 23 mar 26 Mar 29" [ref=e1442] [cursor=pointer]':
+                    - cell [ref=e1443]:
+                      - checkbox [ref=e1444]
+                    - cell "OT-2026-50086" [ref=e1445]
+                    - cell "PM03" [ref=e1446]
+                    - 'cell "TAG: SUB-AT-S01" [ref=e1447]':
+                      - generic [ref=e1448]: "TAG: SUB-AT-S01"
+                    - cell "Falla breaker MT — Subestación AT Mina · 220kV" [ref=e1449]
+                    - cell "Closed" [ref=e1450]
+                    - cell "P2" [ref=e1451]
+                    - cell "23 mar 26" [ref=e1452]
+                    - cell "Mar 29" [ref=e1453]
+                    - cell [ref=e1454]
+                  - 'row "OT-2026-50030 PM01 TAG: DCS-PLT-01 Falla comunicación módulo — DCS Planta · Yokogawa Released P3 23 mar 26 —" [ref=e1455] [cursor=pointer]':
+                    - cell [ref=e1456]:
+                      - checkbox [ref=e1457]
+                    - cell "OT-2026-50030" [ref=e1458]
+                    - cell "PM01" [ref=e1459]
+                    - 'cell "TAG: DCS-PLT-01" [ref=e1460]':
+                      - generic [ref=e1461]: "TAG: DCS-PLT-01"
+                    - cell "Falla comunicación módulo — DCS Planta · Yokogawa" [ref=e1462]
+                    - cell "Released" [ref=e1463]
+                    - cell "P3" [ref=e1464]
+                    - cell "23 mar 26" [ref=e1465]
+                    - cell "—" [ref=e1466]
+                    - cell [ref=e1467]
+                  - 'row "OT-2026-50005 PM03 TAG: PMP-AGUA-01 Fuga en sello mecánico — Bomba Agua Proceso 01 · 250kW Closed P2 23 mar 26 Apr 02" [ref=e1468] [cursor=pointer]':
+                    - cell [ref=e1469]:
+                      - checkbox [ref=e1470]
+                    - cell "OT-2026-50005" [ref=e1471]
+                    - cell "PM03" [ref=e1472]
+                    - 'cell "TAG: PMP-AGUA-01" [ref=e1473]':
+                      - generic [ref=e1474]: "TAG: PMP-AGUA-01"
+                    - cell "Fuga en sello mecánico — Bomba Agua Proceso 01 · 250kW" [ref=e1475]
+                    - cell "Closed" [ref=e1476]
+                    - cell "P2" [ref=e1477]
+                    - cell "23 mar 26" [ref=e1478]
+                    - cell "Apr 02" [ref=e1479]
+                    - cell [ref=e1480]
+                  - 'row "OT-2026-50008 PM01 TAG: THK-REL-01 Corrosión en base de mecanismo — Espesador Relaves 01 · 90m Closed P4 22 mar 26 Mar 30" [ref=e1481] [cursor=pointer]':
+                    - cell [ref=e1482]:
+                      - checkbox [ref=e1483]
+                    - cell "OT-2026-50008" [ref=e1484]
+                    - cell "PM01" [ref=e1485]
+                    - 'cell "TAG: THK-REL-01" [ref=e1486]':
+                      - generic [ref=e1487]: "TAG: THK-REL-01"
+                    - cell "Corrosión en base de mecanismo — Espesador Relaves 01 · 90m" [ref=e1488]
+                    - cell "Closed" [ref=e1489]
+                    - cell "P4" [ref=e1490]
+                    - cell "22 mar 26" [ref=e1491]
+                    - cell "Mar 30" [ref=e1492]
+                    - cell [ref=e1493]
+                  - 'row "OT-2026-50059 PM01 TAG: CVY-CV-001 Polines trabados — Correa Principal CV-001 · 1800t/h Closed P4 22 mar 26 Apr 02" [ref=e1494] [cursor=pointer]':
+                    - cell [ref=e1495]:
+                      - checkbox [ref=e1496]
+                    - cell "OT-2026-50059" [ref=e1497]
+                    - cell "PM01" [ref=e1498]
+                    - 'cell "TAG: CVY-CV-001" [ref=e1499]':
+                      - generic [ref=e1500]: "TAG: CVY-CV-001"
+                    - cell "Polines trabados — Correa Principal CV-001 · 1800t/h" [ref=e1501]
+                    - cell "Closed" [ref=e1502]
+                    - cell "P4" [ref=e1503]
+                    - cell "22 mar 26" [ref=e1504]
+                    - cell "Apr 02" [ref=e1505]
+                    - cell [ref=e1506]
+                  - 'row "OT-2026-50028 PM01 TAG: COM-AIRE-02 Temperatura descarga alta — Compresor Aire 02 · 1800cfm Closed P3 21 mar 26 Mar 25" [ref=e1507] [cursor=pointer]':
+                    - cell [ref=e1508]:
+                      - checkbox [ref=e1509]
+                    - cell "OT-2026-50028" [ref=e1510]
+                    - cell "PM01" [ref=e1511]
+                    - 'cell "TAG: COM-AIRE-02" [ref=e1512]':
+                      - generic [ref=e1513]: "TAG: COM-AIRE-02"
+                    - cell "Temperatura descarga alta — Compresor Aire 02 · 1800cfm" [ref=e1514]
+                    - cell "Closed" [ref=e1515]
+                    - cell "P3" [ref=e1516]
+                    - cell "21 mar 26" [ref=e1517]
+                    - cell "Mar 25" [ref=e1518]
+                    - cell [ref=e1519]
+                  - 'row "OT-2026-50047 PM01 TAG: FLT-BCO-CND-01 Falla en válvula dart — Banco Columnas Cleaner Closed P3 21 mar 26 Apr 04" [ref=e1520] [cursor=pointer]':
+                    - cell [ref=e1521]:
+                      - checkbox [ref=e1522]
+                    - cell "OT-2026-50047" [ref=e1523]
+                    - cell "PM01" [ref=e1524]
+                    - 'cell "TAG: FLT-BCO-CND-01" [ref=e1525]':
+                      - generic [ref=e1526]: "TAG: FLT-BCO-CND-01"
+                    - cell "Falla en válvula dart — Banco Columnas Cleaner" [ref=e1527]
+                    - cell "Closed" [ref=e1528]
+                    - cell "P3" [ref=e1529]
+                    - cell "21 mar 26" [ref=e1530]
+                    - cell "Apr 04" [ref=e1531]
+                    - cell [ref=e1532]
+                  - 'row "OT-2026-50040 PM01 TAG: PMP-SL-HP-002 Vibración en descanso motor — Bomba Slurry HP 002 · 650kW Released P3 21 mar 26 —" [ref=e1533] [cursor=pointer]':
+                    - cell [ref=e1534]:
+                      - checkbox [ref=e1535]
+                    - cell "OT-2026-50040" [ref=e1536]
+                    - cell "PM01" [ref=e1537]
+                    - 'cell "TAG: PMP-SL-HP-002" [ref=e1538]':
+                      - generic [ref=e1539]: "TAG: PMP-SL-HP-002"
+                    - cell "Vibración en descanso motor — Bomba Slurry HP 002 · 650kW" [ref=e1540]
+                    - cell "Released" [ref=e1541]
+                    - cell "P3" [ref=e1542]
+                    - cell "21 mar 26" [ref=e1543]
+                    - cell "—" [ref=e1544]
+                    - cell [ref=e1545]
+                  - 'row "OT-2026-50083 PM01 TAG: COM-AIRE-02 Temperatura descarga alta — Compresor Aire 02 · 1800cfm Scheduled P3 20 mar 26 Mar 28" [ref=e1546] [cursor=pointer]':
+                    - cell [ref=e1547]:
+                      - checkbox [ref=e1548]
+                    - cell "OT-2026-50083" [ref=e1549]
+                    - cell "PM01" [ref=e1550]
+                    - 'cell "TAG: COM-AIRE-02" [ref=e1551]':
+                      - generic [ref=e1552]: "TAG: COM-AIRE-02"
+                    - cell "Temperatura descarga alta — Compresor Aire 02 · 1800cfm" [ref=e1553]
+                    - cell "Scheduled" [ref=e1554]
+                    - cell "P3" [ref=e1555]
+                    - cell "20 mar 26" [ref=e1556]
+                    - cell "Mar 28" [ref=e1557]
+                    - cell [ref=e1558]
+  - status

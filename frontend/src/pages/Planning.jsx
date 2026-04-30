@@ -739,7 +739,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   useEffect(() => {
     const h = () => fetchData();
     window.addEventListener('ws:reconnected', h);
-    return () => window.removeEventListener('ws:reconnected', h);
+    window.addEventListener('wo:created', h);
+    return () => {
+      window.removeEventListener('ws:reconnected', h);
+      window.removeEventListener('wo:created', h);
+    };
   }, [plant]); // eslint-disable-line react-hooks/exhaustive-deps
   useWebSocket(plant, useCallback((msg) => {
     if (msg.event?.startsWith('wo_') || msg.event?.startsWith('wr_')) fetchData();

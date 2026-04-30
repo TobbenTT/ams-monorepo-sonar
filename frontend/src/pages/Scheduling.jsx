@@ -3965,9 +3965,20 @@ export default function Scheduling() {
         setShiftOverflowWizard({ wo, tech, dayDate, shift, overflow, shiftHours, woHours });
       }, 400);
     }
+    // Bug 2026-04-30: el drag SIEMPRE pisaba assigned_workers con un array de
+    // 1 elemento → si arrastrabas 3 técnicos, sólo quedaba el último (o
+    // duplicaba al mismo si era el mismo). Una OT con ops quantity>1 necesita
+    // varios trabajadores en simultáneo (ej: op 0020 quantity=3 mecánicos).
+    // Fix: append + dedup por worker_id.
+    const newWorker = { worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty };
+    const existingWorkers = Array.isArray(wo.assigned_workers) ? wo.assigned_workers : [];
+    const seen = new Set(existingWorkers.map(w => w.worker_id).filter(Boolean));
+    const mergedWorkers = seen.has(tech.worker_id)
+      ? existingWorkers   // ya está, no duplicar
+      : [...existingWorkers, newWorker];
     const scheduled = {
       ...wo,
-      assigned_workers: [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }],
+      assigned_workers: mergedWorkers,
       planned_start: toDateStr(dayDate),
       planned_end: toDateStr(dayDate),
       shift,
@@ -3976,14 +3987,20 @@ export default function Scheduling() {
     setReleasedWOs(prev => prev.filter(w => w.wo_id !== wo.wo_id));
     setScheduledWOs(prev => [...prev.filter(w => w.wo_id !== wo.wo_id), scheduled]);
     api.updateManagedWO(wo.wo_id, {
-      assigned_workers: [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }],
+      assigned_workers: mergedWorkers,
       planned_start: toDateStr(dayDate),
       planned_end: toDateStr(dayDate),
       shift: shift,
       status: 'EN_PROGRAMACION',
     })
       .then(() => {
-        toast.success(`${wo.wo_number} → ${tech.name} · borrador`);
+        const crewSize = mergedWorkers.length;
+        const crewMsg = crewSize > 1
+          ? `${wo.wo_number} → +${tech.name} (crew ${crewSize}) · borrador`
+          : (seen.has(tech.worker_id)
+              ? `${wo.wo_number} ya tenía a ${tech.name} (no se duplica)`
+              : `${wo.wo_number} → ${tech.name} · borrador`);
+        toast.success(crewMsg);
         loadCalendarData();
       })
       .catch(() => {

@@ -1,4 +1,4 @@
-// build: 2026-04-30-wo-created-refresh
+// build: 2026-04-30-wo-created-refresh-v2
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';

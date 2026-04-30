@@ -1737,6 +1737,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           try {
             const wo = await api.createWOFromWR({ work_request_id: id });
             setWrsWithOT(prev => new Set([...prev, id]));
+            try { window.dispatchEvent(new CustomEvent('wo:created', { detail: wo })); } catch {}
             toast.success('FAST TRACK: WO ' + (wo.wo_number || '') + ' created — available in Planning');
           } catch (err) {
             // David 2026-04-28: toast de error real (antes decía "success" en verde
@@ -1827,6 +1828,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           const wo = await api.createWOFromWR({ work_request_id: id });
           // Jorge (2026-04-20): mismo estilo que el modal centrado de creación de aviso.
           setOtCreatedModal({ woNumber: wo.wo_number || '', woId: wo.wo_id || null });
+          try { window.dispatchEvent(new CustomEvent('wo:created', { detail: wo })); } catch {}
           setSelected(null);
         } catch {
           toast.success(t('workRequests.approvedNoOT') || 'Aviso aprobado. Error creating OT — créala manualmente desde Work Orders.');

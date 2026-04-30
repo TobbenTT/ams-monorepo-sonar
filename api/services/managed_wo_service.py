@@ -386,7 +386,14 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
     # Jorge SF-509: cada paso numerado del suggested_action debe ser una operación
     # independiente. Mapear recursos[i] a la operación i (fallback a recursos[0]).
     import re as _re
-    wr_resources = getattr(wr, "resources", None) or []
+    # Bug 2026-04-30: WorkRequestModel no tiene columna `resources` directa.
+    # El form Failure Capture las guarda en problem_description.resources.
+    # Antes: getattr(wr, "resources") → None siempre → fallback genérico se
+    # ejecutaba aunque el WR tuviera 3 labours definidos. Resultado: OT con
+    # ops genéricas INSTRUMENTACION en vez de Lubrication/Boilermaker/Mechanical.
+    wr_resources = getattr(wr, "resources", None)
+    if not wr_resources and isinstance(pd, dict):
+        wr_resources = pd.get("resources") or []
     if not isinstance(wr_resources, list):
         wr_resources = []
     steps = []

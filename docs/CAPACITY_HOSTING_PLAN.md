@@ -63,15 +63,32 @@ Regla industrial: ~15-20% concurrent active de la base total. Con 100 totales es
 - Soporte lento, sin SLA.
 - Sin servidores en Chile/LATAM (datacenter en EU/US → +200ms latencia).
 
-### Comparativa (KVM 2 → 4 vCPU, 8 GB RAM)
+### Vultr — tiers disponibles para Santiago (Regular Performance)
 
-| Provider | Datacenter más cercano a Chile | Precio (4 vCPU/8 GB) | Pros | Contras |
+Verificado en panel Vultr 2026-04-30:
+
+| Plan | vCPUs | RAM | Storage | BW | $/mes | $/hr |
+|---|---|---|---|---|---|---|
+| **Pequeño** | 2 vCPU | 4 GB | 80 GB | 3 TB | **$20** | $0.03 |
+| **Recomendado** ✅ | **4 vCPU** | **8 GB** | **160 GB** | **4 TB** | **$40** | $0.06 |
+| Holgado | 6 vCPU | 16 GB | 320 GB | 5 TB | $80 | $0.11 |
+
+**Decisión revisada**: arrancar con **2 vCPU / 4 GB / $20/mes** (igual que la KVM 2 actual de Hostinger pero en Santiago + más confiable). Subir a $40 sólo si las métricas del primer mes lo piden.
+
+**Por qué arrancar chico**:
+- Hoy CPU 7% y RAM 32% con uso liviano — el plan $20 igual da margen para cache Redis y RAG inicial.
+- LanceDB + MiniLM agregan ~500-700 MB RAM → quedaríamos en ~70% RAM con $20 plan, ajustado pero no crítico.
+- Si llega 25-30 concurrentes reales, upgrade en caliente a $40 sin downtime (Vultr permite resize).
+
+### Comparativa de hosting (todos en plan equivalente 4 vCPU/8 GB)
+
+| Provider | Datacenter más cercano a Chile | Precio | Pros | Contras |
 |---|---|---|---|---|
-| **Vultr** ✅ elegido | **Santiago de Chile** | $24/mes | Latencia mínima Chile, network confiable, snapshots, soporte 24/7 | — |
-| Hetzner | Helsinki / Falkenstein | $15/mes | Más barato, infraestructura sólida | +200ms latencia LATAM |
-| DigitalOcean | São Paulo (más cerca que EU) | $48/mes | Documentación excelente | Más caro |
-| Linode (Akamai) | Miami | $24/mes | Buena red | Lejos de Chile |
-| AWS Lightsail | Virginia / São Paulo | $40/mes | Confiable | Más caro, complejo |
+| **Vultr** ✅ elegido | **Santiago de Chile** | $40/mes | Latencia mínima Chile, snapshots, soporte 24/7 | — |
+| Hetzner | Helsinki / Falkenstein | $15/mes | Más barato, infra sólida | +200ms latencia LATAM |
+| DigitalOcean | São Paulo | ~$48/mes | Docs excelentes | Más caro |
+| Linode (Akamai) | Miami | $36/mes | Buena red | Lejos de Chile |
+| AWS Lightsail | Virginia / São Paulo | $40/mes | Confiable | Complejo, lock-in |
 
 ### Plan de migración Hostinger → Vultr
 1. Crear instancia Vultr Cloud Compute en Santiago (4 vCPU, 8 GB, 80 GB SSD NVMe).
@@ -161,15 +178,26 @@ Umbrales de alerta:
 
 ## 6. Costo total mensual estimado al estado final (Vultr + RAG en producción con 100 users)
 
+**Escenario A — arrancar chico (recomendado)**:
+
 | Concepto | Costo mensual |
 |---|---|
-| VPS Vultr Santiago (4 vCPU, 8 GB, 80 GB) | $24 |
-| Anthropic API (uso actual + RAG Phase 2) | ~$30 (PA actual) + ~$30 (RAG Phase 2 baja intensidad) = **$60** |
+| VPS Vultr Santiago (2 vCPU, 4 GB, 80 GB) | $20 |
+| Anthropic API (uso actual sin Phase 2 RAG) | ~$30 |
 | Backups (Vultr snapshot semanal) | $5 |
 | Dominio + Cloudflare Free | $0 |
-| **TOTAL** | **~$89/mes** |
+| **TOTAL inicio** | **~$55/mes** |
 
-Margen para crecimiento: si llegamos a 200 users o más, upgrade a 6 vCPU / 16 GB ($48/mes Vultr) — sigue siendo <$120/mes total, manejable comercialmente.
+**Escenario B — al activar Phase 2 RAG + más users**:
+
+| Concepto | Costo mensual |
+|---|---|
+| VPS Vultr Santiago (4 vCPU, 8 GB, 160 GB) | $40 |
+| Anthropic API (PA actual + RAG Phase 2) | ~$60 |
+| Backups | $5 |
+| **TOTAL Phase 2** | **~$105/mes** |
+
+**Escenario C — si crecemos a 200+ users**: 6 vCPU / 16 GB Vultr = $80/mes → total <$150/mes. Manejable comercialmente (cobrarle al cliente $300-500/mes deja margen sano).
 
 ---
 

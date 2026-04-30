@@ -3646,8 +3646,29 @@ function ExpandedWOCard({ wo, ops, shift, onClose, onOpen }) {
                     <span className="text-muted-foreground tabular-nums shrink-0">{o.count}op · {o.hh.toFixed(1)}h</span>
                     <span className="text-muted-foreground">→</span>
                     {matched ? (
-                      <span className="flex-1 truncate text-foreground">
-                        {workers.map(w => w.name || w.worker_id).join(', ')}
+                      <span className="flex-1 truncate text-foreground flex flex-wrap gap-1">
+                        {workers.map((w, wi) => (
+                          <span key={(w.worker_id || w.name) + wi} className="inline-flex items-center gap-1 bg-white border border-border rounded-full px-1.5 py-0.5 text-[10px]">
+                            {w.name || w.worker_id}
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!confirm(`Quitar ${w.name || w.worker_id} de ${wo.wo_number}?`)) return;
+                                const remaining = (wo.assigned_workers || []).filter(x => (x.worker_id || x.name) !== (w.worker_id || w.name));
+                                try {
+                                  await api.updateManagedWO(wo.wo_id, { assigned_workers: remaining });
+                                  toast.success(`✓ ${w.name} retirado de ${wo.wo_number}`);
+                                  window.dispatchEvent(new CustomEvent('wo:created'));  // reusamos para forzar refresh
+                                } catch (err) {
+                                  toast.error('Error: ' + (err.message || ''));
+                                }
+                              }}
+                              className="text-gray-400 hover:text-red-600 leading-none text-[12px] font-bold"
+                              title="Quitar este técnico (los demás quedan)"
+                            >×</button>
+                          </span>
+                        ))}
                       </span>
                     ) : needsTech ? (
                       <span className="flex-1 text-amber-700 dark:text-amber-300 italic">
@@ -3859,6 +3880,12 @@ export default function Scheduling() {
   };
 
   useEffect(() => { loadPrograms(); loadCalendarData(); }, [plant]);
+  // Refresh cuando otro componente dispara wo:created (incluido remove worker)
+  useEffect(() => {
+    const h = () => loadCalendarData();
+    window.addEventListener('wo:created', h);
+    return () => window.removeEventListener('wo:created', h);
+  }, [plant]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track blocked support equipment to warn planner during Auto-Level
   useEffect(() => {

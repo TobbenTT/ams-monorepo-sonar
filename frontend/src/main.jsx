@@ -1,4 +1,4 @@
-// build: 2026-04-30-crew-required-display
+// build: 2026-04-30-remove-single-worker
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';

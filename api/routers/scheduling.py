@@ -551,3 +551,90 @@ def ai_daily_briefing(
 
     except Exception as e:
         return {"briefing": "AI error: " + str(e)[:100], "data": summary_data, "ai_used": False}
+
+
+class AutoLevelParseRequest(BaseModel):
+    text: str  # natural language instructions
+    wo_summary: list = []  # [{wo_number, equipment_tag, priority_code, hours}]
+    week_days: list = []   # ['2026-04-29', '2026-04-30', ...]
+
+
+@router.post("/parse-autolevel-instructions")
+def parse_autolevel_instructions(data: AutoLevelParseRequest):
+    """Convierte instrucciones en lenguaje natural en constraints estructurados
+    para el algoritmo Auto-Level. Antes el frontend usaba `.includes()` con
+    keywords hardcodeadas — ahora Claude entiende intención.
+
+    Devuelve { parsed: {priority_boost_wos, priority_boost_equipment, light_days,
+    excluded_days, capacity_override_pct, summary}, ai_used: bool }
+    """
+    import os, json
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key or not data.text.strip():
+        # Fallback: extracción keyword (lo que ya hacía el frontend)
+        return {"parsed": _fallback_parse_instructions(data.text), "ai_used": False}
+    try:
+        import anthropic
+    except ImportError:
+        return {"parsed": _fallback_parse_instructions(data.text), "ai_used": False}
+
+    wos_compact = [
+        f"{w.get('wo_number','?')} ({w.get('equipment_tag','?')}, {w.get('priority_code','P3')}, {w.get('hours',0)}h)"
+        for w in (data.wo_summary or [])[:50]
+    ]
+    days_str = ", ".join(data.week_days or [])
+
+    prompt = f"""Eres un planificador de mantenimiento. Convierte estas instrucciones en lenguaje natural a constraints estructurados para el algoritmo Auto-Level.
+
+INSTRUCCIONES DEL USUARIO:
+"{data.text}"
+
+CONTEXTO — OTs disponibles ({len(wos_compact)}):
+{chr(10).join(wos_compact)}
+
+DÍAS DE LA SEMANA: {days_str}
+
+Devuelve SOLO un JSON con estas claves:
+{{
+  "priority_boost_wos": ["lista de wo_number a priorizar (boost al top, ej: usuario dijo 'priorizar OT-2026-00031')"],
+  "priority_boost_equipment": ["lista de equipment_tag a priorizar"],
+  "deprioritize_wos": ["wo_numbers a postergar"],
+  "light_days": ["fechas YYYY-MM-DD con capacidad reducida (ej: 'lunes liviano' → fecha del lunes)"],
+  "excluded_days": ["fechas YYYY-MM-DD a excluir totalmente (ej: 'no programar viernes' o feriados)"],
+  "capacity_override_pct": null o int (1-100) si menciona % capacidad,
+  "include_weekend": true/false (true si menciona sabado/domingo/weekend),
+  "summary": "resumen 1-2 frases de lo que el usuario quiso decir"
+}}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=600,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = resp.content[0].text.strip()
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start < 0:
+            return {"parsed": _fallback_parse_instructions(data.text), "ai_used": False}
+        parsed = json.loads(text[start:end])
+        return {"parsed": parsed, "ai_used": True}
+    except Exception as e:
+        return {"parsed": _fallback_parse_instructions(data.text), "ai_used": False, "error": str(e)[:120]}
+
+
+def _fallback_parse_instructions(text: str) -> dict:
+    """Heurística keyword si Claude no responde — equivalente a lo que
+    el frontend ya hacía con .includes()."""
+    t = (text or "").lower()
+    return {
+        "priority_boost_wos": [],
+        "priority_boost_equipment": [],
+        "deprioritize_wos": [],
+        "light_days": [],
+        "excluded_days": [],
+        "capacity_override_pct": None,
+        "include_weekend": any(k in t for k in ["sabado", "sábado", "domingo", "weekend", "fin de semana", "7x7", "7 dias", "todos los dias"]),
+        "summary": (text[:120] + "...") if len(text) > 120 else text,
+    }

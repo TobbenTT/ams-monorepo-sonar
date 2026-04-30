@@ -416,6 +416,8 @@ export const updateWOSupportEquipment = (id, supportEquipment) =>
   put(`/managed-work-orders/${id}/support-equipment`, { support_equipment: supportEquipment });
 // SF-568 — Smart Assignment IA: ranking de técnicos por skill + HH disponibles
 export const rankTechniciansForOperation = (d) => post('/assignments/rank-for-operation', d);
+// 2026-04-30 — Auto-Level: parser de instrucciones en lenguaje natural con Claude
+export const parseAutoLevelInstructions = (d) => post('/scheduling/parse-autolevel-instructions', d);
 // SF-579 — listar OTs absorbidas por una OT PM03
 export const listAbsorbedWOs = (id) => get(`/managed-work-orders/${id}/absorbed`);
 export const verifyCloseManagedWO = (id, d) => post(`/managed-work-orders/${id}/verify-close`, d);

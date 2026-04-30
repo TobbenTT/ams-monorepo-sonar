@@ -3730,6 +3730,8 @@ export default function Scheduling() {
   const [capacityLimit, setCapacityLimit] = useState(85); // % max capacity for auto-level
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiInstructions, setAiInstructions] = useState('');
+  const [aiParsed, setAiParsed] = useState(null); // Claude-parsed constraints
+  const [aiParsing, setAiParsing] = useState(false);
   const [aiDraftPlan, setAiDraftPlan] = useState(null);
   const [blockedEquipment, setBlockedEquipment] = useState([]);
   const [publishing, setPublishing] = useState(false);
@@ -4015,19 +4017,35 @@ export default function Scheduling() {
       // Working-days mask: 0=Mon … 6=Sun. Exclude weekends unless instructions request them
       // (this mirrors standard 5-day work week; shift-based schedules can drag manually).
       const instructions = aiInstructions.toLowerCase();
-      const includeWeekendInPlan = /sabado|sábado|domingo|weekend|fin de semana|7x7|7 dias|todos los dias/.test(instructions);
+      // Si Claude interpretó las instrucciones (clic en "Interpretar con Claude"),
+      // sus constraints overridean la heurística keyword.
+      const _boostWoSet = new Set([...(aiParsed?.priority_boost_wos || [])].map(s => (s || '').toLowerCase()));
+      const _boostEqSet = new Set([...(aiParsed?.priority_boost_equipment || [])].map(s => (s || '').toLowerCase()));
+      const _depriWoSet = new Set((aiParsed?.deprioritize_wos || []).map(s => (s || '').toLowerCase()));
+      const _aiLightDays = new Set(aiParsed?.light_days || []);
+      const _aiExcludedDays = new Set(aiParsed?.excluded_days || []);
+      const includeWeekendInPlan = aiParsed?.include_weekend != null
+        ? !!aiParsed.include_weekend
+        : /sabado|sábado|domingo|weekend|fin de semana|7x7|7 dias|todos los dias/.test(instructions);
       const workDayMask = [true, true, true, true, true, includeWeekendInPlan, includeWeekendInPlan]; // Mon-Sun
 
       // Sort by priority (P1 first) + apply AI instructions for priority override
       const prioOrder = { P1: 0, P2: 1, P3: 2, P4: 3 };
       toSchedule.sort((a, b) => {
-        // If instructions mention specific WO, boost it to top
-        const aBoost = instructions.includes((a.wo_number || '').toLowerCase()) ? -10 : 0;
-        const bBoost = instructions.includes((b.wo_number || '').toLowerCase()) ? -10 : 0;
-        // If instructions mention equipment, boost those
-        const aEquipBoost = a.equipment_tag && instructions.includes((a.equipment_tag || '').toLowerCase()) ? -5 : 0;
-        const bEquipBoost = b.equipment_tag && instructions.includes((b.equipment_tag || '').toLowerCase()) ? -5 : 0;
-        return (prioOrder[a.priority_code] || 3) + aBoost + aEquipBoost - ((prioOrder[b.priority_code] || 3) + bBoost + bEquipBoost);
+        // Claude bumps (más fuerte que keyword): -15 si está en lista IA, +15 si depri.
+        const aWoLow = (a.wo_number || '').toLowerCase();
+        const bWoLow = (b.wo_number || '').toLowerCase();
+        const aEqLow = (a.equipment_tag || '').toLowerCase();
+        const bEqLow = (b.equipment_tag || '').toLowerCase();
+        const aAiBoost = (_boostWoSet.has(aWoLow) || _boostEqSet.has(aEqLow)) ? -15 : (_depriWoSet.has(aWoLow) ? 15 : 0);
+        const bAiBoost = (_boostWoSet.has(bWoLow) || _boostEqSet.has(bEqLow)) ? -15 : (_depriWoSet.has(bWoLow) ? 15 : 0);
+        // Heurística keyword (fallback si no se usó Claude)
+        const aBoost = instructions.includes(aWoLow) ? -10 : 0;
+        const bBoost = instructions.includes(bWoLow) ? -10 : 0;
+        const aEquipBoost = aEqLow && instructions.includes(aEqLow) ? -5 : 0;
+        const bEquipBoost = bEqLow && instructions.includes(bEqLow) ? -5 : 0;
+        return (prioOrder[a.priority_code] || 3) + aAiBoost + aBoost + aEquipBoost
+             - ((prioOrder[b.priority_code] || 3) + bAiBoost + bBoost + bEquipBoost);
       });
 
       // Capacity-constrained auto-level.
@@ -4044,7 +4062,14 @@ export default function Scheduling() {
       const dayLoad = [0, 0, 0, 0, 0, 0, 0]; // 7 days
       // Apply "keep X light" instructions — reduce capacity for that day
       const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-      const lightDays = dayNames.map((name, i) => instructions.includes(name) && (instructions.includes('light') || instructions.includes('libre') || instructions.includes('liviano')) ? 0.5 : 1);
+      const lightDays = dayNames.map((name, i) => {
+        // 1) Claude excluyó este día → 0
+        if (weekDays[i] && _aiExcludedDays.has(weekDays[i])) return 0;
+        // 2) Claude marcó día liviano → 0.5
+        if (weekDays[i] && _aiLightDays.has(weekDays[i])) return 0.5;
+        // 3) Heurística keyword fallback
+        return instructions.includes(name) && (instructions.includes('light') || instructions.includes('libre') || instructions.includes('liviano')) ? 0.5 : 1;
+      });
 
       // Track per-technician daily load.
       // Jorge 2026-04-27 fix #5: normalizar la clave (worker_id || user_id || id).
@@ -4850,10 +4875,46 @@ export default function Scheduling() {
 
               {/* Free-text instructions */}
               <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Contexto adicional (opcional)</label>
-                <textarea value={aiInstructions} onChange={e => setAiInstructions(e.target.value)}
-                  placeholder='Ej: "Prioriza OT-2026-00031", "adelantar paradas en equipo 1210EF0014"...'
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Contexto adicional (opcional)</label>
+                  <button type="button" disabled={!aiInstructions.trim() || aiParsing}
+                    onClick={async () => {
+                      setAiParsing(true);
+                      try {
+                        const res = await api.parseAutoLevelInstructions({
+                          text: aiInstructions,
+                          wo_summary: (wos || []).slice(0, 50).map(w => ({
+                            wo_number: w.wo_number, equipment_tag: w.equipment_tag,
+                            priority_code: w.priority_code, hours: w.estimated_hours,
+                          })),
+                          week_days: weekDays,
+                        });
+                        setAiParsed(res?.parsed || null);
+                        if (res?.ai_used) toast.success('Claude interpretó tus instrucciones');
+                        else toast.info('Sin API key Claude — uso heurística keyword');
+                      } catch (e) {
+                        toast.error('Error al interpretar: ' + (e.message || ''));
+                      } finally { setAiParsing(false); }
+                    }}
+                    className="text-[10px] font-semibold px-2 py-1 rounded-md bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1">
+                    {aiParsing ? '⏳ Interpretando...' : '🤖 Interpretar con Claude'}
+                  </button>
+                </div>
+                <textarea value={aiInstructions} onChange={e => { setAiInstructions(e.target.value); setAiParsed(null); }}
+                  placeholder='Ej: "Prioriza OT-2026-00031", "adelantar paradas en equipo 1210EF0014", "lunes liviano por reunión"...'
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 min-h-[70px] bg-background text-foreground" />
+                {aiParsed && (
+                  <div className="mt-2 rounded-lg border border-purple-200 bg-purple-50/60 p-2 text-[10px] space-y-1">
+                    <div className="font-semibold text-purple-800">🤖 Claude entendió: {aiParsed.summary}</div>
+                    {(aiParsed.priority_boost_wos || []).length > 0 && <div>✓ Priorizar OTs: {aiParsed.priority_boost_wos.join(', ')}</div>}
+                    {(aiParsed.priority_boost_equipment || []).length > 0 && <div>✓ Priorizar equipos: {aiParsed.priority_boost_equipment.join(', ')}</div>}
+                    {(aiParsed.deprioritize_wos || []).length > 0 && <div>↓ Postergar: {aiParsed.deprioritize_wos.join(', ')}</div>}
+                    {(aiParsed.light_days || []).length > 0 && <div>🌥 Días livianos: {aiParsed.light_days.join(', ')}</div>}
+                    {(aiParsed.excluded_days || []).length > 0 && <div>🚫 Días excluidos: {aiParsed.excluded_days.join(', ')}</div>}
+                    {aiParsed.capacity_override_pct != null && <div>📊 Capacidad override: {aiParsed.capacity_override_pct}%</div>}
+                    {aiParsed.include_weekend && <div>📅 Incluir fin de semana</div>}
+                  </div>
+                )}
               </div>
 
               {/* Plan preview */}

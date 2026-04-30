@@ -1287,30 +1287,9 @@ ${materials.length ? `<div class="section">
                   <CheckCircle size={16} />
                   {t('workRequests.validateRequest')}
                 </button>
-                {/* SF-569 — Conversión rápida Aviso → OT PM03 (express, un sólo paso) */}
-                <button
-                  onClick={async () => {
-                    if (!confirm('Convertir este aviso en OT PM03 (express)?\n\nSe creará la OT inmediatamente. Podrá completar operaciones y materiales después.')) return;
-                    try {
-                      const wo = await api.convertWRToPM03(item.id, {
-                        comment: 'Conversión express PM03 desde WR',
-                        estimated_hours: item.estimated_duration_hours || 4,
-                      });
-                      toast.success(`OT PM03 creada: ${wo.wo_number}`);
-                      // Disparar refresh en Planning/Scheduling/WorkManagement (no esperar al WS broadcast).
-                      try { window.dispatchEvent(new CustomEvent('wo:created', { detail: wo })); } catch {}
-                      onClose && onClose();
-                    } catch (e) {
-                      toast.error('Error: ' + (e.message || ''));
-                    }
-                  }}
-                  disabled={!allChecked}
-                  title={!allChecked ? 'Complete la lista de verificacion' : 'Crear OT PM03 directamente (sin planificación)'}
-                  className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${allChecked ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-                >
-                  <Zap size={16} />
-                  Express → PM03
-                </button>
+                {/* Jorge 2026-04-30: botón Express → PM03 removido. La conversión
+                    a OT debe pasar por Validate Request (P1/P2 auto-crea OT
+                    fast-track) o por Crear OT del planner — no un atajo express. */}
                 <button
                   onClick={() => onReject(item.id)}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"

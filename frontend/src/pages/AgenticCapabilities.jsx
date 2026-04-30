@@ -24,9 +24,8 @@ const CAPABILITIES = [
     demo_route: '/work-requests' },
 
   // Capa 2: Validación + planificación
-  { id: 5, layer: 2, name: 'Aviso → OT PM03 express (1 click)', icon: Zap, status: 'live',
-    differential: 'SAP requiere ~5 transacciones', mageam: '1 round-trip backend',
-    demo_route: '/work-requests', demo_action: 'WR P1 → "Express → PM03"' },
+  // (Jorge 2026-04-30: card #5 'Aviso → OT PM03 express' removida — la conversión
+  //  va por Validate Request fast-track o por Crear OT del planner.)
   { id: 6, layer: 2, name: 'Smart Assignment IA con skills + HH', icon: UserCheck, status: 'live',
     differential: 'SAP no rankea recursos', mageam: 'Score 0-100 con breakdown',
     demo_route: '/supervisor-board', demo_action: 'Detalle OT → botón 🧠 IA' },

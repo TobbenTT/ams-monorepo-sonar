@@ -26,8 +26,8 @@ const PRIORITY_LABELS = { P1: '<24h', P2: '<7d', P3: '>7d', P4: 'Parada de Plant
 // el desglose HH del card del scheduling (ExpandedWOCard) matchee con la
 // specialty del técnico asignado. Antes "Mechanical" hardcoded en + Add.
 const DISCIPLINAS_OP = [
-  'Mecánico', 'Eléctrico', 'Instrumentista', 'Soldador',
-  'Lubricador', 'Civil', 'Predictivo', 'Helper', 'Otro',
+  'Mecánico', 'Eléctrico', 'Instrumentista', 'AUX',
+  'Lubricador', 'Civil', 'Predictivo', 'Operador de Grua', 'Andamios', 'Helper', 'Otro',
 ];
 
 // Jorge SF-515 — Notificación HH: pestaña visible solo en EN_EJECUCION donde
@@ -645,10 +645,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       setEditBudget({ labor: selectedOT.planned_labor || '', material: selectedOT.planned_material || '', external: selectedOT.planned_external || '' });
       // Jorge (2026-04-20): Week Number debe aparecer desde el primer momento.
       // Si la OT todavía no tiene planned_start, tomamos hoy como default.
-      const defaultStart = new Date().toISOString().slice(0, 10);
+      const defaultStart = new Date().toISOString().slice(0, 16);
       setEditDates({
-        start: selectedOT.planned_start || defaultStart,
-        end: selectedOT.planned_end || '',
+        start: selectedOT.planned_start ? selectedOT.planned_start.slice(0, 16) : defaultStart,
+        end: selectedOT.planned_end ? selectedOT.planned_end.slice(0, 16) : '',
       });
     }
   }, [selectedOT?.wo_id]);
@@ -1978,48 +1978,49 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     <div className="grid grid-cols-3 gap-3">
                       <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                         <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Start</div>
-                        <input type="date" value={editDates.start ? editDates.start.slice(0, 10) : ''}
+                        <input type="datetime-local" value={editDates.start ? editDates.start.slice(0, 16) : ''}
                           onChange={e => {
                             const newStart = e.target.value;
                             setEditDates(d => {
-                              // Jorge SF-508: al mover start, preservar duración (desplaza end).
+                              // Auto-calc end = start + estimated_hours when start changes
+                              const hrs = wo.estimated_hours || 0;
+                              if (newStart && hrs > 0) {
+                                const endDt = new Date(new Date(newStart).getTime() + hrs * 3600000);
+                                return { start: newStart, end: endDt.toISOString().slice(0, 16) };
+                              }
+                              // If no duration, preserve relative offset
                               if (d.start && d.end && newStart) {
-                                const oldStart = new Date(d.start.slice(0, 10));
-                                const oldEnd = new Date(d.end.slice(0, 10));
-                                const durMs = oldEnd - oldStart;
-                                if (durMs >= 0) {
+                                const durMs = new Date(d.end) - new Date(d.start);
+                                if (durMs > 0) {
                                   const shifted = new Date(new Date(newStart).getTime() + durMs);
-                                  return { start: newStart, end: shifted.toISOString().slice(0, 10) };
+                                  return { start: newStart, end: shifted.toISOString().slice(0, 16) };
                                 }
                               }
-                              return {
-                                start: newStart,
-                                end: d.end && d.end.slice(0, 10) < newStart ? newStart : d.end,
-                              };
+                              return { start: newStart, end: d.end && d.end < newStart ? newStart : d.end };
                             });
                           }}
-                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                          className="mt-1 text-xs font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
                       </div>
-                      <div className={`rounded-lg p-3 border ${editDates.start && editDates.end && editDates.end.slice(0,10) < editDates.start.slice(0,10) ? 'bg-red-50 border-red-300' : 'bg-blue-50 border-blue-200'}`}>
+                      <div className={`rounded-lg p-3 border ${editDates.start && editDates.end && editDates.end < editDates.start ? 'bg-red-50 border-red-300' : 'bg-blue-50 border-blue-200'}`}>
                         <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned End</div>
-                        <input type="date" value={editDates.end ? editDates.end.slice(0, 10) : ''}
-                          min={editDates.start ? editDates.start.slice(0, 10) : undefined}
+                        <input type="datetime-local" value={editDates.end ? editDates.end.slice(0, 16) : ''}
+                          min={editDates.start ? editDates.start.slice(0, 16) : undefined}
                           onChange={e => {
                             const newEnd = e.target.value;
-                            if (editDates.start && newEnd < editDates.start.slice(0, 10)) {
+                            if (editDates.start && newEnd < editDates.start) {
                               toast.error('Planned End no puede ser anterior a Planned Start');
                               return;
                             }
                             setEditDates(d => ({...d, end: newEnd}));
                           }}
-                          className="mt-1 text-sm font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                          className="mt-1 text-xs font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
                       </div>
                       {/* Jorge 2026-04-24 14:18: "Sacar duración del encabezado porque va
                           en el mini-dashboard de arriba. Dejar solo Week/WIC". */}
                       <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
                         <div className="text-[10px] text-indigo-600 font-semibold uppercase">Week (WIC)</div>
                         {editDates.start ? (() => {
-                          const d = new Date(editDates.start);
+                          const d = new Date(editDates.start.slice(0, 16));
                           const firstJan = new Date(d.getFullYear(), 0, 1);
                           const wic = Math.ceil(((d - firstJan) / 86400000 + firstJan.getDay() + 1) / 7);
                           return (
@@ -2215,7 +2216,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                   <option key={d} value={d}>{d}</option>
                                 ))}
                                 {op.specialty && !DISCIPLINAS_OP.includes(op.specialty) && (
-                                  <option value={op.specialty}>{op.specialty} (legacy)</option>
+                                  <option value={op.specialty}>{op.specialty}</option>
                                 )}
                               </select>
                               <span className="text-[10px] text-gray-500">{op.quantity || 1}p</span>
@@ -2962,8 +2963,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 className="text-xs border border-gray-100 rounded px-2 py-1 w-16 bg-gray-50 text-gray-500 cursor-not-allowed" />
                               <div className="flex items-center gap-1">
                                 <label className="text-[10px] text-gray-500">$/u:</label>
-                                <input type="number" min="0" step="0.01" value={mat.unit_price || ''} onChange={e => { const n = [...editMats]; n[idx].unit_price = parseFloat(e.target.value) || 0; setEditMats(n); }}
-                                  className="w-16 text-xs border rounded px-1 py-1 text-center" placeholder="0" />
+                                <input type="number" value={mat.unit_price || 0} readOnly
+                                  className="w-16 text-xs border border-gray-100 rounded px-1 py-1 text-center bg-gray-50 text-gray-500 cursor-not-allowed" />
                               </div>
                             </div>
                           </div>

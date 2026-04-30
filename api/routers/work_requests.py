@@ -1055,7 +1055,7 @@ IMPORTANT: Detect the language of the user description. If the description is in
   "resources": [
     {"type": "Mechanical", "quantity": 2, "hours": 6},
     {"type": "Electrical", "quantity": 1, "hours": 2},
-    {"type": "Rigger", "quantity": 1, "hours": 3},
+    {"type": "Andamios", "quantity": 1, "hours": 3},
     {"type": "Helper", "quantity": 1, "hours": 6}
   ],
   "materials": [
@@ -1072,7 +1072,7 @@ IMPORTANT: Detect the language of the user description. If the description is in
 CRITICAL RESOURCE RULES (YOU MUST FOLLOW THESE — the example above is the MINIMUM):
 - resources array MUST have 3-4 entries ALWAYS. One resource type is NEVER enough.
 - For ANY mechanical job: Mechanical (2 people, 6-8h) + Electrical (1 person, 2h) + Helper (1-2 people, 4-6h)
-- For heavy equipment (pumps, compressors, crushers): ADD Rigger (1 person, 2-4h)
+- For heavy equipment (pumps, compressors, crushers): ADD Andamios (1 person, 2-4h)
 - materials array MUST have 5+ entries for mechanical, 3+ for electrical
 - estimatedDuration = hours of the longest resource (critical path), minimum 6h for P1/P2
 - NEVER include Supervisor as resource

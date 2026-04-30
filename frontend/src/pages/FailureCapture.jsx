@@ -123,8 +123,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const SPECIAL_EQUIPMENT = supportEquipmentList;
 
   const RESOURCE_TYPES = [
-    'Mechanical', 'Electrical', 'Instrumentation', 'Lubrication', 'Soldador',
-    'Crane Operator', 'Scaffolder', 'Boilermaker', 'General Helper', 'Rigger',
+    'Mechanical', 'Electrical', 'Instrumentation', 'Lubrication', 'AUX',
+    'Operador de Grua', 'Andamios', 'Rigger',
   ];
 
   const COMMON_MATERIALS = [

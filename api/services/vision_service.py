@@ -26,7 +26,7 @@ IMPORTANT: Respond ONLY with valid JSON, no markdown or explanations.
   "failureObjectPart": "Part object from catalog (EXACT value)",
   "estimatedDuration": "hours (number as string)",
   "equipmentCondition": "operating | stopped",
-  "resources": [{"type": "Mechanical|Electrical|Instrumentation|Lubrication|Soldador|Crane Operator", "quantity": N, "hours": N}],
+  "resources": [{"type": "Mechanical|Electrical|Instrumentation|Lubrication|AUX|Operador de Grua|Andamios|Rigger", "quantity": N, "hours": N}],
   "materials": [{"sapId": "SAP code", "description": "material", "quantity": N, "unit": "PZ|KG|LT|MT|UD"}],
   "supportEquipment": ["Crane", "Forklift", etc],
   "workConditions": "Required conditions: equipment de-energized, area cleared, etc",

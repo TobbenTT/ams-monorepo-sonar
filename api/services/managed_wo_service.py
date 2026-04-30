@@ -1003,6 +1003,67 @@ def complete_wo(db: Session, wo_id: str, user_id: str = "", actual_hours: float 
     return _transition(db, wo_id, "CERRADO", user_id, actual_hours=actual_hours)
 
 
+def compute_close_gates(wo, candidate_actual_hours: float | None = None, candidate_ops: list | None = None) -> dict:
+    """Pre-cierre gates obligatorios (Jorge: validación supervisor real, no solo firma).
+
+    5 gates:
+      G1 ALL_OPS_DONE    — todas las operaciones completion_pct >= 100 (auto, blocking)
+      G2 HH_VARIANCE_OK  — variance plan vs real <= 25% (auto, blocking sin justificación)
+      G3 MATERIALS_OK    — materiales reservados fueron consumidos o flagged unused (auto, soft)
+      G4 SUPERVISOR_QA   — supervisor confirmó calidad del trabajo (manual, blocking)
+      G5 NO_OPEN_NOTIFS  — sin alertas/observaciones abiertas pendientes en la OT (auto, soft)
+    """
+    ops = candidate_ops if candidate_ops is not None else (wo.operations or [])
+    actual_hours = candidate_actual_hours if candidate_actual_hours is not None else (wo.actual_hours or 0.0)
+
+    # G1: todas las ops al 100%
+    op_pcts = [float(o.get("completion_pct") or 0) for o in ops]
+    all_ops_done = bool(op_pcts) and all(p >= 100.0 for p in op_pcts)
+    incomplete_ops = [o.get("op_number") or i+1 for i, o in enumerate(ops) if float(o.get("completion_pct") or 0) < 100.0]
+
+    # G2: variance plan vs real <= 25%
+    plan_hours = float(wo.estimated_hours or 0)
+    if plan_hours > 0:
+        variance = abs(actual_hours - plan_hours) / plan_hours
+        hh_variance_ok = variance <= 0.25
+        variance_pct = round(variance * 100, 1)
+    else:
+        hh_variance_ok = True
+        variance_pct = 0.0
+
+    # G3: materiales (heurística: si hay materials reservados, deben estar usados o explícitos)
+    materials = wo.materials or []
+    reserved = [m for m in materials if isinstance(m, dict) and (m.get("reservation_code") or m.get("reserved"))]
+    used_or_flagged = [m for m in reserved if m.get("used") or m.get("unused_reason")]
+    materials_ok = (not reserved) or (len(used_or_flagged) == len(reserved))
+
+    # G5: notificaciones/observaciones abiertas (heurística: execution_notes con [WARN] o [BLOCKED])
+    notes = wo.execution_notes or []
+    open_warnings = [n for n in notes if isinstance(n, dict) and any(tag in (n.get("note") or "").upper() for tag in ["[WARN]", "[BLOCKED]", "[PENDING]"]) and not n.get("resolved")]
+    no_open_notifs = len(open_warnings) == 0
+
+    return {
+        "gates": [
+            {"id": "ALL_OPS_DONE", "label": "Todas las operaciones al 100%",
+             "passed": all_ops_done, "blocking": True, "auto": True,
+             "detail": f"{len(op_pcts) - len(incomplete_ops)}/{len(op_pcts)} ops completas" + (f" — pendientes: #{', #'.join(map(str, incomplete_ops))}" if incomplete_ops else "")},
+            {"id": "HH_VARIANCE_OK", "label": "Variance HH plan vs real ≤ 25%",
+             "passed": hh_variance_ok, "blocking": True, "auto": True,
+             "detail": f"plan {plan_hours}h vs real {actual_hours}h → {variance_pct}% variance",
+             "override_allowed": True},
+            {"id": "MATERIALS_OK", "label": "Materiales reservados consumidos o flagged",
+             "passed": materials_ok, "blocking": False, "auto": True,
+             "detail": f"{len(used_or_flagged)}/{len(reserved)} materiales reservados confirmados"},
+            {"id": "SUPERVISOR_QA", "label": "Supervisor revisó calidad del trabajo",
+             "passed": False, "blocking": True, "auto": False,
+             "detail": "Marcar manualmente — supervisor confirma que el equipo quedó operativo y cumple specs"},
+            {"id": "NO_OPEN_NOTIFS", "label": "Sin alertas/observaciones abiertas",
+             "passed": no_open_notifs, "blocking": False, "auto": True,
+             "detail": f"{len(open_warnings)} alerta(s) abierta(s)" if open_warnings else "Sin alertas"},
+        ],
+    }
+
+
 def close_wo(
     db: Session,
     wo_id: str,
@@ -1013,26 +1074,88 @@ def close_wo(
     actual_hours: float | None = None,
     operations: list | None = None,
     closure_audio_url: str | None = None,
+    gate_acks: dict | None = None,        # {gate_id: True} — supervisor checkboxes manuales
+    gate_overrides: dict | None = None,    # {gate_id: "razón"} — override con justificación
 ) -> dict | None:
     """Close a WO with supervisor signature. Signature is mandatory.
 
     Operations (optional) is the plan-vs-actual capture: a list of ops with
     `actual_hours` per step. When provided, overwrites `actual_hours` with
     the sum of op actuals for KPI consistency.
+
+    Pre-close gates (compute_close_gates) — todas las que son `blocking` deben
+    estar `passed=True` o tener override con justificación. Si no, levanta
+    HTTPException 412 con el detalle de gates.
     """
+    from fastapi import HTTPException
     if not signature or not signature.strip():
         return None
+
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return None
+
+    # Calcular actual_hours efectivo para los gates ANTES del transition.
+    eff_hours = actual_hours
+    if operations is not None and eff_hours is None:
+        eff_hours = sum(float(op.get("actual_hours") or 0) for op in operations)
+
+    gates_state = compute_close_gates(wo, eff_hours, operations)
+    gate_acks = gate_acks or {}
+    gate_overrides = gate_overrides or {}
+
+    # Aplicar acks manuales (supervisor marcó la checkbox)
+    for g in gates_state["gates"]:
+        if g.get("auto") is False and gate_acks.get(g["id"]) is True:
+            g["passed"] = True
+            g["acknowledged_by"] = user_id
+
+    # Aplicar overrides — exigir razón ≥ 10 chars
+    for g in gates_state["gates"]:
+        if not g["passed"] and g.get("blocking") and g.get("override_allowed"):
+            reason = (gate_overrides.get(g["id"]) or "").strip()
+            if len(reason) >= 10:
+                g["passed"] = True
+                g["overridden_by"] = user_id
+                g["override_reason"] = reason
+
+    # Verificar gates blocking
+    failed_blocking = [g for g in gates_state["gates"] if g.get("blocking") and not g["passed"]]
+    if failed_blocking:
+        raise HTTPException(
+            status_code=412,
+            detail={
+                "error": "PRE_CLOSE_GATES_FAILED",
+                "message": "Pre-close gates no superadas. Resuelve antes de cerrar.",
+                "failed_gates": [{"id": g["id"], "label": g["label"], "detail": g.get("detail")} for g in failed_blocking],
+                "all_gates": gates_state["gates"],
+            },
+        )
+
     import hashlib
     pin_hash = hashlib.sha256((pin or "").encode()).hexdigest()[:16] if pin else None
+
+    # Persistir trazabilidad de los gates en execution_notes (audit)
+    audit_notes = list(wo.execution_notes or [])
+    audit_notes.append({
+        "timestamp": datetime.now().isoformat(),
+        "user": user_id or "system",
+        "note": "[PRE_CLOSE_GATES_PASSED] " + " | ".join([
+            f"{g['id']}={'OVERRIDE' if g.get('overridden_by') else ('ACK' if g.get('acknowledged_by') else 'OK')}"
+            for g in gates_state["gates"] if g["passed"]
+        ]),
+        "gates": gates_state["gates"],
+    })
+
     kwargs = {
         "closed_by_signature": signature.strip()[:120],
         "closed_by_pin_hash": pin_hash,
         "closure_notes": (notes or "").strip()[:500] or None,
         "closure_audio_url": (closure_audio_url or "").strip()[:500] or None,
+        "execution_notes": audit_notes,
     }
     if operations is not None:
         kwargs["operations"] = operations
-        # Recompute actual_hours from ops if caller didn't give an explicit total
         if actual_hours is None:
             actual_hours = sum(float(op.get("actual_hours") or 0) for op in operations)
     if actual_hours is not None:

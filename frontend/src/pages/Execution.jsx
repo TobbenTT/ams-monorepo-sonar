@@ -120,6 +120,10 @@ export default function Execution() {
   // Group A #3 supervisor signature + #5 per-op actuals for plan-vs-actual.
   const [closureSignature, setClosureSignature] = useState('');
   const [closurePin, setClosurePin] = useState('');
+  // Pre-close gates (Jorge 2026-04-30): obligatorios antes de cerrar la OT.
+  const [closeGates, setCloseGates] = useState(null);            // [{id,label,passed,blocking,auto,detail,override_allowed}]
+  const [gateAcks, setGateAcks] = useState({});                  // {SUPERVISOR_QA: true}
+  const [gateOverrides, setGateOverrides] = useState({});        // {HH_VARIANCE_OK: "razón"}
   const [closureOps, setClosureOps] = useState([]); // [{...op, actual_hours}]
   const [closing, setClosing] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -394,6 +398,13 @@ export default function Execution() {
     setClosureNotes('');
     setClosureSignature('');
     setClosurePin('');
+    setCloseGates(null);
+    setGateAcks({});
+    setGateOverrides({});
+    // Cargar gates desde el backend
+    api.getCloseGates(wo.wo_id)
+      .then(res => setCloseGates(res?.gates || []))
+      .catch(() => setCloseGates([]));
   };
 
   // Close WO (single) — now requires supervisor signature and captures
@@ -418,6 +429,8 @@ export default function Execution() {
         notes: closureNotes || null,
         actual_hours: hours,
         operations: closureOps.length ? closureOps : null,
+        gate_acks: gateAcks,
+        gate_overrides: gateOverrides,
       });
       toast.success(closureWO.wo_number + ' cerrada y firmada');
       setClosureWO(null); setClosureHours(''); setClosureNotes('');
@@ -1840,6 +1853,51 @@ export default function Execution() {
                 <ClosureClassify notes={closureNotes} />
               </div>
 
+              {/* Pre-close gates checklist (Jorge 2026-04-30) */}
+              {closeGates && closeGates.length > 0 && (
+                <div className="border-2 border-purple-300 dark:border-purple-700 rounded-xl p-3 bg-purple-50/40 dark:bg-purple-900/10">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-purple-800 dark:text-purple-300 mb-2">
+                    🛡 Pre-close gates · todas las obligatorias deben aprobarse
+                  </div>
+                  <div className="space-y-2">
+                    {closeGates.map(g => {
+                      const ackedManual = !g.auto && gateAcks[g.id] === true;
+                      const overridden = gateOverrides[g.id] && gateOverrides[g.id].trim().length >= 10;
+                      const effective = g.passed || ackedManual || overridden;
+                      return (
+                        <div key={g.id} className={`rounded-lg p-2 border text-xs ${effective ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-900/20 dark:border-emerald-700' : (g.blocking ? 'bg-rose-50 border-rose-300 dark:bg-rose-900/20 dark:border-rose-700' : 'bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:border-amber-700')}`}>
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" checked={effective}
+                              disabled={g.auto && !g.override_allowed}
+                              onChange={e => {
+                                if (g.auto) return;
+                                setGateAcks(prev => ({ ...prev, [g.id]: e.target.checked }));
+                              }}
+                              className="mt-0.5 cursor-pointer" />
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-semibold ${effective ? 'text-emerald-800 dark:text-emerald-300' : (g.blocking ? 'text-rose-800 dark:text-rose-300' : 'text-amber-800 dark:text-amber-300')}`}>
+                                {g.label}
+                                {g.blocking && <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded bg-rose-200 text-rose-900">OBLIGATORIA</span>}
+                                {g.auto && <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-gray-200 text-gray-700">AUTO</span>}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">{g.detail}</div>
+                              {/* Override input — solo si auto+falla+override_allowed */}
+                              {g.auto && !g.passed && g.override_allowed && !ackedManual && (
+                                <input
+                                  value={gateOverrides[g.id] || ''}
+                                  onChange={e => setGateOverrides(prev => ({ ...prev, [g.id]: e.target.value }))}
+                                  placeholder="Razón del override (≥10 chars) — ej: 'aprobado por jefe planta, ver mail'"
+                                  className="mt-1 w-full text-[10px] px-2 py-1 border border-rose-300 rounded bg-white" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Signature block — legal trace */}
               <div className="border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl p-4 bg-emerald-50/30 dark:bg-emerald-900/10">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2">Firma del supervisor · obligatoria</div>
@@ -1873,11 +1931,19 @@ export default function Execution() {
                 className="flex-1 py-2.5 text-sm font-semibold border border-border rounded-xl text-foreground hover:bg-muted">
                 Cancelar
               </button>
-              <button onClick={handleClose} disabled={closing || !closureSignature.trim() || (closureOps.length === 0 && !closureHours)}
-                className="flex-1 py-2.5 text-sm font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-40 flex items-center justify-center gap-2">
-                {closing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                Cerrar y firmar
-              </button>
+              {(() => {
+                const blockingFails = (closeGates || []).filter(g => g.blocking && !(g.passed || (!g.auto && gateAcks[g.id] === true) || (g.override_allowed && (gateOverrides[g.id] || '').trim().length >= 10)));
+                const gatesOk = !closeGates || blockingFails.length === 0;
+                const disabled = closing || !closureSignature.trim() || (closureOps.length === 0 && !closureHours) || !gatesOk;
+                return (
+                  <button onClick={handleClose} disabled={disabled}
+                    title={!gatesOk ? `Gates pendientes: ${blockingFails.map(g => g.label).join(', ')}` : ''}
+                    className="flex-1 py-2.5 text-sm font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-40 flex items-center justify-center gap-2">
+                    {closing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                    {gatesOk ? 'Cerrar y firmar' : `${blockingFails.length} gate(s) pendiente(s)`}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>

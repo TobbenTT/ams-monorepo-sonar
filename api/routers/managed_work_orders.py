@@ -84,6 +84,10 @@ class WOCloseRequest(BaseModel):
     actual_hours: float | None = None
     operations: list | None = None
     closure_audio_url: str | None = None  # SF-500
+    # Pre-close gates (Jorge 2026-04-30): supervisor confirma manual gates +
+    # justifica overrides de gates auto que están en falla.
+    gate_acks: dict | None = None         # {"SUPERVISOR_QA": true}
+    gate_overrides: dict | None = None    # {"HH_VARIANCE_OK": "razon ≥10 chars"}
 
 
 class WONoteRequest(BaseModel):
@@ -332,10 +336,24 @@ def close_work_order(
         actual_hours=data.actual_hours,
         operations=data.operations,
         closure_audio_url=data.closure_audio_url,
+        gate_acks=data.gate_acks,
+        gate_overrides=data.gate_overrides,
     )
     if not result:
         raise HTTPException(status_code=400, detail="Cannot close — WO not found, invalid status, or missing signature")
     return result
+
+
+@router.get("/{wo_id}/close-gates")
+def get_close_gates(wo_id: str, db: Session = Depends(get_db)):
+    """Pre-close gates state — usado por el modal de cierre para mostrar
+    qué condiciones están cumplidas y cuáles requieren ack manual o override.
+    """
+    from api.database.models import ManagedWorkOrderModel
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        raise HTTPException(status_code=404, detail="WO not found")
+    return managed_wo_service.compute_close_gates(wo)
 
 
 @router.post("/{wo_id}/sap-sync")

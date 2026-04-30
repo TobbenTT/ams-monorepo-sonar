@@ -351,6 +351,7 @@ export const rescheduleManagedWO = (id) => put(`/managed-work-orders/${id}/resch
 export const startManagedWO = (id) => put(`/managed-work-orders/${id}/start`);
 export const completeManagedWO = (id, d) => put(`/managed-work-orders/${id}/complete`, d);
 export const closeManagedWO = (id, body) => put(`/managed-work-orders/${id}/close`, body || {});
+export const getCloseGates = (id) => get(`/managed-work-orders/${id}/close-gates`);
 export const getManagedWOHistory = (id) => get(`/managed-work-orders/${id}/history`);
 export const saveWOPostReview = (id, data) => post(`/managed-work-orders/${id}/post-review`, data);
 export const getAdherenceComplianceDash = (plantId, days) => get('/analytics-dash/adherence-compliance', { plant_id: plantId, days: days || 30 });

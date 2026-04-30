@@ -1,9 +1,13 @@
 """Work requests router — list, get, validate, classify, duplicates, OCR closure."""
 
+import os
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import Optional
+
+log = logging.getLogger(__name__)
 
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user, require_role
@@ -1931,14 +1935,39 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
     wo_type_map = {"P1": "PM01", "P2": "PM01", "P3": "PM02", "P4": "PM02"}
     wo_type = wo_type_map.get(data.priority, "PM01")
 
+    # Llamar a Claude para enriquecer/validar clasificación cuando el usuario
+    # describió el problema. Si Claude está caído o sin API key, _fallback_classify
+    # da heurísticas razonables. Lo importante: la card #4 "AI Classification
+    # automática" deja de ser un stub para el path manual.
+    ai_enrichment = {}
+    ai_source = "manual_form"
+    if data.problem_description.strip():
+        try:
+            from api.services.agentic_voice_capture_service import _classify_with_claude
+            ai_enrichment = _classify_with_claude(data.problem_description, data.equipment_tag) or {}
+            ai_source = "manual_form+claude" if os.environ.get("ANTHROPIC_API_KEY") else "manual_form+fallback"
+        except Exception as _ai_err:
+            log.warning("AI enrichment failed for manual WR: %s", _ai_err)
+            ai_enrichment = {}
+    # Si la IA sugiere una prioridad MAYOR (más urgente) que la del usuario, la levantamos.
+    # P1 < P2 < P3 < P4 en string pero P1 es la más alta de severidad — usar índice.
+    _pri_order = {"P1": 0, "P2": 1, "P3": 2, "P4": 3}
+    user_pri = data.priority
+    ai_pri = ai_enrichment.get("priority")
+    final_pri = user_pri
+    pri_bumped_by_ai = False
+    if ai_pri in _pri_order and _pri_order[ai_pri] < _pri_order.get(user_pri, 99):
+        final_pri = ai_pri
+        pri_bumped_by_ai = True
+
     wr = WorkRequestModel(
         request_id=_generate_wr_id(db),
         status="PENDIENTE",
         equipment_id=data.equipment_tag,
         equipment_tag=data.equipment_tag,
         equipment_confidence=0.9 if data.equipment_name and "(No catalogado)" not in data.equipment_name else 0.5,
-        priority_code=data.priority,
-        work_class=work_request_service.derive_work_class(data.priority),
+        priority_code=final_pri,
+        work_class=work_request_service.derive_work_class(final_pri),
         created_by=data.created_by or getattr(user, "full_name", None) or getattr(user, "username", ""),
         problem_description={
             "original_text": data.problem_description,
@@ -1951,20 +1980,26 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
             "materials": data.materials,
         },
         ai_classification={
-            "priority_suggested": data.priority,
+            "priority_suggested": ai_pri or final_pri,
+            "priority_user": user_pri,
+            "priority_bumped_by_ai": pri_bumped_by_ai,
             "confidence": confidence,
             "work_order_type": wo_type,
-            "failure_type": data.failure_category,
-            "failure_class": data.failure_symptom,
-            "failure_category": data.failure_cause,
-            "recommended_priority": data.priority,
+            "failure_type": ai_enrichment.get("failure_category") or data.failure_category,
+            "failure_class": ai_enrichment.get("failure_symptom") or data.failure_symptom,
+            "failure_category": ai_enrichment.get("failure_cause") or data.failure_cause,
+            "failure_object_part": ai_enrichment.get("failure_object_part") or data.failure_object_part,
+            "ai_suggested_action": ai_enrichment.get("suggested_action"),
+            "ai_work_conditions": ai_enrichment.get("work_conditions"),
+            "ai_activity_class": ai_enrichment.get("activity_class"),
+            "recommended_priority": final_pri,
             "plant_id": data.plant_id,
             "equipment_name": data.equipment_name,
             "activity_class": data.activity_class,
             "plant_condition": data.plant_condition,
             "estimated_duration_hours": data.estimated_duration,
             "safety_flags": ["BREAKDOWN"] if data.plant_condition == "stopped" else [],
-            "source": "manual_form",
+            "source": ai_source,
             "wo_title": getattr(data, 'wo_title', '') or '',
             "aviso_coding": data.aviso_coding,
             "technical_location": data.technical_location,

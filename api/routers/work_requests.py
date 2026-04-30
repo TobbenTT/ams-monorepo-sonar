@@ -900,6 +900,9 @@ def ai_priority_decision(
     if data.decision == "accepted" and suggested:
         wr.priority_code = suggested
         ai["priority_user"] = user_pri  # mantener histórico de lo que tipeó originalmente
+    elif data.decision == "rejected" and user_pri:
+        # Revertir a la prioridad del usuario por si quedó auto-bumpeada antes
+        wr.priority_code = user_pri
     ai["ai_priority_pending"] = False
     ai["ai_priority_decision"] = data.decision
     ai["ai_priority_decided_at"] = datetime.now().isoformat()

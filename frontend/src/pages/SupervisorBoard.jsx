@@ -73,8 +73,18 @@ export default function SupervisorBoard() {
   const woByDay = useMemo(() => {
     const map = {};
     days.forEach(d => { map[fmtISODate(d)] = []; });
+    // Jorge/José 2026-04-30: el supervisor sólo ve OTs listas para ejecutar
+    // (PROGRAMADO/EN_EJECUCION/COMPLETADO/REPROGRAMADO/CERRADO). Las OTs en
+    // CREADO/LIBERADO/PLANIFICADO/EN_PROGRAMACION son del dominio del planner
+    // — antes aparecían en el calendario porque agrupábamos por created_at
+    // si planned_start era null.
+    const SUPERVISOR_STATUSES = new Set([
+      'PROGRAMADO', 'EN_EJECUCION', 'COMPLETADO', 'REPROGRAMADO', 'CERRADO',
+    ]);
     for (const wo of wos) {
-      const ts = wo.planned_start || wo.actual_start || wo.created_at;
+      if (!SUPERVISOR_STATUSES.has(wo.status)) continue;
+      // Y debe tener planned_start o actual_start — sin fecha no se programa.
+      const ts = wo.planned_start || wo.actual_start;
       if (!ts) continue;
       const key = fmtISODate(new Date(ts));
       if (map[key]) map[key].push(wo);

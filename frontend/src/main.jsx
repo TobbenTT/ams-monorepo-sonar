@@ -1,4 +1,4 @@
-// build: 2026-04-30-support-eq-persist
+// build: 2026-04-30-supervisor-only-ready
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';

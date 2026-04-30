@@ -300,6 +300,19 @@ export const createWRFromHierarchy = (d) => post('/work-requests/from-hierarchy'
 export const cancelWorkRequest = (id, d) => put(`/work-requests/${id}/cancel`, d || {});
 export const updateWorkRequest = (id, d) => put(`/work-requests/${id}`, d);
 export const aiPriorityDecision = (id, decision) => post(`/work-requests/${id}/ai-priority-decision`, { decision });
+
+// ── RAG Phase 2 (#33,#34,#35,#40) ──
+export const ragStats = () => get('/rag/stats');
+export const ragIngest = (table, items) => post('/rag/ingest', { table, items });
+export const ragSearch = (table, query, k = 5) => post('/rag/search', { table, query, k });
+export const ragRcmStrategy = (d) => post('/rag/rcm-strategy', d);
+export const ragShiftHandover = (d) => post('/rag/shift-handover', d);
+export const ragPostMaintLearn = (d) => post('/rag/post-maint-learn', d);
+export const ragKbCurator = (d) => post('/rag/kb-curator', d);
+
+// ── Programmer Agent (Jorge Excel r49 #8 + #11) ──
+export const programmerEquipmentAvailability = (params) => get('/programmer-agent/equipment-availability', params);
+export const programmerWeeklyReport = (params) => get('/programmer-agent/weekly-report', params);
 export const deleteWorkRequest = (id, data) => del(`/work-requests/${id}`, data);
 export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);
 export const startWorkRequest = (id) => put(`/work-requests/${id}/start`);

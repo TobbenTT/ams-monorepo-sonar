@@ -154,6 +154,8 @@ const ExecutionChecklists = lazyRetry(() => import('./pages/ExecutionChecklists'
 const Execution = lazyRetry(() => import('./pages/Execution'));
 const SupervisorBoard = lazyRetry(() => import('./pages/SupervisorBoard'));
 const AgenticCapabilities = lazyRetry(() => import('./pages/AgenticCapabilities'));
+const RagLab = lazyRetry(() => import('./pages/RagLab'));
+const ProgrammerAgent = lazyRetry(() => import('./pages/ProgrammerAgent'));
 const PostMaintenance = lazyRetry(() => import('./pages/PostMaintenance'));
 const DataImport = lazyRetry(() => import('./pages/DataImport'));
 
@@ -212,6 +214,8 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="execution" element={<P roles={['admin', 'planner', 'tecnico']}><S><Execution /></S></P>} />
                                     <Route path="supervisor-board" element={<P roles={['admin', 'manager', 'planner', 'supervisor']}><S><SupervisorBoard /></S></P>} />
                                     <Route path="agentic-capabilities" element={<S><AgenticCapabilities /></S>} />
+                                    <Route path="rag-lab" element={<S><RagLab /></S>} />
+                                    <Route path="programmer-agent" element={<S><ProgrammerAgent /></S>} />
                                     <Route path="post-maintenance" element={<P roles={PLAN}><S><PostMaintenance /></S></P>} />
                                     <Route path="data-import" element={<P roles={MGMT}><S><DataImport /></S></P>} />
                                     <Route path="user-guide" element={<S><UserGuidePage /></S>} />

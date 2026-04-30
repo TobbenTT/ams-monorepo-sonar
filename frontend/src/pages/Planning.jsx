@@ -2795,20 +2795,25 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           </thead>
                           <tbody>
                             {(wo.support_equipment || []).map((se, i) => {
+                              // Jorge 2026-04-30: usar siempre el endpoint dedicado (bypass
+                              // optimistic lock) en lugar de updateManagedWO. Antes los updates
+                              // de equipos podían fallar con 409 si el version cambió en otro
+                              // lado y los cambios se perdían silenciosamente.
                               const updateField = async (field, value) => {
                                 const next = (wo.support_equipment || []).map((x, idx) =>
                                   idx === i ? { ...x, [field]: value } : x
                                 );
                                 try {
-                                  const updated = await api.updateManagedWO(wo.wo_id, { support_equipment: next });
+                                  const updated = await api.updateWOSupportEquipment(wo.wo_id, next);
                                   setSelectedOT(updated);
-                                } catch (e) { toast.error('Error: ' + (e.message || '')); }
+                                  toast.success('✓ Equipo guardado');
+                                } catch (e) { toast.error('Error al guardar: ' + (e.message || '')); }
                               };
                               const removeRow = async () => {
                                 if (!confirm(`Quitar equipo de apoyo "${se.name || se.tag}"?`)) return;
                                 const next = (wo.support_equipment || []).filter((_, idx) => idx !== i);
                                 try {
-                                  const updated = await api.updateManagedWO(wo.wo_id, { support_equipment: next });
+                                  const updated = await api.updateWOSupportEquipment(wo.wo_id, next);
                                   setSelectedOT(updated);
                                 } catch (e) { toast.error('Error: ' + (e.message || '')); }
                               };

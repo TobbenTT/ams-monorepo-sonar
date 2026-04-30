@@ -545,7 +545,20 @@ def update_support_equipment(
         raise HTTPException(status_code=404, detail="WO not found")
     if wo.status in ("CERRADO", "CANCELADO"):
         raise HTTPException(status_code=400, detail="WO already closed/cancelled")
-    wo.support_equipment = data.support_equipment or []
+    # Jorge 2026-04-30: normalizar items que vienen como string del form
+    # (legacy) → dict {tag, name, equipment_type, hours, notes}.
+    raw = data.support_equipment or []
+    normalized = []
+    for s in raw:
+        if isinstance(s, dict):
+            normalized.append(s)
+        elif isinstance(s, str) and s.strip():
+            normalized.append({"tag": s.strip(), "name": s.strip(), "equipment_type": "OTHER", "hours": 1, "notes": ""})
+    wo.support_equipment = normalized
+    # JSON columns en SQLAlchemy: flag_modified obligatorio si se quiere persistir
+    # un cambio de la lista. Antes faltaba → el commit no escribía nada en algunos casos.
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(wo, "support_equipment")
     db.commit()
     db.refresh(wo)
     return managed_wo_service._to_dict(wo)

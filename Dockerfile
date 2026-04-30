@@ -18,6 +18,10 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 RUN pip install --no-cache-dir --upgrade pip setuptools
 
 COPY requirements.txt .
+# torch CPU-only first (saves ~1.5GB vs CUDA wheel) — RAG Phase 2 needs sentence-transformers
+RUN pip install --no-cache-dir --prefix=/install \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    torch==2.5.1+cpu
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 # Override transitive deps con CVEs (python-jose viene de anthropic SDK):
 RUN pip install --no-cache-dir --prefix=/install --upgrade \

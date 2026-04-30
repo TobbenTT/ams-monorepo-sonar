@@ -35,3 +35,9 @@ bcrypt==4.2.1
 psycopg2-binary==2.9.11
 pyotp==2.9.0
 qrcode==7.4.2
+
+# Phase 2 RAG (#33 RCM, #34 Shift Handover, #35 Post-Maint Learning, #40 KB Curator)
+# torch CPU-only via Dockerfile (--extra-index-url https://download.pytorch.org/whl/cpu)
+sentence-transformers==3.3.1
+lancedb==0.16.0
+pyarrow==18.1.0

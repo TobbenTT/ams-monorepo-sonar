@@ -1414,8 +1414,14 @@ function normalizeWR(wr) {
     technician: wr.technician_name || wr.technician || cls.required_specialties?.[0] || '',
     created_by: wr.created_by || wr.technician || '',
     status: wr.status || 'DRAFT',
-    priority_requested: cls.priority_suggested || wr.priority_requested || wr.priority || 'P3',
-    priority_suggested: cls.priority_suggested || wr.priority_suggested || 'P3',
+    // Jorge 2026-04-30: distinguir lo que tipeó el usuario (priority_user)
+    // de lo que sugirió Claude (priority_suggested). Si la IA subió la prioridad,
+    // priority_bumped_by_ai=true y mostramos badge "🤖 IA subió" en la lista.
+    priority_requested: wr.priority_code || cls.priority_suggested || wr.priority_requested || wr.priority || 'P3',
+    priority_suggested: cls.priority_suggested || wr.priority_suggested || wr.priority_code || 'P3',
+    priority_user: cls.priority_user || null,
+    priority_bumped_by_ai: cls.priority_bumped_by_ai === true,
+    ai_source: cls.source || '',
     failure_description: desc.original_text || desc.structured_description || wr.failure_description || (typeof wr.problem_description === 'string' ? wr.problem_description : '') || '',
     original_text: desc.original_text || '',
     technical_location: desc.technical_location || desc.technical_location_code || cls.technical_location || '',
@@ -2227,6 +2233,14 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                                 {req.priority_suggested}
                               </span>
                             </>
+                          )}
+                          {req.priority_bumped_by_ai && req.priority_user && (
+                            <span
+                              title={`Usuario tipeó ${req.priority_user} pero Claude la subió a ${req.priority_requested} por la descripción del problema.`}
+                              className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300"
+                            >
+                              🤖 IA subió {req.priority_user}→{req.priority_requested}
+                            </span>
                           )}
                         </div>
                       </td>

@@ -409,7 +409,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
         <div className="flex items-start justify-between px-6 py-4 border-b border-border sticky top-0 bg-card z-10 rounded-t-2xl">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-sm font-bold text-muted-foreground">{item.id}</span>
+              <span className="font-mono text-sm font-bold text-muted-foreground" title={item.id}>{item.display_id || item.id}</span>
               <span className={`text-xs px-2 py-0.5 rounded font-medium ${statusColor(item.status)}`}>
                 {statusLabels[item.status] ?? item.status}
               </span>

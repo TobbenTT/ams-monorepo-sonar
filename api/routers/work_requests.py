@@ -2,6 +2,7 @@
 
 import os
 import logging
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -855,6 +856,46 @@ def classify_work_request(request_id: str, db: Session = Depends(get_db)):
     if not result:
         raise HTTPException(status_code=404, detail="Work request not found")
     return result
+
+
+class AIPriorityDecisionRequest(BaseModel):
+    decision: str  # 'accepted' | 'rejected'
+
+
+@router.post("/{request_id}/ai-priority-decision")
+def ai_priority_decision(
+    request_id: str,
+    data: AIPriorityDecisionRequest,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Jorge 2026-04-30: el usuario decide si acepta la sugerencia de prioridad de
+    la IA. Si 'accepted', subimos priority_code al sugerido y limpiamos el flag.
+    Si 'rejected', mantenemos prioridad usuario y limpiamos el flag. En ambos
+    casos `ai_priority_pending=False` → la UI deja de mostrar la sugerencia.
+    """
+    from sqlalchemy.orm.attributes import flag_modified
+    from api.database.models import WorkRequestModel
+    if data.decision not in ("accepted", "rejected"):
+        raise HTTPException(400, "decision must be 'accepted' or 'rejected'")
+    wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not wr:
+        raise HTTPException(404, "WR not found")
+    ai = dict(wr.ai_classification) if isinstance(wr.ai_classification, dict) else {}
+    suggested = ai.get("priority_suggested")
+    user_pri = ai.get("priority_user") or wr.priority_code
+    if data.decision == "accepted" and suggested:
+        wr.priority_code = suggested
+        ai["priority_user"] = user_pri  # mantener histórico de lo que tipeó originalmente
+    ai["ai_priority_pending"] = False
+    ai["ai_priority_decision"] = data.decision
+    ai["ai_priority_decided_at"] = datetime.now().isoformat()
+    ai["ai_priority_decided_by"] = getattr(user, "user_id", None) or getattr(user, "username", "")
+    wr.ai_classification = ai
+    flag_modified(wr, "ai_classification")
+    db.commit()
+    db.refresh(wr)
+    return {"request_id": request_id, "priority_code": wr.priority_code, "decision": data.decision, "ai_classification": wr.ai_classification}
 
 
 @router.post("/check-duplicates")
@@ -1949,16 +1990,19 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
         except Exception as _ai_err:
             log.warning("AI enrichment failed for manual WR: %s", _ai_err)
             ai_enrichment = {}
-    # Si la IA sugiere una prioridad MAYOR (más urgente) que la del usuario, la levantamos.
-    # P1 < P2 < P3 < P4 en string pero P1 es la más alta de severidad — usar índice.
+    # Jorge 2026-04-30: la IA NO modifica la prioridad — sólo SUGIERE.
+    # El usuario decide aceptar o rechazar. La sugerencia + razón se muestran en
+    # la UI hasta que el usuario tome decisión (entonces desaparecen).
     _pri_order = {"P1": 0, "P2": 1, "P3": 2, "P4": 3}
     user_pri = data.priority
     ai_pri = ai_enrichment.get("priority")
-    final_pri = user_pri
-    pri_bumped_by_ai = False
-    if ai_pri in _pri_order and _pri_order[ai_pri] < _pri_order.get(user_pri, 99):
-        final_pri = ai_pri
-        pri_bumped_by_ai = True
+    final_pri = user_pri  # SIEMPRE respeta al usuario
+    # Flag de sugerencia pendiente: la IA propone más severidad que el usuario y
+    # el usuario aún no decidió. ai_priority_decision: null|'accepted'|'rejected'
+    has_pending_ai_suggestion = (
+        ai_pri in _pri_order
+        and _pri_order[ai_pri] < _pri_order.get(user_pri, 99)
+    )
 
     wr = WorkRequestModel(
         request_id=_generate_wr_id(db),
@@ -1982,7 +2026,9 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
         ai_classification={
             "priority_suggested": ai_pri or final_pri,
             "priority_user": user_pri,
-            "priority_bumped_by_ai": pri_bumped_by_ai,
+            "priority_bumped_by_ai": False,  # Jorge 2026-04-30: ya no se hace bump automático
+            "ai_priority_pending": has_pending_ai_suggestion,
+            "ai_priority_decision": None,  # null|'accepted'|'rejected'
             "confidence": confidence,
             "work_order_type": wo_type,
             "failure_type": ai_enrichment.get("failure_category") or data.failure_category,

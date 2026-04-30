@@ -726,6 +726,9 @@ class WRUpdateRequest(BaseModel):
     failure_cause: str | None = None
     estimated_duration: float | None = None
     production_impact: str | None = None
+    # Jorge 2026-04-30: permitir actualizar support_equipment desde el modal del aviso
+    # (botón + Add Equipment).
+    support_equipment: list | None = None
 
 
 @router.put("/{request_id}")
@@ -791,6 +794,16 @@ def update_work_request(request_id: str, data: WRUpdateRequest, db: Session = De
         ai["production_impact"] = data.production_impact
         wr.ai_classification = ai
         flag_modified(wr, "ai_classification")
+    if data.support_equipment is not None:
+        # Normalizar: items pueden ser strings (legacy) o objetos {tag, name, equipment_type, hours}
+        normalized = []
+        for s in data.support_equipment:
+            if isinstance(s, dict):
+                normalized.append(s)
+            elif isinstance(s, str) and s.strip():
+                normalized.append({"tag": s.strip(), "name": s.strip(), "equipment_type": "OTHER", "hours": 1})
+        wr.support_equipment = normalized
+        flag_modified(wr, "support_equipment")
 
     wr.updated_at = datetime.now()
     log_action(db, "work_request", request_id, "UPDATE")

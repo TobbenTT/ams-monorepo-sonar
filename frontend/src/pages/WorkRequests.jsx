@@ -1167,11 +1167,24 @@ ${materials.length ? `<div class="section">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Support Equipment</p>
               {(editing || canEdit) && (
                 <button
-                  onClick={() => {
-                    if (!editing) setEditing(true);
+                  onClick={async () => {
                     const name = window.prompt('Nombre o tag del equipo de apoyo:');
                     if (!name || !name.trim()) return;
-                    setEditData(d => ({ ...d, support_equipment: [...(d.support_equipment || []), name.trim()] }));
+                    const trimmed = name.trim();
+                    const current = Array.isArray(item.support_equipment) ? item.support_equipment : [];
+                    const next = [...current, { tag: trimmed, name: trimmed, equipment_type: 'OTHER', hours: 1 }];
+                    // Jorge 2026-04-30: persistir inmediato — antes solo se agregaba a
+                    // editData en memoria, si el usuario no clickeaba Save se perdía.
+                    try {
+                      await api.updateWorkRequest(item.id, { support_equipment: next });
+                      // refrescar el item localmente sin esperar al re-fetch
+                      setEditData(d => ({ ...d, support_equipment: next }));
+                      item.support_equipment = next;
+                      try { window.dispatchEvent(new CustomEvent('wr:updated', { detail: { id: item.id } })); } catch {}
+                    } catch (err) {
+                      // Mostrar el error para que el usuario sepa que no se guardó
+                      alert('Error al guardar el equipo: ' + (err?.message || 'desconocido'));
+                    }
                   }}
                   className="text-[10px] font-semibold px-2 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-1"
                 >

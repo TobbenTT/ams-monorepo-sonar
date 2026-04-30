@@ -1,4 +1,4 @@
-// build: 2026-04-30-remove-express-pm03
+// build: 2026-04-30-add-equipment-persist
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';

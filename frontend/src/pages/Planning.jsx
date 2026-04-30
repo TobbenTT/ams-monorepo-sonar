@@ -2268,9 +2268,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                       title="Código SAP del puesto de trabajo. La descripción se autocompleta abajo."
                                       className="text-xs border rounded px-2 py-1 max-w-[260px]">
                                       <option value="">— Seleccionar puesto —</option>
-                                      {(wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : WORK_CENTERS).map(w => (
-                                        <option key={w.value} value={w.value}>{w.value} · {w.label}</option>
-                                      ))}
+                                      {(() => {
+                                        const filtered = wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : WORK_CENTERS;
+                                        return (filtered.length ? filtered : WORK_CENTERS).map(w => (
+                                          <option key={w.value} value={w.value}>{w.value} · {w.label}</option>
+                                        ));
+                                      })()}
                                     </select>
                                   </div>
                                   {/* Jorge 2026-04-27: agrandar inputs Cantidad/Duración/HH

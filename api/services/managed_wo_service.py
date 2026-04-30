@@ -406,17 +406,28 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
             if m:
                 steps.append(m.group(1).strip())
     if steps:
+        # Bug 2026-04-30: si hay más steps que resources, los extras
+        # replicaban resources[0] inflando HH (ej. 7 mech ops × 16 HH = 112).
+        # Fix: para steps i>=len(resources) usar default mínimo (1p, 1h)
+        # para que los totales reflejen lo que el usuario ingresó en LABOUR.
         for i, step_desc in enumerate(steps):
-            res = wr_resources[i] if i < len(wr_resources) else (wr_resources[0] if wr_resources else {})
-            if not isinstance(res, dict):
-                res = {}
-            qty = int(res.get("quantity", 1) or 1)
-            dur = float(res.get("hours", 1) or 1)
+            if i < len(wr_resources) and isinstance(wr_resources[i], dict):
+                res = wr_resources[i]
+                qty = int(res.get("quantity", 1) or 1)
+                dur = float(res.get("hours", 1) or 1)
+                spec = res.get("type", failure_type or "Mecánico")
+                op_type = res.get("op_type", "INT")
+            else:
+                # Step sin recurso explícito → default mínimo, NO replicar res[0]
+                qty = 1
+                dur = 1.0
+                spec = failure_type or "Mecánico"
+                op_type = "INT"
             operations.append({
                 "op_number": op_num,
                 "description": step_desc,
-                "op_type": res.get("op_type", "INT"),
-                "specialty": res.get("type", failure_type or "Mecánico"),
+                "op_type": op_type,
+                "specialty": spec,
                 "quantity": qty,
                 "duration": dur,
                 "hours": dur,  # legacy field que el frontend Planning lee

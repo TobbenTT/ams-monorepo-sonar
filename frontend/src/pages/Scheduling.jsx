@@ -3885,7 +3885,12 @@ export default function Scheduling() {
     // Optimistic UI: immediately move it out of scheduled, into released
     const prevScheduled = scheduledWOs;
     const prevReleased = releasedWOs;
-    const cleared = { ...wo, assigned_workers: [], planned_start: null, planned_end: null, status: 'PLANIFICADO' };
+    // Bug 2026-04-30: antes mandaba status='PLANIFICADO' pero el filtro
+    // del panel "En programación" solo muestra EN_PROGRAMACION → la OT
+    // desaparecía visualmente al desprogramar. Mantener EN_PROGRAMACION
+    // sin planned_start: el loader la pone en panel izquierdo (pendiente)
+    // y queda visible con filtro "En programación".
+    const cleared = { ...wo, assigned_workers: [], planned_start: null, planned_end: null, status: 'EN_PROGRAMACION' };
     setScheduledWOs(prev => prev.filter(w => w.wo_id !== wo.wo_id));
     setReleasedWOs(prev => [cleared, ...prev.filter(w => w.wo_id !== wo.wo_id)]);
     try {
@@ -3893,9 +3898,9 @@ export default function Scheduling() {
         assigned_workers: [],
         planned_start: '',
         planned_end: '',
-        status: 'PLANIFICADO',
+        status: 'EN_PROGRAMACION',
       });
-      toast.success(`↩️ ${wo.wo_number} desprogramada`);
+      toast.success(`↩️ ${wo.wo_number} desprogramada · vuelve a OTs pendientes`);
       // Refresh from backend to stay in sync
       await loadCalendarData();
       loadGantt();

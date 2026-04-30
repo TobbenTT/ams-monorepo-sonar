@@ -299,6 +299,7 @@ export const checkDuplicates = (d) => post('/work-requests/check-duplicates', d)
 export const createWRFromHierarchy = (d) => post('/work-requests/from-hierarchy', d);
 export const cancelWorkRequest = (id, d) => put(`/work-requests/${id}/cancel`, d || {});
 export const updateWorkRequest = (id, d) => put(`/work-requests/${id}`, d);
+export const aiPriorityDecision = (id, decision) => post(`/work-requests/${id}/ai-priority-decision`, { decision });
 export const deleteWorkRequest = (id, data) => del(`/work-requests/${id}`, data);
 export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);
 export const startWorkRequest = (id) => put(`/work-requests/${id}/start`);

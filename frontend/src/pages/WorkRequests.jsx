@@ -312,7 +312,7 @@ const safeStr = (v) => {
   return String(v);
 };
 
-function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, onGoToOT, onToggleFullScreen, isFullScreen, userRole, t, _isInCarousel, _isDuplicate }) {
+function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, onGoToOT, onToggleFullScreen, isFullScreen, userRole, t, onAIPriorityDecision, _isInCarousel, _isDuplicate }) {
   const toast = useToast();
   if (!item) return null;
   const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(item.status);
@@ -683,6 +683,23 @@ ${materials.length ? `<div class="section">
                 {item.priority_bumped_by_ai && item.ai_priority_reason && (
                   <div className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 rounded px-2 py-1 leading-snug">
                     <strong>¿Por qué subió la IA?</strong> {safeStr(item.ai_priority_reason)}
+                    {item.ai_priority_pending && onAIPriorityDecision && (
+                      <div className="mt-1.5 flex gap-2">
+                        <button
+                          onClick={() => onAIPriorityDecision(item.id, 'accepted')}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700"
+                        >✓ Aceptar sugerencia IA</button>
+                        <button
+                          onClick={() => onAIPriorityDecision(item.id, 'rejected')}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        >✗ Mantener {item.priority_user || item.priority_requested}</button>
+                      </div>
+                    )}
+                    {item.ai_priority_decision && !item.ai_priority_pending && (
+                      <div className="mt-1 text-[9px] italic text-purple-600">
+                        Decisión registrada: {item.ai_priority_decision === 'accepted' ? '✓ Aceptada' : '✗ Rechazada'}
+                      </div>
+                    )}
                   </div>
                 )}
                 {!item.priority_bumped_by_ai && item.ai_priority_reason && (
@@ -1459,6 +1476,8 @@ function normalizeWR(wr) {
     priority_suggested: cls.priority_suggested || wr.priority_suggested || wr.priority_code || 'P3',
     priority_user: cls.priority_user || null,
     priority_bumped_by_ai: cls.priority_bumped_by_ai === true,
+    ai_priority_pending: cls.ai_priority_pending === true,
+    ai_priority_decision: cls.ai_priority_decision || null,
     ai_source: cls.source || '',
     ai_priority_reason: cls.ai_priority_reason || '',
     ai_suggested_action: cls.ai_suggested_action || '',
@@ -2555,6 +2574,15 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           onSaveEdit={handleSaveEdit}
                           onPlannerCreateOT={handlePlannerCreateOT}
                           onGoToOT={() => navigate('/work-orders', { state: { openOtByWrId: wrItem.id } })}
+                          onAIPriorityDecision={async (id, dec) => {
+                            try {
+                              await api.aiPriorityDecision(id, dec);
+                              toast.success(dec === 'accepted' ? 'Sugerencia IA aceptada' : 'Sugerencia IA rechazada');
+                              refreshList();
+                            } catch (e) {
+                              toast.error('Error registrando decisión: ' + (e?.message || e));
+                            }
+                          }}
                           userRole={user?.role}
                           t={t}
                           _isInCarousel={true}

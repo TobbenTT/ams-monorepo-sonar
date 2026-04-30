@@ -1,0 +1,791 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - navigation "Main navigation" [ref=e4]:
+      - generic [ref=e5]:
+        - img "MagEAM" [ref=e154]
+        - paragraph [ref=e6]: Reliability Platform
+      - navigation [ref=e7]:
+        - generic [ref=e8]:
+          - link "Dashboard" [ref=e9] [cursor=pointer]:
+            - /url: /
+            - img [ref=e10]
+            - generic [ref=e13]: Dashboard
+          - link "✨ Agentic Capabilities" [ref=e14] [cursor=pointer]:
+            - /url: /agentic-capabilities
+            - img [ref=e15]
+            - generic [ref=e19]: ✨ Agentic Capabilities
+          - link "WOs & Notifications" [ref=e20] [cursor=pointer]:
+            - /url: /work-orders
+            - img [ref=e21]
+            - generic [ref=e23]: WOs & Notifications
+          - link "Work Management" [ref=e24] [cursor=pointer]:
+            - /url: /work-management
+            - img [ref=e25]
+            - generic [ref=e28]: Work Management
+          - link "Failures & Events" [ref=e29] [cursor=pointer]:
+            - /url: /failures-events
+            - img [ref=e30]
+            - generic [ref=e32]: Failures & Events
+          - link "Improvement Actions" [ref=e33] [cursor=pointer]:
+            - /url: /improvement-actions
+            - img [ref=e34]
+            - generic [ref=e37]: Improvement Actions
+          - link "Criticality" [ref=e38] [cursor=pointer]:
+            - /url: /criticality
+            - img [ref=e39]
+            - generic [ref=e42]: Criticality
+          - link "FMECA" [ref=e43] [cursor=pointer]:
+            - /url: /fmeca
+            - img [ref=e44]
+            - generic [ref=e48]: FMECA
+          - link "RCA" [ref=e49] [cursor=pointer]:
+            - /url: /rca
+            - img [ref=e50]
+            - generic [ref=e53]: RCA
+          - link "Reliability" [ref=e54] [cursor=pointer]:
+            - /url: /reliability
+            - img [ref=e55]
+            - generic [ref=e57]: Reliability
+          - link "Analytics" [ref=e58] [cursor=pointer]:
+            - /url: /analytics
+            - img [ref=e59]
+            - generic [ref=e61]: Analytics
+          - link "Reports" [ref=e62] [cursor=pointer]:
+            - /url: /reports
+            - img [ref=e63]
+            - generic [ref=e66]: Reports
+          - link "Team" [ref=e67] [cursor=pointer]:
+            - /url: /team
+            - img [ref=e68]
+            - generic [ref=e73]: Team
+          - link "Settings" [ref=e74] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e75]
+            - generic [ref=e78]: Settings
+          - link "SAP PM" [ref=e79] [cursor=pointer]:
+            - /url: /sap-pm
+            - img [ref=e80]
+            - generic [ref=e84]: SAP PM
+          - link "Data Import" [ref=e85] [cursor=pointer]:
+            - /url: /data-import
+            - img [ref=e86]
+            - generic [ref=e89]: Data Import
+          - link "Audit Log" [ref=e90] [cursor=pointer]:
+            - /url: /audit-log
+            - img [ref=e91]
+            - generic [ref=e94]: Audit Log
+      - generic [ref=e95]:
+        - button "AS Administrador Sistema Administrator" [ref=e96] [cursor=pointer]:
+          - generic [ref=e98]: AS
+          - generic [ref=e99]:
+            - generic [ref=e100]: Administrador Sistema
+            - generic [ref=e101]: Administrator
+        - generic [ref=e102]:
+          - button "Sign Out" [ref=e103]:
+            - img [ref=e104]
+            - generic [ref=e107]: Sign Out
+          - button [ref=e108]:
+            - img [ref=e109]
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e115]:
+            - img [ref=e116]
+            - textbox "Search modules..." [ref=e119]
+          - generic [ref=e120]:
+            - button "🇬🇧 EN" [ref=e122]:
+              - img [ref=e123]
+              - generic [ref=e126]: 🇬🇧 EN
+            - button "Switch to dark mode" [ref=e127]:
+              - img [ref=e128]
+            - generic "Tiempo real activo" [ref=e130]:
+              - img [ref=e131]
+              - generic [ref=e135]: Sync OK
+            - button "9+" [ref=e155]:
+              - img [ref=e138]
+              - generic [ref=e156]: 9+
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - img [ref=e143]
+            - combobox [ref=e145]:
+              - generic: GOLDFIELDS-SN — Goldfields - Salares Norte
+              - img
+          - generic [ref=e146]:
+            - img [ref=e147]
+            - combobox [ref=e149]:
+              - generic: Last 30 Days
+              - img
+      - main [ref=e150]:
+        - generic [ref=e157]:
+          - generic [ref=e159]:
+            - heading "Work Management" [level=1] [ref=e160]
+            - paragraph [ref=e161]: Complete maintenance work lifecycle
+          - generic [ref=e163]:
+            - button "Failure Capture" [ref=e164]
+            - button "Identification40" [ref=e165]
+            - button "Planning128" [ref=e166]
+            - button "Scheduling31" [ref=e167]
+            - button "Execution" [ref=e168]
+          - generic [ref=e171]:
+            - generic [ref=e172]:
+              - generic [ref=e173]:
+                - img [ref=e175]
+                - generic [ref=e177]:
+                  - heading "Execution" [level=1] [ref=e178]
+                  - paragraph [ref=e179]: Real-time work tracking and closure
+              - generic [ref=e180]:
+                - button "Scan QR" [ref=e181]:
+                  - img [ref=e182]
+                  - text: Scan QR
+                - button "Refresh" [ref=e188]:
+                  - img [ref=e189]
+                  - text: Refresh
+            - generic [ref=e191]:
+              - generic [ref=e192]:
+                - generic [ref=e193]:
+                  - generic [ref=e194]:
+                    - img [ref=e195]
+                    - generic [ref=e198]: Cumplimiento programa
+                  - generic [ref=e199]: 41%
+                  - generic [ref=e200]: 797h ejec / 1960h plan · meta 85%
+                - generic [ref=e201]:
+                  - generic [ref=e202]:
+                    - img [ref=e203]
+                    - generic [ref=e205]: Adherencia programa
+                  - generic [ref=e206]: 94%
+                  - generic [ref=e207]: 47 en día / 50 cerradas · meta 80%
+                - generic [ref=e208]:
+                  - generic [ref=e209]:
+                    - img [ref=e210]
+                    - generic [ref=e213]: Avisos atrasados
+                  - generic [ref=e214]: "16"
+                  - generic [ref=e215]: pendientes >24h sin validar
+                - generic [ref=e216]:
+                  - generic [ref=e217]:
+                    - img [ref=e218]
+                    - generic [ref=e220]: OTs atrasadas
+                  - generic [ref=e221]: "14"
+                  - generic [ref=e222]: vencidas >24h sin notificar
+              - generic [ref=e223]:
+                - generic [ref=e224]:
+                  - generic [ref=e225]: "16"
+                  - generic [ref=e226]: In Execution
+                - generic [ref=e227]:
+                  - generic [ref=e228]: "28"
+                  - generic [ref=e229]: Scheduled
+                - generic [ref=e230]:
+                  - generic [ref=e231]: "25"
+                  - generic [ref=e232]: Fast Track
+                - generic [ref=e233]:
+                  - generic [ref=e234]: "16"
+                  - generic [ref=e235]: Completed
+                - generic [ref=e236]:
+                  - generic [ref=e237]: "50"
+                  - generic [ref=e238]: Closed
+                - generic [ref=e239]:
+                  - generic [ref=e240]: 782/0h
+                  - generic [ref=e241]: HH plan/real
+            - generic [ref=e242]:
+              - button "Hoy 45" [ref=e243]:
+                - img [ref=e244]
+                - text: Hoy
+                - generic [ref=e246]: "45"
+              - button "📅 Programado 20" [ref=e247]:
+                - img [ref=e248]
+                - text: 📅 Programado
+                - generic [ref=e250]: "20"
+              - button "🚨 No Programado (PM03) 25" [ref=e251]:
+                - img [ref=e252]
+                - text: 🚨 No Programado (PM03)
+                - generic [ref=e254]: "25"
+              - button "📨 Avisos 19" [ref=e255]:
+                - img [ref=e256]
+                - text: 📨 Avisos
+                - generic [ref=e259]: "19"
+              - button "📝 Notificación 32" [ref=e260]:
+                - img [ref=e261]
+                - text: 📝 Notificación
+                - generic [ref=e264]: "32"
+              - button "Bandeja de Cierre 16" [ref=e265]:
+                - img [ref=e266]
+                - text: Bandeja de Cierre
+                - generic [ref=e269]: "16"
+              - button "Semana 45" [ref=e270]:
+                - img [ref=e271]
+                - text: Semana
+                - generic [ref=e273]: "45"
+              - button "Resumen 50" [ref=e274]:
+                - img [ref=e275]
+                - text: Resumen
+                - generic [ref=e276]: "50"
+              - button "Historial 50" [ref=e277]:
+                - img [ref=e278]
+                - text: Historial
+                - generic [ref=e280]: "50"
+            - generic [ref=e281]:
+              - generic [ref=e283] [cursor=pointer]:
+                - generic [ref=e284]: P1
+                - generic [ref=e285]:
+                  - generic [ref=e286]:
+                    - generic [ref=e287]: OT-2026-50106
+                    - generic [ref=e288]: FAST TRACK
+                    - generic [ref=e289]: In Execution
+                  - paragraph [ref=e290]: PMP-AGUA-01 - Vibración severa en bomba, humo blanco saliendo de
+                - generic [ref=e291]:
+                  - generic [ref=e293]: Avance
+                  - generic [ref=e295]: 0%
+                  - generic [ref=e296]: 4h
+                - img [ref=e297]
+              - generic [ref=e300] [cursor=pointer]:
+                - generic [ref=e301]: P3
+                - generic [ref=e302]:
+                  - generic [ref=e303]:
+                    - generic [ref=e304]: OT-2026-50096
+                    - generic [ref=e305]: In Execution
+                  - paragraph [ref=e306]: ANL-XRF-01 - Calibración fuera de rango — Analizador XRF Courie
+                - generic [ref=e307]:
+                  - generic [ref=e309]: Avance
+                  - generic [ref=e312]: 40%
+                  - generic [ref=e313]: 7h
+                - img [ref=e314]
+              - generic [ref=e317] [cursor=pointer]:
+                - generic [ref=e318]: P1
+                - generic [ref=e319]:
+                  - generic [ref=e320]:
+                    - generic [ref=e321]: OT-2026-50084
+                    - generic [ref=e322]: FAST TRACK
+                    - generic [ref=e323]: In Execution
+                  - paragraph [ref=e324]: SUB-MT-P01 - Alarma sobrecarga trafo — Subestación MT Planta 01
+                - generic [ref=e325]:
+                  - generic [ref=e327]: Avance
+                  - generic [ref=e330]: 75%
+                  - generic [ref=e331]: 17h
+                - img [ref=e332]
+              - generic [ref=e335] [cursor=pointer]:
+                - generic [ref=e336]: P4
+                - generic [ref=e337]:
+                  - generic [ref=e338]:
+                    - generic [ref=e339]: OT-2026-50066
+                    - generic [ref=e340]: In Execution
+                  - paragraph [ref=e341]: THK-CNC-01 - Corrosión en base de mecanismo — Espesador Concent
+                - generic [ref=e342]:
+                  - generic [ref=e344]: Avance
+                  - generic [ref=e347]: 50%
+                  - generic [ref=e348]: 11h
+                - img [ref=e349]
+              - generic [ref=e352] [cursor=pointer]:
+                - generic [ref=e353]: P2
+                - generic [ref=e354]:
+                  - generic [ref=e355]:
+                    - generic [ref=e356]: OT-2026-50003
+                    - generic [ref=e357]: FAST TRACK
+                    - generic [ref=e358]: In Execution
+                  - paragraph [ref=e359]: PMP-AGUA-01 - Fuga en sello mecánico — Bomba Agua Proceso 01 · 2
+                - generic [ref=e360]:
+                  - generic [ref=e362]: Avance
+                  - generic [ref=e365]: 50%
+                  - generic [ref=e366]: 16h
+                - img [ref=e367]
+              - generic [ref=e370] [cursor=pointer]:
+                - generic [ref=e371]: P4
+                - generic [ref=e372]:
+                  - generic [ref=e373]:
+                    - generic [ref=e374]: OT-2026-50046
+                    - generic [ref=e375]: In Execution
+                  - paragraph [ref=e376]: CVY-CV-003 - Polines trabados — Correa Stock Pile CV-003
+                - generic [ref=e377]:
+                  - generic [ref=e379]: Avance
+                  - generic [ref=e382]: 25%
+                  - generic [ref=e383]: 11h
+                - img [ref=e384]
+              - generic [ref=e387] [cursor=pointer]:
+                - generic [ref=e388]: P3
+                - generic [ref=e389]:
+                  - generic [ref=e390]:
+                    - generic [ref=e391]: OT-2026-50016
+                    - generic [ref=e392]: In Execution
+                  - paragraph [ref=e393]: TRF-PRI-01 - Temperatura devanado alta — Transformador Principa
+                - generic [ref=e394]:
+                  - generic [ref=e396]: Avance
+                  - generic [ref=e399]: 75%
+                  - generic [ref=e400]: 17h
+                - img [ref=e401]
+              - generic [ref=e404] [cursor=pointer]:
+                - generic [ref=e405]: P2
+                - generic [ref=e406]:
+                  - generic [ref=e407]:
+                    - generic [ref=e408]: OT-2026-50024
+                    - generic [ref=e409]: FAST TRACK
+                    - generic [ref=e410]: In Execution
+                  - paragraph [ref=e411]: THK-CNC-01 - Falla torque mecanismo rastrillo — Espesador Conce
+                - generic [ref=e412]:
+                  - generic [ref=e414]: Avance
+                  - generic [ref=e417]: 65%
+                  - generic [ref=e418]: 11h
+                - img [ref=e419]
+              - generic [ref=e422] [cursor=pointer]:
+                - generic [ref=e423]: P2
+                - generic [ref=e424]:
+                  - generic [ref=e425]:
+                    - generic [ref=e426]: OT-2026-50023
+                    - generic [ref=e427]: FAST TRACK
+                    - generic [ref=e428]: In Execution
+                  - paragraph [ref=e429]: SUB-AT-S01 - Falla breaker MT — Subestación AT Mina · 220kV
+                - generic [ref=e430]:
+                  - generic [ref=e432]: Avance
+                  - generic [ref=e435]: 65%
+                  - generic [ref=e436]: 17h
+                - img [ref=e437]
+              - generic [ref=e440] [cursor=pointer]:
+                - generic [ref=e441]: P3
+                - generic [ref=e442]:
+                  - generic [ref=e443]:
+                    - generic [ref=e444]: OT-2026-50036
+                    - generic [ref=e445]: In Execution
+                  - paragraph [ref=e446]: BRY-CYC-NST-01 - Temperatura alta en lubrication unit — Nest Ciclon
+                - generic [ref=e447]:
+                  - generic [ref=e449]: Avance
+                  - generic [ref=e452]: 75%
+                  - generic [ref=e453]: 16h
+                - img [ref=e454]
+              - generic [ref=e457] [cursor=pointer]:
+                - generic [ref=e458]: P2
+                - generic [ref=e459]:
+                  - generic [ref=e460]:
+                    - generic [ref=e461]: OT-2026-50004
+                    - generic [ref=e462]: FAST TRACK
+                    - generic [ref=e463]: In Execution
+                  - paragraph [ref=e464]: CRU-GIR-01 - Fuga hidráulica en ajuste — Chancador Giratorio 60
+                - generic [ref=e465]:
+                  - generic [ref=e467]: Avance
+                  - generic [ref=e470]: 25%
+                  - generic [ref=e471]: 11h
+                - img [ref=e472]
+              - generic [ref=e475] [cursor=pointer]:
+                - generic [ref=e476]: P1
+                - generic [ref=e477]:
+                  - generic [ref=e478]:
+                    - generic [ref=e479]: OT-2026-50094
+                    - generic [ref=e480]: FAST TRACK
+                    - generic [ref=e481]: In Execution
+                  - paragraph [ref=e482]: CRU-CON-HP-02 - Falla rodamiento eje excéntrico — Chancador Cónico
+                - generic [ref=e483]:
+                  - generic [ref=e485]: Avance
+                  - generic [ref=e488]: 40%
+                  - generic [ref=e489]: 99h
+                - img [ref=e490]
+              - generic [ref=e493] [cursor=pointer]:
+                - generic [ref=e494]: P1
+                - generic [ref=e495]:
+                  - generic [ref=e496]:
+                    - generic [ref=e497]: OT-2026-50033
+                    - generic [ref=e498]: FAST TRACK
+                    - generic [ref=e499]: In Execution
+                  - paragraph [ref=e500]: CRU-CON-HP-01 - Falla rodamiento eje excéntrico — Chancador Cónico
+                - generic [ref=e501]:
+                  - generic [ref=e503]: Avance
+                  - generic [ref=e506]: 50%
+                  - generic [ref=e507]: 99h
+                - img [ref=e508]
+              - generic [ref=e511] [cursor=pointer]:
+                - generic [ref=e512]: P2
+                - generic [ref=e513]:
+                  - generic [ref=e514]:
+                    - generic [ref=e515]: OT-2026-50064
+                    - generic [ref=e516]: FAST TRACK
+                    - generic [ref=e517]: In Execution
+                  - paragraph [ref=e518]: CRU-JAW-01 - Fuga hidráulica en ajuste — Chancador Mandíbula 01
+                - generic [ref=e519]:
+                  - generic [ref=e521]: Avance
+                  - generic [ref=e524]: 25%
+                  - generic [ref=e525]: 11h
+                - img [ref=e526]
+              - generic [ref=e529] [cursor=pointer]:
+                - generic [ref=e530]: P3
+                - generic [ref=e531]:
+                  - generic [ref=e532]:
+                    - generic [ref=e533]: OT-2026-50076
+                    - generic [ref=e534]: In Execution
+                  - paragraph [ref=e535]: BRY-BAL-ML-001 - Fuga de aceite en trunnion bearing — Molino Bolas
+                - generic [ref=e536]:
+                  - generic [ref=e538]: Avance
+                  - generic [ref=e541]: 75%
+                  - generic [ref=e542]: 16h
+                - img [ref=e543]
+              - generic [ref=e546] [cursor=pointer]:
+                - generic [ref=e547]: P2
+                - generic [ref=e548]:
+                  - generic [ref=e549]:
+                    - generic [ref=e550]: OT-2026-50014
+                    - generic [ref=e551]: FAST TRACK
+                    - generic [ref=e552]: In Execution
+                  - paragraph [ref=e553]: TRF-PRI-01 - Fuga de aceite — Transformador Principal 01 · 80MV
+                - generic [ref=e554]:
+                  - generic [ref=e556]: Avance
+                  - generic [ref=e559]: 75%
+                  - generic [ref=e560]: 17h
+                - img [ref=e561]
+              - generic [ref=e564] [cursor=pointer]:
+                - generic [ref=e565]: P2
+                - generic [ref=e566]:
+                  - generic [ref=e567]:
+                    - generic [ref=e568]: OT-2026-50103
+                    - generic [ref=e569]: FAST TRACK
+                    - generic [ref=e570]: Scheduled
+                  - paragraph [ref=e571]: COM-AIRE-02 - Falla válvula admisión. En operación continua. Vál
+                - generic [ref=e572]:
+                  - generic [ref=e574]: Avance
+                  - generic [ref=e576]: 0%
+                  - generic [ref=e577]: 8h
+                - img [ref=e578]
+              - generic [ref=e581] [cursor=pointer]:
+                - generic [ref=e582]: P2
+                - generic [ref=e583]:
+                  - generic [ref=e584]:
+                    - generic [ref=e585]: OT-2026-50102
+                    - generic [ref=e586]: FAST TRACK
+                    - generic [ref=e587]: Scheduled
+                  - paragraph [ref=e588]: PMP-SL-HP-002 - Vibración en descanso motor. Durante el arranque.
+                - generic [ref=e589]:
+                  - generic [ref=e591]: Avance
+                  - generic [ref=e593]: 0%
+                  - generic [ref=e594]: 4h
+                - img [ref=e595]
+              - generic [ref=e598] [cursor=pointer]:
+                - generic [ref=e599]: P2
+                - generic [ref=e600]:
+                  - generic [ref=e601]:
+                    - generic [ref=e602]: OT-2026-50101
+                    - generic [ref=e603]: FAST TRACK
+                    - generic [ref=e604]: Scheduled
+                  - paragraph [ref=e605]: PMP-AGUA-01 - — Circunstancias del aviso — Test circumstances Wo
+                - generic [ref=e606]:
+                  - generic [ref=e608]: Avance
+                  - generic [ref=e610]: 0%
+                  - generic [ref=e611]: 4h
+                - img [ref=e612]
+              - generic [ref=e615] [cursor=pointer]:
+                - generic [ref=e616]: P2
+                - generic [ref=e617]:
+                  - generic [ref=e618]:
+                    - generic [ref=e619]: OT-2026-50100
+                    - generic [ref=e620]: FAST TRACK
+                    - generic [ref=e621]: Scheduled
+                  - paragraph [ref=e622]: MCC-ML-01 - Contactor pegado en partidor. Durante turno noche.
+                - generic [ref=e623]:
+                  - generic [ref=e625]: Avance
+                  - generic [ref=e627]: 0%
+                  - generic [ref=e628]: 8h
+                - img [ref=e629]
+              - generic [ref=e632] [cursor=pointer]:
+                - generic [ref=e633]: P3
+                - generic [ref=e634]:
+                  - generic [ref=e635]:
+                    - generic [ref=e636]: OT-2026-50053
+                    - generic [ref=e637]: Scheduled
+                  - paragraph [ref=e638]: HID-CEN-01 - Contaminación de aceite — Central Hidráulica Crush
+                - generic [ref=e639]:
+                  - generic [ref=e641]: Avance
+                  - generic [ref=e643]: 0%
+                  - generic [ref=e644]: 11h
+                - img [ref=e645]
+              - generic [ref=e648] [cursor=pointer]:
+                - generic [ref=e649]: P1
+                - generic [ref=e650]:
+                  - generic [ref=e651]:
+                    - generic [ref=e652]: OT-2026-50090
+                    - generic [ref=e653]: FAST TRACK
+                    - generic [ref=e654]: Scheduled
+                  - paragraph [ref=e655]: SUB-MT-P01 - Alarma sobrecarga trafo — Subestación MT Planta 01
+                - generic [ref=e656]:
+                  - generic [ref=e658]: Avance
+                  - generic [ref=e660]: 0%
+                  - generic [ref=e661]: 17h
+                - img [ref=e662]
+              - generic [ref=e665] [cursor=pointer]:
+                - generic [ref=e666]: P2
+                - generic [ref=e667]:
+                  - generic [ref=e668]:
+                    - generic [ref=e669]: OT-2026-50032
+                    - generic [ref=e670]: FAST TRACK
+                    - generic [ref=e671]: Scheduled
+                  - paragraph [ref=e672]: SUB-AT-S01 - Falla breaker MT — Subestación AT Mina · 220kV
+                - generic [ref=e673]:
+                  - generic [ref=e675]: Avance
+                  - generic [ref=e677]: 0%
+                  - generic [ref=e678]: 17h
+                - img [ref=e679]
+              - generic [ref=e682] [cursor=pointer]:
+                - generic [ref=e683]: P3
+                - generic [ref=e684]:
+                  - generic [ref=e685]:
+                    - generic [ref=e686]: OT-2026-50055
+                    - generic [ref=e687]: Scheduled
+                  - paragraph [ref=e688]: COM-AIRE-02 - Temperatura descarga alta — Compresor Aire 02 · 18
+                - generic [ref=e689]:
+                  - generic [ref=e691]: Avance
+                  - generic [ref=e693]: 0%
+                  - generic [ref=e694]: 11h
+                - img [ref=e695]
+              - generic [ref=e698] [cursor=pointer]:
+                - generic [ref=e699]: P3
+                - generic [ref=e700]:
+                  - generic [ref=e701]:
+                    - generic [ref=e702]: OT-2026-50093
+                    - generic [ref=e703]: Scheduled
+                  - paragraph [ref=e704]: ANL-XRF-01 - Calibración fuera de rango — Analizador XRF Courie
+                - generic [ref=e705]:
+                  - generic [ref=e707]: Avance
+                  - generic [ref=e709]: 0%
+                  - generic [ref=e710]: 7h
+                - img [ref=e711]
+              - generic [ref=e714] [cursor=pointer]:
+                - generic [ref=e715]: P2
+                - generic [ref=e716]:
+                  - generic [ref=e717]:
+                    - generic [ref=e718]: OT-2026-50061
+                    - generic [ref=e719]: FAST TRACK
+                    - generic [ref=e720]: Scheduled
+                  - paragraph [ref=e721]: SUB-AT-S01 - Falla breaker MT — Subestación AT Mina · 220kV
+                - generic [ref=e722]:
+                  - generic [ref=e724]: Avance
+                  - generic [ref=e726]: 0%
+                  - generic [ref=e727]: 17h
+                - img [ref=e728]
+              - generic [ref=e731] [cursor=pointer]:
+                - generic [ref=e732]: P2
+                - generic [ref=e733]:
+                  - generic [ref=e734]:
+                    - generic [ref=e735]: OT-2026-50021
+                    - generic [ref=e736]: FAST TRACK
+                    - generic [ref=e737]: Scheduled
+                  - paragraph [ref=e738]: THK-REL-02 - Falla torque mecanismo rastrillo — Espesador Relav
+                - generic [ref=e739]:
+                  - generic [ref=e741]: Avance
+                  - generic [ref=e743]: 0%
+                  - generic [ref=e744]: 11h
+                - img [ref=e745]
+              - generic [ref=e748] [cursor=pointer]:
+                - generic [ref=e749]: P2
+                - generic [ref=e750]:
+                  - generic [ref=e751]:
+                    - generic [ref=e752]: OT-2026-50012
+                    - generic [ref=e753]: FAST TRACK
+                    - generic [ref=e754]: Scheduled
+                  - paragraph [ref=e755]: THK-REL-02 - Falla torque mecanismo rastrillo — Espesador Relav
+                - generic [ref=e756]:
+                  - generic [ref=e758]: Avance
+                  - generic [ref=e760]: 0%
+                  - generic [ref=e761]: 11h
+                - img [ref=e762]
+              - generic [ref=e765] [cursor=pointer]:
+                - generic [ref=e766]: P2
+                - generic [ref=e767]:
+                  - generic [ref=e768]:
+                    - generic [ref=e769]: OT-2026-50001
+                    - generic [ref=e770]: FAST TRACK
+                    - generic [ref=e771]: Scheduled
+                  - paragraph [ref=e772]: THK-REL-01 - Falla torque mecanismo rastrillo — Espesador Relav
+                - generic [ref=e773]:
+                  - generic [ref=e775]: Avance
+                  - generic [ref=e777]: 0%
+                  - generic [ref=e778]: 11h
+                - img [ref=e779]
+              - generic [ref=e782] [cursor=pointer]:
+                - generic [ref=e783]: P3
+                - generic [ref=e784]:
+                  - generic [ref=e785]:
+                    - generic [ref=e786]: OT-2026-50015
+                    - generic [ref=e787]: Scheduled
+                  - paragraph [ref=e788]: DCS-PLT-01 - Falla comunicación módulo — DCS Planta · Yokogawa
+                - generic [ref=e789]:
+                  - generic [ref=e791]: Avance
+                  - generic [ref=e793]: 0%
+                  - generic [ref=e794]: 7h
+                - img [ref=e795]
+              - generic [ref=e798] [cursor=pointer]:
+                - generic [ref=e799]: P4
+                - generic [ref=e800]:
+                  - generic [ref=e801]:
+                    - generic [ref=e802]: OT-2026-50063
+                    - generic [ref=e803]: Scheduled
+                  - paragraph [ref=e804]: FLT-CEL-RG-01 - Desgaste de impulsor rotor — Celda Rougher 01 · 30
+                - generic [ref=e805]:
+                  - generic [ref=e807]: Avance
+                  - generic [ref=e809]: 0%
+                  - generic [ref=e810]: 11h
+                - img [ref=e811]
+              - generic [ref=e814] [cursor=pointer]:
+                - generic [ref=e815]: P3
+                - generic [ref=e816]:
+                  - generic [ref=e817]:
+                    - generic [ref=e818]: OT-2026-50045
+                    - generic [ref=e819]: Scheduled
+                  - paragraph [ref=e820]: CVY-CV-001 - Desalineación de correa — Correa Principal CV-001
+                - generic [ref=e821]:
+                  - generic [ref=e823]: Avance
+                  - generic [ref=e825]: 0%
+                  - generic [ref=e826]: 11h
+                - img [ref=e827]
+              - generic [ref=e830] [cursor=pointer]:
+                - generic [ref=e831]: P1
+                - generic [ref=e832]:
+                  - generic [ref=e833]:
+                    - generic [ref=e834]: OT-2026-50041
+                    - generic [ref=e835]: FAST TRACK
+                    - generic [ref=e836]: Scheduled
+                  - paragraph [ref=e837]: CRU-CON-HP-02 - Falla rodamiento eje excéntrico — Chancador Cónico
+                - generic [ref=e838]:
+                  - generic [ref=e840]: Avance
+                  - generic [ref=e842]: 0%
+                  - generic [ref=e843]: 99h
+                - img [ref=e844]
+              - generic [ref=e847] [cursor=pointer]:
+                - generic [ref=e848]: P3
+                - generic [ref=e849]:
+                  - generic [ref=e850]:
+                    - generic [ref=e851]: OT-2026-50044
+                    - generic [ref=e852]: Scheduled
+                  - paragraph [ref=e853]: CVY-CV-002 - Desalineación de correa — Correa Secundaria CV-002
+                - generic [ref=e854]:
+                  - generic [ref=e856]: Avance
+                  - generic [ref=e858]: 0%
+                  - generic [ref=e859]: 11h
+                - img [ref=e860]
+              - generic [ref=e863] [cursor=pointer]:
+                - generic [ref=e864]: P3
+                - generic [ref=e865]:
+                  - generic [ref=e866]:
+                    - generic [ref=e867]: OT-2026-50074
+                    - generic [ref=e868]: Scheduled
+                  - paragraph [ref=e869]: PMP-SL-HP-002 - Vibración en descanso motor — Bomba Slurry HP 002
+                - generic [ref=e870]:
+                  - generic [ref=e872]: Avance
+                  - generic [ref=e874]: 0%
+                  - generic [ref=e875]: 11h
+                - img [ref=e876]
+              - generic [ref=e879] [cursor=pointer]:
+                - generic [ref=e880]: P2
+                - generic [ref=e881]:
+                  - generic [ref=e882]:
+                    - generic [ref=e883]: OT-2026-50051
+                    - generic [ref=e884]: FAST TRACK
+                    - generic [ref=e885]: Scheduled
+                  - paragraph [ref=e886]: SUB-MT-P01 - Falla breaker MT — Subestación MT Planta 01 · 23kV
+                - generic [ref=e887]:
+                  - generic [ref=e889]: Avance
+                  - generic [ref=e891]: 0%
+                  - generic [ref=e892]: 17h
+                - img [ref=e893]
+              - generic [ref=e896] [cursor=pointer]:
+                - generic [ref=e897]: P2
+                - generic [ref=e898]:
+                  - generic [ref=e899]:
+                    - generic [ref=e900]: OT-2026-50091
+                    - generic [ref=e901]: FAST TRACK
+                    - generic [ref=e902]: Scheduled
+                  - paragraph [ref=e903]: PMP-AGUA-01 - Fuga en sello mecánico — Bomba Agua Proceso 01 · 2
+                - generic [ref=e904]:
+                  - generic [ref=e906]: Avance
+                  - generic [ref=e908]: 0%
+                  - generic [ref=e909]: 16h
+                - img [ref=e910]
+              - generic [ref=e913] [cursor=pointer]:
+                - generic [ref=e914]: P3
+                - generic [ref=e915]:
+                  - generic [ref=e916]:
+                    - generic [ref=e917]: OT-2026-50043
+                    - generic [ref=e918]: Scheduled
+                  - paragraph [ref=e919]: PLC-FLT-01 - Error CPU redundante — PLC Flotación · Rockwell
+                - generic [ref=e920]:
+                  - generic [ref=e922]: Avance
+                  - generic [ref=e924]: 0%
+                  - generic [ref=e925]: 7h
+                - img [ref=e926]
+              - generic [ref=e929] [cursor=pointer]:
+                - generic [ref=e930]: P2
+                - generic [ref=e931]:
+                  - generic [ref=e932]:
+                    - generic [ref=e933]: OT-2026-50062
+                    - generic [ref=e934]: FAST TRACK
+                    - generic [ref=e935]: Scheduled
+                  - paragraph [ref=e936]: COM-AIRE-02 - Falla válvula admisión — Compresor Aire 02 · 1800c
+                - generic [ref=e937]:
+                  - generic [ref=e939]: Avance
+                  - generic [ref=e941]: 0%
+                  - generic [ref=e942]: 11h
+                - img [ref=e943]
+              - generic [ref=e946] [cursor=pointer]:
+                - generic [ref=e947]: P1
+                - generic [ref=e948]:
+                  - generic [ref=e949]:
+                    - generic [ref=e950]: OT-2026-50072
+                    - generic [ref=e951]: FAST TRACK
+                    - generic [ref=e952]: Scheduled
+                  - paragraph [ref=e953]: SUB-MT-P01 - Alarma sobrecarga trafo — Subestación MT Planta 01
+                - generic [ref=e954]:
+                  - generic [ref=e956]: Avance
+                  - generic [ref=e958]: 0%
+                  - generic [ref=e959]: 17h
+                - img [ref=e960]
+              - generic [ref=e963] [cursor=pointer]:
+                - generic [ref=e964]: P3
+                - generic [ref=e965]:
+                  - generic [ref=e966]:
+                    - generic [ref=e967]: OT-2026-50083
+                    - generic [ref=e968]: Scheduled
+                  - paragraph [ref=e969]: COM-AIRE-02 - Temperatura descarga alta — Compresor Aire 02 · 18
+                - generic [ref=e970]:
+                  - generic [ref=e972]: Avance
+                  - generic [ref=e974]: 0%
+                  - generic [ref=e975]: 11h
+                - img [ref=e976]
+              - generic [ref=e979] [cursor=pointer]:
+                - generic [ref=e980]: P3
+                - generic [ref=e981]:
+                  - generic [ref=e982]:
+                    - generic [ref=e983]: OT-2026-50034
+                    - generic [ref=e984]: Scheduled
+                  - paragraph [ref=e985]: PLC-FLT-01 - Error CPU redundante — PLC Flotación · Rockwell
+                - generic [ref=e986]:
+                  - generic [ref=e988]: Avance
+                  - generic [ref=e990]: 0%
+                  - generic [ref=e991]: 7h
+                - img [ref=e992]
+              - generic [ref=e995] [cursor=pointer]:
+                - generic [ref=e996]: P3
+                - generic [ref=e997]:
+                  - generic [ref=e998]:
+                    - generic [ref=e999]: OT-2026-50013
+                    - generic [ref=e1000]: Scheduled
+                  - paragraph [ref=e1001]: DCS-PLT-01 - Falla comunicación módulo — DCS Planta · Yokogawa
+                - generic [ref=e1002]:
+                  - generic [ref=e1004]: Avance
+                  - generic [ref=e1006]: 0%
+                  - generic [ref=e1007]: 7h
+                - img [ref=e1008]
+              - generic [ref=e1011] [cursor=pointer]:
+                - generic [ref=e1012]: P3
+                - generic [ref=e1013]:
+                  - generic [ref=e1014]:
+                    - generic [ref=e1015]: OT-2026-50073
+                    - generic [ref=e1016]: Scheduled
+                  - paragraph [ref=e1017]: COM-AIRE-01 - Temperatura descarga alta — Compresor Aire 01 · 18
+                - generic [ref=e1018]:
+                  - generic [ref=e1020]: Avance
+                  - generic [ref=e1022]: 0%
+                  - generic [ref=e1023]: 11h
+                - img [ref=e1024]
+              - generic [ref=e1027] [cursor=pointer]:
+                - generic [ref=e1028]: P3
+                - generic [ref=e1029]:
+                  - generic [ref=e1030]:
+                    - generic [ref=e1031]: OT-2026-50011
+                    - generic [ref=e1032]: Scheduled
+                  - paragraph [ref=e1033]: HID-CEN-01 - Contaminación de aceite — Central Hidráulica Crush
+                - generic [ref=e1034]:
+                  - generic [ref=e1036]: Avance
+                  - generic [ref=e1038]: 0%
+                  - generic [ref=e1039]: 11h
+                - img [ref=e1040]
+  - status

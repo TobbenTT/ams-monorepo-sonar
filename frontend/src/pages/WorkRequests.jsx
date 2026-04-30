@@ -293,6 +293,18 @@ function DuplicateWarning({ duplicates, onViewDuplicate, onDismiss, t, currentRe
 }
 
 /* ─── Detail Modal (expanded + editable for supervisor) ─── */
+// Defensa contra React error #31 — devuelve string seguro de cualquier valor
+// (incluyendo objetos {tag, name, equipment_type, hours} que vienen del seed
+// support_equipment cuando un campo string fue contaminado en DB).
+const safeStr = (v) => {
+  if (v == null) return '';
+  if (typeof v === 'string' || typeof v === 'number') return String(v);
+  if (typeof v === 'object') {
+    return v.name || v.tag || v.description || v.label || v.value || '';
+  }
+  return String(v);
+};
+
 function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, onGoToOT, onToggleFullScreen, isFullScreen, userRole, t, _isInCarousel, _isDuplicate }) {
   const toast = useToast();
   if (!item) return null;
@@ -663,21 +675,21 @@ ${materials.length ? `<div class="section">
                 </div>
                 {item.priority_bumped_by_ai && item.ai_priority_reason && (
                   <div className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 rounded px-2 py-1 leading-snug">
-                    <strong>¿Por qué subió la IA?</strong> {item.ai_priority_reason}
+                    <strong>¿Por qué subió la IA?</strong> {safeStr(item.ai_priority_reason)}
                   </div>
                 )}
                 {!item.priority_bumped_by_ai && item.ai_priority_reason && (
                   <div className="text-[10px] text-gray-600 italic leading-snug">
-                    IA confirmó {item.priority_requested}: {item.ai_priority_reason}
+                    IA confirmó {item.priority_requested}: {safeStr(item.ai_priority_reason)}
                   </div>
                 )}
                 {(item.ai_suggested_action || item.ai_work_conditions) && (
                   <div className="mt-1 text-[10px] text-gray-700 space-y-0.5">
                     {item.ai_suggested_action && (
-                      <div><span className="font-semibold">🤖 Acción IA:</span> {item.ai_suggested_action}</div>
+                      <div><span className="font-semibold">🤖 Acción IA:</span> {safeStr(item.ai_suggested_action)}</div>
                     )}
                     {item.ai_work_conditions && (
-                      <div><span className="font-semibold">🛡 Condiciones IA:</span> {item.ai_work_conditions}</div>
+                      <div><span className="font-semibold">🛡 Condiciones IA:</span> {safeStr(item.ai_work_conditions)}</div>
                     )}
                   </div>
                 )}
@@ -688,19 +700,19 @@ ${materials.length ? `<div class="section">
             <ConfidenceBar value={item.ai_confidence} />
           </DetailCard>
           {item.activity_class && (
-            <DetailCard icon={Wrench} label="Activity Class" value={item.activity_class} />
+            <DetailCard icon={Wrench} label="Activity Class" value={safeStr(item.activity_class)} />
           )}
           {item.plant_condition && (
-            <DetailCard icon={Zap} label="Required Condition" value={item.plant_condition} />
+            <DetailCard icon={Zap} label="Required Condition" value={safeStr(item.plant_condition)} />
           )}
           {item.created_at && (
             <DetailCard icon={Calendar} label={t('workRequests.createdAt')} value={new Date(item.created_at).toLocaleDateString()} />
           )}
           {item.notification_type && (
-            <DetailCard icon={FileText} label="Notification Type" value={item.notification_type} />
+            <DetailCard icon={FileText} label="Notification Type" value={safeStr(item.notification_type)} />
           )}
           {item.work_class && (
-            <DetailCard icon={Tag} label="Work Class" value={item.work_class} />
+            <DetailCard icon={Tag} label="Work Class" value={safeStr(item.work_class)} />
           )}
           {item.wo_number && (
             <div className="bg-white dark:bg-card rounded-xl border border-border px-3 py-2.5 flex items-center gap-2">
@@ -798,7 +810,7 @@ ${materials.length ? `<div class="section">
                 className="w-full text-base font-bold text-foreground bg-emerald-50 border border-emerald-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 placeholder="Título para la OT (arrastrado desde el aviso)" />
             ) : (
-              <p className="text-base font-bold text-foreground bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">{item.wo_title}</p>
+              <p className="text-base font-bold text-foreground bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">{safeStr(item.wo_title)}</p>
             )}
           </div>
         )}
@@ -833,7 +845,7 @@ ${materials.length ? `<div class="section">
               rows={6} className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-y" />
           ) : (
             <p className="text-sm text-foreground leading-relaxed bg-muted/50 rounded-lg p-3 border border-border">
-              {item.failure_description}
+              {safeStr(item.failure_description)}
             </p>
           )}
 
@@ -844,7 +856,7 @@ ${materials.length ? `<div class="section">
           <div className="px-6 pb-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Original Request</p>
             <p className="text-sm text-muted-foreground italic leading-relaxed bg-gray-50 rounded-lg p-3 border border-gray-200">
-              "{item.original_text}"
+              "{safeStr(item.original_text)}"
             </p>
           </div>
         )}
@@ -906,19 +918,19 @@ ${materials.length ? `<div class="section">
                 {(item.failure_object_part || item.failure_category) && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground min-w-[90px]">Object Part:</span>
-                    <span className="text-sm font-medium text-foreground">{item.failure_object_part || item.failure_category}</span>
+                    <span className="text-sm font-medium text-foreground">{safeStr(item.failure_object_part || item.failure_category)}</span>
                   </div>
                 )}
                 {item.failure_symptom && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground min-w-[90px]">Symptom:</span>
-                    <span className="text-sm font-medium text-foreground">{item.failure_symptom}</span>
+                    <span className="text-sm font-medium text-foreground">{safeStr(item.failure_symptom)}</span>
                   </div>
                 )}
                 {item.failure_cause && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground min-w-[90px]">Cause:</span>
-                    <span className="text-sm font-medium text-foreground">{item.failure_cause}</span>
+                    <span className="text-sm font-medium text-foreground">{safeStr(item.failure_cause)}</span>
                   </div>
                 )}
               </div>
@@ -976,7 +988,7 @@ ${materials.length ? `<div class="section">
               </div>
             ) : (
               <p className="text-sm text-foreground leading-relaxed bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
-                {item.suggested_action}
+                {safeStr(item.suggested_action)}
               </p>
             )}
           </div>
@@ -1006,13 +1018,13 @@ ${materials.length ? `<div class="section">
                 <div className="flex items-center gap-2">
                   <User size={14} className="text-muted-foreground flex-shrink-0" />
                   <span className="text-xs text-muted-foreground">Notificated by:</span>
-                  <span className="text-sm font-medium text-foreground">{item.reported_by}</span>
+                  <span className="text-sm font-medium text-foreground">{safeStr(item.reported_by)}</span>
                 </div>
               )}
               {item.circumstances && (
                 <div>
                   <span className="text-xs text-muted-foreground">Circunstancias:</span>
-                  <p className="text-sm text-foreground mt-0.5">{item.circumstances}</p>
+                  <p className="text-sm text-foreground mt-0.5">{safeStr(item.circumstances)}</p>
                 </div>
               )}
               {/* Jorge 2026-04-23 17:38: support_equipment duplicado (estaba

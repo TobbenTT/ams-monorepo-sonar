@@ -368,6 +368,185 @@ def _fallback_classify_noncompliance(notes: list[str]) -> list[dict]:
     )
 
 
+class ChronicCluster(BaseModel):
+    equipment: str
+    failure_mode: str
+    count_in_window: int
+    total_count: int
+    sample_descriptions: list[str] = []
+
+
+class ChronicAnalysisRequest(BaseModel):
+    clusters: list[ChronicCluster]
+    plant_id: str | None = None
+
+
+@router.post("/chronic-failures-analyze")
+def chronic_failures_analyze(data: ChronicAnalysisRequest):
+    """Para cada cluster crónico detectado, Claude propone causa raíz +
+    acción recomendada. El detector algorítmico (≥3 reps en 7d) ranquea;
+    Claude interpreta el patrón y sugiere intervención."""
+    import json
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    clusters = data.clusters or []
+    if not clusters:
+        return {"analyses": [], "ai_used": False}
+    if not api_key:
+        return {"analyses": [{"equipment": c.equipment, "failure_mode": c.failure_mode,
+                              "root_cause_hypothesis": "Patrón crónico detectado (sin Claude para análisis profundo)",
+                              "recommended_action": "Abrir RCA formal — investigar diseño/operación/lubricación",
+                              "confidence": "low"} for c in clusters], "ai_used": False}
+    try:
+        import anthropic
+    except ImportError:
+        return {"analyses": [], "ai_used": False}
+
+    clusters_str = "\n".join([
+        f"  {i+1}. Equipo {c.equipment} → modo '{c.failure_mode}': {c.count_in_window} repeticiones en 7 días "
+        f"(total histórico: {c.total_count})"
+        + (f" · sample descs: {' | '.join(c.sample_descriptions[:2])}" if c.sample_descriptions else "")
+        for i, c in enumerate(clusters[:10])
+    ])
+    prompt = f"""Eres un ingeniero de confiabilidad senior. Te paso clusters de fallas crónicas detectadas (≥3 repeticiones en 7 días del mismo modo en el mismo equipo). Para CADA uno, propone:
+- root_cause_hypothesis: hipótesis de causa raíz (max 200 chars). Citar señales del modo + frecuencia.
+- recommended_action: acción concreta para atacar la causa raíz (max 200 chars). NO genérico tipo "abrir RCA" — específico.
+- confidence: "high" / "medium" / "low" según qué tan claro es el patrón.
+
+CLUSTERS DETECTADOS:
+{clusters_str}
+
+Devuelve SOLO JSON:
+{{
+  "analyses": [
+    {{ "cluster_idx": 1, "root_cause_hypothesis": "...", "recommended_action": "...", "confidence": "high" }},
+    ...
+  ]
+}}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = resp.content[0].text.strip()
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start < 0:
+            return {"analyses": [], "ai_used": False}
+        parsed = json.loads(text[start:end])
+        out = []
+        for a in (parsed.get("analyses") or []):
+            idx = a.get("cluster_idx")
+            if not isinstance(idx, int) or idx < 1 or idx > len(clusters):
+                continue
+            c = clusters[idx-1]
+            out.append({
+                "equipment": c.equipment,
+                "failure_mode": c.failure_mode,
+                "root_cause_hypothesis": a.get("root_cause_hypothesis"),
+                "recommended_action": a.get("recommended_action"),
+                "confidence": a.get("confidence") or "medium",
+            })
+        return {"analyses": out, "ai_used": True}
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("chronic-analyze Claude failed: %s", e)
+        return {"analyses": [], "ai_used": False}
+
+
+class StockOCRecommendRequest(BaseModel):
+    forecast: list[dict]  # output de forecast_stock con códigos críticos
+    plant_id: str | None = None
+
+
+@router.post("/stock-oc-recommend")
+def stock_oc_recommend(data: StockOCRecommendRequest):
+    """Claude analiza el forecast determinístico y sugiere OCs (cantidad +
+    justificación) por código crítico. El forecast da los números, Claude
+    decide la prioridad de la compra y explica al planificador."""
+    import json
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    items = data.forecast or []
+    # Filtrar a los códigos en riesgo (cobertura <14d o stockout proyectado)
+    risky = [
+        f for f in items
+        if (f.get("coverage_days") is not None and f.get("coverage_days") < 30)
+        or (f.get("planned_demand_60", 0) > f.get("available", 0))
+    ][:15]
+    if not risky:
+        return {"recommendations": [], "ai_used": False}
+    if not api_key:
+        return {"recommendations": [
+            {"code": r.get("code"), "qty_suggested": max(r.get("planned_demand_60", 0) - r.get("available", 0), 0),
+             "priority": "MEDIUM", "reasoning": "(sin Claude) cobertura crítica detectada por algoritmo."} for r in risky
+        ], "ai_used": False}
+    try:
+        import anthropic
+    except ImportError:
+        return {"recommendations": [], "ai_used": False}
+
+    rows = "\n".join([
+        f"  {i+1}. {r.get('code','?')} {(r.get('description') or '')[:50]} — "
+        f"stock disp: {r.get('available',0)}, consumo diario: {r.get('daily_avg',0)}, "
+        f"cobertura: {r.get('coverage_days','?')}d, demanda 30d: {r.get('planned_demand_30',0)}, "
+        f"60d: {r.get('planned_demand_60',0)}"
+        for i, r in enumerate(risky)
+    ])
+    prompt = f"""Eres un planificador de abastecimiento. Para cada código crítico, sugiere cantidad de OC + prioridad + justificación corta.
+
+CÓDIGOS EN RIESGO:
+{rows}
+
+Para cada uno devuelve:
+- qty_suggested: cantidad recomendada de la OC (entero)
+- priority: "HIGH" (stockout en <7d), "MEDIUM" (<30d), "LOW"
+- reasoning: 1 frase citando los números clave (max 160 chars)
+
+Devuelve SOLO JSON:
+{{
+  "recommendations": [
+    {{ "idx": 1, "qty_suggested": 50, "priority": "HIGH", "reasoning": "..." }},
+    ...
+  ]
+}}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1800,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = resp.content[0].text.strip()
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start < 0:
+            return {"recommendations": [], "ai_used": False}
+        parsed = json.loads(text[start:end])
+        out = []
+        for r in (parsed.get("recommendations") or []):
+            idx = r.get("idx")
+            if not isinstance(idx, int) or idx < 1 or idx > len(risky):
+                continue
+            src = risky[idx-1]
+            out.append({
+                "code": src.get("code"),
+                "description": src.get("description") or "",
+                "available": src.get("available", 0),
+                "coverage_days": src.get("coverage_days"),
+                "qty_suggested": r.get("qty_suggested"),
+                "priority": r.get("priority"),
+                "reasoning": r.get("reasoning"),
+            })
+        return {"recommendations": out, "ai_used": True, "items_analyzed": len(risky)}
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("stock-oc-recommend Claude failed: %s", e)
+        return {"recommendations": [], "ai_used": False}
+
+
 @router.get("/variance-alerts")
 def get_variance_alerts(db: Session = Depends(get_db)):
     alerts = analytics_service.get_variance_alerts(db)

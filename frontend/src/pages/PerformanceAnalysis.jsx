@@ -75,6 +75,10 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
   // #18 — NLP real con Claude (no regex)
   const [aiNoncompliance, setAiNoncompliance] = useState(null);
   const [aiNoncomplianceLoading, setAiNoncomplianceLoading] = useState(false);
+  // #14 — Claude analiza chronic failures
+  const [aiChronic, setAiChronic] = useState(null);
+  // #19 — Claude OC recommendations
+  const [aiOCRecs, setAiOCRecs] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -104,7 +108,15 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
     });
     // SF-589: stock forecast en paralelo (no bloquea loading)
     api.stockForecast({ plant_id: plant, lookback_days: 90, horizon_days: 60 })
-      .then(res => setStockForecastData(res))
+      .then(res => {
+        setStockForecastData(res);
+        // #19 — disparar Claude OC recommend con el forecast resultante
+        const items = (res?.items || res?.forecast || []);
+        if (items.length > 0) {
+          api.recommendStockOC({ forecast: items, plant_id: plant })
+            .then(setAiOCRecs).catch(() => setAiOCRecs(null));
+        }
+      })
       .catch(() => setStockForecastData(null));
     // SF-588: cost analysis jerárquico
     api.costAnalysis({ plant_id: plant })
@@ -385,6 +397,23 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
     });
     return chronic.sort((a, b) => b.count_in_window - a.count_in_window).slice(0, 10);
   }, [wrs, criticalityMap]);
+
+  // #14 — Llamar a Claude para causa raíz cuando hay clusters detectados
+  useEffect(() => {
+    if (!chronicFailures.length) { setAiChronic(null); return; }
+    const payload = chronicFailures.slice(0, 5).map(c => {
+      const sampleWrs = wrs.filter(w => w.equipment_tag === c.equipment).slice(0, 2);
+      return {
+        equipment: c.equipment,
+        failure_mode: c.failure_mode,
+        count_in_window: c.count_in_window,
+        total_count: c.total_count,
+        sample_descriptions: sampleWrs.map(w => (w.problem_description?.original_text || w.failure_description || '').slice(0, 120)).filter(Boolean),
+      };
+    });
+    api.analyzeChronicFailures({ clusters: payload, plant_id: plant })
+      .then(setAiChronic).catch(() => setAiChronic(null));
+  }, [chronicFailures.length, wrs.length, plant]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Prioridades mal asignadas (Jorge 2026-04-28 17:56) ──
   // P1 sin atender en >24h, P2 sin atender en >7d, P3 cerrado en <2h (sub-priorizado),
@@ -1569,6 +1598,9 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
             🔥 Fallas Crónicas detectadas
+            {aiChronic?.ai_used && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300">🤖 Claude</span>
+            )}
           </h3>
           <span className="text-xs font-bold px-2 py-1 rounded-full bg-rose-100 text-rose-700">
             {chronicFailures.length} casos · ventana 7d
@@ -1615,6 +1647,20 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+        {aiChronic?.analyses?.length > 0 && (
+          <div className="mt-3 rounded-lg border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-fuchsia-50 p-3 space-y-2">
+            <div className="text-[11px] font-bold text-purple-900 mb-1">🤖 Análisis Claude — causa raíz + acción</div>
+            {aiChronic.analyses.map((a, i) => (
+              <div key={i} className="rounded bg-white/80 border border-purple-100 p-2 text-[11px]">
+                <div className="font-semibold text-purple-800">{a.equipment} → {a.failure_mode}
+                  <span className={`ml-2 text-[9px] font-bold px-1 py-0.5 rounded ${a.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' : a.confidence === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>{a.confidence?.toUpperCase()}</span>
+                </div>
+                <div className="text-gray-700 mt-1"><strong>Causa raíz:</strong> {a.root_cause_hypothesis}</div>
+                <div className="text-gray-700"><strong>Acción:</strong> {a.recommended_action}</div>
+              </div>
+            ))}
           </div>
         )}
         <p className="text-[10px] text-gray-500 italic mt-2">
@@ -2323,6 +2369,9 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
             📦 SF-589 · Predicción de quiebre stock IA
+            {aiOCRecs?.ai_used && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300">🤖 Claude OC</span>
+            )}
           </h3>
           {stockForecastData?.summary && (
             <div className="flex items-center gap-2 text-xs">
@@ -2386,6 +2435,25 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+        {aiOCRecs?.recommendations?.length > 0 && (
+          <div className="mt-3 rounded-lg border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-fuchsia-50 p-3">
+            <div className="text-[11px] font-bold text-purple-900 mb-2">🤖 Claude — recomendación de OC ({aiOCRecs.items_analyzed} códigos analizados)</div>
+            <div className="space-y-1.5">
+              {aiOCRecs.recommendations.slice(0, 8).map((r, i) => (
+                <div key={i} className="rounded bg-white/80 border border-purple-100 p-2 text-[11px] flex items-start gap-2">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${r.priority === 'HIGH' ? 'bg-red-200 text-red-800' : r.priority === 'MEDIUM' ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700'}`}>{r.priority}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-purple-800">
+                      {r.code} {r.description ? `· ${r.description.slice(0, 40)}` : ''} → OC {r.qty_suggested}
+                    </div>
+                    <div className="text-gray-700">{r.reasoning}</div>
+                    <div className="text-[9px] text-gray-500">disponible {r.available} · cobertura {r.coverage_days}d</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         <p className="text-[10px] text-gray-500 italic mt-2">

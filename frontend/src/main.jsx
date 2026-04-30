@@ -1,4 +1,4 @@
-// build: 2026-04-30-real-nlp-cost
+// build: 2026-04-30-capa4-claude
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';

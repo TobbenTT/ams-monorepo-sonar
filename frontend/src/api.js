@@ -421,6 +421,10 @@ export const rankTechniciansForOperation = (d) => post('/assignments/rank-for-op
 export const parseAutoLevelInstructions = (d) => post('/scheduling/parse-autolevel-instructions', d);
 // 2026-04-30 — NLP causas no-cumplimiento (real Claude, no regex)
 export const classifyNoncomplianceWithAI = (d) => post('/analytics/classify-noncompliance', d);
+// 2026-04-30 — Crónicas: Claude propone causa raíz + acción por cluster
+export const analyzeChronicFailures = (d) => post('/analytics/chronic-failures-analyze', d);
+// 2026-04-30 — Stock: Claude recomienda OC con justificación
+export const recommendStockOC = (d) => post('/analytics/stock-oc-recommend', d);
 // SF-579 — listar OTs absorbidas por una OT PM03
 export const listAbsorbedWOs = (id) => get(`/managed-work-orders/${id}/absorbed`);
 export const verifyCloseManagedWO = (id, d) => post(`/managed-work-orders/${id}/verify-close`, d);

@@ -1,0 +1,177 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - navigation "Main navigation" [ref=e4]:
+      - generic [ref=e5]:
+        - img "MagEAM" [ref=e159]
+        - paragraph [ref=e6]: Reliability Platform
+      - navigation [ref=e7]:
+        - generic [ref=e8]:
+          - link "Dashboard" [ref=e9] [cursor=pointer]:
+            - /url: /
+            - img [ref=e10]
+            - generic [ref=e13]: Dashboard
+          - link "✨ Agentic Capabilities" [ref=e14] [cursor=pointer]:
+            - /url: /agentic-capabilities
+            - img [ref=e15]
+            - generic [ref=e19]: ✨ Agentic Capabilities
+          - link "WOs & Notifications" [ref=e20] [cursor=pointer]:
+            - /url: /work-orders
+            - img [ref=e21]
+            - generic [ref=e23]: WOs & Notifications
+          - link "Work Management" [ref=e24] [cursor=pointer]:
+            - /url: /work-management
+            - img [ref=e25]
+            - generic [ref=e28]: Work Management
+          - link "Failures & Events" [ref=e29] [cursor=pointer]:
+            - /url: /failures-events
+            - img [ref=e30]
+            - generic [ref=e32]: Failures & Events
+          - link "Improvement Actions" [ref=e33] [cursor=pointer]:
+            - /url: /improvement-actions
+            - img [ref=e34]
+            - generic [ref=e37]: Improvement Actions
+          - link "Criticality" [ref=e38] [cursor=pointer]:
+            - /url: /criticality
+            - img [ref=e39]
+            - generic [ref=e42]: Criticality
+          - link "FMECA" [ref=e43] [cursor=pointer]:
+            - /url: /fmeca
+            - img [ref=e44]
+            - generic [ref=e48]: FMECA
+          - link "RCA" [ref=e49] [cursor=pointer]:
+            - /url: /rca
+            - img [ref=e50]
+            - generic [ref=e53]: RCA
+          - link "Reliability" [ref=e54] [cursor=pointer]:
+            - /url: /reliability
+            - img [ref=e55]
+            - generic [ref=e57]: Reliability
+          - link "Analytics" [ref=e58] [cursor=pointer]:
+            - /url: /analytics
+            - img [ref=e59]
+            - generic [ref=e61]: Analytics
+          - link "Reports" [ref=e62] [cursor=pointer]:
+            - /url: /reports
+            - img [ref=e63]
+            - generic [ref=e66]: Reports
+          - link "Team" [ref=e67] [cursor=pointer]:
+            - /url: /team
+            - img [ref=e68]
+            - generic [ref=e73]: Team
+          - link "Settings" [ref=e74] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e75]
+            - generic [ref=e78]: Settings
+          - link "SAP PM" [ref=e79] [cursor=pointer]:
+            - /url: /sap-pm
+            - img [ref=e80]
+            - generic [ref=e84]: SAP PM
+          - link "Data Import" [ref=e85] [cursor=pointer]:
+            - /url: /data-import
+            - img [ref=e86]
+            - generic [ref=e89]: Data Import
+          - link "Audit Log" [ref=e90] [cursor=pointer]:
+            - /url: /audit-log
+            - img [ref=e91]
+            - generic [ref=e94]: Audit Log
+      - generic [ref=e95]:
+        - button "AS Administrador Sistema Administrator" [ref=e96] [cursor=pointer]:
+          - generic [ref=e98]: AS
+          - generic [ref=e99]:
+            - generic [ref=e100]: Administrador Sistema
+            - generic [ref=e101]: Administrator
+        - generic [ref=e102]:
+          - button "Sign Out" [ref=e103]:
+            - img [ref=e104]
+            - generic [ref=e107]: Sign Out
+          - button [ref=e108]:
+            - img [ref=e109]
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e115]:
+            - img [ref=e116]
+            - textbox "Search modules..." [ref=e119]
+          - generic [ref=e120]:
+            - button "🇬🇧 EN" [ref=e122]:
+              - img [ref=e123]
+              - generic [ref=e126]: 🇬🇧 EN
+            - button "Switch to dark mode" [ref=e127]:
+              - img [ref=e128]
+            - generic "Tiempo real activo · última señal ahora" [ref=e215]:
+              - img [ref=e131]
+              - generic [ref=e135]: Sync ahora
+            - button "9+" [ref=e160]:
+              - img [ref=e138]
+              - generic [ref=e161]: 9+
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - img [ref=e143]
+            - combobox [ref=e145]:
+              - generic: GOLDFIELDS-SN — Goldfields - Salares Norte
+              - img
+          - generic [ref=e146]:
+            - img [ref=e147]
+            - combobox [ref=e149]:
+              - generic: Last 30 Days
+              - img
+        - generic [ref=e150]:
+          - generic [ref=e151]: "Analysis Level:"
+          - generic [ref=e152]:
+            - button "Executive View" [ref=e153]
+            - button "Tactical Operations View" [ref=e154]
+      - main [ref=e155]:
+        - generic [ref=e162]:
+          - generic [ref=e163]:
+            - img [ref=e164]
+            - generic [ref=e168]:
+              - heading "RAG Lab — Phase 2 Capabilities" [level=1] [ref=e169]
+              - paragraph [ref=e170]: LanceDB + sentence-transformers + Claude Sonnet 4.6 · Lazy load · idle 0 RAM
+          - generic [ref=e171]:
+            - generic [ref=e172]:
+              - strong [ref=e173]: "Modelo:"
+              - text: —
+            - generic [ref=e174]:
+              - strong [ref=e175]: "Loaded:"
+              - text: "false"
+            - generic [ref=e176]:
+              - strong [ref=e177]: "Tablas:"
+              - text: (vacío)
+          - generic [ref=e178]:
+            - button "#33 RCM Strategy Advisor" [ref=e179]:
+              - img [ref=e180]
+              - text: "#33 RCM Strategy Advisor"
+            - button "#34 Shift Handover" [ref=e183]:
+              - img [ref=e184]
+              - text: "#34 Shift Handover"
+            - button "#35 Post-Maint Learning" [ref=e188]:
+              - img [ref=e189]
+              - text: "#35 Post-Maint Learning"
+            - button "#40 KB Curator" [ref=e197]:
+              - img [ref=e198]
+              - text: "#40 KB Curator"
+          - generic [ref=e201]:
+            - 'heading "🎯 #33 RCM Strategy Advisor — Sugiere estrategia preventiva con histórico real" [level=3] [ref=e202]'
+            - generic [ref=e203]:
+              - textbox "Tag equipo" [ref=e204]: 343-PP-001
+              - textbox "Modo de falla" [ref=e205]: cavitación recurrente
+              - textbox "Contexto adicional" [ref=e206]: Reincidencias en últimos 6 meses, NPSH bajo sospecha
+            - button "Generar estrategia RCM" [ref=e220]
+            - generic [ref=e217]:
+              - generic [ref=e221]: "```json { \"recommended_strategy\": \"redesign\", \"frequency\": \"immediate\", \"key_tasks\": [ \"Realizar estudio hidráulico completo del sistema de succión para calcular NPSH disponible vs NPSH requerido de la bomba 343-PP-001 y comparar con curvas del fabricante Goulds 3196\", \"Inspeccionar y limpiar línea de aspiración para eliminar restricciones, válvulas parcialmente cerradas o accesorios que reduzcan el NPSH disponible\", \"Evaluar rediseño del sistema de succión: reducción de longitud de tubería, aumento de diámetro, eliminación de codos innecesarios o elevación del nivel del estanque de succión\", \"Instalar sensor de vibración continuo en carcasa de bomba con alarma configurable a 7 mm/s según especificación del manual man-001, para detección temprana de cavitación\", \"Revisar y reemplazar empaques mecánicos en el próximo mantenimiento programado dentro de las 2000 horas de operación, validando condición post-intervención\", \"Establecer monitoreo de presión diferencial en succión con datalogger para correlacionar eventos de cavitación con condiciones operacionales del proceso\" ], \"monitoring_indicators\": [ \"NPSH disponible vs NPSH requerido (cálculo hidráulico en tiempo real o por medición de presión de succión)\", \"Vibración en carcasa de bomba (mm/s) con umbral de alerta a 5 mm/s y parada a 7 mm/s según manual man-001\", \"Presión en línea de succión (kPa) con tendencia histórica para detectar deterioro progresivo\", \"Temperatura de cojinetes (°C) con límite de parada inmediata a 75°C según especificación Goulds 3196\" ], \"justification\": \"La OT-50091 documenta que la cavitación recurrente en 343-PP-001 fue atribuida a NPSH insuficiente como causa raíz, y que intervenciones de reemplazo de empaque y alineación resultaron en reincidencia a las 200 horas, evidenciando que las tareas correctivas y preventivas son insuficientes sin abordar el problema hidráulico de fondo. El manual man-001 indica que vibración superior a 7 mm/s es indicativa de cavitación o desbalance, lo que refuerza la necesidad de monitoreo continuo como complemento al rediseño. Dado el patrón de reincidencia en los últimos 6 meses y la causa raíz identificada de carácter sistémico, la estrategia RCM recomendada es redesign para eliminar la condición de operación fuera del envelope hidráulico de la bomba.\", \"confidence\": 0.87 } ```"
+              - generic [ref=e222]:
+                - generic [ref=e223]: "Fuentes recuperadas (LanceDB):"
+                - generic [ref=e224]:
+                  - generic [ref=e225]:
+                    - generic [ref=e226]: manual/man-001 · score 1.224
+                    - generic [ref=e227]: "Bomba centrifuga 343-PP-001 Goulds 3196: revisar empaques mecanicos cada 2000 horas. Vibracion >7mm/s indica desbalance o cavitacion. Temperatura cojinetes >75C requiere parada inmediata."
+                  - generic [ref=e228]:
+                    - generic [ref=e229]: manual/man-002 · score 1.439
+                    - generic [ref=e230]: "Motor electrico 1500HP TECO: aislamiento megger semestral. Termografia mensual. Filtro aceite cambiar 8000h. Vibracion axial >4mm/s revisar acople."
+                  - generic [ref=e231]:
+                    - generic [ref=e232]: history/OT-50091 · score 0.902
+                    - generic [ref=e233]: "OT-50091 343-PP-001: cavitacion por aspiracion bloqueada. Reemplazo empaque + alineacion. Reincidio en 200h. Causa raiz: NPSH insuficiente."
+                  - generic [ref=e234]:
+                    - generic [ref=e235]: history/OT-50087 · score 1.435
+                    - generic [ref=e236]: "OT-50087 motor 1500HP molino SAG: alta temperatura cojinete lado libre. Regrasaje + cambio termografia. Sin reincidencia 6 meses."
+  - status

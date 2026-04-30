@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
   ChevronLeft, ChevronRight, Users, User, Globe, ImageOff, Search,
   Wrench, Tag, MapPin, Gauge, Package, Calendar, FileText, Trash2, Zap,
-  Save, Download, X, Info, ArrowRight, Maximize2, Minimize2
+  Save, Download, X, Info, ArrowRight, Maximize2, Minimize2, Brain
 } from 'lucide-react';
 import { statusColor, priorityColor } from '../data/mockData';
 import * as api from '../api';
@@ -608,6 +608,46 @@ ${materials.length ? `<div class="section">
           )}
         </div>
 
+        {/* AI Priority Suggestion Banner — Jorge: la IA sugiere, el usuario decide */}
+        {item.priority_bumped_by_ai && item.ai_priority_pending && onAIPriorityDecision && (
+          <div className="mx-6 my-3 rounded-xl border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-fuchsia-50 overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2">
+              <Brain className="w-4 h-4" />
+              <span className="text-sm font-bold">Sugerencia de la IA — requiere tu decisión</span>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-gray-600">Tu prioridad:</span>
+                <span className={`text-sm font-bold px-2 py-0.5 rounded border ${priorityColor(item.priority_user || item.priority_requested)}`}>
+                  {item.priority_user || item.priority_requested}
+                </span>
+                <span className="text-purple-500 text-lg">→</span>
+                <span className="text-xs text-gray-600">IA sugiere:</span>
+                <span className={`text-sm font-bold px-2 py-0.5 rounded border ${priorityColor(item.priority_suggested)}`}>
+                  {item.priority_suggested}
+                </span>
+              </div>
+              <div className="text-xs text-gray-700 bg-white/70 rounded p-2 border border-purple-200">
+                <strong className="text-purple-800">¿Por qué?</strong> {safeStr(item.ai_priority_reason)}
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  onClick={() => onAIPriorityDecision(item.id, 'accepted')}
+                  className="flex-1 min-w-[180px] px-4 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  ✓ Aceptar sugerencia ({item.priority_suggested})
+                </button>
+                <button
+                  onClick={() => onAIPriorityDecision(item.id, 'rejected')}
+                  className="flex-1 min-w-[180px] px-4 py-2.5 bg-white text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 border-2 border-gray-300 shadow-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  ✗ Mantener {item.priority_user || item.priority_requested}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Detail Grid */}
         <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <DetailCard icon={MapPin} label={t('workRequests.plantArea')} value={`${item.plant} / ${item.area}`} />
@@ -676,28 +716,16 @@ ${materials.length ? `<div class="section">
                   )}
                   {item.priority_bumped_by_ai && item.priority_user && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300">
-                      🤖 IA subió {item.priority_user}→{item.priority_requested}
+                      🤖 IA sugiere {item.priority_user || item.priority_requested}→{item.priority_suggested}
                     </span>
                   )}
                 </div>
-                {item.priority_bumped_by_ai && item.ai_priority_reason && (
+                {item.priority_bumped_by_ai && item.ai_priority_reason && !item.ai_priority_pending && (
                   <div className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 rounded px-2 py-1 leading-snug">
                     <strong>¿Por qué subió la IA?</strong> {safeStr(item.ai_priority_reason)}
-                    {item.ai_priority_pending && onAIPriorityDecision && (
-                      <div className="mt-1.5 flex gap-2">
-                        <button
-                          onClick={() => onAIPriorityDecision(item.id, 'accepted')}
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700"
-                        >✓ Aceptar sugerencia IA</button>
-                        <button
-                          onClick={() => onAIPriorityDecision(item.id, 'rejected')}
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                        >✗ Mantener {item.priority_user || item.priority_requested}</button>
-                      </div>
-                    )}
-                    {item.ai_priority_decision && !item.ai_priority_pending && (
+                    {item.ai_priority_decision && (
                       <div className="mt-1 text-[9px] italic text-purple-600">
-                        Decisión registrada: {item.ai_priority_decision === 'accepted' ? '✓ Aceptada' : '✗ Rechazada'}
+                        {item.ai_priority_decision === 'accepted' ? '✓ Sugerencia aceptada' : '✗ Sugerencia rechazada'}
                       </div>
                     )}
                   </div>
@@ -2299,7 +2327,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                               title={`Usuario tipeó ${req.priority_user} pero Claude la subió a ${req.priority_requested} por la descripción del problema.`}
                               className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300"
                             >
-                              🤖 IA subió {req.priority_user}→{req.priority_requested}
+                              🤖 IA sugiere {req.priority_user || req.priority_requested}→{req.priority_suggested}
                             </span>
                           )}
                         </div>
@@ -2578,7 +2606,12 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                             try {
                               await api.aiPriorityDecision(id, dec);
                               toast.success(dec === 'accepted' ? 'Sugerencia IA aceptada' : 'Sugerencia IA rechazada');
+                              // Refresh both the list AND the open modal
                               refreshList();
+                              try {
+                                const fresh = await api.getWorkRequest(id);
+                                setSelected(normalizeWR(fresh));
+                              } catch {}
                             } catch (e) {
                               toast.error('Error registrando decisión: ' + (e?.message || e));
                             }

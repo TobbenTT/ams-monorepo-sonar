@@ -1,0 +1,239 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - navigation "Main navigation" [ref=e4]:
+      - generic [ref=e5]:
+        - img "MagEAM" [ref=e159]
+        - paragraph [ref=e6]: Reliability Platform
+      - navigation [ref=e7]:
+        - generic [ref=e8]:
+          - link "Dashboard" [ref=e9] [cursor=pointer]:
+            - /url: /
+            - img [ref=e10]
+            - generic [ref=e13]: Dashboard
+          - link "✨ Agentic Capabilities" [ref=e14] [cursor=pointer]:
+            - /url: /agentic-capabilities
+            - img [ref=e15]
+            - generic [ref=e19]: ✨ Agentic Capabilities
+          - link "WOs & Notifications" [ref=e20] [cursor=pointer]:
+            - /url: /work-orders
+            - img [ref=e21]
+            - generic [ref=e23]: WOs & Notifications
+          - link "Work Management" [ref=e24] [cursor=pointer]:
+            - /url: /work-management
+            - img [ref=e25]
+            - generic [ref=e28]: Work Management
+          - link "Failures & Events" [ref=e29] [cursor=pointer]:
+            - /url: /failures-events
+            - img [ref=e30]
+            - generic [ref=e32]: Failures & Events
+          - link "Improvement Actions" [ref=e33] [cursor=pointer]:
+            - /url: /improvement-actions
+            - img [ref=e34]
+            - generic [ref=e37]: Improvement Actions
+          - link "Criticality" [ref=e38] [cursor=pointer]:
+            - /url: /criticality
+            - img [ref=e39]
+            - generic [ref=e42]: Criticality
+          - link "FMECA" [ref=e43] [cursor=pointer]:
+            - /url: /fmeca
+            - img [ref=e44]
+            - generic [ref=e48]: FMECA
+          - link "RCA" [ref=e49] [cursor=pointer]:
+            - /url: /rca
+            - img [ref=e50]
+            - generic [ref=e53]: RCA
+          - link "Reliability" [ref=e54] [cursor=pointer]:
+            - /url: /reliability
+            - img [ref=e55]
+            - generic [ref=e57]: Reliability
+          - link "Analytics" [ref=e58] [cursor=pointer]:
+            - /url: /analytics
+            - img [ref=e59]
+            - generic [ref=e61]: Analytics
+          - link "Reports" [ref=e62] [cursor=pointer]:
+            - /url: /reports
+            - img [ref=e63]
+            - generic [ref=e66]: Reports
+          - link "Team" [ref=e67] [cursor=pointer]:
+            - /url: /team
+            - img [ref=e68]
+            - generic [ref=e73]: Team
+          - link "Settings" [ref=e74] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e75]
+            - generic [ref=e78]: Settings
+          - link "SAP PM" [ref=e79] [cursor=pointer]:
+            - /url: /sap-pm
+            - img [ref=e80]
+            - generic [ref=e84]: SAP PM
+          - link "Data Import" [ref=e85] [cursor=pointer]:
+            - /url: /data-import
+            - img [ref=e86]
+            - generic [ref=e89]: Data Import
+          - link "Audit Log" [ref=e90] [cursor=pointer]:
+            - /url: /audit-log
+            - img [ref=e91]
+            - generic [ref=e94]: Audit Log
+      - generic [ref=e95]:
+        - button "AS Administrador Sistema Administrator" [ref=e96] [cursor=pointer]:
+          - generic [ref=e98]: AS
+          - generic [ref=e99]:
+            - generic [ref=e100]: Administrador Sistema
+            - generic [ref=e101]: Administrator
+        - generic [ref=e102]:
+          - button "Sign Out" [ref=e103]:
+            - img [ref=e104]
+            - generic [ref=e107]: Sign Out
+          - button [ref=e108]:
+            - img [ref=e109]
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e115]:
+            - img [ref=e116]
+            - textbox "Search modules..." [ref=e119]
+          - generic [ref=e120]:
+            - button "🇬🇧 EN" [ref=e122]:
+              - img [ref=e123]
+              - generic [ref=e126]: 🇬🇧 EN
+            - button "Switch to dark mode" [ref=e127]:
+              - img [ref=e128]
+            - generic "Tiempo real activo" [ref=e130]:
+              - img [ref=e131]
+              - generic [ref=e135]: Sync OK
+            - button "9+" [ref=e160]:
+              - img [ref=e138]
+              - generic [ref=e161]: 9+
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - img [ref=e143]
+            - combobox [ref=e145]:
+              - generic: GOLDFIELDS-SN — Goldfields - Salares Norte
+              - img
+          - generic [ref=e146]:
+            - img [ref=e147]
+            - combobox [ref=e149]:
+              - generic: Last 30 Days
+              - img
+        - generic [ref=e150]:
+          - generic [ref=e151]: "Analysis Level:"
+          - generic [ref=e152]:
+            - button "Executive View" [ref=e153]
+            - button "Tactical Operations View" [ref=e154]
+      - main [ref=e155]:
+        - generic [ref=e162]:
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - img [ref=e165]
+              - generic [ref=e167]:
+                - heading "Programmer Agent" [level=1] [ref=e168]
+                - paragraph [ref=e169]: "Excel Jorge · Bullets r49 #8 (disponibilidad) + #11 (reporte semanal)"
+            - generic [ref=e170]:
+              - generic [ref=e171]: "Semana inicio:"
+              - textbox [ref=e172]: 2026-04-27
+          - generic [ref=e173]:
+            - button "#8 Disponibilidad por equipo" [ref=e174]:
+              - img [ref=e175]
+              - text: "#8 Disponibilidad por equipo"
+            - button "#11 Reporte semanal" [active] [ref=e177]:
+              - img [ref=e178]
+              - text: "#11 Reporte semanal"
+          - generic [ref=e279]:
+            - generic [ref=e280]:
+              - generic [ref=e281]:
+                - generic [ref=e282]: "8"
+                - generic [ref=e283]: OTs semana
+              - generic [ref=e284]:
+                - generic [ref=e285]: "2"
+                - generic [ref=e286]: Críticas P1+P2
+              - generic [ref=e287]:
+                - generic [ref=e288]: 113.5h
+                - generic [ref=e289]: HH planificadas
+              - generic [ref=e290]:
+                - generic [ref=e291]: $5164
+                - generic [ref=e292]: Costo estimado
+            - generic [ref=e293]:
+              - heading "Tareas críticas" [level=3] [ref=e294]:
+                - img [ref=e295]
+                - text: Tareas críticas
+              - generic [ref=e297]:
+                - generic [ref=e298]:
+                  - generic [ref=e299]: P2
+                  - generic [ref=e300]: OT-2026-50021
+                  - generic [ref=e301]: THK-REL-02
+                  - generic [ref=e302]: Falla torque mecanismo rastrillo — Espesador Relaves 02 · 90m
+                  - generic [ref=e303]: 11h
+                  - generic [ref=e304]: 2026-04-29 10:41
+                - generic [ref=e305]:
+                  - generic [ref=e306]: P2
+                  - generic [ref=e307]: OT-2026-50065
+                  - generic [ref=e308]: TRF-PRI-01
+                  - generic [ref=e309]: Fuga de aceite — Transformador Principal 01 · 80MVA
+                  - generic [ref=e310]: 17h
+                  - generic [ref=e311]: 2026-05-03 07:41
+            - generic [ref=e312]:
+              - generic [ref=e313]:
+                - heading "Histórico 3 semanas anteriores" [level=3] [ref=e314]
+                - table [ref=e315]:
+                  - rowgroup [ref=e316]:
+                    - row "Semana OTs P1+P2 HH Costo" [ref=e317]:
+                      - columnheader "Semana" [ref=e318]
+                      - columnheader "OTs" [ref=e319]
+                      - columnheader "P1+P2" [ref=e320]
+                      - columnheader "HH" [ref=e321]
+                      - columnheader "Costo" [ref=e322]
+                  - rowgroup [ref=e323]:
+                    - row "2026-04-06 19 9 486h $22.113" [ref=e324]:
+                      - cell "2026-04-06" [ref=e325]
+                      - cell "19" [ref=e326]
+                      - cell "9" [ref=e327]
+                      - cell "486h" [ref=e328]
+                      - cell "$22.113" [ref=e329]
+                    - row "2026-04-13 14 5 236h $10.738" [ref=e330]:
+                      - cell "2026-04-13" [ref=e331]
+                      - cell "14" [ref=e332]
+                      - cell "5" [ref=e333]
+                      - cell "236h" [ref=e334]
+                      - cell "$10.738" [ref=e335]
+                    - row "2026-04-20 13 7 240h $10.920" [ref=e336]:
+                      - cell "2026-04-20" [ref=e337]
+                      - cell "13" [ref=e338]
+                      - cell "7" [ref=e339]
+                      - cell "240h" [ref=e340]
+                      - cell "$10.920" [ref=e341]
+              - generic [ref=e342]:
+                - heading "Forecast móvil 4 semanas" [level=3] [ref=e343]
+                - table [ref=e344]:
+                  - rowgroup [ref=e345]:
+                    - row "Semana OTs P1+P2 HH Costo" [ref=e346]:
+                      - columnheader "Semana" [ref=e347]
+                      - columnheader "OTs" [ref=e348]
+                      - columnheader "P1+P2" [ref=e349]
+                      - columnheader "HH" [ref=e350]
+                      - columnheader "Costo" [ref=e351]
+                  - rowgroup [ref=e352]:
+                    - row "2026-05-04 6 2 66h $3003" [ref=e353]:
+                      - cell "2026-05-04" [ref=e354]
+                      - cell "6" [ref=e355]
+                      - cell "2" [ref=e356]
+                      - cell "66h" [ref=e357]
+                      - cell "$3003" [ref=e358]
+                    - row "2026-05-11 0 0 0h $0" [ref=e359]:
+                      - cell "2026-05-11" [ref=e360]
+                      - cell "0" [ref=e361]
+                      - cell "0" [ref=e362]
+                      - cell "0h" [ref=e363]
+                      - cell "$0" [ref=e364]
+                    - row "2026-05-18 0 0 0h $0" [ref=e365]:
+                      - cell "2026-05-18" [ref=e366]
+                      - cell "0" [ref=e367]
+                      - cell "0" [ref=e368]
+                      - cell "0h" [ref=e369]
+                      - cell "$0" [ref=e370]
+                    - row "2026-05-25 0 0 0h $0" [ref=e371]:
+                      - cell "2026-05-25" [ref=e372]
+                      - cell "0" [ref=e373]
+                      - cell "0" [ref=e374]
+                      - cell "0h" [ref=e375]
+                      - cell "$0" [ref=e376]
+  - status

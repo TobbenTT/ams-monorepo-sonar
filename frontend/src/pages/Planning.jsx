@@ -1861,7 +1861,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       const imp = { P1: { l: 'CRITICAL', c: 'bg-red-50 border-red-300 text-red-800', s: 95 }, P2: { l: 'HIGH', c: 'bg-orange-50 border-orange-300 text-orange-800', s: 75 }, P3: { l: 'MEDIUM', c: 'bg-yellow-50 border-yellow-300 text-yellow-800', s: 45 }, P4: { l: 'LOW', c: 'bg-green-50 border-green-300 text-green-800', s: 20 } };
                       const d = imp[wo.priority_code] || imp.P3;
                       return <div className={"rounded-xl p-4 border-2 flex items-center justify-between "+d.c}>
-                        <div><div className="text-xs font-bold uppercase">Production Impact</div><div className="text-lg font-bold">{d.l}</div></div>
+                        <div><div className="text-xs font-bold uppercase">Nivel de Riesgo</div><div className="text-lg font-bold">{d.l}</div></div>
                         <div className="text-3xl font-black">{d.s}</div>
                       </div>;
                     })()}

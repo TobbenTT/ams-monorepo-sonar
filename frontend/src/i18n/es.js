@@ -276,7 +276,7 @@ export default {
         plantArea: 'Planta / Área',
         technician: 'Técnico',
         estimatedDuration: 'Duración Estimada',
-        productionImpact: 'Impacto Producción',
+        productionImpact: 'Nivel de Riesgo',
         priorityLabel: 'Prioridad (Aviso / IA)',
         createdAt: 'Creado',
         spareParts: 'Repuestos Requeridos',

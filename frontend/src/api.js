@@ -317,6 +317,9 @@ export const programmerWeeklyReport = (params) => get('/programmer-agent/weekly-
 // ── Supervisor Agent (Jorge Excel r64 #1 + #2) ──
 export const supervisorShiftReadiness = (d) => post('/supervisor-agent/shift-start-readiness', d);
 export const supervisorProdVsProgram = (d) => post('/supervisor-agent/production-vs-program', d);
+
+// ── Planificador Agent (Jorge Excel r30) ──
+export const planificadorAnalyzeWO = (wo_id, use_claude = true) => post('/planificador-agent/analyze-wo', { wo_id, use_claude });
 export const deleteWorkRequest = (id, data) => del(`/work-requests/${id}`, data);
 export const ocrWorkOrderClosure = (d) => post('/work-requests/ocr-closure', d);
 export const startWorkRequest = (id) => put(`/work-requests/${id}/start`);

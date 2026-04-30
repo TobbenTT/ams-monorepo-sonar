@@ -157,6 +157,7 @@ const AgenticCapabilities = lazyRetry(() => import('./pages/AgenticCapabilities'
 const RagLab = lazyRetry(() => import('./pages/RagLab'));
 const ProgrammerAgent = lazyRetry(() => import('./pages/ProgrammerAgent'));
 const SupervisorAgent = lazyRetry(() => import('./pages/SupervisorAgent'));
+const PlanificadorAgent = lazyRetry(() => import('./pages/PlanificadorAgent'));
 const PostMaintenance = lazyRetry(() => import('./pages/PostMaintenance'));
 const DataImport = lazyRetry(() => import('./pages/DataImport'));
 
@@ -218,6 +219,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="rag-lab" element={<S><RagLab /></S>} />
                                     <Route path="programmer-agent" element={<S><ProgrammerAgent /></S>} />
                                     <Route path="supervisor-agent" element={<S><SupervisorAgent /></S>} />
+                                    <Route path="planificador-agent" element={<S><PlanificadorAgent /></S>} />
                                     <Route path="post-maintenance" element={<P roles={PLAN}><S><PostMaintenance /></S></P>} />
                                     <Route path="data-import" element={<P roles={MGMT}><S><DataImport /></S></P>} />
                                     <Route path="user-guide" element={<S><UserGuidePage /></S>} />

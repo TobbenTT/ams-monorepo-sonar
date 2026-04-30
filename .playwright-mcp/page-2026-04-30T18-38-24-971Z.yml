@@ -1,0 +1,81 @@
+- generic [ref=e2]:
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e13]:
+        - img "MagEAM" [ref=e14]
+        - heading "MAGEAM" [level=1] [ref=e15]
+        - paragraph [ref=e16]: AI-Powered Platform
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - heading "Intelligent Industrial Maintenance Management" [level=2] [ref=e19]
+          - paragraph [ref=e20]: Comprehensive platform for asset management, maintenance planning and reliability analysis powered by artificial intelligence.
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - img [ref=e23]
+            - generic [ref=e25]: Reliability
+            - generic [ref=e26]: FMEA, RCM, RCA
+          - generic [ref=e27]:
+            - img [ref=e28]
+            - generic [ref=e30]: Planning
+            - generic [ref=e31]: Backlog, Scheduling
+          - generic [ref=e32]:
+            - img [ref=e33]
+            - generic [ref=e35]: Analytics
+            - generic [ref=e36]: KPIs, Reports
+      - generic [ref=e37]: © 2026 AMS Industrial — Industrial Complex
+    - generic [ref=e39]:
+      - generic [ref=e41]:
+        - button "🇬🇧 English" [ref=e42]:
+          - generic [ref=e43]: 🇬🇧
+          - generic [ref=e44]: English
+        - button "🇪🇸 Español" [ref=e45]:
+          - generic [ref=e46]: 🇪🇸
+          - generic [ref=e47]: Español
+      - generic [ref=e48]:
+        - heading "Welcome" [level=2] [ref=e49]
+        - paragraph [ref=e50]: Enter your credentials to access the system
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]: Username or Email
+          - textbox "Username or Email" [ref=e54]:
+            - /placeholder: admin
+            - text: admin
+        - generic [ref=e55]:
+          - generic [ref=e56]: Password
+          - generic [ref=e57]:
+            - textbox "Password" [ref=e58]:
+              - /placeholder: ••••••••
+              - text: password123
+            - button [ref=e59]:
+              - img [ref=e60]
+        - button "Sign In" [ref=e63]
+      - generic [ref=e64]:
+        - generic [ref=e65]: auth.quickAccess
+        - generic [ref=e66]:
+          - button "A admin Administrator" [active] [ref=e67]:
+            - generic [ref=e68]: A
+            - generic [ref=e69]:
+              - generic [ref=e70]: admin
+              - generic [ref=e71]: Administrator
+          - button "P planner1 Planner" [ref=e72]:
+            - generic [ref=e73]: P
+            - generic [ref=e74]:
+              - generic [ref=e75]: planner1
+              - generic [ref=e76]: Planner
+          - button "T tecnico1 Técnico" [ref=e77]:
+            - generic [ref=e78]: T
+            - generic [ref=e79]:
+              - generic [ref=e80]: tecnico1
+              - generic [ref=e81]: Técnico
+          - button "S supervisor1 Supervisor" [ref=e82]:
+            - generic [ref=e83]: S
+            - generic [ref=e84]:
+              - generic [ref=e85]: supervisor1
+              - generic [ref=e86]: Supervisor
+          - button "M manager1 Manager" [ref=e87]:
+            - generic [ref=e88]: M
+            - generic [ref=e89]:
+              - generic [ref=e90]: manager1
+              - generic [ref=e91]: Manager
+      - button "← Back to Home" [ref=e92]
+  - status

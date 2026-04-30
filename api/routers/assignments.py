@@ -194,7 +194,98 @@ def rank_for_operation(
             "breakdown": breakdown,
         })
     ranked.sort(key=lambda x: x["score"], reverse=True)
-    return {"plant_id": plant_id, "specialty": op_spec, "shift": shift, "candidates": ranked[:10]}
+    top10 = ranked[:10]
+
+    # IA real: Claude analiza top 3 candidatos y recomienda al mejor con razonamiento.
+    # El scoring deterministic ranquea, Claude explica por qué + flags edge cases que
+    # el algoritmo no captura (ej: continuidad con OT previa del mismo equipo, o un
+    # tech con muchas P1 esta semana que conviene NO sobrecargar).
+    ai_recommendation = None
+    try:
+        ai_recommendation = _claude_recommend_technician(
+            top10[:3], op_spec, shift, planned_hours,
+            wo_description=data.get("wo_description") or "",
+            equipment_tag=data.get("equipment_tag") or "",
+        )
+    except Exception as _err:
+        # Falla silenciosa — el scoring sigue siendo válido.
+        import logging
+        logging.getLogger(__name__).warning("Claude recommendation failed: %s", _err)
+
+    return {
+        "plant_id": plant_id,
+        "specialty": op_spec,
+        "shift": shift,
+        "candidates": top10,
+        "ai_recommendation": ai_recommendation,
+    }
+
+
+def _claude_recommend_technician(
+    top_candidates: list, specialty: str, shift: str, planned_hours: float,
+    wo_description: str = "", equipment_tag: str = "",
+) -> dict | None:
+    """Llama a Claude con los top-3 del scoring algorítmico para que recomiende
+    el mejor + razonamiento. Retorna {recommended_worker_id, reasoning, warnings}.
+    """
+    import os, json
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key or not top_candidates:
+        return None
+    try:
+        import anthropic
+    except ImportError:
+        return None
+
+    candidates_str = "\n".join([
+        f"  {i+1}. {c['name']} (ID: {c['worker_id']}) — score {c['score']}, "
+        f"specialty: {c.get('specialty','-')}, shift: {c.get('shift','-')}, "
+        f"skills: {', '.join(c.get('skills') or []) or 'sin skills declaradas'}, "
+        f"HH disponibles: {c.get('hh_available', 8)}h, "
+        f"breakdown: {json.dumps(c.get('breakdown') or {}, ensure_ascii=False)}"
+        for i, c in enumerate(top_candidates)
+    ])
+
+    prompt = f"""Eres un planificador de mantenimiento experto. Te paso los top 3 candidatos rankeados por scoring algorítmico para una operación, recomienda al mejor y explica por qué.
+
+OPERACIÓN:
+- Especialidad requerida: {specialty}
+- Turno: {shift or 'sin preferencia'}
+- HH planificadas: {planned_hours}h
+- Equipo: {equipment_tag or 'no especificado'}
+- Descripción: {wo_description or 'no provista'}
+
+TOP 3 CANDIDATOS (ya rankeados por specialty+skills+shift+HH):
+{candidates_str}
+
+Responde SOLO con un JSON con estas claves:
+{{
+  "recommended_worker_id": "id del candidato recomendado (uno de los IDs de arriba)",
+  "reasoning": "explicación corta (max 200 chars) — citar el factor decisivo (skill match, shift, HH, o la naturaleza del trabajo)",
+  "warnings": ["lista de advertencias opcionales — ej: 'el #1 tiene poca holgura HH', 'considerar al #2 si la falla es eléctrica']"
+}}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=400,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = response.content[0].text.strip()
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start < 0:
+            return None
+        parsed = json.loads(text[start:end])
+        # Validar que el worker_id recomendado esté en los candidatos.
+        valid_ids = {c["worker_id"] for c in top_candidates}
+        if parsed.get("recommended_worker_id") not in valid_ids:
+            parsed["recommended_worker_id"] = top_candidates[0]["worker_id"]
+            parsed["reasoning"] = "(IA devolvió ID inválido — fallback al top scoring) " + (parsed.get("reasoning") or "")
+        return parsed
+    except Exception:
+        return None
 
 
 @router.post("/optimize")

@@ -1,0 +1,1062 @@
+- generic [ref=e2]:
+  - generic [ref=e6]:
+    - navigation "Main navigation" [ref=e7]:
+      - generic [ref=e8]:
+        - img "MagEAM" [ref=e9]
+        - paragraph [ref=e10]: Reliability Platform
+      - navigation [ref=e11]:
+        - generic [ref=e12]:
+          - link "Dashboard" [ref=e13] [cursor=pointer]:
+            - /url: /
+            - img [ref=e14]
+            - generic [ref=e17]: Dashboard
+          - link "✨ Agentic Capabilities" [ref=e18] [cursor=pointer]:
+            - /url: /agentic-capabilities
+            - img [ref=e19]
+            - generic [ref=e23]: ✨ Agentic Capabilities
+          - link "WOs & Notifications" [ref=e24] [cursor=pointer]:
+            - /url: /work-orders
+            - img [ref=e25]
+            - generic [ref=e27]: WOs & Notifications
+          - link "Work Management" [ref=e28] [cursor=pointer]:
+            - /url: /work-management
+            - img [ref=e29]
+            - generic [ref=e32]: Work Management
+          - link "Failures & Events" [ref=e33] [cursor=pointer]:
+            - /url: /failures-events
+            - img [ref=e34]
+            - generic [ref=e36]: Failures & Events
+          - link "Improvement Actions" [ref=e37] [cursor=pointer]:
+            - /url: /improvement-actions
+            - img [ref=e38]
+            - generic [ref=e41]: Improvement Actions
+          - link "Criticality" [ref=e42] [cursor=pointer]:
+            - /url: /criticality
+            - img [ref=e43]
+            - generic [ref=e46]: Criticality
+          - link "FMECA" [ref=e47] [cursor=pointer]:
+            - /url: /fmeca
+            - img [ref=e48]
+            - generic [ref=e52]: FMECA
+          - link "RCA" [ref=e53] [cursor=pointer]:
+            - /url: /rca
+            - img [ref=e54]
+            - generic [ref=e57]: RCA
+          - link "Reliability" [ref=e58] [cursor=pointer]:
+            - /url: /reliability
+            - img [ref=e59]
+            - generic [ref=e61]: Reliability
+          - link "Analytics" [ref=e62] [cursor=pointer]:
+            - /url: /analytics
+            - img [ref=e63]
+            - generic [ref=e65]: Analytics
+          - link "Reports" [ref=e66] [cursor=pointer]:
+            - /url: /reports
+            - img [ref=e67]
+            - generic [ref=e70]: Reports
+          - link "Team" [ref=e71] [cursor=pointer]:
+            - /url: /team
+            - img [ref=e72]
+            - generic [ref=e77]: Team
+          - link "Settings" [ref=e78] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e79]
+            - generic [ref=e82]: Settings
+          - link "SAP PM" [ref=e83] [cursor=pointer]:
+            - /url: /sap-pm
+            - img [ref=e84]
+            - generic [ref=e88]: SAP PM
+          - link "Data Import" [ref=e89] [cursor=pointer]:
+            - /url: /data-import
+            - img [ref=e90]
+            - generic [ref=e93]: Data Import
+          - link "Audit Log" [ref=e94] [cursor=pointer]:
+            - /url: /audit-log
+            - img [ref=e95]
+            - generic [ref=e98]: Audit Log
+      - generic [ref=e99]:
+        - button "AS Administrador Sistema Administrator" [ref=e100] [cursor=pointer]:
+          - generic [ref=e102]: AS
+          - generic [ref=e103]:
+            - generic [ref=e104]: Administrador Sistema
+            - generic [ref=e105]: Administrator
+        - generic [ref=e106]:
+          - button "Sign Out" [ref=e107]:
+            - img [ref=e108]
+            - generic [ref=e111]: Sign Out
+          - button [ref=e112]:
+            - img [ref=e113]
+    - generic [ref=e115]:
+      - banner [ref=e116]:
+        - generic [ref=e117]:
+          - generic [ref=e119]:
+            - img [ref=e120]
+            - textbox "Search modules..." [ref=e123]
+          - generic [ref=e124]:
+            - button "🇬🇧 EN" [ref=e126]:
+              - img [ref=e127]
+              - generic [ref=e130]: 🇬🇧 EN
+            - button "Switch to dark mode" [ref=e131]:
+              - img [ref=e132]
+            - generic "Tiempo real activo · última señal ahora" [ref=e1115]:
+              - img [ref=e135]
+              - generic [ref=e139]: Sync ahora
+            - button "9+" [ref=e141]:
+              - img [ref=e142]
+              - generic [ref=e145]: 9+
+        - generic [ref=e146]:
+          - generic [ref=e147]:
+            - img [ref=e148]
+            - combobox [ref=e150]:
+              - generic: GOLDFIELDS-SN — Goldfields - Salares Norte
+              - img
+          - generic [ref=e151]:
+            - img [ref=e152]
+            - combobox [ref=e154]:
+              - generic: Last 30 Days
+              - img
+        - generic [ref=e155]:
+          - generic [ref=e156]: "Analysis Level:"
+          - generic [ref=e157]:
+            - button "Executive View" [ref=e158]
+            - button "Tactical Operations View" [ref=e159]
+      - main [ref=e160]:
+        - generic [ref=e161]:
+          - generic [ref=e162]:
+            - generic [ref=e163]:
+              - img [ref=e165]
+              - generic [ref=e168]:
+                - heading "Work Request Validation" [level=1] [ref=e169]
+                - paragraph [ref=e170]: Review, validate and manage work notices from field captures
+            - generic [ref=e171]:
+              - img [ref=e172]
+              - generic [ref=e174]: 19 pending validation
+          - generic [ref=e175]:
+            - generic [ref=e176]:
+              - paragraph [ref=e177]: Pending
+              - paragraph [ref=e178]: "19"
+            - generic [ref=e179]:
+              - paragraph [ref=e180]: Approved
+              - paragraph [ref=e181]: "21"
+            - generic [ref=e182]:
+              - paragraph [ref=e183]: Rejected
+              - paragraph [ref=e184]: "8"
+            - generic [ref=e185]:
+              - paragraph [ref=e186]: Cancelled
+              - paragraph [ref=e187]: "2"
+            - generic [ref=e188]:
+              - paragraph [ref=e189]: Closed
+              - paragraph [ref=e190]: "0"
+          - generic [ref=e191]:
+            - button "My Requests 112" [ref=e192]:
+              - img [ref=e193]
+              - generic [ref=e196]: My Requests
+              - generic [ref=e197]: "112"
+            - button "Team 0" [ref=e198]:
+              - img [ref=e199]
+              - generic [ref=e204]: Team
+              - generic [ref=e205]: "0"
+            - button "All 156" [ref=e206]:
+              - img [ref=e207]
+              - generic [ref=e210]: All
+              - generic [ref=e211]: "156"
+          - generic [ref=e212]:
+            - button "All 156" [ref=e213]:
+              - img [ref=e214]
+              - generic [ref=e217]: All
+              - generic [ref=e218]: "156"
+            - button "Emergencies (P1/P2) 73 8" [ref=e219]:
+              - img [ref=e220]
+              - generic [ref=e222]: Emergencies (P1/P2)
+              - generic [ref=e223]: "73"
+              - generic [ref=e224]: "8"
+            - button "Planning (P3/P4) 83 11" [ref=e225]:
+              - img [ref=e226]
+              - generic [ref=e228]: Planning (P3/P4)
+              - generic [ref=e229]: "83"
+              - generic [ref=e230]: "11"
+          - generic [ref=e232]:
+            - generic [ref=e233]:
+              - img [ref=e234]
+              - textbox "Search by TAG, request ID, equipment..." [ref=e237]
+            - generic [ref=e238]:
+              - button "Todos 156" [ref=e239]
+              - button "Pending 19" [ref=e240]
+              - button "Approved 21" [ref=e241]
+              - button "Rejected 8" [ref=e242]
+              - button "Cancelled 2" [ref=e243]
+              - button "Closed 0" [ref=e244]
+            - generic [ref=e245]:
+              - button "P1" [ref=e246]
+              - button "P2" [ref=e247]
+              - button "P3" [ref=e248]
+              - button "P4" [ref=e249]
+            - generic [ref=e250]:
+              - textbox "Desde (fecha de creación)" [ref=e251]
+              - generic [ref=e252]: →
+              - textbox "Hasta (fecha de creación)" [ref=e253]
+          - generic [ref=e254]:
+            - table [ref=e256]:
+              - rowgroup [ref=e257]:
+                - 'row "DATE ↓ Aviso # Título OT Ubic. Técnica / TAG Priority Status WO Actions" [ref=e258]':
+                  - columnheader "DATE ↓" [ref=e259] [cursor=pointer]
+                  - 'columnheader "Aviso #" [ref=e260]'
+                  - columnheader "Título OT" [ref=e261]
+                  - columnheader "Ubic. Técnica / TAG" [ref=e262]
+                  - columnheader "Priority" [ref=e263] [cursor=pointer]
+                  - columnheader "Status" [ref=e264] [cursor=pointer]
+                  - columnheader "WO" [ref=e265]
+                  - columnheader "Actions" [ref=e266]
+              - rowgroup [ref=e267]:
+                - 'row "30-04-2026 Similar open request found AV-00106 FT Chancador Cono HP Vibración fuerte en chancador cono, ya escuchamos chasquidos... TAG: CRU-CON-HP-01 P1 🤖 IA subió P3→P1 Pending —" [ref=e268]':
+                  - cell "30-04-2026" [ref=e269]
+                  - cell "Similar open request found AV-00106 FT" [ref=e270]:
+                    - generic [ref=e271]:
+                      - generic "Similar open request found" [ref=e272]
+                      - paragraph [ref=e273]: AV-00106
+                      - generic [ref=e274]:
+                        - img [ref=e275]
+                        - text: FT
+                  - cell "Chancador Cono HP Vibración fuerte en chancador cono, ya escuchamos chasquidos..." [ref=e277]:
+                    - paragraph [ref=e278]: Chancador Cono HP
+                    - paragraph [ref=e279]: Vibración fuerte en chancador cono, ya escuchamos chasquidos...
+                  - 'cell "TAG: CRU-CON-HP-01" [ref=e280]':
+                    - paragraph [ref=e281]: "TAG: CRU-CON-HP-01"
+                  - cell "P1 🤖 IA subió P3→P1" [ref=e282]:
+                    - generic [ref=e283]:
+                      - generic [ref=e284]: P1
+                      - generic "Usuario tipeó P3 pero Claude la subió a P1 por la descripción del problema." [ref=e285]: 🤖 IA subió P3→P1
+                  - cell "Pending" [ref=e286]
+                  - cell "—" [ref=e287]
+                  - cell [ref=e288]:
+                    - button "Details" [ref=e290]:
+                      - img [ref=e291]
+                - 'row "30-04-2026 Similar open request found AV-00105 FT Bomba Agua Proceso La bomba está saltando con humo blanco y un ruido fuerte, ha... TAG: PMP-AGUA-01 P1 🤖 IA subió P3→P1 Pending —" [ref=e294]':
+                  - cell "30-04-2026" [ref=e295]
+                  - cell "Similar open request found AV-00105 FT" [ref=e296]:
+                    - generic [ref=e297]:
+                      - generic "Similar open request found" [ref=e298]
+                      - paragraph [ref=e299]: AV-00105
+                      - generic [ref=e300]:
+                        - img [ref=e301]
+                        - text: FT
+                  - cell "Bomba Agua Proceso La bomba está saltando con humo blanco y un ruido fuerte, ha..." [ref=e303]:
+                    - paragraph [ref=e304]: Bomba Agua Proceso
+                    - paragraph [ref=e305]: La bomba está saltando con humo blanco y un ruido fuerte, ha...
+                  - 'cell "TAG: PMP-AGUA-01" [ref=e306]':
+                    - paragraph [ref=e307]: "TAG: PMP-AGUA-01"
+                  - cell "P1 🤖 IA subió P3→P1" [ref=e308]:
+                    - generic [ref=e309]:
+                      - generic [ref=e310]: P1
+                      - generic "Usuario tipeó P3 pero Claude la subió a P1 por la descripción del problema." [ref=e311]: 🤖 IA subió P3→P1
+                  - cell "Pending" [ref=e312]
+                  - cell "—" [ref=e313]
+                  - cell [ref=e314]:
+                    - button "Details" [ref=e316]:
+                      - img [ref=e317]
+                - 'row "30-04-2026 Similar open request found AV-00104 FT Bomba Agua Proceso La bomba está saltando con humo blanco y un ruido fuerte, ha... TAG: PMP-AGUA-01 P1 🤖 IA subió P3→P1 Pending —" [ref=e320]':
+                  - cell "30-04-2026" [ref=e321]
+                  - cell "Similar open request found AV-00104 FT" [ref=e322]:
+                    - generic [ref=e323]:
+                      - generic "Similar open request found" [ref=e324]
+                      - paragraph [ref=e325]: AV-00104
+                      - generic [ref=e326]:
+                        - img [ref=e327]
+                        - text: FT
+                  - cell "Bomba Agua Proceso La bomba está saltando con humo blanco y un ruido fuerte, ha..." [ref=e329]:
+                    - paragraph [ref=e330]: Bomba Agua Proceso
+                    - paragraph [ref=e331]: La bomba está saltando con humo blanco y un ruido fuerte, ha...
+                  - 'cell "TAG: PMP-AGUA-01" [ref=e332]':
+                    - paragraph [ref=e333]: "TAG: PMP-AGUA-01"
+                  - cell "P1 🤖 IA subió P3→P1" [ref=e334]:
+                    - generic [ref=e335]:
+                      - generic [ref=e336]: P1
+                      - generic "Usuario tipeó P3 pero Claude la subió a P1 por la descripción del problema." [ref=e337]: 🤖 IA subió P3→P1
+                  - cell "Pending" [ref=e338]
+                  - cell "—" [ref=e339]
+                  - cell [ref=e340]:
+                    - button "Details" [ref=e342]:
+                      - img [ref=e343]
+                - 'row "30-04-2026 Similar open request found AV-00103 FT Bomba Agua Proceso 01 · 250kW TAG: PMP-AGUA-01 P2 OT_CREADA OT-2026-50101" [ref=e346]':
+                  - cell "30-04-2026" [ref=e347]
+                  - cell "Similar open request found AV-00103 FT" [ref=e348]:
+                    - generic [ref=e349]:
+                      - generic "Similar open request found" [ref=e350]
+                      - paragraph [ref=e351]: AV-00103
+                      - generic [ref=e352]:
+                        - img [ref=e353]
+                        - text: FT
+                  - cell "Bomba Agua Proceso 01 · 250kW" [ref=e355]:
+                    - paragraph [ref=e356]: Bomba Agua Proceso 01 · 250kW
+                    - paragraph
+                  - 'cell "TAG: PMP-AGUA-01" [ref=e357]':
+                    - paragraph [ref=e358]: "TAG: PMP-AGUA-01"
+                  - cell "P2" [ref=e359]:
+                    - generic [ref=e361]: P2
+                  - cell "OT_CREADA" [ref=e362]
+                  - cell "OT-2026-50101" [ref=e363]:
+                    - button "OT-2026-50101" [ref=e364]
+                  - cell [ref=e365]:
+                    - button "Details" [ref=e367]:
+                      - img [ref=e368]
+                - 'row "29-04-2026 Similar open request found AV-00101 FT PMP-SL-HP-002 — Vibración en descanso motor Vibración en descanso motor. Durante el arranque. Vibración ... TL: PMP-SL-HP-002 TAG: PMP-SL-HP-002 P2 OT_CREADA OT-2026-50102" [ref=e371]':
+                  - cell "29-04-2026" [ref=e372]
+                  - cell "Similar open request found AV-00101 FT" [ref=e373]:
+                    - generic [ref=e374]:
+                      - generic "Similar open request found" [ref=e375]
+                      - paragraph [ref=e376]: AV-00101
+                      - generic [ref=e377]:
+                        - img [ref=e378]
+                        - text: FT
+                  - cell "PMP-SL-HP-002 — Vibración en descanso motor Vibración en descanso motor. Durante el arranque. Vibración ..." [ref=e380]:
+                    - paragraph [ref=e381]: PMP-SL-HP-002 — Vibración en descanso motor
+                    - paragraph [ref=e382]: Vibración en descanso motor. Durante el arranque. Vibración ...
+                  - 'cell "TL: PMP-SL-HP-002 TAG: PMP-SL-HP-002" [ref=e383]':
+                    - paragraph [ref=e384]: "TL: PMP-SL-HP-002"
+                    - paragraph [ref=e385]: "TAG: PMP-SL-HP-002"
+                  - cell "P2" [ref=e386]:
+                    - generic [ref=e388]: P2
+                  - cell "OT_CREADA" [ref=e389]
+                  - cell "OT-2026-50102" [ref=e390]:
+                    - button "OT-2026-50102" [ref=e391]
+                  - cell [ref=e392]:
+                    - button "Details" [ref=e394]:
+                      - img [ref=e395]
+                - 'row "29-04-2026 AV-00101 FT MCC-ML-01 — Contactor pegado en partidor Contactor pegado en partidor. Durante turno noche. Partidor ... TL: MCC-ML-01 TAG: MCC-ML-01 P2 OT_CREADA OT-2026-50100" [ref=e398]':
+                  - cell "29-04-2026" [ref=e399]
+                  - cell "AV-00101 FT" [ref=e400]:
+                    - generic [ref=e401]:
+                      - paragraph [ref=e402]: AV-00101
+                      - generic [ref=e403]:
+                        - img [ref=e404]
+                        - text: FT
+                  - cell "MCC-ML-01 — Contactor pegado en partidor Contactor pegado en partidor. Durante turno noche. Partidor ..." [ref=e406]:
+                    - paragraph [ref=e407]: MCC-ML-01 — Contactor pegado en partidor
+                    - paragraph [ref=e408]: Contactor pegado en partidor. Durante turno noche. Partidor ...
+                  - 'cell "TL: MCC-ML-01 TAG: MCC-ML-01" [ref=e409]':
+                    - paragraph [ref=e410]: "TL: MCC-ML-01"
+                    - paragraph [ref=e411]: "TAG: MCC-ML-01"
+                  - cell "P2" [ref=e412]:
+                    - generic [ref=e414]: P2
+                  - cell "OT_CREADA" [ref=e415]
+                  - cell "OT-2026-50100" [ref=e416]:
+                    - button "OT-2026-50100" [ref=e417]
+                  - cell [ref=e418]:
+                    - button "Details" [ref=e420]:
+                      - img [ref=e421]
+                - 'row "29-04-2026 AV-00101 FT MCC-ML-01 — Contactor pegado en partidor Contactor pegado en partidor. Durante el arranque. Partidor ... TL: MCC-ML-01 TAG: MCC-ML-01 P2 Rejected —" [ref=e424]':
+                  - cell "29-04-2026" [ref=e425]
+                  - cell "AV-00101 FT" [ref=e426]:
+                    - generic [ref=e427]:
+                      - paragraph [ref=e428]: AV-00101
+                      - generic [ref=e429]:
+                        - img [ref=e430]
+                        - text: FT
+                  - cell "MCC-ML-01 — Contactor pegado en partidor Contactor pegado en partidor. Durante el arranque. Partidor ..." [ref=e432]:
+                    - paragraph [ref=e433]: MCC-ML-01 — Contactor pegado en partidor
+                    - paragraph [ref=e434]: Contactor pegado en partidor. Durante el arranque. Partidor ...
+                  - 'cell "TL: MCC-ML-01 TAG: MCC-ML-01" [ref=e435]':
+                    - paragraph [ref=e436]: "TL: MCC-ML-01"
+                    - paragraph [ref=e437]: "TAG: MCC-ML-01"
+                  - cell "P2" [ref=e438]:
+                    - generic [ref=e440]: P2
+                  - cell "Rejected" [ref=e441]
+                  - cell "—" [ref=e442]
+                  - cell [ref=e443]:
+                    - button "Details" [ref=e445]:
+                      - img [ref=e446]
+                - 'row "29-04-2026 AV-00050 THK-REL-02 — Corrosión en base de mecanismo Corrosión en base de mecanismo. Durante el arranque. Inspecc... TL: THK-REL-02 TAG: THK-REL-02 P4 OT_CREADA OT-2026-50049" [ref=e449]':
+                  - cell "29-04-2026" [ref=e450]
+                  - cell "AV-00050" [ref=e451]:
+                    - paragraph [ref=e453]: AV-00050
+                  - cell "THK-REL-02 — Corrosión en base de mecanismo Corrosión en base de mecanismo. Durante el arranque. Inspecc..." [ref=e454]:
+                    - paragraph [ref=e455]: THK-REL-02 — Corrosión en base de mecanismo
+                    - paragraph [ref=e456]: Corrosión en base de mecanismo. Durante el arranque. Inspecc...
+                  - 'cell "TL: THK-REL-02 TAG: THK-REL-02" [ref=e457]':
+                    - paragraph [ref=e458]: "TL: THK-REL-02"
+                    - paragraph [ref=e459]: "TAG: THK-REL-02"
+                  - cell "P4" [ref=e460]:
+                    - generic [ref=e462]: P4
+                  - cell "OT_CREADA" [ref=e463]
+                  - cell "OT-2026-50049" [ref=e464]:
+                    - button "OT-2026-50049" [ref=e465]
+                  - cell [ref=e466]:
+                    - button "Details" [ref=e468]:
+                      - img [ref=e469]
+                - 'row "28-04-2026 AV-00054 HID-CEN-01 — Contaminación de aceite Contaminación de aceite. En operación continua. Partículas F... TL: HID-CEN-01 TAG: HID-CEN-01 P3 OT_CREADA OT-2026-50053" [ref=e472]':
+                  - cell "28-04-2026" [ref=e473]
+                  - cell "AV-00054" [ref=e474]:
+                    - paragraph [ref=e476]: AV-00054
+                  - cell "HID-CEN-01 — Contaminación de aceite Contaminación de aceite. En operación continua. Partículas F..." [ref=e477]:
+                    - paragraph [ref=e478]: HID-CEN-01 — Contaminación de aceite
+                    - paragraph [ref=e479]: Contaminación de aceite. En operación continua. Partículas F...
+                  - 'cell "TL: HID-CEN-01 TAG: HID-CEN-01" [ref=e480]':
+                    - paragraph [ref=e481]: "TL: HID-CEN-01"
+                    - paragraph [ref=e482]: "TAG: HID-CEN-01"
+                  - cell "P3" [ref=e483]:
+                    - generic [ref=e485]: P3
+                  - cell "OT_CREADA" [ref=e486]
+                  - cell "OT-2026-50053" [ref=e487]:
+                    - button "OT-2026-50053" [ref=e488]
+                  - cell [ref=e489]:
+                    - button "Details" [ref=e491]:
+                      - img [ref=e492]
+                - 'row "28-04-2026 Similar open request found AV-00101 FT COM-AIRE-02 — Falla válvula admisión Falla válvula admisión. En operación continua. Válvula admis... TL: COM-AIRE-02 TAG: COM-AIRE-02 P2 OT_CREADA OT-2026-50103" [ref=e495]':
+                  - cell "28-04-2026" [ref=e496]
+                  - cell "Similar open request found AV-00101 FT" [ref=e497]:
+                    - generic [ref=e498]:
+                      - generic "Similar open request found" [ref=e499]
+                      - paragraph [ref=e500]: AV-00101
+                      - generic [ref=e501]:
+                        - img [ref=e502]
+                        - text: FT
+                  - cell "COM-AIRE-02 — Falla válvula admisión Falla válvula admisión. En operación continua. Válvula admis..." [ref=e504]:
+                    - paragraph [ref=e505]: COM-AIRE-02 — Falla válvula admisión
+                    - paragraph [ref=e506]: Falla válvula admisión. En operación continua. Válvula admis...
+                  - 'cell "TL: COM-AIRE-02 TAG: COM-AIRE-02" [ref=e507]':
+                    - paragraph [ref=e508]: "TL: COM-AIRE-02"
+                    - paragraph [ref=e509]: "TAG: COM-AIRE-02"
+                  - cell "P2" [ref=e510]:
+                    - generic [ref=e512]: P2
+                  - cell "OT_CREADA" [ref=e513]
+                  - cell "OT-2026-50103" [ref=e514]:
+                    - button "OT-2026-50103" [ref=e515]
+                  - cell [ref=e516]:
+                    - button "Details" [ref=e518]:
+                      - img [ref=e519]
+                - 'row "28-04-2026 Similar open request found AV-00101 BRY-SAG-ML-002 — Temperatura alta en lubrication unit Temperatura alta en lubrication unit. Durante turno noche. T... TL: BRY-SAG-ML-002 TAG: BRY-SAG-ML-002 P3 OT_CREADA OT-2026-50104" [ref=e522]':
+                  - cell "28-04-2026" [ref=e523]
+                  - cell "Similar open request found AV-00101" [ref=e524]:
+                    - generic [ref=e525]:
+                      - generic "Similar open request found" [ref=e526]
+                      - paragraph [ref=e527]: AV-00101
+                  - cell "BRY-SAG-ML-002 — Temperatura alta en lubrication unit Temperatura alta en lubrication unit. Durante turno noche. T..." [ref=e528]:
+                    - paragraph [ref=e529]: BRY-SAG-ML-002 — Temperatura alta en lubrication unit
+                    - paragraph [ref=e530]: Temperatura alta en lubrication unit. Durante turno noche. T...
+                  - 'cell "TL: BRY-SAG-ML-002 TAG: BRY-SAG-ML-002" [ref=e531]':
+                    - paragraph [ref=e532]: "TL: BRY-SAG-ML-002"
+                    - paragraph [ref=e533]: "TAG: BRY-SAG-ML-002"
+                  - cell "P3" [ref=e534]:
+                    - generic [ref=e536]: P3
+                  - cell "OT_CREADA" [ref=e537]
+                  - cell "OT-2026-50104" [ref=e538]:
+                    - button "OT-2026-50104" [ref=e539]
+                  - cell [ref=e540]:
+                    - button "Details" [ref=e542]:
+                      - img [ref=e543]
+                - 'row "28-04-2026 AV-00069 PLC-FLT-01 — Error CPU redundante Error CPU redundante. Durante el arranque. CPU B marca error... TL: PLC-FLT-01 TAG: PLC-FLT-01 P3 OT_CREADA OT-2026-50068" [ref=e546]':
+                  - cell "28-04-2026" [ref=e547]
+                  - cell "AV-00069" [ref=e548]:
+                    - paragraph [ref=e550]: AV-00069
+                  - cell "PLC-FLT-01 — Error CPU redundante Error CPU redundante. Durante el arranque. CPU B marca error..." [ref=e551]:
+                    - paragraph [ref=e552]: PLC-FLT-01 — Error CPU redundante
+                    - paragraph [ref=e553]: Error CPU redundante. Durante el arranque. CPU B marca error...
+                  - 'cell "TL: PLC-FLT-01 TAG: PLC-FLT-01" [ref=e554]':
+                    - paragraph [ref=e555]: "TL: PLC-FLT-01"
+                    - paragraph [ref=e556]: "TAG: PLC-FLT-01"
+                  - cell "P3" [ref=e557]:
+                    - generic [ref=e559]: P3
+                  - cell "OT_CREADA" [ref=e560]
+                  - cell "OT-2026-50068" [ref=e561]:
+                    - button "OT-2026-50068" [ref=e562]
+                  - cell [ref=e563]:
+                    - button "Details" [ref=e565]:
+                      - img [ref=e566]
+                - 'row "27-04-2026 Similar open request found AV-00066 FT TRF-PRI-01 — Fuga de aceite Fuga de aceite. En operación continua. Goteo constante en vá... TL: TRF-PRI-01 TAG: TRF-PRI-01 P2 OT_CREADA OT-2026-50065" [ref=e569]':
+                  - cell "27-04-2026" [ref=e570]
+                  - cell "Similar open request found AV-00066 FT" [ref=e571]:
+                    - generic [ref=e572]:
+                      - generic "Similar open request found" [ref=e573]
+                      - paragraph [ref=e574]: AV-00066
+                      - generic [ref=e575]:
+                        - img [ref=e576]
+                        - text: FT
+                  - cell "TRF-PRI-01 — Fuga de aceite Fuga de aceite. En operación continua. Goteo constante en vá..." [ref=e578]:
+                    - paragraph [ref=e579]: TRF-PRI-01 — Fuga de aceite
+                    - paragraph [ref=e580]: Fuga de aceite. En operación continua. Goteo constante en vá...
+                  - 'cell "TL: TRF-PRI-01 TAG: TRF-PRI-01" [ref=e581]':
+                    - paragraph [ref=e582]: "TL: TRF-PRI-01"
+                    - paragraph [ref=e583]: "TAG: TRF-PRI-01"
+                  - cell "P2" [ref=e584]:
+                    - generic [ref=e586]: P2
+                  - cell "OT_CREADA" [ref=e587]
+                  - cell "OT-2026-50065" [ref=e588]:
+                    - button "OT-2026-50065" [ref=e589]
+                  - cell [ref=e590]:
+                    - button "Details" [ref=e592]:
+                      - img [ref=e593]
+                - 'row "27-04-2026 Similar open request found AV-00061 CVY-CV-001 — Polines trabados Polines trabados. Durante turno día. 3 polines detectados tr... TL: CVY-CV-001 TAG: CVY-CV-001 P4 OT_CREADA OT-2026-50060" [ref=e596]':
+                  - cell "27-04-2026" [ref=e597]
+                  - cell "Similar open request found AV-00061" [ref=e598]:
+                    - generic [ref=e599]:
+                      - generic "Similar open request found" [ref=e600]
+                      - paragraph [ref=e601]: AV-00061
+                  - cell "CVY-CV-001 — Polines trabados Polines trabados. Durante turno día. 3 polines detectados tr..." [ref=e602]:
+                    - paragraph [ref=e603]: CVY-CV-001 — Polines trabados
+                    - paragraph [ref=e604]: Polines trabados. Durante turno día. 3 polines detectados tr...
+                  - 'cell "TL: CVY-CV-001 TAG: CVY-CV-001" [ref=e605]':
+                    - paragraph [ref=e606]: "TL: CVY-CV-001"
+                    - paragraph [ref=e607]: "TAG: CVY-CV-001"
+                  - cell "P4" [ref=e608]:
+                    - generic [ref=e610]: P4
+                  - cell "OT_CREADA" [ref=e611]
+                  - cell "OT-2026-50060" [ref=e612]:
+                    - button "OT-2026-50060" [ref=e613]
+                  - cell [ref=e614]:
+                    - button "Details" [ref=e616]:
+                      - img [ref=e617]
+                - 'row "26-04-2026 Similar open request found AV-00101 COM-AIRE-01 — Temperatura descarga alta Temperatura descarga alta. Durante turno día. T° de descarga... TL: COM-AIRE-01 TAG: COM-AIRE-01 P3 OT_CREADA OT-2026-50105" [ref=e620]':
+                  - cell "26-04-2026" [ref=e621]
+                  - cell "Similar open request found AV-00101" [ref=e622]:
+                    - generic [ref=e623]:
+                      - generic "Similar open request found" [ref=e624]
+                      - paragraph [ref=e625]: AV-00101
+                  - cell "COM-AIRE-01 — Temperatura descarga alta Temperatura descarga alta. Durante turno día. T° de descarga..." [ref=e626]:
+                    - paragraph [ref=e627]: COM-AIRE-01 — Temperatura descarga alta
+                    - paragraph [ref=e628]: Temperatura descarga alta. Durante turno día. T° de descarga...
+                  - 'cell "TL: COM-AIRE-01 TAG: COM-AIRE-01" [ref=e629]':
+                    - paragraph [ref=e630]: "TL: COM-AIRE-01"
+                    - paragraph [ref=e631]: "TAG: COM-AIRE-01"
+                  - cell "P3" [ref=e632]:
+                    - generic [ref=e634]: P3
+                  - cell "OT_CREADA" [ref=e635]
+                  - cell "OT-2026-50105" [ref=e636]:
+                    - button "OT-2026-50105" [ref=e637]
+                  - cell [ref=e638]:
+                    - button "Details" [ref=e640]:
+                      - img [ref=e641]
+                - 'row "26-04-2026 Similar open request found AV-00003 COM-AIRE-02 — Temperatura descarga alta Temperatura descarga alta. Durante turno noche. T° de descar... TL: COM-AIRE-02 TAG: COM-AIRE-02 P3 OT_CREADA OT-2026-50002" [ref=e644]':
+                  - cell "26-04-2026" [ref=e645]
+                  - cell "Similar open request found AV-00003" [ref=e646]:
+                    - generic [ref=e647]:
+                      - generic "Similar open request found" [ref=e648]
+                      - paragraph [ref=e649]: AV-00003
+                  - cell "COM-AIRE-02 — Temperatura descarga alta Temperatura descarga alta. Durante turno noche. T° de descar..." [ref=e650]:
+                    - paragraph [ref=e651]: COM-AIRE-02 — Temperatura descarga alta
+                    - paragraph [ref=e652]: Temperatura descarga alta. Durante turno noche. T° de descar...
+                  - 'cell "TL: COM-AIRE-02 TAG: COM-AIRE-02" [ref=e653]':
+                    - paragraph [ref=e654]: "TL: COM-AIRE-02"
+                    - paragraph [ref=e655]: "TAG: COM-AIRE-02"
+                  - cell "P3" [ref=e656]:
+                    - generic [ref=e658]: P3
+                  - cell "OT_CREADA" [ref=e659]
+                  - cell "OT-2026-50002" [ref=e660]:
+                    - button "OT-2026-50002" [ref=e661]
+                  - cell [ref=e662]:
+                    - button "Details" [ref=e664]:
+                      - img [ref=e665]
+                - 'row "26-04-2026 AV-00097 ANL-XRF-01 — Calibración fuera de rango Calibración fuera de rango. Durante turno día. Desvío de lec... TL: ANL-XRF-01 TAG: ANL-XRF-01 P3 OT_CREADA OT-2026-50096" [ref=e668]':
+                  - cell "26-04-2026" [ref=e669]
+                  - cell "AV-00097" [ref=e670]:
+                    - paragraph [ref=e672]: AV-00097
+                  - cell "ANL-XRF-01 — Calibración fuera de rango Calibración fuera de rango. Durante turno día. Desvío de lec..." [ref=e673]:
+                    - paragraph [ref=e674]: ANL-XRF-01 — Calibración fuera de rango
+                    - paragraph [ref=e675]: Calibración fuera de rango. Durante turno día. Desvío de lec...
+                  - 'cell "TL: ANL-XRF-01 TAG: ANL-XRF-01" [ref=e676]':
+                    - paragraph [ref=e677]: "TL: ANL-XRF-01"
+                    - paragraph [ref=e678]: "TAG: ANL-XRF-01"
+                  - cell "P3" [ref=e679]:
+                    - generic [ref=e681]: P3
+                  - cell "OT_CREADA" [ref=e682]
+                  - cell "OT-2026-50096" [ref=e683]:
+                    - button "OT-2026-50096" [ref=e684]
+                  - cell [ref=e685]:
+                    - button "Details" [ref=e687]:
+                      - img [ref=e688]
+                - 'row "26-04-2026 Similar open request found AV-00091 FT SUB-MT-P01 — Alarma sobrecarga trafo Alarma sobrecarga trafo. Durante el arranque. Sobrecarga sos... TL: SUB-MT-P01 TAG: SUB-MT-P01 P1 OT_CREADA OT-2026-50090" [ref=e691]':
+                  - cell "26-04-2026" [ref=e692]
+                  - cell "Similar open request found AV-00091 FT" [ref=e693]:
+                    - generic [ref=e694]:
+                      - generic "Similar open request found" [ref=e695]
+                      - paragraph [ref=e696]: AV-00091
+                      - generic [ref=e697]:
+                        - img [ref=e698]
+                        - text: FT
+                  - cell "SUB-MT-P01 — Alarma sobrecarga trafo Alarma sobrecarga trafo. Durante el arranque. Sobrecarga sos..." [ref=e700]:
+                    - paragraph [ref=e701]: SUB-MT-P01 — Alarma sobrecarga trafo
+                    - paragraph [ref=e702]: Alarma sobrecarga trafo. Durante el arranque. Sobrecarga sos...
+                  - 'cell "TL: SUB-MT-P01 TAG: SUB-MT-P01" [ref=e703]':
+                    - paragraph [ref=e704]: "TL: SUB-MT-P01"
+                    - paragraph [ref=e705]: "TAG: SUB-MT-P01"
+                  - cell "P1" [ref=e706]:
+                    - generic [ref=e708]: P1
+                  - cell "OT_CREADA" [ref=e709]
+                  - cell "OT-2026-50090" [ref=e710]:
+                    - button "OT-2026-50090" [ref=e711]
+                  - cell [ref=e712]:
+                    - button "Details" [ref=e714]:
+                      - img [ref=e715]
+                - 'row "25-04-2026 Similar open request found AV-00011 PMP-AGUA-01 — Cavitación por baja succión Cavitación por baja succión. Durante el arranque. Ruido de c... TL: PMP-AGUA-01 TAG: PMP-AGUA-01 P3 OT_CREADA OT-2026-50010" [ref=e718]':
+                  - cell "25-04-2026" [ref=e719]
+                  - cell "Similar open request found AV-00011" [ref=e720]:
+                    - generic [ref=e721]:
+                      - generic "Similar open request found" [ref=e722]
+                      - paragraph [ref=e723]: AV-00011
+                  - cell "PMP-AGUA-01 — Cavitación por baja succión Cavitación por baja succión. Durante el arranque. Ruido de c..." [ref=e724]:
+                    - paragraph [ref=e725]: PMP-AGUA-01 — Cavitación por baja succión
+                    - paragraph [ref=e726]: Cavitación por baja succión. Durante el arranque. Ruido de c...
+                  - 'cell "TL: PMP-AGUA-01 TAG: PMP-AGUA-01" [ref=e727]':
+                    - paragraph [ref=e728]: "TL: PMP-AGUA-01"
+                    - paragraph [ref=e729]: "TAG: PMP-AGUA-01"
+                  - cell "P3" [ref=e730]:
+                    - generic [ref=e732]: P3
+                  - cell "OT_CREADA" [ref=e733]
+                  - cell "OT-2026-50010" [ref=e734]:
+                    - button "OT-2026-50010" [ref=e735]
+                  - cell [ref=e736]:
+                    - button "Details" [ref=e738]:
+                      - img [ref=e739]
+                - 'row "25-04-2026 Similar open request found AV-00101 FT CRU-CON-HP-01 — Atoro de material no procesable Atoro de material no procesable. Durante el arranque. Materi... TL: CRU-CON-HP-01 TAG: CRU-CON-HP-01 P2 Pending —" [ref=e742]':
+                  - cell "25-04-2026" [ref=e743]
+                  - cell "Similar open request found AV-00101 FT" [ref=e744]:
+                    - generic [ref=e745]:
+                      - generic "Similar open request found" [ref=e746]
+                      - paragraph [ref=e747]: AV-00101
+                      - generic [ref=e748]:
+                        - img [ref=e749]
+                        - text: FT
+                  - cell "CRU-CON-HP-01 — Atoro de material no procesable Atoro de material no procesable. Durante el arranque. Materi..." [ref=e751]:
+                    - paragraph [ref=e752]: CRU-CON-HP-01 — Atoro de material no procesable
+                    - paragraph [ref=e753]: Atoro de material no procesable. Durante el arranque. Materi...
+                  - 'cell "TL: CRU-CON-HP-01 TAG: CRU-CON-HP-01" [ref=e754]':
+                    - paragraph [ref=e755]: "TL: CRU-CON-HP-01"
+                    - paragraph [ref=e756]: "TAG: CRU-CON-HP-01"
+                  - cell "P2" [ref=e757]:
+                    - generic [ref=e759]: P2
+                  - cell "Pending" [ref=e760]
+                  - cell "—" [ref=e761]
+                  - cell [ref=e762]:
+                    - button "Details" [ref=e764]:
+                      - img [ref=e765]
+                - 'row "25-04-2026 AV-00090 PLC-FLT-01 — Error CPU redundante Error CPU redundante. En operación continua. CPU B marca err... TL: PLC-FLT-01 TAG: PLC-FLT-01 P3 OT_CREADA OT-2026-50089" [ref=e768]':
+                  - cell "25-04-2026" [ref=e769]
+                  - cell "AV-00090" [ref=e770]:
+                    - paragraph [ref=e772]: AV-00090
+                  - cell "PLC-FLT-01 — Error CPU redundante Error CPU redundante. En operación continua. CPU B marca err..." [ref=e773]:
+                    - paragraph [ref=e774]: PLC-FLT-01 — Error CPU redundante
+                    - paragraph [ref=e775]: Error CPU redundante. En operación continua. CPU B marca err...
+                  - 'cell "TL: PLC-FLT-01 TAG: PLC-FLT-01" [ref=e776]':
+                    - paragraph [ref=e777]: "TL: PLC-FLT-01"
+                    - paragraph [ref=e778]: "TAG: PLC-FLT-01"
+                  - cell "P3" [ref=e779]:
+                    - generic [ref=e781]: P3
+                  - cell "OT_CREADA" [ref=e782]
+                  - cell "OT-2026-50089" [ref=e783]:
+                    - button "OT-2026-50089" [ref=e784]
+                  - cell [ref=e785]:
+                    - button "Details" [ref=e787]:
+                      - img [ref=e788]
+                - 'row "24-04-2026 Similar open request found AV-00020 PMP-SL-HP-002 — Vibración en descanso motor Vibración en descanso motor. En operación continua. Vibració... TL: PMP-SL-HP-002 TAG: PMP-SL-HP-002 P3 OT_CREADA OT-2026-50019" [ref=e791]':
+                  - cell "24-04-2026" [ref=e792]
+                  - cell "Similar open request found AV-00020" [ref=e793]:
+                    - generic [ref=e794]:
+                      - generic "Similar open request found" [ref=e795]
+                      - paragraph [ref=e796]: AV-00020
+                  - cell "PMP-SL-HP-002 — Vibración en descanso motor Vibración en descanso motor. En operación continua. Vibració..." [ref=e797]:
+                    - paragraph [ref=e798]: PMP-SL-HP-002 — Vibración en descanso motor
+                    - paragraph [ref=e799]: Vibración en descanso motor. En operación continua. Vibració...
+                  - 'cell "TL: PMP-SL-HP-002 TAG: PMP-SL-HP-002" [ref=e800]':
+                    - paragraph [ref=e801]: "TL: PMP-SL-HP-002"
+                    - paragraph [ref=e802]: "TAG: PMP-SL-HP-002"
+                  - cell "P3" [ref=e803]:
+                    - generic [ref=e805]: P3
+                  - cell "OT_CREADA" [ref=e806]
+                  - cell "OT-2026-50019" [ref=e807]:
+                    - button "OT-2026-50019" [ref=e808]
+                  - cell [ref=e809]:
+                    - button "Details" [ref=e811]:
+                      - img [ref=e812]
+                - 'row "23-04-2026 AV-00053 THK-REL-02 — Corrosión en base de mecanismo Corrosión en base de mecanismo. Durante el arranque. Inspecc... TL: THK-REL-02 TAG: THK-REL-02 P4 OT_CREADA OT-2026-50052" [ref=e815]':
+                  - cell "23-04-2026" [ref=e816]
+                  - cell "AV-00053" [ref=e817]:
+                    - paragraph [ref=e819]: AV-00053
+                  - cell "THK-REL-02 — Corrosión en base de mecanismo Corrosión en base de mecanismo. Durante el arranque. Inspecc..." [ref=e820]:
+                    - paragraph [ref=e821]: THK-REL-02 — Corrosión en base de mecanismo
+                    - paragraph [ref=e822]: Corrosión en base de mecanismo. Durante el arranque. Inspecc...
+                  - 'cell "TL: THK-REL-02 TAG: THK-REL-02" [ref=e823]':
+                    - paragraph [ref=e824]: "TL: THK-REL-02"
+                    - paragraph [ref=e825]: "TAG: THK-REL-02"
+                  - cell "P4" [ref=e826]:
+                    - generic [ref=e828]: P4
+                  - cell "OT_CREADA" [ref=e829]
+                  - cell "OT-2026-50052" [ref=e830]:
+                    - button "OT-2026-50052" [ref=e831]
+                  - cell [ref=e832]:
+                    - button "Details" [ref=e834]:
+                      - img [ref=e835]
+                - 'row "23-04-2026 Similar open request found AV-00101 FT BRY-SAG-ML-002 — Vibración anormal en pinion drive Vibración anormal en pinion drive. Durante el arranque. Vibr... TL: BRY-SAG-ML-002 TAG: BRY-SAG-ML-002 P2 Approved —" [ref=e838]':
+                  - cell "23-04-2026" [ref=e839]
+                  - cell "Similar open request found AV-00101 FT" [ref=e840]:
+                    - generic [ref=e841]:
+                      - generic "Similar open request found" [ref=e842]
+                      - paragraph [ref=e843]: AV-00101
+                      - generic [ref=e844]:
+                        - img [ref=e845]
+                        - text: FT
+                  - cell "BRY-SAG-ML-002 — Vibración anormal en pinion drive Vibración anormal en pinion drive. Durante el arranque. Vibr..." [ref=e847]:
+                    - paragraph [ref=e848]: BRY-SAG-ML-002 — Vibración anormal en pinion drive
+                    - paragraph [ref=e849]: Vibración anormal en pinion drive. Durante el arranque. Vibr...
+                  - 'cell "TL: BRY-SAG-ML-002 TAG: BRY-SAG-ML-002" [ref=e850]':
+                    - paragraph [ref=e851]: "TL: BRY-SAG-ML-002"
+                    - paragraph [ref=e852]: "TAG: BRY-SAG-ML-002"
+                  - cell "P2" [ref=e853]:
+                    - generic [ref=e855]: P2
+                  - cell "Approved" [ref=e856]
+                  - cell "—" [ref=e857]
+                  - cell [ref=e858]:
+                    - button "Details" [ref=e860]:
+                      - img [ref=e861]
+                - 'row "23-04-2026 AV-00101 BRY-SAG-ML-001 — Ruido anormal en reductor Ruido anormal en reductor. Durante turno día. Ruido metálico... TL: BRY-SAG-ML-001 TAG: BRY-SAG-ML-001 P3 Pending —" [ref=e864]':
+                  - cell "23-04-2026" [ref=e865]
+                  - cell "AV-00101" [ref=e866]:
+                    - paragraph [ref=e868]: AV-00101
+                  - cell "BRY-SAG-ML-001 — Ruido anormal en reductor Ruido anormal en reductor. Durante turno día. Ruido metálico..." [ref=e869]:
+                    - paragraph [ref=e870]: BRY-SAG-ML-001 — Ruido anormal en reductor
+                    - paragraph [ref=e871]: Ruido anormal en reductor. Durante turno día. Ruido metálico...
+                  - 'cell "TL: BRY-SAG-ML-001 TAG: BRY-SAG-ML-001" [ref=e872]':
+                    - paragraph [ref=e873]: "TL: BRY-SAG-ML-001"
+                    - paragraph [ref=e874]: "TAG: BRY-SAG-ML-001"
+                  - cell "P3" [ref=e875]:
+                    - generic [ref=e877]: P3
+                  - cell "Pending" [ref=e878]
+                  - cell "—" [ref=e879]
+                  - cell [ref=e880]:
+                    - button "Details" [ref=e882]:
+                      - img [ref=e883]
+            - generic [ref=e886]:
+              - generic [ref=e887]:
+                - generic [ref=e888]: Showing 25 of 156 requests
+                - button "Excel" [ref=e889]:
+                  - img [ref=e890]
+                  - text: Excel
+              - generic [ref=e893]:
+                - generic [ref=e894]:
+                  - button [disabled] [ref=e895]:
+                    - img [ref=e896]
+                  - generic [ref=e898]: 1 / 7
+                  - button [ref=e899]:
+                    - img [ref=e900]
+                - generic [ref=e902]:
+                  - img [ref=e903]
+                  - generic [ref=e906]: "Updated: 21:17"
+          - generic [ref=e912]:
+            - generic [ref=e913]:
+              - generic [ref=e914]:
+                - generic [ref=e915]: ACTUAL
+                - generic [ref=e917]:
+                  - generic [ref=e918]:
+                    - generic [ref=e919]:
+                      - generic [ref=e920]:
+                        - generic [ref=e921]: WR-2026-00156
+                        - generic [ref=e922]: Pending
+                      - heading "Chancador Cono HP" [level=2] [ref=e923]
+                      - paragraph [ref=e924]: CRU-CON-HP-01
+                    - generic [ref=e925]:
+                      - button "PDF Report" [ref=e926]:
+                        - img [ref=e927]
+                        - text: PDF Report
+                      - button "Edit" [ref=e930]
+                      - button [ref=e931]:
+                        - img [ref=e932]
+                  - generic [ref=e936]:
+                    - paragraph [ref=e938]: Photos
+                    - generic [ref=e939]:
+                      - img [ref=e940]
+                      - generic [ref=e947]: No photos attached
+                  - generic [ref=e948]:
+                    - generic [ref=e949]:
+                      - generic [ref=e950]:
+                        - img [ref=e951]
+                        - paragraph [ref=e954]: Plant / Area
+                      - paragraph [ref=e955]: GOLDFIELDS-SN /
+                    - generic [ref=e956]:
+                      - generic [ref=e957]:
+                        - img [ref=e958]
+                        - paragraph [ref=e961]: Ubic. Técnica
+                      - paragraph [ref=e962]: —
+                    - generic [ref=e963]:
+                      - generic [ref=e964]:
+                        - img [ref=e965]
+                        - paragraph [ref=e968]: Equipo / TAG
+                      - paragraph [ref=e969]: CRU-CON-HP-01
+                    - generic [ref=e970]:
+                      - generic [ref=e971]:
+                        - img [ref=e972]
+                        - paragraph [ref=e975]: Created By
+                      - paragraph [ref=e976]: Administrador Sistema
+                    - generic [ref=e977]:
+                      - generic [ref=e978]:
+                        - img [ref=e979]
+                        - paragraph [ref=e982]: Approved By
+                      - paragraph [ref=e983]: —
+                    - generic [ref=e984]:
+                      - generic [ref=e985]:
+                        - img [ref=e986]
+                        - paragraph [ref=e989]: Estimated Duration
+                      - generic [ref=e990]: 4h
+                    - generic [ref=e991]:
+                      - generic [ref=e992]:
+                        - img [ref=e993]
+                        - paragraph [ref=e996]: Production Impact
+                      - button "Medium · 36" [ref=e997] [cursor=pointer]:
+                        - text: Medium
+                        - generic [ref=e998]: · 36
+                        - img [ref=e999]
+                    - generic [ref=e1001]:
+                      - generic [ref=e1002]:
+                        - img [ref=e1003]
+                        - paragraph [ref=e1005]: Priority (Req. / AI)
+                      - generic [ref=e1006]:
+                        - generic [ref=e1007]:
+                          - generic [ref=e1008]: P1
+                          - generic [ref=e1009]: 🤖 IA subió P3→P1
+                        - generic [ref=e1010]:
+                          - strong [ref=e1011]: ¿Por qué subió la IA?
+                          - text: Chasquidos metálicos en eje + vibración fuerte + operador advierte riesgo catastrófico → falla inminente P1
+                        - generic [ref=e1012]:
+                          - generic [ref=e1013]: "🤖 Acción IA: Detener equipo inmediato, inspeccionar eje y rodamientos, evaluar daño estructural"
+                          - generic [ref=e1014]: "🛡 Condiciones IA: Detención inmediata, LOTO aplicado, área despejada, permiso trabajo mecánico, supervisor presente"
+                    - generic [ref=e1015]:
+                      - generic [ref=e1016]:
+                        - img [ref=e1017]
+                        - paragraph [ref=e1020]: AI Reliability
+                      - 'generic "Nivel de confianza del análisis IA (0-100%). Se calcula combinando: match del equipo contra el maestro, claridad del texto del aviso, coincidencia con catálogo de fallas, y similitud con WRs pasados del mismo equipo. ≥90% = alta · 75-89% = media · <75% = revisar." [ref=e1021]':
+                        - generic [ref=e1024]: 14%
+                        - generic [ref=e1025]: ⓘ
+                    - generic [ref=e1026]:
+                      - generic [ref=e1027]:
+                        - img [ref=e1028]
+                        - paragraph [ref=e1030]: Created
+                      - paragraph [ref=e1031]: 30/4/2026
+                    - generic [ref=e1032]:
+                      - generic [ref=e1033]:
+                        - img [ref=e1034]
+                        - paragraph [ref=e1037]: Notification Type
+                      - paragraph [ref=e1038]: A1
+                    - generic [ref=e1039]:
+                      - generic [ref=e1040]:
+                        - img [ref=e1041]
+                        - paragraph [ref=e1044]: Work Class
+                      - paragraph [ref=e1045]: NO_PROGRAMADO
+                  - generic [ref=e1046]:
+                    - paragraph [ref=e1047]: Failure Description
+                    - paragraph [ref=e1048]: Vibración fuerte en chancador cono, ya escuchamos chasquidos metálicos del eje, hay riesgo de catastrófica si seguimos operando
+                  - generic [ref=e1049]:
+                    - paragraph [ref=e1050]: Failure Classification
+                    - generic [ref=e1052]:
+                      - generic [ref=e1053]: "Object Part:"
+                      - generic [ref=e1054]: FATIGA
+                  - generic [ref=e1055]:
+                    - paragraph [ref=e1056]: Notification Details
+                    - generic [ref=e1058]:
+                      - img [ref=e1059]
+                      - generic [ref=e1062]: "Notificated by:"
+                      - generic [ref=e1063]: tester reason
+                  - generic [ref=e1064]:
+                    - generic [ref=e1065]:
+                      - paragraph [ref=e1066]: Support Equipment
+                      - button "+ Add Equipment" [ref=e1067]
+                    - generic [ref=e1069]: Sin equipos de apoyo
+                  - generic [ref=e1070]:
+                    - img [ref=e1071]
+                    - generic [ref=e1073]:
+                      - paragraph [ref=e1074]: IMPREVISTO — Fast Track
+                      - paragraph [ref=e1075]: Al aprobar este aviso P1, se creará una OT directa sin planificación
+                  - generic [ref=e1076]:
+                    - paragraph [ref=e1077]: Validation Checklist
+                    - generic [ref=e1078]:
+                      - generic [ref=e1079] [cursor=pointer]:
+                        - checkbox "Priority confirmed" [ref=e1080]
+                        - text: Priority confirmed
+                      - generic [ref=e1081] [cursor=pointer]:
+                        - checkbox "Failure mode validated" [ref=e1082]
+                        - text: Failure mode validated
+                      - generic [ref=e1083] [cursor=pointer]:
+                        - checkbox "Spare parts verified in inventory" [ref=e1084]
+                        - text: Spare parts verified in inventory
+                      - generic [ref=e1085] [cursor=pointer]:
+                        - checkbox "Personnel available" [ref=e1086]
+                        - text: Personnel available
+                  - generic [ref=e1087]:
+                    - button "Validate Request" [disabled] [ref=e1088]:
+                      - img [ref=e1089]
+                      - text: Validate Request
+                    - button "Express → PM03" [disabled] [ref=e1092]:
+                      - img [ref=e1093]
+                      - text: Express → PM03
+                    - button "Reject" [ref=e1095]:
+                      - img [ref=e1096]
+                      - text: Reject
+                    - button "Cancelar" [ref=e1100]:
+                      - img [ref=e1101]
+                      - text: Cancelar
+                    - button "Close" [ref=e1105]
+              - generic:
+                - generic:
+                  - generic: "DUPLICADO #1"
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: ac888c23-1521-41f0-b5e7-77809413d4ec
+                          - generic: Pending
+                        - heading "CRU-CON-HP-01 — Atoro de material no procesable" [level=2]
+                        - paragraph: CRU-CON-HP-01
+                      - generic:
+                        - button "PDF Report":
+                          - img
+                          - text: PDF Report
+                        - button "Edit"
+                        - button:
+                          - img
+                    - generic:
+                      - generic:
+                        - paragraph: Photos
+                      - generic:
+                        - img
+                        - generic: No photos attached
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Plant / Area
+                        - paragraph: GOLDFIELDS-SN /
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Ubic. Técnica
+                        - paragraph: CRU-CON-HP-01
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Equipo / TAG
+                        - paragraph: CRU-CON-HP-01
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Created By
+                        - paragraph: tecnico_3
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Approved By
+                        - paragraph: —
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Estimated Duration
+                        - generic: 4h
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Production Impact
+                        - button "Medium · 49":
+                          - text: Medium
+                          - generic: · 49
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Priority (Req. / AI)
+                        - generic:
+                          - generic:
+                            - generic: P2
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: AI Reliability
+                        - 'generic "Nivel de confianza del análisis IA (0-100%). Se calcula combinando: match del equipo contra el maestro, claridad del texto del aviso, coincidencia con catálogo de fallas, y similitud con WRs pasados del mismo equipo. ≥90% = alta · 75-89% = media · <75% = revisar."':
+                          - generic: 91%
+                          - generic: ⓘ
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Created
+                        - paragraph: 25/4/2026
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Notification Type
+                        - paragraph: A1
+                      - generic:
+                        - generic:
+                          - img
+                          - paragraph: Work Class
+                        - paragraph: NO_PROGRAMADO
+                    - generic:
+                      - paragraph: Work Order Title
+                      - paragraph: CRU-CON-HP-01 — Atoro de material no procesable
+                    - generic:
+                      - paragraph: Failure Description
+                      - paragraph: Atoro de material no procesable. Durante el arranque. Material no chancable atrapado en chamber, requiere rescate.
+                    - generic:
+                      - paragraph: Failure Classification
+                      - generic:
+                        - generic:
+                          - generic: "Object Part:"
+                          - generic: Atoro de material no procesable
+                    - generic:
+                      - paragraph: Required Spare Parts
+                      - generic:
+                        - generic:
+                          - img
+                          - text: Pernos fijación M16×60 gr8.8
+                    - generic:
+                      - paragraph: Notification Details
+                      - generic:
+                        - generic:
+                          - img
+                          - generic: "Notificated by:"
+                          - generic: supervisor_area
+                        - generic:
+                          - text: "Circunstancias:"
+                          - paragraph: Material no chancable atrapado en chamber, requiere rescate.
+                    - generic:
+                      - generic:
+                        - paragraph: Support Equipment
+                        - button "+ Add Equipment"
+                      - generic:
+                        - generic: Sin equipos de apoyo
+                    - generic:
+                      - img
+                      - generic:
+                        - paragraph: IMPREVISTO — Fast Track
+                        - paragraph: Al aprobar este aviso P2, se creará una OT directa sin planificación
+                    - generic:
+                      - paragraph: Validation Checklist
+                      - generic:
+                        - generic:
+                          - checkbox "Priority confirmed"
+                          - text: Priority confirmed
+                        - generic:
+                          - checkbox "Failure mode validated"
+                          - text: Failure mode validated
+                        - generic:
+                          - checkbox "Spare parts verified in inventory"
+                          - text: Spare parts verified in inventory
+                        - generic:
+                          - checkbox "Personnel available"
+                          - text: Personnel available
+                    - generic:
+                      - button "Validate Request" [disabled]:
+                        - img
+                        - text: Validate Request
+                      - button "Express → PM03" [disabled]:
+                        - img
+                        - text: Express → PM03
+                      - button "Reject":
+                        - img
+                        - text: Reject
+                      - button "Cancelar":
+                        - img
+                        - text: Cancelar
+                      - button "Close"
+            - button [disabled] [ref=e1106]:
+              - img [ref=e1107]
+            - button [ref=e1109]:
+              - img [ref=e1110]
+            - generic [ref=e1112]:
+              - button [ref=e1113]
+              - button [ref=e1114]
+  - status

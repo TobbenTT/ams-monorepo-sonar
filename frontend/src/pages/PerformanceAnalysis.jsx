@@ -72,6 +72,9 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
   const [importedJigsaw, setImportedJigsaw] = useState(null);
   const [importingJigsaw, setImportingJigsaw] = useState(false);
   const [importJigsawError, setImportJigsawError] = useState(null);
+  // #18 — NLP real con Claude (no regex)
+  const [aiNoncompliance, setAiNoncompliance] = useState(null);
+  const [aiNoncomplianceLoading, setAiNoncomplianceLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -933,8 +936,9 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
   }, [wrs]);
 
   // ── Causas de no-cumplimiento (Jorge 17:56) ──
-  // Lee execution_notes y notes en operations buscando patrones "no se hizo porque..."
-  const nonComplianceCauses = useMemo(() => {
+  // Frontend siempre tiene el regex como fallback; pero si Claude clasificó,
+  // usamos esa data (NLP real) — ver effect abajo.
+  const _regexNonCompliance = useMemo(() => {
     const patterns = [
       { regex: /repuesto.*no\s+(corresp|disponible|llegó)/i, label: 'Repuesto incorrecto/sin stock' },
       { regex: /operaci(ón|on).*no\s+(entreg|liber)/i, label: 'Operaciones no entregó equipo' },
@@ -958,6 +962,33 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
     });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
   }, [wos]);
+
+  // Si Claude ya clasificó, esa data manda; si no, fallback al regex.
+  const nonComplianceCauses = aiNoncompliance?.categories?.length
+    ? aiNoncompliance.categories.map(c => [c.category.replace(/_/g, ' '), c.count])
+    : _regexNonCompliance;
+
+  // Disparar clasificación Claude una vez por carga de wos (rate-limit reasonable).
+  useEffect(() => {
+    if (!wos.length) return;
+    const allNotes = [];
+    wos.forEach(w => {
+      (w.execution_notes || []).forEach(n => allNotes.push(typeof n === 'string' ? n : (n?.note || n?.text || '')));
+      (w.operations || []).forEach(op => {
+        if (op?.notif_notes) allNotes.push(op.notif_notes);
+        if (op?.notes) allNotes.push(op.notes);
+      });
+      if (w.closure_notes) allNotes.push(w.closure_notes);
+      if (w.cancellation_reason) allNotes.push(w.cancellation_reason);
+    });
+    const filtered = allNotes.filter(n => typeof n === 'string' && n.trim().length > 5);
+    if (filtered.length === 0) return;
+    setAiNoncomplianceLoading(true);
+    api.classifyNoncomplianceWithAI({ notes: filtered, plant_id: plant })
+      .then(res => setAiNoncompliance(res))
+      .catch(() => setAiNoncompliance(null))
+      .finally(() => setAiNoncomplianceLoading(false));
+  }, [wos.length, plant]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Consumo de repuestos + predicción quiebre stock (Jorge 17:56) ──
   // Ranking de materiales más consumidos en período. Sin conexión a bodega real,
@@ -2121,6 +2152,17 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
         <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-3">
           🚧 Causas de no-cumplimiento de OTs
+          {aiNoncomplianceLoading && <span className="text-[9px] text-gray-400 italic">Claude clasificando…</span>}
+          {aiNoncompliance?.ai_used && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300" title={`Claude clasificó ${aiNoncompliance.total_notes} notas en ${aiNoncompliance.categories?.length || 0} categorías${aiNoncompliance.emerging?.length ? ` + ${aiNoncompliance.emerging.length} emergentes` : ''}`}>
+              🤖 Claude NLP
+            </span>
+          )}
+          {aiNoncompliance && !aiNoncompliance.ai_used && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">
+              ⚠ Fallback regex
+            </span>
+          )}
         </h3>
         {nonComplianceCauses.length === 0 ? (
           <p className="text-sm text-gray-400 italic text-center py-4">

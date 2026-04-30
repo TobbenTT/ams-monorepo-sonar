@@ -419,6 +419,8 @@ export const updateWOSupportEquipment = (id, supportEquipment) =>
 export const rankTechniciansForOperation = (d) => post('/assignments/rank-for-operation', d);
 // 2026-04-30 — Auto-Level: parser de instrucciones en lenguaje natural con Claude
 export const parseAutoLevelInstructions = (d) => post('/scheduling/parse-autolevel-instructions', d);
+// 2026-04-30 — NLP causas no-cumplimiento (real Claude, no regex)
+export const classifyNoncomplianceWithAI = (d) => post('/analytics/classify-noncompliance', d);
 // SF-579 — listar OTs absorbidas por una OT PM03
 export const listAbsorbedWOs = (id) => get(`/managed-work-orders/${id}/absorbed`);
 export const verifyCloseManagedWO = (id, d) => post(`/managed-work-orders/${id}/verify-close`, d);

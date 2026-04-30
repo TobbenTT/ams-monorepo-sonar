@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import time
 import tempfile
@@ -245,6 +246,126 @@ async def import_jigsaw_excel(file: UploadFile = File(...)):
             os.unlink(tmp.name)
         except OSError:
             pass
+
+
+class NonComplianceClassifyRequest(BaseModel):
+    notes: list[str]  # textos crudos de execution_notes / closure_notes
+    plant_id: str | None = None
+
+
+@router.post("/classify-noncompliance")
+def classify_noncompliance(data: NonComplianceClassifyRequest):
+    """Clasifica notas de no-cumplimiento con Claude (NLP real, no regex).
+
+    Cada nota cae en una de 7 categorías estándar Jorge + emergentes que Claude
+    detecte. Devuelve counts + sample quotes por categoría.
+    """
+    import json
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    notes = [n for n in (data.notes or []) if isinstance(n, str) and n.strip() and len(n.strip()) > 5]
+    if not notes:
+        return {"categories": [], "ai_used": False}
+    if not api_key:
+        return {"categories": _fallback_classify_noncompliance(notes), "ai_used": False}
+    try:
+        import anthropic
+    except ImportError:
+        return {"categories": _fallback_classify_noncompliance(notes), "ai_used": False}
+
+    # Limit to 80 notes per call (token budget)
+    sample = notes[:80]
+    numbered = "\n".join([f"{i+1}. {n[:200]}" for i, n in enumerate(sample)])
+
+    prompt = f"""Eres un analista de mantenimiento. Clasifica cada nota de OT en UNA de estas 7 categorías estándar (Jorge 2026-04-28):
+
+CATEGORÍAS:
+1. REPUESTO_FALTANTE — repuesto no llegó / sin stock / no corresponde
+2. OPERACIONES_NO_LIBERO — operaciones no entregó el equipo / producción no podía parar
+3. SERVICIO_EXTERNO_NO_LLEGO — proveedor / contratista no llegó o canceló
+4. HERRAMIENTA_FALTANTE — herramienta especial faltante o descalibrada
+5. EQUIPO_APOYO_NO_DISPONIBLE — grúa / scaffolding / equipo apoyo bloqueado
+6. VENTANA_INSUFICIENTE — tiempo insuficiente / no alcanzó la ventana
+7. SEGURIDAD_LOTO — bloqueado por seguridad / permiso / LOTO
+
+Si una nota no encaja en ninguna, ponela en una nueva categoría descriptiva (max 30 chars en SCREAMING_SNAKE_CASE) — ej: "PERSONAL_INSUFICIENTE" si dice falta de gente.
+
+NOTAS A CLASIFICAR ({len(sample)}):
+{numbered}
+
+Devuelve SOLO un JSON con esta forma:
+{{
+  "classifications": [
+    {{ "note_idx": 1, "category": "REPUESTO_FALTANTE" }},
+    ...
+  ],
+  "emerging_categories": ["lista de categorías que inventaste fuera de las 7 estándar"]
+}}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = resp.content[0].text.strip()
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start < 0:
+            return {"categories": _fallback_classify_noncompliance(notes), "ai_used": False}
+        parsed = json.loads(text[start:end])
+        # Build counts + sample quotes
+        cat_data = {}
+        for c in (parsed.get("classifications") or []):
+            idx = c.get("note_idx")
+            cat = c.get("category") or "OTRO"
+            if not isinstance(idx, int) or idx < 1 or idx > len(sample):
+                continue
+            if cat not in cat_data:
+                cat_data[cat] = {"count": 0, "samples": []}
+            cat_data[cat]["count"] += 1
+            if len(cat_data[cat]["samples"]) < 3:
+                cat_data[cat]["samples"].append(sample[idx-1][:140])
+        categories = sorted(
+            [{"category": k, "count": v["count"], "samples": v["samples"]} for k, v in cat_data.items()],
+            key=lambda x: x["count"], reverse=True,
+        )
+        return {
+            "categories": categories,
+            "emerging": parsed.get("emerging_categories") or [],
+            "total_notes": len(sample),
+            "ai_used": True,
+        }
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("classify-noncompliance Claude failed: %s", e)
+        return {"categories": _fallback_classify_noncompliance(notes), "ai_used": False}
+
+
+def _fallback_classify_noncompliance(notes: list[str]) -> list[dict]:
+    """Fallback regex (lo que el frontend hacía antes) si Claude no responde."""
+    import re
+    patterns = [
+        ("REPUESTO_FALTANTE", re.compile(r"repuesto.*no\s+(corresp|disponible|llegó)", re.I)),
+        ("OPERACIONES_NO_LIBERO", re.compile(r"operaci(ón|on).*no\s+(entreg|liber)", re.I)),
+        ("SERVICIO_EXTERNO_NO_LLEGO", re.compile(r"servicio\s+externo.*no\s+lleg", re.I)),
+        ("HERRAMIENTA_FALTANTE", re.compile(r"herramienta.*(descalibr|no\s+estaba|falt)", re.I)),
+        ("EQUIPO_APOYO_NO_DISPONIBLE", re.compile(r"gr[uú]a|equipo\s+de\s+apoyo", re.I)),
+        ("VENTANA_INSUFICIENTE", re.compile(r"tiempo\s+insuficiente|no\s+alcanc", re.I)),
+        ("SEGURIDAD_LOTO", re.compile(r"seguridad|loto|epp", re.I)),
+    ]
+    counts = {}
+    samples_map = {}
+    for n in notes:
+        for cat, rx in patterns:
+            if rx.search(n):
+                counts[cat] = counts.get(cat, 0) + 1
+                samples_map.setdefault(cat, []).append(n[:140])
+                break
+    return sorted(
+        [{"category": k, "count": v, "samples": samples_map.get(k, [])[:3]} for k, v in counts.items()],
+        key=lambda x: x["count"], reverse=True,
+    )
 
 
 @router.get("/variance-alerts")

@@ -6,13 +6,23 @@ Cruza:
   - managed_work_orders.labor_cost / external_cost (mano obra + servicios)
 
 Devuelve un árbol jerárquico con costos plan/real subclasificados.
+
+2026-04-30: si un material no tiene cost_element seteado pero sí tiene
+description, Claude clasifica el material en una de las 7 categorías SAP
+(real NLP, no fallback a default). Cache en memoria por descripción.
 """
 from __future__ import annotations
+import os
+import json
+import logging
 from sqlalchemy.orm import Session
 
 from api.database.models import (
     ManagedWorkOrderModel, HierarchyNodeModel,
 )
+
+log = logging.getLogger(__name__)
+_COST_ELEMENT_CACHE: dict[str, str] = {}  # description (lowercased+trimmed) → cost_element
 
 
 COST_ELEMENTS = {
@@ -24,6 +34,66 @@ COST_ELEMENTS = {
     "MANO_DE_OBRA": "Mano de Obra",
     "SERVICIO_EXTERNO": "Servicio Externo",
 }
+
+
+def _classify_materials_with_claude(descriptions: list[str]) -> dict[str, str]:
+    """Clasifica una lista de descripciones de materiales a cost_elements SAP.
+    Devuelve {description_lc: cost_element}. Cache en memoria global."""
+    descriptions = [d for d in descriptions if d and isinstance(d, str)]
+    needed = [d for d in descriptions if d.lower().strip() not in _COST_ELEMENT_CACHE]
+    if not needed:
+        return _COST_ELEMENT_CACHE
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return _COST_ELEMENT_CACHE
+    try:
+        import anthropic
+    except ImportError:
+        return _COST_ELEMENT_CACHE
+
+    catalog = ", ".join(COST_ELEMENTS.keys())
+    numbered = "\n".join([f"{i+1}. {d[:120]}" for i, d in enumerate(needed[:60])])
+    prompt = f"""Eres un planificador de mantenimiento SAP. Clasifica cada descripción de material/recurso en UNA de estas 7 categorías SAP:
+
+CATEGORÍAS: {catalog}
+
+Reglas:
+- REPUESTO_CONSUMIBLE: tornillería, golillas, juntas, filtros básicos
+- REPUESTO_CRITICO: rodamientos grandes, sellos mecánicos, ejes, impulsores
+- REPUESTO_ELECTRICO: cables, contactores, sensores, variadores, motores
+- INSUMO_LUBRICANTE: aceite, grasa, anticorrosivo, refrigerante
+- HERRAMIENTA_EQUIPO: llaves, torquímetros, multímetros (no se consumen)
+- MANO_DE_OBRA: HH técnico, soldador, mecánico (es servicio interno)
+- SERVICIO_EXTERNO: contratista, certificación, alineamiento láser tercero
+
+DESCRIPCIONES:
+{numbered}
+
+Devuelve SOLO JSON: {{"classifications": [{{"idx": 1, "category": "REPUESTO_CRITICO"}}, ...]}}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = resp.content[0].text.strip()
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start < 0:
+            return _COST_ELEMENT_CACHE
+        parsed = json.loads(text[start:end])
+        for c in (parsed.get("classifications") or []):
+            idx = c.get("idx")
+            cat = c.get("category")
+            if not isinstance(idx, int) or idx < 1 or idx > len(needed):
+                continue
+            if cat in COST_ELEMENTS:
+                _COST_ELEMENT_CACHE[needed[idx-1].lower().strip()] = cat
+    except Exception as e:
+        log.warning("Cost element classification failed: %s", e)
+    return _COST_ELEMENT_CACHE
 
 
 def cost_analysis(db: Session, plant_id: str | None = None) -> dict:
@@ -53,6 +123,18 @@ def cost_analysis(db: Session, plant_id: str | None = None) -> dict:
         wos_q = wos_q.filter(ManagedWorkOrderModel.plant_id == plant_id)
     wos = wos_q.all()
 
+    # Pre-clasificar con Claude las descripciones de materials sin cost_element seteado.
+    # Cache en memoria evita re-clasificar entre llamadas.
+    _missing_descs = []
+    for _w in wos:
+        for _m in (_w.materials or []):
+            if not isinstance(_m, dict):
+                continue
+            if not _m.get("cost_element") and _m.get("description"):
+                _missing_descs.append(_m.get("description"))
+    if _missing_descs:
+        _classify_materials_with_claude(list(set(_missing_descs)))
+
     # Acumular por (node_id, cost_element) → {plan, real}
     bucket: dict[str, dict[str, dict[str, float]]] = {}
 
@@ -77,7 +159,12 @@ def cost_analysis(db: Session, plant_id: str | None = None) -> dict:
         for m in (w.materials or []):
             if not isinstance(m, dict):
                 continue
-            element = (m.get("cost_element") or "REPUESTO_CONSUMIBLE")
+            # cost_element: 1) campo explícito, 2) Claude por descripción (cached), 3) default.
+            element = m.get("cost_element")
+            if not element and m.get("description"):
+                element = _COST_ELEMENT_CACHE.get(m.get("description").lower().strip())
+            if not element:
+                element = "REPUESTO_CONSUMIBLE"
             qty = int(m.get("quantity", 0) or 0)
             unit_price = float(m.get("unit_price", 0) or 0)
             cost = qty * unit_price
@@ -149,9 +236,16 @@ def cost_analysis(db: Session, plant_id: str | None = None) -> dict:
             grand_total_by_element[elem]["plan"] += v["plan"]
             grand_total_by_element[elem]["real"] += v["real"]
 
+    ai_classified_count = sum(
+        1 for _w in wos for _m in (_w.materials or [])
+        if isinstance(_m, dict) and not _m.get("cost_element") and _m.get("description")
+        and _COST_ELEMENT_CACHE.get((_m.get("description") or "").lower().strip())
+    )
     return {
         "plant_id": plant_id,
         "elements_catalog": COST_ELEMENTS,
+        "ai_classifications": ai_classified_count,
+        "ai_used": bool(os.environ.get("ANTHROPIC_API_KEY")) and ai_classified_count > 0,
         "summary_by_element": [
             {
                 "element": e,

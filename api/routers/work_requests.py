@@ -729,6 +729,9 @@ class WRUpdateRequest(BaseModel):
     # Jorge 2026-04-30: permitir actualizar support_equipment desde el modal del aviso
     # (botón + Add Equipment).
     support_equipment: list | None = None
+    photos: list | None = None  # base64 data URLs — saved as documents[type=photo]
+    resources: list | None = None
+    materials: list | None = None
 
 
 @router.put("/{request_id}")
@@ -804,6 +807,23 @@ def update_work_request(request_id: str, data: WRUpdateRequest, db: Session = De
                 normalized.append({"tag": s.strip(), "name": s.strip(), "equipment_type": "OTHER", "hours": 1})
         wr.support_equipment = normalized
         flag_modified(wr, "support_equipment")
+    if data.photos is not None:
+        # Merge new photos into documents keeping other doc types
+        existing_docs = list(wr.documents or []) if isinstance(wr.documents, list) else []
+        non_photo_docs = [d for d in existing_docs if not (isinstance(d, dict) and d.get("type") == "photo")]
+        photo_docs = [{"type": "photo", "data": p} for p in data.photos if p]
+        wr.documents = non_photo_docs + photo_docs
+        flag_modified(wr, "documents")
+    if data.resources is not None:
+        pd = dict(wr.problem_description) if isinstance(wr.problem_description, dict) else {}
+        pd["resources"] = data.resources
+        wr.problem_description = pd
+        flag_modified(wr, "problem_description")
+    if data.materials is not None:
+        if hasattr(wr, 'materials') and wr.materials is not None or data.materials:
+            from sqlalchemy.orm.attributes import flag_modified as _fm
+            wr.spare_parts = data.materials
+            _fm(wr, "spare_parts")
 
     wr.updated_at = datetime.now()
     log_action(db, "work_request", request_id, "UPDATE")

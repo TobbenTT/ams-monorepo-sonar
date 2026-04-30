@@ -1210,7 +1210,7 @@ ${materials.length ? `<div class="section">
           <div className="px-6 pb-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Support Equipment</p>
-              {(editing || canEdit) && (
+              {editing && (
                 <button
                   onClick={async () => {
                     const name = window.prompt('Nombre o tag del equipo de apoyo:');

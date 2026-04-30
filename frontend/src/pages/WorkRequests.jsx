@@ -678,7 +678,7 @@ ${materials.length ? `<div class="section">
               </select>
             ) : (() => {
               // Prefer real multi-criteria score when available
-              const label = impactScore?.impact_label || item.production_impact;
+              const label = impactScore?.impact_label || item.production_impact || 'MEDIUM';
               const score = impactScore?.total_score;
               return (
                 <button
@@ -2050,8 +2050,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-5 gap-4">
         {[
-          { label: 'Pending', count: queueFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
-          { label: 'Approved', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
+          { label: 'Pending', count: queueFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE', 'DRAFT'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
+          { label: 'Approved', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO', 'IN_PROGRESS'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
           { label: 'Rejected', count: queueFiltered.filter(r => ['REJECTED', 'RECHAZADO'].includes(r.status)).length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
           { label: 'Cancelled', count: queueFiltered.filter(r => ['CANCELLED', 'CANCELADO'].includes(r.status)).length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
           // Jorge 2026-04-23 17:38: agregar tarjeta "Closed" para ver cuántos avisos se cerraron (vía OT auto-close).

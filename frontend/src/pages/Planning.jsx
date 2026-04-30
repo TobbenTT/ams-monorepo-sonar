@@ -1037,8 +1037,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         {(() => {
           const byStatus = (keys) => managedWOs.filter(w => keys.includes((w.status || '').toUpperCase())).length;
           const cards = [
-            { label: 'Creadas', count: byStatus(['CREADO','CREATED','LIBERADO','APROBADO']), color: 'border-l-gray-400', text: 'text-gray-700' },
-            { label: 'Planificadas', count: byStatus(['PLANIFICADO','PLANNED']), color: 'border-l-blue-400', text: 'text-blue-700' },
+            { label: 'Creadas', count: byStatus(['CREADO','CREATED']), color: 'border-l-gray-400', text: 'text-gray-700' },
+            { label: 'Planificadas', count: byStatus(['PLANIFICADO','PLANNED','LIBERADO','APROBADO']), color: 'border-l-blue-400', text: 'text-blue-700' },
             { label: 'Programadas', count: byStatus(['PROGRAMADO','EN_PROGRAMACION','SCHEDULED','EN_EJECUCION','EN_PROGRESO','IN_PROGRESS']), color: 'border-l-indigo-400', text: 'text-indigo-700' },
             { label: 'Cerradas', count: byStatus(['CERRADO','CLOSED','COMPLETED']), color: 'border-l-emerald-400', text: 'text-emerald-700' },
           ];

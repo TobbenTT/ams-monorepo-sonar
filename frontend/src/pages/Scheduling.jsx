@@ -3925,8 +3925,10 @@ export default function Scheduling() {
 
   const routeWOToBucket = useCallback((updatedWO) => {
     const status = (updatedWO.status || '').toUpperCase();
-    const inReleased = ['LIBERADO', 'CREADO', 'PLANIFICADO'].includes(status);
-    const inScheduled = ['EN_PROGRAMACION', 'PROGRAMADO', 'EN_EJECUCION'].includes(status);
+    const inReleased = ['LIBERADO', 'CREADO', 'PLANIFICADO'].includes(status)
+      || (status === 'EN_PROGRAMACION' && !updatedWO.planned_start);
+    const inScheduled = ['PROGRAMADO', 'EN_EJECUCION'].includes(status)
+      || (status === 'EN_PROGRAMACION' && !!updatedWO.planned_start);
     setReleasedWOs(prev => {
       const without = prev.filter(w => w.wo_id !== updatedWO.wo_id);
       return inReleased ? [updatedWO, ...without] : without;
@@ -4073,7 +4075,9 @@ export default function Scheduling() {
               ? `${wo.wo_number} ya tenía a ${tech.name} (no se duplica)`
               : `${wo.wo_number} → ${tech.name} · borrador`);
         toast.success(crewMsg);
-        loadCalendarData();
+        // WS wo_updated merges state granularly — no full reload needed here.
+        // Deferred refresh only as safety net in case WS misses the event.
+        setTimeout(() => loadCalendarData(), 2000);
       })
       .catch(() => {
         setScheduledWOs(prevScheduled);

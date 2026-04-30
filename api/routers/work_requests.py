@@ -2010,7 +2010,13 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
         reported_by=data.reported_by or None,
         reported_at=now if data.reported_by else None,
         circumstances=("\n".join(filter(None, [data.circumstances, ("Working conditions: " + data.work_conditions) if data.work_conditions else None]))) or None,
-        support_equipment=[{"tag": s} for s in data.support_equipment] if data.support_equipment else None,
+        # Si el frontend manda objects {tag,name,equipment_type,hours}, no envolver de nuevo.
+        # Si manda strings (legacy), envolver en {tag: str}. Bug 2026-04-30: el wrap
+        # ciego producía {tag: {tag, name, equipment_type, hours}} → React #31 al renderizar.
+        support_equipment=[
+            (s if isinstance(s, dict) else {"tag": s})
+            for s in data.support_equipment
+        ] if data.support_equipment else None,
         documents=data.documents if data.documents else None,
         created_at=now,
     )

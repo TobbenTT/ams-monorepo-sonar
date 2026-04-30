@@ -1,4 +1,4 @@
-// build: 2026-04-30-safestr-modal
+// build: 2026-04-30-support-eq-double-wrap-fix
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';

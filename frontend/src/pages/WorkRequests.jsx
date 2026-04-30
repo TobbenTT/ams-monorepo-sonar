@@ -300,7 +300,14 @@ const safeStr = (v) => {
   if (v == null) return '';
   if (typeof v === 'string' || typeof v === 'number') return String(v);
   if (typeof v === 'object') {
-    return v.name || v.tag || v.description || v.label || v.value || '';
+    // Si v.tag es un objeto (bug 2026-04-30 en manual endpoint), recursar
+    const candidates = [v.name, v.tag, v.description, v.label, v.value];
+    for (const c of candidates) {
+      if (c == null) continue;
+      if (typeof c === 'string' || typeof c === 'number') return String(c);
+      if (typeof c === 'object') return safeStr(c);
+    }
+    return '';
   }
   return String(v);
 };
@@ -1188,7 +1195,7 @@ ${materials.length ? `<div class="section">
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {(Array.isArray(item.support_equipment) ? item.support_equipment : []).map((eq, i) => (
-                  <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full font-medium">{typeof eq === 'string' ? eq : eq.name || eq.tag || ''}</span>
+                  <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full font-medium">{safeStr(eq)}</span>
                 ))}
                 {(!item.support_equipment || item.support_equipment.length === 0) && (
                   <span className="text-[11px] italic text-muted-foreground">Sin equipos de apoyo</span>

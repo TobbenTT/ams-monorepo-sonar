@@ -1073,7 +1073,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   // por material (reservation_code per item). Si null/vacio, comparte la reserva
   // global del WO. Util cuando el planificador necesita separar repuestos en
   // bodegas distintas o por tiempos de entrega.
-  const addMaterial = () => setF('materials', [...form.materials, { sapId: '', quantity: '1', unit: 'UD', description: '', reservation_code: '' }]);
+  // Jorge 2026-04-30: reservation_code se quita del form WR — sólo se setea en la OT.
+  const addMaterial = () => setF('materials', [...form.materials, { sapId: '', quantity: '1', unit: 'UD', description: '' }]);
   const updateMaterial = (i, fieldOrObj, value) => {
     const updated = [...form.materials];
     if (typeof fieldOrObj === 'object') {
@@ -2201,16 +2202,9 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                       <button onClick={() => removeMaterial(i)} className="px-1 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
                     </div>
                   </div>
-                  {/* D2 Tanda D — reservation_code per material (sub-reserva).
-                      Si vacio, usa la reserva global del WO. */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div></div>
-                    <div></div>
-                    <input type="text" placeholder="Nº reserva (opcional)" value={mat.reservation_code || ''}
-                      onChange={e => updateMaterial(i, 'reservation_code', e.target.value)}
-                      title="Sub-reserva: si distinta a la reserva global del WO, este material va aparte"
-                      className="p-1.5 rounded border border-gray-200 text-[10px] font-mono bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500/30" />
-                  </div>
+                  {/* Jorge 2026-04-30: el input de Nº Reserva NO va en el aviso/WR.
+                      La reserva se crea cuando se genera la OT. Removido del form
+                      Failure Capture; sigue editable desde Planning (Materials tab de la OT). */}
                   </div>
                 ))}
               </div>

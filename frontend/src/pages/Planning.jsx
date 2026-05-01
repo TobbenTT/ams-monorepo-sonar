@@ -1700,28 +1700,29 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         // Inline combo for support-equipment pool search
         // Renders a text input that autocompletes from the pool.
         // Items not in pool are shown in orange (need procurement).
-        const EquipPoolCombo = ({ value, label, pool, isFromPool, onSelect, onCustom }) => {
-          const [q, setQ] = React.useState(label || value || '');
+        const EquipPoolCombo = ({ displayName, pool, isFromPool, onSelect, onCustom }) => {
+          const [q, setQ] = React.useState(displayName || '');
           const [open, setOpen] = React.useState(false);
-          const filtered = pool.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase()) || p.equipment_id?.toLowerCase().includes(q.toLowerCase()));
-          const borderCls = isFromPool ? 'border-gray-300' : (q ? 'border-orange-400 text-orange-700' : 'border-gray-300');
+          // Only flag orange when pool is loaded AND item isn't in it
+          const poolLoaded = pool.length > 0;
+          const showOrange = poolLoaded && !isFromPool && q;
+          const filtered = pool.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase()));
+          const borderCls = showOrange ? 'border-orange-400 text-orange-700' : 'border-gray-300';
           return (
             <div className="relative w-44">
+              {showOrange && <span className="absolute -top-4 left-0 text-[9px] text-orange-600 font-medium whitespace-nowrap">Fuera de pool · procurar</span>}
               <input
                 type="text"
                 value={q}
                 onChange={e => { setQ(e.target.value); setOpen(true); }}
-                onFocus={() => setOpen(true)}
-                onBlur={() => setTimeout(() => { setOpen(false); if (q && !pool.find(p => p.name === q || p.equipment_id === q)) onCustom(q); }, 200)}
+                onFocus={() => { setOpen(true); }}
+                onBlur={() => setTimeout(() => { setOpen(false); if (q !== displayName) onCustom(q); }, 200)}
                 placeholder="Buscar equipo..."
                 className={`w-full text-xs border rounded px-2 py-1 ${borderCls}`}
               />
-              {!isFromPool && q && <span className="absolute -top-4 left-0 text-[9px] text-orange-600 font-medium">Fuera de pool · procurar</span>}
-              {open && (
+              {open && filtered.length > 0 && (
                 <div className="absolute z-50 mt-1 w-56 bg-white border border-gray-200 rounded shadow-lg max-h-48 overflow-y-auto">
-                  {filtered.length === 0 ? (
-                    <div className="px-3 py-2 text-xs text-gray-400">Sin coincidencias en pool</div>
-                  ) : filtered.map(p => (
+                  {filtered.map(p => (
                     <button key={p.equipment_id} type="button"
                       className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-xs"
                       onMouseDown={() => { setQ(p.name); setOpen(false); onSelect(p); }}>
@@ -2865,13 +2866,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               // Pool match: se.from_pool or se.equipment_id matches a pool item
                               const poolMatch = equipPool.find(p => p.equipment_id === se.equipment_id || p.name === se.name);
                               const isFromPool = !!(se.from_pool || poolMatch);
+                              const poolLoaded = equipPool.length > 0;
                               return (
-                                <tr key={i} className={`border-t border-amber-100 ${!isFromPool && (se.name || se.tag) ? 'bg-orange-50/40' : ''}`}>
+                                <tr key={i} className={`border-t border-amber-100 ${poolLoaded && !isFromPool && (se.name || se.tag) ? 'bg-orange-50/40' : ''}`}>
                                   <td className="px-3 py-2">
                                     {/* Pool search combo — tag field */}
                                     <EquipPoolCombo
-                                      value={se.tag || se.equipment_id || ''}
-                                      label={se.name || ''}
+                                      displayName={se.name || se.tag || ''}
                                       pool={equipPool}
                                       isFromPool={isFromPool}
                                       onSelect={async (item) => {
@@ -2892,7 +2893,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                     <input type="text" defaultValue={se.name || se.description || ''}
                                       onBlur={e => e.target.value !== (se.name || se.description || '') && updateField('name', e.target.value)}
                                       placeholder="Descripción"
-                                      className={`w-full text-sm border rounded px-2 py-1 ${!isFromPool && se.name ? 'border-orange-300 text-orange-700' : 'border-gray-300'}`} />
+                                      className={`w-full text-sm border rounded px-2 py-1 ${poolLoaded && !isFromPool && se.name ? 'border-orange-300 text-orange-700' : 'border-gray-300'}`} />
                                   </td>
                                   <td className="px-3 py-2">
                                     <select defaultValue={se.equipment_type || 'MOBILE_CRANE'}

@@ -609,7 +609,7 @@ ${materials.length ? `<div class="section">
         </div>
 
         {/* AI Priority Suggestion Banner — Jorge: la IA sugiere, el usuario decide */}
-        {item.ai_priority_pending && onAIPriorityDecision && (
+        {(item.ai_priority_pending || (item.priority_suggested && item.priority_suggested !== item.priority_requested)) && !item.ai_priority_decision && onAIPriorityDecision && (
           <div className="mx-6 my-3 rounded-xl border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-fuchsia-50 overflow-hidden shadow-sm">
             <div className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2">
               <Brain className="w-4 h-4" />

@@ -2033,11 +2033,11 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
     user_pri = data.priority
     ai_pri = ai_enrichment.get("priority")
     final_pri = user_pri  # SIEMPRE respeta al usuario
-    # Flag de sugerencia pendiente: la IA propone más severidad que el usuario y
-    # el usuario aún no decidió. ai_priority_decision: null|'accepted'|'rejected'
+    # Flag de sugerencia pendiente: la IA difiere del usuario (en cualquier dirección).
+    # ai_priority_decision: null|'accepted'|'rejected'
     has_pending_ai_suggestion = (
         ai_pri in _pri_order
-        and _pri_order[ai_pri] < _pri_order.get(user_pri, 99)
+        and ai_pri != user_pri
     )
 
     wr = WorkRequestModel(

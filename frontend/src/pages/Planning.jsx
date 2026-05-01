@@ -526,6 +526,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [extForm, setExtForm] = useState({ vendor: '', vendor_other: '', contract_ref: '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: '', currency: 'USD', start_date: '', end_date: '', lead_time_days: '', contact_name: '', contact_phone: '', safety_requirements: '', notes: '' });
   const [woSearch, setWoSearch] = useState("");
   const [equipPool, setEquipPool] = useState([]);
+  useEffect(() => {
+    if (plant) api.listSupportEquipment(plant).then(r => setEquipPool(r || [])).catch(() => {});
+  }, [plant]);
   const [woStatusFilter, setWoStatusFilter] = useState("All");
   // Jorge 2026-04-24 14:18: multi-select priority + P2 en Planning (antes era single "All"/P1/P3/P4)
   const [woPriorityFilter, setWoPriorityFilter] = useState([]); // [] = all

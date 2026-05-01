@@ -525,6 +525,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [extModal, setExtModal] = useState({ open: false, opIdx: -1, context: 'operation' });
   const [extForm, setExtForm] = useState({ vendor: '', vendor_other: '', contract_ref: '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: '', currency: 'USD', start_date: '', end_date: '', lead_time_days: '', contact_name: '', contact_phone: '', safety_requirements: '', notes: '' });
   const [woSearch, setWoSearch] = useState("");
+  const [equipPool, setEquipPool] = useState([]);
   const [woStatusFilter, setWoStatusFilter] = useState("All");
   // Jorge 2026-04-24 14:18: multi-select priority + P2 en Planning (antes era single "All"/P1/P3/P4)
   const [woPriorityFilter, setWoPriorityFilter] = useState([]); // [] = all
@@ -1696,6 +1697,45 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       )}
       {/* OT DETAIL MODAL */}
       {selectedOT && (() => {
+        // Inline combo for support-equipment pool search
+        // Renders a text input that autocompletes from the pool.
+        // Items not in pool are shown in orange (need procurement).
+        const EquipPoolCombo = ({ value, label, pool, isFromPool, onSelect, onCustom }) => {
+          const [q, setQ] = React.useState(label || value || '');
+          const [open, setOpen] = React.useState(false);
+          const filtered = pool.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase()) || p.equipment_id?.toLowerCase().includes(q.toLowerCase()));
+          const borderCls = isFromPool ? 'border-gray-300' : (q ? 'border-orange-400 text-orange-700' : 'border-gray-300');
+          return (
+            <div className="relative w-44">
+              <input
+                type="text"
+                value={q}
+                onChange={e => { setQ(e.target.value); setOpen(true); }}
+                onFocus={() => setOpen(true)}
+                onBlur={() => setTimeout(() => { setOpen(false); if (q && !pool.find(p => p.name === q || p.equipment_id === q)) onCustom(q); }, 200)}
+                placeholder="Buscar equipo..."
+                className={`w-full text-xs border rounded px-2 py-1 ${borderCls}`}
+              />
+              {!isFromPool && q && <span className="absolute -top-4 left-0 text-[9px] text-orange-600 font-medium">Fuera de pool · procurar</span>}
+              {open && (
+                <div className="absolute z-50 mt-1 w-56 bg-white border border-gray-200 rounded shadow-lg max-h-48 overflow-y-auto">
+                  {filtered.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-gray-400">Sin coincidencias en pool</div>
+                  ) : filtered.map(p => (
+                    <button key={p.equipment_id} type="button"
+                      className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-xs"
+                      onMouseDown={() => { setQ(p.name); setOpen(false); onSelect(p); }}>
+                      <span className="font-medium">{p.name}</span>
+                      {p.capacity_tons && <span className="ml-1 text-gray-400">{p.capacity_tons}T</span>}
+                      {!p.available && <span className="ml-1 text-red-500 text-[9px]">No disp.</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        };
+
         const wo = selectedOT;
         const SAP = {
           CREADO:{label:'Created',color:'bg-yellow-100 text-yellow-700'},
@@ -1823,7 +1863,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 </div>
                 <div className="flex gap-1 mt-3 -mb-4">
                   {OT_TABS.map(tab => (
-                    <button key={tab.id} onClick={() => setOtModalTab(tab.id)}
+                    <button key={tab.id} onClick={() => { setOtModalTab(tab.id); if (tab.id === 'support_eq' && equipPool.length === 0) api.listSupportEquipment(plant).then(r => setEquipPool(r || [])).catch(() => {}); }}
                       className={"flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-t-lg border border-b-0 transition-colors "+(otModalTab === tab.id ? "bg-white text-blue-700 border-gray-200" : "bg-gray-50 text-gray-500 border-transparent hover:text-gray-700")}>
                       <tab.icon size={14} /> {tab.label}
                     </button>
@@ -2770,7 +2810,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </h3>
                       <button type="button"
                         onClick={async () => {
-                          const next = [...(wo.support_equipment || []), { tag: '', name: '', equipment_type: 'MOBILE_CRANE', hours: 1, notes: '' }];
+                          if (equipPool.length === 0) api.listSupportEquipment(plant).then(r => setEquipPool(r || [])).catch(() => {});
+                          const next = [...(wo.support_equipment || []), { tag: '', name: '', equipment_type: 'MOBILE_CRANE', hours: 1, notes: '', from_pool: false }];
                           try {
                             const updated = await api.updateWOSupportEquipment(wo.wo_id, next);
                             setSelectedOT(updated);
@@ -2789,8 +2830,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <table className="w-full text-sm">
                           <thead className="bg-amber-100/60 text-xs uppercase">
                             <tr>
-                              <th className="px-3 py-2 text-left">Tag</th>
-                              <th className="px-3 py-2 text-left">Descripción</th>
+                              <th className="px-3 py-2 text-left">Equipo</th>
+                              <th className="px-3 py-2 text-left">Nombre</th>
                               <th className="px-3 py-2 text-left">Tipo</th>
                               <th className="px-3 py-2 text-right">HH</th>
                               <th className="px-3 py-2 text-left">Notas</th>
@@ -2821,19 +2862,37 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                   setSelectedOT(updated);
                                 } catch (e) { toast.error('Error: ' + (e.message || '')); }
                               };
+                              // Pool match: se.from_pool or se.equipment_id matches a pool item
+                              const poolMatch = equipPool.find(p => p.equipment_id === se.equipment_id || p.name === se.name);
+                              const isFromPool = !!(se.from_pool || poolMatch);
                               return (
-                                <tr key={i} className="border-t border-amber-100">
+                                <tr key={i} className={`border-t border-amber-100 ${!isFromPool && (se.name || se.tag) ? 'bg-orange-50/40' : ''}`}>
                                   <td className="px-3 py-2">
-                                    <input type="text" defaultValue={se.tag || ''}
-                                      onBlur={e => e.target.value !== (se.tag || '') && updateField('tag', e.target.value)}
-                                      placeholder="GRUA-50T-01"
-                                      className="w-32 font-mono text-xs border border-gray-300 rounded px-2 py-1" />
+                                    {/* Pool search combo — tag field */}
+                                    <EquipPoolCombo
+                                      value={se.tag || se.equipment_id || ''}
+                                      label={se.name || ''}
+                                      pool={equipPool}
+                                      isFromPool={isFromPool}
+                                      onSelect={async (item) => {
+                                        const next = (wo.support_equipment || []).map((x, idx) =>
+                                          idx === i ? { ...x, tag: item.equipment_id, name: item.name, equipment_type: item.equipment_type || x.equipment_type, equipment_id: item.equipment_id, from_pool: true } : x
+                                        );
+                                        try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Equipo guardado'); } catch (e) { toast.error('Error: ' + (e.message || '')); }
+                                      }}
+                                      onCustom={async (txt) => {
+                                        const next = (wo.support_equipment || []).map((x, idx) =>
+                                          idx === i ? { ...x, tag: txt, from_pool: false, equipment_id: undefined } : x
+                                        );
+                                        try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Guardado'); } catch (e) { toast.error('Error: ' + (e.message || '')); }
+                                      }}
+                                    />
                                   </td>
                                   <td className="px-3 py-2">
                                     <input type="text" defaultValue={se.name || se.description || ''}
                                       onBlur={e => e.target.value !== (se.name || se.description || '') && updateField('name', e.target.value)}
-                                      placeholder="Grúa móvil 50T"
-                                      className="w-full text-sm border border-gray-300 rounded px-2 py-1" />
+                                      placeholder="Descripción"
+                                      className={`w-full text-sm border rounded px-2 py-1 ${!isFromPool && se.name ? 'border-orange-300 text-orange-700' : 'border-gray-300'}`} />
                                   </td>
                                   <td className="px-3 py-2">
                                     <select defaultValue={se.equipment_type || 'MOBILE_CRANE'}

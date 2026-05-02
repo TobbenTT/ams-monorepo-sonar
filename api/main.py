@@ -71,6 +71,7 @@ from api.routers import (
     programmer_agent,
     supervisor_agent,
     planificador_agent,
+    dms,
 )
 
 # Optional modules — loaded only if their deps are installed. Missing deps won't crash startup.
@@ -345,6 +346,7 @@ def create_app() -> FastAPI:
     app.include_router(data_import.router, prefix=prefix)
     # Agentic Solutions
     app.include_router(agentic.router, prefix=prefix)
+    app.include_router(dms.router, prefix=prefix)
 
     # GAP-W03 — Serve Field PWA at /field/
     field_dist = Path("field_app/dist")

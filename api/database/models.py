@@ -1659,3 +1659,21 @@ class ContractorCrewModel(Base):
     specialty: Mapped[str | None] = mapped_column(String(30), nullable=True)  # MECH, ELEC, INST, CIVIL, etc.
     size: Mapped[int] = mapped_column(Integer, default=1)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class DMSDocumentModel(Base):
+    __tablename__ = "dms_documents"
+
+    doc_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    document_number: Mapped[str] = mapped_column(String(30), unique=True, index=True)  # DOC-000001
+    document_type: Mapped[str] = mapped_column(String(10), index=True)                 # DWG, MAF, MAN, PRO
+    document_desc: Mapped[str] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    sap_func_loc: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    sap_func_loc_short: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    equipment_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    eqart: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    file_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    created_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="Activo")

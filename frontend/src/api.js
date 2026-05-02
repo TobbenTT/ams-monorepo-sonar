@@ -528,6 +528,7 @@ export const getGanttManaged = (p) => get('/scheduling/gantt', p);
 export const clearWeekAssignments = (data) => post('/scheduling/clear-week', data);
 export const updateWorkerAvailability = (workerId, data) => put(`/scheduling/workforce/${workerId}/availability`, data);
 export const listSupportEquipment = (plantId) => get('/scheduling/support-equipment', { plant_id: plantId });
+export const listDMSDocuments = (funcLoc) => get('/dms/documents', { func_loc: funcLoc });
 export const createSupportEquipment = (data) => post('/scheduling/support-equipment', data);
 export const updateSupportEquipment = (id, data) => put(`/scheduling/support-equipment/${id}`, data);
 export const deleteSupportEquipment = (id) => del(`/scheduling/support-equipment/${id}`);

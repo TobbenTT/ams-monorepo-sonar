@@ -63,6 +63,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./certs:/etc/nginx/certs:ro
+      - ocp_dms_docs:/usr/share/nginx/dms:ro
     depends_on:
       - ocp-backend
       - ocp-frontend
@@ -89,3 +90,5 @@ volumes:
     name: ocp_sap_data
   ocp_or_deliverables:
     name: ocp_or_deliverables
+  ocp_dms_docs:
+    name: ocp_dms_docs

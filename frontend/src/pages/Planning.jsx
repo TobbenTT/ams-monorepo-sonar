@@ -1700,45 +1700,6 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       )}
       {/* OT DETAIL MODAL */}
       {selectedOT && (() => {
-        // Inline combo for support-equipment pool search
-        // Renders a text input that autocompletes from the pool.
-        // Items not in pool are shown in orange (need procurement).
-        const EquipPoolCombo = ({ displayName, pool, isFromPool, onSelect, onCustom }) => {
-          const [q, setQ] = React.useState(displayName || '');
-          const [open, setOpen] = React.useState(false);
-          // Only flag orange when pool is loaded AND item isn't in it
-          const poolLoaded = pool.length > 0;
-          const showOrange = poolLoaded && !isFromPool && q;
-          const filtered = pool.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase()));
-          const borderCls = showOrange ? 'border-orange-400 text-orange-700' : 'border-gray-300';
-          return (
-            <div className="relative w-44">
-              {showOrange && <span className="absolute -top-4 left-0 text-[9px] text-orange-600 font-medium whitespace-nowrap">Fuera de pool · procurar</span>}
-              <input
-                type="text"
-                value={q}
-                onChange={e => { setQ(e.target.value); setOpen(true); }}
-                onFocus={() => { setOpen(true); }}
-                onBlur={() => setTimeout(() => { setOpen(false); if (q !== displayName) onCustom(q); }, 200)}
-                placeholder="Buscar equipo..."
-                className={`w-full text-xs border rounded px-2 py-1 ${borderCls}`}
-              />
-              {open && filtered.length > 0 && (
-                <div className="absolute z-50 mt-1 w-56 bg-white border border-gray-200 rounded shadow-lg max-h-48 overflow-y-auto">
-                  {filtered.map(p => (
-                    <button key={p.equipment_id} type="button"
-                      className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-xs"
-                      onMouseDown={() => { setQ(p.name); setOpen(false); onSelect(p); }}>
-                      <span className="font-medium">{p.name}</span>
-                      {p.capacity_tons && <span className="ml-1 text-gray-400">{p.capacity_tons}T</span>}
-                      {!p.available && <span className="ml-1 text-red-500 text-[9px]">No disp.</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        };
 
         const wo = selectedOT;
         const SAP = {
@@ -2825,6 +2786,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         + Agregar Equipo
                       </button>
                     </div>
+                    <datalist id={`equip-pool-${wo.wo_id}`}>
+                      {equipPool.map(p => <option key={p.equipment_id} value={p.name} />)}
+                    </datalist>
                     {(wo.support_equipment || []).length === 0 ? (
                       <div className="text-center text-sm text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed">
                         No se requieren equipos de apoyo para esta OT. Click "+ Agregar Equipo" si necesitas grúa, mandil, andamio, etc.
@@ -2866,37 +2830,32 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                   setSelectedOT(updated);
                                 } catch (e) { toast.error('Error: ' + (e.message || '')); }
                               };
-                              // Pool match: se.from_pool or se.equipment_id matches a pool item
-                              const poolMatch = equipPool.find(p => p.equipment_id === se.equipment_id || p.name === se.name);
+                              const poolMatch = equipPool.find(p => p.name === (se.name || se.tag));
                               const isFromPool = !!(se.from_pool || poolMatch);
                               const poolLoaded = equipPool.length > 0;
+                              const dlId = `equip-pool-${wo.wo_id}`;
                               return (
                                 <tr key={i} className={`border-t border-amber-100 ${poolLoaded && !isFromPool && (se.name || se.tag) ? 'bg-orange-50/40' : ''}`}>
                                   <td className="px-3 py-2">
-                                    {/* Pool search combo — tag field */}
-                                    <EquipPoolCombo
-                                      displayName={se.name || se.tag || ''}
-                                      pool={equipPool}
-                                      isFromPool={isFromPool}
-                                      onSelect={async (item) => {
+                                    <input type="text" list={dlId}
+                                      defaultValue={se.name || se.tag || ''}
+                                      onBlur={async e => {
+                                        const val = e.target.value.trim();
+                                        if (!val || val === (se.name || se.tag || '')) return;
+                                        const hit = equipPool.find(p => p.name === val);
                                         const next = (wo.support_equipment || []).map((x, idx) =>
-                                          idx === i ? { ...x, tag: item.equipment_id, name: item.name, equipment_type: item.equipment_type || x.equipment_type, equipment_id: item.equipment_id, from_pool: true } : x
+                                          idx === i ? { ...x, name: val, tag: hit ? hit.equipment_id : val, equipment_id: hit?.equipment_id, from_pool: !!hit, equipment_type: hit?.equipment_type || x.equipment_type } : x
                                         );
-                                        try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Equipo guardado'); } catch (e) { toast.error('Error: ' + (e.message || '')); }
+                                        try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Guardado'); } catch(e2) { toast.error(e2.message); }
                                       }}
-                                      onCustom={async (txt) => {
-                                        const next = (wo.support_equipment || []).map((x, idx) =>
-                                          idx === i ? { ...x, tag: txt, from_pool: false, equipment_id: undefined } : x
-                                        );
-                                        try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Guardado'); } catch (e) { toast.error('Error: ' + (e.message || '')); }
-                                      }}
-                                    />
+                                      placeholder="Buscar equipo..."
+                                      className={`w-full text-xs border rounded px-2 py-1 ${poolLoaded && !isFromPool && (se.name||se.tag) ? 'border-orange-400 text-orange-700' : 'border-gray-300'}`} />
                                   </td>
                                   <td className="px-3 py-2">
                                     <input type="text" defaultValue={se.name || se.description || ''}
                                       onBlur={e => e.target.value !== (se.name || se.description || '') && updateField('name', e.target.value)}
                                       placeholder="Descripción"
-                                      className={`w-full text-sm border rounded px-2 py-1 ${poolLoaded && !isFromPool && se.name ? 'border-orange-300 text-orange-700' : 'border-gray-300'}`} />
+                                      className="w-full text-sm border border-gray-300 rounded px-2 py-1" />
                                   </td>
                                   <td className="px-3 py-2">
                                     <select defaultValue={se.equipment_type || 'MOBILE_CRANE'}

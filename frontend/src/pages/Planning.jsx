@@ -1749,6 +1749,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           { id: 'materiales', label: 'Materials', icon: Package },
           { id: 'support_eq', label: 'Equipos Apoyo', icon: Wrench },
           { id: 'costos', label: 'Costs', icon: DollarSign },
+          { id: 'documentos', label: 'Documentos', icon: FileText },
           ...(isExec ? [{ id: 'notif_hh', label: 'Notif. HH', icon: Clock }] : []),
           ...(isClosed ? [{ id: 'post_review', label: 'Post-Review', icon: ClipboardCheck }] : []),
           { id: 'historial', label: 'History', icon: MessageSquare },
@@ -3152,6 +3153,50 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 {/* POST-REVIEW — solo CERRADO · Jorge 2026-04-21 RCM feedback */}
                 {otModalTab === 'post_review' && isClosed && (
                   <PostReviewTab wo={wo} onSaved={updated => setSelectedOT({ ...wo, post_closure_review: updated })} />
+                )}
+
+                {/* DOCUMENTOS — procedimientos, checklists, pautas, planos (Jorge 2026-04-30) */}
+                {otModalTab === 'documentos' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-800">Documentos del Trabajo</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Procedimientos, checklists, pautas de mantención y planos asociados a esta OT</p>
+                      </div>
+                      <button type="button" onClick={async () => {
+                        const url = prompt('URL o código del documento:');
+                        if (!url) return;
+                        const name = prompt('Nombre del documento:') || url;
+                        const docs = [...(wo.documents || []), { name, url, type: 'MANUAL', added_by: 'planner' }];
+                        try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); toast.success('Documento agregado'); } catch(e2) { toast.error(e2.message); }
+                      }} className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">+ Agregar</button>
+                    </div>
+                    {(wo.documents || []).length === 0 ? (
+                      <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                        <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">Sin documentos asociados</p>
+                        <p className="text-xs text-gray-400 mt-1">Agrega procedimientos, checklists, pautas o planos</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {(wo.documents || []).map((doc, i) => (
+                          <div key={i} className="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                            <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-800 truncate">{doc.name}</p>
+                              {doc.url && <p className="text-xs text-gray-400 truncate">{doc.url}</p>}
+                            </div>
+                            {doc.type && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-mono">{doc.type}</span>}
+                            <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 text-xs">Abrir</a>
+                            <button onClick={async () => {
+                              const docs = (wo.documents || []).filter((_, j) => j !== i);
+                              try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); } catch(e2) { toast.error(e2.message); }
+                            }} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* HISTORIAL */}

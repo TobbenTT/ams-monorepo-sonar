@@ -3184,7 +3184,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             const isPinned = pinnedIds.has(doc.document_number);
                             return (
                               <div key={doc.document_number}
-                                onClick={() => doc.file_path && window.open(doc.file_path, '_blank')}
+                                onClick={() => doc.file_path && window.open(doc.file_path.replace(/^\/docs\//, '/dms/'), '_blank')}
                                 className={`flex items-center gap-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors group ${doc.file_path ? 'cursor-pointer' : ''}`}>
                                 <FileText className="w-4 h-4 text-gray-400 flex-shrink-0 group-hover:text-blue-500" />
                                 <div className="flex-1 min-w-0">

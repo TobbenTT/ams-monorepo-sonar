@@ -527,6 +527,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [woSearch, setWoSearch] = useState("");
   const [equipPool, setEquipPool] = useState([]);
   const [equipDropdownIdx, setEquipDropdownIdx] = useState(-1);
+  const [docForm, setDocForm] = useState({ show: false, name: '', url: '', type: 'PROCEDURE' });
   useEffect(() => {
     if (plant) api.listSupportEquipment(plant).then(r => setEquipPool(r || [])).catch(() => {});
   }, [plant]);
@@ -3163,15 +3164,61 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <h3 className="text-sm font-semibold text-gray-800">Documentos del Trabajo</h3>
                         <p className="text-xs text-gray-500 mt-0.5">Procedimientos, checklists, pautas de mantención y planos asociados a esta OT</p>
                       </div>
-                      <button type="button" onClick={async () => {
-                        const url = prompt('URL o código del documento:');
-                        if (!url) return;
-                        const name = prompt('Nombre del documento:') || url;
-                        const docs = [...(wo.documents || []), { name, url, type: 'MANUAL', added_by: 'planner' }];
-                        try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); toast.success('Documento agregado'); } catch(e2) { toast.error(e2.message); }
-                      }} className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">+ Agregar</button>
+                      {!docForm.show && (
+                        <button type="button" onClick={() => setDocForm({ show: true, name: '', url: '', type: 'PROCEDURE' })}
+                          className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">+ Agregar</button>
+                      )}
                     </div>
-                    {(wo.documents || []).length === 0 ? (
+
+                    {/* Formulario inline */}
+                    {docForm.show && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Nuevo documento</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="col-span-2">
+                            <label className="text-xs text-gray-600 mb-1 block">Nombre *</label>
+                            <input type="text" value={docForm.name} onChange={e => setDocForm(f => ({ ...f, name: e.target.value }))}
+                              placeholder="Ej: Procedimiento cambio revestimiento cilindro"
+                              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-600 mb-1 block">Tipo</label>
+                            <select value={docForm.type} onChange={e => setDocForm(f => ({ ...f, type: e.target.value }))}
+                              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2">
+                              <option value="PROCEDURE">Procedimiento</option>
+                              <option value="CHECKLIST">Checklist</option>
+                              <option value="MAINTENANCE_GUIDE">Pauta de mantención</option>
+                              <option value="DRAWING">Plano</option>
+                              <option value="MANUAL">Manual</option>
+                              <option value="OTHER">Otro</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-600 mb-1 block">URL o código SAP</label>
+                            <input type="text" value={docForm.url} onChange={e => setDocForm(f => ({ ...f, url: e.target.value }))}
+                              placeholder="https://... o DMS-001"
+                              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <button type="button" onClick={() => setDocForm({ show: false, name: '', url: '', type: 'PROCEDURE' })}
+                            className="text-xs px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                          <button type="button" onClick={async () => {
+                            if (!docForm.name.trim()) { toast.error('Ingresa un nombre'); return; }
+                            const docs = [...(wo.documents || []), { name: docForm.name.trim(), url: docForm.url.trim(), type: docForm.type }];
+                            try {
+                              const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version);
+                              setSelectedOT(u);
+                              setDocForm({ show: false, name: '', url: '', type: 'PROCEDURE' });
+                              toast.success('Documento agregado');
+                            } catch(e2) { toast.error(e2.message); }
+                          }} className="text-xs px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">Guardar</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Lista */}
+                    {(wo.documents || []).length === 0 && !docForm.show ? (
                       <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
                         <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                         <p className="text-sm text-gray-500">Sin documentos asociados</p>
@@ -3179,21 +3226,26 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {(wo.documents || []).map((doc, i) => (
-                          <div key={i} className="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                            <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-800 truncate">{doc.name}</p>
-                              {doc.url && <p className="text-xs text-gray-400 truncate">{doc.url}</p>}
+                        {(wo.documents || []).map((doc, i) => {
+                          const typeLabel = { PROCEDURE: 'Procedimiento', CHECKLIST: 'Checklist', MAINTENANCE_GUIDE: 'Pauta', DRAWING: 'Plano', MANUAL: 'Manual', OTHER: 'Otro' }[doc.type] || doc.type;
+                          const typeColor = { PROCEDURE: 'bg-blue-100 text-blue-700', CHECKLIST: 'bg-green-100 text-green-700', MAINTENANCE_GUIDE: 'bg-amber-100 text-amber-700', DRAWING: 'bg-purple-100 text-purple-700', MANUAL: 'bg-gray-100 text-gray-600', OTHER: 'bg-gray-100 text-gray-600' }[doc.type] || 'bg-gray-100 text-gray-600';
+                          return (
+                            <div key={i} className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors group">
+                              <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-800 truncate">{doc.name}</p>
+                                {doc.url && <p className="text-xs text-gray-400 truncate">{doc.url}</p>}
+                              </div>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${typeColor}`}>{typeLabel}</span>
+                              {doc.url && <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline opacity-0 group-hover:opacity-100">Abrir</a>}
+                              <button onClick={async () => {
+                                if (!confirm(`Quitar "${doc.name}"?`)) return;
+                                const docs = (wo.documents || []).filter((_, j) => j !== i);
+                                try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); } catch(e2) { toast.error(e2.message); }
+                              }} className="text-red-400 hover:text-red-600 text-xs opacity-0 group-hover:opacity-100">✕</button>
                             </div>
-                            {doc.type && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-mono">{doc.type}</span>}
-                            <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 text-xs">Abrir</a>
-                            <button onClick={async () => {
-                              const docs = (wo.documents || []).filter((_, j) => j !== i);
-                              try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); } catch(e2) { toast.error(e2.message); }
-                            }} className="text-red-400 hover:text-red-600 text-xs">✕</button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>

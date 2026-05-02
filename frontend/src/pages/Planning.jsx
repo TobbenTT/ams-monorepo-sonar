@@ -526,6 +526,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [extForm, setExtForm] = useState({ vendor: '', vendor_other: '', contract_ref: '', purchasing_group: '', service_type: '', specialty: '', personnel_count: '', estimated_hours: '', rate_per_hour: '', estimated_cost: '', currency: 'USD', start_date: '', end_date: '', lead_time_days: '', contact_name: '', contact_phone: '', safety_requirements: '', notes: '' });
   const [woSearch, setWoSearch] = useState("");
   const [equipPool, setEquipPool] = useState([]);
+  const [equipDropdownIdx, setEquipDropdownIdx] = useState(-1);
   useEffect(() => {
     if (plant) api.listSupportEquipment(plant).then(r => setEquipPool(r || [])).catch(() => {});
   }, [plant]);
@@ -2786,10 +2787,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         + Agregar Equipo
                       </button>
                     </div>
-                    <datalist id={`equip-pool-${wo.wo_id}`}>
-                      {equipPool.map(p => <option key={p.equipment_id} value={p.name} />)}
-                    </datalist>
-                    {(wo.support_equipment || []).length === 0 ? (
+{(wo.support_equipment || []).length === 0 ? (
                       <div className="text-center text-sm text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed">
                         No se requieren equipos de apoyo para esta OT. Click "+ Agregar Equipo" si necesitas grúa, mandil, andamio, etc.
                       </div>
@@ -2836,10 +2834,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               const dlId = `equip-pool-${wo.wo_id}`;
                               return (
                                 <tr key={i} className={`border-t border-amber-100 ${poolLoaded && !isFromPool && (se.name || se.tag) ? 'bg-orange-50/40' : ''}`}>
-                                  <td className="px-3 py-2">
-                                    <input type="text" list={dlId}
+                                  <td className="px-3 py-2 relative">
+                                    <input type="text"
                                       defaultValue={se.name || se.tag || ''}
+                                      onFocus={() => setEquipDropdownIdx(i)}
                                       onBlur={async e => {
+                                        setTimeout(() => setEquipDropdownIdx(-1), 200);
                                         const val = e.target.value.trim();
                                         if (!val || val === (se.name || se.tag || '')) return;
                                         const hit = equipPool.find(p => p.name === val);
@@ -2850,6 +2850,23 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                       }}
                                       placeholder="Buscar equipo..."
                                       className={`w-full text-xs border rounded px-2 py-1 ${poolLoaded && !isFromPool && (se.name||se.tag) ? 'border-orange-400 text-orange-700' : 'border-gray-300'}`} />
+                                    {equipDropdownIdx === i && equipPool.length > 0 && (
+                                      <div className="absolute z-50 left-2 right-2 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                        {equipPool.map(p => (
+                                          <button key={p.equipment_id} type="button"
+                                            onMouseDown={async () => {
+                                              setEquipDropdownIdx(-1);
+                                              const next = (wo.support_equipment || []).map((x, idx) =>
+                                                idx === i ? { ...x, name: p.name, tag: p.equipment_id, equipment_id: p.equipment_id, from_pool: true, equipment_type: p.equipment_type || x.equipment_type } : x
+                                              );
+                                              try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Guardado'); } catch(e2) { toast.error(e2.message); }
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs hover:bg-amber-50 border-b last:border-b-0">
+                                            {p.name}{p.capacity_tons ? ` ${p.capacity_tons}T` : ''}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
                                   </td>
                                   <td className="px-3 py-2">
                                     <input type="text" defaultValue={se.name || se.description || ''}

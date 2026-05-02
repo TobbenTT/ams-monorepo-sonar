@@ -3183,10 +3183,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                           {dmsDocs.map(doc => {
                             const isPinned = pinnedIds.has(doc.document_number);
                             return (
-                              <div key={doc.document_number} className="flex items-center gap-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg hover:border-blue-200 transition-colors group">
-                                <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                              <div key={doc.document_number}
+                                onClick={() => doc.file_path && window.open(doc.file_path, '_blank')}
+                                className={`flex items-center gap-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors group ${doc.file_path ? 'cursor-pointer' : ''}`}>
+                                <FileText className="w-4 h-4 text-gray-400 flex-shrink-0 group-hover:text-blue-500" />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-gray-700 truncate">{doc.document_desc}</p>
+                                  <p className="text-xs font-medium text-gray-700 truncate group-hover:text-blue-700">{doc.document_desc}</p>
                                   <p className="text-[10px] text-gray-400">{doc.document_number} · v{doc.version}</p>
                                 </div>
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${DOC_TYPE_COLOR[doc.document_type] || 'bg-gray-100 text-gray-600'}`}>{DOC_TYPE_LABEL[doc.document_type] || doc.document_type}</span>
@@ -3194,11 +3196,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                   <span className="text-[10px] text-green-600 font-medium">✓ En OT</span>
                                 ) : (
                                   <button type="button"
-                                    onClick={async () => {
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
                                       const docs = [...(wo.documents || []), { name: doc.document_desc, url: doc.file_path || '', type: doc.document_type, document_number: doc.document_number }];
                                       try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); toast.success('Documento agregado'); } catch(e2) { toast.error(e2.message); }
                                     }}
-                                    className="text-[10px] px-2 py-0.5 bg-blue-600 text-white rounded font-medium opacity-0 group-hover:opacity-100 hover:bg-blue-700">+ OT</button>
+                                    className="text-[10px] px-2 py-0.5 bg-blue-600 text-white rounded font-medium opacity-0 group-hover:opacity-100 hover:bg-blue-700 flex-shrink-0">+ OT</button>
                                 )}
                               </div>
                             );
@@ -3276,18 +3279,21 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       ) : (
                         <div className="space-y-1.5">
                           {(wo.documents || []).map((doc, i) => (
-                            <div key={i} className="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors group">
-                              <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            <div key={i}
+                              onClick={() => doc.url && window.open(doc.url, '_blank')}
+                              className={`flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors group ${doc.url ? 'cursor-pointer' : ''}`}>
+                              <FileText className="w-4 h-4 text-blue-500 flex-shrink-0 group-hover:text-blue-600" />
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-800 truncate">{doc.name}</p>
+                                <p className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-700">{doc.name}</p>
                                 {doc.url && <p className="text-xs text-gray-400 truncate">{doc.url}</p>}
                               </div>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${DOC_TYPE_COLOR[doc.type] || 'bg-gray-100 text-gray-600'}`}>{DOC_TYPE_LABEL[doc.type] || doc.type}</span>
-                              <button onClick={async () => {
+                              <button onClick={async (e) => {
+                                e.stopPropagation();
                                 if (!confirm(`Quitar "${doc.name}"?`)) return;
                                 const docs = (wo.documents || []).filter((_, j) => j !== i);
                                 try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); } catch(e2) { toast.error(e2.message); }
-                              }} className="text-red-400 hover:text-red-600 text-xs opacity-0 group-hover:opacity-100">✕</button>
+                              }} className="text-red-400 hover:text-red-600 text-xs opacity-0 group-hover:opacity-100 flex-shrink-0">✕</button>
                             </div>
                           ))}
                         </div>

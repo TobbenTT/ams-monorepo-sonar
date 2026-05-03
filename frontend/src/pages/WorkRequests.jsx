@@ -416,8 +416,8 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
               {item.wo_number && (
                 <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-100 text-emerald-700 border border-emerald-300 cursor-pointer hover:bg-emerald-200"
                   title="Ver OT vinculada"
-                  onClick={(e) => { e.stopPropagation(); window.open(`/work-management?tab=planning&openWo=${encodeURIComponent(item.wo_number)}`, '_blank', 'noopener,noreferrer'); }}>
-                  OT: {item.wo_number} ↗
+                  onClick={(e) => { e.stopPropagation(); navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(item.wo_number)}`); }}>
+                  OT: {item.wo_number}
                 </span>
               )}
             </div>
@@ -774,14 +774,11 @@ ${materials.length ? `<div class="section">
                 {/* Jorge (2026-04-20): link bidireccional — desde el aviso se puede
                     saltar a la OT. Abre en nueva pestaña para no perder el detalle. */}
                 <button
-                  onClick={() => window.open(
-                    `/work-management?tab=planning&openWo=${encodeURIComponent(item.wo_number)}`,
-                    '_blank', 'noopener,noreferrer'
-                  )}
+                  onClick={() => navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(item.wo_number)}`)}
                   className="text-sm font-bold text-emerald-700 hover:text-emerald-900 underline font-mono"
-                  title="Ver OT vinculada (nueva pestaña)"
+                  title="Ver OT vinculada"
                 >
-                  {item.wo_number} ↗
+                  {item.wo_number}
                 </button>
               </div>
             </div>

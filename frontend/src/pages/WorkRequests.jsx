@@ -415,9 +415,9 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
               </span>
               {item.wo_number && (
                 <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-100 text-emerald-700 border border-emerald-300 cursor-pointer hover:bg-emerald-200"
-                  title="Ir a OT"
-                  onClick={(e) => { e.stopPropagation(); navigate('/work-orders'); }}>
-                  OT: {item.wo_number}
+                  title="Ver OT vinculada"
+                  onClick={(e) => { e.stopPropagation(); window.open(`/work-management?tab=planning&openWo=${encodeURIComponent(item.wo_number)}`, '_blank', 'noopener,noreferrer'); }}>
+                  OT: {item.wo_number} ↗
                 </span>
               )}
             </div>

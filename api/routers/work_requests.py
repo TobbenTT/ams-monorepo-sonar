@@ -126,6 +126,14 @@ class WRFromHierarchyRequest(BaseModel):
 router = APIRouter(prefix="/work-requests", tags=["work-requests"], dependencies=[Depends(get_current_user)])
 
 
+def _get_linked_wo_number(db, request_id: str) -> str:
+    from api.database.models import ManagedWorkOrderModel
+    result = db.query(ManagedWorkOrderModel.wo_number).filter(
+        ManagedWorkOrderModel.work_request_id == request_id
+    ).scalar()
+    return result or ""
+
+
 @router.get("/search-materials")
 def search_materials(q: str = "", category: str = "", limit: int = 20, db: Session = Depends(get_db)):
     """Search SAP materials catalog by description or SAP ID. Supports English query terms."""
@@ -377,6 +385,7 @@ def get_work_request(request_id: str, db: Session = Depends(get_db)):
         "circumstances": getattr(wr, "circumstances", None),
         "support_equipment": getattr(wr, "support_equipment", None),
         "documents": getattr(wr, "documents", None),
+        "wo_number": _get_linked_wo_number(db, wr.request_id),
     }
 
 

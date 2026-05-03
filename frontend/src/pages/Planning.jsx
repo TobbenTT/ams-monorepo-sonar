@@ -3370,7 +3370,6 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   </div>
                   );
                 })()}
-                )}
 
                 {/* HISTORIAL */}
                 {otModalTab === 'historial' && (

@@ -527,6 +527,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [woSearch, setWoSearch] = useState("");
   const [equipPool, setEquipPool] = useState([]);
   const [equipDropdownIdx, setEquipDropdownIdx] = useState(-1);
+  const [editSupportMode, setEditSupportMode] = useState(false);
   const [docForm, setDocForm] = useState({ show: false, name: '', url: '', type: 'PROCEDURE' });
   const [dmsDocs, setDmsDocs] = useState([]);
   useEffect(() => {
@@ -647,6 +648,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   // Init edit state when OT changes
   useEffect(() => {
     if (selectedOT) {
+      setEditSupportMode(false);
       setEditOps(selectedOT.operations || []);
       setEditMats(selectedOT.materials || []);
       setEditBudget({ labor: selectedOT.planned_labor || '', material: selectedOT.planned_material || '', external: selectedOT.planned_external || '' });
@@ -1855,9 +1857,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   <div className="space-y-4">
                     {wo.priority_code && (() => {
                       const imp = { P1: { l: 'CRITICAL', c: 'bg-red-50 border-red-300 text-red-800', s: 95 }, P2: { l: 'HIGH', c: 'bg-orange-50 border-orange-300 text-orange-800', s: 75 }, P3: { l: 'MEDIUM', c: 'bg-yellow-50 border-yellow-300 text-yellow-800', s: 45 }, P4: { l: 'LOW', c: 'bg-green-50 border-green-300 text-green-800', s: 20 } };
-                      const d = imp[wo.priority_code] || imp.P3;
+                      const riskFromWR = wo.risk_analysis?.risk_level;
+                      const riskByPriority = { CRITICAL: imp.P1, HIGH: imp.P2, MEDIUM: imp.P3, LOW: imp.P4 };
+                      const d = (riskFromWR && riskByPriority[riskFromWR]) ? riskByPriority[riskFromWR] : (imp[wo.priority_code] || imp.P3);
+                      const fromWR = !!riskFromWR;
                       return <div className={"rounded-xl p-4 border-2 flex items-center justify-between "+d.c}>
-                        <div><div className="text-xs font-bold uppercase">Nivel de Riesgo</div><div className="text-lg font-bold">{d.l}</div></div>
+                        <div>
+                          <div className="text-xs font-bold uppercase">Nivel de Riesgo{fromWR && <span className="ml-1.5 font-normal normal-case text-[10px] opacity-70">(del aviso)</span>}</div>
+                          <div className="text-lg font-bold">{d.l}</div>
+                        </div>
                         <div className="text-3xl font-black">{d.s}</div>
                       </div>;
                     })()}
@@ -2782,20 +2790,28 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                         🏗️ Equipos de Apoyo
-                        <span className="text-xs font-normal text-gray-500">(arrastrados del aviso, editables)</span>
+                        <span className="text-xs font-normal text-gray-500">(arrastrados del aviso)</span>
                       </h3>
-                      <button type="button"
-                        onClick={async () => {
-                          if (equipPool.length === 0) api.listSupportEquipment(plant).then(r => setEquipPool(r || [])).catch(() => {});
-                          const next = [...(wo.support_equipment || []), { tag: '', name: '', equipment_type: 'MOBILE_CRANE', hours: 1, notes: '', from_pool: false }];
-                          try {
-                            const updated = await api.updateWOSupportEquipment(wo.wo_id, next);
-                            setSelectedOT(updated);
-                          } catch (e) { toast.error('Error: ' + (e.message || '')); }
-                        }}
-                        className="text-xs px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 font-semibold">
-                        + Agregar Equipo
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => setEditSupportMode(m => !m)}
+                          className={"text-xs px-2.5 py-1.5 rounded-lg font-semibold border transition-colors " + (editSupportMode ? "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200" : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200")}>
+                          {editSupportMode ? '✓ Editando' : '✏️ Editar'}
+                        </button>
+                        {editSupportMode && (
+                          <button type="button"
+                            onClick={async () => {
+                              if (equipPool.length === 0) api.listSupportEquipment(plant).then(r => setEquipPool(r || [])).catch(() => {});
+                              const next = [...(wo.support_equipment || []), { tag: '', name: '', equipment_type: 'MOBILE_CRANE', hours: 1, notes: '', from_pool: false }];
+                              try {
+                                const updated = await api.updateWOSupportEquipment(wo.wo_id, next);
+                                setSelectedOT(updated);
+                              } catch (e) { toast.error('Error: ' + (e.message || '')); }
+                            }}
+                            className="text-xs px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 font-semibold">
+                            + Agregar Equipo
+                          </button>
+                        )}
+                      </div>
                     </div>
 {(wo.support_equipment || []).length === 0 ? (
                       <div className="text-center text-sm text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed">

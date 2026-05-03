@@ -232,6 +232,7 @@ def create_work_order(
     work_center: str | None = None,
     wo_title: str | None = None,
     technical_location: str | None = None,
+    risk_analysis: dict | None = None,
 ) -> dict:
     """Create a new managed work order (optionally from an approved WR).
     P1/P2 priorities trigger fast track: OT created directly in RELEASED status."""
@@ -298,6 +299,7 @@ def create_work_order(
         materials=materials or [],
         tools=tools or [],
         is_fast_track=is_fast_track,
+        risk_analysis=risk_analysis or None,
     )
 
     # Fast track: P1/P2 skip planning → go directly to APROBADO
@@ -542,6 +544,12 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
         or None
     )
 
+    # Propagate risk level from WR ai_classification to OT risk_analysis
+    wr_risk_level = ai.get("risk_level") if isinstance(ai, dict) else None
+    wr_risk = None
+    if wr_risk_level:
+        wr_risk = {"risk_level": wr_risk_level, "source": "work_request", "wr_id": request_id}
+
     result = create_work_order(
         db=db,
         equipment_tag=wr.equipment_tag,
@@ -556,6 +564,7 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
         materials=materials,
         wo_title=(ai.get("wo_title") if isinstance(ai, dict) else None) or None,
         technical_location=tl_from_wr,
+        risk_analysis=wr_risk,
     )
 
     # Jorge 2026-04-28 17:56 — propagar equipos de apoyo del aviso a la OT.

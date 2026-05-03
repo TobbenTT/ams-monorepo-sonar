@@ -645,6 +645,16 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
     return { laborHours, laborCost, materialCost, externalCost, total: laborCost + materialCost + externalCost };
   }, [editOps, editMats]);
 
+  // Item 4: auto-recalc planned_end when ops duration changes
+  useEffect(() => {
+    if (!editDates.start) return;
+    const totalHrs = editOps.reduce((s, o) => s + ((parseFloat(o.quantity) || 1) * (parseFloat(o.hours) || parseFloat(o.duration) || 0)), 0);
+    if (totalHrs <= 0) return;
+    const endDt = new Date(new Date(editDates.start).getTime() + totalHrs * 3600000);
+    const newEnd = endDt.toISOString().slice(0, 16);
+    setEditDates(d => d.end === newEnd ? d : { ...d, end: newEnd });
+  }, [editOps]);
+
   // Init edit state when OT changes
   useEffect(() => {
     if (selectedOT) {
@@ -2001,43 +2011,85 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                     {/* C22: Dates - Start/End + Week number */}
                     <div className="grid grid-cols-3 gap-3">
                       <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned Start</div>
-                        <input type="datetime-local" value={editDates.start ? editDates.start.slice(0, 16) : ''}
-                          onChange={e => {
-                            const newStart = e.target.value;
-                            setEditDates(d => {
-                              // Auto-calc end = start + estimated_hours when start changes
-                              const hrs = wo.estimated_hours || 0;
-                              if (newStart && hrs > 0) {
-                                const endDt = new Date(new Date(newStart).getTime() + hrs * 3600000);
-                                return { start: newStart, end: endDt.toISOString().slice(0, 16) };
-                              }
-                              // If no duration, preserve relative offset
-                              if (d.start && d.end && newStart) {
-                                const durMs = new Date(d.end) - new Date(d.start);
-                                if (durMs > 0) {
-                                  const shifted = new Date(new Date(newStart).getTime() + durMs);
-                                  return { start: newStart, end: shifted.toISOString().slice(0, 16) };
+                        <div className="text-[10px] text-blue-600 font-semibold uppercase mb-1">Planned Start</div>
+                        <div className="flex gap-1.5 items-center">
+                          <input type="date"
+                            value={editDates.start ? editDates.start.slice(0, 10) : ''}
+                            onChange={e => {
+                              const datePart = e.target.value;
+                              const timePart = editDates.start ? editDates.start.slice(11, 16) : '08:00';
+                              const newStart = datePart ? `${datePart}T${timePart}` : '';
+                              setEditDates(d => {
+                                const opsHrs = editOps.reduce((s, o) => s + ((parseFloat(o.quantity)||1)*(parseFloat(o.hours)||parseFloat(o.duration)||0)),0);
+                                const hrs = opsHrs > 0 ? opsHrs : (wo.estimated_hours || 0);
+                                if (newStart && hrs > 0) {
+                                  const endDt = new Date(new Date(newStart).getTime() + hrs * 3600000);
+                                  return { start: newStart, end: endDt.toISOString().slice(0, 16) };
                                 }
-                              }
-                              return { start: newStart, end: d.end && d.end < newStart ? newStart : d.end };
-                            });
-                          }}
-                          className="mt-1 text-xs font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                                if (d.start && d.end && newStart) {
+                                  const durMs = new Date(d.end) - new Date(d.start);
+                                  if (durMs > 0) {
+                                    const shifted = new Date(new Date(newStart).getTime() + durMs);
+                                    return { start: newStart, end: shifted.toISOString().slice(0, 16) };
+                                  }
+                                }
+                                return { start: newStart, end: d.end && d.end < newStart ? newStart : d.end };
+                              });
+                            }}
+                            className="text-xs font-semibold text-blue-800 bg-white border border-blue-300 rounded px-1.5 py-1 focus:ring-1 focus:ring-blue-400 focus:outline-none flex-1" />
+                          <input type="time"
+                            value={editDates.start ? editDates.start.slice(11, 16) : ''}
+                            onChange={e => {
+                              const timePart = e.target.value;
+                              const datePart = editDates.start ? editDates.start.slice(0, 10) : '';
+                              if (!datePart) return;
+                              const newStart = `${datePart}T${timePart}`;
+                              setEditDates(d => {
+                                if (d.end) {
+                                  const durMs = new Date(d.end) - new Date(d.start);
+                                  if (durMs > 0) {
+                                    const shifted = new Date(new Date(newStart).getTime() + durMs);
+                                    return { start: newStart, end: shifted.toISOString().slice(0, 16) };
+                                  }
+                                }
+                                return { ...d, start: newStart };
+                              });
+                            }}
+                            className="text-xs font-semibold text-blue-800 bg-white border border-blue-300 rounded px-1.5 py-1 focus:ring-1 focus:ring-blue-400 focus:outline-none w-24" />
+                        </div>
                       </div>
                       <div className={`rounded-lg p-3 border ${editDates.start && editDates.end && editDates.end < editDates.start ? 'bg-red-50 border-red-300' : 'bg-blue-50 border-blue-200'}`}>
-                        <div className="text-[10px] text-blue-600 font-semibold uppercase">Planned End</div>
-                        <input type="datetime-local" value={editDates.end ? editDates.end.slice(0, 16) : ''}
-                          min={editDates.start ? editDates.start.slice(0, 16) : undefined}
-                          onChange={e => {
-                            const newEnd = e.target.value;
-                            if (editDates.start && newEnd < editDates.start) {
-                              toast.error('Planned End no puede ser anterior a Planned Start');
-                              return;
-                            }
-                            setEditDates(d => ({...d, end: newEnd}));
-                          }}
-                          className="mt-1 text-xs font-semibold text-blue-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                        <div className="text-[10px] text-blue-600 font-semibold uppercase mb-1">Planned End</div>
+                        <div className="flex gap-1.5 items-center">
+                          <input type="date"
+                            value={editDates.end ? editDates.end.slice(0, 10) : ''}
+                            min={editDates.start ? editDates.start.slice(0, 10) : undefined}
+                            onChange={e => {
+                              const datePart = e.target.value;
+                              const timePart = editDates.end ? editDates.end.slice(11, 16) : '08:00';
+                              const newEnd = datePart ? `${datePart}T${timePart}` : '';
+                              if (editDates.start && newEnd < editDates.start) {
+                                toast.error('Planned End no puede ser anterior a Planned Start');
+                                return;
+                              }
+                              setEditDates(d => ({...d, end: newEnd}));
+                            }}
+                            className="text-xs font-semibold text-blue-800 bg-white border border-blue-300 rounded px-1.5 py-1 focus:ring-1 focus:ring-blue-400 focus:outline-none flex-1" />
+                          <input type="time"
+                            value={editDates.end ? editDates.end.slice(11, 16) : ''}
+                            onChange={e => {
+                              const timePart = e.target.value;
+                              const datePart = editDates.end ? editDates.end.slice(0, 10) : '';
+                              if (!datePart) return;
+                              const newEnd = `${datePart}T${timePart}`;
+                              if (editDates.start && newEnd < editDates.start) {
+                                toast.error('Planned End no puede ser anterior a Planned Start');
+                                return;
+                              }
+                              setEditDates(d => ({...d, end: newEnd}));
+                            }}
+                            className="text-xs font-semibold text-blue-800 bg-white border border-blue-300 rounded px-1.5 py-1 focus:ring-1 focus:ring-blue-400 focus:outline-none w-24" />
+                        </div>
                       </div>
                       {/* Jorge 2026-04-24 14:18: "Sacar duración del encabezado porque va
                           en el mini-dashboard de arriba. Dejar solo Week/WIC". */}

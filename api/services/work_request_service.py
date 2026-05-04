@@ -71,6 +71,11 @@ def approve_work_request(
     wr.priority_code = priority
     wr.work_class = derive_work_class(priority)
     wr.sla_deadline = compute_sla_deadline(priority, now)
+    # SF-601 BUG-10 (2026-05-04) — mapping prioridad → clase notificación SAP.
+    # Regla Jorge: P4 → M1. P1/P2/P3 mantienen el default (A1) salvo override
+    # explícito previo.
+    if priority == "P4" and (not wr.notification_type or wr.notification_type == "A1"):
+        wr.notification_type = "M1"
     wr.rejection_reason = None
 
     # Also sync into ai_classification for backward compat

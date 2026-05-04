@@ -759,6 +759,16 @@ def update_work_request(request_id: str, data: WRUpdateRequest, db: Session = De
     description_in = data.description if data.description is not None else data.failure_description
     if priority_in:
         wr.priority_code = priority_in
+        # SF-593 BUG-2 / SF-602 BUG-11 (2026-05-04) — flag de inmutabilidad.
+        # Cuando un humano setea priority via PUT, marcamos validation.priority_locked
+        # con timestamp. Cualquier flujo IA posterior debe respetar este flag y
+        # NO sobreescribir priority_code (puede solo poner priority_suggested).
+        v = dict(wr.validation) if isinstance(wr.validation, dict) else {}
+        v["priority_locked"] = True
+        v["priority_locked_at"] = datetime.now().isoformat()
+        v["priority_locked_value"] = priority_in
+        wr.validation = v
+        flag_modified(wr, "validation")
     if description_in is not None:
         pd = dict(wr.problem_description) if isinstance(wr.problem_description, dict) else {}
         pd["original_text"] = description_in

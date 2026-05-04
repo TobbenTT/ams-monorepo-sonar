@@ -614,6 +614,366 @@ def equipment_autocomplete(query: str, plant_id: str | None = None, limit: int =
     }
 
 
+# ─── SF-606 Memoria persistente de IA + feedback usuario ─────────────────────
+@router.get("/ai-feedback/stats")
+def ai_feedback_stats(plant_id: str | None = None, db: Session = Depends(get_db)):
+    """SF-606 NF-1 — Tasa de aceptación de sugerencias IA + memoria persistente.
+
+    Devuelve métricas sobre las decisiones humanas vs sugerencias IA:
+    - cuántas se aceptaron / rechazaron / quedaron pendientes
+    - distribución por tipo de sugerencia (priority, equipment, etc.)
+    """
+    from api.database.models import WorkRequestModel
+    q = db.query(WorkRequestModel)
+    if plant_id:
+        from sqlalchemy import or_, func
+        q = q.filter(or_(
+            WorkRequestModel.ai_classification.contains({"plant_id": plant_id}),
+        ))
+    total = q.count()
+    accepted = 0
+    rejected = 0
+    pending = 0
+    for wr in q.limit(2000).all():
+        ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+        decision = ai.get("ai_priority_decision")
+        if decision == "accepted":
+            accepted += 1
+        elif decision == "rejected":
+            rejected += 1
+        elif ai.get("ai_priority_pending"):
+            pending += 1
+    decided = accepted + rejected
+    accept_rate = round(accepted / decided * 100, 1) if decided else 0
+    return {
+        "total_wrs": total,
+        "ai_decisions": {"accepted": accepted, "rejected": rejected, "pending": pending},
+        "accept_rate_pct": accept_rate,
+        "todo": "Persistir feedback con razón en tabla ai_feedback (vector store opcional). UI 👍/👎 + razón pendiente.",
+    }
+
+
+# ─── SF-615 Planificación por operación ──────────────────────────────────────
+@router.get("/ops-schedule/{wo_id}")
+def ops_schedule(wo_id: str, db: Session = Depends(get_db)):
+    """SF-615 NF-10 — Devuelve plan por operación dentro de la OT.
+
+    Cada op puede tener planned_start/planned_end + assigned_worker propios.
+    Hoy las ops viven en wo.operations[]; agregamos campos por op si existen.
+    """
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return {"error": "WO not found"}
+    ops = wo.operations or []
+    rollup_starts = []
+    rollup_ends = []
+    out_ops = []
+    for op in ops:
+        op_start = op.get("planned_start") or wo.planned_start.isoformat() if wo.planned_start else None
+        op_end = op.get("planned_end")
+        out_ops.append({
+            "op_number": op.get("op_number"),
+            "description": op.get("description"),
+            "specialty": op.get("specialty"),
+            "planned_start": op_start,
+            "planned_end": op_end,
+            "assigned_worker": op.get("assigned_worker"),
+            "duration_h": op.get("hours") or op.get("duration"),
+        })
+        if op_start: rollup_starts.append(op_start)
+        if op_end: rollup_ends.append(op_end)
+    return {
+        "wo_id": wo_id,
+        "wo_number": wo.wo_number,
+        "rollup": {"start": min(rollup_starts) if rollup_starts else None, "end": max(rollup_ends) if rollup_ends else None},
+        "ops": out_ops,
+        "todo": "PUT /ops/{op_seq}/schedule para asignar plan por op individual + UI de calendario por op",
+    }
+
+
+# ─── SF-617 IA skills/capacidades ────────────────────────────────────────────
+@router.get("/skills-inference/{wo_id}")
+def skills_inference(wo_id: str, db: Session = Depends(get_db)):
+    """SF-617 NF-12 — Skills inferidos por op + match con técnicos disponibles."""
+    from api.database.models import WorkforceModel
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return {"error": "WO not found"}
+    SKILL_MAP = {
+        "MECA": ["mecanica", "torque", "alineacion", "rodamientos"],
+        "ELEC": ["electrica", "tablero", "motores", "controles"],
+        "INST": ["instrumentacion", "calibracion", "transmisores"],
+        "LUBR": ["lubricacion", "aceite", "grasa"],
+        "PRED": ["vibracion", "termografia", "ultrasonido"],
+    }
+    out = []
+    workforce = db.query(WorkforceModel).filter(
+        WorkforceModel.plant_id == wo.plant_id, WorkforceModel.active == True  # noqa: E712
+    ).all() if wo.plant_id else []
+    for op in (wo.operations or []):
+        sp = (op.get("specialty") or "").upper()
+        required = SKILL_MAP.get(sp, [])
+        matches = []
+        for w in workforce:
+            skills_str = (getattr(w, "skills", None) or "").lower()
+            score = sum(1 for k in required if k in skills_str)
+            if score > 0:
+                matches.append({"worker_id": w.worker_id, "name": getattr(w, "name", w.worker_id), "score": score})
+        matches.sort(key=lambda m: -m["score"])
+        out.append({
+            "op_number": op.get("op_number"),
+            "specialty": sp,
+            "required_skills": required,
+            "candidates": matches[:5],
+            "best_match": matches[0] if matches else None,
+        })
+    return {
+        "wo_id": wo_id,
+        "ops_inference": out,
+        "todo": "Reemplazar SKILL_MAP estático por catálogo + Claude inference contextual sobre histórico",
+    }
+
+
+# ─── SF-618 Stock vs necesidad de repuestos ──────────────────────────────────
+@router.get("/stock-check/{wo_id}")
+def stock_check(wo_id: str, db: Session = Depends(get_db)):
+    """SF-618 NF-13 — Cruza materiales requeridos por la OT con stock disponible."""
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return {"error": "WO not found"}
+    items = []
+    for m in (wo.materials or []):
+        if not isinstance(m, dict):
+            continue
+        required = float(m.get("quantity") or m.get("qty_required") or 0)
+        available = float(m.get("qty_available") or 0)
+        status = "ok" if available >= required else ("partial" if available > 0 else "out_of_stock")
+        items.append({
+            "code": m.get("code") or m.get("material_code"),
+            "description": m.get("description"),
+            "required": required,
+            "available": available,
+            "shortfall": max(0, required - available),
+            "status": status,
+        })
+    items.sort(key=lambda x: {"out_of_stock": 0, "partial": 1, "ok": 2}[x["status"]])
+    return {
+        "wo_id": wo_id,
+        "wo_number": wo.wo_number,
+        "items": items,
+        "summary": {
+            "total": len(items),
+            "ok": sum(1 for i in items if i["status"] == "ok"),
+            "partial": sum(1 for i in items if i["status"] == "partial"),
+            "out_of_stock": sum(1 for i in items if i["status"] == "out_of_stock"),
+        },
+        "todo": "Reemplazar qty_available embebido por consulta real-time a tabla bodega + endpoint POST de pedido",
+    }
+
+
+# ─── SF-619 Estandarización datos técnicos ───────────────────────────────────
+@router.get("/canonical-data-status")
+def canonical_data_status(plant_id: str | None = None, db: Session = Depends(get_db)):
+    """SF-619 NF-14 — Estado de unificación de datos canónicos (TL, planning groups, puestos, costos)."""
+    from api.database.models import HierarchyNodeModel, WorkforceModel, SupportEquipmentModel
+    plant_filter = lambda q, m: q.filter(m.plant_id == plant_id) if plant_id else q
+    return {
+        "todo": "Definir tabla canonical_master + migración de fuentes legacy + API única de consulta",
+        "implemented": False,
+        "current_sources": {
+            "hierarchy_nodes": plant_filter(db.query(HierarchyNodeModel), HierarchyNodeModel).count(),
+            "workforce": plant_filter(db.query(WorkforceModel), WorkforceModel).count(),
+            "support_equipment": plant_filter(db.query(SupportEquipmentModel), SupportEquipmentModel).count(),
+            "managed_wos": plant_filter(db.query(ManagedWorkOrderModel), ManagedWorkOrderModel).count(),
+        },
+        "fragmentation": "MEDIA — datos viven en 4+ tablas distintas, sin tabla canonical_master",
+    }
+
+
+# ─── SF-620 Automatización generación OT ─────────────────────────────────────
+@router.post("/auto-generate-wo/{request_id}")
+def auto_generate_wo(request_id: str, db: Session = Depends(get_db)):
+    """SF-620 NF-15 — Genera una OT completa desde un aviso usando heurística + IA.
+
+    Flujo: WR aprobado → llama create_from_work_request (existente) que ya
+    propaga ops/materials/risk/photos. Devuelve la OT generada para revisión.
+    """
+    from api.database.models import WorkRequestModel
+    from api.services import managed_wo_service
+    wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+    if not wr:
+        return {"error": "WR not found"}
+    if wr.status not in ("VALIDATED", "APPROVED", "ASSIGNED", "APROBADO"):
+        return {"error": "WR must be approved first", "current_status": wr.status}
+    result = managed_wo_service.create_from_work_request(db, request_id, planned_by="auto-generate")
+    if not result:
+        return {"error": "Failed to create OT"}
+    return {
+        "wo_id": result.get("wo_id"),
+        "wo_number": result.get("wo_number"),
+        "status": result.get("status"),
+        "auto_generated_at": datetime.now().isoformat(),
+        "edit_required": True,
+        "todo": "Métrica % de OTs auto-generadas que requieren <X% edición humana (NF-15 acceptance criteria)",
+    }
+
+
+# ─── SF-622 Definición de perfiles de mantenedores ───────────────────────────
+@router.get("/workforce-profiles")
+def workforce_profiles(plant_id: str | None = None, db: Session = Depends(get_db)):
+    """SF-622 NF-17 — Perfiles estándar agrupados por specialty + certificaciones."""
+    from api.database.models import WorkforceModel
+    q = db.query(WorkforceModel)
+    if plant_id:
+        q = q.filter(WorkforceModel.plant_id == plant_id)
+    by_profile = defaultdict(list)
+    for w in q.all():
+        sp = (getattr(w, "specialty", None) or "OTRO").upper()
+        by_profile[sp].append({
+            "worker_id": w.worker_id,
+            "name": getattr(w, "name", w.worker_id),
+            "skills": getattr(w, "skills", None),
+            "active": getattr(w, "active", None),
+        })
+    profiles = [
+        {
+            "profile": k,
+            "count": len(v),
+            "members": v[:50],
+            "expected_certifications": _expected_certs(k),
+        }
+        for k, v in by_profile.items()
+    ]
+    profiles.sort(key=lambda p: -p["count"])
+    return {
+        "profiles": profiles,
+        "total_workers": sum(p["count"] for p in profiles),
+        "todo": "Tabla certifications con expiry + check vigencia + workflow renovación",
+    }
+
+
+def _expected_certs(profile: str) -> list[str]:
+    base = ["LOTO", "Trabajo en altura"]
+    extras = {
+        "MECA": ["Soldadura básica", "Izaje"],
+        "ELEC": ["NFPA 70E", "Tableros eléctricos", "Motores BT"],
+        "INST": ["Calibración 4-20mA", "HART", "Lazos de control"],
+        "LUBR": ["Manejo lubricantes ISO", "MSDS"],
+        "PRED": ["Cat I Vibraciones", "Termografía Nivel I"],
+    }
+    return base + extras.get(profile, [])
+
+
+# ─── SF-623 IA estándar job completo ─────────────────────────────────────────
+@router.get("/ai-job-standard/{wo_id}")
+def ai_job_standard(wo_id: str, db: Session = Depends(get_db)):
+    """SF-623 NF-18 — Devuelve estándar job sugerido (ops + materials + docs) por IA."""
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return {"error": "WO not found"}
+    # Heurística: agregar templates por wo_type + reusar /work-documents
+    docs_resp = work_documents(wo_id, db)
+    coverage = {
+        "operations": len(wo.operations or []),
+        "materials": len(wo.materials or []),
+        "support_equipment": len(wo.support_equipment or []),
+        "ai_suggested_docs": len(docs_resp.get("ai_suggested", [])),
+        "manual_docs": len(docs_resp.get("manual_documents", [])),
+    }
+    score = sum(1 for v in coverage.values() if v > 0) / len(coverage) * 100
+    return {
+        "wo_id": wo_id,
+        "wo_number": wo.wo_number,
+        "coverage": coverage,
+        "completeness_pct": round(score, 1),
+        "ai_suggested": {
+            "documents": docs_resp.get("ai_suggested", []),
+            "todo_ops": "Reemplazar pass-through por templates + Claude generation por wo_type",
+            "todo_materials": "BOM histórico para equipos similares con mismo failure_mode",
+        },
+    }
+
+
+# ─── SF-616 Visualización expandible puestos de trabajo ──────────────────────
+@router.get("/workstation-expandable/{wo_id}")
+def workstation_expandable(wo_id: str, db: Session = Depends(get_db)):
+    """SF-616 NF-11 — Vista expandible de puestos de trabajo requeridos vs asignados/disponibles."""
+    from api.database.models import WorkforceModel
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return {"error": "WO not found"}
+    # Agregar por specialty
+    by_spec = defaultdict(lambda: {"required_qty": 0, "required_hours": 0.0, "assigned": []})
+    for op in (wo.operations or []):
+        sp = (op.get("specialty") or "MECA").upper()
+        by_spec[sp]["required_qty"] += int(op.get("quantity") or 1)
+        by_spec[sp]["required_hours"] += float(op.get("hours") or op.get("duration") or 0) * int(op.get("quantity") or 1)
+    for w in (wo.assigned_workers or []):
+        sp = (w.get("specialty") if isinstance(w, dict) else "").upper() or "?"
+        by_spec[sp]["assigned"].append(w.get("worker_id") if isinstance(w, dict) else str(w))
+    # Disponibilidad por specialty en plant
+    avail_q = db.query(WorkforceModel)
+    if wo.plant_id:
+        avail_q = avail_q.filter(WorkforceModel.plant_id == wo.plant_id)
+    avail = defaultdict(int)
+    for w in avail_q.all():
+        sp = (getattr(w, "specialty", None) or "?").upper()
+        avail[sp] += 1
+    workstations = []
+    for sp, d in by_spec.items():
+        workstations.append({
+            "specialty": sp,
+            "required_qty": d["required_qty"],
+            "required_hours": round(d["required_hours"], 2),
+            "assigned_count": len(d["assigned"]),
+            "assigned_ids": d["assigned"],
+            "available_pool": avail.get(sp, 0),
+            "gap": max(0, d["required_qty"] - len(d["assigned"])),
+        })
+    return {
+        "wo_id": wo_id,
+        "wo_number": wo.wo_number,
+        "workstations": workstations,
+        "summary": {
+            "total_required_hh": round(sum(w["required_hours"] for w in workstations), 2),
+            "total_assigned": sum(w["assigned_count"] for w in workstations),
+            "total_gap": sum(w["gap"] for w in workstations),
+        },
+    }
+
+
+# ─── SF-625 Recursos internos vs externos ────────────────────────────────────
+@router.get("/resources-internal-external")
+def resources_internal_external(plant_id: str | None = None, db: Session = Depends(get_db)):
+    """SF-625 NF-20 — Distinción visual entre recursos internos vs externos.
+
+    Heurística: support_equipment con ownership='ARRENDADO' = externo; resto interno.
+    Workforce todos internos por ahora (no hay flag externo en modelo actual).
+    """
+    from api.database.models import WorkforceModel, SupportEquipmentModel
+    se_q = db.query(SupportEquipmentModel)
+    if plant_id:
+        se_q = se_q.filter(SupportEquipmentModel.plant_id == plant_id)
+    equipment = []
+    for e in se_q.all():
+        is_external = (getattr(e, "ownership", "") or "").upper() == "ARRENDADO"
+        equipment.append({
+            "id": e.equipment_id,
+            "name": e.name,
+            "type": e.equipment_type,
+            "is_external": is_external,
+            "trigger_quotation_flow": is_external,
+        })
+    wf_q = db.query(WorkforceModel)
+    if plant_id:
+        wf_q = wf_q.filter(WorkforceModel.plant_id == plant_id)
+    return {
+        "equipment": equipment,
+        "workforce_count": wf_q.count(),
+        "todo": "Agregar campo workforce.is_external + flujo quotation/OC para externos",
+    }
+
+
 # ─── SF-627 Tareas en paralelo (consolidación) ───────────────────────────────
 @router.get("/parallel-duration/{wo_id}")
 def parallel_duration(wo_id: str, db: Session = Depends(get_db)):

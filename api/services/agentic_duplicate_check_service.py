@@ -54,6 +54,22 @@ def _text_of(wr: WorkRequestModel) -> str:
     return str(desc or "")
 
 
+def _failure_signature(wr: WorkRequestModel) -> tuple[str, str, str]:
+    """Jorge 2026-05-04 — extrae (symptom, cause, object_part) del problem_description.
+
+    Estos 3 campos los rellena la IA al clasificar el aviso (failure_symptom,
+    failure_cause, failure_object_part). Si dos WRs sobre el mismo equipo
+    comparten los 3, la confianza de que sean el mismo problema es muy alta —
+    independiente de cómo el usuario describió la falla en texto libre.
+    """
+    desc = wr.problem_description if isinstance(wr.problem_description, dict) else {}
+    return (
+        str(desc.get("failure_symptom") or "").strip().upper(),
+        str(desc.get("failure_cause") or "").strip().upper(),
+        str(desc.get("failure_object_part") or "").strip().upper(),
+    )
+
+
 def check_duplicates(
     db: Session,
     description: str,
@@ -62,8 +78,9 @@ def check_duplicates(
     priority: str | None = None,
     candidate_wr_id: str | None = None,
     lookback_days: int = 14,
-    threshold: float = 0.55,
+    threshold: float = 0.7,
     limit: int = 5,
+    incoming_signature: tuple[str, str, str] | None = None,
 ) -> dict:
     """Return likely-duplicate WRs for the given candidate description.
 
@@ -113,12 +130,28 @@ def check_duplicates(
                 continue
         text = _text_of(wr)
         base_score = _similarity(description, text)
-        if base_score < threshold:
+        # Jorge 2026-05-04 — segundo match obligatorio: si el WR entrante trae
+        # signature (symptom/cause/object_part) y el candidato la tiene también,
+        # exigimos match en al menos 2 de 3 dimensiones. Si las 3 coinciden,
+        # boost +0.2; si solo 0-1 coincide, descarta (evita falsos positivos
+        # tipo "palas mecánicas" matcheando con "temperatura motor").
+        signature_boost = 0.0
+        if incoming_signature and any(incoming_signature):
+            cand_sig = _failure_signature(wr)
+            if any(cand_sig):
+                matches = sum(1 for a, b in zip(incoming_signature, cand_sig) if a and b and a == b)
+                if matches >= 3:
+                    signature_boost = 0.2
+                elif matches == 2:
+                    signature_boost = 0.05
+                else:
+                    continue  # mismo equipo pero falla totalmente distinta → no es duplicado
+        if base_score + signature_boost < threshold:
             continue
         # Time-decay: factor que multiplica el score (1.0 hoy → ~0.5 a 7d → ~0.25 a 14d)
         age_days = max(0, (now - wr.created_at).total_seconds() / 86400) if wr.created_at else 0
         decay = math.exp(-age_days / 7.0)
-        final_score = base_score * (0.5 + 0.5 * decay)  # mezcla 50% pure + 50% time-weighted
+        final_score = (base_score + signature_boost) * (0.5 + 0.5 * decay)
         scored.append((final_score, wr, text, base_score, decay))
     scored.sort(key=lambda r: r[0], reverse=True)
 

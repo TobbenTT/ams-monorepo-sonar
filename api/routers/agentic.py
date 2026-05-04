@@ -966,7 +966,13 @@ class DuplicateCheckRequest(BaseModel):
     priority: str | None = Field(default=None, max_length=4)  # P1/P2/P3/P4 — severity filter
     candidate_wr_id: str | None = Field(default=None, max_length=50)  # para negative-pair memory
     lookback_days: int = Field(default=14, ge=1, le=60)
-    threshold: float = Field(default=0.55, ge=0.1, le=0.99)
+    threshold: float = Field(default=0.7, ge=0.1, le=0.99)
+    # Jorge 2026-05-04 — segundo match obligatorio por categoría de falla.
+    # Si la IA ya clasificó el WR entrante con failure_symptom/cause/object_part,
+    # el dedup compara contra esos campos del candidato (no solo texto libre).
+    failure_symptom: str | None = Field(default=None, max_length=120)
+    failure_cause: str | None = Field(default=None, max_length=120)
+    failure_object_part: str | None = Field(default=None, max_length=120)
 
 
 @router.post("/agentic/duplicate-check")
@@ -979,6 +985,11 @@ def duplicate_check(
     aplica time-decay exponencial (7d) y filtro de severidad ±2 niveles. Si se pasa
     candidate_wr_id, también excluye pares dismisseados previamente (negative-pair memory)."""
     from api.services.agentic_duplicate_check_service import check_duplicates
+    sig = (
+        (data.failure_symptom or "").strip().upper(),
+        (data.failure_cause or "").strip().upper(),
+        (data.failure_object_part or "").strip().upper(),
+    )
     return check_duplicates(
         db=db,
         description=data.description,
@@ -988,6 +999,7 @@ def duplicate_check(
         candidate_wr_id=getattr(data, "candidate_wr_id", None),
         lookback_days=data.lookback_days,
         threshold=data.threshold,
+        incoming_signature=sig if any(sig) else None,
     )
 
 

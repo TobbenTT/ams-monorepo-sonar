@@ -2,7 +2,7 @@
 // Reemplaza los 3 window.prompt del flujo CE1 con un formulario decente:
 // dropdown de técnico (filtrado por op.specialty), dropdown de turno e input HH.
 import { useState, useEffect, useMemo } from 'react';
-import { X, Clock, User, Hash } from 'lucide-react';
+import { X, Clock, User, Calendar } from 'lucide-react';
 import { listTechnicians, notifyManagedWOPartial } from '../api';
 import { useToast } from './Toast';
 
@@ -20,9 +20,21 @@ export default function PartialNotifyModal({
   const [loadingTechs, setLoadingTechs] = useState(false);
   const [techId, setTechId] = useState('');
   const [shift, setShift] = useState('day');
-  const [hours, setHours] = useState('1');
+  // Jorge 2026-05-04 (#18): HH no se digita. Es duración × cantidad personas.
+  const [duration, setDuration] = useState('1');   // horas
+  const [people, setPeople] = useState('1');       // cantidad personas
+  // Jorge 2026-05-04 (#19): captura fecha + hora reales de ejecución.
+  const [execDate, setExecDate] = useState(''); // YYYY-MM-DD
+  const [execTime, setExecTime] = useState(''); // HH:MM
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // HH calculadas auto = duración × personas (readonly visible)
+  const hh = useMemo(() => {
+    const d = parseFloat(duration) || 0;
+    const p = parseInt(people, 10) || 0;
+    return Math.round(d * p * 100) / 100;
+  }, [duration, people]);
 
   useEffect(() => {
     if (!open) return;
@@ -34,10 +46,15 @@ export default function PartialNotifyModal({
       })
       .catch(() => setTechs([]))
       .finally(() => setLoadingTechs(false));
-    // Pre-fill HH con planificadas
-    setHours(String(op?.hours || op?.planned_hours || 1));
+    setDuration(String(op?.planned_duration || op?.hours || 1));
+    setPeople(String(op?.quantity || op?.workers_count || 1));
     setTechId('');
     setShift(wo?.shift || 'day');
+    // Default date/time = ahora (formato local sin zona)
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    setExecDate(`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`);
+    setExecTime(`${pad(now.getHours())}:${pad(now.getMinutes())}`);
     setNote('');
   }, [open, plantId, op, wo]);
 
@@ -57,17 +74,21 @@ export default function PartialNotifyModal({
 
   if (!open) return null;
   const submit = async () => {
-    const h = parseFloat(hours);
-    if (!h || h <= 0) { toast.error('HH inválidas'); return; }
+    if (!hh || hh <= 0) { toast.error('Duración × personas debe ser > 0'); return; }
     if (!techId) { toast.error('Seleccione técnico'); return; }
+    if (!execDate || !execTime) { toast.error('Fecha y hora de ejecución obligatorias'); return; }
     setSubmitting(true);
     try {
+      const noteParts = [];
+      if (note.trim()) noteParts.push(note.trim());
+      noteParts.push(`exec_at=${execDate}T${execTime}`);
+      noteParts.push(`duration=${duration}h × ${people}p`);
       const res = await notifyManagedWOPartial(wo.wo_id, {
         op_seq: op?.op_number || op?.seq || (opIndex + 1),
-        hours: h,
+        hours: hh,
         technician_id: techId,
         shift,
-        note: note.trim() || null,
+        note: noteParts.join(' · '),
       });
       if (res.final_auto_triggered) {
         toast.success('✓ Todas las ops al 100% — Notificación FINAL gatillada automáticamente');
@@ -123,8 +144,8 @@ export default function PartialNotifyModal({
             )}
           </div>
 
-          {/* Turno + HH (grid) */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Jorge 2026-05-04 — Turno + Fecha/Hora ejecución (#19) */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-semibold text-gray-700 mb-1 block">Turno</label>
               <select value={shift} onChange={e => setShift(e.target.value)}
@@ -135,11 +156,39 @@ export default function PartialNotifyModal({
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                <Hash className="w-3 h-3" /> HH parciales
+                <Calendar className="w-3 h-3" /> Fecha
               </label>
-              <input type="number" min="0.25" step="0.25" value={hours}
-                onChange={e => setHours(e.target.value)}
+              <input type="date" value={execDate} onChange={e => setExecDate(e.target.value)}
                 className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+                <Clock className="w-3 h-3" /> Hora
+              </label>
+              <input type="time" value={execTime} onChange={e => setExecTime(e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30" />
+            </div>
+          </div>
+
+          {/* Jorge 2026-05-04 (#18) — HH NUNCA se digita: duración × personas → HH auto */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">Duración (h)</label>
+              <input type="number" min="0.25" step="0.25" value={duration}
+                onChange={e => setDuration(e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">Personas</label>
+              <input type="number" min="1" step="1" value={people}
+                onChange={e => setPeople(e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">HH (auto)</label>
+              <div className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2 text-sm font-mono text-gray-800">
+                {hh.toFixed(2)}
+              </div>
             </div>
           </div>
 

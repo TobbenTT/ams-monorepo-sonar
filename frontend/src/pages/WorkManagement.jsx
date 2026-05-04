@@ -34,16 +34,9 @@ export default function WorkManagement() {
     setSearchParams({ tab }, { replace: true });
   };
 
-  // Read tab from URL on mount
+  // Sync tab + handle openWr/openWo params whenever URL changes
   useEffect(() => {
     const urlTab = searchParams.get('tab');
-    if (urlTab && urlTab !== activeTab) setActiveTabState(urlTab);
-  }, []);
-
-  // Jorge (2026-04-20): abrir un aviso directamente desde ?openWr=WR-XXX
-  // y una OT directamente desde ?openWo=OT-XXX (navegación bidireccional
-  // WR ↔ OT, ambos abren en nueva pestaña para no perder el contexto).
-  useEffect(() => {
     const openWr = searchParams.get('openWr');
     const openWo = searchParams.get('openWo');
     if (openWr) {
@@ -60,8 +53,10 @@ export default function WorkManagement() {
       next.delete('openWo');
       next.set('tab', 'planning');
       setSearchParams(next, { replace: true });
+    } else if (urlTab && urlTab !== activeTab) {
+      setActiveTabState(urlTab);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // viewMode change does NOT switch tabs — user stays on current tab
   const [phaseCounts, setPhaseCounts] = useState(null);

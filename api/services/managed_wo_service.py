@@ -1099,11 +1099,25 @@ def compute_close_gates(wo, candidate_actual_hours: float | None = None, candida
     open_warnings = [n for n in notes if isinstance(n, dict) and any(tag in (n.get("note") or "").upper() for tag in ["[WARN]", "[BLOCKED]", "[PENDING]"]) and not n.get("resolved")]
     no_open_notifs = len(open_warnings) == 0
 
+    # SF-571 — G6: cada operación debe tener HH reales notificadas (>0).
+    # No basta con completion_pct=100 si falta el dato granular para KPIs
+    # (Adherencia/Cumplimiento dependen de actual_hours por op).
+    ops_missing_hh = [
+        o.get("op_number") or i+1
+        for i, o in enumerate(ops)
+        if float(o.get("actual_hours") or 0) <= 0
+    ]
+    ops_hh_notified = bool(ops) and len(ops_missing_hh) == 0
+
     return {
         "gates": [
             {"id": "ALL_OPS_DONE", "label": "Todas las operaciones al 100%",
              "passed": all_ops_done, "blocking": True, "auto": True,
              "detail": f"{len(op_pcts) - len(incomplete_ops)}/{len(op_pcts)} ops completas" + (f" — pendientes: #{', #'.join(map(str, incomplete_ops))}" if incomplete_ops else "")},
+            {"id": "OPS_HH_NOTIFIED", "label": "HH reales notificadas por cada operación",
+             "passed": ops_hh_notified, "blocking": True, "auto": True,
+             "detail": (f"{len(ops) - len(ops_missing_hh)}/{len(ops)} ops con HH real" +
+                        (f" — faltan: #{', #'.join(map(str, ops_missing_hh))}" if ops_missing_hh else ""))},
             {"id": "HH_VARIANCE_OK", "label": "Variance HH plan vs real ≤ 25%",
              "passed": hh_variance_ok, "blocking": True, "auto": True,
              "detail": f"plan {plan_hours}h vs real {actual_hours}h → {variance_pct}% variance",

@@ -412,6 +412,18 @@ export const getOpsCostPerEquipment = (plantId, limit = 10) => get('/analytics-d
 // SF-574 — Cumplimiento de Programa (HH ejecutadas vs HH planificadas en período)
 export const getProgramCompliance = (plantId, period = 'week', refDate) =>
   get('/analytics-dash/program-compliance', { plant_id: plantId, period, ref_date: refDate });
+// SF-575 — Adherencia al Programa (OTs ejecutadas en fecha exacta planificada)
+export const getProgramAdherence = (plantId, period = 'week', refDate) =>
+  get('/analytics-dash/program-adherence', { plant_id: plantId, period, ref_date: refDate });
+// SF-576 — Avisos Atrasados + OT Atrasadas (ejecutadas no cerradas)
+export const getBacklogAlerts = (plantId) =>
+  get('/analytics-dash/backlog-alerts', { plant_id: plantId });
+// SF-585 — Tiempos de ciclo end-to-end (Aviso → OT → Plan → Ejec → Close)
+export const getCycleTimes = (plantId, days = 90) =>
+  get('/analytics-dash/cycle-times', { plant_id: plantId, days });
+// SF-586 — Correlación equipos críticos (failure_count + availability + MTBF/MTTR)
+export const getReliabilityCorrelation = (plantId, days = 90, limit = 10) =>
+  get('/analytics-dash/reliability-correlation', { plant_id: plantId, days, limit });
 
 // Triggers an authenticated file download from the reports-export router.
 export async function downloadReportXlsx(path, params) {

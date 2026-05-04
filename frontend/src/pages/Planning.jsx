@@ -7,7 +7,7 @@ import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Eye, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Download, AlertCircle, Plus, XCircle, Ban,
-  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2, Sparkles, Lock, Loader2
+  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2, Sparkles, Lock, Loader2, FileSpreadsheet
 } from 'lucide-react';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
@@ -1848,6 +1848,60 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       <Save className="w-3.5 h-3.5" />
                       {savingOT ? 'Saving…' : 'Save OT'}
                     </button>
+                    {/* SF-611 NF-7 — Exportar OT a Excel */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const wo = selectedOT;
+                        if (!wo) return;
+                        const headerRows = [
+                          ['Campo', 'Valor'],
+                          ['OT', wo.wo_number || wo.wo_id],
+                          ['Equipo', wo.equipment_tag || ''],
+                          ['Tipo', wo.wo_type || ''],
+                          ['Prioridad', wo.priority_code || ''],
+                          ['Estado', wo.status || ''],
+                          ['Descripción', wo.description || ''],
+                          ['Planned Start', wo.planned_start || ''],
+                          ['Planned End', wo.planned_end || ''],
+                          ['Actual Start', wo.actual_start || ''],
+                          ['Actual End', wo.actual_end || ''],
+                          ['HH plan', wo.estimated_hours ?? 0],
+                          ['HH real', wo.actual_hours ?? 0],
+                          ['Costo plan', wo.budget_amount ?? 0],
+                          ['Costo real', wo.actual_total_cost ?? 0],
+                        ];
+                        const opsRows = (editOps || []).map((o, i) => [
+                          o.op_number || i+1,
+                          o.description || '',
+                          o.specialty || '',
+                          o.quantity || 1,
+                          o.hours || o.duration || 0,
+                          (parseFloat(o.quantity)||1) * (parseFloat(o.hours)||parseFloat(o.duration)||0),
+                          o.actual_hours || 0,
+                          o.completion_pct || 0,
+                        ]);
+                        const matsRows = (editMats || []).map(m => [
+                          m.code || m.material_code || '',
+                          m.description || '',
+                          m.quantity || m.qty_required || 0,
+                          m.unit || '',
+                          m.cost_unit || 0,
+                        ]);
+                        downloadExport({
+                          format: 'EXCEL',
+                          sheets: [
+                            { name: 'OT', rows: headerRows },
+                            { name: 'Operaciones', headers: ['#', 'Descripción', 'Especialidad', 'Cantidad', 'Duración (h)', 'HH plan', 'HH real', '% completo'], rows: opsRows },
+                            { name: 'Materiales', headers: ['Código', 'Descripción', 'Cantidad', 'Unidad', 'Costo unit.'], rows: matsRows },
+                          ],
+                        }, `OT-${wo.wo_number || wo.wo_id}.xlsx`);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 flex items-center gap-1.5"
+                      title="Exportar OT a Excel (header + operaciones + materiales)"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                    </button>
                     <div className="w-px h-6 bg-gray-200 mx-1" />
                     <button onClick={() => setModalFullscreen(f => !f)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500" title={modalFullscreen ? 'Resize' : 'Maximize'}>
                       {modalFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -2033,17 +2087,20 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               const timePart = editDates.start ? editDates.start.slice(11, 16) : '08:00';
                               const newStart = datePart ? `${datePart}T${timePart}` : '';
                               setEditDates(d => {
+                                // SF-596/597 TZ-safe formatter (idem línea ~654)
+                                const fmt = dt => {
+                                  const p = n => String(n).padStart(2, '0');
+                                  return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}`;
+                                };
                                 const opsHrs = editOps.reduce((s, o) => s + ((parseFloat(o.quantity)||1)*(parseFloat(o.hours)||parseFloat(o.duration)||0)),0);
                                 const hrs = opsHrs > 0 ? opsHrs : (wo.estimated_hours || 0);
                                 if (newStart && hrs > 0) {
-                                  const endDt = new Date(new Date(newStart).getTime() + hrs * 3600000);
-                                  return { start: newStart, end: endDt.toISOString().slice(0, 16) };
+                                  return { start: newStart, end: fmt(new Date(new Date(newStart).getTime() + hrs * 3600000)) };
                                 }
                                 if (d.start && d.end && newStart) {
                                   const durMs = new Date(d.end) - new Date(d.start);
                                   if (durMs > 0) {
-                                    const shifted = new Date(new Date(newStart).getTime() + durMs);
-                                    return { start: newStart, end: shifted.toISOString().slice(0, 16) };
+                                    return { start: newStart, end: fmt(new Date(new Date(newStart).getTime() + durMs)) };
                                   }
                                 }
                                 return { start: newStart, end: d.end && d.end < newStart ? newStart : d.end };
@@ -2061,8 +2118,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 if (d.end) {
                                   const durMs = new Date(d.end) - new Date(d.start);
                                   if (durMs > 0) {
-                                    const shifted = new Date(new Date(newStart).getTime() + durMs);
-                                    return { start: newStart, end: shifted.toISOString().slice(0, 16) };
+                                    const p = n => String(n).padStart(2, '0');
+                                    const dt = new Date(new Date(newStart).getTime() + durMs);
+                                    const shifted = `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}`;
+                                    return { start: newStart, end: shifted };
                                   }
                                 }
                                 return { ...d, start: newStart };

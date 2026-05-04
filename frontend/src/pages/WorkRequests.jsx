@@ -2605,7 +2605,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           onCloseWR={handleClose}
                           onSaveEdit={handleSaveEdit}
                           onPlannerCreateOT={handlePlannerCreateOT}
-                          onGoToOT={() => navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(wrItem.wo_number || '')}`)}
+                          onGoToOT={() => { setSelected(null); navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(wrItem.wo_number || '')}`); }}
 
                           onAIPriorityDecision={async (id, dec) => {
                             try {

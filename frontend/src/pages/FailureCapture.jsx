@@ -730,8 +730,10 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             const text = res.text || res.transcription || '';
             if (text) {
               setF('whatHappens', text);
-              toast.success('Voice transcribed — AI analyzing...');
-              handleAiSuggest(text);
+              // Jorge 2026-05-04: no auto-ejecutar IA con voz/foto. El usuario
+              // aprieta "AI Assistant" cuando quiere análisis (ahorra tokens y
+              // unifica UX con el flujo de texto).
+              toast.success('Voz transcrita — apretá AI Assistant cuando quieras analizar');
             } else {
               toast.error('No speech detected');
             }
@@ -784,8 +786,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       const fullText = (baseText ? baseText + ' ' : '') + finalTranscript.trim();
       if (finalTranscript.trim()) {
         setF('whatHappens', fullText);
-        toast.success('Voice captured — AI analyzing...');
-        handleAiSuggest(fullText);
+        // Jorge 2026-05-04: idem comentario arriba — no auto-IA con voz/foto.
+        toast.success('Voz capturada — apretá AI Assistant cuando quieras analizar');
       }
     };
 
@@ -802,12 +804,12 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const newPhoto = ev.target.result;
-      setPhotos(prev => {
-        const updated = [...prev, newPhoto];
-        // SF-215: Auto-trigger vision analysis after photo capture
-        setTimeout(() => autoAnalyzePhoto(updated), 300);
-        return updated;
-      });
+      setPhotos(prev => [...prev, newPhoto]);
+      // Jorge 2026-05-04: deshabilitar auto-trigger de Vision al pegar foto.
+      // Antes (SF-215) disparaba autoAnalyzePhoto solo → quemaba tokens y
+      // mostraba "analizando foto con IA" aunque el usuario aún no hubiera
+      // terminado de cargar contexto. Ahora el análisis va por el botón
+      // "AI Assistant" unificado.
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -1489,11 +1491,12 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             </div>
           </div>
 
-          {/* D4 Tanda D — Impacto operacional separado de prioridad. Jorge:
-              "me falta esto del impacto". 4 niveles para FMECA + matriz prio. */}
+          {/* Jorge 2026-05-04: rebranding "Impacto operacional" → "Nivel de
+              riesgo" para alinear con el campo equivalente en la OT (mismo
+              concepto, distinto nombre confundía al usuario). */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-              Impacto operacional
+              Nivel de riesgo
               <span className="ml-2 text-[10px] font-normal text-gray-400 normal-case">¿Cómo afecta la producción si no se atiende?</span>
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -1641,7 +1644,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                     Analizando...
                   </>
                 ) : (
-                  <>{photos.length > 0 ? '📸 Analyze Photo with AI' : '✨ AI Assist'}</>
+                  <>✨ AI Assistant</>
                 )}
               </button>
               {detectedEquipment && !form.whereTag && (

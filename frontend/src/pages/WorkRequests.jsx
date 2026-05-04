@@ -409,7 +409,10 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
         <div className="flex items-start justify-between px-6 py-4 border-b border-border sticky top-0 bg-card z-10 rounded-t-2xl">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-sm font-bold text-muted-foreground" title={item.id}>{item.display_id || item.id}</span>
+              {/* Jorge 2026-05-04: el tooltip mostraba el id legacy (#166)
+                  mientras la pantalla mostraba el display_id nuevo (#116) →
+                  confusión. Ahora el title coincide con lo visible. */}
+              <span className="font-mono text-sm font-bold text-muted-foreground" title={item.display_id || item.id}>{item.display_id || item.id}</span>
               <span className={`text-xs px-2 py-0.5 rounded font-medium ${statusColor(item.status)}`}>
                 {statusLabels[item.status] ?? item.status}
               </span>
@@ -2286,7 +2289,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           )}
                           {/* Jorge 2026-04-23 17:38: quitar prefijo "WR-" del número de aviso */}
                           {/* Mostrar AV-NNNNN si hay aviso_number, sino UUID corto */}
-                          <p className="font-mono text-xs text-muted-foreground" title={req.id}>{req.display_id || String(req.id || '').slice(0, 8)}</p>
+                          <p className="font-mono text-xs text-muted-foreground" title={req.display_id || String(req.id || '').slice(0, 8)}>{req.display_id || String(req.id || '').slice(0, 8)}</p>
                           {isFastTrackWR && (
                             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-300 dark:border-amber-700 flex items-center gap-0.5">
                               <Zap size={8} /> FT

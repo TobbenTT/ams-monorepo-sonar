@@ -456,7 +456,9 @@ export default function Execution() {
     { id: 'today', label: 'Hoy', icon: Zap, count: activeWOs.length },
     { id: 'programado', label: '📅 Programado', icon: Calendar, count: activeWOs.filter(w => w.wo_type !== 'PM03' && !['P1', 'P2'].includes(w.priority_code)).length },
     { id: 'failures', label: '🚨 No Programado (PM03)', icon: AlertTriangle, count: failureWOs.length },
-    { id: 'avisos', label: '📨 Avisos', icon: Inbox, count: pendingWRs.length },
+    // Jorge 2026-05-04: tab "Avisos" eliminada de Execution. El supervisor
+    // ve solo OTs acá; si necesita revisar avisos sueltos va a Identification
+    // (mismo flujo que el planificador). Reduce ruido en la pantalla diaria.
     { id: 'notif', label: '📝 Notificación', icon: FileText, count: notifWOs.length },
     { id: 'close', label: 'Bandeja de Cierre', icon: CheckCircle, count: completedWOs.length },
     { id: 'week', label: 'Semana', icon: Calendar, count: activeWOs.length },
@@ -887,7 +889,7 @@ export default function Execution() {
                                     {/* SF-572 — notif parcial multi-turno con histórico técnico+turno+HH */}
                                     {wo.status === 'EN_EJECUCION' && (
                                       <button
-                                        title="Notificación parcial (modal: técnico+turno+HH)"
+                                        title="Notificación de operación (técnico · turno · HH)"
                                         onClick={() => setPartialModal({ wo, op, opIndex: i })}
                                         className="text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded p-0.5 text-[11px]">
                                         📋

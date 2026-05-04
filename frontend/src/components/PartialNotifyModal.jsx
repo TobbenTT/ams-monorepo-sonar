@@ -90,7 +90,10 @@ export default function PartialNotifyModal({
         <div className="flex items-center gap-3 px-5 py-3 border-b border-border bg-gradient-to-r from-purple-50 to-purple-100">
           <Clock className="w-5 h-5 text-purple-700" />
           <div className="flex-1">
-            <h3 className="text-base font-bold text-gray-900">Notificación parcial</h3>
+            {/* Jorge 2026-05-04: rebranding — el concepto "parcial" confunde
+                al usuario. La notificación es por operación; si quedan ops
+                pendientes el sistema infiere que es parcial automáticamente. */}
+            <h3 className="text-base font-bold text-gray-900">Notificación de operación</h3>
             <p className="text-xs text-gray-600 truncate">
               Op #{op?.op_number || (opIndex + 1)} · {(op?.description || '').slice(0, 50) || '—'}
             </p>
@@ -140,12 +143,15 @@ export default function PartialNotifyModal({
             </div>
           </div>
 
-          {/* Nota opcional */}
+          {/* Nota opcional — Jorge 2026-05-04: textarea multilinea (antes era
+              input). Acá los técnicos dejan harto comentario, una sola línea
+              cortaba la información. */}
           <div>
             <label className="text-xs font-semibold text-gray-700 mb-1 block">Nota (opcional)</label>
-            <input type="text" value={note} onChange={e => setNote(e.target.value)}
-              placeholder="Ej: avance al 60%, falta sello..."
-              className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30" />
+            <textarea
+              value={note} onChange={e => setNote(e.target.value)} rows={4}
+              placeholder="Ej: avance al 60%, falta sello del lado derecho. Se detecta vibración levemente sobre el tope.\nObservaciones para el siguiente turno..."
+              className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 resize-y" />
           </div>
 
           {/* Resumen plan vs */}

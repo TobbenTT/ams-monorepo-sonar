@@ -1789,7 +1789,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         const totalReal = costCats.reduce((s,c2) => s+c2.real, 0);
 
         return (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 md:pl-[240px]" onClick={() => { setSelectedOT(null); setModalFullscreen(false); }}>
+          // Jorge 2026-05-04: NO resetear modalFullscreen al cerrar — Gonzalo
+          // reportaba que a veces el modal abría reducido, a veces full. La
+          // causa era el reset a false al click backdrop. Ahora mantenemos
+          // la preferencia del usuario entre aperturas.
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 md:pl-[240px]" onClick={() => { setSelectedOT(null); }}>
             <div className={`bg-white rounded-2xl shadow-xl flex flex-col transition-all duration-300 ${modalFullscreen ? "w-full h-[94vh]" : "w-[90vw] max-w-5xl h-[85vh]"}`} onClick={e => e.stopPropagation()}>
 
               {/* HEADER */}

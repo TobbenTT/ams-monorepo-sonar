@@ -667,6 +667,200 @@ def reliability_correlation(
     }
 
 
+@router.get("/rework-detection")
+def rework_detection(
+    plant_id: str | None = None,
+    days: int = 90,
+    threshold_hours: int = 24,
+    db: Session = Depends(get_db),
+):
+    """SF-590 — Detección de retrabajos.
+
+    Identifica fallas que ocurren <`threshold_hours` después del cierre de una
+    OT previa sobre el MISMO equipment_tag. El "retrabajo" implica que la
+    intervención no resolvió el problema raíz.
+
+    Devuelve:
+      - rework_pairs: [{previous_wo, new_wo, gap_hours, equipment_tag, suspected_cause}]
+      - by_equipment: ranking de equipos con más retrabajos
+      - by_cause: distribución de causas (heurística sobre execution_notes)
+    """
+    now = datetime.now()
+    since = now - timedelta(days=days)
+
+    closed = _base_wo_query(db, plant_id).filter(
+        ManagedWorkOrderModel.status == "CERRADO",
+        ManagedWorkOrderModel.closed_at >= since,
+        ManagedWorkOrderModel.equipment_tag.isnot(None),
+    ).all()
+
+    by_tag = defaultdict(list)
+    for wo in closed:
+        if wo.closed_at:
+            by_tag[wo.equipment_tag].append(wo)
+
+    rework_pairs = []
+    cause_keywords = {
+        "procedimiento": ["procedimiento", "instructivo", "norma", "incorrecto"],
+        "repuesto": ["repuesto", "calidad", "defectuoso", "spare", "material"],
+        "operacion": ["operacion", "operador", "manejo", "uso"],
+        "instalacion": ["instalacion", "ajuste", "torque", "alineacion", "montaje"],
+    }
+
+    for tag, wos in by_tag.items():
+        wos.sort(key=lambda w: w.closed_at or now)
+        for i, prev in enumerate(wos):
+            for new in wos[i+1:]:
+                if not new.actual_start:
+                    continue
+                gap = (new.actual_start - prev.closed_at).total_seconds() / 3600.0
+                if 0 < gap <= threshold_hours:
+                    text = " ".join([
+                        (n.get("note") or "") for n in (new.execution_notes or [])
+                        if isinstance(n, dict)
+                    ]).lower()
+                    suspected = "no_categorizada"
+                    for cause, keys in cause_keywords.items():
+                        if any(k in text for k in keys):
+                            suspected = cause
+                            break
+                    rework_pairs.append({
+                        "previous_wo_id": prev.wo_id,
+                        "previous_wo_number": prev.wo_number,
+                        "previous_closed_at": prev.closed_at.isoformat() if prev.closed_at else None,
+                        "new_wo_id": new.wo_id,
+                        "new_wo_number": new.wo_number,
+                        "new_started_at": new.actual_start.isoformat() if new.actual_start else None,
+                        "equipment_tag": tag,
+                        "gap_hours": round(gap, 1),
+                        "suspected_cause": suspected,
+                        "wo_type": new.wo_type,
+                    })
+
+    by_equipment = defaultdict(int)
+    by_cause = defaultdict(int)
+    for r in rework_pairs:
+        by_equipment[r["equipment_tag"]] += 1
+        by_cause[r["suspected_cause"]] += 1
+
+    eq_ranking = [{"equipment_tag": k, "rework_count": v} for k, v in by_equipment.items()]
+    eq_ranking.sort(key=lambda x: -x["rework_count"])
+
+    return {
+        "period_days": days,
+        "threshold_hours": threshold_hours,
+        "total_reworks": len(rework_pairs),
+        "by_equipment": eq_ranking[:20],
+        "by_cause": dict(by_cause),
+        "pairs": rework_pairs[:100],
+    }
+
+
+@router.get("/cost-breakdown")
+def cost_breakdown(
+    plant_id: str | None = None,
+    days: int = 90,
+    expense_class: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """SF-588 — Subclasificación de gastos por Ubicación Técnica + clase.
+
+    Agrupa costos de OTs cerradas en últimos `days` por equipment_tag (UT proxy)
+    y desglosa en 5 clases de gasto:
+      - labor (mano de obra)
+      - material (repuestos)
+      - external (servicios externos)
+      - tools (herramientas/equipos especiales — derivado de support_equipment)
+      - other (resto)
+
+    Devuelve plan vs real para cada celda. Filtro opcional por expense_class
+    devuelve solo el desglose de esa clase para drill-down.
+    """
+    now = datetime.now()
+    since = now - timedelta(days=days)
+
+    q = _base_wo_query(db, plant_id).filter(
+        ManagedWorkOrderModel.closed_at.isnot(None),
+        ManagedWorkOrderModel.closed_at >= since,
+    )
+
+    by_tag = defaultdict(lambda: {
+        "wo_count": 0,
+        "budget": 0.0,
+        "labor_cost": 0.0,
+        "material_cost": 0.0,
+        "external_cost": 0.0,
+        "tools_cost": 0.0,
+        "actual_total": 0.0,
+    })
+
+    for wo in q.all():
+        tag = wo.equipment_tag or "SIN_EQUIPO"
+        d = by_tag[tag]
+        d["wo_count"] += 1
+        d["budget"] += float(wo.budget_amount or 0)
+        d["labor_cost"] += float(wo.labor_cost or 0)
+        d["material_cost"] += float(wo.material_cost or 0)
+        d["external_cost"] += float(wo.external_cost or 0)
+        # tools_cost: heurística — sum de hours × rate típica de support_equipment.
+        tools_h = sum(
+            float(s.get("hours") or 0)
+            for s in (wo.support_equipment or [])
+            if isinstance(s, dict)
+        )
+        d["tools_cost"] += tools_h * 50.0  # placeholder rate; real va por catálogo
+        d["actual_total"] += float(
+            wo.actual_total_cost
+            or (float(wo.labor_cost or 0) + float(wo.material_cost or 0) + float(wo.external_cost or 0))
+        )
+
+    rows = []
+    for tag, d in by_tag.items():
+        actual_total = d["actual_total"] or (d["labor_cost"] + d["material_cost"] + d["external_cost"] + d["tools_cost"])
+        budget = d["budget"]
+        variance_pct = round(((actual_total - budget) / budget * 100), 1) if budget > 0 else None
+        row = {
+            "equipment_tag": tag,
+            "wo_count": d["wo_count"],
+            "budget": round(budget, 2),
+            "actual_total": round(actual_total, 2),
+            "variance_pct": variance_pct,
+            "by_class": {
+                "labor":    round(d["labor_cost"], 2),
+                "material": round(d["material_cost"], 2),
+                "external": round(d["external_cost"], 2),
+                "tools":    round(d["tools_cost"], 2),
+                "other":    round(max(0.0, actual_total - d["labor_cost"] - d["material_cost"] - d["external_cost"] - d["tools_cost"]), 2),
+            },
+        }
+        if expense_class:
+            row["filtered_class_value"] = row["by_class"].get(expense_class.lower(), 0.0)
+        rows.append(row)
+
+    if expense_class:
+        rows.sort(key=lambda r: -r.get("filtered_class_value", 0))
+    else:
+        rows.sort(key=lambda r: -r["actual_total"])
+
+    totals_by_class = {
+        "labor":    round(sum(r["by_class"]["labor"] for r in rows), 2),
+        "material": round(sum(r["by_class"]["material"] for r in rows), 2),
+        "external": round(sum(r["by_class"]["external"] for r in rows), 2),
+        "tools":    round(sum(r["by_class"]["tools"] for r in rows), 2),
+        "other":    round(sum(r["by_class"]["other"] for r in rows), 2),
+    }
+
+    return {
+        "period_days": days,
+        "expense_class_filter": expense_class,
+        "total_equipment": len(rows),
+        "total_budget": round(sum(r["budget"] for r in rows), 2),
+        "total_actual": round(sum(r["actual_total"] for r in rows), 2),
+        "totals_by_class": totals_by_class,
+        "items": rows,
+    }
+
+
 @router.post("/reschedule-stale")
 def reschedule_stale(plant_id: str | None = None, db: Session = Depends(get_db)):
     """Jorge SF-513 — auto-mover a REPROGRAMADO las OTs PROGRAMADO/EN_EJECUCION

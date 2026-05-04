@@ -319,6 +319,110 @@ class AIAutoScheduleRequest(BaseModel):
 from pydantic import BaseModel as BaseModel2
 
 
+class ShiftContinuityRequest(BaseModel):
+    model_config = {"extra": "ignore"}
+    wo_id: str
+    shift_hours: float = 12.0     # duración del turno (default 12h, configurable)
+    strategy: str = "A"           # A=continuar en turno siguiente · B=mismo tec al día siguiente
+    start_at: str | None = None   # ISO; default = wo.planned_start
+
+
+@router.post("/shift-continuity-plan")
+def shift_continuity_plan(
+    data: ShiftContinuityRequest,
+    db: Session = Depends(get_db),
+):
+    """SF-562 — Plan de continuidad cuando una OT excede la duración del turno.
+
+    Dada una OT con estimated_hours > shift_hours, devuelve un plan de chunks
+    según la estrategia elegida:
+      - A (default): saldo al técnico del turno siguiente (noche).
+      - B: saldo al mismo técnico al día siguiente (post-descanso).
+
+    Respeta días de descanso (workforce.shift_pattern). NO transiciona la OT;
+    solo devuelve el plan para que el planificador lo confirme antes de aplicar.
+    """
+    from api.database.models import ManagedWorkOrderModel, WorkforceModel
+
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == data.wo_id).first()
+    if not wo:
+        raise HTTPException(status_code=404, detail="WO not found")
+
+    total_h = float(wo.estimated_hours or 0)
+    shift_h = max(1.0, float(data.shift_hours))
+    if total_h <= shift_h:
+        return {"requires_continuity": False, "total_hours": total_h, "shift_hours": shift_h, "chunks": []}
+
+    if data.start_at:
+        try:
+            cursor = datetime.fromisoformat(data.start_at)
+        except ValueError:
+            cursor = wo.planned_start or datetime.now()
+    else:
+        cursor = wo.planned_start or datetime.now()
+
+    workers = wo.assigned_workers or []
+    worker_ids = [w.get("worker_id") if isinstance(w, dict) else w for w in workers]
+    workforce_rows = (
+        db.query(WorkforceModel).filter(WorkforceModel.worker_id.in_(worker_ids)).all()
+        if worker_ids else []
+    )
+    rest_days = {}
+    for w in workforce_rows:
+        # shift_pattern típico: "DDDDNNN" o lista de off-days; fallback: ningún descanso conocido.
+        pattern = (getattr(w, "shift_pattern", "") or "").upper()
+        rest_days[w.worker_id] = set(i for i, ch in enumerate(pattern) if ch in ("X", "L", "R", "-"))
+
+    chunks = []
+    remaining = total_h
+    chunk_idx = 0
+    safety = 0
+    while remaining > 0 and safety < 20:
+        safety += 1
+        chunk_h = min(shift_h, remaining)
+
+        if data.strategy == "B" and chunk_idx > 0:
+            # Saltar al día siguiente, misma hora-de-inicio que el primer chunk.
+            cursor = cursor + timedelta(days=1)
+            # Saltar días de descanso si aplica al primer worker
+            if worker_ids and rest_days.get(worker_ids[0]):
+                while cursor.weekday() in rest_days[worker_ids[0]]:
+                    cursor = cursor + timedelta(days=1)
+            assigned_to = worker_ids[0] if worker_ids else None
+            shift_label = "siguiente_dia"
+        elif data.strategy == "A" and chunk_idx > 0:
+            # Saltar al siguiente bloque de shift_h horas (turno noche típicamente)
+            cursor = cursor + timedelta(hours=shift_h)
+            assigned_to = (worker_ids[chunk_idx % len(worker_ids)] if worker_ids else None)
+            shift_label = "noche" if chunk_idx % 2 else "dia"
+        else:
+            assigned_to = worker_ids[0] if worker_ids else None
+            shift_label = "dia"
+
+        chunks.append({
+            "chunk": chunk_idx + 1,
+            "start": cursor.isoformat(),
+            "end": (cursor + timedelta(hours=chunk_h)).isoformat(),
+            "hours": chunk_h,
+            "assigned_to": assigned_to,
+            "shift": shift_label,
+        })
+        remaining -= chunk_h
+        chunk_idx += 1
+        if data.strategy == "A":
+            cursor = cursor + timedelta(hours=chunk_h)  # avance lineal en estrategia A intra-loop
+
+    return {
+        "requires_continuity": True,
+        "wo_id": wo.wo_id,
+        "wo_number": wo.wo_number,
+        "total_hours": total_h,
+        "shift_hours": shift_h,
+        "strategy": data.strategy,
+        "chunks": chunks,
+    }
+
+
 @router.post("/ai-auto-schedule")
 def ai_auto_schedule(
     data: AIAutoScheduleRequest = None,

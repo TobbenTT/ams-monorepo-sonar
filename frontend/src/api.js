@@ -427,6 +427,9 @@ export const getCycleTimes = (plantId, days = 90) =>
 // SF-586 — Correlación equipos críticos (failure_count + availability + MTBF/MTTR)
 export const getReliabilityCorrelation = (plantId, days = 90, limit = 10) =>
   get('/analytics-dash/reliability-correlation', { plant_id: plantId, days, limit });
+// SF-587 — Brechas de skills (demand vs supply por especialidad)
+export const getSkillsGaps = (plantId, days = 90) =>
+  get('/sprint6/skills-gaps', { plant_id: plantId, days });
 
 // Triggers an authenticated file download from the reports-export router.
 export async function downloadReportXlsx(path, params) {

@@ -12,6 +12,7 @@ import ProgramAdherenceCard from '../ProgramAdherenceCard';
 import BacklogAlertsCards from '../BacklogAlertsCards';
 import CycleTimesCard from '../CycleTimesCard';
 import ReliabilityCorrelationCard from '../ReliabilityCorrelationCard';
+import SkillsGapsCard from '../SkillsGapsCard';
 import { downloadExport } from '../../utils/exportFile';
 import { filterByDateRange, getDateRange } from '../../utils/dateRange';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -656,12 +657,13 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
         {/* SF-574 / SF-575 — Cumplimiento + Adherencia al Programa */}
         <div>
           <div className="flex items-center gap-2 mb-4"><Target className="w-5 h-5 text-emerald-600" /><h4 className="font-bold text-gray-900">Cumplimiento y Adherencia al Programa</h4></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
             <ProgramComplianceCard plantId={selectedPlant} />
             <ProgramAdherenceCard plantId={selectedPlant} />
             <BacklogAlertsCards plantId={selectedPlant} />
             <CycleTimesCard plantId={selectedPlant} />
             <ReliabilityCorrelationCard plantId={selectedPlant} />
+            <SkillsGapsCard plantId={selectedPlant} />
           </div>
         </div>
         <div>

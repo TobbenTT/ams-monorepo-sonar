@@ -374,3 +374,296 @@ def digital_checklist_templates(plant_id: str | None = None, db: Session = Depen
         "implemented": False,
         "templates": [],
     }
+
+
+# ─── SF-608 Asignación automática de recursos ────────────────────────────────
+@router.get("/auto-assign-resources")
+def auto_assign_resources(
+    technical_location: str | None = None,
+    equipment_tag: str | None = None,
+    plant_id: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """SF-608 NF-3 — Sugiere planning_group + responsable según (UbicTec, Tag).
+
+    Heurística: busca OTs cerradas previas con la misma combinación y devuelve
+    el planning_group + responsable más frecuente. Si no hay histórico, intenta
+    fallback por TL/tag por separado.
+    """
+    if not equipment_tag and not technical_location:
+        return {"planning_group": None, "responsible": None, "confidence": 0.0, "source": "none"}
+
+    q = _base_wo(db, plant_id)
+    if equipment_tag:
+        q = q.filter(ManagedWorkOrderModel.equipment_tag == equipment_tag)
+    if technical_location:
+        q = q.filter(ManagedWorkOrderModel.technical_location == technical_location)
+    rows = q.order_by(ManagedWorkOrderModel.created_at.desc()).limit(50).all()
+
+    pg_counts = defaultdict(int)
+    resp_counts = defaultdict(int)
+    for wo in rows:
+        if getattr(wo, "planning_group", None):
+            pg_counts[wo.planning_group] += 1
+        if getattr(wo, "work_center", None):
+            resp_counts[wo.work_center] += 1
+
+    if not pg_counts and not resp_counts:
+        # Fallback: solo tag (sin TL)
+        if equipment_tag:
+            q2 = _base_wo(db, plant_id).filter(
+                ManagedWorkOrderModel.equipment_tag == equipment_tag
+            ).order_by(ManagedWorkOrderModel.created_at.desc()).limit(20).all()
+            for wo in q2:
+                if getattr(wo, "planning_group", None):
+                    pg_counts[wo.planning_group] += 1
+                if getattr(wo, "work_center", None):
+                    resp_counts[wo.work_center] += 1
+
+    pg_top = max(pg_counts.items(), key=lambda x: x[1]) if pg_counts else (None, 0)
+    resp_top = max(resp_counts.items(), key=lambda x: x[1]) if resp_counts else (None, 0)
+    total = max(1, sum(pg_counts.values()))
+    return {
+        "planning_group": pg_top[0],
+        "responsible": resp_top[0],
+        "confidence": round(pg_top[1] / total, 2) if pg_top[0] else 0.0,
+        "source": "history" if rows else "fallback",
+        "history_size": len(rows),
+        "todo": "Cuando exista tabla mapping_resource oficial, reemplazar heurística histórica por lookup directo",
+    }
+
+
+# ─── SF-610 Documentos asociados al trabajo ──────────────────────────────────
+@router.get("/work-documents/{wo_id}")
+def work_documents(wo_id: str, db: Session = Depends(get_db)):
+    """SF-610 NF-6 — Lista consolidada de documentos asociados a una OT.
+
+    Combina:
+    - Sugeridos por IA (DMS por technical_location)
+    - Manuales (wo.documents)
+    - Fotos (wo.documents type=photo)
+    """
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return {"error": "WO not found"}
+    documents = []
+    for d in (wo.documents or []):
+        if isinstance(d, dict):
+            documents.append({
+                "name": d.get("name", ""),
+                "url": d.get("url", ""),
+                "type": d.get("type", "doc"),
+                "source": d.get("source", "manual"),
+                "data": d.get("data", "") if d.get("type") == "photo" else None,
+            })
+    # IA sugiere por DMS si hay technical_location
+    suggested = []
+    if wo.technical_location:
+        try:
+            from api.database.models import DMSDocumentModel
+            dms = db.query(DMSDocumentModel).filter(
+                DMSDocumentModel.func_loc == wo.technical_location
+            ).limit(20).all()
+            for d in dms:
+                suggested.append({
+                    "name": d.title or d.filename,
+                    "url": f"/dms/{d.filename}" if d.filename else None,
+                    "type": "doc",
+                    "source": "ai_suggested_dms",
+                    "func_loc": d.func_loc,
+                })
+        except Exception:
+            pass
+    return {
+        "wo_id": wo_id,
+        "wo_number": wo.wo_number,
+        "manual_documents": documents,
+        "ai_suggested": suggested,
+        "total": len(documents) + len(suggested),
+    }
+
+
+# ─── SF-613 Búsqueda equipos apoyo desde catálogo ────────────────────────────
+@router.get("/support-equipment-catalog")
+def support_equipment_catalog(plant_id: str | None = None, search: str | None = None, db: Session = Depends(get_db)):
+    """SF-613 NF-5 — Catálogo de equipos de apoyo para selector (no texto libre)."""
+    from api.database.models import SupportEquipmentModel
+    q = db.query(SupportEquipmentModel)
+    if plant_id:
+        q = q.filter(SupportEquipmentModel.plant_id == plant_id)
+    if search:
+        term = f"%{search.lower()}%"
+        q = q.filter(
+            SupportEquipmentModel.name.ilike(term) |
+            SupportEquipmentModel.tag.ilike(term) |
+            SupportEquipmentModel.equipment_type.ilike(term)
+        )
+    rows = q.filter(SupportEquipmentModel.status != "FUERA_SERVICIO").limit(100).all()
+    return {
+        "items": [{
+            "id": r.equipment_id,
+            "tag": r.tag,
+            "name": r.name,
+            "type": r.equipment_type,
+            "capacity_tons": r.capacity_tons,
+            "ownership": r.ownership,
+            "status": r.status,
+        } for r in rows],
+        "count": len(rows),
+    }
+
+
+# ─── SF-621 Eliminación / limpieza recursos obsoletos ────────────────────────
+@router.get("/inactive-resources")
+def inactive_resources(plant_id: str | None = None, days_threshold: int = 180, db: Session = Depends(get_db)):
+    """SF-621 NF-16 — Identifica recursos sin uso reciente (candidatos a soft-delete)."""
+    from api.database.models import WorkforceModel, SupportEquipmentModel
+    cutoff = datetime.now() - timedelta(days=days_threshold)
+
+    # WO histórico para saber quién/qué se usó
+    recent_wos = _base_wo(db, plant_id).filter(
+        ManagedWorkOrderModel.created_at >= cutoff
+    ).all()
+    used_workers = set()
+    used_equipment = set()
+    for wo in recent_wos:
+        for w in (wo.assigned_workers or []):
+            wid = w.get("worker_id") if isinstance(w, dict) else w
+            if wid:
+                used_workers.add(wid)
+        for s in (wo.support_equipment or []):
+            tag = s.get("tag") if isinstance(s, dict) else None
+            if tag:
+                used_equipment.add(tag)
+
+    # Workforce inactivos
+    wf_q = db.query(WorkforceModel)
+    if plant_id:
+        wf_q = wf_q.filter(WorkforceModel.plant_id == plant_id)
+    inactive_workers = []
+    for w in wf_q.all():
+        if w.worker_id not in used_workers:
+            inactive_workers.append({
+                "worker_id": w.worker_id,
+                "name": getattr(w, "name", w.worker_id),
+                "specialty": getattr(w, "specialty", None),
+                "active": getattr(w, "active", None),
+            })
+
+    # Support equipment inactivos
+    se_q = db.query(SupportEquipmentModel)
+    if plant_id:
+        se_q = se_q.filter(SupportEquipmentModel.plant_id == plant_id)
+    inactive_equipment = []
+    for e in se_q.all():
+        if e.tag not in used_equipment:
+            inactive_equipment.append({
+                "id": e.equipment_id,
+                "tag": e.tag,
+                "name": e.name,
+                "type": e.equipment_type,
+                "status": e.status,
+            })
+
+    return {
+        "threshold_days": days_threshold,
+        "inactive_workers": inactive_workers,
+        "inactive_equipment": inactive_equipment,
+        "summary": {
+            "total_inactive_workers": len(inactive_workers),
+            "total_inactive_equipment": len(inactive_equipment),
+            "wos_analyzed": len(recent_wos),
+        },
+        "todo": "Acción soft-delete requiere endpoint POST con confirmación + audit log",
+    }
+
+
+# ─── SF-624 Buscador equipos auto-completado ─────────────────────────────────
+@router.get("/equipment-autocomplete")
+def equipment_autocomplete(query: str, plant_id: str | None = None, limit: int = 20, db: Session = Depends(get_db)):
+    """SF-624 NF-19 — Buscador con auto-complete que devuelve nombre + tag + UbicTec.
+
+    Cuando el usuario tipea, este endpoint devuelve un set listo para llenar
+    los 3 campos relacionados (nombre, tag, technical_location).
+    """
+    from api.database.models import HierarchyNodeModel
+    if not query or len(query.strip()) < 2:
+        return {"items": [], "count": 0}
+    term = f"%{query.strip().lower()}%"
+    q = db.query(HierarchyNodeModel).filter(
+        HierarchyNodeModel.node_type == "EQUIPMENT",
+        HierarchyNodeModel.name.ilike(term) |
+        HierarchyNodeModel.tag.ilike(term) |
+        HierarchyNodeModel.code.ilike(term) |
+        HierarchyNodeModel.sap_func_loc.ilike(term)
+    )
+    if plant_id:
+        q = q.filter(HierarchyNodeModel.plant_id == plant_id)
+    rows = q.limit(limit).all()
+    return {
+        "query": query,
+        "count": len(rows),
+        "items": [{
+            "node_id": n.node_id,
+            "name": n.name,
+            "tag": n.tag,
+            "technical_location": n.sap_func_loc or n.code,
+            "code": n.code,
+            "plant_id": n.plant_id,
+        } for n in rows],
+    }
+
+
+# ─── SF-627 Tareas en paralelo (consolidación) ───────────────────────────────
+@router.get("/parallel-duration/{wo_id}")
+def parallel_duration(wo_id: str, db: Session = Depends(get_db)):
+    """SF-627 NF-22 — Calcula duración total de una OT considerando paralelismo.
+
+    Cada operación tiene `parallel: bool` (default False = secuencial). El total
+    es la suma de las duraciones de las secuenciales más el MAX de las paralelas
+    agrupadas. Devuelve también el camino crítico.
+    """
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if not wo:
+        return {"error": "WO not found"}
+    ops = wo.operations or []
+    if not ops:
+        return {"wo_id": wo_id, "total_duration_h": 0, "critical_path": [], "ops_count": 0}
+
+    sequential_total = 0.0
+    parallel_max = 0.0
+    parallel_ops = []
+    sequential_ops = []
+    for op in ops:
+        h = float(op.get("hours") or op.get("duration") or 0)
+        if op.get("parallel") is True:
+            parallel_ops.append(op)
+            parallel_max = max(parallel_max, h)
+        else:
+            sequential_ops.append(op)
+            sequential_total += h
+
+    total = sequential_total + parallel_max
+    critical = []
+    for op in sequential_ops:
+        critical.append({"op": op.get("op_number"), "hours": op.get("hours"), "type": "sequential"})
+    if parallel_ops:
+        longest = max(parallel_ops, key=lambda o: float(o.get("hours") or 0))
+        critical.append({
+            "op": longest.get("op_number"),
+            "hours": longest.get("hours"),
+            "type": "parallel_longest",
+            "parallel_with": [o.get("op_number") for o in parallel_ops if o is not longest],
+        })
+
+    return {
+        "wo_id": wo_id,
+        "wo_number": wo.wo_number,
+        "ops_count": len(ops),
+        "sequential_count": len(sequential_ops),
+        "parallel_count": len(parallel_ops),
+        "naive_sum_h": round(sequential_total + sum(float(o.get("hours") or 0) for o in parallel_ops), 2),
+        "total_duration_h": round(total, 2),
+        "critical_path": critical,
+        "savings_h": round(sum(float(o.get("hours") or 0) for o in parallel_ops) - parallel_max, 2),
+    }

@@ -409,6 +409,9 @@ export const getOpsMtbfTimeseries = (plantId, months = 6) => get('/analytics-das
 export const getOpsPmCompliance = (plantId) => get('/analytics-dash/pm-compliance', { plant_id: plantId });
 export const getOpsBacklogAging = (plantId) => get('/analytics-dash/backlog-aging', { plant_id: plantId });
 export const getOpsCostPerEquipment = (plantId, limit = 10) => get('/analytics-dash/cost-per-equipment', { plant_id: plantId, limit });
+// SF-574 — Cumplimiento de Programa (HH ejecutadas vs HH planificadas en período)
+export const getProgramCompliance = (plantId, period = 'week', refDate) =>
+  get('/analytics-dash/program-compliance', { plant_id: plantId, period, ref_date: refDate });
 
 // Triggers an authenticated file download from the reports-export router.
 export async function downloadReportXlsx(path, params) {

@@ -258,6 +258,84 @@ def adherence_compliance(plant_id: str | None = None, days: int = 30, db: Sessio
     }
 
 
+@router.get("/program-compliance")
+def program_compliance(
+    plant_id: str | None = None,
+    period: str = "week",
+    ref_date: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """SF-574 — Cumplimiento de Programa: HH ejecutadas vs HH planificadas.
+
+    Mide el avance de ejecución de OTs PROGRAMADAS/CERRADAS dentro de un período.
+    Distinto de adherence-compliance (que mide puntualidad de fechas): acá se mide
+    volumen de horas trabajadas relativo a lo planificado.
+
+    - period: "week" (lun-dom de ref_date) o "day" (24h de ref_date).
+    - ref_date: ISO YYYY-MM-DD. Default = hoy.
+    - Considera OTs cuya planned_start cae en el período (no las que se cerraron;
+      eso sesgaría hacia atrás cuando hay cierre con retraso).
+    """
+    today = date.today()
+    if ref_date:
+        try:
+            today = date.fromisoformat(ref_date)
+        except ValueError:
+            pass
+
+    if period == "day":
+        start_d = today
+        end_d = today
+    else:  # week — lunes a domingo
+        start_d = today - timedelta(days=today.weekday())
+        end_d = start_d + timedelta(days=6)
+
+    start_dt = datetime.combine(start_d, datetime.min.time())
+    end_dt = datetime.combine(end_d, datetime.max.time())
+
+    q = _base_wo_query(db, plant_id).filter(
+        ManagedWorkOrderModel.planned_start.isnot(None),
+        ManagedWorkOrderModel.planned_start >= start_dt,
+        ManagedWorkOrderModel.planned_start <= end_dt,
+    )
+
+    rows = q.all()
+    items = []
+    total_planned = 0.0
+    total_actual = 0.0
+    for wo in rows:
+        planned_h = float(wo.estimated_hours or 0)
+        actual_h = float(wo.actual_hours or 0)
+        total_planned += planned_h
+        total_actual += actual_h
+        items.append({
+            "wo_id": wo.wo_id,
+            "wo_number": wo.wo_number,
+            "description": wo.description,
+            "equipment_tag": wo.equipment_tag,
+            "status": wo.status,
+            "planned_h": round(planned_h, 2),
+            "actual_h": round(actual_h, 2),
+            "planned_start": wo.planned_start.isoformat() if wo.planned_start else None,
+        })
+
+    compliance_pct = (
+        round((total_actual / total_planned) * 100, 1) if total_planned > 0 else None
+    )
+
+    return {
+        "period": period,
+        "start": start_d.isoformat(),
+        "end": end_d.isoformat(),
+        "ref_date": today.isoformat(),
+        "total_wo": len(rows),
+        "total_planned_h": round(total_planned, 2),
+        "total_actual_h": round(total_actual, 2),
+        "compliance_pct": compliance_pct,
+        "items": items,
+    }
+
+
 @router.post("/reschedule-stale")
 def reschedule_stale(plant_id: str | None = None, db: Session = Depends(get_db)):
     """Jorge SF-513 — auto-mover a REPROGRAMADO las OTs PROGRAMADO/EN_EJECUCION

@@ -567,6 +567,46 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
         risk_analysis=wr_risk,
     )
 
+    # SF-594 BUG-3 (2026-05-04) — propagar fotos del WR a la OT.
+    # Las fotos vivían en field_captures.images o wr.documents[type=photo] y
+    # no se copiaban a la OT al promover. Resultado: la OT generada desde un
+    # aviso no mostraba las fotos del reporte original. Las anexamos a
+    # wo.documents con type=photo para render uniforme en cualquier vista.
+    if result:
+        try:
+            from api.database.models import FieldCaptureModel
+            wr_photos = []
+            if wr.source_capture_id:
+                cap = db.query(FieldCaptureModel).filter(
+                    FieldCaptureModel.capture_id == wr.source_capture_id
+                ).first()
+                if cap and cap.images:
+                    wr_photos = list(cap.images)
+            if not wr_photos and wr.documents:
+                docs_list = wr.documents if isinstance(wr.documents, list) else []
+                wr_photos = [
+                    d.get("data") for d in docs_list
+                    if isinstance(d, dict) and d.get("type") == "photo" and d.get("data")
+                ]
+            if wr_photos:
+                wo_obj = db.query(ManagedWorkOrderModel).filter(
+                    ManagedWorkOrderModel.wo_id == result["wo_id"]
+                ).first()
+                if wo_obj is not None:
+                    existing = wo_obj.documents or []
+                    for i, data in enumerate(wr_photos):
+                        existing.append({
+                            "name": f"aviso_foto_{i+1}.jpg",
+                            "data": data,
+                            "type": "photo",
+                            "source": "work_request",
+                            "wr_id": request_id,
+                        })
+                    wo_obj.documents = existing
+                    db.commit()
+        except Exception:
+            pass
+
     # Jorge 2026-04-28 17:56 — propagar equipos de apoyo del aviso a la OT.
     # Antes se quedaban sólo en el WR y se perdían en planificación/ejecución/reportes.
     wr_support = getattr(wr, "support_equipment", None)

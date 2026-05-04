@@ -645,13 +645,20 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
     return { laborHours, laborCost, materialCost, externalCost, total: laborCost + materialCost + externalCost };
   }, [editOps, editMats]);
 
-  // Item 4: auto-recalc planned_end when ops duration changes
+  // SF-596 BUG-5 / SF-597 BUG-6 — auto-recalc planned_end TZ-safe.
+  // Antes: `endDt.toISOString().slice(0,16)` devolvía UTC y rompía cuando el
+  // start estaba en hora local (especialmente en días 31 + cambios de mes,
+  // por offsets de TZ). Ahora trabajamos en hora local end-to-end con un
+  // formateador explícito que produce "YYYY-MM-DDTHH:mm" sin shift.
   useEffect(() => {
     if (!editDates.start) return;
     const totalHrs = editOps.reduce((s, o) => s + ((parseFloat(o.quantity) || 1) * (parseFloat(o.hours) || parseFloat(o.duration) || 0)), 0);
     if (totalHrs <= 0) return;
-    const endDt = new Date(new Date(editDates.start).getTime() + totalHrs * 3600000);
-    const newEnd = endDt.toISOString().slice(0, 16);
+    const startMs = new Date(editDates.start).getTime();
+    if (Number.isNaN(startMs)) return;
+    const endDt = new Date(startMs + totalHrs * 3600000);
+    const pad = n => String(n).padStart(2, '0');
+    const newEnd = `${endDt.getFullYear()}-${pad(endDt.getMonth() + 1)}-${pad(endDt.getDate())}T${pad(endDt.getHours())}:${pad(endDt.getMinutes())}`;
     setEditDates(d => d.end === newEnd ? d : { ...d, end: newEnd });
   }, [editOps]);
 

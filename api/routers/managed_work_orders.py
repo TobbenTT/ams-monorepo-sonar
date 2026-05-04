@@ -288,14 +288,25 @@ def schedule_work_order(
     return result
 
 
+class WORescheduleRequest(BaseModel):
+    model_config = {"extra": "ignore"}
+    reason: str = Field(..., min_length=3)
+
+
 @router.put("/{wo_id}/reschedule")
 def reschedule_work_order(
     wo_id: str,
+    data: WORescheduleRequest,
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Supervisor returns WO to planner (REPROGRAMADO)."""
-    result = managed_wo_service.reschedule_wo(db, wo_id, getattr(user, "user_id", ""))
+    """SF-578 — Supervisor returns WO to planner (REPROGRAMADO).
+    Motivo OBLIGATORIO (mínimo 3 caracteres). Queda en reschedule_reason +
+    audit log para trazabilidad."""
+    reason = (data.reason or "").strip()
+    if len(reason) < 3:
+        raise HTTPException(status_code=422, detail="Motivo de reprogramación obligatorio (mínimo 3 caracteres)")
+    result = managed_wo_service.reschedule_wo(db, wo_id, getattr(user, "user_id", ""), reason=reason)
     if not result:
         raise HTTPException(status_code=400, detail="Cannot reschedule — WO not found or invalid status")
     return result
@@ -446,6 +457,67 @@ def get_wo_history(
         })
     entries.sort(key=lambda e: e.get("timestamp") or "", reverse=True)
     return {"wo_id": wo_id, "wo_number": wo.wo_number, "entries": entries}
+
+
+class WOBulkStatusRequest(BaseModel):
+    model_config = {"extra": "ignore"}
+    wo_ids: list[str]
+    target_status: str = "EN_PROGRAMACION"
+    reason: str | None = None
+
+
+@router.post("/bulk-status")
+def bulk_change_status(
+    data: WOBulkStatusRequest,
+    user=Depends(require_role("admin", "manager", "planner")),
+    db: Session = Depends(get_db),
+):
+    """SF-557 — Cambio masivo de estatus con trazabilidad.
+
+    Permite mover N OTs a un mismo estatus (típicamente EN_PROGRAMACION) en
+    una sola operación. Cada cambio queda registrado en audit_log con user,
+    timestamp, estatus origen → destino y motivo opcional.
+    """
+    from datetime import datetime as _dt
+    from api.database.models import AuditLogModel, ManagedWorkOrderModel as _M
+
+    target = (data.target_status or "EN_PROGRAMACION").upper()
+    user_id = getattr(user, "user_id", "") or "system"
+    now = _dt.now()
+    results = {"updated": [], "skipped": [], "target_status": target}
+
+    for wo_id in (data.wo_ids or []):
+        wo = db.query(_M).filter(_M.wo_id == wo_id).first()
+        if not wo:
+            results["skipped"].append({"wo_id": wo_id, "reason": "not_found"})
+            continue
+        if wo.status == target:
+            results["skipped"].append({"wo_id": wo_id, "reason": "already_in_status"})
+            continue
+        prev_status = wo.status
+        wo.status = target
+        wo.updated_at = now
+        db.add(AuditLogModel(
+            entity_type="managed_work_order",
+            entity_id=wo_id,
+            action="STATUS_CHANGE",
+            user=user_id,
+            payload={
+                "changes": {"status": {"from": prev_status, "to": target}},
+                "reason": data.reason,
+                "bulk": True,
+            },
+            timestamp=now,
+        ))
+        results["updated"].append({
+            "wo_id": wo_id,
+            "wo_number": wo.wo_number,
+            "from": prev_status,
+            "to": target,
+        })
+
+    db.commit()
+    return results
 
 
 @router.post("/{wo_id}/notes")

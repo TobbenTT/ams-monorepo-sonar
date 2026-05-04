@@ -1187,15 +1187,18 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         toast.error('Ninguna seleccionada está en estado PLANIFICADO/LIBERADO/CREADO');
                         return;
                       }
-                      if (!window.confirm(`¿Pasar ${eligible.length} OT(s) a "En Programación"? El audit trail registra el cambio.`)) return;
+                      const reason = window.prompt(`¿Pasar ${eligible.length} OT(s) a "En Programación"? Motivo (opcional, queda en audit):`, '');
+                      if (reason === null) return;
                       setBulkBusy(true);
-                      const results = await Promise.allSettled(
-                        eligible.map(w => api.updateManagedWO(w.wo_id, { status: 'EN_PROGRAMACION' }))
-                      );
-                      const ok = results.filter(r => r.status === 'fulfilled').length;
-                      const failed = eligible.length - ok;
-                      if (failed === 0) toast.success(`✓ ${ok} OT(s) → En Programación`);
-                      else toast.error(`${ok} ok · ${failed} fallaron`);
+                      try {
+                        const r = await api.bulkChangeWoStatus(eligible.map(w => w.wo_id), 'EN_PROGRAMACION', reason || null);
+                        const ok = (r?.updated || []).length;
+                        const skipped = (r?.skipped || []).length;
+                        if (skipped === 0) toast.success(`✓ ${ok} OT(s) → En Programación`);
+                        else toast.success(`${ok} ok · ${skipped} omitidas`);
+                      } catch (e) {
+                        toast.error(`Error: ${e?.message || 'fallo bulk'}`);
+                      }
                       setSelectedWoIds(new Set());
                       setBulkBusy(false);
                       fetchData();

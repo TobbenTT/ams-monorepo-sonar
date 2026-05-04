@@ -753,6 +753,21 @@ def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int
                     f"Cree una OT de falla nueva (PM03) — ver botón 'Convertir Aviso → PM03'."
                 ),
             )
+    # SF-577 — Prohibir setear status=EN_EJECUCION vía update genérico. El paso
+    # a "En Ejecución" debe ser MANUAL desde el botón Start (POST .../start),
+    # nunca implícito por save de campos. Esto evita que el sistema marque OTs
+    # como ejecutándose por error y desvirtúe los KPIs de tiempo real.
+    new_status = (data.get("status") or "").upper()
+    if new_status == "EN_EJECUCION" and wo.status != "EN_EJECUCION":
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "El estatus EN_EJECUCION solo puede asignarse manualmente con el botón "
+                "'Iniciar Ejecución' (POST /managed-work-orders/{id}/start). "
+                "No se permite setearlo vía update."
+            ),
+        )
     # Fase 9 Jorge 2026-04-21 — optimistic concurrency. Si el cliente mandó
     # If-Match y la versión actual es distinta, otro usuario ya modificó la
     # OT en el ínterin → rechaza con 409.
@@ -961,9 +976,22 @@ def schedule_wo(db: Session, wo_id: str, user_id: str = "", assigned_workers: li
     return _transition(db, wo_id, "PROGRAMADO", user_id, **kwargs)
 
 
-def reschedule_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
-    """Supervisor returns to planner -> REPROGRAMADO."""
-    return _transition(db, wo_id, "REPROGRAMADO", user_id)
+def reschedule_wo(db: Session, wo_id: str, user_id: str = "", reason: str | None = None) -> dict | None:
+    """Supervisor returns to planner -> REPROGRAMADO.
+
+    SF-578 — `reason` es obligatorio cuando se llama vía endpoint público.
+    Si llega vacío, el endpoint debe rechazar antes. Acá lo aceptamos opcional
+    para compat con callers internos, pero lo persistimos en reschedule_reason
+    + audit log para que quede trazabilidad.
+
+    Además, una OT REPROGRAMADO debe volver a PLANIFICADO (retorno automático
+    a Planificación) — eso lo decide el siguiente flujo del planner. Por ahora
+    simplemente la marcamos REPROGRAMADO y guardamos el motivo.
+    """
+    wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+    if wo and reason:
+        wo.reschedule_reason = reason
+    return _transition(db, wo_id, "REPROGRAMADO", user_id, reschedule_reason=reason or None)
 
 
 def release_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:

@@ -416,7 +416,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
               {item.wo_number && (
                 <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-100 text-emerald-700 border border-emerald-300 cursor-pointer hover:bg-emerald-200"
                   title="Ver OT vinculada"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(item.wo_number)}`); }}>
+                  onClick={(e) => { e.stopPropagation(); onGoToOT?.(); }}>
                   OT: {item.wo_number}
                 </span>
               )}
@@ -774,7 +774,7 @@ ${materials.length ? `<div class="section">
                 {/* Jorge (2026-04-20): link bidireccional — desde el aviso se puede
                     saltar a la OT. Abre en nueva pestaña para no perder el detalle. */}
                 <button
-                  onClick={() => navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(item.wo_number)}`)}
+                  onClick={() => onGoToOT?.()}
                   className="text-sm font-bold text-emerald-700 hover:text-emerald-900 underline font-mono"
                   title="Ver OT vinculada"
                 >
@@ -2605,7 +2605,8 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           onCloseWR={handleClose}
                           onSaveEdit={handleSaveEdit}
                           onPlannerCreateOT={handlePlannerCreateOT}
-                          onGoToOT={() => navigate('/work-orders', { state: { openOtByWrId: wrItem.id } })}
+                          onGoToOT={() => navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(wrItem.wo_number || '')}`)}
+
                           onAIPriorityDecision={async (id, dec) => {
                             try {
                               await api.aiPriorityDecision(id, dec);

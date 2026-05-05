@@ -500,24 +500,24 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     if (equipSearch.length < 2) { setEquipResults([]); return; }
     setEquipFromLocation(false);
     const timer = setTimeout(() => {
-      // Search scoped to selected location if available
-      const locCode = selectedLoc?.code || '';
+      // SF-605 BUG-14 (2026-05-05) — el filtro por locPrefix (que exigía
+      // que `n.code` empiece con el code de la TL seleccionada) descartaba
+      // todos los resultados cuando los códigos de equipos no comparten
+      // prefijo (ej: TL=GOLDFIELDS-SN, equipos=BRY-SAG-ML-002). Resultado:
+      // "molino" no devolvía nada. Ahora confiamos en el ILIKE del backend
+      // (que ya hace match en name/tag/code/sap_func_loc) y dejamos el
+      // filtrado de location al backend vía parent_node_id si aplica.
       const searchParams = { search: equipSearch, node_type: 'EQUIPMENT', limit: 20, plant_id: plant };
-      if (locCode) searchParams.parent_node_id_prefix = locCode;
       api.listNodes(searchParams).then(res => {
         const nodes = Array.isArray(res) ? res : res?.items || [];
-        // Filter client-side by location prefix if server doesn't support it
-        const locPrefix = locCode.toUpperCase();
-        const filtered = locPrefix ? nodes.filter(n => (n.code || '').toUpperCase().startsWith(locPrefix)) : nodes;
-        setEquipResults(filtered.length > 0 ? filtered : nodes.slice(0, 15));
+        setEquipResults(nodes.slice(0, 15));
       }).catch(() => {
         const q = equipSearch.toLowerCase();
-        const locPrefix = locCode.toUpperCase();
-        setEquipResults(allEquipment.filter(n => {
-          const matchesSearch = (n.tag || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q);
-          const matchesLoc = !locPrefix || (n.code || '').toUpperCase().startsWith(locPrefix);
-          return matchesSearch && matchesLoc;
-        }).slice(0, 15));
+        setEquipResults(allEquipment.filter(n =>
+          (n.tag || '').toLowerCase().includes(q) ||
+          (n.code || '').toLowerCase().includes(q) ||
+          (n.name || '').toLowerCase().includes(q)
+        ).slice(0, 15));
       });
     }, 300);
     return () => clearTimeout(timer);

@@ -969,9 +969,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       else if (ns === 'CERRADO') {
         const hours = parseFloat(execData.actual_hours) || wo.actual_hours || 0;
         if (!hours || hours <= 0) {
-          toast.error('Record actual hours in Execution tab before closing');
+          // Obs #9 docx Magdalena (2026-05-05): el toast salía flotante y
+          // confundía. Ahora mensaje más claro en español + redirige al
+          // tab donde están las horas faltantes.
+          toast.error('Antes de cerrar la OT registrá las HH reales en el tab "Notif. HH"');
           setOtActionLoading(null);
-          setOtModalTab('ejecucion');
+          setOtModalTab('notif_hh');
           return;
         }
         upd = await api.completeManagedWO(WO_ID, { actual_hours: hours, execution_notes: execData.observations || '' });
@@ -985,6 +988,12 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         };
         toast.success('Status updated: ' + (STATUS_LABEL[ns] || ns));
         setSelectedOT(upd);
+        // SF-599 BUG-8 (2026-05-05) — optimistic update: refrescar el item
+        // en managedWOs ANTES del fetchData async para que el tablero ya
+        // muestre el nuevo status sin esperar el roundtrip. fetchData igual
+        // dispara para reconciliar con backend (echo suppression filtra el
+        // WS event al originador del cambio).
+        setManagedWOs(prev => prev.map(w => w.wo_id === WO_ID ? { ...w, ...upd } : w));
         fetchData();
       } else {
         toast.error('Transition not allowed or WO not found');

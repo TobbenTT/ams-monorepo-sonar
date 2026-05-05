@@ -324,8 +324,13 @@ export default function WorkOrdersPage() {
       if (priority === 'P1') criticality = 'High';
       else if (priority === 'P2') criticality = 'High';
       else if (priority === 'P3') criticality = 'Medium';
+      // SF-592 BUG-1 — usar AV-NNNNN cuando exista, fallback al request_id legible.
+      const avisoNum = wr.aviso_number;
+      const displayId = avisoNum
+        ? `AV-${String(avisoNum).padStart(5, '0')}`
+        : (wr.request_id || t('workOrders.na'));
       return {
-        id: wr.request_id || t('workOrders.na'),
+        id: displayId,
         description: wr.problem_description?.original_text || t('workOrders.noDescription'),
         area: wr.work_class || t('workOrders.na'),
         criticality,

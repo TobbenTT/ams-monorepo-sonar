@@ -1994,9 +1994,11 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
 
   function handleExportWRs() {
     if (!sorted.length) return;
-    const headers = ['ID', 'Equipo TAG', 'Equipo', 'Descripción Falla', 'Priority', 'Status', 'Impacto', 'Duración Est. (h)', 'Categoría Falla', 'Síntoma', 'Causa', 'Acción Sugerida', 'Técnico', 'Creado'];
+    // SF-592 BUG-1 — exportar el código legible AV-NNNNN (display_id) en
+    // lugar del UUID interno (r.id). Asegura coincidencia 1:1 con la UI.
+    const headers = ['Aviso', 'Equipo TAG', 'Equipo', 'Descripción Falla', 'Priority', 'Status', 'Impacto', 'Duración Est. (h)', 'Categoría Falla', 'Síntoma', 'Causa', 'Acción Sugerida', 'Técnico', 'Creado'];
     const rows = sorted.map(r => [
-      r.id, r.equipment_tag, r.equipment_name, r.failure_description,
+      r.display_id || r.id, r.equipment_tag, r.equipment_name, r.failure_description,
       r.priority_requested, r.status, r.production_impact,
       r.estimated_duration, r.failure_category, r.failure_symptom,
       r.failure_cause, r.suggested_action, r.technician,

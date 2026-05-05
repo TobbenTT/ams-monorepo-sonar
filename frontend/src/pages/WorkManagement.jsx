@@ -65,20 +65,29 @@ export default function WorkManagement() {
   const [autoOpenWoId, setAutoOpenWoId] = useState(null);
 
   const refreshCounts = useCallback(() => {
+    // SF-598 BUG-7 — los conteos antes ignoraban el plant_id (cross-plant) y
+    // contaban estados duplicados entre Identification y Planning. Ahora:
+    // 1) filtran por planta seleccionada (igual que las listas internas)
+    // 2) usan filtros disjuntos para que un mismo registro cuente en una sola fase
+    const plantId = outletContext?.selectedPlant?.plant_id || outletContext?.selectedPlant;
+    const params = plantId ? { plant_id: plantId } : {};
     Promise.all([
-      api.listWorkRequests({}).catch(() => []),
-      api.listManagedWOs({}).catch(() => []),
+      api.listWorkRequests(params).catch(() => []),
+      api.listManagedWOs(params).catch(() => []),
     ]).then(([wrs, wos]) => {
       const wrList = Array.isArray(wrs) ? wrs : [];
       const woList = Array.isArray(wos) ? wos : [];
       setPhaseCounts({
         'failure-capture': null,
-        identification: wrList.filter(w => ['PENDING_VALIDATION', 'VALIDATED', 'PENDIENTE', 'APROBADO'].includes(w.status)).length,
-        planning: wrList.filter(w => ['VALIDATED', 'APROBADO', 'OT_CREADA'].includes(w.status)).length,
-        scheduling: woList.filter(w => ['DRAFT', 'PLANNED', 'RELEASED', 'CREADO', 'PLANIFICADO', 'PROGRAMADO'].includes(w.status)).length,
+        // Identification: solo pending validation (no incluye los aprobados que pasan a Planning)
+        identification: wrList.filter(w => ['PENDING_VALIDATION', 'PENDIENTE'].includes(w.status)).length,
+        // Planning: aprobados sin OT creada (a la espera de pasar a OT)
+        planning: wrList.filter(w => ['VALIDATED', 'APROBADO'].includes(w.status)).length,
+        // Scheduling: OTs en estados pre-ejecución
+        scheduling: woList.filter(w => ['DRAFT', 'PLANNED', 'RELEASED', 'CREADO', 'PLANIFICADO', 'EN_PROGRAMACION', 'PROGRAMADO'].includes(w.status)).length,
       });
     });
-  }, []);
+  }, [outletContext?.selectedPlant]);
 
   useEffect(() => { refreshCounts(); }, [refreshCounts, refreshKey]);
 

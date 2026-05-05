@@ -494,19 +494,33 @@ function WODetailModal({ order, t, onClose, onClosureClick, onCancelClick }) {
             </div>
           )}
 
-          {/* Equipos de Apoyo (Jorge 2026-04-28 17:56) — propagados desde el Aviso */}
+          {/* Equipos de Apoyo (Jorge 2026-04-28 17:56) — propagados desde el Aviso
+              SF-603 BUG-12 — colores e íconos diferenciados por tipo de recurso */}
           {Array.isArray(order.support_equipment) && order.support_equipment.length > 0 && (
             <div>
               <div className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground mb-1.5">🏗️ Equipos de Apoyo · {order.support_equipment.length}</div>
               <div className="border border-amber-200 dark:border-amber-800 rounded-lg divide-y divide-amber-100 dark:divide-amber-900/40 text-[12px] bg-amber-50/40 dark:bg-amber-900/10">
-                {order.support_equipment.map((se, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-1.5">
-                    <span className="font-mono text-[10px] text-muted-foreground w-24 shrink-0 truncate">{se.tag || '—'}</span>
-                    <span className="flex-1 truncate">{se.name || se.description || '—'}</span>
-                    <span className="text-[10px] text-amber-700 dark:text-amber-300">{se.equipment_type || ''}</span>
-                    <span className="tabular-nums text-muted-foreground">{se.hours ? `${se.hours}h` : ''}</span>
-                  </div>
-                ))}
+                {order.support_equipment.map((se, i) => {
+                  // SF-603 — codificación visual por tipo de equipo de apoyo
+                  const tag = (se.equipment_type || se.type || se.name || '').toUpperCase();
+                  let icon = '🛠️', cls = 'bg-gray-100 text-gray-700';
+                  if (/GR(U|UA)|CRANE|PUENTE/.test(tag))      { icon = '🏗️'; cls = 'bg-amber-100 text-amber-800'; }
+                  else if (/ANDAM|SCAFFOLD/.test(tag))         { icon = '🪜'; cls = 'bg-orange-100 text-orange-800'; }
+                  else if (/CAMION|TRUCK|TRANS/.test(tag))     { icon = '🚛'; cls = 'bg-blue-100 text-blue-800'; }
+                  else if (/MONTACARG|FORKLIFT/.test(tag))     { icon = '🚜'; cls = 'bg-yellow-100 text-yellow-800'; }
+                  else if (/COMPRES|GEN|GENERATOR/.test(tag))  { icon = '⚡'; cls = 'bg-purple-100 text-purple-800'; }
+                  else if (/SOLDA|WELD|CORTE|CUT/.test(tag))   { icon = '🔥'; cls = 'bg-red-100 text-red-800'; }
+                  else if (/HERRAM|TOOL/.test(tag))            { icon = '🔧'; cls = 'bg-slate-100 text-slate-800'; }
+                  return (
+                    <div key={i} className="flex items-center gap-2 px-3 py-1.5">
+                      <span className={`shrink-0 inline-flex items-center justify-center w-6 h-6 text-xs rounded ${cls}`}>{icon}</span>
+                      <span className="font-mono text-[10px] text-muted-foreground w-24 shrink-0 truncate">{se.tag || '—'}</span>
+                      <span className="flex-1 truncate">{se.name || se.description || '—'}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${cls}`}>{se.equipment_type || ''}</span>
+                      <span className="tabular-nums text-muted-foreground">{se.hours ? `${se.hours}h` : ''}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

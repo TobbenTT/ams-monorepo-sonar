@@ -830,6 +830,34 @@ def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int
                 "No se permite setearlo vía update."
             ),
         )
+    # SF-600 BUG-9 — bloquear reversiones de estado vía update genérico. Sólo
+    # se permite avanzar (forward) o quedarse igual. Reversiones explícitas
+    # deben ir por endpoints dedicados (/draft, /reschedule, /cancel) que
+    # quedan en audit_log con razón.
+    _STATUS_ORDER = {
+        "CREADO": 0, "DRAFT": 0, "PENDIENTE": 0,
+        "LIBERADO": 1, "RELEASED": 1,
+        "PLANIFICADO": 2, "PLANNED": 2, "APROBADO": 2,
+        "EN_PROGRAMACION": 3,
+        "PROGRAMADO": 4, "SCHEDULED": 4,
+        "EN_EJECUCION": 5, "IN_EXECUTION": 5,
+        "COMPLETADO": 6,
+        "CERRADO": 7, "CLOSED": 7,
+        "REPROGRAMADO": 3,  # vuelve a programación (válido)
+        "CANCELADO": 8,     # terminal
+    }
+    if new_status and new_status != (wo.status or "").upper():
+        cur_lvl = _STATUS_ORDER.get((wo.status or "").upper(), -1)
+        new_lvl = _STATUS_ORDER.get(new_status, -1)
+        if cur_lvl >= 0 and new_lvl >= 0 and new_lvl < cur_lvl and new_status not in ("CANCELADO", "REPROGRAMADO"):
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"Reversión de estado bloqueada: {wo.status} → {new_status}. "
+                    f"Use el endpoint dedicado (/draft, /reschedule, /cancel) si necesita revertir explícitamente."
+                ),
+            )
     # Fase 9 Jorge 2026-04-21 — optimistic concurrency. Si el cliente mandó
     # If-Match y la versión actual es distinta, otro usuario ya modificó la
     # OT en el ínterin → rechaza con 409.

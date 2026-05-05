@@ -1757,11 +1757,14 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           EN_PROGRAMACION:[['PROGRAMADO','Schedule','bg-purple-600 text-white hover:bg-purple-700']],
           PROGRAMADO:[['EN_EJECUCION','Start Execution','bg-amber-500 text-white hover:bg-amber-600'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600']],
           REPROGRAMADO:[['PROGRAMADO','Reschedule','bg-indigo-600 text-white hover:bg-indigo-700']],
-          EN_EJECUCION:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600']],
+          // Jorge 2026-05-05: rename "Close" → "Cerrar OT (firmar)" para
+          // diferenciar de "Salir" (cerrar el modal). Antes había 2 botones
+          // "Close" en el bottom bar y confundía al usuario sobre qué hacían.
+          EN_EJECUCION:[['CERRADO','Cerrar OT (firmar)','bg-green-600 text-white hover:bg-green-700'],['REPROGRAMADO','Reschedule','bg-orange-500 text-white hover:bg-orange-600']],
           CERRADO:[],
           PENDIENTE:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700']],
           APROBADO:[['LIBERADO','Release','bg-blue-600 text-white hover:bg-blue-700']],
-          EN_PROGRESO:[['CERRADO','Close','bg-green-600 text-white hover:bg-green-700']],
+          EN_PROGRESO:[['CERRADO','Cerrar OT (firmar)','bg-green-600 text-white hover:bg-green-700']],
         };
         const TLBL = {PM01:'PM01',PM02:'PM02',PM03:'PM03'};
         const s = SAP[wo.status] || {label:wo.status,color:"bg-gray-100 text-gray-600"};
@@ -3541,13 +3544,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   )) : (
                     <span className="text-xs text-gray-400 italic">Final status</span>
                   )}
-                  {/* Jorge (2026-04-20): botón Close explícito para cerrar la ventana
-                      sin confundirlo con la cancelación de la OT (que ya no existe). */}
+                  {/* Jorge 2026-05-05: rename a "Salir" para no chocar con
+                      "Cerrar OT (firmar)" que es la transición de status. */}
                   <button
                     onClick={() => setSelectedOT(null)}
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors"
                   >
-                    Close
+                    Salir
                   </button>
                 </div>
               </div>

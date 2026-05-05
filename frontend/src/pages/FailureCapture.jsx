@@ -2702,9 +2702,13 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             <div className="text-[10px] text-gray-400 mt-1">Notification author</div>
           </div>
 
-          {/* 14. Adjuntos */}
+          {/* 14. Adjuntos — Jorge 2026-05-05: diferenciar de "Fotos" (de la
+              falla, arriba). Acá van procedimientos, planos, PDFs de soporte. */}
           <div className="border rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Adjuntos</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+              Adjuntos · documentos de soporte
+              <span className="ml-2 text-[10px] font-normal text-gray-400 normal-case">PDFs, planos, procedimientos. Las fotos de la falla van arriba con la cámara.</span>
+            </label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer"
               onDragOver={e => e.preventDefault()} onDrop={handleDrop}
               onClick={() => document.getElementById('fc-file-input').click()}>

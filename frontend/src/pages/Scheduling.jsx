@@ -1186,7 +1186,22 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             {filteredReleased.length === 0 && (
               <div className="p-6 text-center">
                 <Inbox size={24} className="text-muted-foreground/40 mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">{releasedWOs.length === 0 ? 'No OTs to schedule' : 'No results'}</p>
+                {/* 2026-05-05: explicación clara cuando hay items pero filtrados.
+                    Antes salía "No results" sin contexto y daba la impresión de
+                    que el sistema estaba caído. */}
+                {releasedWOs.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No hay OTs disponibles para programar</p>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      {releasedWOs.length} OT{releasedWOs.length === 1 ? '' : 's'} disponible{releasedWOs.length === 1 ? '' : 's'} pero filtrada{releasedWOs.length === 1 ? '' : 's'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-1">
+                      OTs PM03 / P1-P2 van directo a No-Programado (bypass planning).
+                      Limpiá filtros para ver todo.
+                    </p>
+                  </>
+                )}
               </div>
             )}
           </div>

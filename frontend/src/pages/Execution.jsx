@@ -113,6 +113,10 @@ export default function Execution() {
   const [activeWOs, setActiveWOs] = useState([]);
   const [completedWOs, setCompletedWOs] = useState([]);
   const [closedWOs, setClosedWOs] = useState([]);
+  // 2026-05-05: KPIs traídos del mismo endpoint que Dashboard para evitar
+  // discrepancias (Jorge notó cumplimiento 41% acá vs 93.1% en Dashboard
+  // porque acá se sumaba HH histórica en vez de la semana actual).
+  const [kpiSprint6, setKpiSprint6] = useState({ compliance: null, adherence: null, alerts: null });
   const [expandedWO, setExpandedWO] = useState(null);
   const [closureWO, setClosureWO] = useState(null);
   const [closureHours, setClosureHours] = useState('');
@@ -167,6 +171,15 @@ export default function Execution() {
       setCompletedWOs([...compList, ...execList]);
       setClosedWOs(toArr(closed));
       setPendingWRs(toArr(wrs));
+    } catch {}
+    // 2026-05-05: traer KPIs unificados (mismos del Dashboard)
+    try {
+      const [comp, adh, al] = await Promise.all([
+        api.getProgramCompliance(plant, 'week').catch(() => null),
+        api.getProgramAdherence(plant, 'week').catch(() => null),
+        api.getBacklogAlerts(plant).catch(() => null),
+      ]);
+      setKpiSprint6({ compliance: comp, adherence: adh, alerts: al });
     } catch {}
     setLoading(false);
   };
@@ -500,35 +513,14 @@ export default function Execution() {
           le miden la gestión: cumplimiento, adherencia, avisos atrasados,
           OTs atrasadas. Los counts secundarios pasan a una segunda fila chica. */}
       {(() => {
-        // Cumplimiento del programa = HH ejecutadas / HH planificadas (semana)
-        const allWOs = [...activeWOs, ...completedWOs, ...closedWOs];
-        const plannedHH = allWOs.reduce((s, w) => s + (parseFloat(w.estimated_hours) || 0), 0);
-        const actualHH = allWOs.reduce((s, w) => s + (parseFloat(w.actual_hours) || 0), 0);
-        const cumplimientoPct = plannedHH > 0 ? Math.round((actualHH / plannedHH) * 100) : 0;
-        // Adherencia = OTs cerradas en su día/turno planificado / OTs cerradas
-        const cerradas = closedWOs;
-        const adherentes = cerradas.filter(w => {
-          if (!w.planned_start || !w.actual_start) return false;
-          const ps = String(w.planned_start).slice(0, 10);
-          const as = String(w.actual_start).slice(0, 10);
-          return ps === as;
-        }).length;
-        const adherenciaPct = cerradas.length > 0 ? Math.round((adherentes / cerradas.length) * 100) : 0;
-        // Avisos atrasados = WRs pendientes >24h sin validar
-        const now = Date.now();
-        const avisosAtrasados = pendingWRs.filter(wr => {
-          if (!wr.created_at) return false;
-          const age = (now - new Date(wr.created_at).getTime()) / (1000 * 60 * 60);
-          return age > 24;
-        }).length;
-        // OTs atrasadas = en estado COMPLETADO/EN_EJECUCION sin notificar/cerrar +24h tras planned_end
-        const otsAtrasadas = activeWOs.filter(w => {
-          if (!w.planned_end) return false;
-          const end = new Date(w.planned_end).getTime();
-          if (isNaN(end)) return false;
-          const overdue = (now - end) / (1000 * 60 * 60);
-          return overdue > 24 && (w.status === 'EN_EJECUCION' || w.status === 'COMPLETADO');
-        }).length;
+        // 2026-05-05: KPIs unificados con Dashboard (mismos endpoints Sprint 6).
+        // Antes Execution sumaba HH histórica → daba 41% mientras Dashboard mostraba
+        // 93.1% (semana actual). Jorge notó la discrepancia. Ahora ambas pantallas
+        // leen del mismo /analytics-dash/program-compliance con period=week.
+        const cumplimientoPct = kpiSprint6.compliance?.compliance_pct ?? 0;
+        const adherenciaPct = kpiSprint6.adherence?.adherence_pct ?? 0;
+        const avisosAtrasados = kpiSprint6.alerts?.delayed_notifications?.count ?? 0;
+        const otsAtrasadas = kpiSprint6.alerts?.pending_close?.count ?? 0;
         const tone = (pct, target = 80) =>
           pct >= target ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200'
           : pct >= target - 15 ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200'

@@ -6,19 +6,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Loader2, Activity } from 'lucide-react';
 import { getCycleTimes } from '../api';
 import { subscribe } from '../wsSingleton';
-
-const STAGES = [
-  { key: 'wr_to_wo',        label: 'Aviso → OT',          field: 'wr_to_wo_d' },
-  { key: 'wo_to_planned',   label: 'OT → Planificada',    field: 'wo_to_planned_d' },
-  { key: 'planned_to_start',label: 'Planif → Inicio',     field: 'planned_to_start_d' },
-  { key: 'start_to_close',  label: 'Inicio → Cierre',     field: 'start_to_close_d' },
-];
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function CycleTimesCard({ plantId }) {
+  const { t } = useLanguage();
   const [days, setDays] = useState(90);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+
+  const STAGES = [
+    { key: 'wr_to_wo',        label: t('kpiCards.cycleTimes.stageWrToWo'),         field: 'wr_to_wo_d' },
+    { key: 'wo_to_planned',   label: t('kpiCards.cycleTimes.stageWoToPlanned'),    field: 'wo_to_planned_d' },
+    { key: 'planned_to_start',label: t('kpiCards.cycleTimes.stagePlannedToStart'), field: 'planned_to_start_d' },
+    { key: 'start_to_close',  label: t('kpiCards.cycleTimes.stageStartToClose'),   field: 'start_to_close_d' },
+  ];
 
   const load = useCallback(async () => {
     if (!plantId) return;
@@ -54,15 +56,15 @@ export default function CycleTimesCard({ plantId }) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">
               <Activity className="w-4 h-4 text-gray-600" />
-              <p className="text-sm text-gray-700 font-medium">Tiempos de ciclo</p>
+              <p className="text-sm text-gray-700 font-medium">{t('kpiCards.cycleTimes.title')}</p>
             </div>
             <Badge className="bg-indigo-100 text-indigo-800 border-0 text-xs">
-              {outlierCount > 0 ? `${outlierCount} outliers` : 'OK'}
+              {outlierCount > 0 ? t('kpiCards.cycleTimes.outliersBadge', { count: outlierCount }) : t('kpiCards.labelOk')}
             </Badge>
           </div>
           <div className="flex items-baseline gap-2">
             {loading ? <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-              : <p className="text-3xl font-bold text-indigo-700">{totalAvg.toFixed(1)}<span className="text-base font-normal ml-1">d ciclo total</span></p>}
+              : <p className="text-3xl font-bold text-indigo-700">{totalAvg.toFixed(1)}<span className="text-base font-normal ml-1">{t('kpiCards.cycleTimes.totalCycle')}</span></p>}
           </div>
           <div className="space-y-1 text-xs">
             {STAGES.map(st => {
@@ -86,7 +88,7 @@ export default function CycleTimesCard({ plantId }) {
                 {d}d
               </button>
             ))}
-            <span className="ml-auto text-[10px] text-gray-500 self-center">{data?.total_closed ?? 0} OT cerradas</span>
+            <span className="ml-auto text-[10px] text-gray-500 self-center">{t('kpiCards.cycleTimes.otsClosed', { count: data?.total_closed ?? 0 })}</span>
           </div>
         </div>
       </Card>
@@ -94,7 +96,7 @@ export default function CycleTimesCard({ plantId }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Tiempos de ciclo — últimos {days} días</DialogTitle>
+            <DialogTitle>{t('kpiCards.cycleTimes.dialogTitle', { days })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -103,25 +105,25 @@ export default function CycleTimesCard({ plantId }) {
                 return (
                   <div key={st.key} className="p-3 bg-gray-50 rounded">
                     <p className="text-xs text-gray-500">{st.label}</p>
-                    <p className="text-lg font-bold text-gray-900">{s.avg ?? '—'}<span className="text-xs font-normal ml-1">d avg</span></p>
-                    <p className="text-[10px] text-gray-500">med {s.median ?? '—'} · p90 {s.p90 ?? '—'} · n {s.count ?? 0}</p>
+                    <p className="text-lg font-bold text-gray-900">{s.avg ?? '—'}<span className="text-xs font-normal ml-1">{t('kpiCards.cycleTimes.avgSuffix')}</span></p>
+                    <p className="text-[10px] text-gray-500">{t('kpiCards.cycleTimes.avgStats', { median: s.median ?? '—', p90: s.p90 ?? '—', count: s.count ?? 0 })}</p>
                   </div>
                 );
               })}
             </div>
             <div>
-              <p className="text-sm font-semibold mb-2 text-gray-800">Outliers (etapa &gt; 2σ del promedio)</p>
+              <p className="text-sm font-semibold mb-2 text-gray-800">{t('kpiCards.cycleTimes.outliersTitle')}</p>
               <div className="max-h-72 overflow-auto border rounded">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>OT</TableHead>
-                      <TableHead>Equipo</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead className="text-right">Aviso→OT</TableHead>
-                      <TableHead className="text-right">OT→Plan</TableHead>
-                      <TableHead className="text-right">Plan→Inicio</TableHead>
-                      <TableHead className="text-right">Inicio→Close</TableHead>
+                      <TableHead>{t('kpiCards.wo')}</TableHead>
+                      <TableHead>{t('kpiCards.equipment')}</TableHead>
+                      <TableHead>{t('kpiCards.cycleTimes.colType')}</TableHead>
+                      <TableHead className="text-right">{t('kpiCards.cycleTimes.colNoticeWo')}</TableHead>
+                      <TableHead className="text-right">{t('kpiCards.cycleTimes.colWoPlan')}</TableHead>
+                      <TableHead className="text-right">{t('kpiCards.cycleTimes.colPlanStart')}</TableHead>
+                      <TableHead className="text-right">{t('kpiCards.cycleTimes.colStartClose')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -137,7 +139,7 @@ export default function CycleTimesCard({ plantId }) {
                       </TableRow>
                     ))}
                     {(!data?.outliers || data.outliers.length === 0) && (
-                      <TableRow><TableCell colSpan={7} className="text-center text-sm text-gray-500 py-6">Sin outliers — proceso estable.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={7} className="text-center text-sm text-gray-500 py-6">{t('kpiCards.cycleTimes.emptyOutliers')}</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>

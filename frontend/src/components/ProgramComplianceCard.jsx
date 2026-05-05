@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Loader2, Target } from 'lucide-react';
 import { getProgramCompliance } from '../api';
 import { subscribe } from '../wsSingleton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const DEFAULT_THRESHOLDS = { green: 95, yellow: 80 };
 
@@ -33,18 +34,19 @@ function statusFor(pct, thresholds) {
   return 'critical';
 }
 
-const COLORS = {
-  good:     { border: 'border-green-500',  bg: 'bg-green-50',  text: 'text-green-700',  badge: 'bg-green-100 text-green-800',   label: 'En meta' },
-  warning:  { border: 'border-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800', label: 'Vigilar' },
-  critical: { border: 'border-red-500',    bg: 'bg-red-50',    text: 'text-red-700',    badge: 'bg-red-100 text-red-800',       label: 'Acción' },
-};
-
 export default function ProgramComplianceCard({ plantId }) {
+  const { t } = useLanguage();
   const [period, setPeriod] = useState('week');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
+
+  const COLORS = {
+    good:     { border: 'border-green-500',  bg: 'bg-green-50',  text: 'text-green-700',  badge: 'bg-green-100 text-green-800',   label: t('kpiCards.labelOnTarget') },
+    warning:  { border: 'border-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800', label: t('kpiCards.labelWatch') },
+    critical: { border: 'border-red-500',    bg: 'bg-red-50',    text: 'text-red-700',    badge: 'bg-red-100 text-red-800',       label: t('kpiCards.labelAction') },
+  };
 
   const thresholds = useMemo(() => getThresholds(plantId), [plantId]);
 
@@ -81,8 +83,8 @@ export default function ProgramComplianceCard({ plantId }) {
   const c = COLORS[status];
 
   const periodLabel = period === 'week'
-    ? `Semana ${data?.start ?? ''} → ${data?.end ?? ''}`
-    : `Día ${data?.ref_date ?? ''}`;
+    ? t('kpiCards.weekRange', { start: data?.start ?? '', end: data?.end ?? '' })
+    : t('kpiCards.dayRange', { date: data?.ref_date ?? '' });
 
   return (
     <>
@@ -97,7 +99,7 @@ export default function ProgramComplianceCard({ plantId }) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">
               <Target className="w-4 h-4 text-gray-600" />
-              <p className="text-sm text-gray-700 font-medium">Cumplimiento de Programa</p>
+              <p className="text-sm text-gray-700 font-medium">{t('kpiCards.compliance.title')}</p>
             </div>
             <Badge className={`${c.badge} border-0 text-xs`}>{c.label}</Badge>
           </div>
@@ -116,13 +118,13 @@ export default function ProgramComplianceCard({ plantId }) {
             <span>
               {data ? `${data.total_actual_h}h / ${data.total_planned_h}h` : '—'}
             </span>
-            <span>{data?.total_wo ?? 0} OT</span>
+            <span>{t('kpiCards.compliance.otsCount', { count: data?.total_wo ?? 0 })}</span>
           </div>
 
           <div className="flex gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
             {[
-              { v: 'week', l: 'Semana' },
-              { v: 'day',  l: 'Día' },
+              { v: 'week', l: t('kpiCards.week') },
+              { v: 'day',  l: t('kpiCards.day') },
             ].map(opt => (
               <button
                 key={opt.v}
@@ -146,23 +148,23 @@ export default function ProgramComplianceCard({ plantId }) {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              Cumplimiento de Programa — {periodLabel}
+              {t('kpiCards.compliance.dialogTitle', { period: periodLabel })}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div className="p-3 bg-gray-50 rounded">
-                <p className="text-gray-500 text-xs">% Cumplimiento</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.compliance.pctCompliance')}</p>
                 <p className={`text-xl font-bold ${c.text}`}>{pct == null ? '—' : `${pct}%`}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded">
-                <p className="text-gray-500 text-xs">HH ejecutadas / planificadas</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.compliance.hhExecPlanned')}</p>
                 <p className="text-xl font-bold text-gray-900">
                   {data?.total_actual_h ?? '—'}h / {data?.total_planned_h ?? '—'}h
                 </p>
               </div>
               <div className="p-3 bg-gray-50 rounded">
-                <p className="text-gray-500 text-xs">OTs en período</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.compliance.wosInPeriod')}</p>
                 <p className="text-xl font-bold text-gray-900">{data?.total_wo ?? 0}</p>
               </div>
             </div>
@@ -171,12 +173,12 @@ export default function ProgramComplianceCard({ plantId }) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>OT</TableHead>
-                    <TableHead>Equipo</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">HH plan</TableHead>
-                    <TableHead className="text-right">HH real</TableHead>
-                    <TableHead className="text-right">%</TableHead>
+                    <TableHead>{t('kpiCards.wo')}</TableHead>
+                    <TableHead>{t('kpiCards.equipment')}</TableHead>
+                    <TableHead>{t('kpiCards.status')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.plannedHh')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.actualHh')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.pct')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -201,7 +203,7 @@ export default function ProgramComplianceCard({ plantId }) {
                   {(!data?.items || data.items.length === 0) && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-sm text-gray-500 py-6">
-                        Sin OTs planificadas en el período.
+                        {t('kpiCards.noWorkOrdersInPeriod')}
                       </TableCell>
                     </TableRow>
                   )}

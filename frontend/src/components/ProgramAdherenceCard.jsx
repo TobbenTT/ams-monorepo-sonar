@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Loader2, Calendar } from 'lucide-react';
 import { getProgramAdherence } from '../api';
 import { subscribe } from '../wsSingleton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const DEFAULT_THRESHOLDS = { green: 90, yellow: 70 };
 
@@ -31,18 +32,19 @@ function statusFor(pct, thresholds) {
   return 'critical';
 }
 
-const COLORS = {
-  good:     { border: 'border-green-500',  bg: 'bg-green-50',  text: 'text-green-700',  badge: 'bg-green-100 text-green-800',   label: 'En meta' },
-  warning:  { border: 'border-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800', label: 'Vigilar' },
-  critical: { border: 'border-red-500',    bg: 'bg-red-50',    text: 'text-red-700',    badge: 'bg-red-100 text-red-800',       label: 'Acción' },
-};
-
 export default function ProgramAdherenceCard({ plantId }) {
+  const { t } = useLanguage();
   const [period, setPeriod] = useState('week');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
+
+  const COLORS = {
+    good:     { border: 'border-green-500',  bg: 'bg-green-50',  text: 'text-green-700',  badge: 'bg-green-100 text-green-800',   label: t('kpiCards.labelOnTarget') },
+    warning:  { border: 'border-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800', label: t('kpiCards.labelWatch') },
+    critical: { border: 'border-red-500',    bg: 'bg-red-50',    text: 'text-red-700',    badge: 'bg-red-100 text-red-800',       label: t('kpiCards.labelAction') },
+  };
 
   const thresholds = useMemo(() => getThresholds(plantId), [plantId]);
 
@@ -73,8 +75,8 @@ export default function ProgramAdherenceCard({ plantId }) {
   const c = COLORS[status];
 
   const periodLabel = period === 'week'
-    ? `Semana ${data?.start ?? ''} → ${data?.end ?? ''}`
-    : `Día ${data?.ref_date ?? ''}`;
+    ? t('kpiCards.weekRange', { start: data?.start ?? '', end: data?.end ?? '' })
+    : t('kpiCards.dayRange', { date: data?.ref_date ?? '' });
 
   return (
     <>
@@ -89,7 +91,7 @@ export default function ProgramAdherenceCard({ plantId }) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">
               <Calendar className="w-4 h-4 text-gray-600" />
-              <p className="text-sm text-gray-700 font-medium">Adherencia al Programa</p>
+              <p className="text-sm text-gray-700 font-medium">{t('kpiCards.adherence.title')}</p>
             </div>
             <Badge className={`${c.badge} border-0 text-xs`}>{c.label}</Badge>
           </div>
@@ -99,11 +101,11 @@ export default function ProgramAdherenceCard({ plantId }) {
               : <p className={`text-3xl font-bold ${c.text}`}>{pct == null ? '—' : `${pct}%`}</p>}
           </div>
           <div className="flex items-center justify-between text-xs text-gray-600">
-            <span>{data ? `${data.adherent}/${data.total_planned} en fecha` : '—'}</span>
-            <span>{data?.non_adherent ?? 0} desviadas · {data?.not_executed ?? 0} pendientes</span>
+            <span>{data ? t('kpiCards.adherence.adherentRatio', { adherent: data.adherent, total: data.total_planned }) : '—'}</span>
+            <span>{t('kpiCards.adherence.deviatedPending', { deviated: data?.non_adherent ?? 0, pending: data?.not_executed ?? 0 })}</span>
           </div>
           <div className="flex gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
-            {[{v:'week',l:'Semana'},{v:'day',l:'Día'}].map(opt => (
+            {[{v:'week',l:t('kpiCards.week')},{v:'day',l:t('kpiCards.day')}].map(opt => (
               <button key={opt.v} type="button" onClick={() => setPeriod(opt.v)}
                 className={`px-2 py-1 text-xs rounded ${period === opt.v ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
                 {opt.l}
@@ -118,24 +120,24 @@ export default function ProgramAdherenceCard({ plantId }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Adherencia al Programa — {periodLabel}</DialogTitle>
+            <DialogTitle>{t('kpiCards.adherence.dialogTitle', { period: periodLabel })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-4 gap-3 text-sm">
               <div className="p-3 bg-gray-50 rounded">
-                <p className="text-gray-500 text-xs">% Adherencia</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.adherence.pctAdherence')}</p>
                 <p className={`text-xl font-bold ${c.text}`}>{pct == null ? '—' : `${pct}%`}</p>
               </div>
               <div className="p-3 bg-green-50 rounded">
-                <p className="text-gray-500 text-xs">En fecha</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.adherence.onSchedule')}</p>
                 <p className="text-xl font-bold text-green-700">{data?.adherent ?? 0}</p>
               </div>
               <div className="p-3 bg-yellow-50 rounded">
-                <p className="text-gray-500 text-xs">Desviadas</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.adherence.deviated')}</p>
                 <p className="text-xl font-bold text-yellow-700">{data?.non_adherent ?? 0}</p>
               </div>
               <div className="p-3 bg-gray-100 rounded">
-                <p className="text-gray-500 text-xs">Pendientes</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.adherence.pending')}</p>
                 <p className="text-xl font-bold text-gray-700">{data?.not_executed ?? 0}</p>
               </div>
             </div>
@@ -144,21 +146,21 @@ export default function ProgramAdherenceCard({ plantId }) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>OT</TableHead>
-                    <TableHead>Equipo</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Real</TableHead>
-                    <TableHead className="text-right">Δ días</TableHead>
-                    <TableHead>Estado</TableHead>
+                    <TableHead>{t('kpiCards.wo')}</TableHead>
+                    <TableHead>{t('kpiCards.equipment')}</TableHead>
+                    <TableHead>{t('kpiCards.adherence.colPlan')}</TableHead>
+                    <TableHead>{t('kpiCards.adherence.colActual')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.adherence.colDeltaDays')}</TableHead>
+                    <TableHead>{t('kpiCards.status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(data?.items || []).map((it) => {
                     const tag = it.actual_date == null
-                      ? { label: 'Pendiente', cls: 'bg-gray-100 text-gray-600' }
+                      ? { label: t('kpiCards.adherence.tagPending'), cls: 'bg-gray-100 text-gray-600' }
                       : it.is_adherent
-                        ? { label: 'Adherente', cls: 'bg-green-100 text-green-800' }
-                        : { label: 'Desviada', cls: 'bg-yellow-100 text-yellow-800' };
+                        ? { label: t('kpiCards.adherence.tagAdherent'), cls: 'bg-green-100 text-green-800' }
+                        : { label: t('kpiCards.adherence.tagDeviated'), cls: 'bg-yellow-100 text-yellow-800' };
                     return (
                       <TableRow key={it.wo_id}>
                         <TableCell className="font-mono text-xs">{it.wo_number}</TableCell>
@@ -179,7 +181,7 @@ export default function ProgramAdherenceCard({ plantId }) {
                   {(!data?.items || data.items.length === 0) && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-sm text-gray-500 py-6">
-                        Sin OTs planificadas en el período.
+                        {t('kpiCards.noWorkOrdersInPeriod')}
                       </TableCell>
                     </TableRow>
                   )}

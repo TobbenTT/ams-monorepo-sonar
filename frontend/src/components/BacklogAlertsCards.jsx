@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Loader2, AlertTriangle, Inbox, ClipboardCheck } from 'lucide-react';
 import { getBacklogAlerts } from '../api';
 import { subscribe } from '../wsSingleton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const DEFAULT_THRESHOLDS = { yellow: 5, red: 15 };
 
@@ -30,13 +31,7 @@ function statusFor(count, t) {
   return 'good';
 }
 
-const COLORS = {
-  good:     { border: 'border-green-500',  bg: 'bg-green-50',  text: 'text-green-700',  badge: 'bg-green-100 text-green-800',   label: 'OK' },
-  warning:  { border: 'border-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800', label: 'Vigilar' },
-  critical: { border: 'border-red-500',    bg: 'bg-red-50',    text: 'text-red-700',    badge: 'bg-red-100 text-red-800',       label: 'Acción' },
-};
-
-function CountCard({ title, count, items, status, icon: Icon, onClick, hint, loading }) {
+function CountCard({ title, count, status, icon: Icon, onClick, hint, loading, COLORS }) {
   const c = COLORS[status];
   return (
     <Card
@@ -65,9 +60,16 @@ function CountCard({ title, count, items, status, icon: Icon, onClick, hint, loa
 }
 
 export default function BacklogAlertsCards({ plantId }) {
+  const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(null); // 'wr' | 'wo' | null
+
+  const COLORS = {
+    good:     { border: 'border-green-500',  bg: 'bg-green-50',  text: 'text-green-700',  badge: 'bg-green-100 text-green-800',   label: t('kpiCards.labelOk') },
+    warning:  { border: 'border-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800', label: t('kpiCards.labelWatch') },
+    critical: { border: 'border-red-500',    bg: 'bg-red-50',    text: 'text-red-700',    badge: 'bg-red-100 text-red-800',       label: t('kpiCards.labelAction') },
+  };
 
   const tWr = useMemo(() => getThresholds(plantId, 'delayedNotifications'), [plantId]);
   const tWo = useMemo(() => getThresholds(plantId, 'pendingClose'), [plantId]);
@@ -98,41 +100,43 @@ export default function BacklogAlertsCards({ plantId }) {
   return (
     <>
       <CountCard
-        title="Avisos Atrasados"
+        title={t('kpiCards.backlog.delayedNotices')}
         icon={AlertTriangle}
         count={wrCount}
         loading={loading}
         status={statusFor(wrCount, tWr)}
-        hint="Pendientes de revisión fuera de SLA"
+        hint={t('kpiCards.backlog.hintDelayedNotices')}
         onClick={() => setOpen('wr')}
+        COLORS={COLORS}
       />
       <CountCard
-        title="OT Atrasadas"
+        title={t('kpiCards.backlog.lateWorkOrders')}
         icon={ClipboardCheck}
         count={woCount}
         loading={loading}
         status={statusFor(woCount, tWo)}
-        hint="Ejecutadas pero no cerradas en sistema"
+        hint={t('kpiCards.backlog.hintLateWorkOrders')}
         onClick={() => setOpen('wo')}
+        COLORS={COLORS}
       />
 
       <Dialog open={open === 'wr'} onOpenChange={(v) => setOpen(v ? 'wr' : null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Inbox className="w-5 h-5" /> Avisos Atrasados — fuera de SLA
+              <Inbox className="w-5 h-5" /> {t('kpiCards.backlog.dialogDelayedNotices')}
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-[28rem] overflow-auto border rounded">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Aviso</TableHead>
-                  <TableHead>Equipo</TableHead>
-                  <TableHead>Prioridad</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Antigüedad</TableHead>
-                  <TableHead className="text-right">Atraso SLA</TableHead>
+                  <TableHead>{t('kpiCards.backlog.colNotice')}</TableHead>
+                  <TableHead>{t('kpiCards.equipment')}</TableHead>
+                  <TableHead>{t('kpiCards.priority')}</TableHead>
+                  <TableHead>{t('kpiCards.status')}</TableHead>
+                  <TableHead className="text-right">{t('kpiCards.backlog.colAge')}</TableHead>
+                  <TableHead className="text-right">{t('kpiCards.backlog.colSlaOverdue')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -147,7 +151,7 @@ export default function BacklogAlertsCards({ plantId }) {
                   </TableRow>
                 ))}
                 {wrCount === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-gray-500 py-6">Sin avisos fuera de SLA.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-gray-500 py-6">{t('kpiCards.backlog.emptyNoSla')}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -159,19 +163,19 @@ export default function BacklogAlertsCards({ plantId }) {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ClipboardCheck className="w-5 h-5" /> OT Atrasadas — ejecutadas no cerradas
+              <ClipboardCheck className="w-5 h-5" /> {t('kpiCards.backlog.dialogLateWorkOrders')}
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-[28rem] overflow-auto border rounded">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>OT</TableHead>
-                  <TableHead>Equipo</TableHead>
-                  <TableHead>Prioridad</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fin real</TableHead>
-                  <TableHead className="text-right">Pendiente</TableHead>
+                  <TableHead>{t('kpiCards.wo')}</TableHead>
+                  <TableHead>{t('kpiCards.equipment')}</TableHead>
+                  <TableHead>{t('kpiCards.priority')}</TableHead>
+                  <TableHead>{t('kpiCards.status')}</TableHead>
+                  <TableHead>{t('kpiCards.backlog.colActualEnd')}</TableHead>
+                  <TableHead className="text-right">{t('kpiCards.backlog.colPending')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -186,7 +190,7 @@ export default function BacklogAlertsCards({ plantId }) {
                   </TableRow>
                 ))}
                 {woCount === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-gray-500 py-6">No hay OT pendientes de cierre.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-gray-500 py-6">{t('kpiCards.backlog.emptyNoPendingClose')}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

@@ -6,8 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Loader2, Users } from 'lucide-react';
 import { getSkillsGaps } from '../api';
 import { subscribe } from '../wsSingleton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function SkillsGapsCard({ plantId }) {
+  const { t } = useLanguage();
   const [days, setDays] = useState(90);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,9 +41,9 @@ export default function SkillsGapsCard({ plantId }) {
     : 'critical';
 
   const COLORS = {
-    good:     { border: 'border-green-500',  bg: 'bg-green-50',  text: 'text-green-700',  badge: 'bg-green-100 text-green-800',   label: 'Cobertura OK' },
-    warning:  { border: 'border-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800', label: 'Vigilar' },
-    critical: { border: 'border-red-500',    bg: 'bg-red-50',    text: 'text-red-700',    badge: 'bg-red-100 text-red-800',       label: 'Brecha alta' },
+    good:     { border: 'border-green-500',  bg: 'bg-green-50',  text: 'text-green-700',  badge: 'bg-green-100 text-green-800',   label: t('kpiCards.labelCoverageOk') },
+    warning:  { border: 'border-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800', label: t('kpiCards.labelWatch') },
+    critical: { border: 'border-red-500',    bg: 'bg-red-50',    text: 'text-red-700',    badge: 'bg-red-100 text-red-800',       label: t('kpiCards.labelHighGap') },
   };
   const c = COLORS[status];
   const top3 = gaps.slice(0, 3);
@@ -59,24 +61,24 @@ export default function SkillsGapsCard({ plantId }) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">
               <Users className="w-4 h-4 text-gray-600" />
-              <p className="text-sm text-gray-700 font-medium">Brechas de Skills</p>
+              <p className="text-sm text-gray-700 font-medium">{t('kpiCards.skills.title')}</p>
             </div>
             <Badge className={`${c.badge} border-0 text-xs`}>{c.label}</Badge>
           </div>
           <div className="flex items-baseline gap-2">
             {loading ? <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-              : <p className={`text-3xl font-bold ${c.text}`}>{negativeGaps.length}<span className="text-sm font-normal ml-1">especialidades cortas</span></p>}
+              : <p className={`text-3xl font-bold ${c.text}`}>{negativeGaps.length}<span className="text-sm font-normal ml-1">{t('kpiCards.skills.shortSpecialties')}</span></p>}
           </div>
           <div className="space-y-1 text-xs">
             {top3.map(g => (
               <div key={g.specialty} className="flex justify-between">
                 <span className="truncate mr-2 text-gray-700">{g.specialty}</span>
                 <span className={`whitespace-nowrap ${g.gap > 0 ? 'font-semibold text-red-700' : 'text-gray-600'}`}>
-                  {g.demand_op_count} dem · {g.supply_count} ppl {g.gap > 0 ? `(−${g.gap})` : '✓'}
+                  {t('kpiCards.skills.demandSupply', { demand: g.demand_op_count, supply: g.supply_count })} {g.gap > 0 ? `(−${g.gap})` : '✓'}
                 </span>
               </div>
             ))}
-            {top3.length === 0 && <p className="text-gray-500">Sin demanda registrada</p>}
+            {top3.length === 0 && <p className="text-gray-500">{t('kpiCards.skills.emptyNoDemand')}</p>}
           </div>
           <div className="flex gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
             {[30, 90, 180].map(d => (
@@ -85,7 +87,7 @@ export default function SkillsGapsCard({ plantId }) {
                 {d}d
               </button>
             ))}
-            <span className="ml-auto text-[10px] text-gray-500 self-center">déficit total: {totalGap}</span>
+            <span className="ml-auto text-[10px] text-gray-500 self-center">{t('kpiCards.skills.totalDeficit', { count: totalGap })}</span>
           </div>
         </div>
       </Card>
@@ -93,20 +95,20 @@ export default function SkillsGapsCard({ plantId }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Brechas de Skills — últimos {days} días</DialogTitle>
+            <DialogTitle>{t('kpiCards.skills.dialogTitle', { days })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div className="p-3 bg-gray-50 rounded">
-                <p className="text-gray-500 text-xs">Especialidades demandadas</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.skills.specialtiesDemanded')}</p>
                 <p className="text-xl font-bold text-gray-900">{gaps.length}</p>
               </div>
               <div className="p-3 bg-red-50 rounded">
-                <p className="text-gray-500 text-xs">Con brecha (déficit)</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.skills.withGap')}</p>
                 <p className="text-xl font-bold text-red-700">{negativeGaps.length}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded">
-                <p className="text-gray-500 text-xs">Déficit total (ppl)</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.skills.totalDeficitPpl')}</p>
                 <p className="text-xl font-bold text-gray-900">{totalGap}</p>
               </div>
             </div>
@@ -114,11 +116,11 @@ export default function SkillsGapsCard({ plantId }) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Especialidad</TableHead>
-                    <TableHead className="text-right">Demanda (ops)</TableHead>
-                    <TableHead className="text-right">Disponibles</TableHead>
-                    <TableHead className="text-right">Brecha</TableHead>
-                    <TableHead>Acción sugerida</TableHead>
+                    <TableHead>{t('kpiCards.skills.colSpecialty')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.skills.colDemand')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.skills.colAvailable')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.skills.colGap')}</TableHead>
+                    <TableHead>{t('kpiCards.skills.colSuggested')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -131,12 +133,12 @@ export default function SkillsGapsCard({ plantId }) {
                         {g.gap > 0 ? `−${g.gap}` : '✓'}
                       </TableCell>
                       <TableCell className="text-xs text-gray-600">
-                        {g.gap > 0 ? 'Capacitar / contratar / outsource' : 'Sin acción'}
+                        {g.gap > 0 ? t('kpiCards.skills.suggestionTrainHire') : t('kpiCards.skills.suggestionNone')}
                       </TableCell>
                     </TableRow>
                   ))}
                   {gaps.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-sm text-gray-500 py-6">Sin demanda en el período.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center text-sm text-gray-500 py-6">{t('kpiCards.skills.emptyNoDemandInPeriod')}</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>

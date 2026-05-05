@@ -6,8 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { getReliabilityCorrelation } from '../api';
 import { subscribe } from '../wsSingleton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function ReliabilityCorrelationCard({ plantId }) {
+  const { t } = useLanguage();
   const [days, setDays] = useState(90);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,24 +49,26 @@ export default function ReliabilityCorrelationCard({ plantId }) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">
               <ShieldAlert className="w-4 h-4 text-gray-600" />
-              <p className="text-sm text-gray-700 font-medium">Confiabilidad por Activo</p>
+              <p className="text-sm text-gray-700 font-medium">{t('kpiCards.reliability.title')}</p>
             </div>
             <Badge className={`${correlated > 0 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'} border-0 text-xs`}>
-              {correlated > 0 ? `${correlated} crítico${correlated === 1 ? '' : 's'}` : 'OK'}
+              {correlated > 0
+                ? t(correlated === 1 ? 'kpiCards.reliability.criticalCount' : 'kpiCards.reliability.criticalCountPlural', { count: correlated })
+                : t('kpiCards.labelOk')}
             </Badge>
           </div>
           <div className="flex items-baseline gap-2">
             {loading ? <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-              : <p className="text-3xl font-bold text-gray-900">{data?.total_equipment ?? 0}<span className="text-sm font-normal ml-1">activos con fallas</span></p>}
+              : <p className="text-3xl font-bold text-gray-900">{data?.total_equipment ?? 0}<span className="text-sm font-normal ml-1">{t('kpiCards.reliability.assetsWithFailures')}</span></p>}
           </div>
           <div className="space-y-1 text-xs">
             {top3.map(it => (
               <div key={it.equipment_tag} className="flex justify-between">
                 <span className={`truncate mr-2 ${it.high_correlation ? 'font-semibold text-red-700' : 'text-gray-700'}`}>{it.equipment_tag}</span>
-                <span className="text-gray-600 whitespace-nowrap">{it.failure_count}f · {it.availability_pct}%</span>
+                <span className="text-gray-600 whitespace-nowrap">{t('kpiCards.reliability.failureCountSummary', { failures: it.failure_count, avail: it.availability_pct })}</span>
               </div>
             ))}
-            {top3.length === 0 && <p className="text-gray-500">Sin fallas registradas</p>}
+            {top3.length === 0 && <p className="text-gray-500">{t('kpiCards.reliability.emptyNoFailures')}</p>}
           </div>
           <div className="flex gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
             {[30, 90, 180].map(d => (
@@ -73,7 +77,7 @@ export default function ReliabilityCorrelationCard({ plantId }) {
                 {d}d
               </button>
             ))}
-            <span className="ml-auto text-[10px] text-gray-500 self-center">avg disp {data?.avg_availability_pct ?? '—'}%</span>
+            <span className="ml-auto text-[10px] text-gray-500 self-center">{t('kpiCards.reliability.avgAvailShort', { pct: data?.avg_availability_pct ?? '—' })}</span>
           </div>
         </div>
       </Card>
@@ -81,20 +85,20 @@ export default function ReliabilityCorrelationCard({ plantId }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Confiabilidad por Activo — últimos {days} días</DialogTitle>
+            <DialogTitle>{t('kpiCards.reliability.dialogTitle', { days })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div className="p-3 bg-gray-50 rounded">
-                <p className="text-gray-500 text-xs">Activos con fallas</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.reliability.assetsWithFailuresLabel')}</p>
                 <p className="text-xl font-bold text-gray-900">{data?.total_equipment ?? 0}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded">
-                <p className="text-gray-500 text-xs">Avg disponibilidad</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.reliability.avgAvailability')}</p>
                 <p className="text-xl font-bold text-gray-900">{data?.avg_availability_pct ?? '—'}%</p>
               </div>
               <div className="p-3 bg-red-50 rounded">
-                <p className="text-gray-500 text-xs">Alta correlación IA</p>
+                <p className="text-gray-500 text-xs">{t('kpiCards.reliability.highAiCorrelation')}</p>
                 <p className="text-xl font-bold text-red-700">{correlated}</p>
               </div>
             </div>
@@ -102,13 +106,13 @@ export default function ReliabilityCorrelationCard({ plantId }) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Equipo</TableHead>
-                    <TableHead className="text-right">Fallas</TableHead>
-                    <TableHead className="text-right">Downtime (h)</TableHead>
-                    <TableHead className="text-right">MTBF (d)</TableHead>
-                    <TableHead className="text-right">MTTR (h)</TableHead>
-                    <TableHead className="text-right">Disp. (%)</TableHead>
-                    <TableHead>IA</TableHead>
+                    <TableHead>{t('kpiCards.equipment')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.reliability.colFailures')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.reliability.colDowntime')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.reliability.colMtbf')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.reliability.colMttr')}</TableHead>
+                    <TableHead className="text-right">{t('kpiCards.reliability.colAvail')}</TableHead>
+                    <TableHead>{t('kpiCards.reliability.colAi')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -126,20 +130,18 @@ export default function ReliabilityCorrelationCard({ plantId }) {
                       }`}>{it.availability_pct}%</TableCell>
                       <TableCell>
                         {it.high_correlation
-                          ? <Badge className="bg-red-100 text-red-800 border-0 text-xs">Crítico</Badge>
+                          ? <Badge className="bg-red-100 text-red-800 border-0 text-xs">{t('kpiCards.reliability.tagCritical')}</Badge>
                           : <Badge className="bg-gray-100 text-gray-700 border-0 text-xs">—</Badge>}
                       </TableCell>
                     </TableRow>
                   ))}
                   {(!data?.items || data.items.length === 0) && (
-                    <TableRow><TableCell colSpan={7} className="text-center text-sm text-gray-500 py-6">Sin fallas registradas en el período.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center text-sm text-gray-500 py-6">{t('kpiCards.reliability.emptyNoFailuresInPeriod')}</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
             </div>
-            <p className="text-xs text-gray-500">
-              <strong>Correlación IA:</strong> activo flageado cuando failure_count &gt; promedio + 1σ <em>y</em> availability &lt; promedio − 1σ.
-            </p>
+            <p className="text-xs text-gray-500">{t('kpiCards.reliability.footnote')}</p>
           </div>
         </DialogContent>
       </Dialog>

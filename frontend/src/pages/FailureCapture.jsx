@@ -463,6 +463,20 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     return node.code || node.name || '';
   }, []);
 
+  // SF-638 — calcular Nivel de Riesgo automáticamente. Combina criticidad del
+  // equipo (HIGH/MEDIUM/LOW de hierarchy_nodes.criticality) con la prioridad
+  // del aviso (P1..P4). Resultado: CRITICAL/HIGH/MEDIUM/LOW. Read-only en UI.
+  useEffect(() => {
+    const crit = (selectedEquip?.criticality || 'MEDIUM').toUpperCase();
+    const pri = (form.priority || 'P3').toUpperCase();
+    let level;
+    if (crit === 'HIGH' && (pri === 'P1' || pri === 'P2')) level = 'CRITICAL';
+    else if (crit === 'HIGH' || pri === 'P1') level = 'HIGH';
+    else if (crit === 'MEDIUM' || pri === 'P2' || pri === 'P3') level = 'MEDIUM';
+    else level = 'LOW';
+    if (level !== form.productionImpact) setF('productionImpact', level);
+  }, [selectedEquip, form.priority]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     // Load locations (PLANT + AREA + top SYSTEM) and equipment separately
     Promise.all([
@@ -1552,30 +1566,38 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             </div>
           </div>
 
-          {/* Jorge 2026-05-04: rebranding "Impacto operacional" → "Nivel de
-              riesgo" para alinear con el campo equivalente en la OT (mismo
-              concepto, distinto nombre confundía al usuario). */}
-          <div className="border rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-              Nivel de riesgo
-              <span className="ml-2 text-[10px] font-normal text-gray-400 normal-case">¿Cómo afecta la producción si no se atiende?</span>
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { value: 'CRITICAL', label: 'Crítico', desc: 'Para planta', color: '#dc2626', bg: '#fee2e2' },
-                { value: 'HIGH', label: 'Alto', desc: 'Reduce capacidad', color: '#ea580c', bg: '#ffedd5' },
-                { value: 'MEDIUM', label: 'Medio', desc: 'Afecta calidad', color: '#ca8a04', bg: '#fef3c7' },
-                { value: 'LOW', label: 'Bajo', desc: 'Sin impacto inmediato', color: '#2563eb', bg: '#dbeafe' },
-              ].map(imp => (
-                <button key={imp.value} type="button"
-                  onClick={() => setF('productionImpact', imp.value)}
-                  className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${form.productionImpact === imp.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
-                  style={{ borderColor: form.productionImpact === imp.value ? imp.color : '#e5e7eb', backgroundColor: form.productionImpact === imp.value ? imp.bg : 'transparent' }}>
-                  <div className="text-xs font-bold" style={{ color: imp.color }}>{imp.label}</div>
-                  <div className="text-[9px] text-gray-500 leading-tight">{imp.desc}</div>
-                </button>
-              ))}
+          {/* SF-638 (2026-05-05): "Nivel de Riesgo" pasa a campo CALCULADO
+              automáticamente. Se mueve a la zona "datos calculados" (banda
+              informativa, no editable). Fórmula:
+                  criticidad equipo + prioridad → nivel
+              Ver computeRiskLevel() y el effect que lo aplica al cambiar
+              priority o equipo. */}
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-3 bg-gray-50">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                <span>Nivel de Riesgo</span>
+                <span className="text-[9px] font-normal italic text-gray-400 normal-case">(calculado automáticamente)</span>
+              </label>
+              {(() => {
+                const RISK_META = {
+                  CRITICAL: { label: 'CRÍTICO', desc: 'Para planta', color: '#dc2626', bg: '#fee2e2' },
+                  HIGH:     { label: 'ALTO',    desc: 'Reduce capacidad', color: '#ea580c', bg: '#ffedd5' },
+                  MEDIUM:   { label: 'MEDIO',   desc: 'Afecta calidad', color: '#ca8a04', bg: '#fef3c7' },
+                  LOW:      { label: 'BAJO',    desc: 'Sin impacto inmediato', color: '#2563eb', bg: '#dbeafe' },
+                };
+                const m = RISK_META[form.productionImpact] || RISK_META.MEDIUM;
+                return (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold" style={{ color: m.color, backgroundColor: m.bg, border: `1px solid ${m.color}` }}>
+                    {m.label} · {m.desc}
+                  </span>
+                );
+              })()}
             </div>
+            <p className="text-[10px] text-gray-500 leading-relaxed">
+              Derivado de: <strong>criticidad del equipo</strong> ({selectedEquip?.criticality || 'no clasificado'})
+              + <strong>prioridad</strong> ({form.priority || '—'}).
+              Se recalcula al cambiar el equipo o la prioridad.
+            </p>
           </div>
 
           {/* 1. What happened? + Voice / Camera */}

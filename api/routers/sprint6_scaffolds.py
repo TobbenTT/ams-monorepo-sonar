@@ -129,9 +129,15 @@ def smart_assignment_suggest(wo_id: str, db: Session = Depends(get_db)):
     workforce = db.query(WorkforceModel).filter(
         WorkforceModel.plant_id == wo.plant_id, WorkforceModel.active == True  # noqa: E712
     ).all() if wo.plant_id else []
+    def _skills_str(w):
+        raw = getattr(w, "skills", None)
+        if isinstance(raw, list):
+            return ", ".join(str(s) for s in raw if s)
+        return str(raw or "")
+
     suggestions = []
     for w in workforce:
-        skills = (getattr(w, "skills", None) or "")
+        skills = _skills_str(w)
         match_score = sum(1 for s in needed_specialties if s and s.lower() in skills.lower())
         if match_score > 0:
             suggestions.append({
@@ -296,8 +302,14 @@ def skills_gaps(plant_id: str | None = None, days: int = 90, db: Session = Depen
     workforce = db.query(WorkforceModel).all()
     supply = defaultdict(int)
     for w in workforce:
-        for sp in (getattr(w, "skills", "") or "").upper().split(","):
-            sp = sp.strip()
+        # WorkforceModel.skills puede ser list (JSON) o str → normalizar a list de tokens
+        raw = getattr(w, "skills", None)
+        tokens = []
+        if isinstance(raw, list):
+            tokens = [str(s).strip().upper() for s in raw if s]
+        elif isinstance(raw, str):
+            tokens = [s.strip().upper() for s in raw.split(",") if s.strip()]
+        for sp in tokens:
             if sp:
                 supply[sp] += 1
     gaps = []
@@ -715,7 +727,8 @@ def skills_inference(wo_id: str, db: Session = Depends(get_db)):
         required = SKILL_MAP.get(sp, [])
         matches = []
         for w in workforce:
-            skills_str = (getattr(w, "skills", None) or "").lower()
+            _raw = getattr(w, "skills", None)
+            skills_str = (", ".join(str(s) for s in _raw) if isinstance(_raw, list) else str(_raw or "")).lower()
             score = sum(1 for k in required if k in skills_str)
             if score > 0:
                 matches.append({"worker_id": w.worker_id, "name": getattr(w, "name", w.worker_id), "score": score})

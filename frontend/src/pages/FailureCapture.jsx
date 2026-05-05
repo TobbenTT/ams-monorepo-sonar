@@ -648,7 +648,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
         const children = Array.isArray(res) ? res : res?.items || [];
         // Get all equipment from children (direct + nested)
         const equipList = children.filter(n => n.node_type === 'EQUIPMENT');
-        if (equipList.length > 0) {
+        if (equipList.length === 1) {
+          // SF-636 — relación 1:1 (TL con un único equipo) → autollenar Tag.
+          selectEquip(equipList[0]);
+        } else if (equipList.length > 0) {
+          // SF-636 — relación 1:N → mostrar selector de equipos.
           setEquipResults(equipList);
           setEquipFromLocation(true);
           setShowEquipSearch(true);
@@ -658,7 +662,10 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
           Promise.all(childIds.slice(0, 15).map(id => api.listNodes({ parent_node_id: id, limit: 200, plant_id: plant }).catch(() => []))).then(results => {
             const allLevel2 = results.flatMap(r => Array.isArray(r) ? r : r?.items || []);
             const equips2 = allLevel2.filter(n => n.node_type === 'EQUIPMENT');
-            if (equips2.length > 0) {
+            if (equips2.length === 1) {
+              // SF-636 — 1:1 a 2 niveles
+              selectEquip(equips2[0]);
+            } else if (equips2.length > 0) {
               setEquipResults(equips2);
               setEquipFromLocation(true);
               setShowEquipSearch(true);
@@ -668,7 +675,10 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
               Promise.all(level2Ids.slice(0, 20).map(id => api.listNodes({ parent_node_id: id, limit: 200, plant_id: plant }).catch(() => []))).then(res3 => {
                 const allLevel3 = res3.flatMap(r => Array.isArray(r) ? r : r?.items || []);
                 const equips3 = allLevel3.filter(n => n.node_type === 'EQUIPMENT');
-                if (equips3.length > 0) {
+                if (equips3.length === 1) {
+                  // SF-636 — 1:1 a 3 niveles
+                  selectEquip(equips3[0]);
+                } else if (equips3.length > 0) {
                   setEquipResults(equips3);
                   setEquipFromLocation(true);
                   setShowEquipSearch(true);
@@ -701,6 +711,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     setF('technicalLocation', '');
     setF('technicalLocationCode', '');
     setLocSearch('');
+    // SF-636 — invalidación cruzada: al limpiar la TL, el Tag deja de tener
+    // contexto válido. Lo limpiamos también para forzar nueva selección coherente.
+    setSelectedEquip(null);
+    setF('whereTag', '');
+    setEquipSearch('');
   };
 
   // ── Voice ──

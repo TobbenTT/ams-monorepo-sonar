@@ -4010,6 +4010,18 @@ export default function Scheduling() {
       toast.error(`⛔ ${tech.name} está en descanso/vacaciones (${tech.absence_reason || 'no disponible'}). No se puede asignar.`);
       return;
     }
+    // SF-651: shift-match. Si el técnico es de turno noche y se dropeó en celda
+    // 'day' (o viceversa), el card quedaría invisible porque la grilla solo
+    // pinta cards en celdas que matchean el turno. Auto-flip al turno del tech
+    // para que siempre quede visible. Toast informa el ajuste.
+    const techShift = (tech.shift || '').toLowerCase();
+    if ((techShift === 'night' || techShift === 'n') && shift !== 'night') {
+      toast(`🌙 ${tech.name} es de turno noche · OT asignada a turno noche`);
+      shift = 'night';
+    } else if ((techShift === 'day' || techShift === 'd') && shift !== 'day') {
+      toast(`☀️ ${tech.name} es de turno día · OT asignada a turno día`);
+      shift = 'day';
+    }
     // B3-FULL-2 Tanda B3 (David 2026-04-28, Magda transcript 392-394):
     // Constraint exclusividad equipo apoyo simultáneo. Si la OT requiere un
     // equipo (puente grúa, etc) y ya hay otra OT scheduled en el mismo

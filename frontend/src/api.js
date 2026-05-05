@@ -104,8 +104,12 @@ async function request(method, path, data, params) {
   // Jorge 2026-04-27: timeout duro de 30s en cada request — sin esto, si el
   // backend o el WS se cuelgan al persistir, el front queda "pegado" sin
   // poder reintentar (síntoma reportado en Failure Capture y al editar OT).
+  // 2026-05-05: bump a 90s para endpoints AI/Vision que toman 25-40s con
+  // foto (Vision AI con liner SAG tomaba 25s y caía en timeout 30s).
+  const isAiHeavy = /\/(ai-|agentic\/|.*\/ai-|.*-ai$|sap-sync|programmer-agent|supervisor-agent|planificador-agent|rag\/)/i.test(path);
+  const timeoutMs = isAiHeavy ? 90000 : 30000;
   const ctrl = new AbortController();
-  const timeoutId = setTimeout(() => ctrl.abort(), 30000);
+  const timeoutId = setTimeout(() => ctrl.abort(), timeoutMs);
   const opts = { method, headers: authHeaders(), signal: ctrl.signal };
   if (data !== undefined && method !== 'GET') opts.body = JSON.stringify(data);
 
@@ -131,7 +135,7 @@ async function request(method, path, data, params) {
       return { __queued__: true, __queued_at__: Date.now(), ...entry };
     }
     if (networkErr?.name === 'AbortError') {
-      throw new Error('Request timeout (30s) — el servidor no respondió. Reintentá.');
+      throw new Error(`Request timeout (${Math.round(timeoutMs / 1000)}s) — el servidor no respondió. Reintentá.`);
     }
     throw networkErr;
   }

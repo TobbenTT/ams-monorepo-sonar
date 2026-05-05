@@ -774,19 +774,180 @@ def stock_check(wo_id: str, db: Session = Depends(get_db)):
 # ─── SF-619 Estandarización datos técnicos ───────────────────────────────────
 @router.get("/canonical-data-status")
 def canonical_data_status(plant_id: str | None = None, db: Session = Depends(get_db)):
-    """SF-619 NF-14 — Estado de unificación de datos canónicos (TL, planning groups, puestos, costos)."""
-    from api.database.models import HierarchyNodeModel, WorkforceModel, SupportEquipmentModel
-    plant_filter = lambda q, m: q.filter(m.plant_id == plant_id) if plant_id else q
+    """SF-619 NF-14 — Estado real de fragmentación de datos canónicos.
+
+    Investigación 2026-05-05 sobre BD prod: identificadas 3 fuentes paralelas
+    de materiales con IDs distintos (sap_code, material_code, sap_id) sin FKs.
+    Otras dimensiones (equipos, workforce, planning) ya tienen fuente única.
+    """
+    from sqlalchemy import text, inspect
+    from api.database.models import (
+        HierarchyNodeModel, WorkforceModel, SupportEquipmentModel,
+        WorkCenterModel,
+    )
+
+    # Counts por dimensión
+    def count(model, plant_field="plant_id"):
+        q = db.query(model)
+        if plant_id and hasattr(model, plant_field):
+            q = q.filter(getattr(model, plant_field) == plant_id)
+        return q.count()
+
+    inv = inspect(db.bind)
+    has_table = lambda t: t in inv.get_table_names()
+
+    materials_sources = {}
+    for tbl in ("bom_items", "inventory_items", "sap_materials"):
+        if has_table(tbl):
+            materials_sources[tbl] = db.execute(text(f"SELECT COUNT(*) FROM {tbl}")).scalar() or 0
+
+    cost_sources = {}
+    for tbl in (
+        "annual_budget_capex", "annual_budget_equipment", "annual_budget_executive",
+        "annual_budget_kpi_targets", "annual_budget_maintenance", "annual_budget_opex",
+        "annual_budget_production", "cost_centers",
+    ):
+        if has_table(tbl):
+            cost_sources[tbl] = db.execute(text(f"SELECT COUNT(*) FROM {tbl}")).scalar() or 0
+
+    # Fragmentación score: dimensiones con >1 fuente
+    fragmented = []
+    if len(materials_sources) > 1:
+        fragmented.append({
+            "dimension": "materiales",
+            "sources": list(materials_sources.keys()),
+            "ids_distintos": ["bom_items.sap_code", "inventory_items.material_code", "sap_materials.sap_id"],
+            "severity": "ALTA — sin FKs entre tablas, probable solapamiento físico",
+            "remediation": "Crear vista materiales_canonical(canonical_id, sources[]) + endpoint unificado /canonical/materials",
+        })
+    if len(cost_sources) > 4:
+        fragmented.append({
+            "dimension": "costos",
+            "sources": list(cost_sources.keys()),
+            "severity": "MEDIA — fragmentación por dimensión (CAPEX/OPEX/equipment), aceptable",
+            "remediation": "Vista materializada budget_summary() agregando todas las dimensiones",
+        })
+
     return {
-        "todo": "Definir tabla canonical_master + migración de fuentes legacy + API única de consulta",
-        "implemented": False,
-        "current_sources": {
-            "hierarchy_nodes": plant_filter(db.query(HierarchyNodeModel), HierarchyNodeModel).count(),
-            "workforce": plant_filter(db.query(WorkforceModel), WorkforceModel).count(),
-            "support_equipment": plant_filter(db.query(SupportEquipmentModel), SupportEquipmentModel).count(),
-            "managed_wos": plant_filter(db.query(ManagedWorkOrderModel), ManagedWorkOrderModel).count(),
+        "fragmentation_score": len(fragmented),
+        "fragmented_dimensions": fragmented,
+        "single_source_dimensions": {
+            "ubicaciones_tecnicas": {"table": "hierarchy_nodes", "rows": count(HierarchyNodeModel)},
+            "workforce": {"table": "workforce", "rows": count(WorkforceModel)},
+            "support_equipment": {"table": "support_equipment", "rows": count(SupportEquipmentModel)},
+            "work_centers": {"table": "work_centers", "rows": count(WorkCenterModel) if WorkCenterModel else 0},
         },
-        "fragmentation": "MEDIA — datos viven en 4+ tablas distintas, sin tabla canonical_master",
+        "materials_breakdown": materials_sources,
+        "cost_breakdown": cost_sources,
+        "canonical_endpoints": {
+            "/sprint6/canonical/materials-search": "Búsqueda unificada en las 3 fuentes",
+            "/sprint6/canonical-data-status": "este endpoint",
+        },
+    }
+
+
+@router.get("/canonical/materials-search")
+def canonical_materials_search(
+    query: str,
+    limit: int = 30,
+    db: Session = Depends(get_db),
+):
+    """SF-619 NF-14 — Búsqueda canónica unificada en las 3 fuentes de materiales.
+
+    Devuelve resultados con `source` que indica de cuál tabla proviene
+    (bom_items / inventory_items / sap_materials) y un `canonical_id`
+    derivado para deduplicar visualmente.
+    """
+    from sqlalchemy import text
+    if not query or len(query.strip()) < 2:
+        return {"items": [], "count": 0, "sources_searched": 0}
+    term = f"%{query.strip().lower()}%"
+    results = []
+    sources = 0
+
+    # 1. sap_materials (catálogo global SAP)
+    try:
+        rows = db.execute(text("""
+            SELECT sap_id, description, category, unit, unit_cost_usd, manufacturer, part_number, current_stock, min_stock
+            FROM sap_materials
+            WHERE LOWER(description) LIKE :t OR LOWER(part_number) LIKE :t OR LOWER(sap_id) LIKE :t
+            LIMIT :lim
+        """), {"t": term, "lim": limit}).fetchall()
+        sources += 1
+        for r in rows:
+            results.append({
+                "canonical_id": f"SAP:{r[0]}",
+                "source": "sap_materials",
+                "code": r[0],
+                "description": r[1],
+                "category": r[2],
+                "unit": r[3],
+                "unit_cost": r[4],
+                "manufacturer": r[5],
+                "part_number": r[6],
+                "current_stock": r[7],
+                "min_stock": r[8],
+            })
+    except Exception:
+        pass
+
+    # 2. inventory_items (stock por bodega)
+    try:
+        rows = db.execute(text("""
+            SELECT material_code, description, warehouse_id, quantity_on_hand, quantity_available, min_stock
+            FROM inventory_items
+            WHERE LOWER(description) LIKE :t OR LOWER(material_code) LIKE :t
+            LIMIT :lim
+        """), {"t": term, "lim": limit}).fetchall()
+        sources += 1
+        for r in rows:
+            results.append({
+                "canonical_id": f"INV:{r[0]}",
+                "source": "inventory_items",
+                "code": r[0],
+                "description": r[1],
+                "warehouse_id": r[2],
+                "quantity_on_hand": r[3],
+                "quantity_available": r[4],
+                "min_stock": r[5],
+            })
+    except Exception:
+        pass
+
+    # 3. bom_items (lista de materiales por equipo)
+    try:
+        rows = db.execute(text("""
+            SELECT sap_code, component, description, equipment_tag, quantity, unit, critical
+            FROM bom_items
+            WHERE LOWER(description) LIKE :t OR LOWER(component) LIKE :t OR LOWER(sap_code) LIKE :t
+            LIMIT :lim
+        """), {"t": term, "lim": limit}).fetchall()
+        sources += 1
+        for r in rows:
+            results.append({
+                "canonical_id": f"BOM:{r[0]}",
+                "source": "bom_items",
+                "code": r[0],
+                "component_label": r[1],
+                "description": r[2],
+                "equipment_tag": r[3],
+                "quantity": r[4],
+                "unit": r[5],
+                "critical": bool(r[6]) if r[6] is not None else None,
+            })
+    except Exception:
+        pass
+
+    return {
+        "query": query,
+        "count": len(results),
+        "sources_searched": sources,
+        "items": results,
+        "note": (
+            "canonical_id usa prefijo SAP:/INV:/BOM: porque las 3 tablas no comparten FK. "
+            "Próxima iteración: tabla materials_canonical con mapping (sap_id, material_code, sap_code) "
+            "para deduplicar resultados que sean el mismo material físico en distintas fuentes."
+        ),
     }
 
 

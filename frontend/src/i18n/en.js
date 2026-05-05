@@ -1963,6 +1963,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         schedulingDesc: 'Schedule work orders and manage resources',
         executionDesc: 'Track task execution and progress',
         closureDesc: 'Close work orders and capture lessons learned',
+        performanceDesc: 'KPIs, trend analysis and improvement actions',
     },
 
     // ─── Work Orders Page ─────────────────────────────────────

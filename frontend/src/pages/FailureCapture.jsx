@@ -884,7 +884,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     if (!photoList || photoList.length === 0) return;
     setVisionLoading(true);
     setVisionResult(null);
-    toast.info('AI analyzing image...');
+    toast.info(form.whatHappens?.trim() ? 'Análisis de proceso completo…' : 'Analizando imagen con IA…');
     try {
       const res = await aiAssistImage({
         images: photoList,
@@ -1724,7 +1724,15 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                 {aiLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                    Analizando...
+                    {(() => {
+                      // SF-641 — mensaje dinámico según los canales disponibles.
+                      const hasText = !!form.whatHappens?.trim();
+                      const hasImg = photos.length > 0;
+                      if (hasText && hasImg) return 'Análisis de proceso completo';
+                      if (hasImg) return 'Analizando imagen con IA';
+                      if (hasText) return 'Analizando texto con IA';
+                      return 'Analizando…';
+                    })()}
                   </>
                 ) : (
                   <>✨ AI Assistant</>
@@ -1763,7 +1771,14 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             {visionLoading && (
               <div className="flex items-center gap-2 mt-2 px-3 py-2 bg-violet-50 border border-violet-200 rounded-xl animate-pulse">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-violet-600"></div>
-                <span className="text-xs font-semibold text-violet-700">AI analyzing image...</span>
+                <span className="text-xs font-semibold text-violet-700">
+                  {/* SF-641 — mensaje según canales presentes */}
+                  {form.whatHappens?.trim() && photos.length > 0
+                    ? 'Análisis de proceso completo (texto + imagen)'
+                    : photos.length > 0
+                      ? 'Analizando imagen con IA…'
+                      : 'Analizando texto con IA…'}
+                </span>
               </div>
             )}
             {/* SF-215: AI Vision Analysis Confirmation Card */}

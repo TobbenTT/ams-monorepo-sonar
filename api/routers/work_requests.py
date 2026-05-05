@@ -1025,6 +1025,17 @@ def ai_assist_image(data: ImageAssistRequest, user=Depends(get_current_user), db
     imgs = data.images if data.images else ([data.image] if data.image else [])
     if not imgs:
         raise HTTPException(status_code=400, detail="No image provided")
+    # SF-639 — auditoría de invocación manual de IA (token consumption tracking)
+    try:
+        from api.services.audit_service import log_action
+        log_action(
+            db, "ai_invocation", data.equipment_tag or "unknown",
+            "VISION_AI_INVOKED",
+            payload={"images": len(imgs), "has_context": bool(data.additional_context)},
+            user=getattr(user, "user_id", "system"),
+        )
+    except Exception:
+        pass
     result = vision_service.analyze_images(
         images_base64=imgs,
         equipment_tag=data.equipment_tag,

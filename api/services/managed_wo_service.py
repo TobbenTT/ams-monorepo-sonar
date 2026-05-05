@@ -419,7 +419,13 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
         wr_resources = []
     steps = []
     if suggested:
-        for line in str(suggested).split("\n"):
+        # SF-647 (2026-05-05) — algunos avisos guardan los pasos en una sola
+        # línea (`1. Detener... 2. Posicionar... 3. Inspección...`). El split
+        # por \n no detectaba estos casos y la OT quedaba con 1 op de 48h
+        # bundleando todo. Normalizamos primero forzando salto antes de cada
+        # número-punto, luego procesamos como antes.
+        normalized = _re.sub(r"\s+(\d+[\.\)])\s+", r"\n\1 ", str(suggested))
+        for line in normalized.split("\n"):
             line = line.strip()
             if not line:
                 continue
@@ -834,16 +840,19 @@ def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int
     # se permite avanzar (forward) o quedarse igual. Reversiones explícitas
     # deben ir por endpoints dedicados (/draft, /reschedule, /cancel) que
     # quedan en audit_log con razón.
+    # 2026-05-05: EN_PROGRAMACION y PROGRAMADO comparten nivel 3 — Auto-Schedule
+    # legítimamente "desreserva" (PROGRAMADO → EN_PROGRAMACION) cuando el
+    # planificador re-distribuye antes de aplicar Reservar Semana.
     _STATUS_ORDER = {
         "CREADO": 0, "DRAFT": 0, "PENDIENTE": 0,
         "LIBERADO": 1, "RELEASED": 1,
         "PLANIFICADO": 2, "PLANNED": 2, "APROBADO": 2,
         "EN_PROGRAMACION": 3,
-        "PROGRAMADO": 4, "SCHEDULED": 4,
+        "PROGRAMADO": 3, "SCHEDULED": 3,  # mismo nivel que EN_PROGRAMACION
+        "REPROGRAMADO": 3,
         "EN_EJECUCION": 5, "IN_EXECUTION": 5,
         "COMPLETADO": 6,
         "CERRADO": 7, "CLOSED": 7,
-        "REPROGRAMADO": 3,  # vuelve a programación (válido)
         "CANCELADO": 8,     # terminal
     }
     if new_status and new_status != (wo.status or "").upper():

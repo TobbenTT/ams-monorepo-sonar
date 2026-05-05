@@ -32,6 +32,7 @@ Full schema for valid industrial photos:
 
 {
   "equipment_identified": "What specific industrial equipment is visible (e.g. Centrifugal Pump, Belt Conveyor, Electric Motor, Crusher, Cyclone, etc.)",
+  "main_action": "Short SAP-style WO title (max 70 chars, verb+object, e.g. 'Reemplazo de rodamiento bomba P-3201A' or 'Inspección sello mecánico'). Used as Work Order title.",
   "failure_type": "MECHANICAL | ELECTRICAL | INSTRUMENTATION | HYDRAULIC | STRUCTURAL",
   "severity": "low | medium | high | critical",
   "whatHappens": "Concise description of the visible problem (2-3 detailed sentences. Match the language of any user-provided context - if Spanish, respond in Spanish; if English, respond in English)",

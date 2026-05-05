@@ -824,7 +824,16 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
     const wrId = selectedWR.work_request_id || selectedWR.request_id;
     setSaving(true);
     try {
-      await api.updateWorkRequest(wrId, editFields);
+      // Bug 2026-05-05: el backend lee `priority_code`, no `priority`. Antes se
+      // enviaba editFields tal cual con clave `priority` → cambios no persistían.
+      const payload = {
+        planning_group: editFields.planning_group,
+        work_center: editFields.work_center,
+        area_empresa: editFields.area_empresa,
+        aviso_coding: editFields.aviso_coding,
+        priority_code: editFields.priority,
+      };
+      await api.updateWorkRequest(wrId, payload);
       toast.success('Planning data saved');
       fetchData();
       setSelectedWR(null);
@@ -3433,12 +3442,36 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <div className="space-y-1.5">
                           {(wo.documents || []).map((doc, i) => (
                             <div key={i}
-                              onClick={() => doc.url && window.open(doc.url, '_blank')}
-                              className={`flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors group ${doc.url ? 'cursor-pointer' : ''}`}>
+                              onClick={() => {
+                                // SF-639 — manejar 3 casos: URL externa, código DMS, o aviso_foto_X.jpg
+                                if (doc.url) {
+                                  // Si es código DMS (DOC-XXXX), abrir vía /dms/
+                                  if (/^DOC-\d+/i.test(doc.url)) {
+                                    window.open(`/dms/${doc.url}`, '_blank');
+                                  } else if (doc.url.startsWith('http') || doc.url.startsWith('/') || doc.url.startsWith('data:')) {
+                                    window.open(doc.url, '_blank');
+                                  } else {
+                                    toast.info('URL inválida — edita el documento para corregirla');
+                                  }
+                                } else if (/^aviso_foto_\d+/i.test(doc.name || '')) {
+                                  // Foto del aviso de origen — link al WR
+                                  if (wo.work_request_id) {
+                                    window.open(`/work-management?tab=identification&openWr=${encodeURIComponent(wo.work_request_id)}`, '_blank');
+                                  } else {
+                                    toast.info('Foto vinculada al aviso de origen — abrí el aviso desde el header');
+                                  }
+                                } else {
+                                  toast.info('Documento manual sin URL/DMS configurado — edita para agregar');
+                                }
+                              }}
+                              className="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors group cursor-pointer">
                               <FileText className="w-4 h-4 text-blue-500 flex-shrink-0 group-hover:text-blue-600" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-700">{doc.name}</p>
                                 {doc.url && <p className="text-xs text-gray-400 truncate">{doc.url}</p>}
+                                {!doc.url && /^aviso_foto_\d+/i.test(doc.name || '') && (
+                                  <p className="text-xs text-blue-400 italic">📎 Foto del aviso — click para abrir el aviso</p>
+                                )}
                               </div>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${DOC_TYPE_COLOR[doc.type] || 'bg-gray-100 text-gray-600'}`}>{DOC_TYPE_LABEL[doc.type] || doc.type}</span>
                               <button onClick={async (e) => {

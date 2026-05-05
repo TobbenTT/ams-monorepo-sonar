@@ -959,6 +959,22 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       }
       if (res?.suggestions) {
         const s = res.suggestions;
+        // SF-639 — autollenar título de OT también desde el flujo Vision.
+        // Antes solo lo hacía handleAiSuggest (texto). Si la foto venía sola
+        // sin texto, woTitle quedaba vacío.
+        if (s.main_action || s.mainAction) {
+          let title = String(s.main_action || s.mainAction).trim();
+          if (title.length > 70) title = title.substring(0, 70).replace(/\s+\S*$/, '');
+          setF('woTitle', title);
+        } else if (s.suggestedAction) {
+          let title = String(s.suggestedAction).split(/[.,;]/)[0].trim();
+          if (title.length > 70) title = title.substring(0, 70).replace(/\s+\S*$/, '');
+          setF('woTitle', title);
+        } else if (s.whatHappens) {
+          let title = String(s.whatHappens).split(/[.,;]/)[0].trim();
+          if (title.length > 70) title = title.substring(0, 70).replace(/\s+\S*$/, '');
+          setF('woTitle', title);
+        }
         if (s.whatHappens) setF('whatHappens', s.whatHappens);
         if (s.failureCategory) {
           const cat = s.failureCategory.toUpperCase().trim();

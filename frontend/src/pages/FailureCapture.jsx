@@ -809,8 +809,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     // de upload. Ahora resize a 1600px lado largo + JPEG quality 0.85
     // dinámico → resultado típico 200-400KB sin pérdida visual relevante.
     try {
-      if (file.size > 25 * 1024 * 1024) {
-        toast.error('Foto >25MB. Tomá otra con menor resolución.');
+      if (file.size > 30 * 1024 * 1024) {
+        toast.error('Foto >30MB. Tomá otra con menor resolución.');
         return;
       }
       const result = await compressImage(file, { maxDim: 1600, maxBytes: 2 * 1024 * 1024 });
@@ -996,8 +996,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   // Magdalena docx 2026-05-05: si es imagen >2MB se comprime auto. Otros
   // tipos (PDF) se aceptan hasta 15MB tal cual.
   const ingestAttachment = async (file) => {
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error(`"${file.name}" excede 15MB. Comprimila o subila por separado.`);
+    if (file.size > 30 * 1024 * 1024) {
+      toast.error(`"${file.name}" excede 30MB. Comprimila o subila por separado.`);
       return;
     }
     if (file.type.startsWith('image/') && file.size > 2 * 1024 * 1024) {
@@ -2738,7 +2738,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
               <input id="fc-file-input" type="file" multiple accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={handleFileChange} />
               <Upload className="w-5 h-5 mx-auto text-gray-400 mb-1" />
               <p className="text-sm text-gray-500">Arrastra archivos o haz clic para subir</p>
-              <p className="text-xs text-gray-400 mt-0.5">JPG, PNG, PDF (max 15MB · imágenes &gt;2MB se comprimen auto)</p>
+              <p className="text-xs text-gray-400 mt-0.5">JPG, PNG, PDF (max 30MB · imágenes &gt;2MB se comprimen auto)</p>
             </div>
             {attachments.length > 0 && (
               <div className="mt-2 space-y-1">

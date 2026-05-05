@@ -7,6 +7,7 @@ import EquipmentChat from '../components/EquipmentChat';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
+import compressImage from '../utils/imageCompress';
 
 // Browser Speech Recognition (no API key needed)
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -798,21 +799,30 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
 
 
   const handleCameraClick = () => cameraRef.current?.click();
-  const handleCameraChange = (e) => {
+  const handleCameraChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const newPhoto = ev.target.result;
-      setPhotos(prev => [...prev, newPhoto]);
-      // Jorge 2026-05-04: deshabilitar auto-trigger de Vision al pegar foto.
-      // Antes (SF-215) disparaba autoAnalyzePhoto solo → quemaba tokens y
-      // mostraba "analizando foto con IA" aunque el usuario aún no hubiera
-      // terminado de cargar contexto. Ahora el análisis va por el botón
-      // "AI Assistant" unificado.
-    };
-    reader.readAsDataURL(file);
     e.target.value = '';
+    // Obs Magdalena 2026-05-05 / SF-594 BUG-3: comprimir client-side a max 2MB
+    // antes de meter al state. Móviles modernos producen JPEGs de 5-8MB que
+    // como dataURL crecen ~33% → con 2-3 fotos el JSON del WR excedía límites
+    // de upload. Ahora resize a 1600px lado largo + JPEG quality 0.85
+    // dinámico → resultado típico 200-400KB sin pérdida visual relevante.
+    try {
+      if (file.size > 25 * 1024 * 1024) {
+        toast.error('Foto >25MB. Tomá otra con menor resolución.');
+        return;
+      }
+      const result = await compressImage(file, { maxDim: 1600, maxBytes: 2 * 1024 * 1024 });
+      setPhotos(prev => [...prev, result.dataUrl]);
+      const origKB = Math.round(result.originalBytes / 1024);
+      const newKB = Math.round(result.sizeBytes / 1024);
+      if (origKB > newKB * 1.5) {
+        toast.success(`Foto optimizada: ${origKB}KB → ${newKB}KB`);
+      }
+    } catch (err) {
+      toast.error('No se pudo procesar la foto: ' + (err?.message || 'error'));
+    }
 
     // GPS auto-detect: check device location and suggest nearest equipment
     if (navigator.geolocation && !form.technicalLocationCode) {
@@ -983,22 +993,35 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const removePhoto = (idx) => setPhotos(prev => prev.filter((_, i) => i !== idx));
 
   // ── File Attachments ──
+  // Magdalena docx 2026-05-05: si es imagen >2MB se comprime auto. Otros
+  // tipos (PDF) se aceptan hasta 15MB tal cual.
+  const ingestAttachment = async (file) => {
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error(`"${file.name}" excede 15MB. Comprimila o subila por separado.`);
+      return;
+    }
+    if (file.type.startsWith('image/') && file.size > 2 * 1024 * 1024) {
+      try {
+        const r = await compressImage(file, { maxDim: 1600, maxBytes: 2 * 1024 * 1024 });
+        setAttachments(prev => [...prev, { name: file.name, data: r.dataUrl }]);
+        toast.success(`"${file.name}" optimizado: ${Math.round(r.originalBytes/1024)}KB → ${Math.round(r.sizeBytes/1024)}KB`);
+        return;
+      } catch (err) {
+        toast.error('Error optimizando imagen: ' + (err?.message || ''));
+        return;
+      }
+    }
+    const reader = new FileReader();
+    reader.onload = () => setAttachments(prev => [...prev, { name: file.name, data: reader.result }]);
+    reader.onerror = () => toast.error(`Error leyendo "${file.name}"`);
+    reader.readAsDataURL(file);
+  };
   const handleFileChange = (e) => {
-    Array.from(e.target.files || []).forEach(file => {
-      if (file.size > 10 * 1024 * 1024) { toast.error('Maximo 10MB por archivo'); return; }
-      const reader = new FileReader();
-      reader.onload = () => setAttachments(prev => [...prev, { name: file.name, data: reader.result }]);
-      reader.readAsDataURL(file);
-    });
+    Array.from(e.target.files || []).forEach(ingestAttachment);
   };
   const handleDrop = (e) => {
     e.preventDefault();
-    Array.from(e.dataTransfer.files).forEach(file => {
-      if (file.size > 10 * 1024 * 1024) { toast.error('Maximo 10MB por archivo'); return; }
-      const reader = new FileReader();
-      reader.onload = () => setAttachments(prev => [...prev, { name: file.name, data: reader.result }]);
-      reader.readAsDataURL(file);
-    });
+    Array.from(e.dataTransfer.files).forEach(ingestAttachment);
   };
 
   // ── Ensure realistic resource allocation based on failure category ──
@@ -2715,7 +2738,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
               <input id="fc-file-input" type="file" multiple accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={handleFileChange} />
               <Upload className="w-5 h-5 mx-auto text-gray-400 mb-1" />
               <p className="text-sm text-gray-500">Arrastra archivos o haz clic para subir</p>
-              <p className="text-xs text-gray-400 mt-0.5">JPG, PNG, PDF (max 10MB)</p>
+              <p className="text-xs text-gray-400 mt-0.5">JPG, PNG, PDF (max 15MB · imágenes &gt;2MB se comprimen auto)</p>
             </div>
             {attachments.length > 0 && (
               <div className="mt-2 space-y-1">

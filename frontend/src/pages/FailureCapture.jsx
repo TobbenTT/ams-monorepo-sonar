@@ -948,6 +948,15 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
         equipment_tag: form.whereTag || form.equipmentTag || '',
         additional_context: form.whatHappens || '',
       });
+      // SF-639 guard: la IA detectó que la foto no es de equipo industrial.
+      // No autocompletamos campos para evitar contenido inventado.
+      if (res?.irrelevant_photo) {
+        toast.error('⚠️ La foto no parece ser de equipo industrial — ' + (res.reason || 'subí una foto del equipo'));
+        return;
+      }
+      if (res?.equipment_mismatch) {
+        toast.warning('⚠️ La foto muestra otro equipo distinto al Tag seleccionado. Revisá las sugerencias.');
+      }
       if (res?.suggestions) {
         const s = res.suggestions;
         if (s.whatHappens) setF('whatHappens', s.whatHappens);

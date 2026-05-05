@@ -12,6 +12,24 @@ Analyze equipment photos and return a complete JSON for the SAP PM maintenance n
 
 IMPORTANT: Respond ONLY with valid JSON, no markdown or explanations.
 
+CRITICAL VALIDATION RULE (apply BEFORE filling any field):
+1. Look at the photo carefully. Is it actually a photo of industrial equipment, machinery, structural components, or a maintenance scene?
+2. If the photo is NOT industrial (e.g. a person/face, landscape, animal, document, screenshot, blank/black, food, generic indoor scene with no machinery, etc.), respond ONLY with this exact JSON and STOP — do NOT invent any analysis from the equipment_tag context:
+
+{
+  "irrelevant_photo": true,
+  "reason": "Brief explanation of what you see (e.g. 'Photo shows a person, not industrial equipment')",
+  "equipment_identified": "Not industrial equipment",
+  "whatHappens": "",
+  "suggestedAction": "",
+  "severity": "low",
+  "confidence": 0.0
+}
+
+3. ONLY if the photo clearly shows industrial equipment / machinery / a maintenance scene, proceed with the full schema below. If you can identify equipment but it does NOT match the equipment_tag provided, set "equipment_mismatch": true and explain in "whatHappens".
+
+Full schema for valid industrial photos:
+
 {
   "equipment_identified": "What specific industrial equipment is visible (e.g. Centrifugal Pump, Belt Conveyor, Electric Motor, Crusher, Cyclone, etc.)",
   "failure_type": "MECHANICAL | ELECTRICAL | INSTRUMENTATION | HYDRAULIC | STRUCTURAL",
@@ -193,6 +211,20 @@ def analyze_images(images_base64: list, equipment_tag: str = "", additional_cont
                 else:
                     raise
 
+        # Guard SF-639: si la IA detectó que la foto no es industrial, no
+        # devolvemos sugerencias para autollenar — solo el flag + mensaje.
+        if suggestions.get("irrelevant_photo"):
+            return {
+                "irrelevant_photo": True,
+                "reason": suggestions.get("reason", "Photo does not appear to be industrial equipment"),
+                "suggestions": {},
+                "confidence": 0.0,
+                "source": "vision_ai",
+                "has_context": bool(context_str),
+                "images_count": n,
+                "duration_ms": duration_ms,
+            }
+
         prio = suggestions.get("priority", "P3")
         if prio in ("P1", "P2"):
             suggestions["activityClass"] = "M002"
@@ -212,6 +244,7 @@ def analyze_images(images_base64: list, equipment_tag: str = "", additional_cont
             "has_context": bool(context_str),
             "images_count": n,
             "duration_ms": duration_ms,
+            "equipment_mismatch": bool(suggestions.get("equipment_mismatch")),
         }
 
     except json.JSONDecodeError as e:

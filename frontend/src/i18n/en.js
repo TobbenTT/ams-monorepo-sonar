@@ -2188,6 +2188,7 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
         title: 'Work Management',
         subtitle: 'Complete maintenance work lifecycle',
         tabs: {
+            failureCapture: 'Failure Capture',
             identification: 'Identification',
             planning: 'Planning',
             scheduling: 'Scheduling',

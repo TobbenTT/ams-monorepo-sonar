@@ -14,11 +14,11 @@ const Scheduling = lazy(() => import('./Scheduling'));
 const Execution = lazy(() => import('./Execution'));
 
 const TABS = [
-  { id: 'failure-capture', label: 'Failure Capture',  icon: AlertTriangle,  component: FailureCapture },
-  { id: 'identification',  label: 'Identification',   icon: ClipboardList,  component: WorkRequests },
-  { id: 'planning',        label: 'Planning',         icon: CalendarRange,  component: Planning },
-  { id: 'scheduling',      label: 'Scheduling',       icon: Calendar,       component: Scheduling },
-  { id: 'execution',       label: 'Execution',        icon: Wrench,         component: Execution },
+  { id: 'failure-capture', labelKey: 'workManagement.tabs.failureCapture', icon: AlertTriangle,  component: FailureCapture },
+  { id: 'identification',  labelKey: 'workManagement.tabs.identification', icon: ClipboardList,  component: WorkRequests },
+  { id: 'planning',        labelKey: 'workManagement.tabs.planning',       icon: CalendarRange,  component: Planning },
+  { id: 'scheduling',      labelKey: 'workManagement.tabs.scheduling',     icon: Calendar,       component: Scheduling },
+  { id: 'execution',       labelKey: 'workManagement.tabs.execution',      icon: Wrench,         component: Execution },
 ];
 
 export default function WorkManagement() {
@@ -143,7 +143,7 @@ export default function WorkManagement() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                {tab.label}
+                {t(tab.labelKey)}
                 {count > 0 && (
                   <span className={`ml-2 text-xs font-bold px-1.5 py-0.5 rounded-full ${
                     isActive

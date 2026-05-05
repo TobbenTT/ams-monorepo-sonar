@@ -2056,6 +2056,7 @@ export default {
         title: 'إدارة العمل',
         subtitle: 'دورة حياة كاملة لأعمال الصيانة',
         tabs: {
+            failureCapture: 'التقاط الأعطال',
             identification: 'التعريف',
             planning: 'التخطيط',
             scheduling: 'الجدولة',

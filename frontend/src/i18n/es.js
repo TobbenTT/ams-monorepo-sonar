@@ -1972,6 +1972,7 @@ export default {
         title: 'Gestión de Trabajos',
         subtitle: 'Ciclo completo de mantenimiento',
         tabs: {
+            failureCapture: 'Captura de Fallas',
             identification: 'Identificación',
             planning: 'Planificación',
             scheduling: 'Programación',

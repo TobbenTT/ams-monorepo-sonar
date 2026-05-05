@@ -974,6 +974,126 @@ def resources_internal_external(plant_id: str | None = None, db: Session = Depen
     }
 
 
+# ─── SF-612 Vista alternativa calendario (no basada en personas) ─────────────
+@router.get("/calendar-by-hour")
+def calendar_by_hour(
+    plant_id: str | None = None,
+    ref_date: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """SF-612 NF-8 / SF-614 NF-9 — Tablero gemelo (José): grilla por HORA del día.
+
+    Devuelve la semana actual con eje Y = horarios 00-24h en bloques de 1h.
+    Para cada slot devuelve las OTs activas y la HH consumida por especialidad.
+    Es la base del segundo tablero "drag-drop por hora" donde el supervisor
+    asigna OT a una hora específica y arriba se llena automático por specialty.
+    """
+    today = datetime.now().date()
+    if ref_date:
+        try:
+            today = datetime.fromisoformat(ref_date).date()
+        except ValueError:
+            pass
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+
+    q = _base_wo(db, plant_id).filter(
+        ManagedWorkOrderModel.planned_start.isnot(None),
+        ManagedWorkOrderModel.planned_start >= datetime.combine(week_start, datetime.min.time()),
+        ManagedWorkOrderModel.planned_start <= datetime.combine(week_end, datetime.max.time()),
+    )
+
+    # grid[day][hour] = {wos: [...], specialty_hh: {ELEC: 4, MECA: 8, ...}}
+    grid = {}
+    for d_offset in range(7):
+        d = (week_start + timedelta(days=d_offset)).isoformat()
+        grid[d] = {h: {"wos": [], "specialty_hh": {}} for h in range(24)}
+
+    for wo in q.all():
+        if not wo.planned_start:
+            continue
+        d_key = wo.planned_start.date().isoformat()
+        if d_key not in grid:
+            continue
+        start_h = wo.planned_start.hour
+        duration_h = max(1, int(float(wo.estimated_hours or 0)))
+        # Distribuir HH por specialty desde operations
+        spec_hh = defaultdict(float)
+        for op in (wo.operations or []):
+            sp = (op.get("specialty") or "MECA").upper()
+            spec_hh[sp] += float(op.get("hours") or op.get("duration") or 0) * int(op.get("quantity") or 1)
+        for offset in range(duration_h):
+            slot = start_h + offset
+            if slot >= 24:
+                break
+            grid[d_key][slot]["wos"].append({
+                "wo_id": wo.wo_id,
+                "wo_number": wo.wo_number,
+                "equipment_tag": wo.equipment_tag,
+                "priority": wo.priority_code,
+                "status": wo.status,
+            })
+            for sp, hh in spec_hh.items():
+                # Distribución uniforme por hora — heurística simple
+                grid[d_key][slot]["specialty_hh"][sp] = grid[d_key][slot]["specialty_hh"].get(sp, 0) + hh / duration_h
+
+    return {
+        "week_start": week_start.isoformat(),
+        "week_end": week_end.isoformat(),
+        "grid": grid,
+        "todo": (
+            "UI dedicada con drag-drop entre tableros. Tablero superior se llena auto "
+            "por specialty/HH; tablero inferior recibe drag de OT a slot horario."
+        ),
+    }
+
+
+# ─── SF-628 Pruebas de estrés del sistema ────────────────────────────────────
+@router.get("/stress-test/baseline")
+def stress_test_baseline(plant_id: str | None = None, db: Session = Depends(get_db)):
+    """SF-628 NF-23 — Baseline de carga actual del sistema para diseño de pruebas estrés.
+
+    Devuelve métricas reales del backend para usar como punto de comparación al
+    diseñar escenarios de carga (k6/Locust). NO ejecuta carga; solo informa.
+    """
+    from api.database.models import WorkRequestModel, ManagedWorkOrderModel as M
+
+    wr_total = db.query(WorkRequestModel).count()
+    wo_total = db.query(M).count()
+    last_30 = datetime.now() - timedelta(days=30)
+    wr_last30 = db.query(WorkRequestModel).filter(WorkRequestModel.created_at >= last_30).count()
+    wo_last30 = db.query(M).filter(M.created_at >= last_30).count()
+
+    return {
+        "current_volume": {
+            "work_requests_total": wr_total,
+            "work_orders_total": wo_total,
+            "wrs_last_30d": wr_last30,
+            "wos_last_30d": wo_last30,
+            "avg_wrs_per_day_30d": round(wr_last30 / 30.0, 1),
+            "avg_wos_per_day_30d": round(wo_last30 / 30.0, 1),
+        },
+        "recommended_test_scenarios": [
+            {"scenario": "burst_creation", "rps": 50, "duration_s": 60, "endpoint": "POST /work-requests/"},
+            {"scenario": "concurrent_dashboard", "users": 100, "endpoint": "GET /analytics-dash/program-compliance"},
+            {"scenario": "ws_burst", "connections": 200, "events_per_min": 1000},
+            {"scenario": "bulk_status", "wo_ids_per_call": 50, "concurrent_calls": 10},
+            {"scenario": "photo_upload", "images_size_kb": 5000, "concurrent": 20},
+        ],
+        "metrics_to_track": [
+            "p50/p95/p99 latency por endpoint",
+            "error rate por status code",
+            "memory + CPU del container ocp-backend",
+            "tamaño de SQLite + checkpoint frequency",
+            "WS heartbeat success rate",
+        ],
+        "todo": (
+            "Implementar suite k6/Locust separada en /tests/load/. Ejecutar contra "
+            "ambiente staging (no prod) con BD volcada de prod anonimizada."
+        ),
+    }
+
+
 # ─── SF-627 Tareas en paralelo (consolidación) ───────────────────────────────
 @router.get("/parallel-duration/{wo_id}")
 def parallel_duration(wo_id: str, db: Session = Depends(get_db)):

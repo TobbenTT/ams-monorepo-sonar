@@ -879,38 +879,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     }
   };
 
-  // SF-215: Auto-analyze photo with Vision AI
-  const autoAnalyzePhoto = async (photoList) => {
-    if (!photoList || photoList.length === 0) return;
-    setVisionLoading(true);
-    setVisionResult(null);
-    toast.info(form.whatHappens?.trim() ? 'Análisis de proceso completo…' : 'Analizando imagen con IA…');
-    try {
-      const res = await aiAssistImage({
-        images: photoList,
-        equipment_tag: form.whereTag || form.equipmentTag || '',
-        additional_context: form.whatHappens || '',
-      });
-      if (res?.suggestions) {
-        const s = res.suggestions;
-        setVisionResult({
-          equipment_identified: s.equipment_identified || s.equipmentType || 'Unknown equipment',
-          failure_type: s.failure_type || s.failureCategory || '',
-          severity: s.severity || 'medium',
-          description: s.whatHappens || '',
-          suggested_action: s.suggestedAction || '',
-          confidence: res.confidence || 0.85,
-          raw: s,
-        });
-        toast.success('AI identified: ' + (s.equipment_identified || s.equipmentType || 'equipment'));
-      }
-    } catch (e) {
-      console.error('Auto vision analysis error:', e);
-      toast.error('AI photo analysis failed');
-    } finally {
-      setVisionLoading(false);
-    }
-  };
+  // SF-639 (2026-05-05) — autoAnalyzePhoto eliminado.
+  // Antes existía aquí una función auto-trigger de Vision AI sobre foto, pero
+  // nunca se invocaba (Jorge 2026-05-04 desactivó el callsite). Mantenerla
+  // generaba confusión sobre si la IA se disparaba sola. La IA solo se ejecuta
+  // por click explícito en el botón ✨ AI Assistant → handleAiSuggest.
 
   // SF-215: Accept AI vision suggestions and pre-fill form
   const acceptVisionSuggestions = () => {

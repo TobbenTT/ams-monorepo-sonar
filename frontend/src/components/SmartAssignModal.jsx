@@ -47,8 +47,8 @@ export default function SmartAssignModal({
   }, [open, plantId, specialty, shift, plannedHours]);
 
   if (!open) return null;
+  // SF-643 — z-[60] para aparecer encima del Plan borrador modal (z-50).
   return (
-    {/* SF-643 — z-[60] para aparecer encima de Plan borrador modal (z-50) */}
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">

@@ -160,7 +160,9 @@ def analyze_images(images_base64: list, equipment_tag: str = "", additional_cont
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1500,
+            # 2026-05-05: 1500 → 4000. JSON con análisis completo + sugerencias
+            # se truncaba en ~3700 chars y rompía el parse en frontend.
+            max_tokens=4000,
             system=system,
             messages=[{"role": "user", "content": content}],
         )
@@ -171,7 +173,25 @@ def analyze_images(images_base64: list, equipment_tag: str = "", additional_cont
         if raw.startswith("```"):
             raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
-        suggestions = json.loads(raw)
+        # Parser tolerante: si JSON quedó truncado por max_tokens, intentamos
+        # recuperar lo que se haya parseado limpiamente con raw_decode.
+        try:
+            suggestions = json.loads(raw)
+        except json.JSONDecodeError:
+            decoder = json.JSONDecoder()
+            try:
+                suggestions, _ = decoder.raw_decode(raw)
+                log.warning(f"Vision AI JSON truncated, recovered partial. len={len(raw)}")
+            except Exception:
+                # Fallback: intentar cerrar el JSON manualmente recortando hasta
+                # la última key cerrada y agregando "}".
+                last_comma = raw.rfind('",')
+                if last_comma > 0:
+                    repaired = raw[: last_comma + 1] + "}"
+                    suggestions = json.loads(repaired)
+                    log.warning(f"Vision AI JSON repaired manually at char {last_comma}")
+                else:
+                    raise
 
         prio = suggestions.get("priority", "P3")
         if prio in ("P1", "P2"):

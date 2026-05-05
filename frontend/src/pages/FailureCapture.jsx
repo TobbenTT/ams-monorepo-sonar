@@ -1117,6 +1117,29 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const actClasses = ACTIVITY_CLASSES[claseOT] || [];
   const canSubmit = form.whatHappens.trim() && form.technicalLocationCode.trim();
 
+  // SF-650 NF-17 (2026-05-05) — validación bloqueante por step. Antes Next
+  // pasaba sin validar y se descubría al final. Ahora cada step exige sus
+  // mandatorios y el botón Next muestra qué falta en tooltip.
+  const stepValidation = (step) => {
+    const tagOrEquip = (form.whereTag || equipSearch || '').trim();
+    if (step === 1) {
+      const missing = [];
+      if (!form.technicalLocationCode.trim()) missing.push('Technical Location');
+      if (!tagOrEquip) missing.push('Equipo / Tag');
+      return { ok: missing.length === 0, missing };
+    }
+    if (step === 2) {
+      const missing = [];
+      if (!form.priority) missing.push('Prioridad');
+      if (!form.whatHappens.trim() || form.whatHappens.trim().length < 10) {
+        missing.push('Qué pasó (mín. 10 caracteres)');
+      }
+      return { ok: missing.length === 0, missing };
+    }
+    return { ok: true, missing: [] };
+  };
+  const currentStepValidation = stepValidation(wizardStep);
+
   // ── Submit ──
   const handleSubmit = async () => {
     if (!canSubmit || submitting) return;
@@ -2797,11 +2820,26 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             ))}
           </div>
           {wizardStep < 3 ? (
-            <button
-              onClick={() => setWizardStep(s => Math.min(3, s + 1))}
-              className="px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
-              Next &#8594;
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={() => {
+                  if (!currentStepValidation.ok) {
+                    toast.error('Faltan: ' + currentStepValidation.missing.join(' · '));
+                    return;
+                  }
+                  setWizardStep(s => Math.min(3, s + 1));
+                }}
+                disabled={!currentStepValidation.ok}
+                title={currentStepValidation.ok ? '' : 'Faltan: ' + currentStepValidation.missing.join(' · ')}
+                className="px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                Next &#8594;
+              </button>
+              {!currentStepValidation.ok && (
+                <p className="text-[10px] text-red-600 max-w-[220px] text-right">
+                  Faltan: {currentStepValidation.missing.join(' · ')}
+                </p>
+              )}
+            </div>
           ) : (
             <span />
           )}

@@ -539,7 +539,9 @@ export default function Execution() {
                   <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Cumplimiento programa</span>
                 </div>
                 <div className="text-3xl font-extrabold">{cumplimientoPct}%</div>
-                <div className="text-[10px] opacity-70 mt-1">{Math.round(actualHH)}h ejec / {Math.round(plannedHH)}h plan · meta 85%</div>
+                <div className="text-[10px] opacity-70 mt-1">
+                  {kpiSprint6.compliance ? `${kpiSprint6.compliance.total_actual_h}h ejec / ${kpiSprint6.compliance.total_planned_h}h plan` : '—'} · meta 85%
+                </div>
               </div>
               <div className={`rounded-xl border p-4 ${tone(adherenciaPct, 80)}`}>
                 <div className="flex items-center gap-2 mb-1">
@@ -547,7 +549,9 @@ export default function Execution() {
                   <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Adherencia programa</span>
                 </div>
                 <div className="text-3xl font-extrabold">{adherenciaPct}%</div>
-                <div className="text-[10px] opacity-70 mt-1">{adherentes} en día / {cerradas.length} cerradas · meta 80%</div>
+                <div className="text-[10px] opacity-70 mt-1">
+                  {kpiSprint6.adherence ? `${kpiSprint6.adherence.adherent} en día / ${kpiSprint6.adherence.executed} ejecutadas` : '—'} · meta 80%
+                </div>
               </div>
               <div className={`rounded-xl border p-4 ${countTone(avisosAtrasados)}`}>
                 <div className="flex items-center gap-2 mb-1">

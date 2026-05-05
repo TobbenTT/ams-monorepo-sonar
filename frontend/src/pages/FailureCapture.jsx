@@ -987,7 +987,14 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       }
     } catch (e) {
       console.error('Vision AI error:', e);
-      toast.error('Error analyzing photos with AI');
+      // SF-639 — mensaje específico según el tipo de error que devuelve api.js
+      const msg = String(e?.message || e || '');
+      if (/413|payload|too large/i.test(msg))      toast.error('Foto demasiado pesada — comprimila o tomá menor resolución');
+      else if (/timeout|abort/i.test(msg))         toast.error('IA tardó >90s — Anthropic está lento, reintentá');
+      else if (/401|sesion|expired/i.test(msg))    toast.error('Sesión expirada — recargá la página');
+      else if (/429|rate/i.test(msg))              toast.error('Muchas llamadas a la IA — esperá 30s y reintentá');
+      else if (/parse|JSON/i.test(msg))            toast.error('La IA devolvió respuesta incompleta — reintentá');
+      else                                         toast.error('Error analizando con IA: ' + msg.slice(0, 80));
     } finally {
       setVisionLoading(false);
     }

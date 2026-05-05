@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import * as api from '../api';
 import { useToast } from './Toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function CancelWOModal({
   open,
@@ -13,6 +14,7 @@ export default function CancelWOModal({
   candidatePM03s, // optional pre-fetched list of PM03 WOs in plant for validation
   onSuccess,
 }) {
+  const { t } = useLanguage();
   const toast = useToast();
   const [cancelType, setCancelType] = useState('NOT_NEEDED');
   const [reason, setReason] = useState('');
@@ -49,7 +51,7 @@ export default function CancelWOModal({
       if (cancelType === 'ABSORBED') {
         const num = absorbedByNum.trim();
         const match = pm03List.find(w => w.wo_number === num);
-        if (!match) { toast.error('OT PM03 absorbente no encontrada en planta'); setSubmitting(false); return; }
+        if (!match) { toast.error(t('modals.cancelWO.absorberNotFound')); setSubmitting(false); return; }
         absorbedId = match.wo_id;
       }
       await api.cancelManagedWO(wo.wo_id, {
@@ -58,12 +60,12 @@ export default function CancelWOModal({
         absorbed_by_wo_id: absorbedId,
       });
       toast.success(cancelType === 'ABSORBED'
-        ? `OT cancelada por absorción → ${absorbedByNum}`
-        : `OT cancelada: ${wo.wo_number}`);
+        ? t('modals.cancelWO.cancelledByAbsorption', { num: absorbedByNum })
+        : t('modals.cancelWO.cancelled', { num: wo.wo_number }));
       onSuccess && onSuccess();
       onClose();
     } catch (e) {
-      toast.error('Error: ' + (e.message || ''));
+      toast.error(t('modals.cancelWO.errorPrefix') + (e.message || ''));
     } finally {
       setSubmitting(false);
     }
@@ -79,7 +81,7 @@ export default function CancelWOModal({
               <X className="w-5 h-5 text-red-600" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-900">Cancelar OT</h3>
+              <h3 className="text-base font-bold text-gray-900">{t('modals.cancelWO.title')}</h3>
               <p className="text-xs text-gray-500">{wo.wo_number}</p>
             </div>
           </div>
@@ -87,47 +89,47 @@ export default function CancelWOModal({
         </div>
 
         <div className="mb-3">
-          <label className="text-xs font-semibold text-gray-700 mb-1 block">Tipo de cancelación *</label>
+          <label className="text-xs font-semibold text-gray-700 mb-1 block">{t('modals.cancelWO.type')}</label>
           <select value={cancelType} onChange={e => setCancelType(e.target.value)}
             className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30">
-            <option value="ABSORBED">Absorbida por OT de falla (PM03)</option>
-            <option value="NOT_NEEDED">Ya no es necesaria</option>
-            <option value="OTHER">Otros</option>
+            <option value="ABSORBED">{t('modals.cancelWO.typeAbsorbed')}</option>
+            <option value="NOT_NEEDED">{t('modals.cancelWO.typeNotNeeded')}</option>
+            <option value="OTHER">{t('modals.cancelWO.typeOther')}</option>
           </select>
         </div>
 
         {cancelType === 'ABSORBED' && (
           <div className="mb-3">
-            <label className="text-xs font-semibold text-gray-700 mb-1 block">N° OT PM03 absorbente *</label>
+            <label className="text-xs font-semibold text-gray-700 mb-1 block">{t('modals.cancelWO.absorberWO')}</label>
             <input list="pm03-options" value={absorbedByNum} onChange={e => setAbsorbedByNum(e.target.value)}
-              placeholder="OT-2026-XXXXX"
+              placeholder={t('modals.cancelWO.absorberPlaceholder')}
               className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30" />
             <datalist id="pm03-options">
               {pm03List.map(w => <option key={w.wo_id} value={w.wo_number}>{w.equipment_tag} · {w.description?.slice(0, 40)}</option>)}
             </datalist>
             <p className="text-[11px] text-gray-500 mt-1">
-              {pm03List.length} OT PM03 activas en planta. Quedará linkeada en histórico.
+              {t('modals.cancelWO.absorberHint', { count: pm03List.length })}
             </p>
           </div>
         )}
 
         <div className="mb-4">
           <label className="text-xs font-semibold text-gray-700 mb-1 block">
-            Comentario {cancelType === 'OTHER' ? '*' : ''}
+            {t('modals.cancelWO.comment')} {cancelType === 'OTHER' ? '*' : ''}
           </label>
           <textarea value={reason} onChange={e => setReason(e.target.value)}
-            placeholder="Detalle adicional..."
+            placeholder={t('modals.cancelWO.commentPlaceholder')}
             className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 min-h-[70px]" />
         </div>
 
         <div className="flex gap-3">
           <button onClick={onClose}
             className="flex-1 py-2.5 px-4 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
-            Volver
+            {t('modals.cancelWO.back')}
           </button>
           <button disabled={blocked || submitting} onClick={submit}
             className="flex-1 py-2.5 px-4 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed">
-            {submitting ? 'Cancelando...' : 'Confirmar'}
+            {submitting ? t('modals.cancelWO.cancelling') : t('modals.cancelWO.confirm')}
           </button>
         </div>
       </div>

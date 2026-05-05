@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ConfirmContext = createContext();
 
@@ -8,6 +9,7 @@ export function useConfirm() {
 }
 
 export function ConfirmProvider({ children }) {
+    const { t } = useLanguage();
     const [state, setState] = useState(null);
 
     // confirm(title, message)
@@ -38,8 +40,8 @@ export function ConfirmProvider({ children }) {
     }, [state]);
 
     const isDanger = state?.variant === 'danger';
-    const confirmText = state?.confirmText || (isDanger ? 'Eliminar' : 'Confirmar');
-    const cancelText = state?.cancelText || 'Cancelar';
+    const confirmText = state?.confirmText || (isDanger ? t('modals.confirm.defaultDelete') : t('modals.confirm.defaultConfirm'));
+    const cancelText = state?.cancelText || t('modals.confirm.defaultCancel');
     const Icon = state?.icon || (isDanger ? AlertTriangle : null);
 
     return (
@@ -67,7 +69,7 @@ export function ConfirmProvider({ children }) {
                         <button
                             onClick={() => handleClose(false)}
                             className="absolute top-3 right-3 p-1.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                            aria-label="Cerrar"
+                            aria-label={t('modals.confirm.close')}
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -110,7 +112,7 @@ export function ConfirmProvider({ children }) {
                             </div>
 
                             <p className="text-[10px] text-muted-foreground mt-3 text-center italic">
-                                Enter para confirmar · Esc para cancelar
+                                {t('modals.confirm.keyHint')}
                             </p>
                         </div>
                     </div>

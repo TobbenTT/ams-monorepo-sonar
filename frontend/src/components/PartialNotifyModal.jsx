@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { X, Clock, User, Calendar } from 'lucide-react';
 import { listTechnicians, notifyManagedWOPartial } from '../api';
 import { useToast } from './Toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function PartialNotifyModal({
   open,
@@ -15,6 +16,7 @@ export default function PartialNotifyModal({
   plantId,
   onSuccess,
 }) {
+  const { t } = useLanguage();
   const toast = useToast();
   const [techs, setTechs] = useState([]);
   const [loadingTechs, setLoadingTechs] = useState(false);
@@ -74,9 +76,9 @@ export default function PartialNotifyModal({
 
   if (!open) return null;
   const submit = async () => {
-    if (!hh || hh <= 0) { toast.error('Duración × personas debe ser > 0'); return; }
-    if (!techId) { toast.error('Seleccione técnico'); return; }
-    if (!execDate || !execTime) { toast.error('Fecha y hora de ejecución obligatorias'); return; }
+    if (!hh || hh <= 0) { toast.error(t('modals.partialNotify.errorHh')); return; }
+    if (!techId) { toast.error(t('modals.partialNotify.errorTech')); return; }
+    if (!execDate || !execTime) { toast.error(t('modals.partialNotify.errorDateTime')); return; }
     setSubmitting(true);
     try {
       const noteParts = [];
@@ -91,14 +93,14 @@ export default function PartialNotifyModal({
         note: noteParts.join(' · '),
       });
       if (res.final_auto_triggered) {
-        toast.success('✓ Todas las ops al 100% — Notificación FINAL gatillada automáticamente');
+        toast.success(t('modals.partialNotify.successFinal'));
       } else {
-        toast.success('Notificación parcial registrada');
+        toast.success(t('modals.partialNotify.successPartial'));
       }
       onSuccess && onSuccess(res);
       onClose();
     } catch (e) {
-      toast.error('Error: ' + (e.message || e));
+      toast.error(t('modals.partialNotify.errorPrefix') + (e.message || e));
     } finally {
       setSubmitting(false);
     }
@@ -114,9 +116,12 @@ export default function PartialNotifyModal({
             {/* Jorge 2026-05-04: rebranding — el concepto "parcial" confunde
                 al usuario. La notificación es por operación; si quedan ops
                 pendientes el sistema infiere que es parcial automáticamente. */}
-            <h3 className="text-base font-bold text-gray-900">Notificación de operación</h3>
+            <h3 className="text-base font-bold text-gray-900">{t('modals.partialNotify.title')}</h3>
             <p className="text-xs text-gray-600 truncate">
-              Op #{op?.op_number || (opIndex + 1)} · {(op?.description || '').slice(0, 50) || '—'}
+              {t('modals.partialNotify.opSummary', {
+                num: op?.op_number || (opIndex + 1),
+                desc: (op?.description || '').slice(0, 50) || '—',
+              })}
             </p>
           </div>
           <button onClick={onClose} className="p-1 rounded hover:bg-white/60"><X className="w-4 h-4" /></button>
@@ -126,44 +131,44 @@ export default function PartialNotifyModal({
           {/* Técnico */}
           <div>
             <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-              <User className="w-3 h-3" /> Técnico
-              {opSpec && <span className="text-[10px] text-purple-700">· filtro: {opSpec}</span>}
+              <User className="w-3 h-3" /> {t('modals.partialNotify.technician')}
+              {opSpec && <span className="text-[10px] text-purple-700">{t('modals.partialNotify.specFilter', { spec: opSpec })}</span>}
             </label>
             <select value={techId} onChange={e => setTechId(e.target.value)}
               disabled={loadingTechs}
               className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30">
-              <option value="">{loadingTechs ? 'Cargando...' : '— seleccionar —'}</option>
-              {filteredTechs.map(t => (
-                <option key={t.id || t.worker_id} value={t.id || t.worker_id}>
-                  {t.name} {t.specialty ? `· ${t.specialty}` : ''} {t.shift ? `· ${t.shift}` : ''}
+              <option value="">{loadingTechs ? t('modals.partialNotify.loading') : t('modals.partialNotify.selectPlaceholder')}</option>
+              {filteredTechs.map(tech => (
+                <option key={tech.id || tech.worker_id} value={tech.id || tech.worker_id}>
+                  {tech.name} {tech.specialty ? `· ${tech.specialty}` : ''} {tech.shift ? `· ${tech.shift}` : ''}
                 </option>
               ))}
             </select>
             {filteredTechs.length === 0 && !loadingTechs && (
-              <p className="text-[11px] text-amber-600 mt-1">Sin técnicos disponibles para esta especialidad.</p>
+              <p className="text-[11px] text-amber-600 mt-1">{t('modals.partialNotify.noTechnicians')}</p>
             )}
           </div>
 
           {/* Jorge 2026-05-04 — Turno + Fecha/Hora ejecución (#19) */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-semibold text-gray-700 mb-1 block">Turno</label>
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">{t('modals.partialNotify.shift')}</label>
               <select value={shift} onChange={e => setShift(e.target.value)}
                 className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30">
-                <option value="day">Día (07:00-19:00)</option>
-                <option value="night">Noche (19:00-07:00)</option>
+                <option value="day">{t('modals.partialNotify.shiftDay')}</option>
+                <option value="night">{t('modals.partialNotify.shiftNight')}</option>
               </select>
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                <Calendar className="w-3 h-3" /> Fecha
+                <Calendar className="w-3 h-3" /> {t('modals.partialNotify.date')}
               </label>
               <input type="date" value={execDate} onChange={e => setExecDate(e.target.value)}
                 className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30" />
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Hora
+                <Clock className="w-3 h-3" /> {t('modals.partialNotify.time')}
               </label>
               <input type="time" value={execTime} onChange={e => setExecTime(e.target.value)}
                 className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30" />
@@ -173,19 +178,19 @@ export default function PartialNotifyModal({
           {/* Jorge 2026-05-04 (#18) — HH NUNCA se digita: duración × personas → HH auto */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-semibold text-gray-700 mb-1 block">Duración (h)</label>
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">{t('modals.partialNotify.duration')}</label>
               <input type="number" min="0.25" step="0.25" value={duration}
                 onChange={e => setDuration(e.target.value)}
                 className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-700 mb-1 block">Personas</label>
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">{t('modals.partialNotify.people')}</label>
               <input type="number" min="1" step="1" value={people}
                 onChange={e => setPeople(e.target.value)}
                 className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-700 mb-1 block">HH (auto)</label>
+              <label className="text-xs font-semibold text-gray-700 mb-1 block">{t('modals.partialNotify.hhAuto')}</label>
               <div className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2 text-sm font-mono text-gray-800">
                 {hh.toFixed(2)}
               </div>
@@ -196,26 +201,26 @@ export default function PartialNotifyModal({
               input). Acá los técnicos dejan harto comentario, una sola línea
               cortaba la información. */}
           <div>
-            <label className="text-xs font-semibold text-gray-700 mb-1 block">Nota (opcional)</label>
+            <label className="text-xs font-semibold text-gray-700 mb-1 block">{t('modals.partialNotify.note')}</label>
             <textarea
               value={note} onChange={e => setNote(e.target.value)} rows={4}
-              placeholder="Ej: avance al 60%, falta sello del lado derecho. Se detecta vibración levemente sobre el tope.\nObservaciones para el siguiente turno..."
+              placeholder={t('modals.partialNotify.notePlaceholder')}
               className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 resize-y" />
           </div>
 
           {/* Resumen plan vs */}
           <div className="bg-purple-50 rounded-lg p-2 text-[11px] text-purple-800">
             <div className="flex justify-between">
-              <span>HH planificadas op:</span>
+              <span>{t('modals.partialNotify.plannedHh')}</span>
               <strong>{(op?.planned_hours || op?.hours || 0).toFixed(1)}h</strong>
             </div>
             <div className="flex justify-between">
-              <span>HH acumuladas previas:</span>
+              <span>{t('modals.partialNotify.previousHh')}</span>
               <strong>{((op?.notifications || []).reduce((s, n) => s + (n.hours || 0), 0)).toFixed(1)}h</strong>
             </div>
             <div className="flex justify-between border-t border-purple-200 pt-1 mt-1">
-              <span>Después de esta notif:</span>
-              <strong>{(((op?.notifications || []).reduce((s, n) => s + (n.hours || 0), 0)) + (parseFloat(hours) || 0)).toFixed(1)}h</strong>
+              <span>{t('modals.partialNotify.afterThisHh')}</span>
+              <strong>{(((op?.notifications || []).reduce((s, n) => s + (n.hours || 0), 0)) + hh).toFixed(1)}h</strong>
             </div>
           </div>
         </div>
@@ -223,12 +228,12 @@ export default function PartialNotifyModal({
         <div className="flex gap-3 px-5 py-3 border-t border-border bg-muted/30">
           <button onClick={onClose}
             className="flex-1 py-2 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
-            Cancelar
+            {t('modals.partialNotify.cancel')}
           </button>
           <button onClick={submit}
-            disabled={submitting || !techId || !hours}
+            disabled={submitting || !techId || !hh}
             className="flex-1 py-2 text-sm font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed">
-            {submitting ? 'Registrando...' : 'Registrar parcial'}
+            {submitting ? t('modals.partialNotify.submitting') : t('modals.partialNotify.submit')}
           </button>
         </div>
       </div>

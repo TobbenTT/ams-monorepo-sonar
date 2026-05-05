@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Mic, MicOff, Camera, X, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import * as api from '../api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -11,6 +12,7 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
  * result so the tech can verify before leaving the screen.
  */
 export default function SmartCaptureModal({ plantId, technicianId, equipmentTagHint, onClose, onCreated }) {
+    const { t, lang } = useLanguage();
     const [text, setText] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const [photo, setPhoto] = useState(null); // data URL
@@ -23,13 +25,14 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
 
     const handleMic = () => {
         if (!SpeechRecognition) {
-            setError('Tu navegador no soporta reconocimiento de voz. Usa Chrome.');
+            setError(t('modals.smartCapture.voiceUnsupported'));
             return;
         }
         if (isRecording) { recognitionRef.current?.stop(); return; }
 
         const rec = new SpeechRecognition();
-        rec.lang = 'es-ES';
+        // Map UI lang to BCP-47 voice locale; fallback to es-ES.
+        rec.lang = lang === 'en' ? 'en-US' : lang === 'ar' ? 'ar-SA' : 'es-ES';
         rec.continuous = true;
         rec.interimResults = true;
         recognitionRef.current = rec;
@@ -64,7 +67,7 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
-            setError(`Archivo "${file.name}" pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. Máximo permitido: 10 MB.`);
+            setError(t('modals.smartCapture.fileTooLarge', { name: file.name, size: (file.size / 1024 / 1024).toFixed(1) }));
             e.target.value = '';
             return;
         }
@@ -75,7 +78,7 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
 
     const submit = async () => {
         if (!text.trim()) {
-            setError('Describe la falla (puedes dictarla o escribirla)');
+            setError(t('modals.smartCapture.describeFailure'));
             return;
         }
         setError(null);
@@ -87,13 +90,13 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
                 equipment_tag_hint: equipmentTagHint || undefined,
                 plant_id: plantId,
                 technician_id: technicianId,
-                language: 'es',
+                language: lang === 'en' ? 'en' : lang === 'ar' ? 'ar' : 'es',
             });
             const payload = res?.result || res;
             setResult(payload);
             onCreated?.(payload);
         } catch (e) {
-            setError(e?.message || 'No se pudo crear el aviso');
+            setError(e?.message || t('modals.smartCapture.cantCreate'));
         } finally {
             setSubmitting(false);
         }
@@ -102,30 +105,31 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
     // ── Confirmation view ───────────────────────────────────────────────
     if (result) {
         const c = result.classification || {};
+        const slaLocale = lang === 'en' ? 'en-US' : lang === 'ar' ? 'ar-SA' : 'es';
         return (
             <div className="fixed inset-0 z-[200] flex items-end justify-center">
                 <div className="absolute inset-0 bg-black/50" onClick={onClose} />
                 <div className="relative bg-white rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5">
                     <div className="flex items-center gap-2 mb-4">
                         <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-                        <div className="text-lg font-bold text-slate-900">Aviso creado</div>
+                        <div className="text-lg font-bold text-slate-900">{t('modals.smartCapture.wrCreated')}</div>
                     </div>
                     <div className="space-y-2 text-sm">
-                        <Row label="ID" value={result.work_request_id} />
-                        <Row label="Equipo" value={result.equipment_tag} />
-                        <Row label="Prioridad" value={result.priority_code} />
-                        <Row label="Categoría" value={c.failure_category} />
-                        <Row label="Parte" value={c.failure_object_part} />
-                        <Row label="Síntoma" value={c.failure_symptom} />
-                        <Row label="Causa" value={c.failure_cause} />
-                        <Row label="Acción sugerida" value={c.suggested_action} />
-                        <Row label="SLA" value={result.sla_deadline ? new Date(result.sla_deadline).toLocaleString('es') : '—'} />
+                        <Row label={t('modals.smartCapture.rowId')} value={result.work_request_id} />
+                        <Row label={t('modals.smartCapture.rowEquipment')} value={result.equipment_tag} />
+                        <Row label={t('modals.smartCapture.rowPriority')} value={result.priority_code} />
+                        <Row label={t('modals.smartCapture.rowCategory')} value={c.failure_category} />
+                        <Row label={t('modals.smartCapture.rowPart')} value={c.failure_object_part} />
+                        <Row label={t('modals.smartCapture.rowSymptom')} value={c.failure_symptom} />
+                        <Row label={t('modals.smartCapture.rowCause')} value={c.failure_cause} />
+                        <Row label={t('modals.smartCapture.rowSuggestedAction')} value={c.suggested_action} />
+                        <Row label={t('modals.smartCapture.rowSla')} value={result.sla_deadline ? new Date(result.sla_deadline).toLocaleString(slaLocale) : '—'} />
                     </div>
                     <button
                         onClick={onClose}
                         className="mt-5 w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold"
                     >
-                        Listo
+                        {t('modals.smartCapture.done')}
                     </button>
                 </div>
             </div>
@@ -139,8 +143,8 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
             <div className="relative bg-white rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white border-b px-4 py-4 flex items-center justify-between">
                     <div>
-                        <div className="text-sm font-bold text-slate-900">Captura Inteligente</div>
-                        <div className="text-xs text-slate-500">Dictá la falla y sacá una foto — el asistente crea el aviso</div>
+                        <div className="text-sm font-bold text-slate-900">{t('modals.smartCapture.title')}</div>
+                        <div className="text-xs text-slate-500">{t('modals.smartCapture.subtitle')}</div>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100" disabled={submitting}>
                         <X className="w-5 h-5 text-slate-500" />
@@ -151,20 +155,20 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
                     {/* Voice + text area */}
                     <div>
                         <div className="flex items-center justify-between mb-2">
-                            <label className="text-xs font-semibold text-slate-500 tracking-wide">DESCRIPCIÓN DE LA FALLA</label>
+                            <label className="text-xs font-semibold text-slate-500 tracking-wide">{t('modals.smartCapture.descriptionLabel')}</label>
                             <button
                                 onClick={handleMic}
                                 className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg ${isRecording ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-slate-100 text-slate-700'}`}
                                 disabled={submitting}
                             >
                                 {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                                {isRecording ? 'Parar' : 'Dictar'}
+                                {isRecording ? t('modals.smartCapture.stop') : t('modals.smartCapture.dictate')}
                             </button>
                         </div>
                         <textarea
                             value={text}
                             onChange={(e) => setText(e.target.value)}
-                            placeholder="Ej: la bomba 120-PU-001 vibra y hace ruido anormal"
+                            placeholder={t('modals.smartCapture.descPlaceholder')}
                             className="w-full h-28 p-3 rounded-xl border text-sm resize-none outline-none border-slate-200 bg-slate-50"
                             disabled={submitting}
                         />
@@ -172,7 +176,7 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
 
                     {/* Photo */}
                     <div>
-                        <label className="text-xs font-semibold text-slate-500 tracking-wide block mb-2">FOTO (OPCIONAL · MÁX 10 MB)</label>
+                        <label className="text-xs font-semibold text-slate-500 tracking-wide block mb-2">{t('modals.smartCapture.photoLabel')}</label>
                         <input
                             ref={cameraRef}
                             type="file"
@@ -183,7 +187,7 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
                         />
                         {photo ? (
                             <div className="relative">
-                                <img src={photo} alt="captura" className="w-full h-48 object-cover rounded-xl border" />
+                                <img src={photo} alt="capture" className="w-full h-48 object-cover rounded-xl border" />
                                 <button
                                     onClick={() => setPhoto(null)}
                                     className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white"
@@ -199,7 +203,7 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
                                 disabled={submitting}
                             >
                                 <Camera className="w-5 h-5" />
-                                Tomar foto
+                                {t('modals.smartCapture.takePhoto')}
                             </button>
                         )}
                     </div>
@@ -216,7 +220,7 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
                         disabled={submitting || !text.trim()}
                         className="w-full py-3.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        {submitting ? (<><Loader2 className="w-4 h-4 animate-spin" /> Procesando…</>) : 'Crear Aviso'}
+                        {submitting ? (<><Loader2 className="w-4 h-4 animate-spin" /> {t('modals.smartCapture.processing')}</>) : t('modals.smartCapture.createWR')}
                     </button>
                 </div>
             </div>

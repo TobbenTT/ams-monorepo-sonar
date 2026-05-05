@@ -1153,15 +1153,17 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     const tagOrEquip = (form.whereTag || equipSearch || '').trim();
     if (step === 1) {
       const missing = [];
-      if (!form.technicalLocationCode.trim()) missing.push('Technical Location');
-      if (!tagOrEquip) missing.push('Equipo / Tag');
+      // SF-650 — incluimos selector CSS para enfocar automáticamente el primer
+      // campo faltante cuando el usuario intenta avanzar.
+      if (!form.technicalLocationCode.trim()) missing.push({ label: 'Technical Location', focus: 'input[placeholder*="technical location"]' });
+      if (!tagOrEquip) missing.push({ label: 'Equipo / Tag', focus: 'input[placeholder*="equipment name"]' });
       return { ok: missing.length === 0, missing };
     }
     if (step === 2) {
       const missing = [];
-      if (!form.priority) missing.push('Prioridad');
+      if (!form.priority) missing.push({ label: 'Prioridad', focus: '[data-field="priority"] button' });
       if (!form.whatHappens.trim() || form.whatHappens.trim().length < 10) {
-        missing.push('Qué pasó (mín. 10 caracteres)');
+        missing.push({ label: 'Qué pasó (mín. 10 caracteres)', focus: 'textarea[placeholder*="problem"]' });
       }
       return { ok: missing.length === 0, missing };
     }
@@ -2876,19 +2878,31 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
               <button
                 onClick={() => {
                   if (!currentStepValidation.ok) {
-                    toast.error('Faltan: ' + currentStepValidation.missing.join(' · '));
+                    const labels = currentStepValidation.missing.map(m => m.label).join(' · ');
+                    toast.error('Faltan: ' + labels);
+                    // SF-650 — focus automático sobre el primer campo faltante.
+                    const first = currentStepValidation.missing[0];
+                    if (first?.focus) {
+                      setTimeout(() => {
+                        const el = document.querySelector(first.focus);
+                        if (el) {
+                          el.focus();
+                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                      }, 50);
+                    }
                     return;
                   }
                   setWizardStep(s => Math.min(3, s + 1));
                 }}
                 disabled={!currentStepValidation.ok}
-                title={currentStepValidation.ok ? '' : 'Faltan: ' + currentStepValidation.missing.join(' · ')}
+                title={currentStepValidation.ok ? '' : 'Faltan: ' + currentStepValidation.missing.map(m => m.label).join(' · ')}
                 className="px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
                 Next &#8594;
               </button>
               {!currentStepValidation.ok && (
                 <p className="text-[10px] text-red-600 max-w-[220px] text-right">
-                  Faltan: {currentStepValidation.missing.join(' · ')}
+                  Faltan: {currentStepValidation.missing.map(m => m.label).join(' · ')}
                 </p>
               )}
             </div>

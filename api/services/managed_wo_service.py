@@ -50,11 +50,30 @@ def _generate_wo_number(db: Session) -> str:
     return f"{prefix}{seq:05d}"
 
 
-def _to_dict(wo: ManagedWorkOrderModel) -> dict:
+def _wr_aviso_label(db: Session | None, work_request_id: str | None) -> str | None:
+    """SF-649 — devuelve la etiqueta legible AV-NNNNN del aviso vinculado a la
+    OT, o None si no hay vínculo o no se puede resolver. Lookup defensivo
+    (no rompe si el FK es huérfano o si db no está disponible)."""
+    if not work_request_id or db is None:
+        return None
+    try:
+        from api.database.models import WorkRequestModel
+        wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == work_request_id).first()
+        if wr and getattr(wr, "aviso_number", None):
+            return f"AV-{str(wr.aviso_number).zfill(5)}"
+    except Exception:
+        pass
+    return None
+
+
+def _to_dict(wo: ManagedWorkOrderModel, db: Session | None = None) -> dict:
     return {
         "wo_id": wo.wo_id,
         "wo_number": wo.wo_number,
         "work_request_id": wo.work_request_id,
+        # SF-649 — etiqueta legible del aviso de origen (AV-NNNNN). Permite que
+        # el tooltip y los links a "aviso de origen" muestren el código actual.
+        "wr_aviso_label": _wr_aviso_label(db, wo.work_request_id),
         "plant_id": wo.plant_id,
         "equipment_id": wo.equipment_id,
         "equipment_tag": wo.equipment_tag,
@@ -329,7 +348,7 @@ def create_work_order(
         )
     except Exception:
         pass
-    return _to_dict(wo)
+    return _to_dict(wo, db)
 
 
 def create_from_work_request(db: Session, request_id: str, planned_by: str = "", plant_id: str | None = None) -> dict | None:
@@ -638,10 +657,10 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
 
 def get_work_order(db: Session, wo_id: str) -> dict | None:
     wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
-    return _to_dict(wo) if wo else None
+    return _to_dict(wo, db) if wo else None
 
 
-def _to_light_dict(wo: ManagedWorkOrderModel) -> dict:
+def _to_light_dict(wo: ManagedWorkOrderModel, db: Session | None = None) -> dict:
     """Slim projection for list views — ~300 bytes/WO instead of ~1.7KB.
 
     Contains only the fields that the scheduling panel, planning list, and execution
@@ -715,6 +734,9 @@ def _to_light_dict(wo: ManagedWorkOrderModel) -> dict:
         "cancellation_type": getattr(wo, "cancellation_type", None),
         "absorbed_by_wo_id": getattr(wo, "absorbed_by_wo_id", None),
         "created_at": wo.created_at.isoformat() if wo.created_at else None,
+        # SF-649 — etiqueta legible del aviso de origen, también en lista light
+        "work_request_id": wo.work_request_id,
+        "wr_aviso_label": _wr_aviso_label(db, wo.work_request_id),
     }
 
 
@@ -745,7 +767,7 @@ def list_work_orders(
         q = q.filter(ManagedWorkOrderModel.is_fast_track == fast_track)
     total = q.count() if paginated else None
     items = q.order_by(ManagedWorkOrderModel.created_at.desc()).offset(offset).limit(limit).all()
-    rows = [_to_light_dict(wo) for wo in items] if light else [_to_dict(wo) for wo in items]
+    rows = [_to_light_dict(wo, db) for wo in items] if light else [_to_dict(wo, db) for wo in items]
     if paginated:
         return {
             "items": rows,
@@ -876,9 +898,9 @@ def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int
     # Jorge 2026-04-21 — patch granular: enviamos el objeto WO completo en el
     # evento. El cliente mergea en su estado local en vez de refetchear toda
     # la lista. Cambia el feel de la app a "real-time" sin flashes.
-    _wo_dict = _to_dict(wo)
+    _wo_dict = _to_dict(wo, db)
     queue_notify("wo_updated", {"wo_id": wo_id, "wo_number": wo.wo_number, "status": wo.status, "wo": _wo_dict}, wo.plant_id)
-    return _to_dict(wo)
+    return _to_dict(wo, db)
 
 
 def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", **kwargs) -> dict | None:
@@ -967,8 +989,8 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
     log_action(db, "managed_work_order", wo_id, target_status, user=user_id or "system")
     db.commit()
     db.refresh(wo)
-    queue_notify("wo_status", {"wo_id": wo_id, "wo_number": wo.wo_number, "old": old_status, "new": target_status, "wo": _to_dict(wo)}, wo.plant_id)
-    return _to_dict(wo)
+    queue_notify("wo_status", {"wo_id": wo_id, "wo_number": wo.wo_number, "old": old_status, "new": target_status, "wo": _to_dict(wo, db)}, wo.plant_id)
+    return _to_dict(wo, db)
 
 
 def plan_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
@@ -1284,7 +1306,7 @@ def add_note(db: Session, wo_id: str, user_id: str, note: str) -> dict | None:
     wo.updated_at = datetime.now()
     db.commit()
     db.refresh(wo)
-    return _to_dict(wo)
+    return _to_dict(wo, db)
 
 
 def notify_operation_partial(
@@ -1378,7 +1400,7 @@ def notify_operation_partial(
     wo.updated_at = datetime.now()
     db.commit()
     db.refresh(wo)
-    out = _to_dict(wo)
+    out = _to_dict(wo, db)
     out["final_auto_triggered"] = final_auto
     return out
 
@@ -1391,7 +1413,7 @@ def update_progress(db: Session, wo_id: str, pct: float) -> dict | None:
     wo.updated_at = datetime.now()
     db.commit()
     db.refresh(wo)
-    return _to_dict(wo)
+    return _to_dict(wo, db)
 
 
 def get_stats(db: Session, plant_id: str | None = None) -> dict:
@@ -1438,7 +1460,7 @@ def draft_wo(db: Session, wo_id: str, user_id: str = "") -> dict | None:
     log_action(db, "managed_work_order", wo_id, "DRAFT", user=user_id or "system")
     db.commit()
     db.refresh(wo)
-    return _to_dict(wo)
+    return _to_dict(wo, db)
 
 
 def _create_notification(db: Session, wo, old_status: str, new_status: str, user_id: str = ""):

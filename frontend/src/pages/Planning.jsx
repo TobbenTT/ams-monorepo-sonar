@@ -1841,9 +1841,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               navigate(`/work-management?tab=identification&openWr=${encodeURIComponent(wo.work_request_id)}`);
                             }}
                             className="text-xs text-blue-600 hover:text-blue-800 underline font-mono"
-                            title="Ver aviso de origen"
+                            title={`Ver aviso de origen — ${wo.wr_aviso_label || wo.work_request_id}`}
                           >
-                            ← {wo.work_request_id}
+                            {/* SF-649 — preferir el label legible AV-NNNNN sobre el UUID. */}
+                            ← {wo.wr_aviso_label || wo.work_request_id}
                           </button>
                         </>
                       )}

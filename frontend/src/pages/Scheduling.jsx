@@ -2162,6 +2162,169 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   );
 }
 
+/* ───── SF-643: Timeline Mirror View — eje Y = horas 00:00-24:00 ───── */
+function TimelineMirrorView({ scheduledWOs, technicians, viewedWeekStart, onReschedule, onOpenDetail }) {
+  const [slotMinutes, setSlotMinutes] = useState(60); // 30 o 60
+  const [dayOffset, setDayOffset] = useState(0); // qué día de la semana mostrar (0..6)
+  const [dragWO, setDragWO] = useState(null);
+
+  const slotsPerHour = 60 / slotMinutes;
+  const totalSlots = 24 * slotsPerHour;
+
+  const day = useMemo(() => {
+    const d = new Date(viewedWeekStart);
+    d.setDate(d.getDate() + dayOffset);
+    return d;
+  }, [viewedWeekStart, dayOffset]);
+
+  const dayStr = useMemo(() => {
+    const y = day.getFullYear();
+    const m = String(day.getMonth() + 1).padStart(2, '0');
+    const dd = String(day.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  }, [day]);
+
+  // OTs del día seleccionado, agrupadas por technician
+  const otsByTech = useMemo(() => {
+    const map = {};
+    technicians.forEach(t => { map[t.worker_id] = []; });
+    scheduledWOs.forEach(wo => {
+      const ps = wo.planned_start ? String(wo.planned_start).slice(0, 10) : null;
+      if (ps !== dayStr) return;
+      (wo.assigned_workers || []).forEach(w => {
+        const wid = w.worker_id || w.id;
+        if (!wid || !map[wid]) return;
+        map[wid].push(wo);
+      });
+    });
+    return map;
+  }, [scheduledWOs, dayStr, technicians]);
+
+  // Determinar la franja inicial y duración por OT
+  const positionFor = (wo) => {
+    const dt = wo.planned_start ? new Date(wo.planned_start) : null;
+    const startHour = dt ? (dt.getHours() + dt.getMinutes() / 60) : 8;
+    const duration = Math.max(0.5, parseFloat(wo.estimated_hours) || 1);
+    const startSlot = Math.floor(startHour * slotsPerHour);
+    const lengthSlots = Math.max(1, Math.ceil(duration * slotsPerHour));
+    return { startSlot, lengthSlots };
+  };
+
+  const handleDrop = (worker_id, hourSlot) => {
+    if (!dragWO) return;
+    const hour = hourSlot / slotsPerHour;
+    const h = Math.floor(hour);
+    const m = Math.round((hour - h) * 60);
+    const newStart = `${dayStr}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`;
+    const dur = parseFloat(dragWO.estimated_hours) || 1;
+    const endHour = hour + dur;
+    const eh = Math.floor(endHour);
+    const em = Math.round((endHour - eh) * 60);
+    const dayEnd = eh >= 24 ? dayStr : dayStr;
+    const eHrs = eh >= 24 ? 23 : eh;
+    const eMin = eh >= 24 ? 59 : em;
+    const newEnd = `${dayEnd}T${String(eHrs).padStart(2,'0')}:${String(eMin).padStart(2,'0')}:00`;
+    if (onReschedule) {
+      onReschedule(dragWO, newStart, newEnd, worker_id);
+    }
+    setDragWO(null);
+  };
+
+  return (
+    <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Clock size={16} className="text-purple-600" />
+          <h3 className="text-sm font-bold">Vista Cronológica · {day.toLocaleDateString('es', { weekday:'long', day:'2-digit', month:'short' })}</h3>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <button onClick={() => setDayOffset(d => Math.max(0, d - 1))} disabled={dayOffset === 0}
+            className="px-2 py-1 rounded border border-border hover:bg-muted disabled:opacity-30">‹</button>
+          <span className="font-mono">{['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][dayOffset]}</span>
+          <button onClick={() => setDayOffset(d => Math.min(6, d + 1))} disabled={dayOffset === 6}
+            className="px-2 py-1 rounded border border-border hover:bg-muted disabled:opacity-30">›</button>
+          <select value={slotMinutes} onChange={e => setSlotMinutes(Number(e.target.value))}
+            className="ml-3 text-xs bg-transparent border border-border rounded px-2 py-1">
+            <option value="60">1 hora</option>
+            <option value="30">30 min</option>
+          </select>
+        </div>
+      </div>
+      <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
+        <table className="w-full text-xs">
+          <thead className="sticky top-0 bg-card z-10 border-b border-border">
+            <tr>
+              <th className="px-2 py-2 text-left font-semibold w-16 border-r border-border">Hora</th>
+              {technicians.map(tech => (
+                <th key={tech.worker_id} className="px-2 py-2 text-left font-semibold border-r border-border min-w-[140px]" title={tech.name}>
+                  <div className="flex items-center gap-1">
+                    <span className="truncate">{tech.name}</span>
+                    {tech.shift && (
+                      <span className="text-[9px] text-muted-foreground">{tech.shift === 'night' ? '🌙' : '☀️'}</span>
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: totalSlots }, (_, slot) => {
+              const hour = slot / slotsPerHour;
+              const h = Math.floor(hour);
+              const m = (slot % slotsPerHour) * slotMinutes;
+              const isHourMark = m === 0;
+              return (
+                <tr key={slot} className={isHourMark ? 'border-t border-border/60' : ''}>
+                  <td className={`px-2 py-1 font-mono text-[10px] text-muted-foreground border-r border-border/40 ${isHourMark ? 'font-semibold' : ''}`}>
+                    {isHourMark ? `${String(h).padStart(2,'0')}:00` : ''}
+                  </td>
+                  {technicians.map(tech => {
+                    const wos = otsByTech[tech.worker_id] || [];
+                    const woHere = wos.find(w => {
+                      const { startSlot, lengthSlots } = positionFor(w);
+                      return slot >= startSlot && slot < startSlot + lengthSlots;
+                    });
+                    const isStart = woHere && positionFor(woHere).startSlot === slot;
+                    return (
+                      <td key={tech.worker_id} className="px-1 py-0.5 border-r border-border/40 align-top relative"
+                        style={{ height: 22 }}
+                        onDragOver={e => { if (dragWO) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}}
+                        onDrop={e => { e.preventDefault(); handleDrop(tech.worker_id, slot); }}>
+                        {isStart && woHere && (
+                          <div
+                            draggable
+                            onDragStart={() => setDragWO(woHere)}
+                            onClick={() => onOpenDetail && onOpenDetail(woHere)}
+                            className="absolute left-0.5 right-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold text-white cursor-grab hover:opacity-90 truncate"
+                            style={{
+                              top: 0,
+                              height: positionFor(woHere).lengthSlots * 22 - 2,
+                              backgroundColor: woHere.priority_code === 'P1' ? '#dc2626'
+                                : woHere.priority_code === 'P2' ? '#ea580c'
+                                : woHere.priority_code === 'P3' ? '#0284c7'
+                                : '#64748b',
+                            }}
+                            title={`${woHere.wo_number} · ${woHere.priority_code} · ${woHere.estimated_hours}h\n${woHere.description?.slice(0,80) || ''}`}>
+                            <span className="font-mono">{woHere.wo_number}</span>
+                            <span className="ml-1">{woHere.priority_code}</span>
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="px-4 py-2 border-t border-border bg-muted/30 text-[10px] text-muted-foreground">
+        Arrastrá una franja para reposicionar la OT. La altura representa la duración estimada. Cambios sincronizan con la vista Weekly.
+      </div>
+    </div>
+  );
+}
+
 /* ───── Phase 3: Gantt Tab (Interactive with Drag & Drop) ───── */
 function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
   const [hoveredWO, setHoveredWO] = useState(null);
@@ -4625,6 +4788,8 @@ export default function Scheduling() {
   const TABS = [
     ...(isTechnician ? [{ id: 'inbox', icon: Inbox, label: t('scheduling.myInbox') }] : []),
     { id: 'schedule', icon: Calendar, label: t('scheduling.weeklySchedule') },
+    // SF-643 — vista cronológica con eje Y horarios 00-24h
+    { id: 'timeline', icon: Clock, label: 'Cronológico' },
     { id: 'gantt', icon: BarChart3, label: t('scheduling.ganttView') },
     { id: 'masschange', icon: Wrench, label: 'Mass Change' },
     { id: 'hh', icon: Users, label: t('scheduling.hhBalance') },
@@ -4783,6 +4948,23 @@ export default function Scheduling() {
           onOpenDetail={setDetailOrder}
           lastWsAt={lastWsAt}
         />
+      )}
+      {tab === 'timeline' && (
+        <TimelineMirrorView
+          scheduledWOs={scheduledWOs}
+          technicians={technicians}
+          viewedWeekStart={viewedWeekStart}
+          onOpenDetail={setDetailOrder}
+          onReschedule={(wo, newStart, newEnd, worker_id) => {
+            const payload = { planned_start: newStart, planned_end: newEnd };
+            if (worker_id) {
+              const tech = technicians.find(t => t.worker_id === worker_id);
+              if (tech) payload.assigned_workers = [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }];
+            }
+            api.updateManagedWO(wo.wo_id, payload)
+              .then(() => { toast.success(`${wo.wo_number} → ${newStart.slice(11,16)}`); loadCalendarData(); })
+              .catch(e => toast.error(`Error: ${e.message || ''}`));
+          }} />
       )}
       {tab === 'gantt' && (
         <GanttTab ganttData={ganttData} t={t} weeksRange={ganttWeeks} onWeeksChange={setGanttWeeks}

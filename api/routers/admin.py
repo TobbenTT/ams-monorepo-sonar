@@ -169,6 +169,25 @@ def agent_status():
 # Keyed by plant_id; "_global" holds cross-plant defaults.
 _platform_settings: dict[str, dict] = {}
 
+_GLOBAL_DEFAULTS = {
+    "theme": "light",
+    "language": "es",
+    "dateFormat": "DD-MM-YYYY",
+    "timeFormat": "24h",
+    "auditRetentionDays": 365,
+    "notificationRetentionDays": 30,
+    "sessionTimeoutMinutes": 30,
+    "passwordMinLength": 8,
+    "twoFactorEnforced": False,
+    "rateLimitPerMin": 100,
+    "fileUploadMaxMB": 100,
+    "ragEnabled": True,
+    "agenticEnabled": True,
+    "csvInjectionGuard": True,
+    "wsAuthRequired": True,
+}
+
+
 _PLANT_DEFAULTS = {
     "OCP-JFC1": {
         "companyName": "OCP Group",
@@ -199,11 +218,13 @@ _PLANT_DEFAULTS = {
 
 @router.get("/settings", dependencies=[Depends(require_role("admin", "manager"))])
 def get_settings(plant_id: str | None = None):
-    """Return platform settings for a given plant (or global if none)."""
+    """Return platform settings: globals (theme, retention, security flags)
+    overlay con plant defaults overlay con stored. Pre-fix retornaba {} sin
+    plant_id."""
     key = plant_id or "_global"
     stored = _platform_settings.get(key, {})
-    defaults = _PLANT_DEFAULTS.get(plant_id or "", {})
-    return {**defaults, **stored}
+    plant_defaults = _PLANT_DEFAULTS.get(plant_id or "", {})
+    return {**_GLOBAL_DEFAULTS, **plant_defaults, **stored}
 
 
 @router.put("/settings", dependencies=[Depends(require_role("admin"))])

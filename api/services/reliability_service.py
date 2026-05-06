@@ -65,18 +65,27 @@ def create_shutdown(
 
 
 def list_shutdowns(db: Session, plant_id: str | None = None, status: str | None = None) -> list[dict]:
+    """Devuelve eventos de shutdown_events (workflow PLANNED/STARTED/COMPLETED)
+    + entradas de shutdown_calendar (paradas planificadas del calendario minero,
+    sin lifecycle). El calendar se marca con source='calendar' para distinguir.
+
+    Pre-fix 2026-05-06: solo leía shutdown_events (vacía). En prod hay 76
+    entradas en shutdown_calendar que la UI nunca veía.
+    """
+    from api.database.models import ShutdownCalendarModel
     q = db.query(ShutdownEventModel)
     if plant_id:
         q = q.filter(ShutdownEventModel.plant_id == plant_id)
     if status:
         q = q.filter(ShutdownEventModel.status == status)
     rows = q.order_by(ShutdownEventModel.planned_start.desc()).all()
-    return [
+    out = [
         {
             "shutdown_id": r.shutdown_id,
             "plant_id": r.plant_id,
             "name": r.name,
             "status": r.status,
+            "source": "event",
             "planned_start": r.planned_start.isoformat() if r.planned_start else None,
             "planned_end": r.planned_end.isoformat() if r.planned_end else None,
             "actual_start": r.actual_start.isoformat() if r.actual_start else None,
@@ -90,6 +99,33 @@ def list_shutdowns(db: Session, plant_id: str | None = None, status: str | None 
         }
         for r in rows
     ]
+    # Calendar entries (planning-only, sin lifecycle)
+    cq = db.query(ShutdownCalendarModel)
+    if plant_id:
+        cq = cq.filter(ShutdownCalendarModel.plant_id == plant_id)
+    if status and status.upper() != "PLANNED":
+        return out
+    for c in cq.order_by(ShutdownCalendarModel.start_date.desc()).all():
+        out.append({
+            "shutdown_id": c.shutdown_id,
+            "plant_id": c.plant_id,
+            "name": c.description or f"{c.shutdown_type} {c.start_date.isoformat()}",
+            "status": "PLANNED",
+            "source": "calendar",
+            "shutdown_type": c.shutdown_type,
+            "areas": c.areas or [],
+            "planned_start": c.start_date.isoformat() if c.start_date else None,
+            "planned_end": c.end_date.isoformat() if c.end_date else None,
+            "actual_start": None,
+            "actual_end": None,
+            "planned_hours": None,
+            "actual_hours": None,
+            "work_orders_count": 0,
+            "completed_work_orders_count": 0,
+            "completion_pct": 0,
+            "delay_hours": 0,
+        })
+    return out
 
 
 def get_shutdown(db: Session, shutdown_id: str) -> dict | None:

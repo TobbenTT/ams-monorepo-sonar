@@ -76,11 +76,14 @@ class WOCompleteRequest(BaseModel):
 
 class WOCloseRequest(BaseModel):
     """Closure payload: supervisor signature is mandatory; optional PIN, notes
-    and per-operation actuals (plan-vs-actual capture)."""
-    model_config = {"extra": "ignore"}
+    and per-operation actuals (plan-vs-actual capture).
+
+    Acepta `notes` o `closure_notes` (alias) — model storage es `closure_notes`.
+    """
+    model_config = {"extra": "ignore", "populate_by_name": True}
     signature: str = Field(min_length=2, max_length=120)
     pin: str | None = None
-    notes: str | None = None
+    notes: str | None = Field(default=None, alias="closure_notes")
     actual_hours: float | None = None
     operations: list | None = None
     closure_audio_url: str | None = None  # SF-500

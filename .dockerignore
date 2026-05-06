@@ -58,3 +58,5 @@ playwright-report/
 test-results/
 .env*
 *.log
+backups/
+audit_output/

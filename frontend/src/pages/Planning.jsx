@@ -313,6 +313,102 @@ function HistoryTab({ wo }) {
   );
 }
 
+// SF-647 — Historial de comentarios estilo SAP: append-only, comentarios
+// previos congelados (no editables), nuevos en cascada con autor + timestamp.
+function CommentsTab({ wo, onUpdate }) {
+  const [newComment, setNewComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const notes = Array.isArray(wo.execution_notes) ? wo.execution_notes : [];
+  // Filtrar las que son comentarios reales (excluir status transitions y stock_consumed)
+  const comments = notes.filter(n => n && n.note && !/^Status:|^\[STOCK_CONSUMED\]/.test(n.note));
+
+  const submit = async () => {
+    if (!newComment.trim()) return;
+    setSubmitting(true);
+    try {
+      const entry = {
+        timestamp: new Date().toISOString(),
+        user: wo._user_label || 'supervisor',
+        note: newComment.trim(),
+      };
+      const next = [...notes, entry];
+      const updated = await api.updateManagedWO(wo.wo_id, { execution_notes: next });
+      onUpdate?.(updated);
+      setNewComment('');
+    } catch (e) {
+      alert('Error: ' + (e.message || e));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const exportToText = () => {
+    const lines = comments.map(c => `[${new Date(c.timestamp).toLocaleString('es')}] ${c.user || 'system'}\n${c.note}\n`);
+    const blob = new Blob([`Historial de comentarios — ${wo.wo_number}\n\n${lines.join('\n')}`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `comentarios-${wo.wo_number}.txt`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800">Historial de comentarios · {comments.length}</h3>
+          <p className="text-[11px] text-gray-500">Comentarios previos no son editables (auditoría SAP-style). Los nuevos se agregan en cascada.</p>
+        </div>
+        {comments.length > 0 && (
+          <button onClick={exportToText} className="text-[11px] px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 flex items-center gap-1">
+            <FileText className="w-3.5 h-3.5" /> Exportar
+          </button>
+        )}
+      </div>
+
+      {comments.length === 0 ? (
+        <p className="text-center text-gray-400 text-sm py-6 border border-dashed border-gray-200 rounded-lg">
+          Sin comentarios todavía. Agregá el primero abajo.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {comments.map((c, idx) => (
+            <div key={idx} className="rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2.5">
+              <div className="flex items-center gap-2 mb-1 text-[10px]">
+                <span className="font-mono font-semibold text-gray-700">#{idx + 1}</span>
+                <span className="font-semibold text-blue-700">{c.user || 'system'}</span>
+                <span className="text-gray-400">·</span>
+                <span className="text-gray-500">{c.timestamp ? new Date(c.timestamp).toLocaleString('es') : '—'}</span>
+                <span className="ml-auto text-[9px] italic text-gray-400">🔒 Congelado</span>
+              </div>
+              <p className="text-xs text-gray-800 whitespace-pre-wrap">{c.note}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Nuevo comentario — único editable */}
+      {!isClosedStatus(wo) && (
+        <div className="border-t border-gray-200 pt-3 space-y-2">
+          <label className="text-xs font-semibold text-gray-700">Nuevo comentario</label>
+          <textarea value={newComment} onChange={e => setNewComment(e.target.value)} rows={3}
+            placeholder="Agregá tu comentario. Una vez guardado no se puede editar."
+            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          <div className="flex justify-end gap-2">
+            <button onClick={submit} disabled={submitting || !newComment.trim()}
+              className="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 flex items-center gap-1">
+              {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageSquare className="w-3 h-3" />}
+              Agregar comentario
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function isClosedStatus(wo) {
+  return ['CERRADO', 'CLOSED', 'CANCELADO', 'CANCELLED'].includes((wo.status || '').toUpperCase());
+}
+
 // Group C #8 Jorge 2026-04-21 — picker de cuadrilla contratista.
 // Si la OT se tercerea, acá se elige. Null = trabajo interno.
 function ContractorCrewPicker({ wo, onChange }) {
@@ -1802,6 +1898,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           { id: 'support_eq', label: 'Equipos Apoyo', icon: Wrench },
           { id: 'costos', label: 'Costs', icon: DollarSign },
           { id: 'documentos', label: 'Documentos', icon: FileText },
+          // SF-647 — historial comentarios SAP-style (append-only, no editable)
+          { id: 'comentarios', label: 'Comentarios', icon: MessageSquare },
           ...(isExec ? [{ id: 'notif_hh', label: 'Notif. HH', icon: Clock }] : []),
           ...(isClosed ? [{ id: 'post_review', label: 'Post-Review', icon: ClipboardCheck }] : []),
           { id: 'historial', label: 'History', icon: MessageSquare },
@@ -3488,6 +3586,11 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                   </div>
                   );
                 })()}
+
+                {/* SF-647 — COMENTARIOS SAP-style append-only */}
+                {otModalTab === 'comentarios' && (
+                  <CommentsTab wo={wo} onUpdate={(u) => setSelectedOT(u)} />
+                )}
 
                 {/* HISTORIAL */}
                 {otModalTab === 'historial' && (

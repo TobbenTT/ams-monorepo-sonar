@@ -121,6 +121,8 @@ export default function Execution() {
   const [expandedWO, setExpandedWO] = useState(null);
   // SF-645 — supervisor reasigna técnico por skills sobre una operación
   const [reassignFor, setReassignFor] = useState(null); // {wo, op, opIndex}
+  // SF-648 — filtro semanal en pestaña No Programado (PM03)
+  const [failuresWeekOffset, setFailuresWeekOffset] = useState(0); // 0 = semana actual, -1 = anterior
   const [closureWO, setClosureWO] = useState(null);
   const [closureHours, setClosureHours] = useState('');
   const [closureNotes, setClosureNotes] = useState('');
@@ -458,7 +460,43 @@ export default function Execution() {
 
   // Fase Jorge 2026-04-21 — vista Fallas separa las OTs PM03 (correctivo
   // de falla, P1/P2) que llegan directo al supervisor bypass-planning.
-  const failureWOs = activeWOs.filter(w => (w.wo_type === 'PM03') || (w.priority_code === 'P1' || w.priority_code === 'P2'));
+  // SF-648 (2026-05-05): incluir CERRADO + filtrar por semana ISO seleccionada
+  // para que el supervisor vea fallas históricas además de las activas.
+  const allFailures = useMemo(
+    () => [...activeWOs, ...completedWOs, ...closedWOs]
+      .filter(w => (w.wo_type === 'PM03') || (w.priority_code === 'P1' || w.priority_code === 'P2'))
+      // Dedup por wo_id (puede aparecer en activeWOs y completedWOs si recién cerrada)
+      .filter((w, i, arr) => arr.findIndex(x => x.wo_id === w.wo_id) === i),
+    [activeWOs, completedWOs, closedWOs]
+  );
+  // SF-648 — semana ISO objetivo
+  const failureWeekRange = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay() || 7; // 1=Mon..7=Sun
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - day + 1 + (failuresWeekOffset * 7));
+    monday.setHours(0,0,0,0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23,59,59,999);
+    // ISO week number
+    const tmp = new Date(Date.UTC(monday.getFullYear(), monday.getMonth(), monday.getDate()));
+    const dayNum = (tmp.getUTCDay() + 6) % 7;
+    tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3);
+    const firstThursday = tmp.valueOf();
+    tmp.setUTCMonth(0, 1);
+    if (tmp.getUTCDay() !== 4) tmp.setUTCMonth(0, 1 + ((4 - tmp.getUTCDay()) + 7) % 7);
+    const weekNum = 1 + Math.ceil((firstThursday - tmp) / 604800000);
+    return { start: monday, end: sunday, weekNum, year: monday.getFullYear() };
+  }, [failuresWeekOffset]);
+  const failureWOs = useMemo(
+    () => allFailures.filter(w => {
+      const d = w.created_at ? new Date(w.created_at) : (w.planned_start ? new Date(w.planned_start) : null);
+      if (!d) return failuresWeekOffset === 0; // sin fecha → solo en semana actual
+      return d >= failureWeekRange.start && d <= failureWeekRange.end;
+    }),
+    [allFailures, failureWeekRange, failuresWeekOffset]
+  );
   // CE1 Tanda C-EXT (Jorge 2026-04-28 12:32): pestaña Notificación.
   // OTs candidatas a notificar = en EN_EJECUCION o COMPLETADO (cerradas no).
   // El mantenedor carga HH real + cantidad real por cada operación. Banner de
@@ -953,12 +991,28 @@ export default function Execution() {
       {view === 'failures' && (
         <div className="space-y-3">
           <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/40 dark:bg-red-900/10 p-3">
-            <div className="flex items-center gap-2 text-red-800 dark:text-red-300 font-bold text-sm mb-1">
-              <AlertTriangle size={14} /> OTs No Programado · PM03 · Fallas correctivas
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 text-red-800 dark:text-red-300 font-bold text-sm">
+                <AlertTriangle size={14} /> OTs No Programado · PM03 · Fallas correctivas
+              </div>
+              {/* SF-648 — navegación semanal para fallas históricas */}
+              <div className="flex items-center gap-1 text-xs">
+                <button onClick={() => setFailuresWeekOffset(o => o - 1)}
+                  className="px-2 py-1 rounded border border-red-300 hover:bg-red-100" title="Semana anterior">←</button>
+                <span className="font-mono px-2 font-semibold text-red-900">
+                  W{String(failureWeekRange.weekNum).padStart(2, '0')}-{failureWeekRange.year}
+                  {failuresWeekOffset === 0 && <span className="ml-1 text-[9px] text-emerald-600">●  HOY</span>}
+                </span>
+                <button onClick={() => setFailuresWeekOffset(o => o + 1)} disabled={failuresWeekOffset >= 0}
+                  className="px-2 py-1 rounded border border-red-300 hover:bg-red-100 disabled:opacity-30" title="Semana siguiente">→</button>
+                <button onClick={() => setFailuresWeekOffset(0)} disabled={failuresWeekOffset === 0}
+                  className="ml-1 px-2 py-1 rounded border border-red-300 hover:bg-red-100 text-[10px] disabled:opacity-30" title="Volver a la semana actual">Hoy</button>
+              </div>
             </div>
             <p className="text-[11px] text-red-700 dark:text-red-200">
               OTs P1 (&lt;24h) y P2 (&lt;7d) que vienen directo del aviso sin pasar por planificación.
-              Atendelas priorizando P1, completá operaciones/repuestos con IA si hace falta, y firmá al cerrar.
+              Mostrando {failureWOs.length} fallas de {failureWeekRange.start.toLocaleDateString('es', {day:'2-digit',month:'short'})} a {failureWeekRange.end.toLocaleDateString('es', {day:'2-digit',month:'short'})}.
+              {failuresWeekOffset < 0 && ' (semana histórica — incluye cerradas)'}
             </p>
           </div>
           {failureWOs.length === 0 ? (

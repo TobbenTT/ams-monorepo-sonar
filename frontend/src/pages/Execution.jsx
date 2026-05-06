@@ -14,6 +14,7 @@ import {
   updateManagedWOProgress, verifyCloseManagedWO, suggestFailureFields,
 } from '../api';
 import PartialNotifyModal from '../components/PartialNotifyModal';
+import SmartAssignModal from '../components/SmartAssignModal';
 import * as api from '../api';
 
 // Fase 7 Jorge 2026-04-21 — grabar nota de voz en el cierre + transcribir.
@@ -118,6 +119,8 @@ export default function Execution() {
   // porque acá se sumaba HH histórica en vez de la semana actual).
   const [kpiSprint6, setKpiSprint6] = useState({ compliance: null, adherence: null, alerts: null });
   const [expandedWO, setExpandedWO] = useState(null);
+  // SF-645 — supervisor reasigna técnico por skills sobre una operación
+  const [reassignFor, setReassignFor] = useState(null); // {wo, op, opIndex}
   const [closureWO, setClosureWO] = useState(null);
   const [closureHours, setClosureHours] = useState('');
   const [closureNotes, setClosureNotes] = useState('');
@@ -1434,6 +1437,12 @@ export default function Execution() {
                                     <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400" title="Plan: personas × horas">
                                       plan {op.quantity || 1}p × {op.hours || 0}h = {plannedHH.toFixed(1)}HH
                                     </span>
+                                    {/* SF-645 — supervisor reasigna técnico por skills durante ejecución */}
+                                    <button onClick={(e) => { e.stopPropagation(); setReassignFor({ wo, op, opIndex: i }); }}
+                                      className="text-[10px] font-semibold px-2 py-0.5 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-300"
+                                      title="Reasignar técnico (Smart Assignment IA por skills)">
+                                      🤖 Reasignar
+                                    </button>
                                   </div>
                                   {isExec && (
                                     <div className="flex items-center gap-2 mt-1.5 pl-7 text-[11px]">
@@ -2212,6 +2221,33 @@ export default function Execution() {
         plantId={plant}
         onSuccess={() => loadData()}
       />
+
+      {/* SF-645 — Smart Assignment para reasignar técnico por skills durante ejecución */}
+      {reassignFor && (
+        <SmartAssignModal
+          open={!!reassignFor}
+          onClose={() => setReassignFor(null)}
+          plantId={plant}
+          specialty={reassignFor.op?.specialty || reassignFor.wo?.work_center || ''}
+          shift={reassignFor.wo?.shift || 'day'}
+          plannedHours={(reassignFor.op?.quantity || 1) * (reassignFor.op?.hours || 1)}
+          excludeWorkerIds={(reassignFor.wo?.assigned_workers || []).map(w => w.worker_id).filter(Boolean)}
+          woDescription={reassignFor.op?.description || reassignFor.wo?.description}
+          equipmentTag={reassignFor.wo?.equipment_tag}
+          onSelect={async (worker) => {
+            try {
+              const wo = reassignFor.wo;
+              const newWorker = { worker_id: worker.worker_id, name: worker.name, specialty: worker.specialty || '' };
+              const existing = Array.isArray(wo.assigned_workers) ? wo.assigned_workers : [];
+              const seen = new Set(existing.map(w => w.worker_id).filter(Boolean));
+              const merged = seen.has(worker.worker_id) ? existing : [...existing, newWorker];
+              await updateManagedWO(wo.wo_id, { assigned_workers: merged });
+              toast.success(`+ ${worker.name} reasignado a ${wo.wo_number} op #${(reassignFor.opIndex || 0) + 1}`);
+              loadData();
+            } catch (e) { toast.error('Error: ' + (e.message || e)); }
+          }}
+        />
+      )}
     </div>
   );
 }

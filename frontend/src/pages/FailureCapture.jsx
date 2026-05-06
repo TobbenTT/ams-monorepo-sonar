@@ -317,6 +317,10 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const [duplicates, setDuplicates] = useState([]);
   const [showDuplicateDetail, setShowDuplicateDetail] = useState(null);
   const dupeCheckTimer = useRef(null);
+  // SF-639 — banner persistente cuando Vision AI detecta que la foto muestra
+  // un equipo distinto al Tag seleccionado. Bloquea submit hasta que el usuario
+  // resuelva (mantener selección o cambiar al equipo detectado).
+  const [equipmentMismatch, setEquipmentMismatch] = useState(null); // { detected, suggested, userTag }
 
   const handleAiSuggest = async (overrideText) => {
     // Check duplicates
@@ -955,7 +959,13 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
         return;
       }
       if (res?.equipment_mismatch) {
-        toast.warning('⚠️ La foto muestra otro equipo distinto al Tag seleccionado. Revisá las sugerencias.');
+        setEquipmentMismatch({
+          detected: res?.suggestions?.equipment_identified || res?.suggestions?.equipmentType || 'equipo no identificado',
+          userTag: form.whereTag || '',
+          userName: selectedEquip?.name || '',
+        });
+      } else {
+        setEquipmentMismatch(null);
       }
       if (res?.suggestions) {
         const s = res.suggestions;
@@ -1758,6 +1768,44 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                 </span>
               )}
             </div>
+            {/* SF-639 — Banner persistente equipment_mismatch (Vision detectó otro equipo) */}
+            {equipmentMismatch && (
+              <div className="mt-3 rounded-xl border-2 border-amber-400 bg-amber-50 p-3 shadow-sm animate-in fade-in">
+                <div className="flex items-start gap-3">
+                  <div className="shrink-0 w-9 h-9 rounded-full bg-amber-200 flex items-center justify-center text-lg">⚠️</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-amber-900 leading-tight">
+                      La foto NO coincide con el equipo seleccionado
+                    </p>
+                    <div className="text-xs text-amber-800 mt-1.5 space-y-0.5">
+                      <p>📷 La IA detecta: <strong className="font-semibold">{equipmentMismatch.detected}</strong></p>
+                      <p>🏷️ Tag seleccionado: <strong className="font-mono">{equipmentMismatch.userTag || '—'}</strong> {equipmentMismatch.userName ? `(${equipmentMismatch.userName})` : ''}</p>
+                    </div>
+                    <p className="text-[11px] text-amber-700 mt-2 italic">
+                      Las sugerencias de la IA están basadas en lo que ve en la foto, no en el equipo del Tag. Verificá antes de continuar.
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2.5">
+                      <button onClick={() => setEquipmentMismatch(null)}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+                        ✓ Entendí, mantener mi Tag
+                      </button>
+                      <button onClick={() => { setPhotos([]); setVisionResult(null); setEquipmentMismatch(null); toast.info('Foto descartada — subí otra del equipo correcto'); }}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-400 bg-white text-amber-800 hover:bg-amber-100 transition-colors">
+                        🗑️ Descartar foto y subir otra
+                      </button>
+                      <button onClick={() => { setEquipmentMismatch(null); setSelectedEquip(null); setF('whereTag',''); clearLocation(); toast.info('Tag limpiado — buscá el equipo correcto'); }}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-400 bg-white text-amber-800 hover:bg-amber-100 transition-colors">
+                        🔍 Cambiar de equipo
+                      </button>
+                    </div>
+                  </div>
+                  <button onClick={() => setEquipmentMismatch(null)}
+                    className="shrink-0 p-1 text-amber-500 hover:text-amber-800" title="Cerrar advertencia">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
             {/* Photo strip */}
             {photos.length > 0 && (
               <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
@@ -2924,8 +2972,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             <button onClick={handleReset} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               Limpiar
             </button>
-            <button onClick={handleSubmit} disabled={submitting || !canSubmit || wizardStep !== 3}
-              title={!canSubmit ? 'Completá los campos obligatorios antes de crear' : wizardStep !== 3 ? 'Avanzá hasta Paso 3' : ''}
+            <button onClick={handleSubmit} disabled={submitting || !canSubmit || wizardStep !== 3 || !!equipmentMismatch}
+              title={!canSubmit ? 'Completá los campos obligatorios antes de crear' : wizardStep !== 3 ? 'Avanzá hasta Paso 3' : equipmentMismatch ? 'Resolvé el aviso de equipo no coincidente antes de continuar' : ''}
               className="px-5 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2">
               {submitting
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>

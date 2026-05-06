@@ -858,7 +858,18 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     // Jorge (2026-04-20): en el tablero sólo deben aparecer OTs programables.
     // Una OT en CREADO/DRAFT todavía no fue liberada — no puede entrar a
     // la grilla de programación.
-    let list = releasedWOs.filter(wo => {
+    // SF-642 (2026-05-05): cuando el filtro es "En programación" incluimos
+    // TAMBIÉN las OTs ya posicionadas en el calendario (scheduledWOs con
+    // status EN_PROGRAMACION). Antes éstas vivían sólo en scheduledWOs y
+    // el panel izquierdo aparecía vacío aunque hubieran 24 OTs en ese estado.
+    const baseList = statusFilter === 'inSched'
+      ? [...releasedWOs, ...scheduledWOs.filter(w => (w.status || '').toUpperCase() === 'EN_PROGRAMACION')]
+      : releasedWOs;
+    // Dedupe por wo_id (una OT puede aparecer en ambos arrays)
+    const seen = new Set();
+    let list = baseList.filter(wo => {
+      if (seen.has(wo.wo_id)) return false;
+      seen.add(wo.wo_id);
       const s = (wo.status || '').toUpperCase();
       return s !== 'CREADO' && s !== 'DRAFT' && s !== 'PENDIENTE';
     });
@@ -903,7 +914,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     else if (sortBy === 'recent') list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     else if (sortBy === 'oldest') list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     return list;
-  }, [releasedWOs, search, prioFilter, filterGroup, sortBy, statusFilter]);
+  }, [releasedWOs, scheduledWOs, search, prioFilter, filterGroup, sortBy, statusFilter]);
 
   const weekEnd = days[days.length - 1]?.date || weekStart;
   const weekNum = getISOWeek(weekStart);

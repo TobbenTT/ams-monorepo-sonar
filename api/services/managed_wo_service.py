@@ -30,24 +30,33 @@ TRANSITIONS = {
 WO_TYPES = ("PM01", "PM02", "PM03", "PM05")
 
 
+_WO_NUM_LOCK = __import__("threading").Lock()
+
+
 def _generate_wo_number(db: Session) -> str:
-    """Auto-generate sequential WO number: OT-YYYY-NNNNN."""
-    year = datetime.now().year
-    prefix = f"OT-{year}-"
-    last = (
-        db.query(ManagedWorkOrderModel)
-        .filter(ManagedWorkOrderModel.wo_number.like(f"{prefix}%"))
-        .order_by(ManagedWorkOrderModel.wo_number.desc())
-        .first()
-    )
-    if last:
-        try:
-            seq = int(last.wo_number.split("-")[-1]) + 1
-        except (ValueError, IndexError):
+    """Auto-generate sequential WO number: OT-YYYY-NNNNN.
+
+    Process-local lock evita race entre requests concurrentes.
+    Single-worker actualmente (Dockerfile CMD); para multi-worker mover
+    a UPDATE atomic en BD o uuid.
+    """
+    with _WO_NUM_LOCK:
+        year = datetime.now().year
+        prefix = f"OT-{year}-"
+        last = (
+            db.query(ManagedWorkOrderModel)
+            .filter(ManagedWorkOrderModel.wo_number.like(f"{prefix}%"))
+            .order_by(ManagedWorkOrderModel.wo_number.desc())
+            .first()
+        )
+        if last:
+            try:
+                seq = int(last.wo_number.split("-")[-1]) + 1
+            except (ValueError, IndexError):
+                seq = 1
+        else:
             seq = 1
-    else:
-        seq = 1
-    return f"{prefix}{seq:05d}"
+        return f"{prefix}{seq:05d}"
 
 
 def _wr_aviso_label(db: Session | None, work_request_id: str | None) -> str | None:

@@ -11,16 +11,16 @@ from api.services import managed_wo_service
 
 class WOCreateRequest(BaseModel):
     model_config = {"extra": "ignore"}
-    equipment_tag: str
-    description: str = ""
-    wo_type: str = "PM01"
-    priority_code: str = "P3"
-    plant_id: str = "OCP-JFC1"
-    work_request_id: str | None = None
-    estimated_hours: float = 4.0
-    operations: list | None = None
-    materials: list | None = None
-    tools: list | None = None
+    equipment_tag: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=5000)
+    wo_type: str = Field(default="PM01", pattern=r"^(PM0[1-9]|CORRECTIVO|PREVENTIVO|PREDICTIVO|MEJORA|INCIDENTE_OPERACIONAL|MONITOREO_CONDICION)$")
+    priority_code: str = Field(default="P3", pattern=r"^P[1-4]$")
+    plant_id: str = Field(default="OCP-JFC1", max_length=50)
+    work_request_id: str | None = Field(default=None, max_length=50)
+    estimated_hours: float = Field(default=4.0, ge=0, le=10000)
+    operations: list | None = Field(default=None, max_length=200)
+    materials: list | None = Field(default=None, max_length=500)
+    tools: list | None = Field(default=None, max_length=200)
 
 
 class WOFromWRRequest(BaseModel):
@@ -113,6 +113,14 @@ def create_work_order(
     user=Depends(require_role("admin", "manager", "planner")),
     db: Session = Depends(get_db),
 ):
+    from api.database.models import HierarchyNodeModel
+    if not db.query(HierarchyNodeModel.tag).filter(
+        HierarchyNodeModel.tag == data.equipment_tag
+    ).first():
+        raise HTTPException(
+            status_code=400,
+            detail=f"equipment_tag '{data.equipment_tag}' no existe en la jerarquía",
+        )
     result = managed_wo_service.create_work_order(
         db,
         equipment_tag=data.equipment_tag,

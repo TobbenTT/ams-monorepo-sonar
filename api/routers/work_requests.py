@@ -84,30 +84,30 @@ class AIAssistRequest(BaseModel):
 
 class WRManualCreateRequest(BaseModel):
     """Create a WR directly without AI processing — for manual form entry."""
-    equipment_tag: str = ""
-    equipment_name: str = ""
-    plant_id: str = ""
-    problem_description: str = ""
-    priority: str = "P3"
-    activity_class: str = ""
-    failure_category: str = ""
-    failure_symptom: str = ""
-    failure_object_part: str = ""
-    failure_cause: str = ""
-    plant_condition: str = ""
-    suggested_action: str = ""
-    wo_title: str = ""
-    equipment_condition: str = ""
-    estimated_duration: float = 4
-    materials: list = []  # list of str or dict
-    resources: list = []  # list of str or dict
-    created_by: str = ""
-    notification_type: str = "A1"
-    reported_by: str = ""
-    circumstances: str = ""
-    support_equipment: list = []
-    documents: list = []
-    technical_location: str = ""
+    equipment_tag: str = Field(min_length=1, max_length=100)
+    equipment_name: str = Field(default="", max_length=200)
+    plant_id: str = Field(default="", max_length=50)
+    problem_description: str = Field(min_length=3, max_length=5000)
+    priority: str = Field(default="P3", pattern=r"^P[1-4]$")
+    activity_class: str = Field(default="", max_length=50)
+    failure_category: str = Field(default="", max_length=100)
+    failure_symptom: str = Field(default="", max_length=200)
+    failure_object_part: str = Field(default="", max_length=200)
+    failure_cause: str = Field(default="", max_length=500)
+    plant_condition: str = Field(default="", max_length=100)
+    suggested_action: str = Field(default="", max_length=2000)
+    wo_title: str = Field(default="", max_length=200)
+    equipment_condition: str = Field(default="", max_length=200)
+    estimated_duration: float = Field(default=4, ge=0, le=10000)
+    materials: list = Field(default_factory=list, max_length=200)
+    resources: list = Field(default_factory=list, max_length=200)
+    created_by: str = Field(default="", max_length=120)
+    notification_type: str = Field(default="A1", pattern=r"^[A-Z][0-9]?$")
+    reported_by: str = Field(default="", max_length=120)
+    circumstances: str = Field(default="", max_length=2000)
+    support_equipment: list = Field(default_factory=list, max_length=50)
+    documents: list = Field(default_factory=list, max_length=50)
+    technical_location: str = Field(default="", max_length=200)
     aviso_coding: str = ""
     planning_group: str = ""
     area_empresa: str = ""
@@ -1507,26 +1507,34 @@ def get_feedback_stats(equipment_tag: str = "", db: Session = Depends(get_db)):
             })
     return {"total": total, "accuracy_pct": round(positive / total * 100) if total else 0, "by_field": by_field}
 
+_WR_ID_LOCK = __import__("threading").Lock()
+
+
 def _generate_wr_id(db):
-    """Generate sequential WR ID: WR-YYYY-NNNNN"""
+    """Generate sequential WR ID: WR-YYYY-NNNNN.
+
+    Process-local lock evita race entre requests concurrentes (varios workers
+    quedarían fuera del lock pero hoy corremos 1 worker — ver Dockerfile CMD).
+    Si en el futuro pasamos a multi-worker, mover la generación a un counter
+    en BD con UPDATE atomic + RETURNING o usar uuid.
+    """
     from datetime import datetime
     from api.database.models import WorkRequestModel
-    year = datetime.now().year
-    prefix = f"WR-{year}-"
-    # Find max existing ID for this year
-    last = db.query(WorkRequestModel.request_id).filter(
-        WorkRequestModel.request_id.like(f"{prefix}%")
-    ).order_by(WorkRequestModel.request_id.desc()).first()
-    if last and last[0]:
-        try:
-            num = int(last[0].split("-")[-1]) + 1
-        except (ValueError, IndexError):
-            num = 1
-    else:
-        # Count all WRs as fallback
-        total = db.query(WorkRequestModel).count()
-        num = total + 1
-    return f"{prefix}{num:05d}"
+    with _WR_ID_LOCK:
+        year = datetime.now().year
+        prefix = f"WR-{year}-"
+        last = db.query(WorkRequestModel.request_id).filter(
+            WorkRequestModel.request_id.like(f"{prefix}%")
+        ).order_by(WorkRequestModel.request_id.desc()).first()
+        if last and last[0]:
+            try:
+                num = int(last[0].split("-")[-1]) + 1
+            except (ValueError, IndexError):
+                num = 1
+        else:
+            total = db.query(WorkRequestModel).count()
+            num = total + 1
+        return f"{prefix}{num:05d}"
 
 
 @router.get("/tools/ai-summary")
@@ -2015,7 +2023,18 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
     """Create a WR from manual form — calculates confidence from filled fields and goes to PENDING_VALIDATION."""
     import uuid
     from datetime import datetime
-    from api.database.models import WorkRequestModel
+    from api.database.models import WorkRequestModel, HierarchyNodeModel
+
+    # Validar que el equipment_tag exista en la jerarquía. Sin este check
+    # cualquier WR puede crear una OT huérfana (ver investigacion 2026-05-06).
+    tag_exists = db.query(HierarchyNodeModel.tag).filter(
+        HierarchyNodeModel.tag == data.equipment_tag
+    ).first()
+    if not tag_exists:
+        raise HTTPException(
+            status_code=400,
+            detail=f"equipment_tag '{data.equipment_tag}' no existe en la jerarquía",
+        )
 
     now = datetime.now()
 

@@ -22,7 +22,7 @@ router = APIRouter(
 # ── Schemas ──────────────────────────────────────────────────────────
 
 class ActionCreate(BaseModel):
-    title: str = Field(max_length=300)
+    title: str = Field(min_length=3, max_length=300)
     description: str = Field(default="", max_length=5000)
     plant_id: str = Field(default="", max_length=50)
     equipment_id: str | None = None

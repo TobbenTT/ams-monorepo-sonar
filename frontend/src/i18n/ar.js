@@ -67,6 +67,8 @@ export default {
         enterCredentials: 'أدخل بياناتك للوصول إلى النظام',
         authError: 'خطأ في المصادقة',
         demoUsers: 'مستخدمون تجريبيون',
+        quickAccess: 'وصول سريع',
+        backToHome: '← العودة إلى الصفحة الرئيسية',
         roles: {
             admin: 'مدير النظام',
             manager: 'مدير',

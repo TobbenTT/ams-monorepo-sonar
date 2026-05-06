@@ -179,8 +179,13 @@ def get_equipment_history(equipment_tag: str, exclude_id: str | None = None, lim
 
 
 @router.get("/")
-def list_work_requests(status: str | None = None, plant_id: str | None = None, limit: int = 200, offset: int = 0, db: Session = Depends(get_db)):
+def list_work_requests(status: str | None = None, plant_id: str | None = None, limit: int = 200, offset: int = 0, db: Session = Depends(get_db), user=Depends(get_current_user)):
     from api.database.models import FieldCaptureModel
+    # IDOR fix (pentest 2026-05-06): si el usuario tiene plant_id (rol no-admin),
+    # forzar el filtro a su planta. admin/manager (plant_id=null) ven todo.
+    user_plant = getattr(user, "plant_id", None)
+    if user_plant and user.role not in ("admin", "manager"):
+        plant_id = user_plant
     items = work_request_service.list_work_requests(db, status, plant_id=plant_id, limit=limit, offset=offset)
     # Batch-load photos from linked captures
     capture_ids = [wr.source_capture_id for wr in items if wr.source_capture_id]

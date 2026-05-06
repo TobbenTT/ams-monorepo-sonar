@@ -67,6 +67,8 @@ export default {
         enterCredentials: 'Ingresa tus credenciales para acceder al sistema',
         authError: 'Error de autenticación',
         demoUsers: 'Usuarios demo',
+        quickAccess: 'Acceso rápido',
+        backToHome: '← Volver al inicio',
         roles: {
             admin: 'Administrador',
             manager: 'Manager',

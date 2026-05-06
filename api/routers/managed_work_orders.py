@@ -107,6 +107,16 @@ router = APIRouter(
 )
 
 
+def _max_depth(obj, depth=0):
+    if depth > 12:
+        return depth
+    if isinstance(obj, dict):
+        return max((_max_depth(v, depth + 1) for v in obj.values()), default=depth)
+    if isinstance(obj, list):
+        return max((_max_depth(v, depth + 1) for v in obj), default=depth)
+    return depth
+
+
 @router.post("/")
 def create_work_order(
     data: WOCreateRequest,
@@ -121,6 +131,14 @@ def create_work_order(
             status_code=400,
             detail=f"equipment_tag '{data.equipment_tag}' no existe en la jerarquía",
         )
+    # Depth bomb guard (pentest 2026-05-06): rechaza JSON nested >12 niveles
+    # en operations/materials/tools para evitar DoS por recursión profunda.
+    for fld_name, fld in (("operations", data.operations), ("materials", data.materials), ("tools", data.tools)):
+        if fld is not None and _max_depth(fld) > 12:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Campo '{fld_name}' con anidamiento excesivo (>12 niveles)",
+            )
     result = managed_wo_service.create_work_order(
         db,
         equipment_tag=data.equipment_tag,
@@ -165,7 +183,12 @@ def list_work_orders(
     light: bool = False,  # when True, returns only the fields needed by lists (≈70% smaller payload)
     paginated: bool = False,  # Group B #4 — opt-in paginated response {items,total,limit,offset,has_more}
     db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
+    # IDOR fix (pentest 2026-05-06): scope plant para usuarios no-admin/manager.
+    user_plant = getattr(user, "plant_id", None)
+    if user_plant and user.role not in ("admin", "manager"):
+        plant_id = user_plant
     return managed_wo_service.list_work_orders(db, status, plant_id, wo_type, priority, limit, offset, fast_track=fast_track, light=light, paginated=paginated)
 
 

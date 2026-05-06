@@ -1240,9 +1240,12 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
         work_conditions: form.workConditions || '',
         created_by: user?.full_name || user?.username || '',
       });
-      const wrId = res?.request_id || res?.work_request_id || '';
-      setCreatedWRId(wrId);
-      toast.success('Notification created: ' + wrId);
+      // Mostrar AV-NNNNN al usuario (SAP-style); WR-YYYY-NNNNN es ID técnico interno.
+      const reqId = res?.request_id || res?.work_request_id || '';
+      const avNum = res?.aviso_number;
+      const avLabel = avNum ? `AV-${String(avNum).padStart(5, '0')}` : reqId;
+      setCreatedWRId(avLabel);
+      toast.success('Aviso creado: ' + avLabel);
       // Disparar evento para que WorkRequests refresque aunque WS esté desconectado
       try { window.dispatchEvent(new CustomEvent('wr:created', { detail: { wrId } })); } catch {}
       // Jorge 2026-04-27: refrescar badge counts del WM al toque + retry 1.5s
@@ -1448,7 +1451,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
           <h3 className="text-xl font-bold text-gray-900 mb-2">Notification Created</h3>
           <p className="text-sm text-gray-500 mb-4">Your notification has been submitted for review</p>
           <div className="inline-block px-4 py-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 mb-6">
-            <div className="text-xs text-emerald-600 font-medium">Notification ID</div>
+            <div className="text-xs text-emerald-600 font-medium">Aviso #</div>
             <div className="text-lg font-bold text-emerald-700 font-mono">{createdWRId}</div>
             <button onClick={() => { navigator.clipboard.writeText(createdWRId); }}
               className="mt-1 text-xs text-emerald-500 hover:text-emerald-700 flex items-center gap-1 mx-auto">

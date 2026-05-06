@@ -515,9 +515,16 @@ class WorkRequestModel(Base):
 def _auto_assign_aviso_number(mapper, connection, target):
     if getattr(target, "aviso_number", None) is None:
         try:
-            from sqlalchemy import text as _text
-            row = connection.execute(_text("SELECT COALESCE(MAX(aviso_number), 0) + 1 FROM work_requests")).scalar()
-            target.aviso_number = int(row or 1)
+            # Alinear aviso_number con el correlativo del request_id para que
+            # WR-YYYY-NNNNN y AV-NNNNN muestren el mismo número (Jorge 2026-05-06).
+            req = getattr(target, "request_id", "") or ""
+            tail = req.rsplit("-", 1)[-1]
+            if tail.isdigit():
+                target.aviso_number = int(tail)
+            else:
+                from sqlalchemy import text as _text
+                row = connection.execute(_text("SELECT COALESCE(MAX(aviso_number), 0) + 1 FROM work_requests")).scalar()
+                target.aviso_number = int(row or 1)
         except Exception:
             pass
 

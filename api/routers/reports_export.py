@@ -25,6 +25,22 @@ router = APIRouter(
 )
 
 
+_INJECTION_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _sanitize_cell(value):
+    """Prevent CSV/XLSX formula injection. Si una cadena empieza por
+    =/+/-/@/tab/CR, Excel la interpreta como fórmula (DDE attack vector).
+    Anteponemos un apóstrofo para forzar literal text."""
+    if isinstance(value, str) and value and value[0] in _INJECTION_PREFIXES:
+        return "'" + value
+    return value
+
+
+def _safe_row(values: list) -> list:
+    return [_sanitize_cell(v) for v in values]
+
+
 def _wb_response(wb, filename: str) -> StreamingResponse:
     buf = BytesIO()
     wb.save(buf)
@@ -83,7 +99,7 @@ def weekly_schedule_xlsx(
     ])
     for wo in wos:
         techs = ", ".join((w.get("name") or w.get("worker_id") or "") for w in (wo.assigned_workers or []))
-        ws.append([
+        ws.append(_safe_row([
             wo.wo_number, wo.wo_type, wo.priority_code, wo.equipment_tag or "",
             wo.description or "", wo.planning_group or "", wo.work_center or "",
             wo.planned_start.isoformat() if wo.planned_start else "",
@@ -91,7 +107,7 @@ def weekly_schedule_xlsx(
             float(wo.estimated_hours or 0),
             getattr(wo, "shift", "") or "day",
             wo.status, techs,
-        ])
+        ]))
     # Auto-size columns
     for col in ws.columns:
         max_len = max((len(str(c.value)) if c.value else 0) for c in col)
@@ -148,7 +164,7 @@ def wos_closed_xlsx(
         total_plan += plan
         total_actual += actual
         total_cost += cost
-        ws.append([
+        ws.append(_safe_row([
             wo.wo_number, wo.wo_type, wo.priority_code, wo.equipment_tag or "",
             wo.description or "",
             wo.closed_at.isoformat() if wo.closed_at else "",
@@ -157,7 +173,7 @@ def wos_closed_xlsx(
             plan, actual, variance,
             float(wo.labor_cost or 0), float(wo.material_cost or 0), float(wo.external_cost or 0), cost,
             getattr(wo, "closure_notes", "") or "",
-        ])
+        ]))
     # Totals row
     ws.append([])
     totals_row = ["TOTAL", "", "", "", "", "", "", "", total_plan, total_actual,
@@ -187,7 +203,7 @@ def kpi_summary_xlsx(plant_id: str | None = None, db: Session = Depends(get_db))
     s = summary(plant_id=plant_id, db=db)
     _header(ws, ["KPI", "Value"])
     for k, v in s.items():
-        ws.append([k, v])
+        ws.append(_safe_row([k, v]))
 
     # MTBF/MTTR
     ws2 = wb.create_sheet("MTBF-MTTR")

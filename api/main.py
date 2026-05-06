@@ -432,6 +432,35 @@ def create_app() -> FastAPI:
         qp = websocket.query_params
         client_id = qp.get("client_id")
         user_id = qp.get("user_id")
+        # Auth: pentest 2026-05-06 detectó que un anónimo podía conectar y
+        # recibir todos los broadcasts (info leak). Exige JWT en ?token=.
+        token = qp.get("token")
+        if not token:
+            await websocket.close(code=4401, reason="Token requerido")
+            return
+        try:
+            from api.services.auth_service import decode_token, get_user_by_id
+            from api.database.connection import SessionLocal
+            payload = decode_token(token)
+            if not payload or payload.get("type") != "access":
+                await websocket.close(code=4401, reason="Token invalido")
+                return
+            _db = SessionLocal()
+            try:
+                _user = get_user_by_id(_db, payload["sub"])
+                if not _user or not _user.is_active:
+                    await websocket.close(code=4401, reason="Usuario invalido")
+                    return
+                if payload.get("ver", 0) != getattr(_user, "token_version", 0):
+                    await websocket.close(code=4401, reason="Token revocado")
+                    return
+                # Lock user_id al token (evita spoofing de presencia).
+                user_id = _user.user_id
+            finally:
+                _db.close()
+        except Exception as _e:
+            await websocket.close(code=4401, reason="Auth error")
+            return
         await manager.connect(websocket, plant_id, client_id=client_id, user_id=user_id)
         # Announce presence if this user already has another live session.
         try:

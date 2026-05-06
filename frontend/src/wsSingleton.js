@@ -46,6 +46,8 @@ function buildUrl(plantId) {
     const params = new URLSearchParams({ client_id: CLIENT_ID });
     const uid = getUserId();
     if (uid) params.set('user_id', uid);
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    if (token) params.set('token', token);
     return `${proto}//${window.location.host}/ws/${plantId}?${params.toString()}`;
 }
 

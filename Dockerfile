@@ -1,58 +1,47 @@
+# syntax=docker/dockerfile:1.7
 # ── Stage 1: Build dependencies ──────────────────────────────────────
-# Security parcheo 2026-04-25 (2da pasada): python:3.13-slim (Debian 13 trixie)
-# en lugar de 3.11 (Debian 12 bookworm). Cubre las 22 vulns con fix que
-# quedaron del primer parcheo — Debian 12 ya no recibe parches para
-# zlib1g/libxml2/perl-base. Trixie sí los tiene patcheados upstream.
+# Security parcheo: confiamos en base image python:3.13-slim (Debian 13 trixie)
+# que ya trae fixes upstream. apt-get upgrade removido para no invalidar caché
+# en cada build; se vuelve a aplicar via rebuild periódico cuando sale base nueva.
 FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
-# apt-get upgrade trae los security patches de Debian (libsqlite3, libssl3,
-# openssl, gpgv, libc-bin, libxml2, perl-base, libtiff, libcap2, etc).
-# Cubre ~40 CVEs OS-level del scan 2026-04-24.
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    gcc \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-# Bump pip + setuptools antes de instalar deps (CVE en setuptools 65.5.1 → 78.1.1).
-RUN pip install --no-cache-dir --upgrade pip setuptools
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip setuptools
 
 COPY requirements.txt .
-# torch CPU-only first (saves ~1.5GB vs CUDA wheel) — RAG Phase 2 needs sentence-transformers
-RUN pip install --no-cache-dir --prefix=/install \
-    --extra-index-url https://download.pytorch.org/whl/cpu \
-    torch==2.5.1+cpu
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
-# Override transitive deps con CVEs (python-jose viene de anthropic SDK):
-RUN pip install --no-cache-dir --prefix=/install --upgrade \
-    'python-jose[cryptography]>=3.4.0' \
-    'cryptography>=42.0.4' \
-    'anyio>=4.4.0' \
-    'idna>=3.7' \
-    'certifi>=2024.7.4'
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --prefix=/install \
+        --extra-index-url https://download.pytorch.org/whl/cpu \
+        torch==2.5.1+cpu
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --prefix=/install -r requirements.txt && \
+    pip install --prefix=/install --upgrade \
+        'python-jose[cryptography]>=3.4.0' \
+        'cryptography>=42.0.4' \
+        'anyio>=4.4.0' \
+        'idna>=3.7' \
+        'certifi>=2024.7.4'
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────
 FROM python:3.13-slim
 
 WORKDIR /app
 
-# Mismo apt upgrade en runtime para parchear OS del final image.
-RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Bump pip/setuptools también en runtime.
-RUN pip install --no-cache-dir --upgrade pip setuptools
-
-# Copy only installed packages from builder (no gcc in final image)
 COPY --from=builder /install /usr/local
 
-# Copy application code
 COPY . .
 
-# Stamp build time so /health build hash changes on every deploy
-RUN date +%s > /app/.build_timestamp
-
-# Create data directory and non-root user
-RUN mkdir -p /app/data \
+# Single-worker es requerido: WebSocket state (ws_manager) es in-process.
+# Multi-worker requeriría Redis pub/sub.
+RUN date +%s > /app/.build_timestamp \
+    && mkdir -p /app/data \
     && useradd -m -u 1000 appuser \
     && chown -R appuser:appuser /app
 
@@ -60,9 +49,4 @@ USER appuser
 
 EXPOSE 8000
 
-# Start server (tables created via lifespan, seed via POST /api/v1/admin/seed)
-# Single worker is required because WebSocket state (ws_manager) is in-process.
-# Going multi-worker would need Redis pub/sub so broadcasts reach all clients,
-# regardless of which worker they landed on. For ~10 concurrent users uvicorn
-# async single-worker is fine — swap to Redis pub/sub if concurrency grows.
 CMD ["gunicorn", "api.main:app", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120"]

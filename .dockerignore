@@ -53,3 +53,8 @@ docker-compose.yml
 # Datos efímeros / outputs
 data/
 ocp_maintenance.db*
+.playwright-mcp/
+playwright-report/
+test-results/
+.env*
+*.log

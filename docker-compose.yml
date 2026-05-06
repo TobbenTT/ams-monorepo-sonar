@@ -13,6 +13,7 @@ services:
       - ocp_db_data:/app/data
       - ocp_sap_data:/app/sap_mock/data
       - ocp_or_deliverables:/app/or_deliverables
+      - ocp_hf_cache:/home/appuser/.cache/huggingface
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
       interval: 30s
@@ -92,3 +93,5 @@ volumes:
     name: ocp_or_deliverables
   ocp_dms_docs:
     name: ocp_dms_docs
+  ocp_hf_cache:
+    name: ocp_hf_cache

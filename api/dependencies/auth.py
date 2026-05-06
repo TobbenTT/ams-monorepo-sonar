@@ -24,6 +24,10 @@ async def get_current_user(
     user = get_user_by_id(db, payload["sub"])
     if user is None or not user.is_active:
         raise HTTPException(status_code=401, detail="Usuario no encontrado o desactivado")
+    # Verifica token_version: cualquier logout incrementa user.token_version,
+    # invalidando todos los JWTs emitidos antes del logout.
+    if payload.get("ver", 0) != getattr(user, "token_version", 0):
+        raise HTTPException(status_code=401, detail="Token revocado")
     return user
 
 

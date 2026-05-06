@@ -123,6 +123,8 @@ def _run_column_migrations():
         ("work_requests", "aviso_number", "INTEGER", None),
         # Equipos de apoyo en OT (Jorge 2026-04-28 17:56) — propagar desde Aviso
         ("managed_work_orders", "support_equipment", "TEXT", None),  # JSON
+        # Token versioning para invalidar JWTs en logout (pentest 2026-05-06).
+        ("users", "token_version", "INTEGER", "0"),
     ]
 
     with engine.begin() as conn:

@@ -67,8 +67,8 @@ def login(data: UserLogin, request: Request, db: Session = Depends(get_db)):
             status_code=403,
             detail="MFA enrollment required for admin/manager roles. Enrolá vía /mfa/setup antes de iniciar sesión.",
         )
-    access = auth_service.create_access_token({"sub": user.user_id, "role": user.role})
-    refresh = auth_service.create_refresh_token({"sub": user.user_id, "role": user.role})
+    access = auth_service.create_access_token({"sub": user.user_id, "role": user.role, "ver": user.token_version})
+    refresh = auth_service.create_refresh_token({"sub": user.user_id, "role": user.role, "ver": user.token_version})
     # Auditoría 2026-04-22 — registrar logins exitosos (IP + user-agent)
     try:
         from api.services.audit_service import log_action
@@ -95,13 +95,16 @@ def login(data: UserLogin, request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/logout")
-def logout():
-    """Limpia cookies HttpOnly del navegador. El JS no puede borrarlas por sí
-    solo, por eso este endpoint existe. Llamado por el cliente antes de
-    redirect a /login durante force_logout."""
+def logout(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Logout: incrementa user.token_version (invalida todos los JWTs emitidos)
+    + borra cookies HttpOnly del navegador.
+
+    Pentest 2026-05-06: antes el logout solo borraba cookies; el bearer token
+    seguía válido hasta exp (30min). Ahora invalida en BD."""
     from fastapi.responses import JSONResponse as JR
+    user.token_version = (user.token_version or 0) + 1
+    db.commit()
     response = JR(content={"ok": True})
-    # Max-Age=0 + same path/domain/flags = borra la cookie.
     for name in ("access_token", "refresh_token"):
         response.set_cookie(
             name, value="", httponly=True, secure=True, samesite="lax",
@@ -118,8 +121,8 @@ def refresh_token(data: RefreshRequest, db: Session = Depends(get_db)):
     user = auth_service.get_user_by_id(db, payload["sub"])
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="Usuario no encontrado")
-    new_access = auth_service.create_access_token({"sub": user.user_id, "role": user.role})
-    new_refresh = auth_service.create_refresh_token({"sub": user.user_id, "role": user.role})
+    new_access = auth_service.create_access_token({"sub": user.user_id, "role": user.role, "ver": user.token_version})
+    new_refresh = auth_service.create_refresh_token({"sub": user.user_id, "role": user.role, "ver": user.token_version})
     return {
         "access_token": new_access,
         "refresh_token": new_refresh,

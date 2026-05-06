@@ -42,6 +42,9 @@ class UserModel(Base):
     # con specialty=='Mecánico'; análogo para eléctrico/instrumentista. Null
     # = sin restricción (admin/manager/planner). Los técnicos no usan este campo.
     scoped_specialty: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # token_version se incrementa en logout para invalidar JWTs vivos. El token
+    # incluye `ver` y get_current_user lo compara — si difieren, 401.
+    token_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     __table_args__ = (
         Index("ix_users_role", "role"),

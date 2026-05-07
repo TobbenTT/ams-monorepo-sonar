@@ -11,7 +11,7 @@ import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   listManagedWOs, updateManagedWO, completeManagedWO, closeManagedWO,
-  updateManagedWOProgress, verifyCloseManagedWO, suggestFailureFields,
+  updateManagedWOProgress, verifyCloseManagedWO, suggestFailureFields, startManagedWO,
 } from '../api';
 import PartialNotifyModal from '../components/PartialNotifyModal';
 import SmartAssignModal from '../components/SmartAssignModal';
@@ -273,16 +273,22 @@ export default function Execution() {
     // Optimistic update so user sees status change immediately
     setActiveWOs(prev => prev.map(w => w.wo_id === wo.wo_id ? { ...w, status: 'EN_EJECUCION' } : w));
     try {
-      const startedAt = new Date().toISOString();
-      const payload = { status: 'EN_EJECUCION', actual_start: startedAt };
+      // Backend bloquea PUT /managed-work-orders/{id} con status=EN_EJECUCION
+      // (409). El path correcto es PUT /managed-work-orders/{id}/start, que
+      // setea status + actual_start internamente. Geo/started_via se mandan
+      // como update separado solo si vienen del QR scan.
+      await startManagedWO(wo.wo_id);
       if (opts.fromQR) {
         const geo = await getGeo();
         if (geo) {
-          payload.start_location = { lat: geo.lat, lng: geo.lng, accuracy: geo.accuracy };
+          try {
+            await updateManagedWO(wo.wo_id, {
+              start_location: { lat: geo.lat, lng: geo.lng, accuracy: geo.accuracy },
+              started_via: 'qr_scan',
+            });
+          } catch {}
         }
-        payload.started_via = 'qr_scan';
       }
-      await updateManagedWO(wo.wo_id, payload);
       toast.success(wo.wo_number + ' started' + (opts.fromQR ? ' · 📍 ubicación registrada' : ''));
       loadData();
     } catch (e) {

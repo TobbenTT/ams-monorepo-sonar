@@ -714,7 +714,12 @@ ${materials.length ? `<div class="section">
                   <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
                     {item.priority_requested}
                   </span>
-                  {item.priority_requested !== item.priority_suggested && (
+                  {/* Bug demo Gonzalo 2026-05-07: la flecha "P3 → P2" seguía
+                      visible aunque el supervisor hubiera RECHAZADO la sugerencia
+                      IA. Ahora la flecha solo se muestra si la decisión sigue
+                      pendiente — una vez decidida (accepted o rejected) ya no
+                      hace sentido mostrar el contraste. */}
+                  {item.priority_requested !== item.priority_suggested && item.ai_priority_decision !== 'rejected' && (
                     <>
                       <span className="text-amber-500 text-xs">→</span>
                       <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_suggested)}`}>
@@ -2289,7 +2294,10 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                   </tr>
                 )}
                 {paged.map((req) => {
-                  const priorityChanged = req.priority_requested !== req.priority_suggested;
+                  // Bug demo Gonzalo 2026-05-07: la flecha "P3→P2" en la tabla
+                  // seguía visible aunque el supervisor hubiera RECHAZADO la
+                  // sugerencia IA. La oculto cuando ya hubo decisión 'rejected'.
+                  const priorityChanged = req.priority_requested !== req.priority_suggested && req.ai_priority_decision !== 'rejected';
                   const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(req.status);
                   const truncatedDesc =
                     req.failure_description.length > 60

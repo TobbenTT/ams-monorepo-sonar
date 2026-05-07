@@ -1547,11 +1547,41 @@ export default function Execution() {
                       {/* Operations checklist + notificación HH por operación (Jorge #7) */}
                       {ops.length > 0 && (
                         <div>
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Operations ({ops.length})</h4>
-                            {isExec && (
-                              <span className="text-[10px] text-muted-foreground">Notif. HH → personas y horas reales por op</span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {isExec && (
+                                <span className="text-[10px] text-muted-foreground">Notif. HH → personas y horas reales por op</span>
+                              )}
+                              {isExec && ops.some(o => !o.actual_hours || o.actual_hours <= 0) && (
+                                <button
+                                  onClick={async () => {
+                                    // Bug demo Gonzalo 2026-05-07: con 11 ops el supervisor
+                                    // tenía que tipear 22 inputs (qty + h × 11) para pasar
+                                    // los gates ALL_OPS_DONE + OPS_HH_NOTIFIED. Atajo: copia
+                                    // plan → real en todas las ops que aún no tienen actual_hours.
+                                    // Las que ya tienen valor se respetan (no sobreescribir).
+                                    const nextOps = ops.map(o => {
+                                      if (o.actual_hours && o.actual_hours > 0) return o;
+                                      return {
+                                        ...o,
+                                        actual_quantity: o.quantity || 1,
+                                        actual_hours: o.hours || 0,
+                                        completion_pct: 100,
+                                      };
+                                    });
+                                    try {
+                                      await updateManagedWO(wo.wo_id, { operations: nextOps });
+                                      toast.success(`Notificadas ${ops.filter(o => !o.actual_hours).length} ops con HH plan`);
+                                      loadData();
+                                    } catch (e) { toast.error('No se pudo guardar: ' + (e.message || e)); }
+                                  }}
+                                  className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200 transition-colors flex items-center gap-1"
+                                  title="Llena las HH reales de todas las operaciones pendientes con los valores planificados. No sobreescribe las que ya tienen valor.">
+                                  ⚡ Notificar todas con HH plan
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div className="space-y-1">
                             {ops.map((op, i) => {

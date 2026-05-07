@@ -944,9 +944,18 @@ def ai_priority_decision(
     if data.decision == "accepted" and suggested:
         wr.priority_code = suggested
         ai["priority_user"] = user_pri  # mantener histórico de lo que tipeó originalmente
+        # Tras aceptar, sincronizamos suggested = priority_code (ahora son iguales),
+        # así la UI no muestra "P2 → P2".
+        ai["priority_suggested"] = suggested
     elif data.decision == "rejected" and user_pri:
         # Revertir a la prioridad del usuario por si quedó auto-bumpeada antes
         wr.priority_code = user_pri
+        # Bug demo Gonzalo 2026-05-07: tras rechazar, el badge seguía mostrando
+        # "P3 → P2" (la sugerencia rechazada) porque priority_suggested no se
+        # actualizaba. El supervisor pensaba que la IA tomó la decisión igual.
+        # Sincronizamos suggested = priority_code para que la UI muestre solo P3.
+        # ai_priority_reason queda como histórico (aclarando "rechazado").
+        ai["priority_suggested"] = user_pri
     ai["ai_priority_pending"] = False
     ai["ai_priority_decision"] = data.decision
     ai["ai_priority_decided_at"] = datetime.now().isoformat()

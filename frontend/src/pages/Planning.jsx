@@ -2616,6 +2616,21 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       const totalDuration = serieHours + parallelHours;
                       const parallelCount = editOps.filter(o => o.parallel).length;
                       const groupCount = Object.keys(groups).length;
+                      const calcHelp = `Cómo se calcula:
+
+DURACIÓN (tiempo de calendario, horas de pared):
+  • Operaciones en serie → se SUMAN sus horas (una después de otra).
+  • Operaciones en paralelo dentro del mismo grupo → se toma la MÁXIMA del grupo (corren simultáneas, terminan cuando termina la más larga).
+  • Grupos paralelos distintos (A, B, ...) corren en secuencia entre sí.
+  • Fórmula: Σ(serie) + Σ(max de cada grupo paralelo)
+
+TOTAL HH (horas-hombre, esfuerzo del equipo):
+  • Suma de TODOS los HH de cada operación, sin importar paralelo o serie.
+  • HH por operación = cantidad de personas × duración (h).
+  • El paralelismo no reduce HH: 2 técnicos durante 4h en paralelo siguen siendo 8 HH.
+
+Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralelo Grupo A:
+  → Duración del grupo = max(8, 4) = 8h     → HH del grupo = 16 + 4 = 20`;
                       return (
                         <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2 border flex-wrap gap-2">
                           <span className="text-xs text-gray-500">
@@ -2623,15 +2638,25 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                             {parallelCount > 0 && ` · ${parallelCount} en paralelo en ${groupCount} grupo${groupCount > 1 ? 's' : ''}`}
                           </span>
                           <div className="flex items-center gap-4 flex-wrap">
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
                               Duración: <strong className="text-gray-800">{totalDuration.toFixed(1)}h</strong>
                               {groupCount > 0 && (
                                 <span className="text-[10px] text-gray-400 ml-1">
                                   (serie + {Object.entries(groups).map(([g, h]) => `${g}:max ${h}h`).join(' + ')})
                                 </span>
                               )}
+                              <span
+                                title={calcHelp}
+                                className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-300 text-gray-700 text-[10px] font-bold cursor-help hover:bg-gray-400 ml-1"
+                                aria-label="Cómo se calcula la duración y HH">?</span>
                             </span>
-                            <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">Total HH: {totalHH.toFixed(1)}</span>
+                            <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg flex items-center gap-1">
+                              Total HH: {totalHH.toFixed(1)}
+                              <span
+                                title={calcHelp}
+                                className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-200 text-emerald-800 text-[10px] font-bold cursor-help hover:bg-emerald-300"
+                                aria-label="Cómo se calcula la duración y HH">?</span>
+                            </span>
                           </div>
                         </div>
                       );

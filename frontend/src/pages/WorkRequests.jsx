@@ -392,7 +392,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
 
   const handleSaveAndApprove = () => {
     if (!allChecked) {
-      alert('Debe completar todos los items de la Lista de Verificacion antes de aprobar.');
+      toast.warning('Debe completar todos los items de la Lista de Verificación antes de aprobar.');
       return;
     }
     if (editing) onSaveEdit(item.id, editData);
@@ -1232,8 +1232,7 @@ ${materials.length ? `<div class="section">
                       item.support_equipment = next;
                       try { window.dispatchEvent(new CustomEvent('wr:updated', { detail: { id: item.id } })); } catch {}
                     } catch (err) {
-                      // Mostrar el error para que el usuario sepa que no se guardó
-                      alert('Error al guardar el equipo: ' + (err?.message || 'desconocido'));
+                      toast.error('Error al guardar el equipo: ' + (err?.message || 'desconocido'));
                     }
                   }}
                   className="text-[10px] font-semibold px-2 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-1"

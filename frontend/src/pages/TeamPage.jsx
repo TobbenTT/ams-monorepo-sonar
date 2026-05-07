@@ -59,6 +59,7 @@ const COMMON_SKILLS = ['Soldadura', 'Alta tensión', 'Neumática', 'Hidráulica'
 const COMMON_CERTS = ['SEC Clase A', 'SEC Clase B', 'SEC Clase C', 'SEC Clase D', 'Trabajo en Altura', 'Espacio Confinado', 'LOTO', 'Operador Grúa', 'Primeros Auxilios', 'NFPA 70E'];
 
 function TechFields({ member, onSaved }) {
+  const toast = useToast();
   const workerId = member.worker_id || member.user_id;
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -105,7 +106,7 @@ function TechFields({ member, onSaved }) {
       // Notify other pages (Scheduling, SmartAssign) to refresh their cache
       try { window.dispatchEvent(new CustomEvent('workforce:updated', { detail: { workerId, ...form } })); } catch {}
     } catch (e) {
-      alert('Error: ' + (e.message || 'no se pudo guardar'));
+      toast.error('Error: ' + (e.message || 'no se pudo guardar'));
     } finally {
       setSaving(false);
     }

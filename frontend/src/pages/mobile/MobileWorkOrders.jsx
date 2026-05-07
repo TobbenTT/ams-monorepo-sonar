@@ -5,6 +5,7 @@ import {
     AlertCircle, Circle, UserPlus, X, QrCode,
 } from 'lucide-react';
 import * as api from '../../api';
+import { useToast } from '../../components/Toast';
 const QRScanner = lazy(() => import('../../components/QRScanner'));
 
 const STATUS_CONFIG = {
@@ -72,6 +73,7 @@ const ALERT_CHIPS = {
 };
 
 export default function MobileWorkOrders() {
+    const toast = useToast();
     const { mobileRole, plant } = useOutletContext();
     const navigate = useNavigate();
     const [tasks, setTasks] = useState([]);
@@ -541,7 +543,7 @@ export default function MobileWorkOrders() {
                             if (match) {
                                 navigate(`/mobile/task/${match.id}`);
                             } else {
-                                alert('No se encontró OT ni equipo para: ' + code);
+                                toast.warning('No se encontró OT ni equipo para: ' + code);
                             }
                         }}
                     />

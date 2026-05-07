@@ -20,6 +20,7 @@ import * as api from '../api';
 // Fase 7 Jorge 2026-04-21 — grabar nota de voz en el cierre + transcribir.
 // Usa MediaRecorder + endpoint /media/transcribe (whisper) ya existente.
 function AudioDictateButton({ onText }) {
+  const toast = useToast();
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
   const recRef = useState({ current: null })[0];
@@ -39,7 +40,7 @@ function AudioDictateButton({ onText }) {
           const txt = res?.text || res?.transcript || '';
           if (txt) onText(txt.trim());
         } catch (e) {
-          alert('Error al transcribir: ' + (e.message || ''));
+          toast.error('Error al transcribir: ' + (e.message || ''));
         } finally {
           setBusy(false);
         }
@@ -48,7 +49,7 @@ function AudioDictateButton({ onText }) {
       mr.start();
       setRecording(true);
     } catch (e) {
-      alert('No se pudo activar el micrófono: ' + (e.message || ''));
+      toast.error('No se pudo activar el micrófono: ' + (e.message || ''));
     }
   };
   const stop = () => {

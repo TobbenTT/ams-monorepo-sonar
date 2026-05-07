@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Minus, DollarSign, Users, Wrench, Shield, Loader2, Clock, Target } from 'lucide-react';
 import * as api from '../../api';
+import { useToast } from '../Toast';
 import ProgramComplianceCard from '../ProgramComplianceCard';
 import ProgramAdherenceCard from '../ProgramAdherenceCard';
 import BacklogAlertsCards from '../BacklogAlertsCards';
@@ -1138,13 +1139,14 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
 
 // SF-352..370 — Barra de quick-actions para los agentes IA-AGENTIC T2/T3.
 function AgentQuickActions({ plant }) {
+  const toast = useToast();
   const call = async (fn, label) => {
     try {
       const res = await fn({ plant_id: plant });
       const r = res?.output_result || res?.result || res;
-      const summary = r?.summary || r?.status || r?.message || JSON.stringify(r).slice(0, 400);
-      alert(`${label}\n\n${summary}`);
-    } catch (e) { alert(`${label} — Error: ${e.message || ''}`); }
+      const summary = r?.summary || r?.status || r?.message || JSON.stringify(r).slice(0, 200);
+      toast.success(`${label} · ${summary}`);
+    } catch (e) { toast.error(`${label} — Error: ${e.message || ''}`); }
   };
   const actions = [
     { label: 'Digital Twin', fn: api.agenticDigitalTwin, tag: 'SF-364', emoji: '🖥️' },

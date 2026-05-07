@@ -34,6 +34,7 @@ const DISCIPLINAS_OP = [
 // el supervisor captura valores reales (puesto trabajo, HH, inicio/fin)
 // antes de cerrar. Fin real = inicio + duración, editable manualmente.
 function NotifHHTab({ wo, onSaved }) {
+  const toast = useToast();
   const [actualWorkCenter, setActualWorkCenter] = useState(wo.work_center || '');
   const [actualStart, setActualStart] = useState(wo.actual_start ? wo.actual_start.slice(0, 16) : '');
   const [actualDuration, setActualDuration] = useState(wo.actual_hours || wo.estimated_hours || 0);
@@ -69,7 +70,7 @@ function NotifHHTab({ wo, onSaved }) {
         actual_hours: parseFloat(actualHH) || 0,
       });
       onSaved && onSaved(updated);
-    } catch (e) { alert('Error: ' + e.message); }
+    } catch (e) { toast.error('Error: ' + e.message); }
     setSaving(false);
   };
 
@@ -145,6 +146,7 @@ function NotifHHTab({ wo, onSaved }) {
 // Se muestra solo cuando la OT está CERRADA. Captura causa raíz confirmada,
 // lecciones aprendidas, sugerencia de frecuencia PM, exactitud de repuestos.
 function PostReviewTab({ wo, onSaved }) {
+  const toast = useToast();
   const existing = wo.post_closure_review || {};
   const [form, setForm] = useState({
     root_cause_confirmed: existing.root_cause_confirmed || '',
@@ -160,7 +162,7 @@ function PostReviewTab({ wo, onSaved }) {
     try {
       const res = await api.saveWOPostReview(wo.wo_id, form);
       onSaved && onSaved(res);
-    } catch (e) { alert('Error: ' + e.message); }
+    } catch (e) { toast.error('Error: ' + e.message); }
     setSaving(false);
   };
 
@@ -316,6 +318,7 @@ function HistoryTab({ wo }) {
 // SF-647 — Historial de comentarios estilo SAP: append-only, comentarios
 // previos congelados (no editables), nuevos en cascada con autor + timestamp.
 function CommentsTab({ wo, onUpdate }) {
+  const toast = useToast();
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const notes = Array.isArray(wo.execution_notes) ? wo.execution_notes : [];
@@ -336,7 +339,7 @@ function CommentsTab({ wo, onUpdate }) {
       onUpdate?.(updated);
       setNewComment('');
     } catch (e) {
-      alert('Error: ' + (e.message || e));
+      toast.error('Error: ' + (e.message || e));
     } finally {
       setSubmitting(false);
     }
@@ -412,6 +415,7 @@ function isClosedStatus(wo) {
 // Group C #8 Jorge 2026-04-21 — picker de cuadrilla contratista.
 // Si la OT se tercerea, acá se elige. Null = trabajo interno.
 function ContractorCrewPicker({ wo, onChange }) {
+  const toast = useToast();
   const [crews, setCrews] = useState([]);
   const [loading, setLoading] = useState(true);
   const selected = wo.contractor_crew_id || '';
@@ -430,7 +434,7 @@ function ContractorCrewPicker({ wo, onChange }) {
       await api.updateManagedWO(wo.wo_id, { contractor_crew_id: crewId || null });
       onChange && onChange(crewId || null);
     } catch (e) {
-      alert('Error: ' + (e.message || 'no se pudo asignar cuadrilla'));
+      toast.error('Error: ' + (e.message || 'no se pudo asignar cuadrilla'));
     }
   };
 

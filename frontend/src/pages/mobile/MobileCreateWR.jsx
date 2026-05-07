@@ -357,7 +357,7 @@ export default function MobileCreateWR() {
         const file = e.target.files[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
-            alert(`Archivo "${file.name}" pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. Máximo permitido: 10 MB.`);
+            toast.warning(`Archivo "${file.name}" pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. Máximo permitido: 10 MB.`);
             e.target.value = '';
             return;
         }

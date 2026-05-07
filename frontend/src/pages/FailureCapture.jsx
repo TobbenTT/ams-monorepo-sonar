@@ -337,7 +337,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       return;
     }
     if (!desc?.trim() && photos.length === 0) {
-      alert('Escribe la descripcion o toma una foto primero');
+      toast.warning('Escribe la descripción o toma una foto primero');
       return;
     }
     setAiLoading(true);
@@ -453,7 +453,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       }
     } catch (e) {
       console.error('AI suggest failed:', e);
-      alert('Error connecting to AI. Check server configuration.');
+      toast.error('Error conectando con AI. Verificá la configuración del servidor.');
     } finally {
       setAiLoading(false);
     }

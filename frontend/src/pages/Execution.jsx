@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useWebSocket } from '../hooks/useWebSocket';
 const QRScanner = lazy(() => import('../components/QRScanner'));
@@ -94,6 +94,52 @@ function getLaborRate() {
   try { return JSON.parse(localStorage.getItem('ocp_settings') || '{}').laborRate || 50; } catch { return 50; }
 }
 const LABOR_RATE = getLaborRate();
+
+// ProgressEditor — input de avance con state local. Antes el input controlado
+// llamaba handleProgress en cada keystroke (race conditions: tipear "100"
+// disparaba 1, 10, 100 y el response del backend ganaba en orden impredecible
+// dejando valores intermedios visibles). Ahora: estado local mientras se tipea,
+// commit en blur o Enter. Botones rápidos (-/+/25/50/75/100) commitean directo.
+function ProgressEditor({ wo, pct, onSave }) {
+  const [local, setLocal] = useState(String(pct));
+  const lastPropPct = useRef(pct);
+  // Si el pct prop cambia (ej. desde otra interacción o WS), sincronizar — pero
+  // solo si el usuario no está editando (input no enfocado).
+  useEffect(() => {
+    if (lastPropPct.current !== pct) {
+      lastPropPct.current = pct;
+      setLocal(String(pct));
+    }
+  }, [pct]);
+  const commit = (raw) => {
+    const v = Math.max(0, Math.min(100, parseInt(raw, 10) || 0));
+    setLocal(String(v));
+    if (v !== pct) onSave(wo, v);
+  };
+  return (
+    <div className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border bg-card">
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase">avance</span>
+      <button onClick={() => { const v = Math.max(0, pct - 5); setLocal(String(v)); onSave(wo, v); }}
+        title="-5%" className="px-1.5 text-xs hover:bg-muted rounded">−</button>
+      <input type="number" min="0" max="100" step="5" value={local}
+        onChange={e => setLocal(e.target.value)}
+        onBlur={e => commit(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+        className="w-12 text-xs font-bold text-center bg-transparent border border-border rounded px-1 py-0.5" />
+      <span className="text-xs font-bold">%</span>
+      <button onClick={() => { const v = Math.min(100, pct + 5); setLocal(String(v)); onSave(wo, v); }}
+        title="+5%" className="px-1.5 text-xs hover:bg-muted rounded">+</button>
+      <span className="border-l border-border h-4 mx-0.5" />
+      {[25, 50, 75, 100].map(p => (
+        <button key={p} onClick={() => { setLocal(String(p)); onSave(wo, p); }}
+          title={`Set ${p}%`}
+          className={`px-2 text-[10px] font-bold rounded ${pct === p ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}>
+          {p}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const PRIO_STYLE = {
   P1: 'bg-red-500 text-white', P2: 'bg-orange-500 text-white',
@@ -299,20 +345,43 @@ export default function Execution() {
     }
   };
 
-  // Update progress
+  // Update progress — Gonzalo demo bug 2026-05-07: tipear "100" en el input
+  // disparaba handleProgress(1), handleProgress(10), handleProgress(100) en
+  // cada keystroke. Los responses del backend (async + loadData() refrescando
+  // todo el state) llegaban en orden impredecible y el último valor visible
+  // podía ser uno intermedio (5/10) en vez del último tipeado.
+  // Fix: optimistic update local INMEDIATO (sin loadData refresh) + dropear
+  // requests stale via versionado por wo_id. handleComplete usa el pct más
+  // reciente del state, no del closure.
+  const progressVersionRef = useRef(new Map());
   const handleProgress = async (wo, pct) => {
+    const wid = wo.wo_id;
+    const myVersion = (progressVersionRef.current.get(wid) || 0) + 1;
+    progressVersionRef.current.set(wid, myVersion);
+    // Optimistic update: cambia el state local YA, sin esperar API ni recargar.
+    setActiveWOs(prev => prev.map(w => w.wo_id === wid ? { ...w, completion_pct: pct } : w));
     try {
-      await updateManagedWO(wo.wo_id, { completion_pct: pct });
-      try { await updateManagedWOProgress(wo.wo_id, { completion_pct: pct }); } catch {}
-      toast.success(wo.wo_number + ': ' + pct + '%');
-      loadData();
-    } catch (e) { toast.error(e.message); }
+      await updateManagedWO(wid, { completion_pct: pct });
+      try { await updateManagedWOProgress(wid, { completion_pct: pct }); } catch {}
+      // Si llegó otro update mientras yo estaba en flight, no toco nada (el
+      // último gana). Tampoco loadData() — refrescaría con datos potencialmente
+      // viejos del backend si hay request en flight más reciente.
+      if (progressVersionRef.current.get(wid) !== myVersion) return;
+    } catch (e) {
+      toast.error(e.message);
+      // Rollback solo si soy el último request
+      if (progressVersionRef.current.get(wid) === myVersion) {
+        setActiveWOs(prev => prev.map(w => w.wo_id === wid ? { ...w, completion_pct: wo.completion_pct || 0 } : w));
+      }
+    }
   };
 
-  // Complete
+  // Complete — leer pct más reciente del state activeWOs (no del closure de wo,
+  // que puede ser viejo si el usuario tipeó valores nuevos en el input).
   const handleComplete = async (wo, hours) => {
+    const current = activeWOs.find(w => w.wo_id === wo.wo_id) || wo;
     try {
-      await updateManagedWO(wo.wo_id, { completion_pct: 100, actual_hours: parseFloat(hours) || wo.estimated_hours || 0 });
+      await updateManagedWO(wo.wo_id, { completion_pct: 100, actual_hours: parseFloat(hours) || current.estimated_hours || 0 });
       await completeManagedWO(wo.wo_id, { actual_hours: parseFloat(hours) || 0 });
       toast.success(wo.wo_number + ' completed');
       setExpandedWO(null);
@@ -1344,28 +1413,7 @@ export default function Execution() {
                             libre 0-100 + chevrones rápidos. El supervisor
                             es quien actualiza el % (no el mantenedor). */}
                         {isExec && (
-                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border bg-card">
-                            <span className="text-[10px] font-semibold text-muted-foreground uppercase">avance</span>
-                            <button onClick={() => handleProgress(wo, Math.max(0, pct - 5))}
-                              title="-5%" className="px-1.5 text-xs hover:bg-muted rounded">−</button>
-                            <input type="number" min="0" max="100" step="5" value={pct}
-                              onChange={e => {
-                                const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                                handleProgress(wo, v);
-                              }}
-                              className="w-12 text-xs font-bold text-center bg-transparent border border-border rounded px-1 py-0.5" />
-                            <span className="text-xs font-bold">%</span>
-                            <button onClick={() => handleProgress(wo, Math.min(100, pct + 5))}
-                              title="+5%" className="px-1.5 text-xs hover:bg-muted rounded">+</button>
-                            <span className="border-l border-border h-4 mx-0.5" />
-                            {[25, 50, 75, 100].map(p => (
-                              <button key={p} onClick={() => handleProgress(wo, p)}
-                                title={`Set ${p}%`}
-                                className={`px-2 text-[10px] font-bold rounded ${pct === p ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}>
-                                {p}
-                              </button>
-                            ))}
-                          </div>
+                          <ProgressEditor wo={wo} pct={pct} onSave={handleProgress} />
                         )}
                         {isExec && pct >= 50 && (
                           <button onClick={() => handleComplete(wo, wo.estimated_hours)}

@@ -21,7 +21,7 @@ const T = {
     everythingTitle: 'Everything You Need',
     everythingDesc: 'A complete maintenance management ecosystem — from AI-powered diagnostics to SAP integration, audit compliance, and PDF reporting.',
     f1t: 'Work Management', f1d: 'Full lifecycle: Work Requests → Planning → Scheduling → Execution → Closure with SAP integration.',
-    f2t: 'AI Agents (CORTEX)', f2d: '8 specialized agents: Equipment Doctor, Predictive Health, Smart Backlog, RCM Advisor, Safety Checklists, and more.',
+    f2t: 'AI Agents (CORTEX)', f2d: '35 specialized agents: Equipment Doctor, Predictive Health, Smart Backlog, RCM Advisor, Safety Checklists, Auto-RCA, KPI Watchdog, and more.',
     f3t: 'Analytics & KPIs', f3d: 'Real-time MTBF, MTTR, OEE, Availability. Executive and tactical dashboards with trend analysis and alerts.',
     f4t: 'Audit & Compliance', f4d: 'Full activity log with user tracking, date filtering, detail inspection, and CSV export. Enterprise audit trail.',
     f5t: 'Smart Scheduling', f5d: 'AI priority-based distribution. Gantt visualization, HH balance by specialty, material tracking.',
@@ -46,7 +46,7 @@ const T = {
     badge: 'Gestion de Mantenimiento con IA',
     heroTitle1: 'Transforma tus',
     heroTitle2: 'Operaciones de Mantenimiento',
-    heroDesc: 'Plataforma empresarial de gestion de activos con 8 agentes de IA, analitica predictiva, alertas por email, auditoria completa y flujos de trabajo — desde la solicitud hasta el cierre.',
+    heroDesc: 'Plataforma empresarial de gestion de activos con 35 agentes de IA, analitica predictiva, alertas por email, auditoria completa y flujos de trabajo — desde la solicitud hasta el cierre.',
     startDemo: 'Solicitar Demo',
     seeFeatures: 'Ver Funciones',
     apiEndpoints: 'Endpoints API', modules: 'Modulos', aiAgents: 'Agentes IA', userRoles: 'Roles', languages: 'Idiomas', dataModels: 'Modelos de Datos',
@@ -54,7 +54,7 @@ const T = {
     everythingTitle: 'Todo lo que Necesitas',
     everythingDesc: 'Un ecosistema completo de gestion de mantenimiento — desde diagnosticos con IA hasta integracion SAP, compliance de auditoria y reportes PDF.',
     f1t: 'Gestion de Trabajo', f1d: 'Ciclo completo: Avisos → Planificacion → Programacion → Ejecucion → Cierre con integracion SAP.',
-    f2t: 'Agentes IA (CORTEX)', f2d: '8 agentes especializados: Doctor de Equipos, Salud Predictiva, Backlog Inteligente, Asesor RCM, Checklists de Seguridad.',
+    f2t: 'Agentes IA (CORTEX)', f2d: '35 agentes especializados: Doctor de Equipos, Salud Predictiva, Backlog Inteligente, Asesor RCM, Checklists de Seguridad, Auto-RCA, KPI Watchdog, y más.',
     f3t: 'Analitica y KPIs', f3d: 'MTBF, MTTR, OEE, Disponibilidad en tiempo real. Dashboards ejecutivos y tacticos con analisis de tendencias.',
     f4t: 'Auditoria y Compliance', f4d: 'Registro completo de actividad con seguimiento de usuarios, filtros por fecha, detalle expandible y exportacion CSV.',
     f5t: 'Programacion Inteligente', f5d: 'Distribucion por prioridad con IA. Gantt visual, balance HH por especialidad, seguimiento de materiales.',
@@ -163,12 +163,12 @@ export default function LandingPage() {
                     {/* Stats strip */}
                     <div className="mt-20 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                         {[
-                            { value: '404', label: t.apiEndpoints, icon: Layers },
-                            { value: '49+', label: t.modules, icon: Target },
-                            { value: '8', label: t.aiAgents, icon: Bot },
+                            { value: '500+', label: t.apiEndpoints, icon: Layers },
+                            { value: '65+', label: t.modules, icon: Target },
+                            { value: '35', label: t.aiAgents, icon: Bot },
                             { value: '6', label: t.userRoles, icon: Users },
-                            { value: '2', label: t.languages, icon: Globe },
-                            { value: '60+', label: t.dataModels, icon: FileText },
+                            { value: '3', label: t.languages, icon: Globe },
+                            { value: '66', label: t.dataModels, icon: FileText },
                         ].map(s => (
                             <div key={s.label} className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
                                 <s.icon className="w-5 h-5 text-emerald-600 mx-auto mb-2" />

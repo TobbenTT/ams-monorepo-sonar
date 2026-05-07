@@ -303,25 +303,50 @@ def create_fmeca_from_rca(db: Session, analysis_id: str, analyst: str = "") -> d
     if not ws_id:
         return {"error": "No se pudo crear el worksheet"}
 
-    # Convertir causas → filas FMECA
+    # Convertir causas → filas FMECA con RPN before/after
+    # rpn_before = S×O×D del estado actual (pre-intervención).
+    # rpn_after_target = proyección post-aplicar solución del RCA. Heurística:
+    #   ELIMINATE / DESIGN_CHANGE → 30% del before (reduce O y D)
+    #   CONTROL / TRAINING        → 50% del before (reduce O)
+    #   DETECT / INSPECTION       → 65% del before (reduce D)
+    #   DEFAULT                   → 70% del before
     ce = rca.cause_effect or {}
     categories = ['manpower', 'machine', 'method', 'material', 'measurement', 'environment']
     rows_added = 0
+    rpn_before_total = 0
+    rpn_after_total = 0
+    primary_sol_type = ""
+    for sol in (rca.solutions or []):
+        if isinstance(sol, dict):
+            primary_sol_type = (sol.get('type') or '').upper()
+            break
+    after_factor = {
+        'ELIMINATE': 0.30, 'DESIGN_CHANGE': 0.30,
+        'CONTROL': 0.50, 'TRAINING': 0.50, 'PROCEDURE': 0.50,
+        'DETECT': 0.65, 'INSPECTION': 0.65, 'MONITORING': 0.65,
+    }.get(primary_sol_type, 0.70)
     for cat in categories:
         causes = ce.get(cat) or []
         if isinstance(causes, str): causes = [causes]
         for cause in causes:
             if not cause or (isinstance(cause, dict) and not cause.get('description')): continue
             desc = cause if isinstance(cause, str) else cause.get('description', '')
+            s, o, d = 6, 5, 5
+            rpn_before = s * o * d
+            rpn_after = round(rpn_before * after_factor)
             row = {
                 'function_description': f'Causa {cat}: {desc[:60]}',
                 'functional_failure': (rca.event_description or '')[:200],
                 'failure_mode': desc[:200],
                 'failure_effect': f'Identificado en RCA {analysis_id[:8]}',
                 'failure_consequence': 'EVIDENT_OPERATIONAL',
-                'severity': 6, 'occurrence': 5, 'detection': 5,
+                'severity': s, 'occurrence': o, 'detection': d,
+                'rpn_before': rpn_before,
+                'rpn_after_target': rpn_after,
                 'recommended_action': f'Ver RCA {analysis_id[:8]} — análisis 5M categoría {cat}',
             }
+            rpn_before_total += rpn_before
+            rpn_after_total += rpn_after
             try:
                 from api.database.models import FMECAWorksheetModel
                 # Usa el service existente addFmecaRow vía engine
@@ -333,15 +358,22 @@ def create_fmeca_from_rca(db: Session, analysis_id: str, analyst: str = "") -> d
     # Soluciones del RCA como rows con acción recomendada
     for sol in (rca.solutions or []):
         if isinstance(sol, dict) and sol.get('description'):
+            s, o, d = 5, 4, 4
+            rpn_before = s * o * d
+            rpn_after = round(rpn_before * after_factor)
             row = {
                 'function_description': f'Solución RCA',
                 'functional_failure': sol.get('description', '')[:200],
                 'failure_mode': sol.get('type', 'CAPA'),
                 'failure_effect': 'Acción correctiva/preventiva del RCA',
                 'failure_consequence': 'EVIDENT_OPERATIONAL',
-                'severity': 5, 'occurrence': 4, 'detection': 4,
+                'severity': s, 'occurrence': o, 'detection': d,
+                'rpn_before': rpn_before,
+                'rpn_after_target': rpn_after,
                 'recommended_action': sol.get('description', '')[:300],
             }
+            rpn_before_total += rpn_before
+            rpn_after_total += rpn_after
             try:
                 from api.services.fmea_service import FMECAEngine as _Engine
                 _Engine.add_row(ws_id, row)
@@ -356,7 +388,20 @@ def create_fmeca_from_rca(db: Session, analysis_id: str, analyst: str = "") -> d
         db.commit()
     except Exception: pass
 
-    return {"worksheet_id": ws_id, "rows_added": rows_added, "source_rca": analysis_id}
+    rpn_reduction_pct = (
+        round(100 * (rpn_before_total - rpn_after_total) / rpn_before_total, 1)
+        if rpn_before_total > 0 else 0
+    )
+    return {
+        "worksheet_id": ws_id,
+        "rows_added": rows_added,
+        "source_rca": analysis_id,
+        "rpn_before_total": rpn_before_total,
+        "rpn_after_target_total": rpn_after_total,
+        "rpn_reduction_pct": rpn_reduction_pct,
+        "primary_solution_type": primary_sol_type or "DEFAULT",
+        "after_factor": after_factor,
+    }
 
 
 def fmeca_history_hints(db: Session, equipment_id: str, months: int = 12) -> list[dict]:

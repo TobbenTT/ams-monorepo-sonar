@@ -317,6 +317,86 @@ def agentic_status():
     }
 
 
+# Estimación de costo por solution_type. Basado en modelos Anthropic 2026:
+# Haiku ~$0.001/call, Sonnet ~$0.005/call, Opus ~$0.025/call. Valores
+# conservadores asumiendo ~3 KTokens input + 1 KTokens output por invocación.
+_COST_PER_CALL_USD = {
+    "VOICE_CAPTURE": 0.0010,        # Haiku
+    "EQUIPMENT_DOCTOR": 0.0050,     # Sonnet
+    "AUTO_SCHEDULER": 0.0080,       # Sonnet (más tokens)
+    "SMART_BACKLOG": 0.0050,        # Sonnet
+    "SAFETY_CHECKLIST": 0.0030,     # Sonnet (corta)
+    "KPI_WATCHDOG": 0.0040,         # Sonnet
+    "EXECUTIVE_REPORT": 0.0250,     # Opus (long-form)
+    "CHRONIC_FAILURES": 0.0050,     # Sonnet
+    "MATERIAL_READINESS": 0.0030,   # Sonnet
+    "AUTO_RCA": 0.0080,             # Sonnet (estructurado)
+    "BUDGET_SENTINEL": 0.0040,      # Sonnet
+    "COST_ANALYSIS": 0.0050,        # Sonnet
+    "DEFECT_TRACKER": 0.0030,       # Sonnet
+}
+_DEFAULT_COST = 0.0050
+
+
+@router.get("/agentic/cost-summary")
+def agentic_cost_summary(days: int = 30, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Cost-tracking panel: aggregates last N days de agentic_executions y
+    estima el costo USD por solution_type usando _COST_PER_CALL_USD."""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    from api.database.models import AgenticExecutionModel
+
+    cutoff = datetime.now() - timedelta(days=days)
+    rows = (
+        db.query(
+            AgenticExecutionModel.solution_type,
+            AgenticExecutionModel.status,
+            func.count(AgenticExecutionModel.execution_id).label("count"),
+            func.avg(AgenticExecutionModel.duration_ms).label("avg_ms"),
+        )
+        .filter(AgenticExecutionModel.created_at >= cutoff)
+        .group_by(AgenticExecutionModel.solution_type, AgenticExecutionModel.status)
+        .all()
+    )
+
+    by_type: dict[str, dict] = {}
+    for solution_type, status, count, avg_ms in rows:
+        st = solution_type or "UNKNOWN"
+        by_type.setdefault(st, {
+            "solution_type": st,
+            "total": 0, "completed": 0, "failed": 0, "running": 0,
+            "avg_duration_ms": 0,
+            "cost_per_call_usd": _COST_PER_CALL_USD.get(st, _DEFAULT_COST),
+            "estimated_cost_usd": 0.0,
+        })
+        b = by_type[st]
+        b["total"] += count
+        if status == "COMPLETED": b["completed"] = count
+        elif status == "FAILED": b["failed"] = count
+        elif status == "RUNNING": b["running"] = count
+        if avg_ms:
+            b["avg_duration_ms"] = max(b["avg_duration_ms"], int(avg_ms))
+
+    for b in by_type.values():
+        b["estimated_cost_usd"] = round(b["total"] * b["cost_per_call_usd"], 4)
+
+    items = sorted(by_type.values(), key=lambda x: -x["estimated_cost_usd"])
+    total_cost = round(sum(b["estimated_cost_usd"] for b in items), 2)
+    total_calls = sum(b["total"] for b in items)
+    total_failed = sum(b["failed"] for b in items)
+    return {
+        "window_days": days,
+        "total_calls": total_calls,
+        "total_failed": total_failed,
+        "failure_rate_pct": round(100 * total_failed / total_calls, 1) if total_calls else 0,
+        "estimated_cost_usd": total_cost,
+        "by_solution_type": items,
+        "note": "Costo estimado: tokens reales no se loggean por ejecución. "
+                "Valores basados en pricing Anthropic 2026 Haiku/Sonnet/Opus, "
+                "asumiendo ~3K input + 1K output tokens por invocación.",
+    }
+
+
 # =========================================================================
 # T1 — Quick-Win Solutions
 # =========================================================================

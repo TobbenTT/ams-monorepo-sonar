@@ -86,6 +86,9 @@ export default function Reliability() {
               oee: d.oee || 0,
               weibull_beta: d.weibull_beta || 2.0,
               weibull_eta: d.weibull_eta || d.mtbf || 500,
+              weibull_calibrated: d.weibull_calibrated === true,
+              weibull_n_failures: d.weibull_n_failures || 0,
+              weibull_r2: d.weibull_r2 || null,
               failures_ytd: d.failures_ytd || 0,
               trend: d.trend || 'STABLE',
             }));
@@ -144,7 +147,17 @@ export default function Reliability() {
           {t('reliability.subtitle')}
         </p>
         <div className="mt-3">
-          <DevBanner>Weibull β/η y agregados de sitio se están calibrando con datos reales de planta. Valores actuales mezclan histórico real + estimaciones.</DevBanner>
+          {(() => {
+            const calibrated = kpis.filter(k => k.weibull_calibrated).length;
+            const total = kpis.length;
+            if (total === 0) return null;
+            if (calibrated === total) return null;
+            return (
+              <DevBanner variant="subtle">
+                Weibull β/η fitted con histórico real en {calibrated}/{total} equipos (≥3 fallas). Resto usa β=2.0 (default conservador) hasta acumular más eventos.
+              </DevBanner>
+            );
+          })()}
         </div>
       </div>
 

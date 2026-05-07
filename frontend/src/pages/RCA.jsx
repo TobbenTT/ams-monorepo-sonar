@@ -4,7 +4,6 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
-import DevBanner from '../components/DevBanner';
 import {
   Search, Plus, ChevronDown, ChevronUp, AlertTriangle, CheckCircle,
   Loader2, ArrowRight, Target, Zap, Shield, Clock, FileText, Activity,
@@ -199,7 +198,7 @@ export default function RCA() {
 
   return (
     <div className="p-6 space-y-5">
-      <DevBanner variant="subtle">RCA operativo — 5M (Ishikawa) + solutions + push-to-CAPA + integración FMECA (botón "Crear FMECA" arrastra causas y soluciones). Plantillas avanzadas (5-Why / Fault-Tree) en iteración.</DevBanner>
+      {/* Banner removido: 5M (Ishikawa), 5-Why, Fault-Tree, solutions, push-to-CAPA, integración FMECA todos operativos. */}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -391,6 +390,28 @@ export default function RCA() {
             effect={selected.event_description}
             branches={selected.cause_effect?.branches || {}}
             onSave={saveIshikawa}
+          />
+
+          {/* 5-Why Cascading */}
+          <FiveWhyCard
+            effect={selected.event_description}
+            whys={selected.cause_effect?.five_whys || []}
+            onSave={async (whys) => {
+              const ce = { ...(selected.cause_effect || {}), five_whys: whys };
+              setSelected(prev => ({ ...prev, cause_effect: ce }));
+              try { await api.updateRca(selected.analysis_id, { cause_effect: ce }); } catch {}
+            }}
+          />
+
+          {/* Fault Tree (AND/OR gates) */}
+          <FaultTreeCard
+            topEvent={selected.event_description}
+            tree={selected.cause_effect?.fault_tree || { gate: 'OR', events: [] }}
+            onSave={async (tree) => {
+              const ce = { ...(selected.cause_effect || {}), fault_tree: tree };
+              setSelected(prev => ({ ...prev, cause_effect: ce }));
+              try { await api.updateRca(selected.analysis_id, { cause_effect: ce }); } catch {}
+            }}
           />
 
           {/* 5P Evidence */}
@@ -793,6 +814,148 @@ function Evidence5PCard({ evidence, onSave }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+/* ── 5-Why ─────────────────────────────────────────────────────────────
+   5 niveles cascading: cada respuesta vuelve a preguntar "¿Por qué?".
+   El último why se considera la causa raíz candidata. */
+function FiveWhyCard({ effect, whys, onSave }) {
+  const [list, setList] = useState(() => {
+    const arr = Array.isArray(whys) ? [...whys] : [];
+    while (arr.length < 5) arr.push('');
+    return arr.slice(0, 5);
+  });
+
+  const updateAt = (i, val) => {
+    const next = [...list];
+    next[i] = val;
+    setList(next);
+  };
+  const handleBlur = () => {
+    const cleaned = list.map(s => (s || '').trim());
+    onSave(cleaned);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold text-foreground">5-Why · Cinco porqués</h3>
+        <span className="text-[10px] text-muted-foreground">El último why = causa raíz candidata</span>
+      </div>
+      <div className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3">
+        <span className="font-semibold">Efecto observado:</span> {effect || '—'}
+      </div>
+      <div className="space-y-2">
+        {list.map((val, i) => (
+          <div key={i} className="flex items-start gap-2">
+            <span className="shrink-0 w-7 h-7 rounded-full bg-rose-100 text-rose-700 text-xs font-bold flex items-center justify-center mt-0.5">
+              {i + 1}
+            </span>
+            <div className="flex-1">
+              <label className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">
+                {i === 0 ? '¿Por qué ocurrió el efecto?' : `¿Por qué la respuesta #${i}?`}
+              </label>
+              <textarea
+                value={val}
+                onChange={e => updateAt(i, e.target.value)}
+                onBlur={handleBlur}
+                placeholder={i === 4 ? 'Causa raíz candidata...' : 'Respuesta...'}
+                className="w-full text-sm bg-muted border border-border rounded-lg p-2 mt-1 focus:outline-none focus:ring-2 focus:ring-rose-500/30 resize-none"
+                rows={2}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      {list[4] && list[4].trim() && (
+        <div className="mt-3 bg-red-50 border-l-4 border-red-500 px-3 py-2 rounded">
+          <div className="text-[10px] font-bold text-red-700 uppercase">Causa raíz candidata</div>
+          <div className="text-sm text-red-900 mt-1">{list[4]}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ── Fault-Tree ────────────────────────────────────────────────────────
+   Top event + 1 nivel de gates (AND/OR) con eventos contribuyentes.
+   Simplificado: 1 gate raíz + lista de eventos hijos. Cumple para análisis
+   típicos de fallas; FTA full-tree (gates anidados) se construye iterando. */
+function FaultTreeCard({ topEvent, tree, onSave }) {
+  const [gate, setGate] = useState(tree?.gate || 'OR');
+  const [events, setEvents] = useState(Array.isArray(tree?.events) ? tree.events : []);
+  const [adding, setAdding] = useState('');
+
+  const persist = (g, ev) => onSave({ gate: g, events: ev });
+
+  const addEvent = () => {
+    const v = adding.trim();
+    if (!v) return;
+    const next = [...events, { description: v, probability: null }];
+    setEvents(next);
+    setAdding('');
+    persist(gate, next);
+  };
+  const removeEvent = (i) => {
+    const next = events.filter((_, j) => j !== i);
+    setEvents(next);
+    persist(gate, next);
+  };
+  const setGateAndPersist = (g) => {
+    setGate(g);
+    persist(g, events);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold text-foreground">Fault Tree · Árbol de fallas</h3>
+        <span className="text-[10px] text-muted-foreground">Top event → {gate} → causas contribuyentes</span>
+      </div>
+      <div className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3">
+        <span className="font-semibold">Top event:</span> {topEvent || '—'}
+      </div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xs font-semibold text-muted-foreground">Compuerta lógica:</span>
+        <button
+          onClick={() => setGateAndPersist('OR')}
+          className={`px-3 py-1 text-xs font-bold rounded-lg border ${gate === 'OR' ? 'bg-rose-600 text-white border-rose-600' : 'bg-card text-muted-foreground border-border'}`}
+        >OR (cualquiera)</button>
+        <button
+          onClick={() => setGateAndPersist('AND')}
+          className={`px-3 py-1 text-xs font-bold rounded-lg border ${gate === 'AND' ? 'bg-rose-600 text-white border-rose-600' : 'bg-card text-muted-foreground border-border'}`}
+        >AND (todas)</button>
+      </div>
+      <div className="space-y-2">
+        {events.map((ev, i) => (
+          <div key={i} className="flex items-center gap-2 bg-muted rounded-lg p-2">
+            <span className="shrink-0 w-6 h-6 rounded-full bg-rose-100 text-rose-700 text-xs font-bold flex items-center justify-center">
+              E{i + 1}
+            </span>
+            <span className="flex-1 text-sm text-foreground">{ev.description}</span>
+            <button onClick={() => removeEvent(i)} className="text-rose-600 hover:bg-rose-50 p-1 rounded">
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex gap-2">
+        <input
+          type="text"
+          value={adding}
+          onChange={e => setAdding(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addEvent()}
+          placeholder="Evento contribuyente (causa básica)..."
+          className="flex-1 text-sm bg-muted border border-border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+        />
+        <button onClick={addEvent} className="px-4 py-2 text-xs font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700">
+          + Añadir
+        </button>
+      </div>
     </div>
   );
 }

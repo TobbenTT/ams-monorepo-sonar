@@ -559,8 +559,24 @@ def get_variance_alerts(db: Session = Depends(get_db)):
 
 @router.get("/asset-health")
 def get_asset_health_scores(plant_id: str | None = None, db: Session = Depends(get_db)):
-    """Get asset health scores for all equipment from real DB data."""
-    from api.database.models import HierarchyNodeModel, HealthScoreModel, KPIMetricsModel
+    """Get asset health scores for all equipment from real DB data.
+
+    Weibull β/η:
+    - Si el equipo tiene ≥2 fallas correctivas (PM03 o priority P1/P2 en
+      managed_work_orders), se ajusta Weibull con WeibullEngine sobre los
+      intervalos entre fallas → weibull_calibrated=true.
+    - Si <2 fallas, weibull_beta/eta=null y weibull_calibrated=false. El
+      cliente puede mostrar la advertencia "estimación" cuando corresponda.
+    """
+    from api.database.models import (
+        HierarchyNodeModel, HealthScoreModel, KPIMetricsModel,
+        ManagedWorkOrderModel,
+    )
+    try:
+        from tools.engines.weibull_engine import WeibullEngine
+        _WEIBULL_OK = True
+    except Exception:
+        _WEIBULL_OK = False
 
     nodes = db.query(HierarchyNodeModel).filter(
         HierarchyNodeModel.node_type == "EQUIPMENT"
@@ -611,8 +627,41 @@ def get_asset_health_scores(plant_id: str | None = None, db: Session = Depends(g
                 (availability or 0) * 0.3 + (oee or 0) * 0.3
                 + min((mtbf or 0) / 20, 100) * 0.4, 1)
 
+        # Weibull fit con histórico real de fallas correctivas
+        weibull_beta = None
+        weibull_eta = None
+        weibull_r2 = None
+        n_failures = 0
+        weibull_calibrated = False
+        if _WEIBULL_OK:
+            try:
+                wos = (
+                    db.query(ManagedWorkOrderModel)
+                    .filter(
+                        ManagedWorkOrderModel.equipment_tag == (node.tag or node.node_id),
+                        ManagedWorkOrderModel.wo_type.in_(["PM03", "CORRECTIVO", "INCIDENTE_OPERACIONAL"]),
+                    )
+                    .order_by(ManagedWorkOrderModel.created_at.asc())
+                    .all()
+                )
+                n_failures = len(wos)
+                if n_failures >= 3:  # mínimo 3 puntos para fit decente
+                    intervals = []
+                    for i in range(1, len(wos)):
+                        delta = (wos[i].created_at - wos[i-1].created_at).days
+                        if delta > 0:
+                            intervals.append(float(delta))
+                    if len(intervals) >= 2:
+                        params = WeibullEngine.fit_parameters(intervals)
+                        weibull_beta = round(params.beta, 3)
+                        weibull_eta = round(params.eta, 1)
+                        weibull_r2 = round(params.r_squared, 3)
+                        weibull_calibrated = True
+            except Exception:
+                pass
+
         results.append({
-            "equipment_tag": node.node_id,
+            "equipment_tag": node.tag or node.node_id,
             "equipment_name": node.name,
             "health_score": health,
             "availability": round(availability, 1) if availability is not None else None,
@@ -620,6 +669,11 @@ def get_asset_health_scores(plant_id: str | None = None, db: Session = Depends(g
             "mtbf": round(mtbf, 1) if mtbf is not None else None,
             "mttr": round(mttr, 1) if mttr is not None else None,
             "trend": trend or "STABLE",
+            "weibull_beta": weibull_beta,
+            "weibull_eta": weibull_eta,
+            "weibull_r2": weibull_r2,
+            "weibull_n_failures": n_failures,
+            "weibull_calibrated": weibull_calibrated,
         })
     return {"count": len(results), "assets": sorted(results, key=lambda x: x["health_score"] or 0)}
 

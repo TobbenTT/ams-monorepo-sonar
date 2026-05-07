@@ -14,6 +14,7 @@ const TABS = [
   { id: 'troubleshoot', icon: Search, label: 'Diagnostics' },
   { id: 'checklists', icon: ClipboardCheck, label: 'Checklists' },
   { id: 'sessions', icon: BrainCircuit, label: 'Strategy' },
+  { id: 'cost', icon: DollarSign, label: 'Cost Tracking' },
   { id: 'or_projects', icon: FolderOpen, label: 'OR Projects' },
   { id: 'tools', icon: Wrench, label: 'Tools' },
 ];
@@ -48,7 +49,7 @@ export default function AIAgents() {
 
   return (
     <div className="p-6 space-y-6">
-      <DevBanner>Agentes de IA (Diagnostics, Checklists, Strategy) están activos con prompts afinados; panel de monitoreo y cost-tracking por agente se están construyendo.</DevBanner>
+      <DevBanner>Agentes de IA (Diagnostics, Checklists, Strategy) operativos con prompts afinados. Cost-tracking en tab dedicado leyendo agentic_executions.</DevBanner>
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-700 via-purple-600 to-fuchsia-500 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -88,6 +89,7 @@ export default function AIAgents() {
       {tab === 'troubleshoot' && <TroubleshootTab />}
       {tab === 'checklists'   && <ChecklistsTab />}
       {tab === 'sessions'     && <SessionsTab />}
+      {tab === 'cost'         && <CostTab />}
       {tab === 'or_projects'  && <ORProjectsTab />}
       {tab === 'tools'        && <ToolsTab />}
     </div>
@@ -725,6 +727,107 @@ function ErrorCard({ message }) {
         <p className="font-semibold">Connection Error</p>
         <p className="text-red-500">{message}</p>
       </div>
+    </div>
+  );
+}
+
+/* ── Cost Tracking Tab ─────────────────────────────────────────── */
+function CostTab() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(30);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    api.agenticCostSummary(days)
+      .then(d => alive && setData(d))
+      .catch(e => alive && setError(e.message || 'Error cargando costos'))
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [days]);
+
+  if (loading) return <Loader2 className="w-6 h-6 animate-spin text-emerald-600 mx-auto mt-12" />;
+  if (error) return <ErrorCard message={error} />;
+  if (!data) return null;
+
+  const fmt$ = (n) => `$${Number(n || 0).toFixed(2)}`;
+  const fmt$4 = (n) => `$${Number(n || 0).toFixed(4)}`;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Cost Tracking · IA Agéntica</h2>
+          <p className="text-sm text-gray-500">Estimación basada en agentic_executions y pricing Anthropic 2026.</p>
+        </div>
+        <select value={days} onChange={(e) => setDays(parseInt(e.target.value))} className="border rounded-lg px-3 py-2 text-sm">
+          <option value={7}>Últimos 7 días</option>
+          <option value={30}>Últimos 30 días</option>
+          <option value={90}>Últimos 90 días</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+          <div className="text-xs text-emerald-700 font-medium uppercase">Costo total</div>
+          <div className="text-2xl font-bold text-emerald-900 mt-1">{fmt$(data.estimated_cost_usd)}</div>
+          <div className="text-xs text-emerald-600 mt-1">{data.window_days}d</div>
+        </div>
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+          <div className="text-xs text-indigo-700 font-medium uppercase">Invocaciones</div>
+          <div className="text-2xl font-bold text-indigo-900 mt-1">{data.total_calls}</div>
+          <div className="text-xs text-indigo-600 mt-1">total ejec.</div>
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="text-xs text-amber-700 font-medium uppercase">Failure rate</div>
+          <div className="text-2xl font-bold text-amber-900 mt-1">{data.failure_rate_pct}%</div>
+          <div className="text-xs text-amber-600 mt-1">{data.total_failed} fallos</div>
+        </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div className="text-xs text-slate-700 font-medium uppercase">Costo / día (avg)</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">{fmt$(data.estimated_cost_usd / Math.max(data.window_days, 1))}</div>
+          <div className="text-xs text-slate-600 mt-1">extrapolado</div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-sm font-semibold text-gray-700">Por solution_type</h3>
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr className="text-left text-xs uppercase text-gray-500">
+              <th className="px-4 py-2">Solution Type</th>
+              <th className="px-4 py-2 text-right">Invocaciones</th>
+              <th className="px-4 py-2 text-right">Completadas</th>
+              <th className="px-4 py-2 text-right">Fallidas</th>
+              <th className="px-4 py-2 text-right">Avg duración</th>
+              <th className="px-4 py-2 text-right">Costo / call</th>
+              <th className="px-4 py-2 text-right">Costo total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data.by_solution_type || []).map((b) => (
+              <tr key={b.solution_type} className="border-t border-gray-100">
+                <td className="px-4 py-2 font-mono text-xs">{b.solution_type}</td>
+                <td className="px-4 py-2 text-right">{b.total}</td>
+                <td className="px-4 py-2 text-right text-emerald-700">{b.completed}</td>
+                <td className="px-4 py-2 text-right text-red-700">{b.failed}</td>
+                <td className="px-4 py-2 text-right text-gray-500">{b.avg_duration_ms ? `${b.avg_duration_ms}ms` : '—'}</td>
+                <td className="px-4 py-2 text-right font-mono text-xs">{fmt$4(b.cost_per_call_usd)}</td>
+                <td className="px-4 py-2 text-right font-semibold">{fmt$(b.estimated_cost_usd)}</td>
+              </tr>
+            ))}
+            {(data.by_solution_type || []).length === 0 && (
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Sin invocaciones en el período seleccionado</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="text-xs text-gray-500 italic">{data.note}</div>
     </div>
   );
 }

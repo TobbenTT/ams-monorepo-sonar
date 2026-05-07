@@ -5,7 +5,7 @@ const QRScanner = lazy(() => import('../components/QRScanner'));
 import {
   Wrench, CheckCircle, Clock, AlertTriangle, User, ChevronDown, ChevronUp, QrCode,
   Zap, Calendar, Loader2, Play, X, ArrowRight, BarChart2, Package, FileText,
-  Timer, TrendingUp, Users, Activity, Plus, Inbox,
+  Timer, TrendingUp, Users, Activity, Plus, Inbox, Search,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -120,6 +120,7 @@ export default function Execution() {
   // porque acá se sumaba HH histórica en vez de la semana actual).
   const [kpiSprint6, setKpiSprint6] = useState({ compliance: null, adherence: null, alerts: null });
   const [expandedWO, setExpandedWO] = useState(null);
+  const [searchExec, setSearchExec] = useState('');
   // SF-645 — supervisor reasigna técnico por skills sobre una operación
   const [reassignFor, setReassignFor] = useState(null); // {wo, op, opIndex}
   // SF-648 — filtro semanal en pestaña No Programado (PM03)
@@ -1217,15 +1218,41 @@ export default function Execution() {
       })()}
 
       {/* ═══ TODAY VIEW ═══ */}
-      {view === 'today' && (
+      {view === 'today' && (() => {
+        const q = searchExec.trim().toLowerCase().replace(/[\s\-]+/g, '');
+        const filteredWOs = q ? activeWOs.filter(w => {
+          const num = (w.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '');
+          const tag = (w.equipment_tag || '').toLowerCase();
+          const title = (w.wo_title || w.failure_description || '').toLowerCase();
+          const wr = (w.linked_wr_number || w.work_request_number || '').toLowerCase().replace(/[\s\-]+/g, '');
+          return num.includes(q) || tag.includes(q) || title.includes(q.replace(/-/g, '')) || wr.includes(q);
+        }) : activeWOs;
+        return (
         <div className="space-y-3">
-          {activeWOs.length === 0 ? (
+          {/* Buscador OT */}
+          <div className="bg-card border border-border rounded-xl px-3 py-2 flex items-center gap-2">
+            <Search size={14} className="text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              value={searchExec}
+              onChange={e => setSearchExec(e.target.value)}
+              placeholder="Buscar por OT-####, TAG, AV-####, o texto del título..."
+              className="flex-1 bg-transparent text-sm focus:outline-none text-foreground placeholder:text-muted-foreground"
+            />
+            {searchExec && (
+              <>
+                <span className="text-[10px] text-muted-foreground tabular-nums">{filteredWOs.length}/{activeWOs.length}</span>
+                <button onClick={() => setSearchExec('')} className="text-muted-foreground hover:text-foreground text-xs px-1" title="Limpiar">✕</button>
+              </>
+            )}
+          </div>
+          {filteredWOs.length === 0 ? (
             <div className="bg-card border border-border rounded-xl p-12 text-center">
               <CheckCircle size={40} className="text-emerald-400/40 mx-auto mb-3" />
-              <p className="text-muted-foreground">No active work orders for today</p>
+              <p className="text-muted-foreground">{searchExec ? `Sin resultados para "${searchExec}"` : 'No active work orders for today'}</p>
             </div>
           ) : (
-            activeWOs.map(wo => {
+            filteredWOs.map(wo => {
               const isExpanded = expandedWO === wo.wo_id;
               const pct = wo.completion_pct || 0;
               const isExec = wo.status === 'EN_EJECUCION';
@@ -1593,7 +1620,8 @@ export default function Execution() {
             })
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* ═══ CLOSE VIEW ═══ */}
       {view === 'close' && (() => {

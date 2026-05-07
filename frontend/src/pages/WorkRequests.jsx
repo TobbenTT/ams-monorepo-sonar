@@ -1919,9 +1919,29 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   }
 
   function handleSaveEdit(id, updates) {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
+    // Sincronizar campos espejo en el state local. El backend persiste priority
+    // en wr.priority_code, pero el normalizer hidrata `priority_requested` en el
+    // state. Si solo actualizo priority_requested, otras vistas que leen
+    // priority_code (badge tabla, filtros, ai_priority_pending check) siguen
+    // viendo el viejo valor hasta que la app re-fetcha desde backend.
+    const mirrored = { ...updates };
+    if (updates.priority_requested) {
+      mirrored.priority_code = updates.priority_requested;
+      // Marcar como decisión humana → la sugerencia IA queda como "histórica".
+      mirrored.ai_priority_pending = false;
+      // No borramos ai_priority_reason — sigue informativo.
+    }
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...mirrored } : r)));
     api.updateWorkRequest(id, updates)
-      .then(() => toast.success(t('workRequests.updated') || 'Aviso actualizado'))
+      .then(async () => {
+        toast.success(t('workRequests.updated') || 'Aviso actualizado');
+        // Re-fetch del WR para obtener el estado canónico del backend
+        // (priority_locked, validation, etc) y descartar mismatches.
+        try {
+          const fresh = await api.getWorkRequest(id);
+          if (fresh) setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...fresh } : r)));
+        } catch {}
+      })
       .catch(() => toast.error(t('workRequests.errorUpdate') || 'Error al actualizar'));
   }
 

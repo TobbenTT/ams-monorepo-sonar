@@ -8,6 +8,7 @@ import {
   Circle, ChevronRight, Trash2, Save,
 } from 'lucide-react';
 import * as api from '../api';
+import { useToast } from '../components/Toast';
 import { TEMPLATE_KEYS, getTemplate } from '../data/fmecaTemplates';
 
 const STAGES = [
@@ -57,6 +58,7 @@ const EMPTY_ROW = {
 };
 
 export default function FMECA() {
+  const toast = useToast();
   const [worksheets, setWorksheets] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -123,7 +125,7 @@ export default function FMECA() {
 
   const handleCreate = async () => {
     if (!createForm.equipment_id || !createForm.equipment_tag) {
-      alert('Equipment ID y Tag son obligatorios');
+      toast.error('Equipment ID y Tag son obligatorios');
       return;
     }
     try {
@@ -162,7 +164,7 @@ export default function FMECA() {
       reloadList();
       if (res?.worksheet_id) setSelectedId(res.worksheet_id);
     } catch (e) {
-      alert('No se pudo crear el worksheet: ' + (e?.message || e));
+      toast.error('No se pudo crear el worksheet: ' + (e?.message || e));
     } finally {
       setSaving(false);
     }
@@ -171,7 +173,7 @@ export default function FMECA() {
   const handleAddRow = async () => {
     if (!draftRow || !selectedId) return;
     if (!draftRow.function_description.trim()) {
-      alert('La descripción de la función es obligatoria');
+      toast.error('La descripción de la función es obligatoria');
       return;
     }
     try {
@@ -186,7 +188,7 @@ export default function FMECA() {
       setDraftRow(null);
       loadDetail(selectedId);
     } catch (e) {
-      alert('No se pudo agregar la fila: ' + (e?.message || e));
+      toast.error('No se pudo agregar la fila: ' + (e?.message || e));
     } finally {
       setSaving(false);
     }
@@ -203,7 +205,7 @@ export default function FMECA() {
       await api.runFmecaDecisions(selectedId);
       loadDetail(selectedId);
     } catch (e) {
-      alert('Error corriendo decisiones: ' + (e?.message || e));
+      toast.error('Error corriendo decisiones: ' + (e?.message || e));
     } finally {
       setSaving(false);
     }
@@ -217,10 +219,10 @@ export default function FMECA() {
       const res = await api.generateFmecaTasks(selectedId);
       const created = res?.tasks_created ?? 0;
       const skipped = res?.skipped_duplicates ?? 0;
-      alert(`✓ ${created} tareas generadas${skipped ? ` (${skipped} duplicadas omitidas)` : ''}`);
+      toast.success(`✓ ${created} tareas generadas${skipped ? ` (${skipped} duplicadas omitidas)` : ''}`);
       loadDetail(selectedId);
     } catch (e) {
-      alert('Error generando tareas: ' + (e?.message || e));
+      toast.error('Error generando tareas: ' + (e?.message || e));
     } finally {
       setSaving(false);
     }
@@ -232,9 +234,9 @@ export default function FMECA() {
     try {
       setSaving(true);
       const res = await api.pushFmecaToBacklog(selectedId);
-      alert(`✓ ${res?.created ?? 0} items en backlog${res?.skipped ? ` (${res.skipped} ya existían)` : ''}`);
+      toast.success(`✓ ${res?.created ?? 0} items en backlog${res?.skipped ? ` (${res.skipped} ya existían)` : ''}`);
     } catch (e) {
-      alert('Error empujando al backlog: ' + (e?.message || e));
+      toast.error('Error empujando al backlog: ' + (e?.message || e));
     } finally {
       setSaving(false);
     }
@@ -253,7 +255,7 @@ export default function FMECA() {
       reloadList();
       if (res?.worksheet_id) setSelectedId(res.worksheet_id);
     } catch (e) {
-      alert('Error creando worksheet: ' + (e?.message || e));
+      toast.error('Error creando worksheet: ' + (e?.message || e));
     } finally {
       setSaving(false);
     }

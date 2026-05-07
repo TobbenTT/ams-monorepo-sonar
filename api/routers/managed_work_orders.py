@@ -289,7 +289,21 @@ def plan_work_order(
 ):
     result = managed_wo_service.plan_wo(db, wo_id, getattr(user, "user_id", ""))
     if not result:
-        raise HTTPException(status_code=400, detail="Cannot plan — WO not found or invalid status")
+        # Diagnóstico: leer el WO actual y dar un mensaje útil — diferenciar
+        # "no existe" vs "status no permite la transición". Antes el genérico
+        # confundía al supervisor durante demo (Gonzalo 2026-05-07).
+        from api.database.models import ManagedWorkOrderModel
+        wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+        if not wo:
+            raise HTTPException(status_code=404, detail=f"WO {wo_id} no encontrada. Refrescá la página y reintentá.")
+        from api.services.managed_wo_service import TRANSITIONS
+        allowed = TRANSITIONS.get(wo.status, [])
+        if "PLANIFICADO" not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"OT en status '{wo.status}' no puede pasar a PLANIFICADO. Transiciones válidas desde {wo.status}: {', '.join(allowed) or 'ninguna (terminal)'}."
+            )
+        raise HTTPException(status_code=400, detail="Cannot plan — error desconocido")
     return result
 
 

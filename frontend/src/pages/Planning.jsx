@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
 import CapacityEvaluation from '../components/CapacityEvaluation';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -561,6 +561,37 @@ const AREAS_EMPRESA = [
   { value: 'TAL', label: 'TAL - Taller' },
 ];
 
+// HelpPopover — tooltip estilizado al click (no native title con delay 1s).
+// Cierra con click afuera o Escape. Soporta texto multilinea (\n).
+function HelpPopover({ label, text, variant = 'gray', className = '' }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onClick = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = e => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('mousedown', onClick);
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('mousedown', onClick); window.removeEventListener('keydown', onKey); };
+  }, [open]);
+  const trigClass = variant === 'emerald'
+    ? 'bg-emerald-200 text-emerald-800 hover:bg-emerald-300'
+    : 'bg-gray-300 text-gray-700 hover:bg-gray-400';
+  return (
+    <span ref={ref} className={`relative inline-block ${className}`}>
+      <button type="button" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold cursor-pointer ${trigClass}`}
+        aria-label={label}>?</button>
+      {open && (
+        <div className="absolute z-50 right-0 mt-1 w-[360px] max-w-[92vw] bg-white dark:bg-gray-900 border border-border rounded-lg shadow-xl p-3 text-xs leading-relaxed text-foreground whitespace-pre-line">
+          {label && <div className="font-bold mb-1.5 text-gray-800 dark:text-gray-100">{label}</div>}
+          <div className="text-gray-600 dark:text-gray-300">{text}</div>
+        </div>
+      )}
+    </span>
+  );
+}
+
 export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClearAutoOpenWo }) {
   const { plant } = useOutletContext();
   const navigate = useNavigate();
@@ -1110,7 +1141,15 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         toast.error('Transition not allowed or WO not found');
       }
     } catch (err) {
-      toast.error('Error: ' + (err.message || 'Could not change status'));
+      // Si el backend dice que la OT no se encuentra, probablemente el state
+      // local está desincronizado. Refrescar y avisar.
+      const msg = String(err?.message || err || '');
+      if (/no encontrada|not found|404/i.test(msg)) {
+        toast.error('OT desincronizada — refrescando datos. Reintentá la acción.');
+        fetchData();
+      } else {
+        toast.error('Error: ' + (msg || 'Could not change status'));
+      }
     } finally {
       setOtActionLoading(null);
     }
@@ -2645,17 +2684,11 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                   (serie + {Object.entries(groups).map(([g, h]) => `${g}:max ${h}h`).join(' + ')})
                                 </span>
                               )}
-                              <span
-                                title={calcHelp}
-                                className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-300 text-gray-700 text-[10px] font-bold cursor-help hover:bg-gray-400 ml-1"
-                                aria-label="Cómo se calcula la duración y HH">?</span>
+                              <HelpPopover label="Cómo se calcula" text={calcHelp} className="ml-1" />
                             </span>
                             <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg flex items-center gap-1">
                               Total HH: {totalHH.toFixed(1)}
-                              <span
-                                title={calcHelp}
-                                className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-200 text-emerald-800 text-[10px] font-bold cursor-help hover:bg-emerald-300"
-                                aria-label="Cómo se calcula la duración y HH">?</span>
+                              <HelpPopover label="Cómo se calcula" text={calcHelp} variant="emerald" />
                             </span>
                           </div>
                         </div>

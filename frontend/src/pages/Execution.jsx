@@ -2000,14 +2000,47 @@ export default function Execution() {
               {/* Pre-close gates checklist (Jorge 2026-04-30) */}
               {closeGates && closeGates.length > 0 && (
                 <div className="border-2 border-purple-300 dark:border-purple-700 rounded-xl p-3 bg-purple-50/40 dark:bg-purple-900/10">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-purple-800 dark:text-purple-300 mb-2">
-                    🛡 Pre-close gates · todas las obligatorias deben aprobarse
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-purple-800 dark:text-purple-300 mb-2 flex items-center gap-2">
+                    <span>🛡 Pre-close gates · todas las obligatorias deben aprobarse</span>
+                    <span
+                      title={`Cómo cerrar cada gate:
+
+• Todas las operaciones al 100% (AUTO)
+  → Llenar 'Real: pers × h' en cada operación. La op pasa a 100% cuando tiene actual_hours > 0.
+
+• HH reales notificadas por cada operación (AUTO)
+  → Mismo input 'Real: pers × h'. Sin esto los KPIs Adherencia/Cumplimiento no se calculan.
+
+• Variance HH plan vs real ≤ 25% (AUTO, override permitido)
+  → Si la diferencia entre horas planificadas y reales pasa 25%, podés justificar con un texto ≥10 chars.
+
+• Materiales reservados consumidos o flagged (AUTO, soft)
+  → No bloquea pero conviene marcar materiales reservados como 'usado' o explicar por qué quedaron sin usar.
+
+• Supervisor revisó calidad del trabajo (MANUAL)
+  → Marcar el checkbox confirmando que el equipo quedó operativo y cumple specs.
+
+• Sin alertas/observaciones abiertas (AUTO, soft)
+  → No debe haber notas con [WARN] o [BLOCKED] sin resolver.
+
+ATAJO: usar el botón 'Notificar todas con HH plan' (si está visible) llena automáticamente todas las ops con los valores planificados — el supervisor luego ajusta solo las que difieren.`}
+                      className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-200 text-purple-800 text-[10px] font-bold cursor-help hover:bg-purple-300 dark:bg-purple-800 dark:text-purple-100"
+                      aria-label="Cómo cerrar cada gate">?</span>
                   </div>
                   <div className="space-y-2">
                     {closeGates.map(g => {
                       const ackedManual = !g.auto && gateAcks[g.id] === true;
                       const overridden = gateOverrides[g.id] && gateOverrides[g.id].trim().length >= 10;
                       const effective = g.passed || ackedManual || overridden;
+                      const GATE_HELP = {
+                        ALL_OPS_DONE: 'Cada operación debe estar al 100%. La op pasa a 100% cuando le ponés actual_hours > 0 en el campo "Real: pers × h" de la fila. ATAJO: si todo salió como planificado, podés copiar el plan a real con un click.',
+                        OPS_HH_NOTIFIED: 'Cada operación necesita las horas-hombre reales (no solo el % de avance). Llenar "Real: X pers × Y h" en cada fila de Operations. Esto alimenta los KPIs Adherencia y Cumplimiento.',
+                        HH_VARIANCE_OK: 'La diferencia entre HH planificadas y HH reales debe ser ≤ 25%. Si la pasaste (ej. trabajo tomó el doble), podés justificar con un texto ≥10 chars y se acepta el cierre.',
+                        MATERIALS_OK: 'Soft (no bloquea). Los materiales reservados deben quedar marcados como "usado" o explicar por qué no se usaron (devolución a almacén, sustituido, etc).',
+                        SUPERVISOR_QA: 'Manual: el supervisor confirma marcando el checkbox que verificó in-situ que el equipo quedó operativo y cumple las specs del trabajo.',
+                        NO_OPEN_NOTIFS: 'Soft (no bloquea). No deberían quedar notas con [WARN], [BLOCKED] o [PENDING] sin resolver. Resolverlas o marcar como resolved=true.',
+                      };
+                      const help = GATE_HELP[g.id];
                       return (
                         <div key={g.id} className={`rounded-lg p-2 border text-xs ${effective ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-900/20 dark:border-emerald-700' : (g.blocking ? 'bg-rose-50 border-rose-300 dark:bg-rose-900/20 dark:border-rose-700' : 'bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:border-amber-700')}`}>
                           <div className="flex items-start gap-2">
@@ -2019,10 +2052,15 @@ export default function Execution() {
                               }}
                               className="mt-0.5 cursor-pointer" />
                             <div className="flex-1 min-w-0">
-                              <div className={`font-semibold ${effective ? 'text-emerald-800 dark:text-emerald-300' : (g.blocking ? 'text-rose-800 dark:text-rose-300' : 'text-amber-800 dark:text-amber-300')}`}>
-                                {g.label}
-                                {g.blocking && <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded bg-rose-200 text-rose-900">OBLIGATORIA</span>}
-                                {g.auto && <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-gray-200 text-gray-700">AUTO</span>}
+                              <div className={`font-semibold flex items-center gap-1 flex-wrap ${effective ? 'text-emerald-800 dark:text-emerald-300' : (g.blocking ? 'text-rose-800 dark:text-rose-300' : 'text-amber-800 dark:text-amber-300')}`}>
+                                <span>{g.label}</span>
+                                {g.blocking && <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-rose-200 text-rose-900">OBLIGATORIA</span>}
+                                {g.auto && <span className="text-[9px] px-1 py-0.5 rounded bg-gray-200 text-gray-700">AUTO</span>}
+                                {help && (
+                                  <span title={help}
+                                    className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-gray-300 text-gray-700 text-[9px] font-bold cursor-help hover:bg-gray-400"
+                                    aria-label={`Cómo cerrar ${g.label}`}>?</span>
+                                )}
                               </div>
                               <div className="text-[10px] text-muted-foreground mt-0.5">{g.detail}</div>
                               {/* Override input — solo si auto+falla+override_allowed */}

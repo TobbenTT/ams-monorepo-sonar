@@ -543,13 +543,32 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   }, [equipSearch, allEquipment, selectedLoc]);
 
   // Filter location results
+  // Antes: filtro client-side sobre locationNodes (limit 300 al init, sin equipos
+  // ni systems profundos). Buscar "Molino" devolvía vacío porque los molinos no
+  // estaban en los primeros 300 cargados. Ahora: si locSearch≥2 chars, fetch al
+  // backend con search= (mismo patrón que equipSearch). Sin search, mostramos
+  // los 15 primeros del cache local.
   useEffect(() => {
     if (!locSearch) { setLocResults(locationNodes.slice(0, 15)); return; }
-    const q = locSearch.toLowerCase();
-    setLocResults(locationNodes.filter(n =>
-      (n._funcLoc || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
-    ).slice(0, 8));
-  }, [locSearch, locationNodes]);
+    if (locSearch.length < 2) { setLocResults([]); return; }
+    const timer = setTimeout(() => {
+      api.listNodes({ search: locSearch, limit: 20, plant_id: plant }).then(res => {
+        const nodes = Array.isArray(res) ? res : res?.items || [];
+        // Mantener PLANT/AREA/SYSTEM/EQUIPMENT — si el usuario buscó un tag de equipo,
+        // que aparezca también para que pueda seleccionarlo como TL directamente.
+        const nodeMap = {};
+        nodes.forEach(n => { nodeMap[n.node_id] = n; });
+        const enriched = nodes.map(n => ({ ...n, _funcLoc: n._funcLoc || buildFuncLocPath(n, nodeMap) }));
+        setLocResults(enriched.slice(0, 10));
+      }).catch(() => {
+        const q = locSearch.toLowerCase();
+        setLocResults(locationNodes.filter(n =>
+          (n._funcLoc || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
+        ).slice(0, 8));
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [locSearch, locationNodes, plant, buildFuncLocPath]);
 
 
   // Browse all locations - drill-down navigation

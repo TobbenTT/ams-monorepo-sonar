@@ -672,6 +672,7 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
 function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onUnscheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange, onRefresh, onAutoLevel, lastWsAt }) {
   const { CAP, PROGRAMMABLE_HH_PER_DAY, HOURS_PER_WEEK } = useCapacitySettings();
   const toast = useToast();
+  const confirm = useConfirm();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewRange, setViewRange] = useState(1);
   const [viewBy, setViewBy] = useState('technician'); // 'technician' | 'wo'
@@ -1428,7 +1429,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             ))}
             <button onClick={async () => {
                 const plantId = localStorage.getItem('selected_plant') || 'OCP-JFC1';
-                if (!confirm('¿Mover a REPROGRAMADO todas las OTs PROGRAMADO/EN_EJECUCION con planned_end vencido?')) return;
+                if (!await confirm({ title: 'Reprogramar vencidas', message: '¿Mover a REPROGRAMADO todas las OTs PROGRAMADO/EN_EJECUCION con planned_end vencido?', variant: 'danger', confirmText: 'Reprogramar' })) return;
                 try {
                   const r = await api.rescheduleStale(plantId);
                   toast.success(`↻ ${r.rescheduled} OTs movidas a REPROGRAMADO`);

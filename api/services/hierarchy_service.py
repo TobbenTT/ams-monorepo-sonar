@@ -45,6 +45,7 @@ def list_nodes(db: Session, plant_id: str | None = None, node_type: str | None =
     if parent_node_id:
         q = q.filter(HierarchyNodeModel.parent_node_id == parent_node_id)
     if search:
+        from sqlalchemy import case
         term = f"%{search}%"
         q = q.filter(
             (HierarchyNodeModel.name.ilike(term)) |
@@ -52,6 +53,22 @@ def list_nodes(db: Session, plant_id: str | None = None, node_type: str | None =
             (HierarchyNodeModel.code.ilike(term)) |
             (HierarchyNodeModel.sap_func_loc.ilike(term))
         )
+        # Priorizar match exacto en tag/code/sap_func_loc → luego prefix → luego substring.
+        # Sin esto, buscar "3120MI0002" devolvía sub-componentes hijos cuyo code
+        # contiene esa cadena por jerarquía (SN-...-3120-3120MI0002), y el equipo
+        # con tag exacto quedaba enterrado o cortado por el limit.
+        s = search
+        relevance = case(
+            (HierarchyNodeModel.tag == s, 0),
+            (HierarchyNodeModel.code == s, 0),
+            (HierarchyNodeModel.sap_func_loc == s, 0),
+            (HierarchyNodeModel.name == s, 1),
+            (HierarchyNodeModel.tag.ilike(f"{s}%"), 2),
+            (HierarchyNodeModel.code.ilike(f"{s}%"), 2),
+            (HierarchyNodeModel.name.ilike(f"{s}%"), 3),
+            else_=4,
+        )
+        return q.order_by(relevance, HierarchyNodeModel.level, HierarchyNodeModel.order).limit(limit).all()
     return q.order_by(HierarchyNodeModel.level, HierarchyNodeModel.order).limit(limit).all()
 
 

@@ -4,6 +4,7 @@ import CapacityEvaluation from '../components/CapacityEvaluation';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { KPICard, PriorityBadge, StatusBadge, LoadingSpinner } from '../components/Shared';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Eye, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Download, AlertCircle, Plus, XCircle, Ban,
@@ -564,6 +565,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const { plant } = useOutletContext();
   const navigate = useNavigate();
   const toast = useToast();
+  const confirm = useConfirm();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ots');
@@ -1494,7 +1496,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                   toast.error('La OT necesita fecha y técnico asignado antes de reservar');
                                   return;
                                 }
-                                if (!confirm(`¿Reservar ${wo.wo_number}? Bloquea HH y pasa a PROGRAMADO.`)) return;
+                                if (!await confirm({ title: 'Reservar OT', message: `¿Reservar ${wo.wo_number}? Bloquea HH y pasa a PROGRAMADO.`, confirmText: 'Reservar' })) return;
                                 try {
                                   const upd = await api.scheduleManagedWO(wo.wo_id, { status: 'PROGRAMADO' });
                                   toast.success(`${wo.wo_number} reservada`);
@@ -3095,7 +3097,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                 } catch (e) { toast.error('Error al guardar: ' + (e.message || '')); }
                               };
                               const removeRow = async () => {
-                                if (!confirm(`Quitar equipo de apoyo "${se.name || se.tag}"?`)) return;
+                                if (!await confirm({ title: 'Quitar equipo de apoyo', message: `¿Quitar "${se.name || se.tag}"?`, variant: 'danger', confirmText: 'Quitar' })) return;
                                 const next = (wo.support_equipment || []).filter((_, idx) => idx !== i);
                                 try {
                                   const updated = await api.updateWOSupportEquipment(wo.wo_id, next);
@@ -3578,7 +3580,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${DOC_TYPE_COLOR[doc.type] || 'bg-gray-100 text-gray-600'}`}>{DOC_TYPE_LABEL[doc.type] || doc.type}</span>
                               <button onClick={async (e) => {
                                 e.stopPropagation();
-                                if (!confirm(`Quitar "${doc.name}"?`)) return;
+                                if (!await confirm({ title: 'Quitar documento', message: `¿Quitar "${doc.name}"?`, variant: 'danger', confirmText: 'Quitar' })) return;
                                 const docs = (wo.documents || []).filter((_, j) => j !== i);
                                 try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); } catch(e2) { toast.error(e2.message); }
                               }} className="text-red-400 hover:text-red-600 text-xs opacity-0 group-hover:opacity-100 flex-shrink-0">✕</button>

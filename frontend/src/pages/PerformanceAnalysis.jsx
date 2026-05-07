@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, ComposedChart, ScatterChart, Scatter, ZAxis, ReferenceLine } from 'recharts';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 import {
@@ -42,6 +43,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
   const { plant } = useOutletContext();
   const navigate = useNavigate();
   const toast = useToast();
+  const confirm = useConfirm();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [wos, setWos] = useState([]);
@@ -1365,7 +1367,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
                   toast?.info ? toast.info('Todos los clusters ya tienen RCA activo') : alert('Todos los clusters ya tienen RCA activo');
                   return;
                 }
-                if (!confirm(`Detectados ${res.new_rca_candidates} clusters sin RCA. ¿Crear RCAs automáticos?`)) return;
+                if (!await confirm({ title: 'Crear RCAs automáticos', message: `Detectados ${res.new_rca_candidates} clusters sin RCA. ¿Crear RCAs automáticos?`, confirmText: 'Crear' })) return;
                 const r = await api.autoTriggerRcaFromClusters({ plant_id: plant, window_days: 30, min_occurrences: 3, dry_run: false });
                 toast?.success ? toast.success(`${r.rcas_created} RCAs creados`) : alert(`${r.rcas_created} RCAs creados`);
                 navigate('/rca');

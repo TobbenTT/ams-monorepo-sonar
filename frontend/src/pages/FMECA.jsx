@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import * as api from '../api';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import { TEMPLATE_KEYS, getTemplate } from '../data/fmecaTemplates';
 
 const STAGES = [
@@ -59,6 +60,7 @@ const EMPTY_ROW = {
 
 export default function FMECA() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [worksheets, setWorksheets] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -198,7 +200,7 @@ export default function FMECA() {
     if (!selectedId) return;
     const anyConsequence = (detail?.rows || []).some(r => r.failure_consequence);
     if (!anyConsequence) {
-      if (!confirm('Ninguna fila tiene "Consecuencia" asignada — el engine no podrá decidir estrategia. ¿Correr de todas formas?')) return;
+      if (!await confirm({ title: 'Consecuencias faltantes', message: 'Ninguna fila tiene "Consecuencia" asignada — el engine no podrá decidir estrategia. ¿Correr de todas formas?', confirmText: 'Correr igual' })) return;
     }
     try {
       setSaving(true);
@@ -213,7 +215,7 @@ export default function FMECA() {
 
   const handleGenerateTasks = async () => {
     if (!selectedId) return;
-    if (!confirm('¿Generar tareas de mantenimiento para cada fila con estrategia?')) return;
+    if (!await confirm({ title: 'Generar tareas', message: '¿Generar tareas de mantenimiento para cada fila con estrategia?', confirmText: 'Generar' })) return;
     try {
       setSaving(true);
       const res = await api.generateFmecaTasks(selectedId);
@@ -230,7 +232,7 @@ export default function FMECA() {
 
   const handlePushToBacklog = async () => {
     if (!selectedId) return;
-    if (!confirm('¿Empujar las filas con estrategia al backlog de Planning como items P1–P4?')) return;
+    if (!await confirm({ title: 'Push to Backlog', message: '¿Empujar las filas con estrategia al backlog de Planning como items P1–P4?', confirmText: 'Empujar' })) return;
     try {
       setSaving(true);
       const res = await api.pushFmecaToBacklog(selectedId);

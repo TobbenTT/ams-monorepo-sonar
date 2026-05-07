@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Calendar as CalIcon, Plus, Play, CheckCircle2, Loader2, Save, X, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import * as api from '../api';
 
 const STATUS_COLOR = {
@@ -28,6 +29,7 @@ function daysBetween(a, b) {
 export default function Shutdowns() {
   const { plant } = useOutletContext();
   const toast = useToast();
+  const confirm = useConfirm();
   const [shutdowns, setShutdowns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -84,7 +86,7 @@ export default function Shutdowns() {
   };
 
   const handleComplete = async (id) => {
-    if (!confirm('¿Marcar este shutdown como completado?')) return;
+    if (!await confirm({ title: 'Completar shutdown', message: '¿Marcar este shutdown como completado?', confirmText: 'Completar' })) return;
     try {
       await api.completeShutdown(id);
       toast.success('Shutdown completado');

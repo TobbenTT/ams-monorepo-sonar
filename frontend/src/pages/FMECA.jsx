@@ -8,7 +8,6 @@ import {
   Circle, ChevronRight, Trash2, Save,
 } from 'lucide-react';
 import * as api from '../api';
-import DevBanner from '../components/DevBanner';
 import { TEMPLATE_KEYS, getTemplate } from '../data/fmecaTemplates';
 
 const STAGES = [
@@ -292,13 +291,6 @@ export default function FMECA() {
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-gray-900">FMECA — Análisis de Modos de Fallo, Efectos y Criticidad</h1>
         <p className="text-sm text-gray-500 mt-1">Flujo RCM de 4 etapas · RPN = S × O × D · Engine determinístico (sin LLM)</p>
-        <div className="mt-3">
-          <DevBanner variant="subtle">
-            FMECA operativo — 4 etapas · RPN = S × O × D · 6 plantillas RCM · integración
-            historial de fallas · push-to-backlog por estrategia · export SAP-IW22 (TAB-delimited,
-            LSMW-compatible) · import desde RCA (botón en RCA detail).
-          </DevBanner>
-        </div>
       </div>
 
       {/* Fase 3a — Sugerencias auto-init FMECA (equipos con P1/P2 cerradas y sin worksheet) */}

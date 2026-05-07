@@ -62,6 +62,7 @@ function openConnection(plantId) {
         retryAttempt: 0,
         connected: false,
         lastPongAt: 0,
+        consecutiveFailedOpens: 0,  // contador de connect→close sin onopen
     };
 
     const notifyStatus = (connected) => {
@@ -123,6 +124,7 @@ function openConnection(plantId) {
 
         ws.onopen = () => {
             state.lastPongAt = Date.now();
+            state.consecutiveFailedOpens = 0;
             notifyStatus(true);
             // Jorge 2026-04-27: ping cada 15s (antes 25s). Reduce ventana de
             // detección de conexión muerta a ≤25s vs ~35s anterior. Cuando la
@@ -189,15 +191,25 @@ function openConnection(plantId) {
 
         ws.onclose = (e) => {
             clearTimers();
-            if (state.connected) notifyStatus(false);
+            const wasConnected = state.connected;
+            if (wasConnected) notifyStatus(false);
             if (state.closed) return;
-            // Server-side auth rejection (4401 = token requerido / inválido / revocado).
-            // No reintentar — sería loop infinito hasta que el usuario refresque o re-login.
-            // El próximo /api call con 401 dispara el flujo de refresh en api.js.
+            // 4401 = backend rechazó auth → no reintentar, queda muerto.
             if (e && e.code === 4401) {
                 state.closed = true;
                 try { window.dispatchEvent(new CustomEvent('ws:auth_failed', { detail: { plantId, reason: e.reason || 'Token inválido' } })); } catch {}
                 return;
+            }
+            // Si nunca llegó a abrir y se cerró 3 veces seguidas, asume problema
+            // de auth/red persistente y para el loop. El usuario lo despertará
+            // con visibilitychange o re-login.
+            if (!wasConnected) {
+                state.consecutiveFailedOpens++;
+                if (state.consecutiveFailedOpens >= 3) {
+                    state.closed = true;
+                    try { window.dispatchEvent(new CustomEvent('ws:auth_failed', { detail: { plantId, reason: 'Conexión rechazada repetidas veces' } })); } catch {}
+                    return;
+                }
             }
             scheduleReconnect();
         };

@@ -1,7 +1,7 @@
 // build: 2026-05-01-equip-pool-combo
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import { ToastProvider } from './components/Toast';
@@ -264,6 +264,13 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="admin" element={<P roles={['admin']}><S><Admin /></S></P>} />
                                     <Route path="ai-agents" element={<P roles={ENGR}><S><AIAgents /></S></P>} />
                                     <Route path="profile" element={<S><Profile /></S>} />
+                                    {/* Aliases comunes que la gente tipea — sin esto caen en pantalla blanca */}
+                                    <Route path="failures" element={<Navigate to="/failures-events" replace />} />
+                                    <Route path="wo" element={<Navigate to="/work-orders" replace />} />
+                                    <Route path="wos" element={<Navigate to="/work-orders" replace />} />
+                                    <Route path="wm" element={<Navigate to="/work-management" replace />} />
+                                    {/* Catch-all: cualquier URL inexistente → home, no pantalla blanca */}
+                                    <Route path="*" element={<Navigate to="/" replace />} />
                                 </Route>
                             </Routes>
                         </BrowserRouter>

@@ -187,10 +187,19 @@ function openConnection(plantId) {
             }
         };
 
-        ws.onclose = () => {
+        ws.onclose = (e) => {
             clearTimers();
             if (state.connected) notifyStatus(false);
-            if (!state.closed) scheduleReconnect();
+            if (state.closed) return;
+            // Server-side auth rejection (4401 = token requerido / inválido / revocado).
+            // No reintentar — sería loop infinito hasta que el usuario refresque o re-login.
+            // El próximo /api call con 401 dispara el flujo de refresh en api.js.
+            if (e && e.code === 4401) {
+                state.closed = true;
+                try { window.dispatchEvent(new CustomEvent('ws:auth_failed', { detail: { plantId, reason: e.reason || 'Token inválido' } })); } catch {}
+                return;
+            }
+            scheduleReconnect();
         };
 
         ws.onerror = () => { try { ws.close(); } catch {} };

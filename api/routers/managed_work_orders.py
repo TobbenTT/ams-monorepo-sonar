@@ -332,7 +332,18 @@ def schedule_work_order(
     p_shift = data.shift if data else None
     result = managed_wo_service.schedule_wo(db, wo_id, getattr(user, "user_id", ""), workers, planned_start=p_start, planned_end=p_end, shift=p_shift)
     if not result:
-        raise HTTPException(status_code=400, detail="Cannot schedule — WO not found or invalid status")
+        from api.database.models import ManagedWorkOrderModel
+        wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+        if not wo:
+            raise HTTPException(status_code=404, detail=f"WO {wo_id} no encontrada. Refrescá la página y reintentá.")
+        from api.services.managed_wo_service import TRANSITIONS
+        allowed = TRANSITIONS.get(wo.status, [])
+        if "PROGRAMADO" not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"OT en status '{wo.status}' no puede pasar a PROGRAMADO. Transiciones válidas desde {wo.status}: {', '.join(allowed) or 'ninguna (terminal)'}."
+            )
+        raise HTTPException(status_code=400, detail="Cannot schedule — error desconocido")
     return result
 
 
@@ -356,7 +367,18 @@ def reschedule_work_order(
         raise HTTPException(status_code=422, detail="Motivo de reprogramación obligatorio (mínimo 3 caracteres)")
     result = managed_wo_service.reschedule_wo(db, wo_id, getattr(user, "user_id", ""), reason=reason)
     if not result:
-        raise HTTPException(status_code=400, detail="Cannot reschedule — WO not found or invalid status")
+        from api.database.models import ManagedWorkOrderModel
+        wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()
+        if not wo:
+            raise HTTPException(status_code=404, detail=f"WO {wo_id} no encontrada. Refrescá la página y reintentá.")
+        from api.services.managed_wo_service import TRANSITIONS
+        allowed = TRANSITIONS.get(wo.status, [])
+        if "REPROGRAMADO" not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"OT en status '{wo.status}' no puede pasar a REPROGRAMADO. Transiciones válidas desde {wo.status}: {', '.join(allowed) or 'ninguna (terminal)'}."
+            )
+        raise HTTPException(status_code=400, detail="Cannot reschedule — error desconocido")
     return result
 
 

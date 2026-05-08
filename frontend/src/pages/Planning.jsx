@@ -5,6 +5,7 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import { KPICard, PriorityBadge, StatusBadge, LoadingSpinner } from '../components/Shared';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
+import HelpPopover from '../components/HelpPopover';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Eye, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Download, AlertCircle, Plus, XCircle, Ban,
@@ -560,37 +561,6 @@ const AREAS_EMPRESA = [
   { value: 'AUX', label: 'AUX - Auxiliar Planta' },
   { value: 'TAL', label: 'TAL - Taller' },
 ];
-
-// HelpPopover — tooltip estilizado al click (no native title con delay 1s).
-// Cierra con click afuera o Escape. Soporta texto multilinea (\n).
-function HelpPopover({ label, text, variant = 'gray', className = '' }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    if (!open) return;
-    const onClick = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    const onKey = e => { if (e.key === 'Escape') setOpen(false); };
-    window.addEventListener('mousedown', onClick);
-    window.addEventListener('keydown', onKey);
-    return () => { window.removeEventListener('mousedown', onClick); window.removeEventListener('keydown', onKey); };
-  }, [open]);
-  const trigClass = variant === 'emerald'
-    ? 'bg-emerald-200 text-emerald-800 hover:bg-emerald-300'
-    : 'bg-gray-300 text-gray-700 hover:bg-gray-400';
-  return (
-    <span ref={ref} className={`relative inline-block ${className}`}>
-      <button type="button" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-        className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold cursor-pointer ${trigClass}`}
-        aria-label={label}>?</button>
-      {open && (
-        <div className="absolute z-50 right-0 mt-1 w-[360px] max-w-[92vw] bg-white dark:bg-gray-900 border border-border rounded-lg shadow-xl p-3 text-xs leading-relaxed text-foreground whitespace-pre-line">
-          {label && <div className="font-bold mb-1.5 text-gray-800 dark:text-gray-100">{label}</div>}
-          <div className="text-gray-600 dark:text-gray-300">{text}</div>
-        </div>
-      )}
-    </span>
-  );
-}
 
 export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClearAutoOpenWo }) {
   const { plant } = useOutletContext();

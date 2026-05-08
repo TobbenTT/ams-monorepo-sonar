@@ -8,6 +8,7 @@ import {
   Timer, TrendingUp, Users, Activity, Plus, Inbox, Search,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import HelpPopover from '../components/HelpPopover';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   listManagedWOs, updateManagedWO, completeManagedWO, closeManagedWO,
@@ -2039,10 +2040,10 @@ export default function Execution() {
                 <div className="border-2 border-purple-300 dark:border-purple-700 rounded-xl p-3 bg-purple-50/40 dark:bg-purple-900/10">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-purple-800 dark:text-purple-300 mb-2 flex items-center gap-2">
                     <span>🛡 Pre-close gates · todas las obligatorias deben aprobarse</span>
-                    <span
-                      title={`Cómo cerrar cada gate:
-
-• Todas las operaciones al 100% (AUTO)
+                    <HelpPopover
+                      variant="purple"
+                      label="Cómo cerrar cada gate"
+                      text={`• Todas las operaciones al 100% (AUTO)
   → Llenar 'Real: pers × h' en cada operación. La op pasa a 100% cuando tiene actual_hours > 0.
 
 • HH reales notificadas por cada operación (AUTO)
@@ -2061,8 +2062,7 @@ export default function Execution() {
   → No debe haber notas con [WARN] o [BLOCKED] sin resolver.
 
 ATAJO: usar el botón 'Notificar todas con HH plan' (si está visible) llena automáticamente todas las ops con los valores planificados — el supervisor luego ajusta solo las que difieren.`}
-                      className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-200 text-purple-800 text-[10px] font-bold cursor-help hover:bg-purple-300 dark:bg-purple-800 dark:text-purple-100"
-                      aria-label="Cómo cerrar cada gate">?</span>
+                    />
                   </div>
                   <div className="space-y-2">
                     {closeGates.map(g => {
@@ -2094,9 +2094,13 @@ ATAJO: usar el botón 'Notificar todas con HH plan' (si está visible) llena aut
                                 {g.blocking && <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-rose-200 text-rose-900">OBLIGATORIA</span>}
                                 {g.auto && <span className="text-[9px] px-1 py-0.5 rounded bg-gray-200 text-gray-700">AUTO</span>}
                                 {help && (
-                                  <span title={help}
-                                    className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-gray-300 text-gray-700 text-[9px] font-bold cursor-help hover:bg-gray-400"
-                                    aria-label={`Cómo cerrar ${g.label}`}>?</span>
+                                  <HelpPopover
+                                    size="xs"
+                                    variant={g.passed ? 'emerald' : (g.blocking ? 'rose' : 'gray')}
+                                    label={g.label}
+                                    text={help}
+                                    placement="left"
+                                  />
                                 )}
                               </div>
                               <div className="text-[10px] text-muted-foreground mt-0.5">{g.detail}</div>

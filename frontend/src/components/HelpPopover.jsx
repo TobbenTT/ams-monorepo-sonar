@@ -27,14 +27,14 @@ export default function HelpPopover({
 
     useEffect(() => {
         if (!open) return;
-        const onClick = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        // Bug Gonzalo 2026-05-08: el "click outside" cerraba el popover cuando
+        // el usuario clikeaba la scrollbar horizontal del modal padre (que el
+        // popover tapaba parcialmente). Removido: el popover ahora SOLO se
+        // cierra con Escape o el boton X. El usuario puede interactuar con
+        // cualquier control debajo sin que el tooltip desaparezca.
         const onKey = e => { if (e.key === 'Escape') setOpen(false); };
-        window.addEventListener('mousedown', onClick);
         window.addEventListener('keydown', onKey);
-        return () => {
-            window.removeEventListener('mousedown', onClick);
-            window.removeEventListener('keydown', onKey);
-        };
+        return () => { window.removeEventListener('keydown', onKey); };
     }, [open]);
 
     const trigVariant = {

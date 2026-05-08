@@ -2648,11 +2648,30 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                             try {
                               await api.aiPriorityDecision(id, dec);
                               toast.success(dec === 'accepted' ? 'Sugerencia IA aceptada' : 'Sugerencia IA rechazada');
-                              // Refresh both the list AND the open modal
-                              refreshList();
+                              // Refresh both the list AND the open modal.
+                              // Bug Gonzalo demo 2026-05-07: setSelected(normalizeWR(fresh))
+                              // no estaba forzando re-render del DetailModal porque React
+                              // reusaba el component (same key=id). Optimistic update inline
+                              // PRIMERO con los nuevos valores, después confirmamos con fetch.
+                              setRequests(prev => prev.map(r => r.id === id ? {
+                                ...r,
+                                ai_priority_pending: false,
+                                ai_priority_decision: dec,
+                                priority_requested: dec === 'accepted' ? (r.priority_suggested || r.priority_requested) : r.priority_requested,
+                                priority_suggested: dec === 'accepted' ? (r.priority_suggested || r.priority_requested) : r.priority_requested,
+                              } : r));
+                              setSelected(prev => prev && prev.id === id ? {
+                                ...prev,
+                                ai_priority_pending: false,
+                                ai_priority_decision: dec,
+                                priority_requested: dec === 'accepted' ? (prev.priority_suggested || prev.priority_requested) : prev.priority_requested,
+                                priority_suggested: dec === 'accepted' ? (prev.priority_suggested || prev.priority_requested) : prev.priority_requested,
+                              } : prev);
+                              // Confirmación con fetch (toma estado canónico backend)
                               try {
                                 const fresh = await api.getWorkRequest(id);
                                 setSelected(normalizeWR(fresh));
+                                refreshList();
                               } catch {}
                             } catch (e) {
                               toast.error('Error registrando decisión: ' + (e?.message || e));

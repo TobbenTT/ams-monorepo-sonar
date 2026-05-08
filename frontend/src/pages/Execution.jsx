@@ -1561,6 +1561,7 @@ export default function Execution() {
                                     // los gates ALL_OPS_DONE + OPS_HH_NOTIFIED. Atajo: copia
                                     // plan → real en todas las ops que aún no tienen actual_hours.
                                     // Las que ya tienen valor se respetan (no sobreescribir).
+                                    const pendingCount = ops.filter(o => !o.actual_hours).length;
                                     const nextOps = ops.map(o => {
                                       if (o.actual_hours && o.actual_hours > 0) return o;
                                       return {
@@ -1570,9 +1571,15 @@ export default function Execution() {
                                         completion_pct: 100,
                                       };
                                     });
+                                    // Bug E2E test 2026-05-08: el bulk actualizaba solo op.actual_hours
+                                    // pero no wo.actual_hours total. Resultado: gate HH_VARIANCE_OK
+                                    // seguía rojo "real 0.0h vs plan Xh = 100% variance" aunque las ops
+                                    // ya tuvieran horas. Sumamos op.actual_quantity × op.actual_hours
+                                    // como total y lo seteamos en wo.actual_hours también.
+                                    const totalActualHH = nextOps.reduce((s, o) => s + (o.actual_quantity || 0) * (o.actual_hours || 0), 0);
                                     try {
-                                      await updateManagedWO(wo.wo_id, { operations: nextOps });
-                                      toast.success(`Notificadas ${ops.filter(o => !o.actual_hours).length} ops con HH plan`);
+                                      await updateManagedWO(wo.wo_id, { operations: nextOps, actual_hours: totalActualHH });
+                                      toast.success(`Notificadas ${pendingCount} ops con HH plan (total ${totalActualHH.toFixed(1)}h)`);
                                       loadData();
                                     } catch (e) { toast.error('No se pudo guardar: ' + (e.message || e)); }
                                   }}

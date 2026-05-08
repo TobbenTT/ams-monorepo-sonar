@@ -61,18 +61,28 @@ export default function HelpPopover({
             <button
                 type="button"
                 onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-                onMouseEnter={() => setOpen(true)}
                 className={`inline-flex items-center justify-center rounded-full font-bold cursor-pointer transition-colors ${sizeClass} ${trigVariant}`}
                 aria-label={label || 'Ayuda'}
             >
                 ?
             </button>
             {open && (
+                // Una vez abierto, queda sticky hasta click afuera o Escape.
+                // Sin onMouseLeave porque el popover puede tapar parcialmente
+                // otros controles (scrollbar, inputs) y al mover el cursor para
+                // interactuar el tooltip se cerraba — frustante (Gonzalo demo
+                // 2026-05-08).
                 <div
-                    className={`absolute z-[60] ${placementClass} mt-1.5 w-[360px] max-w-[92vw] bg-white dark:bg-gray-900 border border-border rounded-xl shadow-2xl p-3.5 text-xs leading-relaxed whitespace-pre-line animate-in fade-in zoom-in-95`}
-                    onMouseLeave={() => setOpen(false)}
+                    className={`absolute z-[60] ${placementClass} mt-1.5 w-[300px] max-w-[88vw] bg-white dark:bg-gray-900 border border-border rounded-xl shadow-2xl p-3 pt-3.5 text-xs leading-relaxed whitespace-pre-line animate-in fade-in zoom-in-95`}
                     onClick={e => e.stopPropagation()}
                 >
+                    {/* Close X — útil cuando el popover bloquea otros controles */}
+                    <button
+                        type="button"
+                        onClick={() => setOpen(false)}
+                        className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-base leading-none"
+                        aria-label="Cerrar"
+                    >×</button>
                     {/* Top accent */}
                     <div className={`absolute top-0 left-0 right-0 h-0.5 rounded-t-xl ${
                         variant === 'emerald' ? 'bg-emerald-500' :
@@ -81,14 +91,14 @@ export default function HelpPopover({
                         'bg-gray-400'
                     }`} />
                     {label && (
-                        <div className="font-bold mb-1.5 text-gray-800 dark:text-gray-100 flex items-center gap-1.5">
-                            <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+                        <div className="font-bold mb-1.5 pr-5 text-gray-800 dark:text-gray-100 flex items-center gap-1.5">
+                            <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
                                 variant === 'emerald' ? 'bg-emerald-500' :
                                 variant === 'purple' ? 'bg-purple-500' :
                                 variant === 'rose' ? 'bg-rose-500' :
                                 'bg-gray-400'
                             }`} />
-                            {label}
+                            <span className="truncate">{label}</span>
                         </div>
                     )}
                     <div className="text-gray-600 dark:text-gray-300">{text}</div>

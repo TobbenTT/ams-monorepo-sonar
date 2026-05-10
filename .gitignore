@@ -112,3 +112,18 @@ htmlcov/
 node_modules/
 frontend/dist/
 frontend/dist-ssr/
+
+# -------------------- Playwright MCP / Test artifacts --------------------
+.playwright-mcp/
+*.png
+*.tmp.json
+payload.tmp.json
+payload*.json
+
+# -------------------- Audit/data scratch (local only) --------------------
+audit_output/
+equip_pool_seed.json
+docs/docs/
+
+# -------------------- Ayudas (local meeting notes/transcripts) --------------------
+Ayudas/

@@ -1921,10 +1921,14 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         ];
 
         const ops = wo.operations || [];
+        // QA #13 (2026-05-08): REAL debe iniciar en 0 — antes hacía fallback al
+        // PLAN (`wo.actual_labor || wo.labor_cost`) y mostraba REAL = PLAN cuando
+        // no había consumos reales registrados. Ahora REAL solo lee actual_*;
+        // si no hay dato, queda 0 hasta que se llene desde Notif. HH / cierre.
         const costCats = [
-          { key: 'labor', label: 'Labor', plan: calculatedCosts.laborCost || wo.labor_cost || (wo.estimated_budget||0)*0.5, real: wo.actual_labor || wo.labor_cost || 0, color: 'blue' },
-          { key: 'material', label: 'Materials', plan: calculatedCosts.materialCost || wo.material_cost || (wo.estimated_budget||0)*0.3, real: wo.actual_material || wo.material_cost || 0, color: 'amber' },
-          { key: 'external', label: 'External', plan: calculatedCosts.externalCost || wo.external_cost || (wo.estimated_budget||0)*0.2, real: wo.actual_external || wo.external_cost || 0, color: 'purple' },
+          { key: 'labor', label: 'Labor', plan: calculatedCosts.laborCost || wo.labor_cost || (wo.estimated_budget||0)*0.5, real: parseFloat(wo.actual_labor) || 0, color: 'blue' },
+          { key: 'material', label: 'Materials', plan: calculatedCosts.materialCost || wo.material_cost || (wo.estimated_budget||0)*0.3, real: parseFloat(wo.actual_material) || 0, color: 'amber' },
+          { key: 'external', label: 'External', plan: calculatedCosts.externalCost || wo.external_cost || (wo.estimated_budget||0)*0.2, real: parseFloat(wo.actual_external) || 0, color: 'purple' },
         ];
         const totalPlan = costCats.reduce((s,c2) => s+c2.plan, 0) || wo.estimated_budget || 0;
         const totalReal = costCats.reduce((s,c2) => s+c2.real, 0);
@@ -2206,9 +2210,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       </div>
                     </div>
 
-                    {/* Group C #8 — Contractor crew picker (Jorge 2026-04-21).
-                        Opcional: si la OT se tercerea, se asigna a una cuadrilla externa. */}
-                    <ContractorCrewPicker wo={wo} onChange={(crewId) => { wo.contractor_crew_id = crewId; setSelectedOT({ ...wo }); }} />
+                    {/* QA #17 (2026-05-08): bloque "Cuadrilla contratista"
+                        removido del Summary por pedido del cliente. La feature
+                        sigue disponible vía /contractors si se reactiva luego. */}
 
                     {/* C22: Dates - Start/End + Week number */}
                     <div className="grid grid-cols-3 gap-3">
@@ -2569,7 +2573,19 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <label className="text-xs text-gray-600 font-semibold">Duración (h):</label>
-                                    <input type="number" min="0" step="0.5" value={op.hours || 0} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
+                                    {/* QA #7 (2026-05-08): mínimo 0.5h por operación.
+                                        Una op de 0h no aporta nada y rompe el cálculo de
+                                        Duración total. Si el usuario tipea menos, se ajusta. */}
+                                    <input type="number" min="0.5" step="0.5" value={op.hours || 0}
+                                      onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
+                                      onBlur={e => {
+                                        const v = parseFloat(e.target.value) || 0;
+                                        if (v > 0 && v < 0.5) {
+                                          const n = [...editOps]; n[idx] = {...n[idx], hours: 0.5}; setEditOps(n);
+                                          toast.info('Duración mínima ajustada a 0.5h');
+                                        }
+                                      }}
+                                      title="Mínimo 0.5h por operación"
                                       className="w-20 text-sm font-semibold border rounded px-2 py-1.5 text-center" />
                                   </div>
                                   <div className="bg-emerald-50 border border-emerald-200 rounded px-3 py-1.5 text-sm font-bold text-emerald-700 whitespace-nowrap">
@@ -3101,9 +3117,11 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                           <thead className="bg-amber-100/60 text-xs uppercase">
                             <tr>
                               <th className="px-3 py-2 text-left">Equipo</th>
-                              <th className="px-3 py-2 text-left">Nombre</th>
+                              {/* QA #10 (2026-05-08): "Nombre" → "Características" */}
+                              <th className="px-3 py-2 text-left">Características</th>
                               <th className="px-3 py-2 text-left">Tipo</th>
-                              <th className="px-3 py-2 text-right">HH</th>
+                              {/* QA #11 (2026-05-08): "HH" → "Cantidad" */}
+                              <th className="px-3 py-2 text-right">Cantidad</th>
                               <th className="px-3 py-2 text-left">Notas</th>
                               <th className="px-3 py-2"></th>
                             </tr>
@@ -3173,9 +3191,9 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                     )}
                                   </td>
                                   <td className="px-3 py-2">
-                                    <input type="text" defaultValue={se.name || se.description || ''}
-                                      onBlur={e => e.target.value !== (se.name || se.description || '') && updateField('name', e.target.value)}
-                                      placeholder="Descripción"
+                                    <input type="text" defaultValue={se.characteristics || se.description || ''}
+                                      onBlur={e => e.target.value !== (se.characteristics || se.description || '') && updateField('characteristics', e.target.value)}
+                                      placeholder="Ej: 10T, brazo 12m, 2 ejes…"
                                       className="w-full text-sm border border-gray-300 rounded px-2 py-1" />
                                   </td>
                                   <td className="px-3 py-2">

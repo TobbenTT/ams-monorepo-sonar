@@ -683,7 +683,11 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   // Jorge 2026-04-27 (reunión 18:06): el tablero del programador debe mostrar
   // SOLO OTs en estatus "en programación" — las planificadas todavía no son
   // input válido. Toggle 'inSched' / 'planned' / 'all' para transicionar.
-  const [statusFilter, setStatusFilter] = useState('inSched');
+  // QA #19 (2026-05-08): filtro fijo en 'inSched' — opciones planned/all removidas.
+  // setStatusFilter se mantiene como no-op para no romper otros lugares que lo
+  // llaman (ej. setStatusFilter('inSched') tras drag-drop en línea 1167).
+  const [statusFilter] = useState('inSched');
+  const setStatusFilter = () => {};
   const [filterGroup, setFilterGroup] = useState('all');
   const [sortBy, setSortBy] = useState('priority'); // 'priority' | 'hours_desc' | 'hours_asc' | 'number'
   const [showShifts, setShowShifts] = useState(true);
@@ -1092,21 +1096,15 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 todas
               </button>
             </div>
-            {/* Jorge 2026-04-27: status filter — programador trabaja con EN_PROGRAMACION */}
+            {/* QA #19 (2026-05-08): el programador solo trabaja con OTs en
+                "En programación". Las opciones "Planificadas" y "Todas" causaban
+                ruido y permitían operar sobre OTs aún no liberadas a programar.
+                Filtro fijo en EN_PROGRAMACION (badge informativo). */}
             <div className="flex items-center gap-1 text-[10px] font-semibold">
               <span className="text-muted-foreground mr-0.5">Estatus:</span>
-              {[
-                { id: 'inSched', label: 'En programación', color: 'bg-emerald-600 text-white border-emerald-700' },
-                { id: 'planned', label: 'Planificadas', color: 'bg-blue-500 text-white border-blue-600' },
-                { id: 'all', label: 'Todas', color: 'bg-gray-500 text-white border-gray-600' },
-              ].map(s => (
-                <button key={s.id}
-                  onClick={() => setStatusFilter(s.id)}
-                  className={`px-2 py-0.5 rounded border transition-all ${statusFilter === s.id ? s.color + ' shadow-sm' : 'border-border text-muted-foreground hover:bg-muted'}`}
-                  title={s.label}>
-                  {s.label}
-                </button>
-              ))}
+              <span className="px-2 py-0.5 rounded border bg-emerald-600 text-white border-emerald-700 shadow-sm">
+                En programación
+              </span>
             </div>
             {/* Group + Sort */}
             <div className="grid grid-cols-2 gap-1">

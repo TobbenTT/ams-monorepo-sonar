@@ -2294,10 +2294,9 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                   </tr>
                 )}
                 {paged.map((req) => {
-                  // Bug demo Gonzalo 2026-05-07: la flecha "P3→P2" en la tabla
-                  // seguía visible aunque el supervisor hubiera RECHAZADO la
-                  // sugerencia IA. La oculto cuando ya hubo decisión 'rejected'.
-                  const priorityChanged = req.priority_requested !== req.priority_suggested && req.ai_priority_decision !== 'rejected';
+                  // QA jornada 2026-05-08 hallazgo #3: la sugerencia IA y la
+                  // flecha P_orig → P_nueva NO van en la lista — solo en el
+                  // modal de detalle. Aquí mostramos solo priority_requested.
                   const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(req.status);
                   const truncatedDesc =
                     req.failure_description.length > 60
@@ -2349,29 +2348,12 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                         {!req.technical_location && !req.equipment_tag && <span className="text-[10px] text-gray-300">—</span>}
                       </td>
 
-                      {/* Priority */}
+                      {/* Priority — QA #3 (2026-05-08): solo prioridad actual,
+                          sin flecha ni badge IA (eso queda en el modal). */}
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1 flex-wrap">
-                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(req.priority_requested)}`}>
-                            {req.priority_requested}
-                          </span>
-                          {priorityChanged && (
-                            <>
-                              <span className="text-amber-500 text-xs font-bold">→</span>
-                              <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(req.priority_suggested)}`}>
-                                {req.priority_suggested}
-                              </span>
-                            </>
-                          )}
-                          {req.priority_bumped_by_ai && req.priority_user && (
-                            <span
-                              title={`Usuario tipeó ${req.priority_user} pero Claude la subió a ${req.priority_requested} por la descripción del problema.`}
-                              className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300"
-                            >
-                              🤖 IA sugiere {req.priority_user || req.priority_requested}→{req.priority_suggested}
-                            </span>
-                          )}
-                        </div>
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(req.priority_requested)}`}>
+                          {req.priority_requested}
+                        </span>
                       </td>
 
                       {/* Status */}

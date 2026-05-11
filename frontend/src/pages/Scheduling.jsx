@@ -904,13 +904,24 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     }
     // Planning group filter
     if (filterGroup !== 'all') list = list.filter(wo => wo.planning_group === filterGroup);
-    // Search
+    // SF-669 (reunión VSC 2026-05-11): búsqueda multi-campo case-insensitive.
+    // Match parcial sobre wo_number, equipment_tag, technical_location, description,
+    // wo_title, equipment_id, planning_group, work_center, priority.
     if (search) {
-      const q = search.toLowerCase().replace(/[\s\-]+/g, '');
+      const norm = (s) => (s || '').toString().toLowerCase().replace(/[\s\-]+/g, '');
+      const q = norm(search);
+      const qRaw = search.toLowerCase();
       list = list.filter(wo =>
-        (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q) ||
-        (wo.equipment_tag || '').toLowerCase().includes(search.toLowerCase()) ||
-        (wo.description || '').toLowerCase().includes(search.toLowerCase())
+        norm(wo.wo_number).includes(q) ||
+        norm(wo.equipment_tag).includes(q) ||
+        (wo.equipment_tag || '').toLowerCase().includes(qRaw) ||
+        (wo.equipment_id || '').toLowerCase().includes(qRaw) ||
+        (wo.technical_location || '').toLowerCase().includes(qRaw) ||
+        (wo.description || '').toLowerCase().includes(qRaw) ||
+        (wo.wo_title || '').toLowerCase().includes(qRaw) ||
+        (wo.planning_group || '').toLowerCase().includes(qRaw) ||
+        (wo.work_center || '').toLowerCase().includes(qRaw) ||
+        (wo.priority_code || '').toLowerCase() === qRaw
       );
     }
     // Sort
@@ -1075,7 +1086,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
             </div>
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar OT, equipo, descripción…"
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="OT / Tag / TL / título / grupo planif / work center / P1-P4…"
+                title="SF-669: busca por wo_number, equipment_tag, equipment_id, technical_location, description, wo_title, planning_group, work_center, priority_code"
                 className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
             </div>
             {/* Priority chips — multi-select (like Prometheus) */}

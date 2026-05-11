@@ -1692,3 +1692,33 @@ class DMSDocumentModel(Base):
     created_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="Activo")
+
+
+# ══════════════════════════════════════════════════════════════════════
+# SF-662 (Tanda 14 SP8) — Preparativos OT estilo Rappi
+# ══════════════════════════════════════════════════════════════════════
+# Tracking de repuestos/insumos despachados desde bodega al patio de obras
+# por OT. Estados estilo Rappi: DESPACHADO → EN_TRANSITO → RECIBIDO.
+# Layout PDF disposición materiales en sitio + firma de recepción.
+
+class PreparativoOTModel(Base):
+    __tablename__ = "preparativos_ot"
+
+    prep_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    wo_id: Mapped[str] = mapped_column(String(50), index=True)
+    plant_id: Mapped[str | None] = mapped_column(String(50), index=True, nullable=True)
+    item_code: Mapped[str] = mapped_column(String(50))            # SAP material code o asset code
+    item_desc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    qty: Mapped[float] = mapped_column(Float, default=0)
+    unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Estado Rappi: PENDIENTE → DESPACHADO → EN_TRANSITO → RECIBIDO → ANOMALIA
+    status: Mapped[str] = mapped_column(String(20), default="PENDIENTE", index=True)
+    dispatched_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    dispatched_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    received_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    received_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    conforme: Mapped[bool | None] = mapped_column(Boolean, nullable=True)   # null = sin firmar
+    layout_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # PDF disposición patio
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)

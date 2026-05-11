@@ -73,6 +73,7 @@ from api.routers import (
     supervisor_agent,
     planificador_agent,
     dms,
+    preparativos,
 )
 
 # Optional modules — loaded only if their deps are installed. Missing deps won't crash startup.
@@ -349,6 +350,8 @@ def create_app() -> FastAPI:
     # Agentic Solutions
     app.include_router(agentic.router, prefix=prefix)
     app.include_router(dms.router, prefix=prefix)
+    # SF-662 (Tanda 14 SP8) — Preparativos OT estilo Rappi
+    app.include_router(preparativos.router, prefix=prefix)
 
     # GAP-W03 — Serve Field PWA at /field/
     field_dist = Path("field_app/dist")

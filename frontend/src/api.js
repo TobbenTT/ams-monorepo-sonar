@@ -338,6 +338,9 @@ export const getCriticalityScore = (wrId) => get(`/work-requests/${wrId}/critica
 export const listManagedWOs = (p) => get('/managed-work-orders/', p);
 export const getManagedWO = (id) => get(`/managed-work-orders/${id}`);
 export const getManagedWOImpactScore = (id) => get(`/managed-work-orders/${id}/impact-score`);
+// SF-661 v0.1 — análisis IA de OT (función 1 de 7: resumen ejecutivo determinista)
+export const aiAnalyzeManagedWO = (id, mode = 'pre_execution') =>
+  post(`/managed-work-orders/${id}/ai-analyze?mode=${encodeURIComponent(mode)}`, {});
 export const createManagedWO = (d) => post('/managed-work-orders/', d);
 export const createWOFromWR = (d) => post('/managed-work-orders/from-wr', d);
 // Fase 9 Jorge 2026-04-21 — optimistic lock. Si el caller pasa {...data, _version: N}

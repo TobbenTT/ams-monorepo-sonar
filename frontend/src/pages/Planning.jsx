@@ -785,6 +785,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [showRescheduleModal, setShowRescheduleModal] = useState(null);
   const [rescheduleReason, setRescheduleReason] = useState('');
   const [savingOT, setSavingOT] = useState(false);
+  // SF-661 v0.1: análisis IA OT (función 1 de 7 — resumen ejecutivo determinista)
+  const [aiAnalysis, setAiAnalysis] = useState(null);
   const [expandedOps, setExpandedOps] = useState({});
   // Jorge SF-559 (2026-04-27): vista agrupada por especialidad con subtotales
   const [opsViewMode, setOpsViewMode] = useState('flat'); // 'flat' | 'bySpec'
@@ -2220,6 +2222,24 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                       title="Exportar OT a Excel (header + operaciones + materiales)"
                     >
                       <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                    </button>
+                    {/* SF-661 v0.1 — Análisis IA OT (función 1 de 7) */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!selectedOT?.wo_id) return;
+                        try {
+                          const mode = selectedOT.status === 'CERRADO' ? 'post_close' : 'pre_execution';
+                          const r = await api.aiAnalyzeManagedWO(selectedOT.wo_id, mode);
+                          setAiAnalysis(r);
+                        } catch (e) {
+                          toast.error('Análisis IA falló: ' + (e.message || 'error'));
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 flex items-center gap-1.5"
+                      title="Resumen ejecutivo + métricas (función 1 de 7 — el resto en SP8)"
+                    >
+                      🤖 Analizar IA
                     </button>
                     <div className="w-px h-6 bg-gray-200 mx-1" />
                     <button onClick={() => setModalFullscreen(f => !f)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500" title={modalFullscreen ? 'Resize' : 'Maximize'}>
@@ -4069,6 +4089,43 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                 </div>
               </div>
             </div>
+            {/* SF-661 v0.1 — panel lateral análisis IA */}
+            {aiAnalysis && (
+              <div className="absolute right-4 top-20 bottom-4 w-[380px] bg-white border border-violet-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="px-4 py-3 border-b bg-violet-50 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">🤖 Análisis IA <span className="text-[10px] font-mono bg-violet-200 px-1.5 py-0.5 rounded">v{aiAnalysis.version}</span></h3>
+                  <button onClick={() => setAiAnalysis(null)} className="text-violet-700 hover:bg-violet-200 rounded p-1"><X size={14} /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-xs">
+                  <section>
+                    <h4 className="text-[11px] font-bold text-gray-600 uppercase mb-1">Resumen ejecutivo</h4>
+                    <p className="text-gray-800 leading-relaxed">{aiAnalysis.summary?.text}</p>
+                  </section>
+                  <section>
+                    <h4 className="text-[11px] font-bold text-gray-600 uppercase mb-1">Métricas</h4>
+                    <table className="w-full text-[11px]">
+                      <tbody>
+                        {Object.entries(aiAnalysis.summary?.metrics || {}).map(([k, v]) => (
+                          <tr key={k} className="border-b border-gray-100"><td className="py-0.5 text-gray-500">{k}</td><td className="py-0.5 font-mono text-right">{v ?? '—'}</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </section>
+                  {(aiAnalysis.summary?.blockers || []).length > 0 && (
+                    <section>
+                      <h4 className="text-[11px] font-bold text-red-600 uppercase mb-1">Bloqueadores</h4>
+                      <ul className="list-disc list-inside text-red-700 space-y-0.5">
+                        {aiAnalysis.summary.blockers.map((b, i) => <li key={i}>{b}</li>)}
+                      </ul>
+                    </section>
+                  )}
+                  <section className="text-[10px] text-gray-400 border-t pt-2">
+                    Funciones 2-7 (predicción HH, riesgos, skill mix, materiales, safety, RCA) están
+                    en SP8 backlog — requieren histórico real Goldfields (ticket 0B2).
+                  </section>
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}

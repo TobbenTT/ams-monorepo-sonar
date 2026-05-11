@@ -288,6 +288,128 @@ def get_work_order(wo_id: str, user=Depends(get_current_user), db: Session = Dep
     return result
 
 
+# SF-661 (Tanda 13 SP8 backlog): skill 'analyze-work-order' función #1 (resumen ejecutivo).
+# Funciones 2-7 son STUB hasta tener data real Goldfields (0B2).
+# El endpoint NO muta la OT. Solo lectura + audit log.
+@router.post("/{wo_id}/ai-analyze")
+def ai_analyze_work_order(
+    wo_id: str,
+    mode: str = "pre_execution",
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """SF-661 v0.1 — función 1 (resumen ejecutivo determinista, sin LLM call).
+
+    Funciones 2-7 retornan None / [] explícitos (ver skills/02-work-planning/analyze-work-order/CLAUDE.md).
+    """
+    from api.services import audit_service
+    import json as _json
+    wo = managed_wo_service.get_work_order(db, wo_id)
+    if not wo:
+        raise HTTPException(status_code=404, detail="Work order not found")
+    # IDOR guard (mismo patrón que get_work_order)
+    wo_plant = wo.get("plant_id")
+    if getattr(user, "plant_id", None) and user.role not in ("admin", "manager"):
+        if wo_plant and wo_plant != user.plant_id:
+            raise HTTPException(status_code=404, detail="Work order not found")
+    if mode not in ("pre_execution", "post_close"):
+        raise HTTPException(status_code=400, detail="mode must be 'pre_execution' or 'post_close'")
+
+    # Parse defensive de campos que pueden venir como JSON-string
+    def _as_list(v):
+        if v is None: return []
+        if isinstance(v, list): return v
+        if isinstance(v, str):
+            try: return _json.loads(v) or []
+            except: return []
+        return []
+
+    ops = _as_list(wo.get("operations"))
+    workers = _as_list(wo.get("assigned_workers"))
+    mats = _as_list(wo.get("materials"))
+    support = _as_list(wo.get("support_equipment"))
+
+    # Métricas duras
+    total_hh_est = 0.0
+    for op in ops:
+        try:
+            total_hh_est += float(op.get("hours", 0) or 0) * float(op.get("quantity", 1) or 1)
+        except Exception:
+            pass
+    n_materials_reserved = sum(1 for m in mats if m.get("reservation_code"))
+
+    # Días en estado actual (usando updated_at como proxy)
+    days_in_status = None
+    try:
+        from datetime import datetime
+        ts = wo.get("updated_at") or wo.get("created_at")
+        if ts:
+            dt = datetime.fromisoformat(str(ts).replace("Z", "")) if not isinstance(ts, datetime) else ts
+            days_in_status = max(0, (datetime.now() - dt).days)
+    except Exception:
+        pass
+
+    metrics = {
+        "n_operations": len(ops),
+        "total_hh_est": round(total_hh_est, 2),
+        "n_workers_assigned": len(workers),
+        "n_materials_reserved": n_materials_reserved,
+        "n_support_eq": len(support),
+        "days_in_current_status": days_in_status,
+        "priority_code": wo.get("priority_code"),
+        "priority_band": wo.get("priority_band") or wo.get("risk_class"),
+    }
+
+    # Bloqueadores
+    blockers = []
+    if wo.get("status") == "PROGRAMADO" and not workers:
+        blockers.append("PROGRAMADO sin técnicos asignados")
+    if not wo.get("planned_start") and wo.get("status") in ("PROGRAMADO", "EN_EJECUCION"):
+        blockers.append("Sin planned_start")
+    has_replace_op = any(
+        str(op.get("task_type", "")).upper() in ("REPLACE", "OVERHAUL", "REBUILD")
+        for op in ops
+    )
+    if has_replace_op and not mats:
+        blockers.append("Operación REPLACE sin materiales reservados (T-16)")
+
+    # Narrativa (4 frases máx)
+    eq = wo.get("equipment_tag") or wo.get("technical_location") or "equipo sin tag"
+    band = metrics["priority_band"] or "sin clasificación"
+    wo_type = wo.get("wo_type") or "OT"
+    title = wo.get("wo_title") or wo.get("description") or ""
+    sentences = [
+        f"OT {wo_type} sobre {eq} (riesgo {band}, prioridad {metrics['priority_code'] or '-'}).",
+        f"{metrics['n_operations']} operaciones, {metrics['total_hh_est']:.1f} HH planificadas — '{title[:60]}'.",
+        f"{metrics['n_workers_assigned']} técnicos asignados, {metrics['n_materials_reserved']} materiales reservados, {metrics['n_support_eq']} equipos de apoyo.",
+        f"Estado {wo.get('status')} hace {days_in_status if days_in_status is not None else '?'} días."
+        + (f" Bloqueadores: {'; '.join(blockers)}." if blockers else " Sin bloqueadores detectados."),
+    ]
+    summary_text = " ".join(sentences)[:800]
+
+    result = {
+        "version": "0.1",
+        "mode": mode,
+        "summary": {"text": summary_text, "metrics": metrics, "blockers": blockers},
+        "predictions": None,         # función 2 — STUB (requiere histórico real)
+        "risks": [],                 # función 3 — STUB
+        "skill_mix": None,           # función 4 — STUB
+        "missing_materials": [],     # función 5 — STUB
+        "safety_alerts": [],         # función 6 — STUB
+        "root_cause_hints": None,    # función 7 — STUB
+    }
+
+    audit_service.log_action(
+        db,
+        entity_type="managed_work_order",
+        entity_id=wo_id,
+        action="AI_ANALYZE",
+        user=f"agent:planning-analyze-wo|confirmed_by={getattr(user, 'user_id', '')}",
+        payload={"functions_run": [1], "mode": mode, "metrics": metrics},
+    )
+    return result
+
+
 @router.put("/{wo_id}")
 def update_work_order(
     wo_id: str,

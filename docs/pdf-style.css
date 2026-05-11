@@ -1,20 +1,15 @@
 @page {
   size: A4;
-  margin: 22mm 18mm 22mm 18mm;
-  @bottom-center {
-    content: "MAGEAM · Inconsistencias de Datos · " counter(page) " / " counter(pages);
-    font-family: 'Inter', sans-serif;
-    font-size: 9pt;
-    color: #6b7280;
-  }
+  margin: 20mm 16mm 22mm 16mm;
 }
 
 body {
-  font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Segoe UI', 'Inter', Roboto, Arial, sans-serif;
   font-size: 10.5pt;
   line-height: 1.55;
   color: #1f2937;
-  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 h1 {
@@ -22,41 +17,44 @@ h1 {
   font-size: 22pt;
   border-bottom: 3px solid #10b981;
   padding-bottom: 6pt;
-  margin-top: 18pt;
+  margin: 18pt 0 12pt 0;
   page-break-after: avoid;
 }
 
 h1:first-of-type {
-  font-size: 26pt;
+  font-size: 24pt;
   margin-top: 0;
 }
 
 h2 {
   color: #065f46;
   font-size: 15pt;
-  margin-top: 22pt;
-  padding-left: 8pt;
-  border-left: 4px solid #10b981;
+  background: #ecfdf5;
+  padding: 5pt 10pt;
+  border-radius: 4pt;
+  margin: 20pt 0 10pt 0;
   page-break-after: avoid;
 }
 
 h3 {
   color: #047857;
-  font-size: 12pt;
-  margin-top: 14pt;
+  font-size: 12.5pt;
+  margin: 14pt 0 8pt 0;
   page-break-after: avoid;
 }
 
-p, li { text-align: justify; }
+h4 { color: #065f46; font-size: 11pt; margin: 10pt 0 6pt 0; }
+p  { margin: 6pt 0; text-align: left; orphans: 3; widows: 3; }
 strong { color: #064e3b; }
 
 code {
-  background: #f3f4f6;
-  padding: 1pt 4pt;
+  background: #f1f5f9;
+  padding: 1pt 5pt;
   border-radius: 3pt;
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-family: 'Consolas', 'JetBrains Mono', monospace;
   font-size: 9.5pt;
   color: #be123c;
+  word-break: break-word;
 }
 
 pre {
@@ -66,10 +64,11 @@ pre {
   border-radius: 6pt;
   font-size: 8.5pt;
   line-height: 1.4;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
   page-break-inside: avoid;
+  margin: 8pt 0;
 }
-
 pre code { background: transparent; color: inherit; padding: 0; font-size: 8.5pt; }
 
 table {
@@ -78,10 +77,10 @@ table {
   margin: 10pt 0;
   font-size: 9.5pt;
   page-break-inside: avoid;
+  table-layout: fixed;
 }
-
-th { background: #064e3b; color: white; padding: 6pt 8pt; text-align: left; font-weight: 600; }
-td { padding: 5pt 8pt; border-bottom: 1px solid #e5e7eb; }
+th { background: #064e3b; color: white; padding: 6pt 8pt; text-align: left; font-weight: 600; word-wrap: break-word; }
+td { padding: 5pt 8pt; border-bottom: 1px solid #e5e7eb; vertical-align: top; word-wrap: break-word; }
 tr:nth-child(even) td { background: #f9fafb; }
 
 blockquote {
@@ -94,6 +93,7 @@ blockquote {
   page-break-inside: avoid;
 }
 
-hr { border: none; border-top: 1px solid #d1d5db; margin: 18pt 0; }
-ul, ol { padding-left: 18pt; }
+hr { border: none; border-top: 1px solid #d1d5db; margin: 16pt 0; }
+ul, ol { padding-left: 22pt; margin: 6pt 0; }
 li { margin: 3pt 0; }
+img { max-width: 100%; height: auto; }

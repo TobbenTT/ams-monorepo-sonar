@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 import { downloadExport } from '../utils/exportFile';
+import { isWRPreExecution } from '../utils/woLifecycle';
 
 /* ─── Status config (dynamic with i18n) ─── */
 
@@ -616,7 +617,12 @@ ${materials.length ? `<div class="section">
             ya validó la priority), ocultar el banner activo. La sugerencia queda en
             audit/historial pero la UI no genera ambigüedad sobre cuál es la prioridad
             oficial. */}
+        {/* QA #27 jornada VSC 2026-05-08: la priorización por IA solo está
+            activa antes del punto de ejecución. Una vez que la WR generó OT
+            (OT_CREADA) o quedó terminal (CERRADO/RECHAZADO/CANCELADO), la
+            sugerencia ya no es accionable — la OT está en curso o cerrada. */}
         {!(item.validation?.priority_locked) &&
+         isWRPreExecution(item.status) &&
          (item.ai_priority_pending || (item.priority_suggested && item.priority_suggested !== item.priority_requested)) && !item.ai_priority_decision && onAIPriorityDecision && (
           <div className="mx-6 my-3 rounded-xl border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-fuchsia-50 overflow-hidden shadow-sm">
             <div className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2">

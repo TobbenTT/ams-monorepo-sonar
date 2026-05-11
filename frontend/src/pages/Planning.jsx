@@ -2509,7 +2509,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                               <span className="text-[10px] text-gray-500">{op.quantity || 1}p</span>
                               <span className="text-[10px] text-gray-500">{op.hours || 0}h</span>
                               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">{((op.quantity || 1) * (op.hours || 0)).toFixed(1)} HH</span>
-                              <button type="button" onClick={e => { e.stopPropagation(); setEditOps(prev => prev.filter((_,i) => i !== idx)); }} className="text-red-400 hover:text-red-600 p-1 ml-1"><X size={12} /></button>
+                              {/* QA #12 (2026-05-08): confirmación al eliminar operación. */}
+                              <button type="button" onClick={async e => {
+                                e.stopPropagation();
+                                const opDesc = (editOps[idx]?.description || '').slice(0, 40) || `Operación #${idx + 1}`;
+                                if (!await confirm({ title: 'Eliminar operación', message: `¿Eliminar "${opDesc}"? Esta acción no se puede deshacer.`, variant: 'danger', confirmText: 'Eliminar' })) return;
+                                setEditOps(prev => prev.filter((_,i) => i !== idx));
+                              }} className="text-red-400 hover:text-red-600 p-1 ml-1" title="Eliminar operación"><X size={12} /></button>
                               {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
                             </div>
                             {isExpanded && (
@@ -3311,8 +3317,12 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                   }}
                                   className="flex-1 text-sm border rounded px-2 py-1" placeholder="Buscar material por nombre o código…" />
                               )}
-                              <button onClick={() => setEditMats(prev => prev.filter((_,i) => i !== idx))}
-                                className="text-red-400 hover:text-red-600 text-xs px-1">x</button>
+                              {/* QA #12 (2026-05-08): confirmación al eliminar material. */}
+                              <button onClick={async () => {
+                                const matDesc = (editMats[idx]?.description || editMats[idx]?.sapId || `Material #${idx + 1}`).slice(0, 40);
+                                if (!await confirm({ title: 'Eliminar material', message: `¿Eliminar "${matDesc}"?`, variant: 'danger', confirmText: 'Eliminar' })) return;
+                                setEditMats(prev => prev.filter((_,i) => i !== idx));
+                              }} className="text-red-400 hover:text-red-600 text-xs px-1" title="Eliminar material">x</button>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1">

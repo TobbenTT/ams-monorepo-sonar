@@ -594,7 +594,9 @@ export default function Execution() {
     { id: 'notif', label: '📝 Notificación', icon: FileText, count: notifWOs.length },
     { id: 'close', label: 'Bandeja de Cierre', icon: CheckCircle, count: completedWOs.length },
     { id: 'week', label: 'Semana', icon: Calendar, count: activeWOs.length },
-    { id: 'summary', label: 'Resumen', icon: BarChart2, count: closedWOs.length },
+    // QA #8 (jornada VSC 2026-05-08): Resumen pasa a violeta para distinguirse
+    // visualmente del resto (que usan amber/ámbar como acento de Execution).
+    { id: 'summary', label: 'Resumen', icon: BarChart2, count: closedWOs.length, accent: 'violet' },
     { id: 'history', label: 'Historial', icon: Calendar, count: closedWOs.length },
   ];
 
@@ -711,13 +713,20 @@ export default function Execution() {
 
       {/* View selector */}
       <div className="flex gap-1 border-b border-border">
-        {VIEWS.map(v => (
-          <button key={v.id} onClick={() => setView(v.id)}
-            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors ${view === v.id ? 'border-amber-600 text-amber-700 dark:text-amber-400' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
-            <v.icon size={16} /> {v.label}
-            {v.count > 0 && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${view === v.id ? 'bg-amber-600 text-white' : 'bg-muted text-muted-foreground'}`}>{v.count}</span>}
-          </button>
-        ))}
+        {VIEWS.map(v => {
+          const isActive = view === v.id;
+          // QA #8: Resumen usa violeta para destacarse. Resto sigue ámbar.
+          const accent = v.accent === 'violet'
+            ? { border: 'border-violet-600', text: 'text-violet-700 dark:text-violet-400', badge: 'bg-violet-600 text-white' }
+            : { border: 'border-amber-600', text: 'text-amber-700 dark:text-amber-400', badge: 'bg-amber-600 text-white' };
+          return (
+            <button key={v.id} onClick={() => setView(v.id)}
+              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors ${isActive ? `${accent.border} ${accent.text}` : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+              <v.icon size={16} /> {v.label}
+              {v.count > 0 && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? accent.badge : 'bg-muted text-muted-foreground'}`}>{v.count}</span>}
+            </button>
+          );
+        })}
       </div>
 
       {/* ═══ PROGRAMADO VIEW — SF-566 Tanda C (Jorge 2026-04-27) ═══

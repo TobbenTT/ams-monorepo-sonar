@@ -352,12 +352,19 @@ function CommentsTab({ wo, onUpdate }) {
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState(null); // {base64, mime}
+  const [audioBlob, setAudioBlob] = useState(null); // {data_url, mime}
+  const [photoData, setPhotoData] = useState(null); // SF-655: data URL de foto adjunta
+  const [showEvents, setShowEvents] = useState(true); // SF-654: toggle eventos sistema
+  const photoInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const speechRef = useRef(null);
   const notes = Array.isArray(wo.execution_notes) ? wo.execution_notes : [];
-  // Filtrar las que son comentarios reales (excluir status transitions y stock_consumed)
-  const comments = notes.filter(n => n && n.note && !/^Status:|^\[STOCK_CONSUMED\]/.test(n.note));
+
+  // SF-654 (reunión VSC 2026-05-11): los EVENTS del sistema (status transitions,
+  // stock consumed, etc) también se ven en Comentarios, no solo en History.
+  // El usuario puede toggle on/off el filtro.
+  const allEntries = notes.filter(n => n && n.note);
+  const comments = showEvents ? allEntries : allEntries.filter(n => !/^Status:|^\[STOCK_CONSUMED\]/.test(n.note));
 
   // SF-674: grabación de audio + Web SpeechRecognition para transcripción.
   const startRecording = async () => {
@@ -418,11 +425,16 @@ function CommentsTab({ wo, onUpdate }) {
         entry.audio_data_url = audioBlob.data_url;
         entry.audio_mime = audioBlob.mime;
       }
+      // SF-655: adjuntar foto si fue cargada
+      if (photoData) {
+        entry.photo_data_url = photoData;
+      }
       const next = [...notes, entry];
       const updated = await api.updateManagedWO(wo.wo_id, { execution_notes: next });
       onUpdate?.(updated);
       setNewComment('');
       setAudioBlob(null);
+      setPhotoData(null);
     } catch (e) {
       toast.error('Error: ' + (e.message || e));
     } finally {
@@ -445,11 +457,18 @@ function CommentsTab({ wo, onUpdate }) {
           <h3 className="text-sm font-semibold text-gray-800">Historial de comentarios · {comments.length}</h3>
           <p className="text-[11px] text-gray-500">Comentarios previos no son editables (auditoría SAP-style). Los nuevos se agregan en cascada.</p>
         </div>
-        {comments.length > 0 && (
-          <button onClick={exportToText} className="text-[11px] px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 flex items-center gap-1">
-            <FileText className="w-3.5 h-3.5" /> Exportar
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* SF-654: toggle eventos del sistema */}
+          <label className="flex items-center gap-1 text-[11px] text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={showEvents} onChange={e => setShowEvents(e.target.checked)} className="w-3.5 h-3.5" />
+            Eventos del sistema
+          </label>
+          {comments.length > 0 && (
+            <button onClick={exportToText} className="text-[11px] px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 flex items-center gap-1">
+              <FileText className="w-3.5 h-3.5" /> Exportar
+            </button>
+          )}
+        </div>
       </div>
 
       {comments.length === 0 ? (
@@ -458,11 +477,18 @@ function CommentsTab({ wo, onUpdate }) {
         </p>
       ) : (
         <div className="space-y-2">
-          {comments.map((c, idx) => (
-            <div key={idx} className="rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2.5">
+          {comments.map((c, idx) => {
+            // SF-654: distinguir eventos del sistema vs comentarios humanos
+            const isSystemEvent = /^Status:|^\[STOCK_CONSUMED\]|^\[AUDIT\]/.test(c.note || '');
+            const bg = isSystemEvent ? 'border-indigo-200 bg-indigo-50/40' : 'border-gray-200 bg-gray-50/50';
+            return (
+            <div key={idx} className={`rounded-lg border ${bg} px-3 py-2.5`}>
               <div className="flex items-center gap-2 mb-1 text-[10px]">
                 <span className="font-mono font-semibold text-gray-700">#{idx + 1}</span>
-                <span className="font-semibold text-blue-700">{c.user || 'system'}</span>
+                {isSystemEvent && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 border border-indigo-300">⚙️ Sistema</span>
+                )}
+                <span className={`font-semibold ${isSystemEvent ? 'text-indigo-700' : 'text-blue-700'}`}>{c.user || 'system'}</span>
                 <span className="text-gray-400">·</span>
                 <span className="text-gray-500">{c.timestamp ? new Date(c.timestamp).toLocaleString('es') : '—'}</span>
                 <span className="ml-auto text-[9px] italic text-gray-400">🔒 Congelado</span>
@@ -476,8 +502,15 @@ function CommentsTab({ wo, onUpdate }) {
                   </audio>
                 </div>
               )}
+              {/* SF-655: render foto si está adjunta */}
+              {c.photo_data_url && (
+                <div className="mt-2">
+                  <img src={c.photo_data_url} alt="Foto del comentario" className="max-h-48 rounded-lg border border-gray-300" />
+                </div>
+              )}
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
@@ -492,10 +525,34 @@ function CommentsTab({ wo, onUpdate }) {
           {audioBlob && (
             <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
               <audio controls src={audioBlob.data_url} className="flex-1 h-8" />
-              <button onClick={() => setAudioBlob(null)} className="text-xs text-red-600 hover:underline">✕ Quitar</button>
+              <button onClick={() => setAudioBlob(null)} className="text-xs text-red-600 hover:underline">✕ Quitar audio</button>
             </div>
           )}
-          <div className="flex justify-end gap-2">
+          {/* SF-655: preview foto */}
+          {photoData && (
+            <div className="flex items-start gap-2 p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <img src={photoData} alt="preview" className="h-24 rounded border border-gray-300" />
+              <button onClick={() => setPhotoData(null)} className="text-xs text-red-600 hover:underline">✕ Quitar foto</button>
+            </div>
+          )}
+          {/* SF-655: hidden input para foto */}
+          <input ref={photoInputRef} type="file" accept="image/*" capture="environment"
+            onChange={async e => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              const reader = new FileReader();
+              reader.onloadend = () => setPhotoData(reader.result);
+              reader.readAsDataURL(f);
+              e.target.value = '';
+            }}
+            className="hidden" />
+          <div className="flex justify-end gap-2 flex-wrap">
+            {/* SF-655: botón adjuntar foto */}
+            <button onClick={() => photoInputRef.current?.click()} disabled={submitting}
+              className="px-3 py-1.5 text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300 rounded-lg hover:bg-amber-200 disabled:opacity-40 flex items-center gap-1"
+              title="Adjuntar foto desde cámara o galería">
+              📷 Foto
+            </button>
             {/* SF-674: botón grabar audio */}
             {!isRecording ? (
               <button onClick={startRecording} disabled={submitting}
@@ -509,7 +566,7 @@ function CommentsTab({ wo, onUpdate }) {
                 ⏹️ Detener
               </button>
             )}
-            <button onClick={submit} disabled={submitting || (!newComment.trim() && !audioBlob)}
+            <button onClick={submit} disabled={submitting || (!newComment.trim() && !audioBlob && !photoData)}
               className="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 flex items-center gap-1">
               {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageSquare className="w-3 h-3" />}
               Agregar comentario

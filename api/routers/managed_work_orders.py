@@ -174,6 +174,66 @@ def create_from_work_request(
     return result
 
 
+# SF-657 (jornada VSC 2026-05-08, reunión 2026-05-11): OTs huérfanas
+# = sin assigned_workers cuando deberían tenerlos / sin coherencia de estado.
+@router.get("/orphans")
+def list_orphans(plant_id: str | None = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Detect OTs huérfanas: combinaciones de campos inconsistentes."""
+    from api.database.models import ManagedWorkOrderModel
+    import json as _json
+    q = db.query(ManagedWorkOrderModel)
+    if plant_id:
+        q = q.filter(ManagedWorkOrderModel.plant_id == plant_id)
+    all_wos = q.all()
+    orphans = []
+    for wo in all_wos:
+        reasons = []
+        # Tipo 1: PROGRAMADO sin assigned_workers
+        if wo.status == "PROGRAMADO":
+            aw = wo.assigned_workers
+            if isinstance(aw, str):
+                try: aw = _json.loads(aw)
+                except: aw = []
+            if not aw:
+                reasons.append("PROGRAMADO sin técnicos asignados")
+        # Tipo 2: CERRADO sin actual_end
+        if wo.status in ("CERRADO", "CLOSED") and not wo.actual_end:
+            reasons.append("CERRADO sin actual_end (fecha real de cierre)")
+        # Tipo 3: Atrasada (planned_start en pasado >7d y status pre-ejecución)
+        if wo.status in ("CREADO", "LIBERADO", "PLANIFICADO") and wo.planned_start:
+            from datetime import datetime, timedelta
+            try:
+                ps = wo.planned_start if isinstance(wo.planned_start, datetime) else datetime.fromisoformat(str(wo.planned_start).replace("Z",""))
+                if ps < datetime.now() - timedelta(days=7):
+                    reasons.append(f"Atrasada >7d (planned_start: {ps.date()})")
+            except Exception:
+                pass
+        # Tipo 4: Sin priority_code
+        if not wo.priority_code:
+            reasons.append("Sin priority_code")
+        # Tipo 5: Sin equipment_tag ni technical_location
+        if not (wo.equipment_tag or wo.technical_location):
+            reasons.append("Sin equipo ni TL")
+        # Tipo 6: PROGRAMADO sin planned_start
+        if wo.status == "PROGRAMADO" and not wo.planned_start:
+            reasons.append("PROGRAMADO sin planned_start")
+        if reasons:
+            orphans.append({
+                "wo_id": wo.wo_id,
+                "wo_number": wo.wo_number,
+                "status": wo.status,
+                "priority_code": wo.priority_code,
+                "equipment_tag": wo.equipment_tag,
+                "reasons": reasons,
+                "severity": "high" if len(reasons) >= 2 else "medium",
+            })
+    return {
+        "total_wos": len(all_wos),
+        "orphans_count": len(orphans),
+        "orphans": orphans,
+    }
+
+
 @router.get("/")
 def list_work_orders(
     status: str | None = None,

@@ -19,7 +19,10 @@ import { useAuth } from '../contexts/AuthContext';
 /* ── Module → { view: roles[], edit: roles[] } ── */
 
 const ALL_ROLES = ['admin', 'manager', 'planner', 'engineer', 'tecnico', 'supervisor'];
-const TACTICAL = ['admin', 'planner', 'engineer', 'tecnico'];
+// 0G2 (reunión VSC 2026-05-11): supervisor incluido en TACTICAL —
+// el supervisor de turno necesita ver Planning/Scheduling/Execution
+// para validar WRs, asignar técnicos y notificar HH.
+const TACTICAL = ['admin', 'planner', 'engineer', 'tecnico', 'supervisor'];
 
 const PERMISSIONS = {
     // ─── Operations / Planning ───
@@ -41,9 +44,9 @@ const PERMISSIONS = {
     'defect-elimination': { view: TACTICAL,  edit: ['admin', 'engineer'] },
 
     // ─── Work Orders & Execution ───
-    'work-management':    { view: ALL_ROLES, edit: ['admin', 'planner', 'tecnico'] },
-    'work-orders':        { view: ALL_ROLES, edit: ['admin', 'planner'] },
-    'execution':          { view: ['admin', 'planner', 'tecnico'], edit: ['admin', 'planner', 'tecnico'] },
+    'work-management':    { view: ALL_ROLES, edit: ['admin', 'planner', 'tecnico', 'supervisor'] },
+    'work-orders':        { view: ALL_ROLES, edit: ['admin', 'planner', 'supervisor'] },
+    'execution':          { view: ['admin', 'planner', 'tecnico', 'supervisor'], edit: ['admin', 'planner', 'tecnico', 'supervisor'] },
     'post-maintenance':   { view: ['admin', 'manager', 'engineer'], edit: ['admin', 'engineer'] },
     'field-capture':      { view: TACTICAL,  edit: ['admin', 'tecnico'] },
     'troubleshooting':    { view: TACTICAL,  edit: ['admin', 'tecnico'] },
@@ -71,20 +74,22 @@ const PERMISSIONS = {
 
 /* ── Role → edit scope label ── */
 const EDIT_SCOPE = {
-    admin:    'all',
-    manager:  'executive',
-    planner:  'planning',
-    engineer: 'reliability',
-    tecnico:  'execution',
+    admin:      'all',
+    manager:    'executive',
+    planner:    'planning',
+    engineer:   'reliability',
+    supervisor: 'execution',  // 0G2: supervisor edita en execution scope (igual que tecnico pero con override de WR approve)
+    tecnico:    'execution',
 };
 
 /* ── Role → view tier ── */
 const VIEW_TIER = {
-    admin:    'admin',
-    manager:  'executive',
-    planner:  'tactical',
-    engineer: 'tactical',
-    tecnico:  'tactical',
+    admin:      'admin',
+    manager:    'executive',
+    planner:    'tactical',
+    engineer:   'tactical',
+    supervisor: 'tactical',
+    tecnico:    'tactical',
 };
 
 export function usePermissions() {

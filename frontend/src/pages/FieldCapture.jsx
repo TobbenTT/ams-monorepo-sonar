@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, ArrowRight, ArrowLeft, Camera, Mic, MicOff, Search, Edit3, ChevronDown, X, Plus } from 'lucide-react';
 import * as api from '../api';
+import { formatWRCode } from '../utils/wrCode';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -671,7 +672,7 @@ export default function FieldCapture() {
                             <tbody>
                                 {workRequests.slice(0, 10).map((wr, i) => (
                                     <tr key={i}>
-                                        <td className="font-mono text-xs">{(wr.request_id || '').slice(0, 8)}</td>
+                                        <td className="font-mono text-xs">{formatWRCode(wr)}</td>
                                         <td>{wr.equipment_identification?.equipment_tag || wr.equipment_tag || '—'}</td>
                                         <td><StatusBadge status={wr.status} /></td>
                                         <td><PriorityBadge priority={wr.ai_classification?.priority_suggested || wr.priority || '3'} /></td>

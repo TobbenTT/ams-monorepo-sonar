@@ -9,6 +9,7 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { filterByDateRange } from '../utils/dateRange';
+import { formatWRCode } from '../utils/wrCode';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
@@ -1344,7 +1345,7 @@ export default function FailuresEvents() {
                         : 'bg-yellow-100 text-yellow-800 border-yellow-300';
                     return (
                       <TableRow key={wr.request_id + '-' + idx} className="hover:bg-gray-50">
-                        <TableCell className="text-xs font-medium">{wr.request_id || 'N/A'}</TableCell>
+                        <TableCell className="text-xs font-medium font-mono">{formatWRCode(wr) || 'N/A'}</TableCell>
                         <TableCell className="text-xs">{wr.created_at ? wr.created_at.split('T')[0] : 'N/A'}</TableCell>
                         <TableCell className="text-xs font-medium">{wr.equipment_tag || wr.equipment_name || 'N/A'}</TableCell>
                         <TableCell className="text-xs">{wr.work_class || 'N/A'}</TableCell>
@@ -1562,7 +1563,7 @@ export default function FailuresEvents() {
               <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">{wr.description?.substring(0, 50) || wr.equipment_name || wr.equipment_tag || 'Work Request'}</h2>
-                  <p className="text-xs text-gray-400"><span className="font-mono">{wr.request_id}</span> {wr.equipment_tag ? `· ${wr.equipment_tag}` : ''}</p>
+                  <p className="text-xs text-gray-400"><span className="font-mono">{formatWRCode(wr)}</span> {wr.equipment_tag ? `· ${wr.equipment_tag}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className={`${

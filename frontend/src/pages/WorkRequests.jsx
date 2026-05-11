@@ -879,6 +879,23 @@ ${materials.length ? `<div class="section">
           </div>
         )}
 
+        {/* SF-680 (jornada VSC 2026-05-08): "What Happened" (failure_description)
+            antes que WO Title. El operador primero lee QUÉ pasó y luego el título
+            sintético de la OT que la IA generó a partir de eso. */}
+        {/* Failure Description */}
+        <div className="px-6 pb-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t('workRequests.failureDesc')}</p>
+          {editing ? (
+            <textarea value={editData.failure_description} onChange={e => setEditData(d => ({ ...d, failure_description: e.target.value }))}
+              rows={6} className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-y" />
+          ) : (
+            <p className="text-sm text-foreground leading-relaxed bg-muted/50 rounded-lg p-3 border border-border">
+              {safeStr(item.failure_description)}
+            </p>
+          )}
+
+        </div>
+
         {/* WO Title — Jorge 2026-04-24 (obs doc): debe ser editable */}
         {(item.wo_title || editing) && (
           <div className="px-6 pb-3">
@@ -915,20 +932,6 @@ ${materials.length ? `<div class="section">
             </div>
           </div>
         )}
-
-        {/* Failure Description */}
-        <div className="px-6 pb-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t('workRequests.failureDesc')}</p>
-          {editing ? (
-            <textarea value={editData.failure_description} onChange={e => setEditData(d => ({ ...d, failure_description: e.target.value }))}
-              rows={6} className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none resize-y" />
-          ) : (
-            <p className="text-sm text-foreground leading-relaxed bg-muted/50 rounded-lg p-3 border border-border">
-              {safeStr(item.failure_description)}
-            </p>
-          )}
-
-        </div>
 
         {/* Original Request (raw text from technician) */}
         {item.original_text && item.original_text !== item.failure_description && (

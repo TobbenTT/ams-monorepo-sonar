@@ -446,6 +446,9 @@ def backlog_alerts(plant_id: str | None = None, db: Session = Depends(get_db)):
             overdue_h = (now - deadline).total_seconds() / 3600.0
             delayed_wrs.append({
                 "request_id": wr.request_id,
+                # SF-678 (jornada VSC 2026-05-08): UI muestra AV-NNNNN, así
+                # que devolvemos aviso_number para que formatWRCode lo formatee.
+                "aviso_number": getattr(wr, "aviso_number", None),
                 "equipment_tag": wr.equipment_tag,
                 "priority": wr.priority_code or "P3",
                 "status": wr.status,

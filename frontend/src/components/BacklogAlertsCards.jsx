@@ -7,6 +7,7 @@ import { Loader2, AlertTriangle, Inbox, ClipboardCheck } from 'lucide-react';
 import { getBacklogAlerts } from '../api';
 import { subscribe } from '../wsSingleton';
 import { useLanguage } from '../contexts/LanguageContext';
+import { formatWRCode } from '../utils/wrCode';
 
 const DEFAULT_THRESHOLDS = { yellow: 5, red: 15 };
 
@@ -142,7 +143,7 @@ export default function BacklogAlertsCards({ plantId }) {
               <TableBody>
                 {(data?.delayed_notifications?.items || []).map((it) => (
                   <TableRow key={it.request_id}>
-                    <TableCell className="font-mono text-xs">{it.request_id}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatWRCode(it)}</TableCell>
                     <TableCell className="text-xs">{it.equipment_tag}</TableCell>
                     <TableCell><Badge className="bg-gray-100 text-gray-800 border-0 text-xs">{it.priority}</Badge></TableCell>
                     <TableCell className="text-xs">{it.status}</TableCell>

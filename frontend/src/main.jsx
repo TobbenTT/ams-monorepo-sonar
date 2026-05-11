@@ -109,7 +109,10 @@ const PerformanceAnalysis = lazyRetry(() => import('./pages/PerformanceAnalysis'
 const FailureCapture = lazyRetry(() => import('./pages/FailureCapture'));
 const TeamPage = lazyRetry(() => import('./pages/TeamPage'));
 const SettingsPage = lazyRetry(() => import('./pages/SettingsPage'));
-const ContractorsPage = lazyRetry(() => import('./pages/ContractorsPage'));
+// SF-671 (jornada VSC 2026-05-08): "Cuadrilla Contratista" se quitó del flujo
+// operativo. La ruta /contractors deja de cargar; el archivo se mantiene en
+// disco para preservar contexto histórico pero no es navegable desde la UI.
+// const ContractorsPage = lazyRetry(() => import('./pages/ContractorsPage'));
 
 // ── Existing Pages (secondary routes) ─────────────────────────
 const Login = lazyRetry(() => import('./pages/Login'));
@@ -225,7 +228,7 @@ createRoot(document.getElementById('root')).render(
                                     <Route path="user-guide" element={<S><UserGuidePage /></S>} />
                                     <Route path="audit-log" element={<P roles={MGMT}><S><AuditLogPage /></S></P>} />
                                     <Route path="ws-debug" element={<P roles={MGMT}><S><WSDebugPage /></S></P>} />
-                                    <Route path="contractors" element={<P roles={['admin', 'manager', 'planner']}><S><ContractorsPage /></S></P>} />
+                                    {/* SF-671: ruta /contractors deshabilitada — concepto retirado del flujo. */}
 
                                     {/* ── Mobile routes ── */}
                                     <Route path="m/tareas" element={<S><MobileWorkOrders /></S>} />

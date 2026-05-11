@@ -441,57 +441,10 @@ function isClosedStatus(wo) {
   return ['CERRADO', 'CLOSED', 'CANCELADO', 'CANCELLED'].includes((wo.status || '').toUpperCase());
 }
 
-// Group C #8 Jorge 2026-04-21 — picker de cuadrilla contratista.
-// Si la OT se tercerea, acá se elige. Null = trabajo interno.
-function ContractorCrewPicker({ wo, onChange }) {
-  const toast = useToast();
-  const [crews, setCrews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const selected = wo.contractor_crew_id || '';
-
-  useEffect(() => {
-    let cancelled = false;
-    api.listAllCrews(wo.plant_id)
-      .then(r => { if (!cancelled) setCrews(Array.isArray(r) ? r : []); })
-      .catch(() => { if (!cancelled) setCrews([]); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [wo.plant_id]);
-
-  const handleChange = async (crewId) => {
-    try {
-      await api.updateManagedWO(wo.wo_id, { contractor_crew_id: crewId || null });
-      onChange && onChange(crewId || null);
-    } catch (e) {
-      toast.error('Error: ' + (e.message || 'no se pudo asignar cuadrilla'));
-    }
-  };
-
-  return (
-    <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-      <div className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase mb-1">
-        Cuadrilla contratista (opcional)
-      </div>
-      {loading ? (
-        <div className="text-xs text-amber-600 italic">Cargando cuadrillas…</div>
-      ) : crews.length === 0 ? (
-        <div className="text-xs text-amber-600 italic">
-          Sin contratistas configurados. Agregalos en <a href="/contractors" className="underline">Contratistas</a>.
-        </div>
-      ) : (
-        <select value={selected} onChange={e => handleChange(e.target.value)}
-          className="w-full text-sm font-semibold text-gray-800 bg-white border border-amber-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500">
-          <option value="">— In-house (técnicos propios) —</option>
-          {crews.map(c => (
-            <option key={c.crew_id} value={c.crew_id}>
-              {c.contractor_name} · {c.name}{c.specialty ? ` (${c.specialty})` : ''}{c.size > 1 ? ` · ${c.size} pers` : ''}
-            </option>
-          ))}
-        </select>
-      )}
-    </div>
-  );
-}
+// SF-671 (jornada VSC 2026-05-08): el concepto "Cuadrilla Contratista" se eliminó
+// del flujo operativo. El selector ya no se renderiza (estaba sin uso desde QA #17).
+// El campo contractor_crew_id en BD queda para registros históricos, pero ninguna
+// entidad nueva puede ser asignada — Carlos confirma con cliente eventual cleanup.
 
 function PriorityLabel({ priority }) {
   const p = String(priority || 'P3');
@@ -1216,7 +1169,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
               .catch(e => toast.error('Error: ' + (e.message || '')));
           }} className="ml-2 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
             title="Ranking IA multi-criterio: criticidad del equipo (40%) + urgencia SLA (30%) + repetición histórica / Pareto (20%) + impacto productivo (10%). Prioriza primero P1/P2 fast-track, luego ordena P3/P4 por score combinado.">
-            <Sparkles className="w-3 h-3" /> Priorizar con IA
+            <Sparkles className="w-3 h-3" /> Priorizar por riesgo
           </button>
         </>)}
       </div>
@@ -2598,10 +2551,25 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                     </select>
                                   </div>
                                   {/* Jorge 2026-04-27: agrandar inputs Cantidad/Duración/HH
-                                      para que se lean fácil (eran w-12/w-14 text-xs → w-16/w-20 text-sm). */}
+                                      para que se lean fácil (eran w-12/w-14 text-xs → w-16/w-20 text-sm).
+                                      SF-682 (jornada VSC 2026-05-08): la edición manual de cantidad
+                                      REEMPLAZA el valor en la misma línea (n[idx] = {...}), nunca crea
+                                      una nueva. Aceptamos 0 explícito (criterio Jorge: "si el usuario
+                                      quiere borrar el valor, la línea queda con cantidad = 0 o se
+                                      elimina"). HH se recalcula vía el render de plannedHH abajo. */}
                                   <div className="flex items-center gap-1">
                                     <label className="text-xs text-gray-600 font-semibold">Cantidad:</label>
-                                    <input type="number" min="1" value={op.quantity || 1} onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], quantity: parseInt(e.target.value)||1}; setEditOps(n); }}
+                                    <input type="number" min="0" step="1"
+                                      value={op.quantity ?? 1}
+                                      onChange={e => {
+                                        const raw = e.target.value;
+                                        const parsed = raw === '' ? 0 : parseInt(raw, 10);
+                                        const q = Number.isNaN(parsed) ? (op.quantity ?? 1) : Math.max(0, parsed);
+                                        const n = [...editOps];
+                                        n[idx] = { ...n[idx], quantity: q };
+                                        setEditOps(n);
+                                      }}
+                                      title="Cantidad de personas para esta operación. Editar reemplaza el valor (no agrega bloque). HH = Cantidad × Duración."
                                       className="w-16 text-sm font-semibold border rounded px-2 py-1.5 text-center" />
                                   </div>
                                   <div className="flex items-center gap-1">

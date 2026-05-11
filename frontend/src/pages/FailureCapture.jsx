@@ -1603,39 +1603,10 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             </div>
           </div>
 
-          {/* SF-638 (2026-05-05): "Nivel de Riesgo" pasa a campo CALCULADO
-              automáticamente. Se mueve a la zona "datos calculados" (banda
-              informativa, no editable). Fórmula:
-                  criticidad equipo + prioridad → nivel
-              Ver computeRiskLevel() y el effect que lo aplica al cambiar
-              priority o equipo. */}
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-3 bg-gray-50">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                <span>Nivel de Riesgo</span>
-                <span className="text-[9px] font-normal italic text-gray-400 normal-case">(calculado automáticamente)</span>
-              </label>
-              {(() => {
-                const RISK_META = {
-                  CRITICAL: { label: 'CRÍTICO', desc: 'Para planta', color: '#dc2626', bg: '#fee2e2' },
-                  HIGH:     { label: 'ALTO',    desc: 'Reduce capacidad', color: '#ea580c', bg: '#ffedd5' },
-                  MEDIUM:   { label: 'MEDIO',   desc: 'Afecta calidad', color: '#ca8a04', bg: '#fef3c7' },
-                  LOW:      { label: 'BAJO',    desc: 'Sin impacto inmediato', color: '#2563eb', bg: '#dbeafe' },
-                };
-                const m = RISK_META[form.productionImpact] || RISK_META.MEDIUM;
-                return (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold" style={{ color: m.color, backgroundColor: m.bg, border: `1px solid ${m.color}` }}>
-                    {m.label} · {m.desc}
-                  </span>
-                );
-              })()}
-            </div>
-            <p className="text-[10px] text-gray-500 leading-relaxed">
-              Derivado de: <strong>criticidad del equipo</strong> ({selectedEquip?.criticality || 'no clasificado'})
-              + <strong>prioridad</strong> ({form.priority || '—'}).
-              Se recalcula al cambiar el equipo o la prioridad.
-            </p>
-          </div>
+          {/* reunión VSC 2026-05-11 (Jorge): Nivel de Riesgo se mueve DEBAJO
+              del WO Title (después del módulo IA Assistant + título). Estaba
+              acá pero confundía al ser un dato calculado mostrado antes que el
+              usuario describa el problema. */}
 
           {/* 1. What happened? + Voice / Camera */}
           <div>
@@ -2021,6 +1992,37 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
               className="w-full px-3 py-2.5 border border-emerald-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white"
             />
             <p className="text-[10px] text-gray-400 mt-1">This will be the Work Order name in Planning and Identification</p>
+          </div>
+
+          {/* reunión VSC 2026-05-11 (Jorge): "Nivel de Riesgo" se renderiza
+              DEBAJO del WO Title — flujo correcto: usuario describe + IA
+              analiza + revisa título, y RECIÉN ahí ve el riesgo calculado. */}
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-3 bg-gray-50">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                <span>Nivel de Riesgo</span>
+                <span className="text-[9px] font-normal italic text-gray-400 normal-case">(calculado automáticamente)</span>
+              </label>
+              {(() => {
+                const RISK_META = {
+                  CRITICAL: { label: 'CRÍTICO', desc: 'Para planta', color: '#dc2626', bg: '#fee2e2' },
+                  HIGH:     { label: 'ALTO',    desc: 'Reduce capacidad', color: '#ea580c', bg: '#ffedd5' },
+                  MEDIUM:   { label: 'MEDIO',   desc: 'Afecta calidad', color: '#ca8a04', bg: '#fef3c7' },
+                  LOW:      { label: 'BAJO',    desc: 'Sin impacto inmediato', color: '#2563eb', bg: '#dbeafe' },
+                };
+                const m = RISK_META[form.productionImpact] || RISK_META.MEDIUM;
+                return (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold" style={{ color: m.color, backgroundColor: m.bg, border: `1px solid ${m.color}` }}>
+                    {m.label} · {m.desc}
+                  </span>
+                );
+              })()}
+            </div>
+            <p className="text-[10px] text-gray-500 leading-relaxed">
+              Derivado de: <strong>criticidad del equipo</strong> ({selectedEquip?.criticality || 'no clasificado'})
+              + <strong>prioridad</strong> ({form.priority || '—'}).
+              Se recalcula al cambiar el equipo o la prioridad.
+            </p>
           </div>
 
           {/* 0B5 (reunión VSC 2026-05-11): bloque "Suggested Action" reubicado

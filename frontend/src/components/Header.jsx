@@ -303,11 +303,14 @@ export default function Header({
                                 <SelectValue placeholder={t('header.selectPlant')} />
                             </SelectTrigger>
                             <SelectContent>
+                                {/* 0D1 (reunión VSC 2026-05-11): mostrar solo el name
+                                    de la planta, no el plant_id (que puede contener nombre
+                                    del cliente real). Tooltip muestra el id para ops/debug. */}
                                 {(plants || []).map(p => (
-                                    <SelectItem key={p.plant_id} value={p.plant_id}>{p.plant_id} — {p.name}</SelectItem>
+                                    <SelectItem key={p.plant_id} value={p.plant_id} title={p.plant_id}>{p.name || p.plant_id}</SelectItem>
                                 ))}
                                 {(!plants || plants.length === 0) && (
-                                    <SelectItem value="OCP-JFC1">PLANT-01 — Main Site</SelectItem>
+                                    <SelectItem value="OCP-JFC1">Main Site</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>

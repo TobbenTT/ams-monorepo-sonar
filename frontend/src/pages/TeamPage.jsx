@@ -920,7 +920,7 @@ export default function TeamPage() {
                     >
                       <option value="">Select plant...</option>
                       {(plants || []).map(p => (
-                        <option key={p.plant_id} value={p.plant_id}>{p.plant_id} — {p.name}</option>
+                        <option key={p.plant_id} value={p.plant_id} title={p.plant_id}>{p.name || p.plant_id}</option>
                       ))}
                     </select>
                   </div>
@@ -1161,7 +1161,7 @@ export default function TeamPage() {
                 >
                   <option value="">Select plant...</option>
                   {(plants || []).map(p => (
-                    <option key={p.plant_id} value={p.plant_id}>{p.plant_id} — {p.name}</option>
+                    <option key={p.plant_id} value={p.plant_id} title={p.plant_id}>{p.name || p.plant_id}</option>
                   ))}
                 </select>
               </div>

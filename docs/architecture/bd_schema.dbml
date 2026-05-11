@@ -1,0 +1,1139 @@
+// MAGEAM — Schema generado automáticamente desde api/database/models.py
+// Importar en https://dbdiagram.io para visualización interactiva.
+
+Table users {
+  user_id str [pk]
+  email str
+  username str
+  hashed_password str
+  full_name str
+  role str
+  plant_id str
+  is_active bool
+  created_at datetime
+  last_login datetime
+  mfa_secret str
+  mfa_pending_secret str
+  scoped_specialty str
+  token_version int
+}
+
+Table plants {
+  plant_id str [pk]
+  name str
+  name_fr str
+  name_ar str
+  location str
+  nodes list['HierarchyNodeModel']
+}
+
+Table hierarchy_nodes {
+  node_id str [pk]
+  node_type str
+  name str
+  name_fr str
+  code str
+  parent_node_id str
+  level int
+  plant_id str
+  tag str
+  criticality str
+  status str
+  equipment_lib_ref str
+  component_lib_ref str
+  sap_func_loc str
+  sap_equipment_nr str
+  order int
+  metadata_json dict
+  gps_lat float
+  gps_lon float
+  plant ?
+  children list['HierarchyNodeModel']
+  parent ?
+}
+
+Table criticality_assessments {
+  assessment_id str [pk]
+  node_id str
+  assessed_at datetime
+  assessed_by str
+  method str
+  criteria_scores list
+  probability int
+  overall_score float
+  risk_class str
+  ai_suggested_class str
+  ai_justification str
+  status str
+}
+
+Table functions {
+  function_id str [pk]
+  node_id str
+  function_type str
+  description str
+  description_fr str
+  performance_standard str
+  ai_generated bool
+  status str
+}
+
+Table functional_failures {
+  failure_id str [pk]
+  function_id str
+  failure_type str
+  description str
+  description_fr str
+}
+
+Table failure_modes {
+  failure_mode_id str [pk]
+  functional_failure_id str
+  fm_status str
+  what str
+  mechanism str
+  cause str
+  failure_pattern str
+  failure_consequence str
+  is_hidden bool
+  failure_effect dict
+  strategy_type str
+  ai_generated bool
+  ai_confidence float
+  existing_task_source str
+  justification_category str
+}
+
+Table maintenance_tasks {
+  task_id str [pk]
+  failure_mode_id str
+  name str
+  name_fr str
+  task_type str
+  is_secondary bool
+  acceptable_limits str
+  conditional_comments str
+  consequences str
+  justification str
+  constraint str
+  access_time_hours float
+  frequency_value float
+  frequency_unit str
+  origin str
+  budget_type str
+  budgeted_life float
+  labour_resources list
+  material_resources list
+  tools_list list
+  special_equipment list
+  ai_generated bool
+  ai_confidence float
+  status str
+}
+
+Table work_packages {
+  work_package_id str [pk]
+  name str
+  code str
+  node_id str
+  frequency_value float
+  frequency_unit str
+  constraint str
+  access_time_hours float
+  work_package_type str
+  job_preparation str
+  post_shutdown str
+  allocated_tasks list
+  labour_summary dict
+  material_summary list
+  sap_upload_ref dict
+  status str
+}
+
+Table sap_upload_packages {
+  package_id str [pk]
+  generated_at datetime
+  plant_code str
+  maintenance_plan dict
+  maintenance_items list
+  task_lists list
+  status str
+}
+
+Table work_orders {
+  work_order_id str [pk]
+  order_type str
+  equipment_id str
+  equipment_tag str
+  priority str
+  status str
+  created_date date
+  actual_duration_hours float
+  description str
+  materials_consumed list
+}
+
+Table health_scores {
+  score_id str [pk]
+  node_id str
+  plant_id str
+  equipment_tag str
+  calculated_at datetime
+  dimensions list
+  composite_score float
+  health_class str
+  trend str
+  recommendations list
+}
+
+Table kpi_metrics {
+  metrics_id str [pk]
+  plant_id str
+  equipment_id str
+  period_start date
+  period_end date
+  calculated_at datetime
+  mtbf_days float
+  mttr_hours float
+  availability_pct float
+  oee_pct float
+  schedule_compliance_pct float
+  backlog_hours float
+  pm_compliance_pct float
+  total_work_orders int
+  corrective_wo_count int
+  preventive_wo_count int
+  reactive_ratio_pct float
+}
+
+Table failure_predictions {
+  prediction_id str [pk]
+  equipment_id str
+  equipment_tag str
+  predicted_at datetime
+  weibull_params dict
+  current_age_days float
+  reliability_current float
+  predicted_failure_window_days float
+  confidence_level float
+  risk_score float
+  failure_pattern str
+  recommendation str
+  status str
+}
+
+Table capa_items {
+  capa_id str [pk]
+  capa_type str
+  title str
+  description str
+  plant_id str
+  equipment_id str
+  source str
+  root_cause str
+  current_phase str
+  status str
+  assigned_to str
+  created_at datetime
+  target_date date
+  closed_at datetime
+  verified_at datetime
+  actions_planned list
+  actions_completed list
+  effectiveness_verified bool
+  lessons_learned str
+}
+
+Table variance_alerts {
+  alert_id str [pk]
+  plant_id str
+  plant_name str
+  metric_name str
+  plant_value float
+  portfolio_mean float
+  portfolio_std float
+  z_score float
+  variance_level str
+  detected_at datetime
+  message str
+}
+
+Table expert_cards {
+  expert_id str [pk]
+  user_id str
+  name str
+  role str
+  plant_id str
+  domains list
+  equipment_expertise list
+  certifications list
+  years_experience int
+  resolution_count int
+  last_active datetime
+  contact_method str
+  languages list
+  is_retired bool
+  retired_at datetime
+  hourly_rate_usd float
+  availability_hours str
+  preferred_contact str
+}
+
+Table audit_log {
+  id int [pk]
+  entity_type str
+  entity_id str
+  action str
+  payload dict
+  user str
+  ip_address str
+  user_agent str
+  timestamp datetime
+}
+
+Table field_captures {
+  capture_id str [pk]
+  technician_id str
+  capture_type str
+  language str
+  raw_text str
+  raw_voice_text str
+  images list
+  equipment_tag_manual str
+  location_hint str
+  created_at datetime
+  version int
+  synced_at datetime
+  modified_at datetime
+  audio_file_path str
+  audio_transcription str
+  gps_lat float
+  gps_lon float
+  image_analysis_result str
+}
+
+Table work_requests {
+  request_id str [pk]
+  source_capture_id str
+  status str
+  equipment_id str
+  equipment_tag str
+  equipment_confidence float
+  resolution_method str
+  problem_description dict
+  ai_classification dict
+  spare_parts list
+  image_analysis dict
+  validation dict
+  created_at datetime
+  version int
+  synced_at datetime
+  modified_at datetime
+  priority_code str
+  work_class str
+  sla_deadline datetime
+  created_by str
+  approver_id str
+  approved_at datetime
+  approval_comment str
+  rejection_reason str
+  notification_type str
+  reported_by str
+  reported_at datetime
+  documents list
+  support_equipment list
+  circumstances str
+  aviso_coding str
+  planning_group str
+  area_empresa str
+  work_center str
+  failure_object_part str
+  technical_location str
+  aviso_number int
+  deleted_at datetime
+  deleted_by str
+  cancellation_reason str
+}
+
+Table managed_work_orders {
+  wo_id str [pk]
+  wo_number str
+  work_request_id str
+  plant_id str
+  equipment_id str
+  equipment_tag str
+  wo_title str
+  description str
+  wo_type str
+  priority_code str
+  work_class str
+  operations list
+  materials list
+  tools list
+  support_equipment list
+  documents list
+  labour_summary dict
+  planned_start datetime
+  planned_end datetime
+  actual_start datetime
+  actual_end datetime
+  estimated_hours float
+  actual_hours float
+  status str
+  planned_by str
+  released_by str
+  released_at datetime
+  closed_by str
+  closed_at datetime
+  contractor_crew_id str
+  closed_by_signature str
+  closed_by_pin_hash str
+  closure_notes str
+  closure_audio_url str
+  post_closure_review dict
+  assigned_workers list
+  is_fast_track bool
+  technical_location str
+  planning_group str
+  work_center str
+  completion_pct float
+  execution_notes list
+  risk_analysis dict
+  budget_approved bool
+  budget_amount float
+  labor_cost float
+  material_cost float
+  external_cost float
+  planned_material_cost float
+  planned_external_cost float
+  actual_total_cost float
+  shift str
+  reservation_code str
+  reservation_codes list
+  cancellation_reason str
+  cancellation_type str
+  absorbed_by_wo_id str
+  created_at datetime
+  updated_at datetime
+  version int
+}
+
+Table planner_recommendations {
+  recommendation_id str [pk]
+  work_request_id str
+  resource_analysis dict
+  scheduling_suggestion dict
+  risk_assessment dict
+  planner_action str
+  ai_confidence float
+  generated_at datetime
+}
+
+Table backlog_items {
+  backlog_id str [pk]
+  work_request_id str
+  equipment_id str
+  equipment_tag str
+  priority str
+  wo_type str
+  status str
+  blocking_reason str
+  estimated_hours float
+  specialties list
+  materials_ready bool
+  shutdown_required bool
+  age_days int
+  created_at datetime
+}
+
+Table optimized_backlogs {
+  optimization_id str [pk]
+  plant_id str
+  period_start date
+  period_end date
+  total_items int
+  stratification dict
+  work_packages list
+  schedule list
+  alerts list
+  status str
+  generated_at datetime
+}
+
+Table workforce {
+  worker_id str [pk]
+  name str
+  specialty str
+  shift str
+  plant_id str
+  available bool
+  certifications list
+  competency_level str
+  years_experience int
+  equipment_expertise list
+  safety_training_current bool
+  competencies list
+  absence_reason str
+  absence_until str
+  shift_pattern str
+  shift_cycle_start str
+  skills list
+}
+
+Table support_equipment {
+  equipment_id str [pk]
+  plant_id str
+  name str
+  equipment_type str
+  capacity_tons float
+  available bool
+  is_rented bool
+  out_of_service_reason str
+  out_of_service_until str
+}
+
+Table shutdown_calendar {
+  shutdown_id str [pk]
+  plant_id str
+  start_date date
+  end_date date
+  shutdown_type str
+  areas list
+  description str
+}
+
+Table inventory_items {
+  item_id str [pk]
+  material_code str
+  warehouse_id str
+  description str
+  quantity_on_hand int
+  quantity_reserved int
+  quantity_available int
+  min_stock int
+  reorder_point int
+  last_movement_date date
+}
+
+Table weekly_programs {
+  program_id str [pk]
+  plant_id str
+  week_number int
+  year int
+  status str
+  work_packages list
+  total_hours float
+  resource_slots list
+  conflicts list
+  support_tasks list
+  created_at datetime
+  finalized_at datetime
+  published_at datetime
+  published_by str
+  material_status dict
+  hh_balance dict
+}
+
+Table shutdown_events {
+  shutdown_id str [pk]
+  plant_id str
+  name str
+  status str
+  planned_start datetime
+  planned_end datetime
+  actual_start datetime
+  actual_end datetime
+  planned_hours float
+  actual_hours float
+  work_orders list
+  completed_work_orders list
+  completion_pct float
+  delay_hours float
+  delay_reasons list
+  created_at datetime
+}
+
+Table moc_requests {
+  moc_id str [pk]
+  plant_id str
+  title str
+  description str
+  category str
+  status str
+  risk_level str
+  requester_id str
+  reviewer_id str
+  approver_id str
+  affected_equipment list
+  affected_procedures list
+  risk_assessment str
+  impact_analysis str
+  created_at datetime
+  submitted_at datetime
+  approved_at datetime
+  closed_at datetime
+}
+
+Table spare_part_analyses {
+  analysis_id str [pk]
+  plant_id str
+  analyzed_at datetime
+  total_parts int
+  results list
+  total_inventory_value float
+  recommended_reduction_pct float
+}
+
+Table rbi_assessments {
+  assessment_id str [pk]
+  plant_id str
+  analyzed_at datetime
+  total_equipment int
+  assessments list
+  high_risk_count int
+  overdue_count int
+}
+
+Table reports {
+  report_id str [pk]
+  report_type str
+  plant_id str
+  period_start datetime
+  period_end datetime
+  generated_at datetime
+  content dict
+  metadata_json dict
+}
+
+Table notifications {
+  notification_id str [pk]
+  notification_type str
+  level str
+  plant_id str
+  equipment_id str
+  title str
+  message str
+  acknowledged bool
+  created_at datetime
+  acknowledged_at datetime
+  recipient_id str
+  consultation_id str
+  channel str
+  read_at datetime
+}
+
+Table rca_analyses {
+  analysis_id str [pk]
+  event_description str
+  plant_id str
+  equipment_id str
+  level str
+  status str
+  team_members list
+  analysis_5w2h dict
+  cause_effect dict
+  evidence_5p list
+  solutions list
+  created_at datetime
+  completed_at datetime
+}
+
+Table planning_kpi_snapshots {
+  snapshot_id str [pk]
+  plant_id str
+  period_start date
+  period_end date
+  kpis list
+  overall_health str
+  on_target_count int
+  below_target_count int
+  calculated_at datetime
+}
+
+Table de_kpi_snapshots {
+  snapshot_id str [pk]
+  plant_id str
+  period_start date
+  period_end date
+  kpis list
+  overall_compliance float
+  program_score float
+  maturity_level str
+  calculated_at datetime
+}
+
+Table user_feedback {
+  feedback_id str [pk]
+  page str
+  rating int
+  comment str
+  created_at datetime
+}
+
+Table detailed_feedback {
+  feedback_id str [pk]
+  user_id str
+  user_name str
+  user_role str
+  feedback_type str
+  priority str
+  title str
+  description str
+  rating int
+  page_url str
+  page_name str
+  section str
+  component str
+  browser_info str
+  screen_size str
+  device_type str
+  os_info str
+  screenshots list
+  attachments list
+  steps_to_reproduce str
+  expected_behavior str
+  actual_behavior str
+  frequency str
+  impact str
+  contact_email str
+  desired_behavior str
+  expected_benefit str
+  status str
+  admin_notes str
+  created_at datetime
+  updated_at datetime
+}
+
+Table dedup_negative_pairs {
+  id str [pk]
+  wr_a_id str
+  wr_b_id str
+  plant_id str
+  dismissed_by str
+  created_at datetime
+}
+
+Table fmeca_worksheets {
+  worksheet_id str [pk]
+  equipment_id str
+  equipment_tag str
+  equipment_name str
+  status str
+  current_stage str
+  rows list
+  stage_completion dict
+  analyst str
+  created_at datetime
+  completed_at datetime
+}
+
+Table ai_sessions {
+  session_id str [pk]
+  user_id str
+  equipment_tag str
+  plant_id str
+  status str
+  current_milestone int
+  session_state dict
+  milestone_gates list
+  created_at datetime
+  updated_at datetime
+  completed_at datetime
+}
+
+Table ai_interactions {
+  interaction_id str [pk]
+  session_id str
+  agent_type str
+  milestone int
+  instruction str
+  response_summary str
+  tool_calls list
+  tokens_used int
+  duration_ms int
+  created_at datetime
+}
+
+Table troubleshooting_diagnostics {
+  diagnostic_id str [pk]
+  equipment_tag str
+  plant_id str
+  symptom_description str
+  ai_diagnosis dict
+  probable_causes list
+  recommended_actions list
+  confidence_score float
+  resolved bool
+  resolution_notes str
+  created_by str
+  created_at datetime
+}
+
+Table execution_checklists {
+  checklist_id str [pk]
+  work_package_id str
+  work_package_name str
+  work_package_code str
+  equipment_tag str
+  equipment_name str
+  task_type str
+  steps list
+  checklist_items list
+  safety_items list
+  safety_section list
+  loto_steps list
+  ppe_requirements list
+  pre_task_notes str
+  post_task_notes str
+  status str
+  assigned_to str
+  supervisor str
+  supervisor_signature str
+  closure_summary dict
+  completed_items int
+  total_items int
+  created_at datetime
+  started_at datetime
+  completed_at datetime
+  closed_at datetime
+}
+
+Table work_assignments {
+  assignment_id str [pk]
+  work_package_id str
+  plant_id str
+  assigned_to str
+  required_competencies list
+  matched_competencies list
+  competency_match_score float
+  scheduled_date date
+  estimated_hours float
+  status str
+  wo_id str
+  task_description str
+  task_understood bool
+  progress_pct float
+  partial_notes list
+  shift_handover_notes str
+  completed_at datetime
+  created_at datetime
+}
+
+Table sync_conflicts {
+  conflict_id str [pk]
+  entity_type str
+  entity_id str
+  field str
+  local_value str
+  server_value str
+  local_modified_at datetime
+  server_modified_at datetime
+  resolution str
+  resolved_at datetime
+  device_id str
+  created_at datetime
+}
+
+Table troubleshooting_sessions {
+  session_id str [pk]
+  equipment_type_id str
+  equipment_tag str
+  plant_id str
+  status str
+  symptoms str
+  tests_performed str
+  candidate_diagnoses str
+  final_fm_code str
+  final_mechanism str
+  final_cause str
+  final_confidence float
+  actual_cause_feedback str
+  technician_id str
+  notes str
+  created_at datetime
+  completed_at datetime
+  expert_consultation_id str
+}
+
+Table deliverables {
+  deliverable_id str [pk]
+  name str
+  name_fr str
+  category str
+  milestone int
+  status str
+  execution_plan_stage_id str
+  quality_score_id str
+  estimated_hours float
+  actual_hours float
+  artifact_paths list
+  client_slug str
+  project_slug str
+  assigned_agent str
+  created_at datetime
+  submitted_at datetime
+  reviewed_at datetime
+  completed_at datetime
+  client_feedback str
+  consultant_notes str
+}
+
+Table time_logs {
+  log_id str [pk]
+  deliverable_id str
+  hours float
+  description str
+  logged_by str
+  logged_at datetime
+  activity_type str
+}
+
+Table expert_consultations {
+  consultation_id str [pk]
+  session_id str
+  expert_id str
+  technician_id str
+  equipment_type_id str
+  equipment_tag str
+  plant_id str
+  symptoms_snapshot str
+  candidates_snapshot str
+  ai_suggestion str
+  expert_guidance str
+  expert_fm_codes str
+  expert_confidence float
+  status str
+  token str
+  token_expires_at datetime
+  requested_at datetime
+  viewed_at datetime
+  responded_at datetime
+  closed_at datetime
+  response_time_minutes float
+  compensation_status str
+  language str
+  notes str
+}
+
+Table expert_contributions {
+  contribution_id str [pk]
+  consultation_id str
+  expert_id str
+  equipment_type_id str
+  fm_codes str
+  symptom_descriptions str
+  diagnostic_steps str
+  corrective_actions str
+  tips str
+  status str
+  validated_by str
+  validated_at datetime
+  promoted_at datetime
+  promoted_targets str
+  created_at datetime
+}
+
+Table import_history {
+  import_id str [pk]
+  plant_id str
+  source str
+  filename str
+  file_size_kb int
+  total_rows int
+  valid_rows int
+  error_rows int
+  status str
+  errors_json str
+  imported_by str
+  imported_at datetime
+}
+
+Table or_projects {
+  project_id str [pk]
+  user_id str
+  client_name str
+  plant_code str
+  project_type str
+  status str
+  current_gate str
+  gate_status dict
+  active_agents list
+  notes str
+  created_at datetime
+  updated_at datetime
+}
+
+Table or_deliverables {
+  deliverable_id str [pk]
+  project_id str
+  agent_type str
+  name str
+  file_path str
+  file_type str
+  status str
+  quality_score float
+  quality_dimensions dict
+  gate str
+  created_at datetime
+}
+
+Table improvement_actions {
+  action_id str [pk]
+  title str
+  description str
+  plant_id str
+  equipment_id str
+  equipment_tag str
+  source_type str
+  source_ref str
+  action_type str
+  priority str
+  category str
+  assigned_to str
+  created_by str
+  target_date date
+  completed_at datetime
+  created_at datetime
+  updated_at datetime
+  status str
+  ai_generated bool
+  ai_suggestion str
+  notes str
+  resolution str
+}
+
+Table equipment_handovers {
+  handover_id str [pk]
+  wo_id str
+  equipment_id str
+  equipment_tag str
+  handover_type str
+  from_user str
+  to_user str
+  condition_notes str
+  tests_passed bool
+  test_notes str
+  handover_at datetime
+  created_at datetime
+}
+
+Table post_maintenance_reviews {
+  review_id str [pk]
+  plant_id str
+  period_start date
+  period_end date
+  wo_summary dict
+  performance_kpis dict
+  delays list
+  unplanned_work list
+  rework_items list
+  meeting_date date
+  attendees list
+  meeting_notes str
+  improvement_actions list
+  lessons_learned str
+  status str
+  created_by str
+  created_at datetime
+  updated_at datetime
+}
+
+Table ai_feedback {
+  feedback_id str [pk]
+  work_request_id str
+  work_order_id str
+  equipment_tag str
+  field_name str
+  predicted_value str
+  actual_value str
+  rating int
+  feedback_source str
+  created_at datetime
+}
+
+Table agentic_executions {
+  execution_id str [pk]
+  solution_type str
+  triggered_by str
+  plant_id str
+  status str
+  input_params dict
+  output_result dict
+  duration_ms int
+  error_message str
+  created_at datetime
+  completed_at datetime
+}
+
+Table equipment_3d_models {
+  model_id str [pk]
+  equipment_type str
+  name str
+  blender_file_path str
+  sketchfab_url str
+  reference_renders dict
+  render_angles list
+  model_metadata dict
+  created_at datetime
+  updated_at datetime
+}
+
+Table sap_sync_log {
+  id int [pk]
+  entity_type str
+  entity_id str
+  status str
+  attempts int
+  last_error str
+  sap_ref str
+  payload dict
+  created_at datetime
+  updated_at datetime
+}
+
+Table contractors {
+  contractor_id str [pk]
+  plant_id str
+  name str
+  tax_id str
+  contact_name str
+  contact_phone str
+  hourly_rate float
+  active bool
+  created_at datetime
+  contact_email str
+  address str
+  specialties list
+  insurance_expiry date
+  hse_score float
+  sap_vendor_code str
+  payment_terms_days int
+  contract_ref str
+  status str
+  notes str
+}
+
+Table contractor_crews {
+  crew_id str [pk]
+  contractor_id str
+  name str
+  specialty str
+  size int
+  active bool
+}
+
+Table dms_documents {
+  doc_id str [pk]
+  document_number str
+  document_type str
+  document_desc str
+  version int
+  sap_func_loc str
+  sap_func_loc_short str
+  equipment_name str
+  eqart str
+  file_path str
+  created_date str
+  created_by str
+  status str
+}

@@ -1,0 +1,46 @@
+flowchart LR
+    pblicoauthrequerida([público (auth requerida)])
+    pblicoauthrequerida_admin["admin<br/>(16 endpoints)"]
+    pblicoauthrequerida --> pblicoauthrequerida_admin
+    pblicoauthrequerida_agentic["agentic<br/>(59 endpoints)"]
+    pblicoauthrequerida --> pblicoauthrequerida_agentic
+    pblicoauthrequerida_aiagents["ai_agents<br/>(15 endpoints)"]
+    pblicoauthrequerida --> pblicoauthrequerida_aiagents
+    pblicoauthrequerida_analytics["analytics<br/>(13 endpoints)"]
+    pblicoauthrequerida --> pblicoauthrequerida_analytics
+    pblicoauthrequerida_analyticsdashboards["analytics_dashboards<br/>(14 endpoints)"]
+    pblicoauthrequerida --> pblicoauthrequerida_analyticsdashboards
+    pblicoauthrequerida_assignments["assignments<br/>(7 endpoints)"]
+    pblicoauthrequerida --> pblicoauthrequerida_assignments
+    pblicoauthrequerida_auth["auth<br/>(6 endpoints)"]
+    pblicoauthrequerida --> pblicoauthrequerida_auth
+    pblicoauthrequerida_backlog["backlog<br/>(6 endpoints)"]
+    pblicoauthrequerida --> pblicoauthrequerida_backlog
+    admin([Administrador])
+    admin_auth["auth<br/>(6 endpoints)"]
+    admin --> admin_auth
+    admin_fmea["fmea<br/>(2 endpoints)"]
+    admin --> admin_fmea
+    admin_scheduling["scheduling<br/>(6 endpoints)"]
+    admin --> admin_scheduling
+    admin_workrequests["work_requests<br/>(3 endpoints)"]
+    admin --> admin_workrequests
+    manager([Gerente])
+    manager_auth["auth<br/>(1 endpoints)"]
+    manager --> manager_auth
+    manager_fmea["fmea<br/>(2 endpoints)"]
+    manager --> manager_fmea
+    manager_scheduling["scheduling<br/>(6 endpoints)"]
+    manager --> manager_scheduling
+    manager_workrequests["work_requests<br/>(3 endpoints)"]
+    manager --> manager_workrequests
+    planner([Planificador])
+    planner_fmea["fmea<br/>(2 endpoints)"]
+    planner --> planner_fmea
+    planner_scheduling["scheduling<br/>(3 endpoints)"]
+    planner --> planner_scheduling
+    planner_workrequests["work_requests<br/>(3 endpoints)"]
+    planner --> planner_workrequests
+    supervisor([Supervisor])
+    supervisor_scheduling["scheduling<br/>(1 endpoints)"]
+    supervisor --> supervisor_scheduling

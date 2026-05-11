@@ -88,6 +88,7 @@ def _to_dict(wo: ManagedWorkOrderModel, db: Session | None = None) -> dict:
         "equipment_tag": wo.equipment_tag,
         "wo_title": getattr(wo, "wo_title", None),
         "description": wo.description,
+        "description_history": getattr(wo, "description_history", None) or [],
         "wo_type": wo.wo_type,
         "priority_code": wo.priority_code,
         "work_class": wo.work_class,
@@ -729,6 +730,7 @@ def _to_light_dict(wo: ManagedWorkOrderModel, db: Session | None = None) -> dict
         "equipment_tag": wo.equipment_tag,
         "wo_title": getattr(wo, "wo_title", None),
         "description": wo.description,
+        "description_history": getattr(wo, "description_history", None) or [],
         "wo_type": wo.wo_type,
         "priority_code": wo.priority_code,
         "status": wo.status,
@@ -915,6 +917,30 @@ def update_work_order(db: Session, wo_id: str, data: dict, if_match_version: int
                 new = new.isoformat()
             if old != new:
                 _changes[key] = {"from": old, "to": new}
+
+    # SF-653 (jornada VSC 2026-05-08) — historial inmutable de ediciones de
+    # description. Antes de aplicar el cambio, si description cambió, push'eamos
+    # la versión actual al `description_history` con timestamp + autor.
+    if "description" in data and data["description"] != wo.description:
+        history = list(wo.description_history or [])
+        # Primera edición: capturar la descripción ORIGINAL (lo que está en BD ahora)
+        if not history and wo.description:
+            history.append({
+                "text": wo.description,
+                "edited_at": (wo.created_at.isoformat() if wo.created_at else None),
+                "edited_by": "(original)",
+                "is_original": True,
+            })
+        # Push nuevo estado: el valor entrante con autor + timestamp ahora.
+        history.append({
+            "text": data["description"],
+            "edited_at": datetime.now().isoformat(),
+            "edited_by": data.get("updated_by", "system"),
+            "is_original": False,
+        })
+        wo.description_history = history
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(wo, "description_history")
 
     for key in updatable:
         if key in data:

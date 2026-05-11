@@ -544,6 +544,11 @@ class ManagedWorkOrderModel(Base):
     # Planning
     wo_title: Mapped[str | None] = mapped_column(String(200), nullable=True)  # SF-507 Jorge: título arrastrado desde el WR
     description: Mapped[str] = mapped_column(Text, default="")
+    # SF-653 (jornada VSC 2026-05-08) — historial inmutable de ediciones de descripción.
+    # Cada vez que se edita `description`, se push'ea {text, edited_at, edited_by}.
+    # La descripción original siempre queda preservada como history[0].
+    # Modelo: lista de dicts, no se borra ni edita en sitio.
+    description_history: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
     wo_type: Mapped[str] = mapped_column(String(30), default="CORRECTIVO")  # CORRECTIVO, PREVENTIVO, PREDICTIVO, MEJORA, INCIDENTE_OPERACIONAL, MONITOREO_CONDICION
     priority_code: Mapped[str] = mapped_column(String(5), default="P3")
     work_class: Mapped[str] = mapped_column(String(20), default="PROGRAMADO")

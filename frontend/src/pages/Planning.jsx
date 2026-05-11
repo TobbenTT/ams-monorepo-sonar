@@ -262,8 +262,35 @@ function HistoryTab({ wo }) {
     return s.length > 80 ? s.slice(0, 77) + '…' : s;
   };
 
+  // SF-653 (jornada VSC 2026-05-08): historial inmutable de la descripción.
+  // Cada edición de description queda como bloque separado con autor + fecha.
+  const descHistory = Array.isArray(wo?.description_history) ? wo.description_history : [];
+
   return (
     <div className="space-y-3">
+      {descHistory.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText size={14} className="text-amber-700" />
+            <h3 className="text-sm font-semibold text-amber-900">Descripción · {descHistory.length} versión{descHistory.length === 1 ? '' : 'es'}</h3>
+            <span className="text-[10px] text-amber-700 ml-auto">Inmutable — la original no se borra</span>
+          </div>
+          <div className="space-y-2">
+            {descHistory.map((h, idx) => (
+              <div key={idx} className={`text-xs rounded border p-2 ${h.is_original ? 'bg-white border-amber-300' : 'bg-amber-100/60 border-amber-200'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${h.is_original ? 'bg-amber-600 text-white' : 'bg-amber-300 text-amber-900'}`}>
+                    {h.is_original ? 'ORIGINAL' : `Edición #${idx}`}
+                  </span>
+                  <span className="text-[10px] text-amber-800">{h.edited_at ? new Date(h.edited_at).toLocaleString('es') : '—'}</span>
+                  <span className="text-[10px] font-mono text-amber-900 ml-auto">{h.edited_by || 'system'}</span>
+                </div>
+                <div className="text-gray-800 whitespace-pre-wrap">{h.text || <span className="italic text-gray-400">(vacío)</span>}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-800">Historial · {entries.length} eventos</h3>
         <span className="text-[10px] text-gray-400">Audit log + notas de ejecución</span>

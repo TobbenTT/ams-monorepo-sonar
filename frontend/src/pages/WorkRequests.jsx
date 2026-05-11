@@ -1095,7 +1095,9 @@ ${materials.length ? `<div class="section">
         )}
 
         {/* SAP Aviso fields */}
-        {(item.reported_by || item.circumstances) && (
+        {/* 0B4 (reunión VSC 2026-05-11): bloque Circunstancias removido del
+            formulario Y del display. Si reported_by existe, mostrar solo eso. */}
+        {item.reported_by && (
           <div className="px-6 pb-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Notification Details</p>
             <div className="space-y-2 bg-muted/50 rounded-lg p-3 border border-border">
@@ -1104,12 +1106,6 @@ ${materials.length ? `<div class="section">
                   <User size={14} className="text-muted-foreground flex-shrink-0" />
                   <span className="text-xs text-muted-foreground">Notificated by:</span>
                   <span className="text-sm font-medium text-foreground">{safeStr(item.reported_by)}</span>
-                </div>
-              )}
-              {item.circumstances && (
-                <div>
-                  <span className="text-xs text-muted-foreground">Circunstancias:</span>
-                  <p className="text-sm text-foreground mt-0.5">{safeStr(item.circumstances)}</p>
                 </div>
               )}
               {/* Jorge 2026-04-23 17:38: support_equipment duplicado (estaba

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../api';
+import { displayPlantName } from '../utils/plantDisplay';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
@@ -867,7 +868,7 @@ export default function WorkOrdersPage() {
           </h2>
           <p className="text-sm text-gray-600 mt-1">
             {t('workOrders.subtitle')}
-            {plant && <span className="ml-2 font-medium">({plant})</span>}
+            {plant && <span className="ml-2 font-medium" title={plant}>({displayPlantName(plant)})</span>}
           </p>
         </div>
         <div className="flex items-center gap-3">

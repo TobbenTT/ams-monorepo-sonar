@@ -338,10 +338,10 @@ export default function SettingsPage() {
             </h1>
             <p className="text-slate-200 text-sm mt-1">{t('settings.subtitle')}</p>
             {plantId && (
-              <div className="mt-2 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-full text-xs">
+              <div className="mt-2 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-full text-xs" title={plantId}>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-300"></span>
                 <span className="text-slate-100">Editing settings for</span>
-                <span className="font-semibold text-white">{plantId}</span>
+                <span className="font-semibold text-white">{PLANT_DEFAULTS[plantId]?.companyName || plantId}</span>
               </div>
             )}
           </div>

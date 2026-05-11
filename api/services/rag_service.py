@@ -116,9 +116,11 @@ def search(table_name: str, query: str, k: int = 5, filter_sql: str | None = Non
 
 
 def stats() -> dict:
-    if _state["db"] is None:
-        return {"loaded": False, "tables": []}
-    db = _get_db()
+    """Report tables and row counts. Cheap: connects lancedb without loading embed model."""
+    try:
+        db = _get_db()
+    except Exception as e:
+        return {"loaded": False, "tables": [], "error": str(e), "dir": str(LANCE_DIR)}
     tables = []
     for name in db.table_names():
         try:
@@ -126,4 +128,10 @@ def stats() -> dict:
             tables.append({"name": name, "rows": tbl.count_rows()})
         except Exception as e:
             tables.append({"name": name, "error": str(e)})
-    return {"loaded": True, "tables": tables, "model": EMBED_MODEL, "dir": str(LANCE_DIR)}
+    return {
+        "loaded": True,
+        "model_loaded": _state["model"] is not None,
+        "tables": tables,
+        "model": EMBED_MODEL,
+        "dir": str(LANCE_DIR),
+    }

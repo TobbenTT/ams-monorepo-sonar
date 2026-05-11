@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 import {
@@ -889,6 +890,7 @@ function FaultTreeCard({ topEvent, tree, onSave }) {
   const [gate, setGate] = useState(tree?.gate || 'OR');
   const [events, setEvents] = useState(Array.isArray(tree?.events) ? tree.events : []);
   const [adding, setAdding] = useState('');
+  const confirm = useConfirm();
 
   const persist = (g, ev) => onSave({ gate: g, events: ev });
 
@@ -900,7 +902,9 @@ function FaultTreeCard({ topEvent, tree, onSave }) {
     setAdding('');
     persist(gate, next);
   };
-  const removeEvent = (i) => {
+  const removeEvent = async (i) => {
+    const desc = (events[i]?.description || `Evento #${i + 1}`).slice(0, 50);
+    if (!await confirm({ title: 'Quitar evento del fault tree', message: `¿Quitar "${desc}"?`, variant: 'danger', confirmText: 'Quitar' })) return;
     const next = events.filter((_, j) => j !== i);
     setEvents(next);
     persist(gate, next);

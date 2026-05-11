@@ -16,10 +16,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 import { downloadExport } from '../utils/exportFile';
 import { isWRPreExecution } from '../utils/woLifecycle';
+import { useConfirm } from '../components/ConfirmDialog';
 
 /* ─── Status config (dynamic with i18n) ─── */
 
 function MaterialEditor({ materials, onChange }) {
+  const confirm = useConfirm();
   const [searchIdx, setSearchIdx] = useState(-1);
   const [searchResults, setSearchResults] = useState([]);
   const [searchText, setSearchText] = useState('');
@@ -90,7 +92,11 @@ function MaterialEditor({ materials, onChange }) {
                 className="text-xs px-1 py-1.5 border border-border rounded bg-background">
                 <option>PZ</option><option>KG</option><option>LT</option><option>MT</option><option>UD</option>
               </select>
-              <button onClick={() => onChange(materials.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600">&times;</button>
+              <button onClick={async () => {
+                const mname = materials[i]?.description || materials[i]?.sapId || `Material #${i + 1}`;
+                if (!await confirm({ title: 'Quitar material', message: `¿Quitar "${mname}"?`, variant: 'danger', confirmText: 'Quitar' })) return;
+                onChange(materials.filter((_, j) => j !== i));
+              }} className="text-red-400 hover:text-red-600">&times;</button>
             </div>
           </div>
         );
@@ -315,6 +321,7 @@ const safeStr = (v) => {
 
 function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValidate, onReject, onCancel, onStart, onComplete, onCloseWR, onSaveEdit, onPlannerCreateOT, onGoToOT, onToggleFullScreen, isFullScreen, userRole, t, onAIPriorityDecision, _isInCarousel, _isDuplicate }) {
   const toast = useToast();
+  const confirm = useConfirm();
   if (!item) return null;
   const isPending = ['PENDING_VALIDATION', 'PENDIENTE'].includes(item.status);
   const isValidated = ['VALIDATED', 'APROBADO'].includes(item.status);
@@ -598,7 +605,10 @@ ${materials.length ? `<div class="section">
                 <div key={i} className="relative group">
                   <img src={p} alt={`foto-${i}`} className="w-24 h-24 object-cover rounded-lg border border-border" />
                   <button type="button"
-                    onClick={() => setEditData(d => ({ ...d, photos: (d.photos || []).filter((_, j) => j !== i) }))}
+                    onClick={async () => {
+                      if (!await confirm({ title: 'Quitar foto', message: '¿Quitar esta foto del aviso?', variant: 'danger', confirmText: 'Quitar' })) return;
+                      setEditData(d => ({ ...d, photos: (d.photos || []).filter((_, j) => j !== i) }));
+                    }}
                     className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-xs w-5 h-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Quitar foto">×</button>
                 </div>
@@ -720,12 +730,13 @@ ${materials.length ? `<div class="section">
                   <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
                     {item.priority_requested}
                   </span>
-                  {/* Bug demo Gonzalo 2026-05-07: la flecha "P3 → P2" seguía
-                      visible aunque el supervisor hubiera RECHAZADO la sugerencia
-                      IA. Ahora la flecha solo se muestra si la decisión sigue
-                      pendiente — una vez decidida (accepted o rejected) ya no
-                      hace sentido mostrar el contraste. */}
-                  {item.priority_requested !== item.priority_suggested && item.ai_priority_decision !== 'rejected' && (
+                  {/* QA #2 jornada VSC 2026-05-08 (SF-651): consolidar la lógica
+                      de la flecha. Solo se muestra si NO hay decisión IA todavía
+                      (ni accepted ni rejected). Post-decisión backend sincroniza
+                      priority_suggested=priority_requested, pero si el sync
+                      falla por race condition, esta guarda defensa-en-profundidad
+                      evita mostrar contraste rancio. */}
+                  {item.priority_requested !== item.priority_suggested && !item.ai_priority_decision && (
                     <>
                       <span className="text-amber-500 text-xs">→</span>
                       <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_suggested)}`}>
@@ -1107,7 +1118,11 @@ ${materials.length ? `<div class="section">
                         {(Array.isArray(editData.support_equipment) ? editData.support_equipment : []).map((eq, i) => (
                           <span key={i} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full flex items-center gap-1">
                             {typeof eq === 'string' ? eq : eq.tag || eq.description || ''}
-                            <button onClick={() => setEditData(d => ({ ...d, support_equipment: (d.support_equipment || []).filter((_, j) => j !== i) }))} className="text-purple-400 hover:text-red-500">&times;</button>
+                            <button onClick={async () => {
+                              const name = typeof eq === 'string' ? eq : (eq.tag || eq.description || `Equipo #${i + 1}`);
+                              if (!await confirm({ title: 'Quitar equipo de apoyo', message: `¿Quitar "${name}"?`, variant: 'danger', confirmText: 'Quitar' })) return;
+                              setEditData(d => ({ ...d, support_equipment: (d.support_equipment || []).filter((_, j) => j !== i) }));
+                            }} className="text-purple-400 hover:text-red-500">&times;</button>
                           </span>
                         ))}
                       </div>
@@ -1177,7 +1192,11 @@ ${materials.length ? `<div class="section">
                         arr[i] = { ...res, hours: parseFloat(e.target.value) || 0 };
                         setEditData(d => ({ ...d, resources: arr }));
                       }} className="text-sm px-2 py-1.5 border border-border rounded bg-background text-center" />
-                      <button onClick={() => setEditData(d => ({ ...d, resources: (d.resources || []).filter((_, j) => j !== i) }))} className="text-red-400 hover:text-red-600">&times;</button>
+                      <button onClick={async () => {
+                        const rname = res.type || res.specialty || `Recurso #${i + 1}`;
+                        if (!await confirm({ title: 'Quitar recurso', message: `¿Quitar "${rname}"?`, variant: 'danger', confirmText: 'Quitar' })) return;
+                        setEditData(d => ({ ...d, resources: (d.resources || []).filter((_, j) => j !== i) }));
+                      }} className="text-red-400 hover:text-red-600">&times;</button>
                     </div>
                     );
                   })}
@@ -1257,7 +1276,11 @@ ${materials.length ? `<div class="section">
                 {(Array.isArray(editData.support_equipment) ? editData.support_equipment : []).map((eq, i) => (
                   <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1">
                     {typeof eq === 'string' ? eq : eq.name || eq.tag || ''}
-                    <button onClick={() => setEditData(d => ({ ...d, support_equipment: (d.support_equipment || []).filter((_, j) => j !== i) }))}
+                    <button onClick={async () => {
+                      const ename = typeof eq === 'string' ? eq : (eq.name || eq.tag || `Equipo #${i + 1}`);
+                      if (!await confirm({ title: 'Quitar equipo de apoyo', message: `¿Quitar "${ename}"?`, variant: 'danger', confirmText: 'Quitar' })) return;
+                      setEditData(d => ({ ...d, support_equipment: (d.support_equipment || []).filter((_, j) => j !== i) }));
+                    }}
                       className="text-purple-400 hover:text-red-500">&times;</button>
                   </span>
                 ))}

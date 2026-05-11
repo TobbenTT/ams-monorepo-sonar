@@ -11,6 +11,15 @@ function seededNoise(seed) {
 }
 import { getDateRange, filterByDateRange } from '../../utils/dateRange';
 
+// 0D1: anonimización display plant name (reunión VSC 2026-05-11)
+const PLANT_DISPLAY_NAMES = {
+  'GOLDFIELDS-SN': 'Planta Minera Cliente',
+  'OCP-JFC1': 'Jorf Fertilizers Complex 1',
+  'FLUOR-ALFA': 'Fluor Alfa',
+  'DEMO-CORP': 'Demo Mining Corporation',
+};
+const displayPlantName = (id) => PLANT_DISPLAY_NAMES[id] || id || '';
+
 export default function TacticalOperationsView({ selectedPlant, selectedTimeRange, selectedArea }) {
   const [loading, setLoading] = useState(true);
   const [workRequests, setWorkRequests] = useState([]);
@@ -197,9 +206,9 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
             <p className="text-indigo-100 text-sm mt-1">Work volume, schedule compliance, and operational metrics</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm" title={selectedPlant}>
               <span className="text-indigo-200 text-xs">Plant</span>
-              <div className="font-semibold">{selectedPlant}</div>
+              <div className="font-semibold">{displayPlantName(selectedPlant)}</div>
             </div>
             <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
               <span className="text-indigo-200 text-xs">WOs</span>

@@ -85,6 +85,16 @@ function getPlantTargets(plantId) {
   } catch { return DEFAULT_TARGETS; }
 }
 
+// 0D1 (reunión VSC 2026-05-11): mapeo plant_id → display name anónimo.
+// Evita mostrar "GOLDFIELDS-SN" en headers visibles a clientes externos.
+const PLANT_DISPLAY_NAMES = {
+  'GOLDFIELDS-SN': 'Planta Minera Cliente',
+  'OCP-JFC1': 'Jorf Fertilizers Complex 1',
+  'FLUOR-ALFA': 'Fluor Alfa',
+  'DEMO-CORP': 'Demo Mining Corporation',
+};
+const displayPlantName = (id) => PLANT_DISPLAY_NAMES[id] || id || '';
+
 export default function ExecutiveView({ selectedPlant, selectedTimeRange, selectedArea }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -930,9 +940,9 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
             <p className="text-emerald-100 text-sm mt-1">Plant performance overview and strategic insights</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm" title={selectedPlant}>
               <span className="text-emerald-200 text-xs">Plant</span>
-              <div className="font-semibold">{selectedPlant}</div>
+              <div className="font-semibold">{displayPlantName(selectedPlant)}</div>
             </div>
             <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
               <span className="text-emerald-200 text-xs">Period</span>

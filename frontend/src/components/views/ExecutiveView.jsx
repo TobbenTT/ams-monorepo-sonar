@@ -940,7 +940,7 @@ export default function ExecutiveView({ selectedPlant, selectedTimeRange, select
             <p className="text-emerald-100 text-sm mt-1">Plant performance overview and strategic insights</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm" title={selectedPlant}>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
               <span className="text-emerald-200 text-xs">Plant</span>
               <div className="font-semibold">{displayPlantName(selectedPlant)}</div>
             </div>

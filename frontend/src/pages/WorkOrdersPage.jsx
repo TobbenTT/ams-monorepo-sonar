@@ -868,7 +868,7 @@ export default function WorkOrdersPage() {
           </h2>
           <p className="text-sm text-gray-600 mt-1">
             {t('workOrders.subtitle')}
-            {plant && <span className="ml-2 font-medium" title={plant}>({displayPlantName(plant)})</span>}
+            {plant && <span className="ml-2 font-medium">({displayPlantName(plant)})</span>}
           </p>
         </div>
         <div className="flex items-center gap-3">

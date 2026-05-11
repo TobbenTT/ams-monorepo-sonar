@@ -4121,7 +4121,7 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                   )}
                   <section className="text-[10px] text-gray-400 border-t pt-2">
                     Funciones 2-7 (predicción HH, riesgos, skill mix, materiales, safety, RCA) están
-                    en SP8 backlog — requieren histórico real Goldfields (ticket 0B2).
+                    en SP8 backlog — requieren histórico real de la planta cliente (ticket 0B2).
                   </section>
                 </div>
               </div>

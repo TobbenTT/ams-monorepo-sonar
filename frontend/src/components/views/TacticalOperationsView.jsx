@@ -206,7 +206,7 @@ export default function TacticalOperationsView({ selectedPlant, selectedTimeRang
             <p className="text-indigo-100 text-sm mt-1">Work volume, schedule compliance, and operational metrics</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm" title={selectedPlant}>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
               <span className="text-indigo-200 text-xs">Plant</span>
               <div className="font-semibold">{displayPlantName(selectedPlant)}</div>
             </div>

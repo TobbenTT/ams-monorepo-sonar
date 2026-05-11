@@ -307,7 +307,7 @@ export default function Header({
                                     de la planta, no el plant_id (que puede contener nombre
                                     del cliente real). Tooltip muestra el id para ops/debug. */}
                                 {(plants || []).map(p => (
-                                    <SelectItem key={p.plant_id} value={p.plant_id} title={p.plant_id}>{p.name || p.plant_id}</SelectItem>
+                                    <SelectItem key={p.plant_id} value={p.plant_id}>{p.name || 'Planta'}</SelectItem>
                                 ))}
                                 {(!plants || plants.length === 0) && (
                                     <SelectItem value="OCP-JFC1">Main Site</SelectItem>

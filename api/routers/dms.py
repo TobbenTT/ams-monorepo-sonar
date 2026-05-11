@@ -1,12 +1,22 @@
-"""DMS Document Management — lookup de documentos por ubicación funcional."""
+"""DMS Document Management — lookup de documentos por ubicación funcional.
+
+SEC 2026-05-11: agregado require auth. Antes este router era public y filtraba
+metadatos de docs SAP del cliente (file_paths, SAP func loc, equipment names) a
+cualquier visitante de mageam.com. Ver review de seguridad jornada VSC.
+"""
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from api.database.connection import get_db
 from api.database.models import DMSDocumentModel
+from api.dependencies.auth import get_current_user
 
-router = APIRouter(prefix="/dms", tags=["dms"])
+router = APIRouter(
+    prefix="/dms",
+    tags=["dms"],
+    dependencies=[Depends(get_current_user)],
+)
 
 DOC_TYPE_LABEL = {
     "DWG": "Plano",

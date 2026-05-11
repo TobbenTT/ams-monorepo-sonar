@@ -213,14 +213,18 @@ def get_impact_score(wo_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{wo_id}")
-def get_work_order(wo_id: str, plant_id: str | None = None, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def get_work_order(wo_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
     result = managed_wo_service.get_work_order(db, wo_id)
     if not result:
         raise HTTPException(status_code=404, detail="Work order not found")
-    # IDOR protection: verify user has access to this plant
+    # SEC 2026-05-11 IDOR fix: la check anterior usaba un `plant_id` que venia
+    # como QUERY PARAM (attacker-controlled) → el atacante simplemente omitia el
+    # parametro y bypaseaba el control. Ahora gateamos contra user.plant_id del
+    # JWT validado. Admin/manager pueden ver todas las plantas.
     wo_plant = result.get("plant_id")
-    if wo_plant and plant_id and wo_plant != plant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this work order")
+    if getattr(user, "plant_id", None) and user.role not in ("admin", "manager"):
+        if wo_plant and wo_plant != user.plant_id:
+            raise HTTPException(status_code=404, detail="Work order not found")
     return result
 
 
@@ -237,6 +241,11 @@ def update_work_order(
     existing = db.query(_M).filter(_M.wo_id == wo_id).first()
     if existing and existing.status == "CERRADO":
         raise HTTPException(status_code=409, detail="Work order is closed and locked — cannot be edited.")
+    # SEC 2026-05-11 IDOR fix: planner solo puede editar OTs de SU planta.
+    # admin/manager: todas. Si no, 404 (no revelamos existencia cross-plant).
+    if existing and getattr(user, "plant_id", None) and user.role not in ("admin", "manager"):
+        if existing.plant_id and existing.plant_id != user.plant_id:
+            raise HTTPException(status_code=404, detail="Work order not found")
     update_data = data.model_dump(exclude_none=True)
     # Handle empty strings as "clear field" for dates and workers
     raw = data.model_dump()

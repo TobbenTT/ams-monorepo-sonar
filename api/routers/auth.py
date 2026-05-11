@@ -195,6 +195,32 @@ def admin_update_user(user_id: str, data: AdminUserUpdate, db: Session = Depends
     target = db.query(UserModel).filter(UserModel.user_id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
+    # SEC 2026-05-11: privilege escalation fix. Solo admin puede cambiar role
+    # o plant_id (no manager). Sin esto, un manager podia hacer PUT con
+    # {"role":"admin"} sobre su propio user_id y autopromocionarse → admin tras
+    # re-login, ganando acceso a /admin/reset-database, /admin/seed, etc.
+    # Tambien forbid mutar el rol del propio user_id (incluso para admin) para
+    # evitar self-lockouts; el admin de turno debe pedirle a otro admin que lo
+    # haga, asegurando 2 personas en el camino.
+    if data.role is not None or data.plant_id is not None:
+        if user.role != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Solo administradores pueden cambiar 'role' o 'plant_id' de otro usuario.",
+            )
+        if user_id == user.user_id and data.role is not None:
+            raise HTTPException(
+                status_code=403,
+                detail="No podés cambiar tu propio rol. Pedile a otro admin.",
+            )
+    # Whitelist de valores validos para role (evita roles arbitrarios que
+    # podrian bypassear require_role() en otros endpoints).
+    VALID_ROLES = {"admin", "manager", "planner", "supervisor", "tecnico"}
+    if data.role is not None and data.role not in VALID_ROLES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Rol invalido. Valores permitidos: {', '.join(sorted(VALID_ROLES))}",
+        )
     if data.username is not None:
         target.username = data.username
     if data.full_name is not None:
@@ -205,8 +231,10 @@ def admin_update_user(user_id: str, data: AdminUserUpdate, db: Session = Depends
         target.plant_id = data.plant_id
     if data.role is not None:
         target.role = data.role
+        # Bump token_version: el target queda fuera con su JWT viejo, debe
+        # re-login para tomar el nuevo rol. Audit lo registra.
+        target.token_version = (target.token_version or 0) + 1
     if data.scoped_specialty is not None:
-        # Vacío "" = limpiar scope; cualquier otro valor lo persiste.
         target.scoped_specialty = data.scoped_specialty.strip() or None
     db.commit()
     db.refresh(target)

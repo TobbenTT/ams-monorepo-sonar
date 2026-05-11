@@ -57,6 +57,7 @@ def list_backlog(
     status: str | None = None,
     priority: str | None = None,
     equipment_tag: str | None = None,
+    plant_id: str | None = None,
     limit: int = 200,
     offset: int = 0,
 ) -> list[dict]:
@@ -67,8 +68,24 @@ def list_backlog(
         q = q.filter(BacklogItemModel.priority == priority)
     if equipment_tag:
         q = q.filter(BacklogItemModel.equipment_tag == equipment_tag)
-    items = q.order_by(BacklogItemModel.created_at.desc()).offset(offset).limit(limit).all()
-    return [_item_to_dict(i) for i in items]
+    items = q.order_by(BacklogItemModel.created_at.desc()).offset(offset).limit(limit * 3).all()
+    # SEC 2026-05-11: plant scoping post-query. BacklogItem no tiene columna
+    # plant_id directa, vive en WR.ai_classification.plant_id. Filtramos
+    # despues de fetch: hidratamos plants via WR linkage. Solo afecta users
+    # con scope (admin/manager se saltan este path).
+    if plant_id:
+        from api.database.models import WorkRequestModel
+        wr_ids = [i.work_request_id for i in items if i.work_request_id]
+        wrs = db.query(WorkRequestModel).filter(WorkRequestModel.request_id.in_(wr_ids)).all() if wr_ids else []
+        wr_plants = {}
+        for wr in wrs:
+            ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+            wr_plants[wr.request_id] = ai.get("plant_id")
+        items = [
+            i for i in items
+            if i.work_request_id and wr_plants.get(i.work_request_id) == plant_id
+        ]
+    return [_item_to_dict(i) for i in items[:limit]]
 
 
 def optimize_backlog(db: Session, plant_id: str, period_days: int = 30) -> dict:

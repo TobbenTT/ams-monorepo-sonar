@@ -313,11 +313,17 @@ def get_wr_impact_score(request_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{request_id}")
-def get_work_request(request_id: str, db: Session = Depends(get_db)):
+def get_work_request(request_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
     from api.database.models import FieldCaptureModel
     wr = work_request_service.get_work_request(db, request_id)
     if not wr:
         raise HTTPException(status_code=404, detail="Work request not found")
+    # SEC 2026-05-11 IDOR fix: el WR no tiene columna plant_id directa, vive en
+    # ai_classification.plant_id. Scope al usuario salvo admin/manager.
+    if getattr(user, "plant_id", None) and user.role not in ("admin", "manager"):
+        wr_plant = (wr.ai_classification or {}).get("plant_id") if isinstance(wr.ai_classification, dict) else None
+        if wr_plant and wr_plant != user.plant_id:
+            raise HTTPException(status_code=404, detail="Work request not found")
     # Resolve created_by UUID to name
     from api.database.models import UserModel
     _created_name = wr.created_by or ""

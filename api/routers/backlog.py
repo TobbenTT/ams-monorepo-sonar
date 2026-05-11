@@ -18,9 +18,15 @@ def list_backlog(
     equipment_tag: str | None = None,
     limit: int = 200,
     offset: int = 0,
+    user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return backlog_service.list_backlog(db, status, priority, equipment_tag, limit=limit, offset=offset)
+    # SEC 2026-05-11: scope a la planta del usuario salvo admin/manager.
+    # Antes este endpoint era public y expuso `work_request_id` cross-plant.
+    plant_id = None
+    if getattr(user, "plant_id", None) and user.role not in ("admin", "manager"):
+        plant_id = user.plant_id
+    return backlog_service.list_backlog(db, status, priority, equipment_tag, plant_id=plant_id, limit=limit, offset=offset)
 
 
 @router.post("/add/{work_request_id}")

@@ -3671,19 +3671,29 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                         const stamped = editMats.map(m => m.reservation_code ? m : { ...m, reservation_code: code });
                         const toReserve = editMats.filter(m => !m.reservation_code).length;
                         if (toReserve === 0) { toast.info('No hay materiales sin reservar'); return; }
+                        // SF-652 (jornada VSC 2026-05-08): "segunda reserva está fallando".
+                        // Causa raíz: saveOTChanges() persiste editMats pero usa stale state +
+                        // reservation_codes podía venir como string JSON, rompiendo Array.isArray.
+                        // Fix: persistir TODO en una sola llamada updateManagedWO con state
+                        // ya stamped + parsear reservation_codes defensivamente.
                         setEditMats(stamped);
-                        // Persist stamped materials + reservation code via saveOTChanges
-                        // (uses editMats from state, so wait next tick).
-                        await new Promise(r => setTimeout(r, 0));
-                        await saveOTChanges();
-                        const postRelease = !['CREADO','PENDIENTE'].includes(selectedOT.status) && !!selectedOT.reservation_code;
-                        const prev = Array.isArray(selectedOT.reservation_codes) ? selectedOT.reservation_codes : (selectedOT.reservation_code ? [selectedOT.reservation_code] : []);
+                        let prev = selectedOT.reservation_codes;
+                        if (typeof prev === 'string') {
+                          try { prev = JSON.parse(prev); } catch { prev = []; }
+                        }
+                        if (!Array.isArray(prev)) {
+                          prev = selectedOT.reservation_code ? [selectedOT.reservation_code] : [];
+                        }
+                        const postRelease = !['CREADO','PENDIENTE'].includes(selectedOT.status) && (!!selectedOT.reservation_code || prev.length > 0);
                         const nextList = postRelease ? [...prev, code] : (prev.length === 0 ? [code] : [...prev.slice(0, -1), code]);
                         try {
-                          await api.updateManagedWO(woId, { reservation_code: code, reservation_codes: nextList, materials: stamped });
-                          setSelectedOT({ ...selectedOT, reservation_code: code, reservation_codes: nextList, materials: stamped });
-                          toast.success(`Reserva ${code}: ${toReserve} material${toReserve > 1 ? 'es' : ''}${postRelease ? ' (segunda reserva)' : ''}`);
-                        } catch { toast.success('Reserva: ' + code); }
+                          const u = await api.updateManagedWO(woId, { reservation_code: code, reservation_codes: nextList, materials: stamped });
+                          // Use returned WO from API (avoids stale local state)
+                          setSelectedOT(u || { ...selectedOT, reservation_code: code, reservation_codes: nextList, materials: stamped });
+                          toast.success(`Reserva ${code}: ${toReserve} material${toReserve > 1 ? 'es' : ''}${postRelease ? ' (segunda reserva — ' + nextList.length + ' totales)' : ''}`);
+                        } catch (err) {
+                          toast.error('Error al guardar reserva: ' + (err?.message || err));
+                        }
                       }} disabled={savingOT || editMats.length === 0 || editMats.every(m => !!m.reservation_code)}
                         className="flex-1 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
                         Create Reservation

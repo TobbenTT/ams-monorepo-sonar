@@ -3285,11 +3285,13 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                         <table className="w-full text-sm">
                           <thead className="bg-amber-100/60 text-xs uppercase">
                             <tr>
-                              <th className="px-3 py-2 text-left">Equipo</th>
-                              {/* QA #10 (2026-05-08): "Nombre" → "Características" */}
-                              <th className="px-3 py-2 text-left">Características</th>
+                              {/* SF-675 (reunión VSC 2026-05-11): reestructuración 5 cambios */}
+                              <th className="px-3 py-2 text-left">Equipo - Características</th>
+                              <th className="px-3 py-2 text-left">Detalle</th>
+                              {/* SF-675 #2: Interno/Externo selector obligatorio */}
+                              <th className="px-3 py-2 text-left">Interno/Externo</th>
+                              {/* SF-675 #4: Tipo condicional según categoría del equipo */}
                               <th className="px-3 py-2 text-left">Tipo</th>
-                              {/* QA #11 (2026-05-08): "HH" → "Cantidad" */}
                               <th className="px-3 py-2 text-right">Cantidad</th>
                               <th className="px-3 py-2 text-left">Notas</th>
                               <th className="px-3 py-2"></th>
@@ -3410,21 +3412,50 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                       placeholder="Ej: 10T, brazo 12m, 2 ejes…"
                                       className="w-full text-sm border border-gray-300 rounded px-2 py-1" />
                                   </td>
+                                  {/* SF-675 #2: Interno/Externo */}
+                                  <td className="px-3 py-2">
+                                    <select defaultValue={se.ownership || 'INT'}
+                                      onChange={e => updateField('ownership', e.target.value)}
+                                      className="text-xs border border-gray-300 rounded px-1 py-1">
+                                      <option value="INT">Interno</option>
+                                      <option value="EXT">Externo</option>
+                                    </select>
+                                  </td>
+                                  {/* SF-675 #4: Tipo CONDICIONAL según categoría/equipo seleccionado.
+                                      Si el equipo del catálogo tiene equipment_type fijo (poolMatch),
+                                      mostramos solo opciones compatibles. Sino, full list. */}
                                   <td className="px-3 py-2">
                                     <select defaultValue={se.equipment_type || 'MOBILE_CRANE'}
                                       onChange={e => updateField('equipment_type', e.target.value)}
-                                      className="text-xs border border-gray-300 rounded px-1 py-1">
-                                      <option value="MOBILE_CRANE">Grúa móvil</option>
-                                      <option value="BRIDGE_CRANE">Puente grúa</option>
-                                      <option value="HYDRAULIC_TRUCK">Mandil hidráulico</option>
-                                      <option value="SCAFFOLDING">Andamio</option>
-                                      <option value="FORKLIFT">Montacargas</option>
-                                      <option value="OTHER">Otro</option>
+                                      className="text-xs border border-gray-300 rounded px-1 py-1"
+                                      title="Tipo se filtra según el equipo elegido del catálogo">
+                                      {(() => {
+                                        // Si pool match: bias to that type + related
+                                        const baseType = poolMatch?.equipment_type;
+                                        const RELATED = {
+                                          MOBILE_CRANE: ['MOBILE_CRANE', 'BRIDGE_CRANE'],
+                                          BRIDGE_CRANE: ['BRIDGE_CRANE', 'MOBILE_CRANE'],
+                                          HYDRAULIC_TRUCK: ['HYDRAULIC_TRUCK'],
+                                          SCAFFOLDING: ['SCAFFOLDING'],
+                                          FORKLIFT: ['FORKLIFT'],
+                                          OTHER: ['OTHER', 'WELDING', 'AIR_COMPRESSOR', 'PRESSURE_WASHER'],
+                                        };
+                                        const opts = baseType ? (RELATED[baseType] || ['OTHER']) : ['MOBILE_CRANE', 'BRIDGE_CRANE', 'HYDRAULIC_TRUCK', 'SCAFFOLDING', 'FORKLIFT', 'OTHER'];
+                                        const LABELS = { MOBILE_CRANE: 'Grúa móvil', BRIDGE_CRANE: 'Puente grúa', HYDRAULIC_TRUCK: 'Mandil hidráulico', SCAFFOLDING: 'Andamio', FORKLIFT: 'Montacargas', WELDING: 'Soldadora', AIR_COMPRESSOR: 'Compresor', PRESSURE_WASHER: 'Hidrolavadora', OTHER: 'Otro' };
+                                        return opts.map(o => <option key={o} value={o}>{LABELS[o] || o}</option>);
+                                      })()}
                                     </select>
                                   </td>
+                                  {/* SF-675 #1: HH → Cantidad (entero positivo) */}
                                   <td className="px-3 py-2 text-right">
-                                    <input type="number" min="0" step="0.5" defaultValue={se.hours || ''}
-                                      onBlur={e => parseFloat(e.target.value) !== (parseFloat(se.hours) || 0) && updateField('hours', parseFloat(e.target.value) || 0)}
+                                    <input type="number" min="1" step="1"
+                                      defaultValue={se.quantity ?? se.hours ?? 1}
+                                      onBlur={e => {
+                                        const v = parseInt(e.target.value, 10);
+                                        const cur = se.quantity ?? se.hours ?? 1;
+                                        if (!Number.isNaN(v) && v !== cur) updateField('quantity', Math.max(1, v));
+                                      }}
+                                      title="Cantidad de equipos requeridos (entero positivo)"
                                       className="w-16 text-right border border-gray-300 rounded px-2 py-1" />
                                   </td>
                                   <td className="px-3 py-2">

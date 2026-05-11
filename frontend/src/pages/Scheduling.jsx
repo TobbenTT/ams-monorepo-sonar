@@ -4983,6 +4983,8 @@ export default function Scheduling() {
     { id: 'hh', icon: Users, label: t('scheduling.hhBalance') },
     { id: 'materials', icon: Package, label: t('scheduling.materials') },
     { id: 'equipment', icon: Wrench, label: 'Equipos de Apoyo' },
+    // SF-656 (jornada VSC 2026-05-08) — auditoría visual capacidad + turnos
+    { id: 'audit', icon: AlertTriangle, label: 'Auditoría' },
   ];
 
   return (
@@ -5174,6 +5176,10 @@ export default function Scheduling() {
       )}
       {tab === 'equipment' && (
         <SupportEquipmentTab plantId={plant} t={t} />
+      )}
+      {/* SF-656 (jornada VSC 2026-05-08) — auditoría visual capacidad/turnos */}
+      {tab === 'audit' && (
+        <CapacityAuditTab plantId={plant} />
       )}
 
       {/* Open WOs bottom bar — inspirado en mockup Jorge: cola de prioridad
@@ -5608,6 +5614,160 @@ export default function Scheduling() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// SF-656 (jornada VSC 2026-05-08) — auditoría visual: sobrecapacidad técnico
+// + violaciones día/noche. Backend: GET /scheduling/audit-capacity.
+function CapacityAuditTab({ plantId }) {
+  const [loading, setLoading] = React.useState(true);
+  const [data, setData] = React.useState(null);
+  const [error, setError] = React.useState(null);
+  const [hoursPerWeek, setHoursPerWeek] = React.useState(40);
+  const [weekStart, setWeekStart] = React.useState(() => {
+    const t = new Date();
+    const monday = new Date(t);
+    monday.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+    return monday.toISOString().slice(0, 10);
+  });
+
+  const load = React.useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const r = await api.auditCapacity({ plant_id: plantId, week_start: weekStart, hours_per_week: hoursPerWeek });
+      setData(r);
+    } catch (e) {
+      setError(e.message || 'Error cargando auditoría');
+    } finally { setLoading(false); }
+  }, [plantId, weekStart, hoursPerWeek]);
+
+  React.useEffect(() => { load(); }, [load]);
+
+  if (loading) return <div className="p-6 text-sm text-gray-500"><Loader2 className="inline animate-spin" size={14} /> Cargando auditoría…</div>;
+  if (error) return <div className="p-6 text-sm text-red-600">{error}</div>;
+  if (!data) return null;
+
+  const sevColor = (s) => s === 'critical' ? 'text-red-700 bg-red-50 border-red-200' : 'text-orange-700 bg-orange-50 border-orange-200';
+  const hasIssues = data.totals.overcapacity_count > 0 || data.totals.shift_violations_count > 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Filtros */}
+      <div className="flex flex-wrap items-end gap-3 p-3 rounded-xl border border-gray-200 bg-white">
+        <div>
+          <label className="block text-[11px] font-medium text-gray-600 mb-1">Semana (lunes)</label>
+          <input type="date" value={weekStart} onChange={e => setWeekStart(e.target.value)}
+            className="px-2 py-1 text-sm border rounded" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-gray-600 mb-1">Cap. semanal (HH)</label>
+          <input type="number" value={hoursPerWeek} onChange={e => setHoursPerWeek(parseFloat(e.target.value) || 40)} min={1}
+            className="px-2 py-1 text-sm border rounded w-20" />
+        </div>
+        <button onClick={load} className="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded hover:bg-blue-700">
+          Recalcular
+        </button>
+        <div className="ml-auto text-xs text-gray-500">
+          Ventana <span className="font-mono">{data.week_start} → {data.week_end}</span> · {data.totals.wos_in_window} OTs analizadas
+        </div>
+      </div>
+
+      {/* Banner global */}
+      <div className={`p-3 rounded-xl border ${hasIssues ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
+        <div className="flex items-center gap-3">
+          <AlertTriangle className={hasIssues ? 'text-red-600' : 'text-emerald-600'} size={20} />
+          <div className="flex-1">
+            <div className={`text-sm font-bold ${hasIssues ? 'text-red-800' : 'text-emerald-800'}`}>
+              {hasIssues
+                ? `${data.totals.overcapacity_count} técnico(s) con sobrecapacidad · ${data.totals.shift_violations_count} violación(es) de turno`
+                : 'Sin violaciones detectadas en la semana — capacidad y turnos OK'}
+            </div>
+            <div className="text-xs text-gray-600 mt-0.5">
+              {data.totals.workers_with_load} técnicos con carga · umbral {data.hours_per_week}h/sem
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sobrecapacidad */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-4 py-2 border-b bg-gray-50">
+          <h3 className="text-sm font-bold text-gray-800">Sobrecapacidad ({data.overcapacity.length})</h3>
+        </div>
+        {data.overcapacity.length === 0 ? (
+          <div className="p-4 text-sm text-gray-500 italic">Sin técnicos sobre {data.hours_per_week}h esta semana.</div>
+        ) : (
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr>
+                <th className="text-left px-3 py-2">Técnico</th>
+                <th className="text-left px-3 py-2">Especialidad</th>
+                <th className="text-right px-3 py-2">HH asignadas</th>
+                <th className="text-right px-3 py-2">Sobrecarga</th>
+                <th className="text-center px-3 py-2">Severidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.overcapacity.map(o => (
+                <tr key={o.worker_id} className="border-t border-gray-100">
+                  <td className="px-3 py-2 font-medium">{o.worker_name}</td>
+                  <td className="px-3 py-2 text-gray-600">{o.specialty || '—'}</td>
+                  <td className="px-3 py-2 text-right font-mono">{o.hh_assigned}h / {o.hh_capacity}h</td>
+                  <td className="px-3 py-2 text-right font-mono text-red-600">+{o.overload_pct}%</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${sevColor(o.severity)}`}>{o.severity.toUpperCase()}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Violaciones turno */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-4 py-2 border-b bg-gray-50">
+          <h3 className="text-sm font-bold text-gray-800">Violaciones de turno día/noche ({data.shift_violations.length})</h3>
+        </div>
+        {data.shift_violations.length === 0 ? (
+          <div className="p-4 text-sm text-gray-500 italic">Sin mismatches de turno detectados.</div>
+        ) : (
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr>
+                <th className="text-left px-3 py-2">Técnico</th>
+                <th className="text-left px-3 py-2">Turno técnico</th>
+                <th className="text-left px-3 py-2">Slot OT</th>
+                <th className="text-left px-3 py-2">OT</th>
+                <th className="text-left px-3 py-2">Inicio plan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.shift_violations.map((v, i) => (
+                <tr key={`${v.worker_id}-${v.wo_id}-${i}`} className="border-t border-gray-100">
+                  <td className="px-3 py-2 font-medium">{v.worker_name}</td>
+                  <td className="px-3 py-2">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${v.tech_shift === 'night' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {v.tech_shift === 'night' ? '🌙 NOCHE' : '☀️ DÍA'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${v.slot_shift === 'night' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {v.slot_shift === 'night' ? '🌙 NOCHE' : '☀️ DÍA'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 font-mono">
+                    <button onClick={() => window.open(`/work-management?tab=planning&openWo=${v.wo_id}`, '_blank')}
+                      className="text-blue-600 hover:underline">{v.wo_number}</button>
+                  </td>
+                  <td className="px-3 py-2 font-mono text-gray-600">{v.planned_start?.slice(0, 16).replace('T', ' ')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

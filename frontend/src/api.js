@@ -341,6 +341,13 @@ export const getManagedWOImpactScore = (id) => get(`/managed-work-orders/${id}/i
 // SF-661 v0.1 — análisis IA de OT (función 1 de 7: resumen ejecutivo determinista)
 export const aiAnalyzeManagedWO = (id, mode = 'pre_execution') =>
   post(`/managed-work-orders/${id}/ai-analyze?mode=${encodeURIComponent(mode)}`, {});
+// SF-656 — auditoría visual de capacidad + turnos por semana
+export const auditCapacity = (params = {}) => get('/scheduling/audit-capacity', params);
+// SF-662 — preparativos OT estilo Rappi
+export const listPreparativos = (params = {}) => get('/preparativos/', params);
+export const createPreparativo = (data) => post('/preparativos/', data);
+export const transitionPreparativo = (id, data) => put(`/preparativos/${id}/transition`, data);
+export const preparativosSummary = (woId) => get(`/preparativos/by-wo/${woId}/summary`);
 export const createManagedWO = (d) => post('/managed-work-orders/', d);
 export const createWOFromWR = (d) => post('/managed-work-orders/from-wr', d);
 // Fase 9 Jorge 2026-04-21 — optimistic lock. Si el caller pasa {...data, _version: N}

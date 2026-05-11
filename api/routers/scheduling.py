@@ -122,6 +122,130 @@ def hh_balance_live(plant_id: str = "OCP-JFC1", week_start: str = "", db: Sessio
     return scheduling_service.hh_balance_from_wos(db, plant_id, week_start=week_start or None)
 
 
+# SF-656 (jornada VSC 2026-05-08) — auditoría visual: sobrecapacidad técnico
+# + violaciones día/noche en la semana en curso. Endpoint determinista, sin LLM.
+@router.get("/audit-capacity")
+def audit_capacity(
+    plant_id: str | None = None,
+    week_start: str | None = None,
+    hours_per_week: float = 40,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Detecta dos clases de violación en la semana ventana [week_start, +6d]:
+       (a) técnico con HH asignadas > hours_per_week (overcapacity)
+       (b) técnico con shift DAY asignado a OT en horario nocturno (18:00-06:00)
+           o técnico con shift NIGHT asignado a OT en horario diurno (06:00-18:00).
+    """
+    from datetime import date as _date, datetime, timedelta
+    from api.database.models import ManagedWorkOrderModel, WorkforceModel
+    import json as _json
+
+    if week_start:
+        try:
+            start = datetime.fromisoformat(week_start)
+        except Exception:
+            raise HTTPException(status_code=400, detail="week_start debe ser YYYY-MM-DD")
+    else:
+        today = _date.today()
+        start = datetime.combine(today - timedelta(days=today.weekday()), datetime.min.time())
+    end = start + timedelta(days=7)
+
+    # IDOR / plant scoping
+    if getattr(user, "plant_id", None) and user.role not in ("admin", "manager"):
+        plant_id = user.plant_id
+
+    # 1) Workforce indexada por worker_id
+    wq = db.query(WorkforceModel)
+    if plant_id:
+        wq = wq.filter(WorkforceModel.plant_id == plant_id)
+    workers_by_id = {w.worker_id: w for w in wq.all()}
+
+    # 2) WOs programadas en la ventana
+    woq = db.query(ManagedWorkOrderModel).filter(
+        ManagedWorkOrderModel.planned_start.isnot(None),
+        ManagedWorkOrderModel.planned_start >= start,
+        ManagedWorkOrderModel.planned_start < end,
+        ManagedWorkOrderModel.status.in_(["PROGRAMADO", "EN_EJECUCION", "REPROGRAMADO"]),
+    )
+    if plant_id:
+        woq = woq.filter(ManagedWorkOrderModel.plant_id == plant_id)
+    wos = woq.all()
+
+    # 3) Acumulado HH por worker + detección de shift mismatch
+    hh_by_worker: dict[str, float] = {}
+    shift_violations: list[dict] = []
+    for wo in wos:
+        aw = wo.assigned_workers
+        if isinstance(aw, str):
+            try: aw = _json.loads(aw)
+            except: aw = []
+        if not aw:
+            continue
+        n = len(aw)
+        est = float(wo.estimated_hours or 0)
+        per = est / n if n else 0
+        # Shift slot derivado del planned_start
+        ps = wo.planned_start if isinstance(wo.planned_start, datetime) else None
+        if ps is None:
+            try: ps = datetime.fromisoformat(str(wo.planned_start).replace("Z",""))
+            except: ps = None
+        if ps:
+            slot_shift = "night" if (ps.hour >= 18 or ps.hour < 6) else "day"
+        else:
+            slot_shift = None
+        for entry in aw:
+            wid = entry.get("worker_id") if isinstance(entry, dict) else None
+            if not wid:
+                continue
+            hh_by_worker[wid] = hh_by_worker.get(wid, 0) + per
+            # Shift mismatch
+            tech = workers_by_id.get(wid)
+            if tech and slot_shift:
+                tech_shift = "night" if str(tech.shift or "").upper() in ("NIGHT", "NOCHE") else "day"
+                if tech_shift != slot_shift:
+                    shift_violations.append({
+                        "worker_id": wid,
+                        "worker_name": tech.name,
+                        "tech_shift": tech_shift,
+                        "slot_shift": slot_shift,
+                        "wo_id": wo.wo_id,
+                        "wo_number": wo.wo_number,
+                        "planned_start": ps.isoformat() if ps else None,
+                    })
+
+    # 4) Overcapacity
+    overcapacity = []
+    for wid, hh in hh_by_worker.items():
+        if hh > hours_per_week:
+            tech = workers_by_id.get(wid)
+            overcapacity.append({
+                "worker_id": wid,
+                "worker_name": tech.name if tech else wid,
+                "specialty": tech.specialty if tech else None,
+                "hh_assigned": round(hh, 2),
+                "hh_capacity": hours_per_week,
+                "overload_pct": round((hh / hours_per_week - 1) * 100, 1),
+                "severity": "critical" if hh > hours_per_week * 1.25 else "high",
+            })
+    overcapacity.sort(key=lambda x: -x["hh_assigned"])
+
+    return {
+        "week_start": start.date().isoformat(),
+        "week_end": (end - timedelta(days=1)).date().isoformat(),
+        "plant_id": plant_id,
+        "hours_per_week": hours_per_week,
+        "totals": {
+            "workers_with_load": len(hh_by_worker),
+            "overcapacity_count": len(overcapacity),
+            "shift_violations_count": len(shift_violations),
+            "wos_in_window": len(wos),
+        },
+        "overcapacity": overcapacity,
+        "shift_violations": shift_violations[:200],  # cap
+    }
+
+
 @router.get("/materials-live")
 def materials_live(plant_id: str = "OCP-JFC1", db: Session = Depends(get_db)):
     """Materials status from actual scheduled WOs."""

@@ -79,12 +79,52 @@ def seed_demo_plant_endpoint(
     return seed_demo_plant(db, plant_code, plant_name, location)
 
 
-@router.get("/audit-log", dependencies=[Depends(require_role("admin", "manager"))])
-def get_audit_log(entity_type: str | None = None, limit: int = 100, db: Session = Depends(get_db)):
+@router.get("/audit-log")
+def get_audit_log(
+    entity_type: str | None = None,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """SF-660 (audit log policy §5) — scoping por rol:
+       - admin/manager: ven todo, filtros libres.
+       - supervisor: ven todo de su planta + sus propias acciones.
+       - planner/engineer/tecnico: solo sus propias acciones.
+    """
     q = db.query(AuditLogModel)
     if entity_type:
         q = q.filter(AuditLogModel.entity_type == entity_type)
-    entries = q.order_by(AuditLogModel.timestamp.desc()).limit(limit).all()
+
+    role = getattr(user, "role", None)
+    uid = getattr(user, "user_id", None)
+    user_plant = getattr(user, "plant_id", None)
+
+    if role in ("admin", "manager"):
+        pass  # acceso total
+    elif role == "supervisor":
+        # Filtro: payload.plant_id == user_plant O user == uid
+        # SQLite no soporta JSON ops portables, así que filtramos en Python tras query
+        # con un límite ampliado para no perder datos
+        rows = q.order_by(AuditLogModel.timestamp.desc()).limit(min(limit * 5, 2000)).all()
+        entries = []
+        for r in rows:
+            if r.user == uid:
+                entries.append(r)
+                continue
+            if user_plant and isinstance(r.payload, dict):
+                pid = r.payload.get("plant_id") or r.payload.get("plantId")
+                if pid == user_plant:
+                    entries.append(r)
+            if len(entries) >= limit:
+                break
+    elif role in ("planner", "engineer", "tecnico"):
+        q = q.filter(AuditLogModel.user == uid)
+        entries = q.order_by(AuditLogModel.timestamp.desc()).limit(limit).all()
+    else:
+        raise HTTPException(status_code=403, detail=f"Rol '{role}' no tiene acceso al audit log")
+
+    if role in ("admin", "manager"):
+        entries = q.order_by(AuditLogModel.timestamp.desc()).limit(limit).all()
     # Resolve user IDs to usernames
     user_ids = set(e.user for e in entries if e.user and e.user != 'system')
     user_map = {}

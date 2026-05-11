@@ -27,11 +27,14 @@ from pathlib import Path
 DB_PATH = Path("/app/data/ocp_maintenance.db")
 
 # Distribución target: pesos cumulativos
+# risk_class en BD usa el formato del enum RiskClass (I_LOW..IV_CRITICAL),
+# el frontend mapea a letter (B/A/A+/AA) vía RISK_TO_LETTER en
+# api/services/criticality_service.py.
 CLASSES = [
-    (0.10, "AA",  20, 5, "Alto riesgo · paro de planta"),
-    (0.40, "A+",  15, 4, "Moderado-alto · reduce capacidad"),
-    (0.80, "A",   10, 3, "Moderado · afecta calidad"),
-    (1.00, "B",    5, 2, "Bajo · sin impacto inmediato"),
+    (0.10, "IV_CRITICAL", 20, 5, "Alto riesgo · paro de planta"),
+    (0.40, "III_HIGH",    15, 4, "Moderado-alto · reduce capacidad"),
+    (0.80, "II_MEDIUM",   10, 3, "Moderado · afecta calidad"),
+    (1.00, "I_LOW",        5, 2, "Bajo · sin impacto inmediato"),
 ]
 
 

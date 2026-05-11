@@ -675,7 +675,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
   const confirm = useConfirm();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewRange, setViewRange] = useState(1);
-  const [viewBy, setViewBy] = useState('technician'); // 'technician' | 'wo'
+  // Reunión VSC 2026-05-11: vista por defecto = HORARIOS (Jorge spec).
+  // 'timeslot' = eje vertical horarios, drop OT → matching auto skills+disponibilidad.
+  // 'technician' = legacy (técnicos en vertical). 'resource' agrupado. 'wo' por OT.
+  const [viewBy, setViewBy] = useState('timeslot');
   const [expandedWOs, setExpandedWOs] = useState(new Set());
   const [search, setSearch] = useState('');
   // Multi-select priority filter (Prometheus style): default P3+P4 on, P1/P2 off
@@ -1394,6 +1397,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
           </div>
           <div className="flex items-center gap-2">
             <div className="flex rounded-lg border border-border overflow-hidden">
+              {/* Reunión VSC 2026-05-11 (Jorge): vista por HORARIOS pasa a ser
+                  primera opción. Eje vertical = horarios (no técnicos), eje
+                  horizontal = días. Al arrastrar OT al slot, el sistema lee las
+                  operaciones y matchea técnicos por puesto trabajo + capacidad. */}
+              <button onClick={() => setViewBy('timeslot')}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'timeslot' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
+                🕐 Horarios
+              </button>
               <button onClick={() => setViewBy('technician')}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'technician' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
                 👷 Technicians
@@ -1540,7 +1551,166 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         })()}
 
         {/* Calendar grid */}
-        {viewBy === 'wo' ? (
+        {viewBy === 'timeslot' ? (
+          /* ═══ TIMESLOT VIEW (Reunión VSC 2026-05-11 Jorge spec)
+              Eje vertical: HORARIOS (turnos día / noche con slots horarios).
+              Eje horizontal: días. Solo OTs status="En Programación" (filtro
+              externo ya aplicado vía scheduledWOs).
+              Al arrastrar OT al slot → el sistema lee las operaciones (cada op
+              tiene puesto trabajo asignado) y busca técnicos disponibles con
+              esa skill + capacidad horaria en ese slot. Auto-assigns workers. */
+          (() => {
+            // Definimos slots horarios: día (06-18h, 12 slots de 1h) + noche (18-06h, 12 slots de 1h)
+            const HOUR_SLOTS = [];
+            for (let h = 6; h < 18; h++) HOUR_SLOTS.push({ h, label: `${String(h).padStart(2, '0')}:00`, shift: 'day' });
+            for (let h = 18; h < 24; h++) HOUR_SLOTS.push({ h, label: `${String(h).padStart(2, '0')}:00`, shift: 'night' });
+            for (let h = 0; h < 6; h++) HOUR_SLOTS.push({ h, label: `${String(h).padStart(2, '0')}:00`, shift: 'night' });
+
+            // Función: matchear técnicos a una OT por skills de sus operaciones
+            const matchTechniciansForWO = (wo) => {
+              const ops = wo.operations || [];
+              const requiredSpecs = new Set();
+              ops.forEach(op => {
+                const spec = (op.specialty || '').toUpperCase().trim();
+                if (!spec) return;
+                // normalizar: Mecánico → MECANICO, Eléctrico → ELECTRICO, etc
+                if (/MECAN|MECH/i.test(spec)) requiredSpecs.add('MECANICO');
+                else if (/ELEC/i.test(spec)) requiredSpecs.add('ELECTRICO');
+                else if (/INSTRUM/i.test(spec)) requiredSpecs.add('INSTRUMENTISTA');
+                else if (/SOLD|WELD/i.test(spec)) requiredSpecs.add('SOLDADOR');
+                else if (/LUBR/i.test(spec)) requiredSpecs.add('LUBRICADOR');
+                else if (/CIVIL/i.test(spec)) requiredSpecs.add('CIVIL');
+                else if (/PRED/i.test(spec)) requiredSpecs.add('PREDICTIVO');
+                else requiredSpecs.add(spec);
+              });
+              if (requiredSpecs.size === 0 && technicians.length > 0) {
+                // Fallback: si la OT no tiene specialty marcado, devolver primer técnico mecánico
+                const fallback = technicians.find(t => /MECAN/i.test(t.specialty || ''));
+                return fallback ? [fallback.worker_id] : [];
+              }
+              const assigned = [];
+              for (const spec of requiredSpecs) {
+                const tech = technicians.find(t => {
+                  const ts = (t.specialty || '').toUpperCase().trim();
+                  return ts === spec || ts.startsWith(spec.slice(0, 4));
+                });
+                if (tech) assigned.push(tech.worker_id);
+              }
+              return assigned;
+            };
+
+            return (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 border-b border-emerald-200 dark:border-emerald-800">
+                <p className="text-xs text-emerald-900 dark:text-emerald-200">
+                  <strong>🕐 Vista Horarios</strong> · arrastrá una OT al horario destino · el sistema asignará automáticamente técnicos con skill compatible y capacidad disponible
+                </p>
+              </div>
+              <div className="overflow-x-auto" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                <table className="w-full border-collapse" style={{ minWidth: days.length * 140 + 100 }}>
+                  <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase border-r border-border" style={{ width: 90, minWidth: 90 }}>Hora</th>
+                      {days.map(d => (
+                        <th key={d.str} className={"text-center px-2 py-2.5 text-xs font-semibold text-muted-foreground border-r border-border last:border-r-0" + (d.isWeekend ? " bg-gray-100 dark:bg-gray-800/50" : "")} style={{ minWidth: 140 }}>
+                          <div className="font-bold">{d.label}</div>
+                          <div className="text-[0.65rem] font-normal">{d.dateLabel}</div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {HOUR_SLOTS.map((slot, slotIdx) => {
+                      const isShiftStart = slotIdx === 0 || HOUR_SLOTS[slotIdx - 1].shift !== slot.shift;
+                      return (
+                        <React.Fragment key={`slot-${slot.h}-${slot.shift}`}>
+                          {isShiftStart && (
+                            <tr className={slot.shift === 'day' ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-indigo-50 dark:bg-indigo-900/20'}>
+                              <td colSpan={days.length + 1} className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground/80">
+                                {slot.shift === 'day' ? '☀️ Turno Día' : '🌙 Turno Noche'}
+                              </td>
+                            </tr>
+                          )}
+                          <tr className="border-t border-border/40 hover:bg-muted/10">
+                            <td className={`px-3 py-2 border-r border-border text-xs font-mono font-semibold ${slot.shift === 'night' ? 'bg-indigo-50/30 dark:bg-indigo-900/10 text-indigo-900 dark:text-indigo-200' : 'text-foreground'}`}>
+                              {slot.label}
+                            </td>
+                            {days.map(d => {
+                              // Buscar OTs ya asignadas a este slot (planned_start hora coincide)
+                              const slotWOs = scheduledWOs.filter(wo => {
+                                if (!wo.planned_start) return false;
+                                const ws = new Date(wo.planned_start);
+                                return toDateStr(ws) === d.str && ws.getHours() === slot.h;
+                              });
+                              const cellKey = `timeslot:${d.str}:${slot.h}`;
+                              const isTarget = dropTarget === cellKey && dragWO;
+                              return (
+                                <td key={d.str}
+                                  className={`px-1 py-1 border-r border-border/50 align-top transition-colors ${d.isWeekend ? 'bg-gray-50/50 dark:bg-gray-800/20' : ''} ${slot.shift === 'night' ? 'bg-indigo-50/20 dark:bg-indigo-900/5' : ''} ${isTarget ? 'bg-emerald-100 dark:bg-emerald-900/30 ring-2 ring-emerald-500' : dragWO ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : ''}`}
+                                  style={{ minHeight: 36 }}
+                                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(cellKey); }}
+                                  onDragLeave={() => setDropTarget(null)}
+                                  onDrop={async e => {
+                                    e.preventDefault();
+                                    setDropTarget(null);
+                                    if (!dragWO) return;
+                                    const wo = dragWO;
+                                    setDragWO(null);
+                                    // Calcular fecha/hora inicio + auto-match técnicos
+                                    const startDate = new Date(d.date);
+                                    startDate.setHours(slot.h, 0, 0, 0);
+                                    const hrs = parseFloat(wo.estimated_hours) || 1;
+                                    const endDate = new Date(startDate.getTime() + hrs * 3600 * 1000);
+                                    const fmt = (dt) => {
+                                      const p = (n) => String(n).padStart(2, '0');
+                                      return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}:00`;
+                                    };
+                                    const matchedWorkers = matchTechniciansForWO(wo);
+                                    try {
+                                      await api.updateManagedWO(wo.wo_id, {
+                                        planned_start: fmt(startDate),
+                                        planned_end: fmt(endDate),
+                                        assigned_workers: matchedWorkers,
+                                        shift: slot.shift === 'day' ? 'DAY' : 'NIGHT',
+                                      });
+                                      toast({ kind: 'success', text: `${wo.wo_number} → ${slot.label} ${d.dateLabel} · ${matchedWorkers.length} técnico${matchedWorkers.length === 1 ? '' : 's'} asignado${matchedWorkers.length === 1 ? '' : 's'}` });
+                                      onRefresh?.();
+                                    } catch (err) {
+                                      toast({ kind: 'error', text: 'Error al asignar: ' + (err.message || err) });
+                                    }
+                                  }}>
+                                  {slotWOs.map(wo => {
+                                    const typeMeta = TYPE_META[wo.wo_type] || TYPE_META.PM02;
+                                    const prioColor = wo.priority_code === 'P1' ? 'bg-red-500 text-white' : wo.priority_code === 'P2' ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white';
+                                    return (
+                                      <div key={wo.wo_id}
+                                        className={`p-1 mb-0.5 rounded text-[10px] cursor-pointer ${typeMeta.bg} border border-border/50 hover:border-emerald-500`}
+                                        onClick={() => onOpenOT?.(wo)}>
+                                        <div className="flex items-center gap-1">
+                                          <span className={`text-[8px] font-bold px-1 rounded ${prioColor}`}>{wo.priority_code}</span>
+                                          <span className="font-mono font-bold truncate">{wo.wo_number}</span>
+                                        </div>
+                                        <div className="text-[9px] text-foreground/70 truncate">{wo.equipment_tag} · {wo.estimated_hours || 0}h</div>
+                                        {(wo.assigned_workers || []).length > 0 && (
+                                          <div className="text-[8px] text-emerald-700 dark:text-emerald-400">👷 {(wo.assigned_workers || []).length}</div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            );
+          })()
+        ) : viewBy === 'wo' ? (
           /* ═══ WO VIEW — rows are Work Orders, expandable to show operations ═══ */
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto" style={{ maxHeight: '60vh', overflowY: 'auto' }}>

@@ -674,7 +674,10 @@ ${materials.length ? `<div class="section">
 
         {/* Detail Grid */}
         <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <DetailCard icon={MapPin} label={t('workRequests.plantArea')} value={`${item.plant} / ${item.area}`} />
+          {/* 0D1 (reunión VSC 2026-05-11): no mostrar plant_id crudo (puede
+              contener nombre del cliente real). Mostrar solo Área del aviso;
+              la planta ya está en el header. */}
+          <DetailCard icon={MapPin} label={t('workRequests.plantArea')} value={item.area || '—'} title={item.plant} />
           {/* Jorge 2026-04-24 14:18: TL + TAG DENTRO del modal aviso */}
           <DetailCard icon={MapPin} label="Ubic. Técnica" value={item.technical_location || '—'} />
           <DetailCard icon={Tag} label="Equipo / TAG" value={item.equipment_tag || '—'} />

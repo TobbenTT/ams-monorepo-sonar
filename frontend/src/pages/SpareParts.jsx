@@ -41,8 +41,17 @@ export default function SpareParts() {
       if (onlyLow && x.status === 'OK') return false;
       if (!search) return true;
       const q = search.toLowerCase();
+      // SF-666 (jornada VSC 2026-05-08): el buscador tiene que matchear también
+      // por Technical Location, código de equipo / TAG, almacén y unidad —
+      // antes sólo material_code + description y "no encuentra datos al filtrar
+      // por Technical Location".
       return (x.material_code || '').toLowerCase().includes(q)
-        || (x.description || '').toLowerCase().includes(q);
+        || (x.description || '').toLowerCase().includes(q)
+        || (x.technical_location || '').toLowerCase().includes(q)
+        || (x.equipment_tag || '').toLowerCase().includes(q)
+        || (x.equipment_id || '').toLowerCase().includes(q)
+        || (x.warehouse || x.warehouse_code || '').toLowerCase().includes(q)
+        || (x.unit || x.unit_of_measure || '').toLowerCase().includes(q);
     });
   }, [enriched, search, onlyLow]);
 

@@ -1684,8 +1684,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                     const prioColor = wo.priority_code === 'P1' ? 'bg-red-500 text-white' : wo.priority_code === 'P2' ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white';
                                     return (
                                       <div key={wo.wo_id}
-                                        className={`p-1 mb-0.5 rounded text-[10px] cursor-pointer ${typeMeta.bg} border border-border/50 hover:border-emerald-500`}
-                                        onClick={() => onOpenOT?.(wo)}>
+                                        className={`p-1 mb-0.5 rounded text-[10px] cursor-pointer ${typeMeta.bg} border border-border/50 hover:border-emerald-500 hover:shadow-md transition-all`}
+                                        title="Click para abrir la OT en Planning"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Mismo patrón que el Work Orders view (Scheduling.jsx:531):
+                                          // abrir la OT en /work-management?tab=planning&openWo=...
+                                          try { window.open(`/work-management?tab=planning&openWo=${wo.wo_id}`, '_blank'); } catch {}
+                                        }}>
                                         <div className="flex items-center gap-1">
                                           <span className={`text-[8px] font-bold px-1 rounded ${prioColor}`}>{wo.priority_code}</span>
                                           <span className="font-mono font-bold truncate">{wo.wo_number}</span>

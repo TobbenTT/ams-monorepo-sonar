@@ -294,6 +294,11 @@ def process_capture(db: Session, data: dict) -> dict:
             return {
                 "capture_id": capture_id,
                 "work_request_id": wr.request_id,
+                # BUG-01 (reunión VSC 2026-05-11): incluir aviso_number en response
+                # para que el frontend muestre "AV-NNNNN" en success card en lugar
+                # del request_id técnico viejo ("WR-2026-NNNNN").
+                "aviso_number": int(_next_av),
+                "request_id": wr.request_id,
                 "status": wr.status.value,
                 "equipment_tag": wr.equipment_identification.equipment_tag,
                 "equipment_confidence": wr.equipment_identification.confidence_score,

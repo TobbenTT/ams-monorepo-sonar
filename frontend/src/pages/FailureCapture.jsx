@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { suggestFailureFields, aiAssistImage } from '../api';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Upload, Loader2, ArrowRight, X, Mic, MicOff, Camera, AlertTriangle, Search, ChevronDown, ChevronRight, Clock, Package, Wrench, Users, MapPin, CheckCircle, FileText, ClipboardCopy, Lock } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import EquipmentChat from '../components/EquipmentChat';
@@ -15,6 +15,7 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 
 export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const { plant } = useOutletContext();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
   const { t } = useLanguage();
@@ -1271,8 +1272,12 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       const avLabel = avNum ? `AV-${String(avNum).padStart(5, '0')}` : reqId;
       setCreatedWRId(avLabel);
       toast.success('Aviso creado: ' + avLabel);
-      // Disparar evento para que WorkRequests refresque aunque WS esté desconectado
+      // Disparar evento para que WorkRequests refresque aunque WS esté desconectado.
+      // BUG-03 (2026-05-11): doble dispatch — primero inmediato (para listeners ya
+      // montados), y otro a 1.5s para que cuando el usuario navegue a /work-management
+      // y WorkRequests acabe de montar su listener, también reciba la señal.
       try { window.dispatchEvent(new CustomEvent('wr:created', { detail: { wrId } })); } catch {}
+      try { setTimeout(() => window.dispatchEvent(new CustomEvent('wr:created', { detail: { wrId } })), 1500); } catch {}
       // Jorge 2026-04-27: refrescar badge counts del WM al toque + retry 1.5s
       // por si el backend tarda en commitear. La pestaña Identification se
       // refresca sola por el WS broadcast wr_created.
@@ -1487,7 +1492,13 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             <button onClick={() => { handleReset(); }} className="px-5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">
               Create Another
             </button>
-            <button onClick={() => { setCreatedWRId(null); if (onNavigateTab) onNavigateTab('identification'); }} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
+            <button onClick={() => {
+              setCreatedWRId(null);
+              // BUG-02: si está embebido en /work-management usa el tab switch;
+              // si está en /failure-capture standalone, navigate al WM tab identification.
+              if (onNavigateTab) onNavigateTab('identification');
+              else navigate('/work-management?tab=identification');
+            }} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
               View Notifications
             </button>
           </div>

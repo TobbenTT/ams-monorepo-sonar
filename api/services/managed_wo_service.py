@@ -654,13 +654,11 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
             if wr_support:
                 wo_obj.support_equipment = wr_support
                 result["support_equipment"] = wr_support
-            if wr_circ:
-                # Append circumstances + working conditions del aviso a la descripción de la OT
-                # para que sean visibles en la lista de OTs y detalle (no se pierden en ejecución/reportes).
-                base_desc = wo_obj.description or ""
-                if wr_circ not in base_desc:
-                    wo_obj.description = (base_desc + "\n\n— Circunstancias del aviso —\n" + wr_circ).strip()[:1900]
-                    result["description"] = wo_obj.description
+            # 0B4 BUG-04 (reunión VSC 2026-05-11): NO concatenar más
+            # "— Circunstancias del aviso —" a la description de la OT. El
+            # campo circunstancias fue eliminado del flujo (0B4), así que el
+            # texto ya no debería aparecer en listados/detalle. La data legacy
+            # de WR.circumstances queda en BD pero no se propaga visualmente.
             db.commit()
 
     # Update WR status so it can't create duplicate WOs

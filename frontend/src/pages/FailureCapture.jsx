@@ -239,7 +239,9 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     technicalLocationCode: '',
     suggestedAction: '',
     estimatedDuration: '',
-    priority: 'P3',
+    // SF-681 (reunión VSC 2026-05-11): priority asignación MANUAL — sin precarga.
+    // El usuario tiene que elegir P1-P4. Validación en canSubmit (línea 1205).
+    priority: '',
     activityClass: 'M001',
     equipmentCondition: 'operating',
     failureCategory: 'MECHANICAL',
@@ -423,9 +425,9 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
           setF('woTitle', title);
         }
         if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);
-        // Jorge SF-544: NO sobreescribir priority si el usuario ya la seleccionó manualmente.
-        // La selección manual gana sobre la sugerencia IA al regenerar.
-        if (s.priority && !form.priority) setF('priority', s.priority);
+        // SF-681 (reunión VSC 2026-05-11): priority NO se autocarga ni por IA.
+        // El usuario tiene que elegirla manualmente. La sugerencia IA queda como
+        // mensaje en el banner pero no muta el form.
         if (s.estimatedDuration || s.estimated_duration) setF('estimatedDuration', String(s.estimatedDuration || s.estimated_duration));
         if (s.equipmentCondition || s.equipment_condition) {
           const pc = (s.equipmentCondition || s.equipment_condition).toLowerCase();
@@ -924,8 +926,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       const cat = s.failureCategory.toUpperCase().trim();
       if (['MECHANICAL','ELECTRICAL','INSTRUMENTATION','HYDRAULIC','STRUCTURAL'].includes(cat)) setF('failureCategory', cat);
     }
-    // Jorge SF-544: respetar selección manual de priority
-    if (s.priority && !form.priority) setF('priority', s.priority);
+    // SF-681 (reunión VSC 2026-05-11): priority NO se autocarga via Accept Vision.
     if (s.activityClass) setF('activityClass', s.activityClass);
     // SF-673: la sugerencia de acción es manual; ni Accept Vision la autorrellena.
     const aiCat = (s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase();
@@ -1016,8 +1017,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
           const cat = s.failureCategory.toUpperCase().trim();
           if (['MECHANICAL', 'ELECTRICAL', 'INSTRUMENTATION'].includes(cat)) setF('failureCategory', cat);
         }
-        // Jorge SF-544: respetar selección manual de priority
-        if (s.priority && !form.priority) setF('priority', s.priority);
+        // SF-681 (reunión VSC 2026-05-11): priority NO se autocarga por IA aquí.
         if (s.activityClass) setF('activityClass', s.activityClass);
         // SF-673: no autorrellenar 'suggestedAction' (captura manual).
         // Validate catalog values against FAILURE_CATALOG
@@ -1298,7 +1298,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     setWizardStep(1);
     setForm({
       whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '',
-      woTitle: '', suggestedAction: '', estimatedDuration: '', priority: 'P3', activityClass: 'M001',
+      woTitle: '', suggestedAction: '', estimatedDuration: '', priority: '', activityClass: 'M001',
       equipmentCondition: 'operating', failureCategory: 'MECHANICAL', failureSymptom: '',
       failureObjectPart: '', failureCause: '', resources: [], materials: [],
       specialEquipment: '', circumstances: '', reportedBy: form.reportedBy, supportEquipment: [],

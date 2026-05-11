@@ -346,27 +346,83 @@ function HistoryTab({ wo }) {
 
 // SF-647 — Historial de comentarios estilo SAP: append-only, comentarios
 // previos congelados (no editables), nuevos en cascada con autor + timestamp.
+// SF-674 (reunión VSC 2026-05-11): + grabación de audio adjunto + transcripción.
 function CommentsTab({ wo, onUpdate }) {
   const toast = useToast();
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null); // {base64, mime}
+  const mediaRecorderRef = useRef(null);
+  const speechRef = useRef(null);
   const notes = Array.isArray(wo.execution_notes) ? wo.execution_notes : [];
   // Filtrar las que son comentarios reales (excluir status transitions y stock_consumed)
   const comments = notes.filter(n => n && n.note && !/^Status:|^\[STOCK_CONSUMED\]/.test(n.note));
 
+  // SF-674: grabación de audio + Web SpeechRecognition para transcripción.
+  const startRecording = async () => {
+    try {
+      // 1) MediaRecorder para guardar el audio binario
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      const chunks = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      mr.onstop = async () => {
+        const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => setAudioBlob({ data_url: reader.result, mime: blob.type });
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      // 2) SpeechRecognition para transcripción (best effort, browser-dependent)
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SR) {
+        const sr = new SR();
+        sr.lang = 'es-CL';
+        sr.continuous = true;
+        sr.interimResults = false;
+        sr.onresult = (ev) => {
+          const transcript = Array.from(ev.results).map(r => r[0].transcript).join(' ').trim();
+          if (transcript) setNewComment(prev => (prev ? prev + ' ' : '') + transcript);
+        };
+        sr.onerror = () => {};
+        sr.start();
+        speechRef.current = sr;
+      }
+      setIsRecording(true);
+    } catch (err) {
+      toast.error('No se pudo iniciar grabación: ' + (err.message || err));
+    }
+  };
+  const stopRecording = () => {
+    try { mediaRecorderRef.current?.stop(); } catch {}
+    try { speechRef.current?.stop(); } catch {}
+    mediaRecorderRef.current = null;
+    speechRef.current = null;
+    setIsRecording(false);
+  };
+
   const submit = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() && !audioBlob) return;
     setSubmitting(true);
     try {
       const entry = {
         timestamp: new Date().toISOString(),
         user: wo._user_label || 'supervisor',
-        note: newComment.trim(),
+        note: newComment.trim() || '(audio)',
       };
+      // SF-674: adjuntar audio si fue grabado
+      if (audioBlob) {
+        entry.audio_data_url = audioBlob.data_url;
+        entry.audio_mime = audioBlob.mime;
+      }
       const next = [...notes, entry];
       const updated = await api.updateManagedWO(wo.wo_id, { execution_notes: next });
       onUpdate?.(updated);
       setNewComment('');
+      setAudioBlob(null);
     } catch (e) {
       toast.error('Error: ' + (e.message || e));
     } finally {
@@ -412,6 +468,14 @@ function CommentsTab({ wo, onUpdate }) {
                 <span className="ml-auto text-[9px] italic text-gray-400">🔒 Congelado</span>
               </div>
               <p className="text-xs text-gray-800 whitespace-pre-wrap">{c.note}</p>
+              {/* SF-674: render audio si está adjunto */}
+              {c.audio_data_url && (
+                <div className="mt-2">
+                  <audio controls src={c.audio_data_url} className="w-full h-8" preload="metadata">
+                    Tu navegador no soporta audio.
+                  </audio>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -422,10 +486,30 @@ function CommentsTab({ wo, onUpdate }) {
         <div className="border-t border-gray-200 pt-3 space-y-2">
           <label className="text-xs font-semibold text-gray-700">Nuevo comentario</label>
           <textarea value={newComment} onChange={e => setNewComment(e.target.value)} rows={3}
-            placeholder="Agregá tu comentario. Una vez guardado no se puede editar."
+            placeholder="Agregá tu comentario o usa 🎤 para grabar audio (se transcribe automáticamente). Una vez guardado no se puede editar."
             className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          {/* SF-674: preview del audio antes de guardar */}
+          {audioBlob && (
+            <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+              <audio controls src={audioBlob.data_url} className="flex-1 h-8" />
+              <button onClick={() => setAudioBlob(null)} className="text-xs text-red-600 hover:underline">✕ Quitar</button>
+            </div>
+          )}
           <div className="flex justify-end gap-2">
-            <button onClick={submit} disabled={submitting || !newComment.trim()}
+            {/* SF-674: botón grabar audio */}
+            {!isRecording ? (
+              <button onClick={startRecording} disabled={submitting}
+                className="px-3 py-1.5 text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg hover:bg-emerald-200 disabled:opacity-40 flex items-center gap-1"
+                title="Grabar audio + transcribir automáticamente">
+                🎤 Grabar audio
+              </button>
+            ) : (
+              <button onClick={stopRecording}
+                className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-1 animate-pulse">
+                ⏹️ Detener
+              </button>
+            )}
+            <button onClick={submit} disabled={submitting || (!newComment.trim() && !audioBlob)}
               className="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 flex items-center gap-1">
               {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageSquare className="w-3 h-3" />}
               Agregar comentario
@@ -1632,8 +1716,24 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3 text-xs font-mono">
+                      {/* SF-677 (jornada VSC 2026-05-08): puesto trabajo sugerido
+                          por IA en azul + badge 🤖 + tooltip explicativo. Cuando
+                          el planner crea la OT y elige WC manual del catálogo
+                          WORK_CENTERS, queda en negro (confirmado, ver Operations
+                          tab del OT modal). */}
                       {wr.work_center
-                        ? <span className="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">{wr.work_center}</span>
+                        ? (() => {
+                            const wcMatch = WORK_CENTERS.find(w => w.value === wr.work_center || w.label === wr.work_center);
+                            const display = wcMatch ? wcMatch.value : wr.work_center;
+                            return (
+                              <span
+                                className="inline-flex items-center gap-1 text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded"
+                                title={`🤖 Sugerido por IA — confirmar al crear OT${wcMatch ? `\nDescripción: ${wcMatch.label}` : '\n(no coincide con catálogo oficial)'}`}>
+                                <span className="text-[9px]">🤖</span>
+                                {display}
+                              </span>
+                            );
+                          })()
                         : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">

@@ -446,6 +446,49 @@ function isClosedStatus(wo) {
 // El campo contractor_crew_id en BD queda para registros históricos, pero ninguna
 // entidad nueva puede ser asignada — Carlos confirma con cliente eventual cleanup.
 
+// 0B10 v3 (reunión VSC 2026-05-11): matching robusto de equipos de apoyo
+// contra el catálogo de planta. Soporta:
+//   1) case-insensitive y normalización de espacios/acentos
+//   2) alias EN↔ES (Mobile crane ↔ Grúa móvil, Scaffolding ↔ Andamio, etc.)
+//   3) match parcial por includes para nombres como "Puente grúa taller"
+// vs "Puente grúa". Si match → equipo se considera CATALOGADO (sin warning).
+const SUPPORT_EQUIP_ALIASES = {
+  'mobile crane': ['grúa móvil', 'grua movil'],
+  'bridge crane': ['puente grúa', 'puente grua'],
+  'scaffolding': ['andamio', 'andamios'],
+  'forklift': ['montacargas'],
+  'hydraulic truck': ['mandil hidráulico', 'mandil hidraulico', 'camión hidráulico'],
+  'vibration analyzer': ['analizador de vibración', 'analizador de vibracion'],
+  'welder': ['soldador', 'soldadora'],
+  'welding machine': ['máquina de soldar', 'maquina de soldar', 'soldadora'],
+};
+function normalizeEquipName(s) {
+  return (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+}
+function matchSupportEquip(name, pool) {
+  if (!name || !pool || pool.length === 0) return null;
+  const target = normalizeEquipName(name);
+  if (!target) return null;
+  // Aliases del target hacia variantes
+  const aliasVariants = new Set([target]);
+  if (SUPPORT_EQUIP_ALIASES[target]) SUPPORT_EQUIP_ALIASES[target].forEach(a => aliasVariants.add(normalizeEquipName(a)));
+  for (const [en, esList] of Object.entries(SUPPORT_EQUIP_ALIASES)) {
+    if (esList.some(es => normalizeEquipName(es) === target)) aliasVariants.add(en);
+  }
+  // 1) match exacto (entre las variantes)
+  for (const p of pool) {
+    const pNorm = normalizeEquipName(p.name);
+    if (aliasVariants.has(pNorm)) return p;
+  }
+  // 2) match parcial (target contiene name del pool o viceversa)
+  for (const p of pool) {
+    const pNorm = normalizeEquipName(p.name);
+    if (!pNorm) continue;
+    if (pNorm.includes(target) || target.includes(pNorm)) return p;
+  }
+  return null;
+}
+
 function PriorityLabel({ priority }) {
   const p = String(priority || 'P3');
   return <span className={PRIORITY_COLORS[p] || 'text-gray-500'}>{PRIORITY_LABELS[p] || p}</span>;
@@ -3108,14 +3151,22 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                           <button type="button"
                             onClick={async () => {
                               if (equipPool.length === 0) api.listSupportEquipment(plant).then(r => setEquipPool(r || [])).catch(() => {});
-                              // 0B10 (reunión VSC 2026-05-11): asignar _uid estable a cada
-                              // fila nueva. Sin esto React reusaba inputs por índice y los
-                              // valores tipeados antes del blur se perdían cuando se agregaba
-                              // otra fila.
+                              // 0B10 (reunión VSC 2026-05-11 v2): el closure capturaba wo
+                              // del render anterior — clicks rápidos sobreescribían rows.
+                              // Fix: usar setSelectedOT(prev => ...) para leer la última
+                              // versión del state, persistir optimistically, después API.
                               const newRow = { tag: '', name: '', equipment_type: 'MOBILE_CRANE', hours: 1, notes: '', from_pool: false, _uid: `se-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
-                              const next = [...(wo.support_equipment || []), newRow];
+                              let woIdLocal = null;
+                              let nextLocal = null;
+                              setSelectedOT(prev => {
+                                if (!prev) return prev;
+                                woIdLocal = prev.wo_id;
+                                nextLocal = [...(prev.support_equipment || []), newRow];
+                                return { ...prev, support_equipment: nextLocal };
+                              });
+                              if (!woIdLocal || !nextLocal) return;
                               try {
-                                const updated = await api.updateWOSupportEquipment(wo.wo_id, next);
+                                const updated = await api.updateWOSupportEquipment(woIdLocal, nextLocal);
                                 setSelectedOT(updated);
                               } catch (e) { toast.error('Error: ' + (e.message || '')); }
                             }}
@@ -3168,7 +3219,11 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                   setSelectedOT(updated);
                                 } catch (e) { toast.error('Error: ' + (e.message || '')); }
                               };
-                              const poolMatch = equipPool.find(p => p.name === (se.name || se.tag));
+                              // 0B10 v3 (reunión VSC 2026-05-11): matching bilingüe
+                              // case-insensitive + alias EN↔ES. El warning naranja sólo
+                              // dispara si el equipo realmente no está en el catálogo
+                              // bajo NINGUNA variante de nombre. Si está → gris (catalogado).
+                              const poolMatch = matchSupportEquip(se.name || se.tag, equipPool);
                               const isFromPool = !!(se.from_pool || poolMatch);
                               const poolLoaded = equipPool.length > 0;
                               const dlId = `equip-pool-${wo.wo_id}`;
@@ -3185,14 +3240,52 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                         setTimeout(() => setEquipDropdownIdx(-1), 200);
                                         const val = e.target.value.trim();
                                         if (!val || val === (se.name || se.tag || '')) return;
-                                        const hit = equipPool.find(p => p.name === val);
+                                        // 0B10 v3: usar matcher bilingüe en vez de equals estricto.
+                                        const hit = matchSupportEquip(val, equipPool);
                                         const next = (wo.support_equipment || []).map((x, idx) =>
                                           idx === i ? { ...x, name: val, tag: hit ? hit.equipment_id : val, equipment_id: hit?.equipment_id, from_pool: !!hit, equipment_type: hit?.equipment_type || x.equipment_type } : x
                                         );
                                         try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Guardado'); } catch(e2) { toast.error(e2.message); }
                                       }}
                                       placeholder="Buscar equipo..."
+                                      title={poolLoaded && !isFromPool && (se.name||se.tag) ? 'Equipo no está en el catálogo de planta. Click "+ Catálogo" al costado para registrarlo permanentemente.' : 'Equipo del catálogo de planta'}
                                       className={`w-full text-xs border rounded px-2 py-1 ${poolLoaded && !isFromPool && (se.name||se.tag) ? 'border-orange-400 text-orange-700' : 'border-gray-300'}`} />
+                                    {/* 0B10 v3: si el equipo no está en catálogo, ofrecer
+                                        registrarlo en el catálogo de planta (POST /scheduling/
+                                        support-equipment). Después de creado, queda disponible
+                                        en el dropdown para todas las OTs futuras. */}
+                                    {poolLoaded && !isFromPool && (se.name || se.tag) && (
+                                      <button type="button"
+                                        onClick={async () => {
+                                          const name = (se.name || se.tag || '').trim();
+                                          if (!name) return;
+                                          if (!await confirm({
+                                            title: 'Agregar al catálogo de planta',
+                                            message: `¿Registrar "${name}" como equipo de apoyo permanente en el catálogo? Quedará disponible para todas las OTs.`,
+                                            confirmText: 'Registrar',
+                                          })) return;
+                                          try {
+                                            const created = await api.createSupportEquipment({
+                                              plant_id: plant,
+                                              name,
+                                              equipment_type: se.equipment_type || 'OTHER',
+                                            });
+                                            // Recargar pool + linkear este row al equipment_id nuevo
+                                            const newPool = await api.listSupportEquipment(plant);
+                                            setEquipPool(newPool || []);
+                                            const next = (wo.support_equipment || []).map((x, idx) =>
+                                              idx === i ? { ...x, name, tag: created.equipment_id, equipment_id: created.equipment_id, from_pool: true } : x
+                                            );
+                                            const u = await api.updateWOSupportEquipment(wo.wo_id, next);
+                                            setSelectedOT(u);
+                                            toast.success(`✓ "${name}" agregado al catálogo de planta`);
+                                          } catch (e2) { toast.error('Error: ' + (e2.message || '')); }
+                                        }}
+                                        title="Registrar este equipo en el catálogo permanente de la planta"
+                                        className="mt-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200">
+                                        + Agregar al catálogo
+                                      </button>
+                                    )}
                                     {equipDropdownIdx === i && equipPool.length > 0 && (
                                       <div className="absolute z-50 left-2 right-2 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                                         {equipPool.map(p => (

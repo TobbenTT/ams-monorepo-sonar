@@ -127,3 +127,18 @@ docs/docs/
 
 # -------------------- Ayudas (local meeting notes/transcripts) --------------------
 Ayudas/
+
+# -------------------- Local-only working dirs (notes, internal copies) --------------------
+Ciberseguridad/
+Seudo clientes/
+errores_imgs/
+docx_imgs/
+
+# -------------------- Local handoff / status / transcript files --------------------
+MOBILE_HANDOFF.md
+SESSION_HANDOFF.md
+PROJECT_STATUS.md
+pa-snapshot.md
+Claude_Mythos_*.txt
+Transcript_Agent_*.txt
+*.jsonl

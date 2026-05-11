@@ -2,7 +2,7 @@
   {
     "sap_func_loc": "SN",
     "code": "SN",
-    "name": "Salares Norte",
+    "name": "Planta Minera CL-SN",
     "node_type": "PLANT",
     "level": 1,
     "parent_code": null

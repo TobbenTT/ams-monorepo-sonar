@@ -2101,8 +2101,8 @@ export default {
         creating: 'Creando...',
         createWorkRequest: 'Crear Aviso de Trabajo',
         // Plant conditions
-        plantOperating: 'Operando',
-        plantStopped: 'Detenida',
+        plantOperating: 'En operación',
+        plantStopped: 'Detenido',
         breakdownAlert: 'Equipo detenido — Prioridad ajustada a P1 (Urgente). Clase OT: PM03 No Programado.',
         // Priorities
         priorityUrgent: '1 - Urgente',

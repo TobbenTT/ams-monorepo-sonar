@@ -195,8 +195,9 @@ _PLANT_DEFAULTS = {
         "currency": "mad",
         "defaultPlant": "OCP-JFC1",
     },
+    # 0D1 (reunión VSC 2026-05-11): anonimización del cliente real.
     "GOLDFIELDS-SN": {
-        "companyName": "Gold Fields — Salares Norte",
+        "companyName": "Cliente Minero CL-SN",
         "timezone": "gmt-3",
         "currency": "usd",
         "defaultPlant": "GOLDFIELDS-SN",

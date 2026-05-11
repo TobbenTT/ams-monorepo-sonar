@@ -1364,14 +1364,16 @@ ${materials.length ? `<div class="section">
                 </button>
               </>
             )}
-            {/* Save button (standalone — save without approving) */}
+            {/* 0B7 (reunión VSC 2026-05-11): Guardar standalone — separado del
+                botón Aprobar. Persiste cambios sin transicionar el estado del aviso. */}
             {editing && (
               <button
                 onClick={() => { onSaveEdit(item.id, editData); setEditing(false); }}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                title="Guardar cambios sin aprobar el aviso"
               >
                 <Save size={16} />
-                Save
+                Guardar (sin aprobar)
               </button>
             )}
             {/* Supervisor: Approve + Reject + Cancelar Aviso */}

@@ -11,13 +11,17 @@ const PLANT_CONFIG = {
     icon: '🏭',
     tagline: 'Phosphate Processing Complex',
   },
+  // 0D1 (reunión VSC 2026-05-11): anonimización por pedido Jorge — riesgo
+  // comercial mostrar el cliente real cuando hacemos demo a otros. plant_id
+  // queda como GOLDFIELDS-SN por compatibilidad histórica BD; los labels son
+  // genéricos. "SN" puede mantenerse o reemplazarse por CL (cliente/chile).
   'GOLDFIELDS-SN': {
     color: 'green',
     gradient: 'from-emerald-600 to-emerald-800',
     hoverGradient: 'from-emerald-500 to-emerald-700',
     ring: 'ring-emerald-400',
     icon: '⛏️',
-    tagline: 'Deep-Level Gold Mining',
+    tagline: 'Planta minera de oro (cliente CL-SN)',
   },
   'FLUOR-ALFA': {
     color: 'gray',

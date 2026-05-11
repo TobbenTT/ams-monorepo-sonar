@@ -20,9 +20,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const { t } = useLanguage();
 
   // ── SAP PM Constants ──
+  // 0B8 (reunión VSC 2026-05-11): rename "Stopped/Parado" → "Detenido" y
+  // "Operating/Operando" → "En operación" por pedido de Jorge.
   const PLANT_CONDITIONS = [
-    { value: 'operating', label: 'Operating', color: '#10B981' },
-    { value: 'stopped', label: 'Stopped', color: '#EF4444' },
+    { value: 'operating', label: 'En operación', color: '#10B981' },
+    { value: 'stopped', label: 'Detenido', color: '#EF4444' },
   ];
 
   // Jorge 2026-04-23: P1<24h, P2<7d, P3>7d, P4 = Parada de Plantas.
@@ -1748,6 +1750,88 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                 </p>
               </div>
             )}
+            {/* 0B5 (reunión VSC 2026-05-11): Suggested Action reubicado JUSTO
+                después de "qué pasó" (textarea whatHappens). Jorge: el flujo
+                cognitivo es describir el problema → escribir acción → invocar IA. */}
+            <div className="border rounded-xl p-4 mt-3">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Actions</label>
+              {form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? (() => {
+                const parseSteps = (raw) => {
+                  const steps = [];
+                  for (let n = 1; n <= 30; n++) {
+                    const start = raw.indexOf(`${n}. `);
+                    if (start === -1) break;
+                    const nextStart = raw.indexOf(`${n + 1}. `, start + 1);
+                    const text = raw.substring(start, nextStart > -1 ? nextStart : undefined).replace(/^\d+\.\s*/, '').trim();
+                    if (text) steps.push(text);
+                  }
+                  return steps;
+                };
+                const serialize = (arr) => arr.map((t, i) => `${i + 1}. ${t}`).join('\n');
+                const steps = parseSteps(form.suggestedAction);
+                return (
+                  <>
+                    <div className="space-y-1.5 mb-2">
+                      {steps.map((s, i) => (
+                        <div key={i} className="flex gap-2 items-start p-2 bg-gray-50 rounded-lg border text-xs group">
+                          <span className="font-bold text-emerald-600 min-w-[20px] pt-1">{i + 1}.</span>
+                          <input
+                            value={s}
+                            onChange={(e) => {
+                              const n = [...steps]; n[i] = e.target.value;
+                              setF('suggestedAction', serialize(n));
+                            }}
+                            className="flex-1 bg-transparent border-b border-transparent focus:border-emerald-400 focus:outline-none py-1" />
+                          <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition">
+                            <button type="button" title="Subir" disabled={i === 0}
+                              onClick={() => {
+                                if (i === 0) return;
+                                const n = [...steps]; [n[i - 1], n[i]] = [n[i], n[i - 1]];
+                                setF('suggestedAction', serialize(n));
+                              }}
+                              className="p-0.5 text-gray-500 hover:text-emerald-700 disabled:opacity-30">↑</button>
+                            <button type="button" title="Bajar" disabled={i === steps.length - 1}
+                              onClick={() => {
+                                if (i === steps.length - 1) return;
+                                const n = [...steps]; [n[i + 1], n[i]] = [n[i], n[i + 1]];
+                                setF('suggestedAction', serialize(n));
+                              }}
+                              className="p-0.5 text-gray-500 hover:text-emerald-700 disabled:opacity-30">↓</button>
+                            <button type="button" title="Eliminar"
+                              onClick={() => {
+                                const n = steps.filter((_, j) => j !== i);
+                                setF('suggestedAction', serialize(n));
+                              }}
+                              className="p-0.5 text-gray-400 hover:text-red-500">×</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button type="button"
+                        onClick={() => {
+                          const txt = window.prompt('Nueva acción:');
+                          if (!txt || !txt.trim()) return;
+                          setF('suggestedAction', serialize([...steps, txt.trim()]));
+                        }}
+                        className="text-[11px] font-semibold px-2.5 py-1 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">
+                        + Agregar acción
+                      </button>
+                      <button type="button" onClick={() => { const el = document.getElementById('sa-raw'); el.style.display = el.style.display === 'none' ? '' : 'none'; }}
+                        className="text-[10px] text-blue-500 underline">Edit raw text</button>
+                    </div>
+                    <textarea id="sa-raw" style={{ display: 'none' }} value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
+                      rows={3} className="mt-2 w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
+                  </>
+                );
+              })() : (
+                <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
+                  placeholder="What corrective action is recommended?"
+                  rows={4}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
+              )}
+            </div>
+
             {/* AI Suggest Button */}
             <div className="flex items-center gap-2 mt-2">
               <button
@@ -1939,89 +2023,9 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             <p className="text-[10px] text-gray-400 mt-1">This will be the Work Order name in Planning and Identification</p>
           </div>
 
-          {/* 2. Suggested Action */}
-          <div className="border rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Actions</label>
-            {/* Jorge (2026-04-20 tarde): las acciones sugeridas por la IA
-                tienen que ser editables inline — X para borrar, ↑↓ para
-                reordenar, + para agregar, texto editable. Re-serializa
-                como "1. ... 2. ..." en suggestedAction al cambiar. */}
-            {form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? (() => {
-              const parseSteps = (raw) => {
-                const steps = [];
-                for (let n = 1; n <= 30; n++) {
-                  const start = raw.indexOf(`${n}. `);
-                  if (start === -1) break;
-                  const nextStart = raw.indexOf(`${n + 1}. `, start + 1);
-                  const text = raw.substring(start, nextStart > -1 ? nextStart : undefined).replace(/^\d+\.\s*/, '').trim();
-                  if (text) steps.push(text);
-                }
-                return steps;
-              };
-              const serialize = (arr) => arr.map((t, i) => `${i + 1}. ${t}`).join('\n');
-              const steps = parseSteps(form.suggestedAction);
-              return (
-                <>
-                  <div className="space-y-1.5 mb-2">
-                    {steps.map((s, i) => (
-                      <div key={i} className="flex gap-2 items-start p-2 bg-gray-50 rounded-lg border text-xs group">
-                        <span className="font-bold text-emerald-600 min-w-[20px] pt-1">{i + 1}.</span>
-                        <input
-                          value={s}
-                          onChange={(e) => {
-                            const n = [...steps]; n[i] = e.target.value;
-                            setF('suggestedAction', serialize(n));
-                          }}
-                          className="flex-1 bg-transparent border-b border-transparent focus:border-emerald-400 focus:outline-none py-1" />
-                        <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition">
-                          <button type="button" title="Subir" disabled={i === 0}
-                            onClick={() => {
-                              if (i === 0) return;
-                              const n = [...steps]; [n[i - 1], n[i]] = [n[i], n[i - 1]];
-                              setF('suggestedAction', serialize(n));
-                            }}
-                            className="p-0.5 text-gray-500 hover:text-emerald-700 disabled:opacity-30">↑</button>
-                          <button type="button" title="Bajar" disabled={i === steps.length - 1}
-                            onClick={() => {
-                              if (i === steps.length - 1) return;
-                              const n = [...steps]; [n[i + 1], n[i]] = [n[i], n[i + 1]];
-                              setF('suggestedAction', serialize(n));
-                            }}
-                            className="p-0.5 text-gray-500 hover:text-emerald-700 disabled:opacity-30">↓</button>
-                          <button type="button" title="Eliminar"
-                            onClick={() => {
-                              const n = steps.filter((_, j) => j !== i);
-                              setF('suggestedAction', serialize(n));
-                            }}
-                            className="p-0.5 text-gray-400 hover:text-red-500">×</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button type="button"
-                      onClick={() => {
-                        const txt = window.prompt('Nueva acción:');
-                        if (!txt || !txt.trim()) return;
-                        setF('suggestedAction', serialize([...steps, txt.trim()]));
-                      }}
-                      className="text-[11px] font-semibold px-2.5 py-1 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">
-                      + Agregar acción
-                    </button>
-                    <button type="button" onClick={() => { const el = document.getElementById('sa-raw'); el.style.display = el.style.display === 'none' ? '' : 'none'; }}
-                      className="text-[10px] text-blue-500 underline">Edit raw text</button>
-                  </div>
-                  <textarea id="sa-raw" style={{ display: 'none' }} value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
-                    rows={3} className="mt-2 w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
-                </>
-              );
-            })() : (
-              <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
-                placeholder="What corrective action is recommended?"
-                rows={4}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
-            )}
-          </div>
+          {/* 0B5 (reunión VSC 2026-05-11): bloque "Suggested Action" reubicado
+              arriba — ahora aparece justo después del textarea whatHappens y
+              antes del módulo IA Assistant. */}
 
           {/* Priority+Estado movidos arriba del textbox (Jorge 2026-04-23) */}
 

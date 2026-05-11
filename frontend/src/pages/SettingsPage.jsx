@@ -17,7 +17,8 @@ const currentPlant = () => localStorage.getItem('selected_plant') || '';
 
 const PLANT_DEFAULTS = {
   'OCP-JFC1':      { companyName: 'OCP Group',                    timezone: 'gmt+1', currency: 'mad', defaultPlant: 'OCP-JFC1' },
-  'GOLDFIELDS-SN': { companyName: 'Gold Fields — Salares Norte',   timezone: 'gmt-3', currency: 'usd', defaultPlant: 'GOLDFIELDS-SN' },
+  // 0D1: anonimización — antes "Gold Fields — Salares Norte", ahora genérico.
+  'GOLDFIELDS-SN': { companyName: 'Cliente Minero CL-SN',            timezone: 'gmt-3', currency: 'usd', defaultPlant: 'GOLDFIELDS-SN' },
   'FLUOR-ALFA':    { companyName: 'Fluor Corporation',             timezone: 'gmt-5', currency: 'usd', defaultPlant: 'FLUOR-ALFA' },
   'DEMO-CORP':     { companyName: 'Demo Mining Corporation',       timezone: 'gmt+0', currency: 'usd', defaultPlant: 'DEMO-CORP' },
 };

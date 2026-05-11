@@ -1784,18 +1784,10 @@ export default function WorkOrdersPage() {
                 <textarea value={createForm.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)} placeholder={t('workOrders.suggestedActionPlaceholder')} rows={2} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none" />
               </div>
 
-              {/* 6. Circunstancias / Detalle */}
-              <div className="border rounded-xl p-4">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('workOrders.circumstances')}</label>
-                <textarea
-                  value={createForm.circumstances}
-                  onChange={e => setF('circumstances', e.target.value)}
-                  placeholder={t('workOrders.circumstancesPlaceholder')}
-                  rows={2}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
-                />
-                <div className="text-[10px] text-gray-400 mt-1">{t('workOrders.circumstancesSapNote')}</div>
-              </div>
+              {/* 0B4 (reunión VSC 2026-05-11): campo "Circunstancias / Detalle"
+                  eliminado del formulario por pedido de Jorge. El estado
+                  `createForm.circumstances` queda vacío. La data histórica sigue
+                  visible en WR detail / OT detail si existe. */}
 
               {/* 7. Resources necesarios */}
               <div className="border rounded-xl p-4">

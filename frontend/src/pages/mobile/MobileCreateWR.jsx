@@ -958,22 +958,8 @@ export default function MobileCreateWR() {
                     />
                 </div>
 
-                {/* Circunstancias (SAP IH01 — campo Detalle) */}
-                <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>
-                    <label className="text-xs font-semibold mb-3 block" style={{ color: '#64748B', letterSpacing: '0.05em' }}>
-                        CIRCUNSTANCIAS / DETALLE
-                    </label>
-                    <textarea
-                        value={form.circumstances}
-                        onChange={(e) => set('circumstances', e.target.value)}
-                        placeholder="Descripción del evento, recursos necesarios, equipos de apoyo, información complementaria..."
-                        className="w-full h-20 p-3 rounded-xl border text-sm resize-none outline-none"
-                        style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                    />
-                    <div className="text-xs mt-1" style={{ color: '#94A3B8' }}>
-                        SAP: Información complementaria del aviso
-                    </div>
-                </div>
+                {/* 0B4 (reunión VSC 2026-05-11): campo "Circunstancias / Detalle"
+                    eliminado del formulario mobile por pedido de Jorge. */}
 
                 {/* 4. Resources necesarios */}
                 <div className="bg-white rounded-2xl p-4 border" style={{ borderColor: '#E2E8F0' }}>

@@ -2539,16 +2539,28 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                         };
                                         setEditOps(n);
                                       }}
-                                      title="Código SAP del puesto de trabajo. La descripción se autocompleta abajo."
-                                      className="text-xs border rounded px-2 py-1 max-w-[260px]">
-                                      <option value="">— Seleccionar puesto —</option>
+                                      title="Código SAP del puesto de trabajo. La descripción se autocompleta arriba (header de la operación)."
+                                      className="text-xs border rounded px-2 py-1 max-w-[140px] font-mono">
+                                      {/* 0B12 (reunión VSC 2026-05-11): mostrar SOLO el código del puesto
+                                          de trabajo. La descripción se autocompleta en el otro extremo
+                                          (header de la operación / select de disciplina). */}
+                                      <option value="">— Seleccionar —</option>
                                       {(() => {
                                         const filtered = wo.planning_group ? WORK_CENTERS.filter(w => w.group === wo.planning_group) : WORK_CENTERS;
                                         return (filtered.length ? filtered : WORK_CENTERS).map(w => (
-                                          <option key={w.value} value={w.value}>{w.value} · {w.label}</option>
+                                          <option key={w.value} value={w.value} title={w.label}>{w.value}</option>
                                         ));
                                       })()}
                                     </select>
+                                    {/* Descripción del puesto seleccionado, side-by-side al code */}
+                                    {op.work_center && (() => {
+                                      const wcMeta = WORK_CENTERS.find(w => w.value === op.work_center);
+                                      return wcMeta ? (
+                                        <span className="text-[10px] text-gray-500 truncate max-w-[200px]" title={wcMeta.label}>
+                                          {wcMeta.label}
+                                        </span>
+                                      ) : null;
+                                    })()}
                                   </div>
                                   {/* Jorge 2026-04-27: agrandar inputs Cantidad/Duración/HH
                                       para que se lean fácil (eran w-12/w-14 text-xs → w-16/w-20 text-sm).
@@ -3096,7 +3108,12 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                           <button type="button"
                             onClick={async () => {
                               if (equipPool.length === 0) api.listSupportEquipment(plant).then(r => setEquipPool(r || [])).catch(() => {});
-                              const next = [...(wo.support_equipment || []), { tag: '', name: '', equipment_type: 'MOBILE_CRANE', hours: 1, notes: '', from_pool: false }];
+                              // 0B10 (reunión VSC 2026-05-11): asignar _uid estable a cada
+                              // fila nueva. Sin esto React reusaba inputs por índice y los
+                              // valores tipeados antes del blur se perdían cuando se agregaba
+                              // otra fila.
+                              const newRow = { tag: '', name: '', equipment_type: 'MOBILE_CRANE', hours: 1, notes: '', from_pool: false, _uid: `se-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
+                              const next = [...(wo.support_equipment || []), newRow];
                               try {
                                 const updated = await api.updateWOSupportEquipment(wo.wo_id, next);
                                 setSelectedOT(updated);
@@ -3155,8 +3172,11 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                               const isFromPool = !!(se.from_pool || poolMatch);
                               const poolLoaded = equipPool.length > 0;
                               const dlId = `equip-pool-${wo.wo_id}`;
+                              // 0B10: key estable por _uid/tag/name para evitar que React
+                              // reuse inputs entre filas al agregar/borrar.
+                              const rowKey = se._uid || se.tag || se.name || `row-${i}`;
                               return (
-                                <tr key={i} className={`border-t border-amber-100 ${poolLoaded && !isFromPool && (se.name || se.tag) ? 'bg-orange-50/40' : ''}`}>
+                                <tr key={rowKey} className={`border-t border-amber-100 ${poolLoaded && !isFromPool && (se.name || se.tag) ? 'bg-orange-50/40' : ''}`}>
                                   <td className="px-3 py-2 relative">
                                     <input type="text"
                                       defaultValue={se.name || se.tag || ''}

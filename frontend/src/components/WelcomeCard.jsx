@@ -1,49 +1,74 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Wrench, FileText, Calendar, CheckCircle, Sparkles } from 'lucide-react';
+import { X, Wrench, FileText, Calendar, CheckCircle, Sparkles, Bot, AlertTriangle, ScrollText } from 'lucide-react';
 
 const STEPS = [
   {
     icon: FileText,
     title: 'Registra un aviso',
-    body: 'El mantenedor reporta la falla desde Failures & Events. Subís fotos, audio y la IA sugiere causa probable y acciones.',
+    body: 'El mantenedor reporta la falla desde Failures & Events. Adjunta foto + audio (transcripción automática ES). La IA sugiere causa probable y acciones, pero el campo Prioridad y Sugerencia son manuales.',
     cta: 'Ir a Failures',
-    route: '/failures',
+    route: '/failures-events',
   },
   {
     icon: Wrench,
     title: 'Planifica la OT',
-    body: 'Work Management → Planning. La OT nace con operaciones, materiales y costos sugeridos. Reserva repuestos y asigna puesto de trabajo.',
+    body: 'Work Management → Planning. La OT nace con operaciones, materiales y costos sugeridos. Reservá repuestos, asignás puesto de trabajo, agregás equipos de apoyo (interno/externo) y subís documentos.',
     cta: 'Ir a Planning',
     route: '/work-management?tab=planning',
   },
   {
     icon: Calendar,
-    title: 'Programa la semana',
-    body: 'Scheduling — arrastra las OTs al calendario por técnico. Auto-Level IA distribuye respetando capacidad. Reservá la semana cuando quede.',
+    title: 'Programa la semana — Vista Horarios',
+    body: 'Scheduling vista Horarios v2: eje vertical = horas (turno día 06–18 / noche 18–06). Arrastrás la OT al slot horario y el sistema asigna automáticamente técnicos con el skill compatible + capacidad libre.',
     cta: 'Ir a Scheduling',
-    route: '/work-management?tab=scheduling',
+    route: '/scheduling',
+  },
+  {
+    icon: AlertTriangle,
+    title: 'Auditoría visual de capacidad',
+    body: 'Tab Auditoría en Scheduling: detecta automáticamente técnicos sobre capacidad (>40h/sem) + violaciones de turno (DAY asignado a NIGHT y viceversa). Banner crítico/high con link directo a la OT problemática.',
+    cta: 'Ver Auditoría',
+    route: '/scheduling',
+  },
+  {
+    icon: Bot,
+    title: 'Analiza la OT con IA',
+    body: 'En cada OT modal, botón 🤖 Analizar IA (v0.2): resumen ejecutivo + readiness score + bloqueadores + alertas safety automáticas (LOTO/ATEX/altura/espacio confinado/hot work) + materiales sugeridos por keyword + quick actions.',
+    cta: 'Ir a Planning',
+    route: '/work-management?tab=planning',
   },
   {
     icon: CheckCircle,
-    title: 'Ejecuta y cierra',
-    body: 'Supervisor ve las OTs en Execution. Iniciar, progresar, cerrar con firma. Cierre pide HH reales por operación y graba observaciones por voz.',
+    title: 'Ejecuta y cierra con firma',
+    body: 'Supervisor ve las OTs en Execution. Iniciar, notificar HH parcial por operación, cerrar con firma PIN + supervisor QA gate (los pre-close gates validan operaciones completas, HH notificadas y variance plan vs real ≤ 25%).',
     cta: 'Ir a Execution',
     route: '/work-management?tab=execution',
+  },
+  {
+    icon: ScrollText,
+    title: 'Trazabilidad audit log',
+    body: 'Toda acción crítica queda registrada en audit log inmutable (SF-660): cambios de estado OT, firmas, ediciones, acciones IA. Acceso scoped por rol (admin todo / supervisor su planta / planner sus propias).',
+    cta: 'Ver Audit Log',
+    route: '/audit-log',
   },
 ];
 
 export default function WelcomeCard() {
   const navigate = useNavigate();
+  // Versión del tutorial — al bumpear esto, el welcome card vuelve a aparecer
+  // a los usuarios que ya lo habían descartado (showcase de features nuevas).
+  const TUTORIAL_VERSION = 'v2-2026-05-12';
+  const STORAGE_KEY = `mageam_welcomed_${TUTORIAL_VERSION}`;
   const [dismissed, setDismissed] = useState(() => {
-    try { return localStorage.getItem('mageam_welcomed') === '1'; } catch { return false; }
+    try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch { return false; }
   });
   const [step, setStep] = useState(0);
 
   if (dismissed) return null;
 
   const dismiss = () => {
-    try { localStorage.setItem('mageam_welcomed', '1'); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, '1'); } catch {}
     setDismissed(true);
   };
 

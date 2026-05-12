@@ -14,7 +14,7 @@ import { shortTag } from '../utils/equipmentTag';
 // Browser Speech Recognition (no API key needed)
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
+export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActive }) {
   const { plant } = useOutletContext();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -272,6 +272,21 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [createdWRId, setCreatedWRId] = useState(null);
+
+  // N2 — Jorge demo Goldfields 2026-05-12 (00:35:14): "creamos el aviso, y yo
+  // me devolví acá, esto debería limpiarse automáticamente cuando crea un aviso,
+  // pero sigue mostrando la información del aviso creado". Cuando el tab vuelve
+  // a estar activo y ya hay un createdWRId (= acaban de crear un aviso), limpio
+  // el banner + dejo el form en blanco. WorkManagement usa display:none para
+  // ocultar tabs, así que el state se preserva — este efecto lo resetea al
+  // volver explícitamente.
+  useEffect(() => {
+    if (isActive && createdWRId) {
+      // pequeño delay para que el usuario alcance a ver el banner al menos 1s
+      const t = setTimeout(() => setCreatedWRId(null), 800);
+      return () => clearTimeout(t);
+    }
+  }, [isActive, createdWRId]);
 
   // Equipment search
   const [equipSearch, setEquipSearch] = useState('');
@@ -694,9 +709,17 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     setF('whereTag', shortTag(node.tag || node.code || ''));
     setEquipSearch('');
     setShowEquipSearch(false);
-    // Duplicates checked only after AI analysis (not on equipment selection per client feedback)
-    // Auto-find location
-    if (node.parent_node_id && locationNodes.length > 0) {
+    // A1 (Jorge demo 2026-05-12 00:02:22): "me eliminó el último nivel, cuando
+    // acá en Technical Location tiene que mostrarlo completo". Antes tomábamos
+    // el sap_func_loc del PADRE — dropeaba el nivel del equipo. Ahora usamos
+    // el path del equipo MISMO (que ya incluye el equipo como último nivel).
+    const equipFuncLoc = node.sap_func_loc || node.code || '';
+    if (equipFuncLoc) {
+      setSelectedLoc(node);
+      setF('technicalLocation', node.name || '');
+      setF('technicalLocationCode', equipFuncLoc);
+    } else if (node.parent_node_id && locationNodes.length > 0) {
+      // Fallback: si el nodo no trae path propio, intentar con el del padre.
       const nodeMap = {};
       allNodes.forEach(n => { nodeMap[n.node_id] = n; });
       let locNode = nodeMap[node.parent_node_id];

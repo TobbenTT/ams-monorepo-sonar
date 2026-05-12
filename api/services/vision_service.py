@@ -129,7 +129,16 @@ SEVERITY RULES:
 
 Priority rules:
 - P1 = emergency/immediate stop, P2 = urgent (<7 days), P3 = normal (>7 days), P4 = plant shutdown
-- P1/P2 -> activityClass M002, P3/P4 -> M001
+
+ACTIVITY CLASS RULES (MANDATORY, Jorge demo Goldfields 2026-05-12 21:54):
+- P1 -> M002 (AVERÍA / breakdown — falla)
+- P2 -> M002 (AVERÍA / breakdown — falla)
+- P3 -> M001 (Mantención / Maintenance request — NOT averia, NOT falla)
+- P4 -> M001 (Mantención / Maintenance request — NOT averia, NOT falla)
+P3 and P4 are MAINTENANCE REQUESTS, NOT failures. NEVER suggest activityClass M002
+for P3 or P4. Jorge: "Cuando es prioridad 1 o 2, falla. Si es 3 o 4, es requerimiento
+de mantención (...) está leyendo al revés. Y por eso sugiere avería". Do NOT
+flip the rule.
 """
 
 

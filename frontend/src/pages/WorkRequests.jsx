@@ -1797,7 +1797,10 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   function handleValidate(id) { // Approve aviso
     const req = requests.find(r => r.id === id);
     const priority = req?.priority_requested || req?.priority_suggested || 'P3';
-    const isFastTrack = ['P1', 'P2'].includes(priority);
+    // N7 — Jorge demo Goldfields 2026-05-12 (00:36:51): "si vamos a usar el
+    // concepto de Fast Track, quizás sería bueno dejarlo para los P1". Antes
+    // se aplicaba a P1+P2; ahora solo P1 (emergencia real, parada de planta).
+    const isFastTrack = priority === 'P1';
 
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'APROBADO' } : r)));
     api.validateWorkRequest(id, { action: 'APPROVE' })
@@ -2268,7 +2271,7 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                       : req.failure_description;
                   const hasDuplicates = findDuplicates(req, requests.filter(r => !['CANCELLED', 'CANCELADO', 'CLOSED', 'CERRADO', 'REJECTED', 'RECHAZADO'].includes(r.status))).length > 0;
 
-                  const isFastTrackWR = ['P1', 'P2'].includes(req.priority_requested);
+                  const isFastTrackWR = req.priority_requested === 'P1';
 
                   return (
                     <tr key={req.id} className={`hover:bg-muted/30 transition-colors ${isFastTrackWR && isPending ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''}`}>

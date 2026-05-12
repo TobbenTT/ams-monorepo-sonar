@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useWebSocketCoalesced } from '../hooks/useWebSocket';
 import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Eye, Filter, Clock, AlertTriangle, Loader2,
@@ -1715,9 +1715,10 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   useEffect(() => {
     if (isActive) refreshList();
   }, [isActive]);
-  useWebSocket(plantId, useCallback((msg) => {
-    if (msg.event?.startsWith('wr_') || msg.event?.startsWith('wo_')) refreshList();
-  }, []));
+  // B6+B7 fix: coalesce + handler ref interno → 1 refresh por ventana 250ms.
+  useWebSocketCoalesced(plantId, refreshList, 250, (msg) =>
+    msg.event?.startsWith('wr_') || msg.event?.startsWith('wo_')
+  );
 
   /* ─── Scope filtering ─── */
   const scopeFiltered = useMemo(() => {

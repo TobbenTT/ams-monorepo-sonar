@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useWebSocketCoalesced } from '../hooks/useWebSocket';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -85,7 +85,8 @@ export default function RCA() {
   };
 
   useEffect(() => { loadData(); }, [plant]);
-  useWebSocket(plant, useCallback((msg) => { if (msg.event) loadData(); }, []));
+  // Coalesce: si llegan N eventos en 250ms, hacemos UN solo loadData().
+  useWebSocketCoalesced(plant, loadData, 250);
 
   const handleCreate = async (desc, equip) => {
     if (!desc?.trim()) return;

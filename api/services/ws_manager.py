@@ -117,17 +117,33 @@ class ConnectionManager:
         }
         message = json.dumps(payload)
         targets = set()
+        # Eventos system-wide que SÍ deben llegar a todos los clientes
+        # independiente del plant (logout/restart/auth/security).
+        SYSTEM_WIDE_EVENTS = {
+            "server_restart", "force_logout",
+            "presence.session_kicked", "kick_all_users",
+            "system_announcement",
+        }
         if plant_id:
             # broadcast dirigido a un plant específico + global
             if plant_id in self.active:
                 targets = set(self.active[plant_id])
             targets |= self.active.get("global", set())
-        else:
-            # Sin plant_id → broadcast a TODOS los conectados (any plant).
-            # Bug QA 2026-04-22: antes iba solo a 'global' → kick_all_users
-            # no llegaba a nadie porque los clientes están en sus plants.
+        elif event in SYSTEM_WIDE_EVENTS:
+            # Solo eventos system-wide explícitos pueden ir cross-plant.
+            # Bug audit 2026-05-12 (B3): antes, CUALQUIER notify sin plant_id
+            # mandaba a todos los clientes — info leak cross-tenant.
             for ws_set in self.active.values():
                 targets |= ws_set
+        else:
+            # Evento sin plant_id que no es system-wide → solo global subs.
+            # Log warning para investigar el caller que no setea plant.
+            targets = self.active.get("global", set()).copy()
+            logger.warning(
+                "WS broadcast sin plant_id ni system-wide whitelist: event=%s — "
+                "solo subscribers 'global' lo reciben",
+                event,
+            )
 
         dead = []
         for ws in targets:
@@ -165,8 +181,29 @@ async def notify(
     await manager.broadcast(event, data, plant_id, origin_client_id=origin_client_id)
 
 
-# Queue for sync code to enqueue notifications
-_pending_events = []
+# ── Per-request pending events ────────────────────────────────────────
+# Bug audit 2026-05-12 (sesión Carlos): antes era una `_pending_events = []`
+# global mutable, compartida entre TODAS las requests concurrentes en FastAPI.
+# Síntomas: a) Request A flusheaba eventos de Request B antes de que B
+# terminara (broadcast con tx aún no comiteada). b) Request B llegaba a su
+# flush con la lista vacía → eventos perdidos. c) Race conditions cuando 2
+# flushes corren concurrentes (doble broadcast).
+# Fix: ContextVar igual que ws_client_context — cada request tiene su propia
+# lista, perfectamente aislada por contexto async.
+from contextvars import ContextVar
+
+_pending_events_ctx: ContextVar[Optional[list]] = ContextVar(
+    "ws_pending_events", default=None
+)
+
+
+def _ensure_queue() -> list:
+    """Asegura que el ContextVar tenga una lista para esta request."""
+    q = _pending_events_ctx.get()
+    if q is None:
+        q = []
+        _pending_events_ctx.set(q)
+    return q
 
 
 def queue_notify(
@@ -176,6 +213,8 @@ def queue_notify(
     origin_client_id: Optional[str] = None,
 ):
     """Queue a notification from sync code. Flushed by middleware.
+
+    Per-request queue (ContextVar) — concurrent requests no interfieren.
 
     If no `origin_client_id` is given, falls back to the request-scoped
     X-Client-Id header captured by middleware so the originating tab
@@ -187,13 +226,30 @@ def queue_notify(
             origin_client_id = get_client_id()
         except Exception:
             origin_client_id = None
-    _pending_events.append((event, data, plant_id, origin_client_id))
+    _ensure_queue().append((event, data, plant_id, origin_client_id))
 
 
 async def flush_notifications():
-    """Send all queued notifications. Called by middleware after response."""
-    global _pending_events
-    events = _pending_events[:]
-    _pending_events = []
+    """Send all queued notifications for THIS request only.
+
+    Called by middleware after response. Lee del ContextVar de la request
+    actual; otras requests concurrentes tienen su propio queue aislado.
+    """
+    q = _pending_events_ctx.get()
+    if not q:
+        return
+    # Snapshot + clear — atómico dentro del mismo contexto sin awaits.
+    events = list(q)
+    q.clear()
     for event, data, plant_id, origin_client_id in events:
-        await manager.broadcast(event, data, plant_id, origin_client_id=origin_client_id)
+        try:
+            await manager.broadcast(
+                event, data, plant_id, origin_client_id=origin_client_id
+            )
+        except Exception as e:
+            # Log + audit en vez de swallow silencioso (bug B2 del audit).
+            logger.warning(
+                "WS broadcast failed: event=%s plant=%s err=%s",
+                event, plant_id, str(e)[:200],
+            )
+            _audit("flush_error", event=event, plant_id=plant_id, error=str(e)[:200])

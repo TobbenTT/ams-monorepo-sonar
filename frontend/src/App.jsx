@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import MobileHeader from './components/MobileHeader';
@@ -61,7 +61,11 @@ export default function App() {
     // Mantener WS conectado app-wide (app-level subscribe) para que eventos
     // como force_logout y server_restart lleguen aunque el usuario esté en
     // una página sin su propio subscribe (Dashboard, Analytics, Criticality, etc).
-    useWebSocket(plant, () => {});
+    // Bug audit 2026-05-12: antes era `() => {}` inline → función nueva cada
+    // render → re-subscribe en cada render → WS flapping silencioso (close 3s
+    // debounce + reopen). Ahora callback estable con useCallback.
+    const noopWsHandler = useCallback(() => {}, []);
+    useWebSocket(plant, noopWsHandler);
 
     // Auto-set viewMode when user role changes (login)
     useEffect(() => {

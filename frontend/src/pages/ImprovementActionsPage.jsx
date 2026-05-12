@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useWebSocketCoalesced } from '../hooks/useWebSocket';
 import {
   Plus, CheckCircle, Clock, AlertTriangle, Loader2, X, Search,
   ArrowRight, Target, TrendingUp, Calendar, User, Edit2, Trash2,
@@ -63,7 +63,8 @@ export default function ImprovementActionsPage() {
   };
 
   useEffect(() => { fetchActions(); }, [plantId]);
-  useWebSocket(plantId, useCallback((msg) => { if (msg.event) fetchActions(); }, []));
+  // Coalesce: N eventos en 250ms = 1 fetchActions.
+  useWebSocketCoalesced(plantId, fetchActions, 250);
 
   const filtered = useMemo(() => {
     let list = actions;

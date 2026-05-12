@@ -4367,7 +4367,9 @@ export default function Scheduling() {
     });
   }, []);
 
-  useWebSocket(plant, useCallback((msg) => {
+  // B7 fix 2026-05-12: handler inline. useWebSocket usa ref interno → no
+  // re-subscribe + closure siempre fresco (showAIModal, etc. reactivos).
+  useWebSocket(plant, (msg) => {
     if (showAIModal || aiScheduling || showClearConfirm || clearing) return;
     if (!msg.event?.startsWith('wo_') && msg.event !== 'wo_bulk_clear') return;
     setLastWsAt(Date.now());
@@ -4380,7 +4382,7 @@ export default function Scheduling() {
     // Fallback al refetch si el evento es sin payload o bulk clear.
     if (wsTimerRef.current) clearTimeout(wsTimerRef.current);
     wsTimerRef.current = setTimeout(() => { loadCalendarData(); loadGantt(); }, 3000);
-  }, [showAIModal, aiScheduling, showClearConfirm, clearing, routeWOToBucket]));
+  });
   useEffect(() => { loadGantt(); }, [plant, ganttWeeks]);
 
   const handleUnscheduleWO = async (wo) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useWebSocketCoalesced } from '../hooks/useWebSocket';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { Card } from '../components/ui/card';
@@ -81,9 +81,10 @@ export default function FailuresEvents() {
   const refreshWRs = useCallback(() => {
     api.listWorkRequests({ plant_id: plant }).then(d => setWorkRequests(Array.isArray(d) ? d : [])).catch(() => {});
   }, [plant]);
-  useWebSocket(plant, useCallback((msg) => {
-    if (msg.event?.startsWith('wr_') || msg.event?.startsWith('wo_')) refreshWRs();
-  }, [refreshWRs]));
+  // B6+B7 fix: coalesce + handler ref. 1 refresh por ventana 250ms.
+  useWebSocketCoalesced(plant, refreshWRs, 250, (msg) =>
+    msg.event?.startsWith('wr_') || msg.event?.startsWith('wo_')
+  );
 
   // --- Filter work requests: time range → page filters ---
   const _timeFiltered = useMemo(() => filterByDateRange(workRequests, selectedTimeRange), [workRequests, selectedTimeRange]);

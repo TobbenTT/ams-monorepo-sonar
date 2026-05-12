@@ -272,7 +272,8 @@ export default function Execution() {
       loadData();
     } catch (e) { toast.error('Error: ' + (e.message || e)); }
   };
-  useWebSocket(plant, useCallback((msg) => {
+  // B7 fix: handler inline. useWebSocket usa ref interno → loadData/toast frescos.
+  useWebSocket(plant, (msg) => {
     if (msg.event?.startsWith('wo_')) loadData();
     // SF-572: notificación FINAL automática gatillada → toast destacado al supervisor
     if (msg.event === 'wo_final_auto') {
@@ -282,7 +283,7 @@ export default function Execution() {
         { duration: 8000 }
       );
     }
-  }, []));
+  });
 
   // KPIs
   const kpis = useMemo(() => {

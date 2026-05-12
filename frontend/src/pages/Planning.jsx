@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useWebSocketCoalesced } from '../hooks/useWebSocket';
 import CapacityEvaluation from '../components/CapacityEvaluation';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { KPICard, PriorityBadge, StatusBadge, LoadingSpinner } from '../components/Shared';
@@ -1059,9 +1059,10 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       window.removeEventListener('wo:created', h);
     };
   }, [plant]); // eslint-disable-line react-hooks/exhaustive-deps
-  useWebSocket(plant, useCallback((msg) => {
-    if (msg.event?.startsWith('wo_') || msg.event?.startsWith('wr_')) fetchData();
-  }, []));
+  // B6 fix 2026-05-12: coalesce wo_*/wr_* events → 1 fetchData por ventana 250ms.
+  useWebSocketCoalesced(plant, fetchData, 250, (msg) =>
+    msg.event?.startsWith('wo_') || msg.event?.startsWith('wr_')
+  );
 
   // Only VALIDATED WRs
   const approvedWRs = useMemo(() => workRequests.filter(wr => ['VALIDATED', 'APROBADO', 'APPROVED'].includes(wr.status)), [workRequests]);

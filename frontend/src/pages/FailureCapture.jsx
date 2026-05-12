@@ -1414,7 +1414,12 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
 
   // ── Success popup ──
   // Duplicate panel component
+  // Jorge demo 2026-05-12: temporalmente desactivado el banner lateral
+  // "Possible Duplicates" — molesta visualmente durante demo.
+  // Re-activar quitando el `return null` cuando se quiera mostrar de nuevo.
   const DuplicatePanel = () => {
+    return null;
+    // eslint-disable-next-line no-unreachable
     if (duplicates.length === 0) return null;
     return (
       <div className="fixed right-4 top-[220px] w-72 bg-white rounded-xl shadow-2xl border-2 border-amber-300 z-40 max-h-[70vh] overflow-y-auto animate-in slide-in-from-right">
@@ -1830,6 +1835,46 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
                 aparecía como artefacto. Eliminado físicamente — el bloque
                 único vive más abajo, debajo del Nivel de Riesgo. */}
 
+            {/* Jorge demo 2026-05-12 (v3): Estado del Equipo + Priority reubicados
+                ENTRE WhatHappened y AI Assistant. El flujo natural es:
+                  1) Describir problema (What Happened)
+                  2) Indicar contexto (Estado + Priority)
+                  3) Disparar IA (que lee los 3 como input)
+                  4) Revisar lo que la IA sugirió */}
+            <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Estado del Equipo</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PLANT_CONDITIONS.map(opt => (
+                    <button key={opt.value}
+                      onClick={() => setF('equipmentCondition', opt.value)}
+                      className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
+                      style={{
+                        borderColor: form.equipmentCondition === opt.value ? opt.color : '#e5e7eb',
+                        backgroundColor: form.equipmentCondition === opt.value ? opt.color + '15' : 'transparent',
+                        color: form.equipmentCondition === opt.value ? opt.color : '#64748B',
+                      }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="border rounded-xl p-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Priority</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PRIORITIES.map(p => (
+                    <button key={p.value}
+                      onClick={() => { setF('priority', p.value); setF('activityClass', deriveActivityClassFromPriority(p.value)); }}
+                      className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${form.priority === p.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
+                      style={{ borderColor: form.priority === p.value ? p.color : '#e5e7eb', backgroundColor: form.priority === p.value ? p.bg : 'transparent' }}>
+                      <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
+                      <div className="text-[9px] text-gray-500 leading-tight">{p.sub}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* AI Suggest Button */}
             <div className="flex items-center gap-2 mt-2">
               <button
@@ -2006,44 +2051,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
             )}
           </div>
 
-          {/* SF-680 (jornada VSC 2026-05-08, Jorge): Estado del Equipo + Priority
-              ahora aparecen DESPUÉS de "What Happened" porque el técnico primero
-              describe el problema (flujo natural de arriba hacia abajo) y recién
-              luego clasifica el contexto operacional. La IA sigue leyendo ambos
-              al disparar handleAiSuggest. */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border rounded-xl p-4">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Estado del Equipo</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PLANT_CONDITIONS.map(opt => (
-                  <button key={opt.value}
-                    onClick={() => setF('equipmentCondition', opt.value)}
-                    className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
-                    style={{
-                      borderColor: form.equipmentCondition === opt.value ? opt.color : '#e5e7eb',
-                      backgroundColor: form.equipmentCondition === opt.value ? opt.color + '15' : 'transparent',
-                      color: form.equipmentCondition === opt.value ? opt.color : '#64748B',
-                    }}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="border rounded-xl p-4">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Priority</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PRIORITIES.map(p => (
-                  <button key={p.value}
-                    onClick={() => { setF('priority', p.value); setF('activityClass', deriveActivityClassFromPriority(p.value)); }}
-                    className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${form.priority === p.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
-                    style={{ borderColor: form.priority === p.value ? p.color : '#e5e7eb', backgroundColor: form.priority === p.value ? p.bg : 'transparent' }}>
-                    <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
-                    <div className="text-[9px] text-gray-500 leading-tight">{p.sub}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* Estado del Equipo + Priority se movieron arriba (entre What Happened
+              y AI Assistant) — Jorge demo 2026-05-12. */}
 
           {/* SF-679 (jornada VSC 2026-05-08): WO Title reubicado DESPUÉS del
               módulo IA Assistant. La IA puede autogenerar el título a partir

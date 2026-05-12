@@ -2045,16 +2045,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                     return (
                                       <div key={wo.wo_id} className="relative mb-1">
                                         <div
-                                          /* Jorge 2026-05-12: las OTs ya colocadas en el calendario
-                                             NO se pueden arrastrar manualmente. El único mecanismo
-                                             de re-asignación masiva es Auto-Level. Antes se podía
-                                             arrastrar y eso desbalanceaba la planificación. */
-                                          draggable={false}
+                                          draggable={!isReserved}
                                           onMouseEnter={() => setHoverWO(wo)}
                                           onMouseLeave={() => setHoverWO(null)}
                                           onClick={e => { if (!wo._continuation) toggleExpand(e); }}
-                                          title={isReserved ? 'Reservada · usa Auto-Level para re-asignar' : 'Click para ver detalle · re-asignación masiva vía Auto-Level'}
-                                          className={`relative bg-white dark:bg-card rounded-md border border-border border-l-[3px] ${leftAccent} px-2 py-1.5 shadow-sm transition-all cursor-pointer ${isReserved ? 'ring-1 ring-emerald-200' : 'hover:shadow-md hover:border-emerald-300'} ${isDraft ? 'border-dashed' : ''} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
+                                          onDragStart={e => { if (isReserved) { e.preventDefault(); return; } e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
+                                          title={isReserved ? 'Reservada — re-asignación vía Auto-Level' : isDraft ? 'Borrador — arrástrala a otra hora/día o reserva la semana' : 'Click para detalle · arrastrar para mover a otra hora/día'}
+                                          className={`relative bg-white dark:bg-card rounded-md border border-border border-l-[3px] ${leftAccent} px-2 py-1.5 shadow-sm transition-all ${isReserved ? 'cursor-not-allowed ring-1 ring-emerald-200' : 'cursor-grab active:cursor-grabbing hover:shadow-md hover:border-emerald-300'} ${isDraft ? 'border-dashed' : ''} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
                                           <div className="flex items-center justify-between gap-1 mb-0.5">
                                             <span className="font-mono text-[9.5px] text-muted-foreground truncate">{wo.wo_number}{wo._continuation ? ` (${wo._dayNum}/${wo._totalDays})` : ''}</span>
                                             <span className={`shrink-0 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-[1px] rounded-full ${prioDot}`}>
@@ -2556,11 +2553,10 @@ function TimelineMirrorView({ scheduledWOs, technicians, viewedWeekStart, onResc
                         onDrop={e => { e.preventDefault(); handleDrop(tech.worker_id, slot); }}>
                         {isStart && woHere && (
                           <div
-                            /* Jorge 2026-05-12: drag deshabilitado para OTs ya
-                               colocadas — re-asignación via Auto-Level. */
-                            draggable={false}
+                            draggable
+                            onDragStart={() => setDragWO(woHere)}
                             onClick={() => onOpenDetail && onOpenDetail(woHere)}
-                            className="absolute left-0.5 right-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold text-white cursor-pointer hover:opacity-90 truncate"
+                            className="absolute left-0.5 right-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold text-white cursor-grab hover:opacity-90 truncate"
                             style={{
                               top: 0,
                               height: positionFor(woHere).lengthSlots * 22 - 2,
@@ -2840,10 +2836,10 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
                         if (todayIdx >= 0) return <div className="absolute top-0 bottom-0 w-0.5 bg-emerald-500 z-10" style={{ left: `${((todayIdx + 0.5) / totalDays) * 100}%` }} />;
                         return null;
                       })()}
-                      {/* Bar — Jorge 2026-05-12: drag deshabilitado en Gantt
-                          también; re-asignación vía Auto-Level. */}
-                      <div className="absolute top-2 bottom-2 flex items-center cursor-pointer"
-                        draggable={false}
+                      {/* Draggable Bar */}
+                      <div className="absolute top-2 bottom-2 flex items-center cursor-grab active:cursor-grabbing"
+                        draggable
+                        onDragStart={e => handleBarDragStart(e, wo)}
                         onDragEnd={() => { setDraggingWO(null); setDragDayIdx(null); }}
                         onMouseEnter={() => setTooltip(wo)}
                         onMouseLeave={() => setTooltip(null)}

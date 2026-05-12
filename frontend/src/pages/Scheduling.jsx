@@ -4629,7 +4629,11 @@ export default function Scheduling() {
   const [generating, setGenerating] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const [capacityLimit, setCapacityLimit] = useState(85); // % max capacity for auto-level
+  // José reunión 2026-05-12 18:02: default 100% — Settings ya define 80%
+  // planificado / 20% imprevistos a nivel global. Antes el wizard arrancaba
+  // en 85% encima del 80%, causando doble penalización (6.4h/persona en lugar
+  // de 8h × 80% = 6.4h pero presentado como 85% confundía al planner).
+  const [capacityLimit, setCapacityLimit] = useState(100);
   const [showAIModal, setShowAIModal] = useState(false);
   // Snapshot al abrir el wizard Auto-Level — definido más abajo después
   // de que `releasedWOs` y `technicians` existan (evita TDZ "Cannot access
@@ -5861,7 +5865,7 @@ export default function Scheduling() {
               {/* Capacity slider */}
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <label className="font-bold text-gray-500 uppercase text-[10px]">Capacidad máxima</label>
+                  <label className="font-bold text-gray-500 uppercase text-[10px]">Capacidad máxima sobre Settings</label>
                   <span className="font-bold text-purple-700">{capacityLimit}% · {Math.round(PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100))}h/persona/día</span>
                 </div>
                 <input type="range" min={60} max={100} step={5} value={capacityLimit}
@@ -5870,6 +5874,9 @@ export default function Scheduling() {
                 <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
                   <span>60%</span><span>70%</span><span>80%</span><span>90%</span><span>100%</span>
                 </div>
+                <p className="text-[10px] text-gray-500 mt-1.5 italic">
+                  100% = capacidad efectiva de Settings (80% planificado tras descontar imprevistos). Sólo bajalo si querés más holgura adicional para esta semana.
+                </p>
               </div>
 
               {/* Blocked equipment warning */}

@@ -22,6 +22,11 @@ class DuplicateCheckRequest(BaseModel):
     equipment_tag: str
     problem_description: str = ""
     priority: str | None = None  # filtro severidad (mejora 2026-04-28)
+    # José/Jorge reunión 2026-05-12 18:02: detector ahora exige (Tag OR
+    # Functional Location) Y (título similar). Antes flaggeaba duplicados
+    # cualquier WR del mismo equipo aunque fuera trabajo distinto.
+    functional_location: str | None = None
+    wo_title: str | None = None
 
 
 class LinkDuplicateRequest(BaseModel):
@@ -1004,21 +1009,46 @@ def check_duplicates(data: DuplicateCheckRequest, db: Session = Depends(get_db))
     desc_lower = (data.problem_description or "").lower()
     # Extract potential equipment tags from description text
     desc_words = set(desc_lower.replace(",", " ").replace(".", " ").split())
+    # José reunión 2026-05-12 18:02: para considerar duplicado se requieren
+    # (a) match de equipo (Tag exact OR Functional Location) Y (b) título
+    # similar de cabecera. Antes bastaba con el equipo → falsos positivos.
+    incoming_title = (data.wo_title or "").lower().strip()
+    incoming_fl = (data.functional_location or "").lower().strip()
+    def _title_similar(a: str, b: str) -> bool:
+        a = (a or "").lower().strip(); b = (b or "").lower().strip()
+        if not a or not b: return False
+        # Jaccard sobre palabras significativas (>3 chars) ≥ 0.5 → similar
+        wa = {w for w in a.replace(",", " ").split() if len(w) > 3}
+        wb = {w for w in b.replace(",", " ").split() if len(w) > 3}
+        if not wa or not wb: return False
+        return (len(wa & wb) / max(len(wa | wb), 1)) >= 0.5
+
     for wr in all_wrs:
-        # Match by equipment_tag if provided, OR by tag mentioned in description
-        tag_match = False
+        # (a) Match por equipo: Tag exacto O Functional Location
+        wr_fl = ""
+        wr_ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else {}
+        if isinstance(wr_ai, dict):
+            wr_fl = (wr_ai.get("technical_location") or wr_ai.get("functional_location") or "").lower().strip()
+        equip_match = False
         if data.equipment_tag and wr.equipment_tag == data.equipment_tag:
-            tag_match = True
-        elif not data.equipment_tag and wr.equipment_tag:
-            # Check if any WR's equipment_tag appears in the description text
+            equip_match = True
+        elif incoming_fl and wr_fl and (incoming_fl == wr_fl or incoming_fl.endswith(wr_fl) or wr_fl.endswith(incoming_fl)):
+            equip_match = True
+        elif not data.equipment_tag and not incoming_fl and wr.equipment_tag:
+            # Fallback legacy: extracción del tag de la descripción libre.
             if wr.equipment_tag.lower() in desc_lower:
-                tag_match = True
-            # Also check individual words match the tag
-            for w in desc_words:
-                if len(w) > 3 and w in wr.equipment_tag.lower():
-                    tag_match = True
-                    break
-        if not tag_match:
+                equip_match = True
+            else:
+                for w in desc_words:
+                    if len(w) > 3 and w in wr.equipment_tag.lower():
+                        equip_match = True
+                        break
+        if not equip_match:
+            continue
+        # (b) Si hay título, exigir similitud — antes flaggeaba duplicado
+        # cualquier WR del mismo equipo aunque fuera trabajo distinto.
+        wr_title = wr_ai.get("wo_title") if isinstance(wr_ai, dict) else ""
+        if incoming_title and wr_title and not _title_similar(incoming_title, wr_title):
             continue
         if wr.status not in open_statuses:
             continue

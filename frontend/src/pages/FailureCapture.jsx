@@ -359,7 +359,13 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
     const eqTag = form.whereTag || '';
     const desc = overrideText || form.whatHappens || '';
     if (desc.length > 3 || eqTag) {
-      api.checkDuplicates({ description: desc, equipment_tag: eqTag })
+      api.checkDuplicates({
+        description: desc,
+        problem_description: desc,
+        equipment_tag: eqTag,
+        functional_location: form.whereTL || form.technical_location || '',
+        wo_title: form.woTitle || form.wo_title || '',
+      })
         .then(res => { if (res?.duplicates?.length > 0) setDuplicates(res.duplicates); })
         .catch(() => {});
     }

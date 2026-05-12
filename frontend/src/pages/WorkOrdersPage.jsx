@@ -399,7 +399,12 @@ export default function WorkOrdersPage() {
     try {
       // 1. Check duplicates
       if (createForm.whereTag) {
-        const dupRes = await api.checkDuplicates({ equipment_tag: createForm.whereTag, problem_description: createForm.whatHappens });
+        const dupRes = await api.checkDuplicates({
+          equipment_tag: createForm.whereTag,
+          problem_description: createForm.whatHappens,
+          functional_location: createForm.whereTL || '',
+          wo_title: createForm.woTitle || '',
+        });
         if (dupRes.duplicate_count > 0) {
           setAiDuplicates(dupRes.duplicates);
           toast.error(`⚠ ${dupRes.duplicate_count} aviso(s) abierto(s) similar(es) encontrado(s) para este equipo`);

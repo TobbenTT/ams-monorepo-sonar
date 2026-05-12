@@ -897,10 +897,18 @@ function CommentsTab({ wo, onUpdate }) {
         </div>
       )}
 
-      {/* Nuevo comentario — único editable */}
+      {/* Nuevo comentario — único editable. José reunión 2026-05-12 18:02:
+          mostrar header con nombre + fecha + hora del autor que va a firmar
+          el comentario, antes de guardar — para que el user vea con qué
+          identidad queda registrado. */}
       {!isClosedStatus(wo) && (
         <div className="border-t border-gray-200 pt-3 space-y-2">
-          <label className="text-xs font-semibold text-gray-700">Nuevo comentario</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-gray-700">Nuevo comentario</label>
+            <span className="text-[10px] text-gray-500">
+              Firmará: <strong className="text-blue-700">{currentUserLabel}</strong> · {new Date().toLocaleString('es', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
           <textarea value={newComment} onChange={e => setNewComment(e.target.value)} rows={3}
             placeholder="Agregá tu comentario o usa 🎤 para grabar audio (se transcribe automáticamente). Una vez guardado no se puede editar."
             className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
@@ -2491,16 +2499,18 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
         // Jorge 2026-04-21 — tab "Post-Review" solo visible en CERRADO.
         const isExec = wo.status === 'EN_EJECUCION';
         const isClosed = wo.status === 'CERRADO';
+        // Jorge/José reunión 2026-05-12 18:02: orden final de pestañas OT modal:
+        // Summary → Operations → Materials → Equipos Apoyo → Documents → Cost →
+        // Preparativos → Comentarios → History.
         const OT_TABS = [
           { id: 'resumen', label: 'Summary', icon: Info },
           { id: 'operaciones', label: 'Operations', icon: List },
           { id: 'materiales', label: 'Materials', icon: Package },
-          // SF-662 — Preparativos OT estilo Rappi (tracking despacho bodega→patio)
-          { id: 'preparativos', label: 'Preparativos', icon: Truck },
           { id: 'support_eq', label: 'Equipos Apoyo', icon: Wrench },
-          // Jorge 2026-05-12: Documentos antes que Costs (revisión visual demo).
           { id: 'documentos', label: 'Documentos', icon: FileText },
           { id: 'costos', label: 'Costs', icon: DollarSign },
+          // SF-662 — Preparativos OT estilo Rappi (después de Cost, no antes).
+          { id: 'preparativos', label: 'Preparativos', icon: Truck },
           // SF-647 — historial comentarios SAP-style (append-only, no editable)
           { id: 'comentarios', label: 'Comentarios', icon: MessageSquare },
           ...(isExec ? [{ id: 'notif_hh', label: 'Notif. HH', icon: Clock }] : []),
@@ -3805,13 +3815,12 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                         <table className="w-full text-sm">
                           <thead className="bg-amber-100/60 text-xs uppercase">
                             <tr>
-                              {/* SF-675 (reunión VSC 2026-05-11 + 2026-05-08): reestructuración 5 cambios.
-                                  Tanda demo Goldfields 2026-05-12: agregado 5º cambio "Condición". */}
-                              <th className="px-3 py-2 text-left">Equipo - Características</th>
-                              <th className="px-3 py-2 text-left">Detalle</th>
+                              {/* José/Jorge reunión 2026-05-12 18:02: orden final:
+                                  Equipo | Características | Propio/Externo | Condición | Cantidad | Notas
+                                  (col "Tipo" eliminada — redundante con la spec del catálogo). */}
+                              <th className="px-3 py-2 text-left">Equipo</th>
+                              <th className="px-3 py-2 text-left">Características</th>
                               <th className="px-3 py-2 text-left">Propio/Externo</th>
-                              <th className="px-3 py-2 text-left">Tipo</th>
-                              {/* SF-675 #4 (Jorge demo 2026-05-12): Condición del equipo */}
                               <th className="px-3 py-2 text-left">Condición</th>
                               <th className="px-3 py-2 text-right">Cantidad</th>
                               <th className="px-3 py-2 text-left">Notas</th>
@@ -3916,10 +3925,23 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                           <button key={p.equipment_id} type="button"
                                             onMouseDown={async () => {
                                               setEquipDropdownIdx(-1);
+                                              // José reunión 18:02: al seleccionar equipo del catálogo
+                                              // → auto-marcar 'Propio' (INT) y, si está disponible,
+                                              // tomar capacity_tons como Características preview.
+                                              const charactPreview = p.capacity_tons ? `${p.capacity_tons}T` : '';
                                               const next = (wo.support_equipment || []).map((x, idx) =>
-                                                idx === i ? { ...x, name: p.name, tag: p.equipment_id, equipment_id: p.equipment_id, from_pool: true, equipment_type: p.equipment_type || x.equipment_type } : x
+                                                idx === i ? {
+                                                  ...x,
+                                                  name: p.name,
+                                                  tag: p.equipment_id,
+                                                  equipment_id: p.equipment_id,
+                                                  from_pool: true,
+                                                  equipment_type: p.equipment_type || x.equipment_type,
+                                                  ownership: x.ownership || 'INT',
+                                                  characteristics: x.characteristics || charactPreview,
+                                                } : x
                                               );
-                                              try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Guardado'); } catch(e2) { toast.error(e2.message); }
+                                              try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Guardado (Propio)'); } catch(e2) { toast.error(e2.message); }
                                             }}
                                             className="w-full text-left px-3 py-2 text-xs hover:bg-amber-50 border-b last:border-b-0">
                                             {p.name}{p.capacity_tons ? ` ${p.capacity_tons}T` : ''}
@@ -3950,31 +3972,9 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                       )}
                                     </div>
                                   </td>
-                                  {/* SF-675 #4: Tipo CONDICIONAL según categoría/equipo seleccionado.
-                                      Si el equipo del catálogo tiene equipment_type fijo (poolMatch),
-                                      mostramos solo opciones compatibles. Sino, full list. */}
-                                  <td className="px-3 py-2">
-                                    <select defaultValue={se.equipment_type || 'MOBILE_CRANE'}
-                                      onChange={e => updateField('equipment_type', e.target.value)}
-                                      className="text-xs border border-gray-300 rounded px-1 py-1"
-                                      title="Tipo se filtra según el equipo elegido del catálogo">
-                                      {(() => {
-                                        // Si pool match: bias to that type + related
-                                        const baseType = poolMatch?.equipment_type;
-                                        const RELATED = {
-                                          MOBILE_CRANE: ['MOBILE_CRANE', 'BRIDGE_CRANE'],
-                                          BRIDGE_CRANE: ['BRIDGE_CRANE', 'MOBILE_CRANE'],
-                                          HYDRAULIC_TRUCK: ['HYDRAULIC_TRUCK'],
-                                          SCAFFOLDING: ['SCAFFOLDING'],
-                                          FORKLIFT: ['FORKLIFT'],
-                                          OTHER: ['OTHER', 'WELDING', 'AIR_COMPRESSOR', 'PRESSURE_WASHER'],
-                                        };
-                                        const opts = baseType ? (RELATED[baseType] || ['OTHER']) : ['MOBILE_CRANE', 'BRIDGE_CRANE', 'HYDRAULIC_TRUCK', 'SCAFFOLDING', 'FORKLIFT', 'OTHER'];
-                                        const LABELS = { MOBILE_CRANE: 'Grúa móvil', BRIDGE_CRANE: 'Puente grúa', HYDRAULIC_TRUCK: 'Mandil hidráulico', SCAFFOLDING: 'Andamio', FORKLIFT: 'Montacargas', WELDING: 'Soldadora', AIR_COMPRESSOR: 'Compresor', PRESSURE_WASHER: 'Hidrolavadora', OTHER: 'Otro' };
-                                        return opts.map(o => <option key={o} value={o}>{LABELS[o] || o}</option>);
-                                      })()}
-                                    </select>
-                                  </td>
+                                  {/* José reunión 2026-05-12 18:02: columna "Tipo" eliminada.
+                                      Era redundante con la spec del equipo del catálogo
+                                      (al picker desde pool ya viene equipment_type fijo). */}
                                   {/* SF-675 #4 (Jorge 2026-05-12): Condición del equipo
                                       con dot indicator de color (verde=operativo, ámbar=mantención,
                                       rojo=fuera de servicio). */}

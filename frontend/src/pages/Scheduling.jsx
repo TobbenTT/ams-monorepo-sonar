@@ -2541,6 +2541,163 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
           }}
         />
       )}
+      {previewWO && (
+        <OTPreviewModal
+          wo={previewWO}
+          onClose={() => setPreviewWO(null)}
+          onRefresh={onRefresh}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ───── José reunión 18:02: preview rápido OT desde Scheduling
+        sin sacar al user del módulo. Read-only + comentarios editables. */
+function OTPreviewModal({ wo, onClose, onRefresh }) {
+  const toast = useToast();
+  const [fresh, setFresh] = useState(wo);
+  const [loading, setLoading] = useState(true);
+  const [newComment, setNewComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    api.getManagedWO(wo.wo_id).then(r => { setFresh(r); setLoading(false); }).catch(() => setLoading(false));
+  }, [wo.wo_id]);
+
+  const submitComment = async () => {
+    if (!newComment.trim()) return;
+    setSubmitting(true);
+    try {
+      const ts = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const stamp = `${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())} ${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
+      const entry = { timestamp: ts.toISOString(), user: 'planner', note: newComment.trim() };
+      const notes = Array.isArray(fresh.execution_notes) ? fresh.execution_notes : [];
+      const updated = await api.updateManagedWO(wo.wo_id, { execution_notes: [...notes, entry] });
+      setFresh(updated);
+      setNewComment('');
+      toast.success('Comentario agregado');
+      onRefresh?.();
+    } catch (e) {
+      toast.error('Error al guardar comentario: ' + (e.message || e));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const notes = Array.isArray(fresh.execution_notes) ? fresh.execution_notes : [];
+  const prioColor = fresh.priority_code === 'P1' ? 'bg-red-500 text-white'
+    : fresh.priority_code === 'P2' ? 'bg-orange-500 text-white'
+    : fresh.priority_code === 'P3' ? 'bg-blue-500 text-white'
+    : 'bg-gray-400 text-white';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="bg-card rounded-2xl shadow-2xl border border-border w-[640px] max-w-[95vw] max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="border-b border-border px-5 py-3 flex items-center justify-between bg-muted/30">
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-bold px-2 py-0.5 rounded ${prioColor}`}>{fresh.priority_code || 'P?'}</span>
+            <h3 className="text-base font-bold text-foreground">{fresh.wo_number}</h3>
+            <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-300 font-semibold">{fresh.status}</span>
+            <span className="text-xs text-muted-foreground">{fresh.wo_type}</span>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xl leading-none px-2" title="Cerrar (Esc)">×</button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
+          {loading && <div className="text-xs text-muted-foreground italic">Cargando detalle...</div>}
+
+          {/* Description read-only */}
+          <div>
+            <label className="text-[10px] font-bold uppercase text-muted-foreground">Descripción</label>
+            <textarea readOnly rows={2} value={fresh.description || ''}
+              className="w-full mt-1 text-sm bg-muted/30 rounded-lg p-2 border border-border resize-none cursor-text select-text" />
+          </div>
+
+          {/* Quick fields grid */}
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="bg-muted/30 rounded-lg p-2 border border-border">
+              <div className="text-[10px] uppercase text-muted-foreground">Equipo / TAG</div>
+              <div className="font-semibold mt-0.5">{(fresh.equipment_tag || '').slice(-15) || '—'}</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-2 border border-border">
+              <div className="text-[10px] uppercase text-muted-foreground">HH (Plan / Real)</div>
+              <div className="font-semibold mt-0.5">{fresh.estimated_hours || 0}h / {fresh.actual_hours || 0}h</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-2 border border-border">
+              <div className="text-[10px] uppercase text-muted-foreground">Planning Group</div>
+              <div className="font-semibold mt-0.5">{fresh.planning_group || '—'}</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-2 border border-border">
+              <div className="text-[10px] uppercase text-muted-foreground">Planned Start</div>
+              <div className="font-semibold mt-0.5">{fresh.planned_start ? new Date(fresh.planned_start).toLocaleString('es', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-2 border border-border">
+              <div className="text-[10px] uppercase text-muted-foreground">Planned End</div>
+              <div className="font-semibold mt-0.5">{fresh.planned_end ? new Date(fresh.planned_end).toLocaleString('es', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-2 border border-border">
+              <div className="text-[10px] uppercase text-muted-foreground">Operaciones</div>
+              <div className="font-semibold mt-0.5">{(fresh.operations || []).length}</div>
+            </div>
+          </div>
+
+          {/* Assigned workers */}
+          <div>
+            <label className="text-[10px] font-bold uppercase text-muted-foreground">Técnicos asignados ({(fresh.assigned_workers || []).length})</label>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {(fresh.assigned_workers || []).length === 0 && <span className="text-xs text-rose-600 italic">⚠ sin técnicos asignados</span>}
+              {(fresh.assigned_workers || []).map((w, i) => (
+                <span key={i} className="text-[11px] px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  👷 {typeof w === 'string' ? w.slice(0,8) : (w?.name || w?.worker_id?.slice(0,8) || '?')}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Comentarios (editables) */}
+          <div className="border-t border-border pt-3">
+            <label className="text-[10px] font-bold uppercase text-muted-foreground">Comentarios ({notes.length})</label>
+            <div className="max-h-40 overflow-y-auto mt-1 space-y-1">
+              {notes.slice(-5).map((n, i) => (
+                <div key={i} className="text-[11px] bg-muted/30 rounded p-1.5 border border-border">
+                  <div className="text-[9px] text-muted-foreground">
+                    {n.user || 'sistema'} · {n.timestamp ? new Date(n.timestamp).toLocaleString('es', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}
+                  </div>
+                  <div>{n.note}</div>
+                </div>
+              ))}
+              {notes.length === 0 && <div className="text-[11px] text-muted-foreground italic">Sin comentarios todavía</div>}
+            </div>
+            <textarea value={newComment} onChange={e => setNewComment(e.target.value)} rows={2}
+              placeholder="Agregá un comentario (se guarda inmutable)..."
+              className="w-full mt-2 text-xs border border-border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+            <button onClick={submitComment} disabled={submitting || !newComment.trim()}
+              className="mt-1 text-xs px-3 py-1 rounded bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-50">
+              {submitting ? 'Guardando...' : 'Agregar comentario'}
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border px-5 py-2.5 flex items-center justify-between bg-muted/30 text-[11px]">
+          <span className="text-muted-foreground italic">Vista rápida · solo comentarios editables. Para edición completa abrí la OT en Planning.</span>
+          <div className="flex gap-2">
+            <button onClick={() => { try { window.open(`/work-management?tab=planning&openWo=${wo.wo_id}`, '_blank'); } catch {} }}
+              className="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 font-semibold">
+              Abrir en Planning ↗
+            </button>
+            <button onClick={onClose}
+              className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted font-semibold">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

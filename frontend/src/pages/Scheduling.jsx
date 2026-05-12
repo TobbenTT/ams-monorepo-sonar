@@ -1765,8 +1765,19 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                       : `${wo.wo_number} (sin técnicos asignados)\n${wo.estimated_hours || 0}h · ${wo.equipment_tag || ''}`;
                                     return (
                                       <div key={wo.wo_id}
-                                        className={`p-1 mb-0.5 rounded text-[10px] cursor-pointer ${typeMeta.bg} border border-border/50 hover:border-emerald-500 hover:shadow-md transition-all`}
-                                        title={tooltipText}
+                                        /* Jorge demo 2026-05-12: las OTs dentro
+                                           del cluster "X OTs en este slot" debían
+                                           poderse arrastrar a otra hora/día. Antes
+                                           solo onClick → bloqueaba el reagendado. */
+                                        draggable={true}
+                                        onDragStart={(e) => {
+                                          e.stopPropagation();
+                                          setDragWO(wo);
+                                          try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', wo.wo_id); } catch {}
+                                        }}
+                                        onDragEnd={() => { setDragWO(null); setDropTarget(null); }}
+                                        className={`p-1 mb-0.5 rounded text-[10px] cursor-grab active:cursor-grabbing ${typeMeta.bg} border border-border/50 hover:border-emerald-500 hover:shadow-md transition-all`}
+                                        title={tooltipText + '\n(arrastrar para mover a otra hora/día)'}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           try { window.open(`/work-management?tab=planning&openWo=${wo.wo_id}`, '_blank'); } catch {}

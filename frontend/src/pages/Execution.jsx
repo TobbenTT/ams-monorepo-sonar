@@ -16,131 +16,18 @@ import {
 } from '../api';
 import PartialNotifyModal from '../components/PartialNotifyModal';
 import SmartAssignModal from '../components/SmartAssignModal';
+import AudioDictateButton from '../components/execution/AudioDictateButton';
+import ClosureClassify from '../components/execution/ClosureClassify';
+import ProgressEditor from '../components/execution/ProgressEditor';
 import * as api from '../api';
 
-// Fase 7 Jorge 2026-04-21 — grabar nota de voz en el cierre + transcribir.
-// Usa MediaRecorder + endpoint /media/transcribe (whisper) ya existente.
-function AudioDictateButton({ onText }) {
-  const toast = useToast();
-  const [recording, setRecording] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const recRef = useState({ current: null })[0];
-
-  const start = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      const chunks = [];
-      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-      mr.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        setBusy(true);
-        try {
-          const res = await import('../api').then(m => m.transcribeAudio(blob, 'es'));
-          const txt = res?.text || res?.transcript || '';
-          if (txt) onText(txt.trim());
-        } catch (e) {
-          toast.error('Error al transcribir: ' + (e.message || ''));
-        } finally {
-          setBusy(false);
-        }
-      };
-      recRef.current = mr;
-      mr.start();
-      setRecording(true);
-    } catch (e) {
-      toast.error('No se pudo activar el micrófono: ' + (e.message || ''));
-    }
-  };
-  const stop = () => {
-    if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop();
-    setRecording(false);
-  };
-
-  if (busy) {
-    return <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"><Loader2 size={11} className="animate-spin" /> Transcribiendo…</span>;
-  }
-  return (
-    <button type="button" onClick={recording ? stop : start}
-      className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded ${recording ? 'bg-rose-600 text-white animate-pulse' : 'bg-muted text-foreground hover:bg-muted/70'}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${recording ? 'bg-white' : 'bg-rose-500'}`} />
-      {recording ? 'Detener' : 'Grabar nota'}
-    </button>
-  );
-}
-
-// Auto-clasifica las observaciones en 3 buckets. Heurística simple keyword —
-// cuando metamos un agente dedicado el clasificador se reemplaza.
-function ClosureClassify({ notes }) {
-  if (!notes || notes.length < 20) return null;
-  const low = notes.toLowerCase();
-  const repuestos = /(repuesto|pieza|stock|codigo|código|sap|bodega|material|filtro|rodamiento|sello|junta|correa)/.test(low);
-  const estrategia = /(estrategia|frecuencia|preventivo|plan|intervalo|ciclo|predictivo|vibraci|termograf)/.test(low);
-  const procesos = /(procedimiento|proceso|lockout|seguridad|permiso|herramienta|accesorio|traslad|tiempo)/.test(low);
-  const tags = [];
-  if (repuestos) tags.push({ k: 'Repuestos', c: 'bg-sky-100 text-sky-800' });
-  if (estrategia) tags.push({ k: 'Oport. estrategia', c: 'bg-purple-100 text-purple-800' });
-  if (procesos) tags.push({ k: 'Oport. procesos', c: 'bg-amber-100 text-amber-800' });
-  if (tags.length === 0) return null;
-  return (
-    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-      <span className="text-[9px] font-semibold uppercase text-muted-foreground">Clasificado:</span>
-      {tags.map(t => <span key={t.k} className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${t.c}`}>{t.k}</span>)}
-    </div>
-  );
-}
+// AudioDictateButton + ClosureClassify + ProgressEditor extraídos a
+// components/execution/ en refactor 2026-05-12.
 
 function getLaborRate() {
   try { return JSON.parse(localStorage.getItem('ocp_settings') || '{}').laborRate || 50; } catch { return 50; }
 }
 const LABOR_RATE = getLaborRate();
-
-// ProgressEditor — input de avance con state local. Antes el input controlado
-// llamaba handleProgress en cada keystroke (race conditions: tipear "100"
-// disparaba 1, 10, 100 y el response del backend ganaba en orden impredecible
-// dejando valores intermedios visibles). Ahora: estado local mientras se tipea,
-// commit en blur o Enter. Botones rápidos (-/+/25/50/75/100) commitean directo.
-function ProgressEditor({ wo, pct, onSave }) {
-  const [local, setLocal] = useState(String(pct));
-  const lastPropPct = useRef(pct);
-  // Si el pct prop cambia (ej. desde otra interacción o WS), sincronizar — pero
-  // solo si el usuario no está editando (input no enfocado).
-  useEffect(() => {
-    if (lastPropPct.current !== pct) {
-      lastPropPct.current = pct;
-      setLocal(String(pct));
-    }
-  }, [pct]);
-  const commit = (raw) => {
-    const v = Math.max(0, Math.min(100, parseInt(raw, 10) || 0));
-    setLocal(String(v));
-    if (v !== pct) onSave(wo, v);
-  };
-  return (
-    <div className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border bg-card">
-      <span className="text-[10px] font-semibold text-muted-foreground uppercase">avance</span>
-      <button onClick={() => { const v = Math.max(0, pct - 5); setLocal(String(v)); onSave(wo, v); }}
-        title="-5%" className="px-1.5 text-xs hover:bg-muted rounded">−</button>
-      <input type="number" min="0" max="100" step="5" value={local}
-        onChange={e => setLocal(e.target.value)}
-        onBlur={e => commit(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
-        className="w-12 text-xs font-bold text-center bg-transparent border border-border rounded px-1 py-0.5" />
-      <span className="text-xs font-bold">%</span>
-      <button onClick={() => { const v = Math.min(100, pct + 5); setLocal(String(v)); onSave(wo, v); }}
-        title="+5%" className="px-1.5 text-xs hover:bg-muted rounded">+</button>
-      <span className="border-l border-border h-4 mx-0.5" />
-      {[25, 50, 75, 100].map(p => (
-        <button key={p} onClick={() => { setLocal(String(p)); onSave(wo, p); }}
-          title={`Set ${p}%`}
-          className={`px-2 text-[10px] font-bold rounded ${pct === p ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}>
-          {p}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 const PRIO_STYLE = {
   P1: 'bg-red-500 text-white', P2: 'bg-orange-500 text-white',

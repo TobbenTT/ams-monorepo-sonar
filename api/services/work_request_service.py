@@ -230,6 +230,17 @@ def validate_work_request(
         priority = wr.priority_code or "P3"
         wr.sla_deadline = compute_sla_deadline(priority)
         wr.work_class = derive_work_class(priority)
+        # SF-723: aplicar mapping prioridad→notification_type también desde el
+        # endpoint legacy /validate. Sin esto, los WR aprobados via Identification
+        # tab quedaban con A1 default mientras approve_work_request (otra ruta)
+        # sí seteaba M1/M2/M3 correctamente.
+        if not wr.notification_type or wr.notification_type == "A1":
+            if priority in ("P1", "P2"):
+                wr.notification_type = "M2"
+            elif priority == "P3":
+                wr.notification_type = "M3"
+            elif priority == "P4":
+                wr.notification_type = "M1"
     elif action == "REJECT":
         wr.status = "RECHAZADO"
         if modifications and modifications.get("rejection_reason"):

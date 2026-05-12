@@ -81,10 +81,20 @@ export default function WorkManagement() {
         'failure-capture': null,
         // Identification: solo pending validation (no incluye los aprobados que pasan a Planning)
         identification: wrList.filter(w => ['PENDING_VALIDATION', 'PENDIENTE'].includes(w.status)).length,
-        // Planning: aprobados sin OT creada (a la espera de pasar a OT)
-        planning: wrList.filter(w => ['VALIDATED', 'APROBADO'].includes(w.status)).length,
-        // Scheduling: OTs en estados pre-ejecución
-        scheduling: woList.filter(w => ['DRAFT', 'PLANNED', 'RELEASED', 'CREADO', 'PLANIFICADO', 'EN_PROGRAMACION', 'PROGRAMADO'].includes(w.status)).length,
+        // Planning: WRs aprobados pendientes de OT + OTs pre-programación
+        // (CREADO/LIBERADO/PLANIFICADO). Estas OTs aún no pasaron al programador.
+        planning: (
+          wrList.filter(w => ['VALIDATED', 'APROBADO'].includes(w.status)).length +
+          woList.filter(w => ['CREADO', 'LIBERADO', 'PLANIFICADO', 'DRAFT', 'PLANNED', 'RELEASED'].includes(w.status)).length
+        ),
+        // Scheduling: solo OTs que el programador efectivamente toca.
+        // Fix 2026-05-12 (Magdalena): antes contaba 7 estados pre-ejecución
+        // (53 OTs) pero el panel "OTs a Programar" solo muestra EN_PROGRAMACION
+        // + PROGRAMADO (22 OTs) → discordancia. Ahora coincide con la realidad
+        // visible: las CREADO/LIBERADO/PLANIFICADO viven en el tab Planning.
+        scheduling: woList.filter(w => ['EN_PROGRAMACION', 'PROGRAMADO'].includes(w.status)).length,
+        // Planning ahora incluye además las OTs CREADO/LIBERADO/PLANIFICADO
+        // que aún NO llegaron al programador.
       });
     });
   }, [outletContext?.selectedPlant]);

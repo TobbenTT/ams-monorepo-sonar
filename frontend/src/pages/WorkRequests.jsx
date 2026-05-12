@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 import { downloadExport } from '../utils/exportFile';
+import { photoUrl } from '../utils/photoUrl';
 import { isWRPreExecution } from '../utils/woLifecycle';
 import { useConfirm } from '../components/ConfirmDialog';
 
@@ -603,7 +604,7 @@ ${materials.length ? `<div class="section">
             <div className="flex flex-wrap gap-2">
               {(editData.photos || []).map((p, i) => (
                 <div key={i} className="relative group">
-                  <img src={p} alt={`foto-${i}`} className="w-24 h-24 object-cover rounded-lg border border-border" />
+                  <img src={photoUrl(p)} alt={`foto-${i}`} className="w-24 h-24 object-cover rounded-lg border border-border" />
                   <button type="button"
                     onClick={async () => {
                       if (!await confirm({ title: 'Quitar foto', message: '¿Quitar esta foto del aviso?', variant: 'danger', confirmText: 'Quitar' })) return;

@@ -1726,7 +1726,8 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                   onDrop={async e => {
                                     e.preventDefault();
                                     setDropTarget(null);
-                                    if (!dragWO) return;
+                                    console.log('[DRAG-DEBUG] onDrop fired', { dragWO: dragWO?.wo_number, targetDay: d.str, targetHour: slot.h });
+                                    if (!dragWO) { console.warn('[DRAG-DEBUG] no dragWO, aborting'); return; }
                                     const wo = dragWO;
                                     setDragWO(null);
                                     // Calcular fecha/hora inicio + auto-match técnicos
@@ -1738,10 +1739,17 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                       const p = (n) => String(n).padStart(2, '0');
                                       return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}:00`;
                                     };
-                                    const matchedWorkers = matchTechniciansForWO(wo);
+                                    // Bug 2026-05-12 (Jorge "scheduled→scheduled no actualiza"): si la OT
+                                    // ya tiene assigned_workers válidos, los preservamos en el re-drag
+                                    // en lugar de re-matchear automáticamente — el planner ya eligió.
+                                    const existingWorkers = (Array.isArray(wo.assigned_workers) && wo.assigned_workers.length > 0)
+                                      ? wo.assigned_workers.filter(w => w && (typeof w === 'string' ? w.trim() : (w.worker_id || w.id)))
+                                      : [];
+                                    const matchedWorkers = existingWorkers.length > 0 ? existingWorkers : matchTechniciansForWO(wo);
                                     const plannedStart = fmt(startDate);
                                     const plannedEnd = fmt(endDate);
                                     const shift = slot.shift === 'day' ? 'DAY' : 'NIGHT';
+                                    console.log('[DRAG-DEBUG] PUT prep', { wo: wo.wo_number, plannedStart, plannedEnd, workers: matchedWorkers.length });
                                     // UX 2026-05-12 (Jorge feedback "se recarga 3 veces"):
                                     // optimistic update — movemos la OT del bucket released al
                                     // scheduled inmediatamente sin esperar al PUT. Si el PUT
@@ -1759,12 +1767,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                     setReleasedWOs(prev => prev.filter(w => w.wo_id !== wo.wo_id));
                                     setScheduledWOs(prev => [optimisticWO, ...prev.filter(w => w.wo_id !== wo.wo_id)]);
                                     try {
-                                      await api.updateManagedWO(wo.wo_id, {
+                                      const resp = await api.updateManagedWO(wo.wo_id, {
                                         planned_start: plannedStart,
                                         planned_end: plannedEnd,
                                         assigned_workers: matchedWorkers,
                                         shift,
                                       });
+                                      console.log('[DRAG-DEBUG] PUT OK', { resp_planned_start: resp?.planned_start, resp_workers: (resp?.assigned_workers||[]).length });
                                       toast.success(`${wo.wo_number} → ${slot.label} ${d.dateLabel} · ${matchedWorkers.length} técnico${matchedWorkers.length === 1 ? '' : 's'} asignado${matchedWorkers.length === 1 ? '' : 's'}`);
                                       // WS broadcast del backend reconciliará en bg si hubo
                                       // mutación de otro campo (p.ej. status auto-bump).
@@ -1772,6 +1781,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                       setTimeout(() => onRefresh?.(), 3000);
                                     } catch (err) {
                                       // Rollback optimistic UI
+                                      console.error('[DRAG-DEBUG] PUT FAILED', err);
                                       setReleasedWOs(prevReleased);
                                       setScheduledWOs(prevScheduled);
                                       toast.error('Error al asignar: ' + (err.message || err));

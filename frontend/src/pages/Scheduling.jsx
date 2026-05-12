@@ -2045,13 +2045,16 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                     return (
                                       <div key={wo.wo_id} className="relative mb-1">
                                         <div
-                                          draggable={!isReserved}
+                                          /* Jorge 2026-05-12: las OTs ya colocadas en el calendario
+                                             NO se pueden arrastrar manualmente. El único mecanismo
+                                             de re-asignación masiva es Auto-Level. Antes se podía
+                                             arrastrar y eso desbalanceaba la planificación. */
+                                          draggable={false}
                                           onMouseEnter={() => setHoverWO(wo)}
                                           onMouseLeave={() => setHoverWO(null)}
                                           onClick={e => { if (!wo._continuation) toggleExpand(e); }}
-                                          onDragStart={e => { if (isReserved) { e.preventDefault(); return; } e.stopPropagation(); setDragWO(wo); e.dataTransfer.effectAllowed = 'move'; }}
-                                          title={isReserved ? 'Reservada — desbloquea con Clear Assignments' : isDraft ? 'Borrador — arrástrala o reserva la semana' : 'Click para detalle · arrastrar para mover'}
-                                          className={`relative bg-white dark:bg-card rounded-md border border-border border-l-[3px] ${leftAccent} px-2 py-1.5 shadow-sm transition-all ${isReserved ? 'cursor-not-allowed ring-1 ring-emerald-200' : 'cursor-grab active:cursor-grabbing hover:shadow-md hover:border-emerald-300'} ${isDraft ? 'border-dashed' : ''} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
+                                          title={isReserved ? 'Reservada · usa Auto-Level para re-asignar' : 'Click para ver detalle · re-asignación masiva vía Auto-Level'}
+                                          className={`relative bg-white dark:bg-card rounded-md border border-border border-l-[3px] ${leftAccent} px-2 py-1.5 shadow-sm transition-all cursor-pointer ${isReserved ? 'ring-1 ring-emerald-200' : 'hover:shadow-md hover:border-emerald-300'} ${isDraft ? 'border-dashed' : ''} ${wo._continuation ? 'opacity-70 border-dashed' : ''}`}>
                                           <div className="flex items-center justify-between gap-1 mb-0.5">
                                             <span className="font-mono text-[9.5px] text-muted-foreground truncate">{wo.wo_number}{wo._continuation ? ` (${wo._dayNum}/${wo._totalDays})` : ''}</span>
                                             <span className={`shrink-0 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-[1px] rounded-full ${prioDot}`}>
@@ -2553,10 +2556,11 @@ function TimelineMirrorView({ scheduledWOs, technicians, viewedWeekStart, onResc
                         onDrop={e => { e.preventDefault(); handleDrop(tech.worker_id, slot); }}>
                         {isStart && woHere && (
                           <div
-                            draggable
-                            onDragStart={() => setDragWO(woHere)}
+                            /* Jorge 2026-05-12: drag deshabilitado para OTs ya
+                               colocadas — re-asignación via Auto-Level. */
+                            draggable={false}
                             onClick={() => onOpenDetail && onOpenDetail(woHere)}
-                            className="absolute left-0.5 right-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold text-white cursor-grab hover:opacity-90 truncate"
+                            className="absolute left-0.5 right-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold text-white cursor-pointer hover:opacity-90 truncate"
                             style={{
                               top: 0,
                               height: positionFor(woHere).lengthSlots * 22 - 2,
@@ -2836,10 +2840,10 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
                         if (todayIdx >= 0) return <div className="absolute top-0 bottom-0 w-0.5 bg-emerald-500 z-10" style={{ left: `${((todayIdx + 0.5) / totalDays) * 100}%` }} />;
                         return null;
                       })()}
-                      {/* Draggable Bar */}
-                      <div className="absolute top-2 bottom-2 flex items-center cursor-grab active:cursor-grabbing"
-                        draggable
-                        onDragStart={e => handleBarDragStart(e, wo)}
+                      {/* Bar — Jorge 2026-05-12: drag deshabilitado en Gantt
+                          también; re-asignación vía Auto-Level. */}
+                      <div className="absolute top-2 bottom-2 flex items-center cursor-pointer"
+                        draggable={false}
                         onDragEnd={() => { setDraggingWO(null); setDragDayIdx(null); }}
                         onMouseEnter={() => setTooltip(wo)}
                         onMouseLeave={() => setTooltip(null)}
@@ -5103,56 +5107,12 @@ export default function Scheduling() {
                 {aiScheduling ? 'Leveling...' : 'Auto-Level'}
               </button>
             </div>
-            <button
-              onClick={async () => {
-                const now = new Date();
-                const weekNumber = (() => {
-                  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-                  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-                  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-                  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-                })();
-                toast.info(`Generando programa semana ${weekNumber}/${now.getFullYear()} desde backlog…`);
-                try {
-                  const res = await api.agenticAutoSchedule({
-                    plant_id: plant,
-                    week_number: weekNumber,
-                    year: now.getFullYear(),
-                    include_preventive: true,
-                    respect_shutdowns: true,
-                  });
-                  const r = res?.result || res;
-                  const conflicts = r?.conflicts_count ?? (r?.conflicts || []).length ?? 0;
-                  const items = r?.program?.total_items || r?.gantt?.length || 0;
-                  if (!r?.program_id) {
-                    toast.info(r?.summary || 'Sin items para programar esta semana');
-                  } else {
-                    toast.success(
-                      <div className="text-xs">
-                        <div className="font-bold mb-1">Programa DRAFT generado</div>
-                        <div>ID: <span className="font-mono">{r.program_id}</span></div>
-                        <div>{items} OTs programadas · {conflicts} conflictos</div>
-                        {r.ai_recommendations && <div className="mt-1 text-amber-600">⚠️ IA detectó sobrecarga — ver recomendaciones</div>}
-                      </div>,
-                      10000
-                    );
-                  }
-                } catch (e) {
-                  toast.error('Error generando programa: ' + (e.message || ''));
-                }
-              }}
-              className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium"
-              title="Generar programa semanal desde backlog (SF-344)"
-            >
-              <Sparkles size={16} />
-              Auto-Schedule
-            </button>
-            <button
-              onClick={() => setShowClearConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-            >
-              <Trash2 size={16} /> Clear Assignments
-            </button>
+            {/* Jorge 2026-05-12 (demo Goldfields): se quitan los botones
+                "Auto-Schedule" y "Clear Assignments" del toolbar. Solo queda
+                Auto-Level como mecanismo de asignación masiva — el resto
+                confundía al planificador y permitía borrar trabajo sin
+                checkpoint. La lógica backend queda intacta por si se reactiva
+                desde otro lado o post-demo. */}
           </div>
         )}
       </div>

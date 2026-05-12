@@ -1755,7 +1755,10 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
     else { setSortField(field); setSortDir('asc'); }
   };
 
-  const pendingCount = queueFiltered.filter((r) => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length;
+  // Jorge 2026-05-12: warning "X pending validation" usa nonStatusFiltered para
+  // alinear con KPI cards y chips. Antes contaba sobre queueFiltered sin fecha
+  // → "22" mientras KPI cards mostraban 14 con el mismo rango.
+  const pendingCount = nonStatusFiltered.filter((r) => ['PENDING_VALIDATION', 'PENDIENTE'].includes(r.status)).length;
 
   /* ─── Status labels (i18n) ─── */
   const statusLabels = useMemo(() => ({
@@ -2144,9 +2147,12 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
           <div className="flex gap-1 flex-wrap">
             {STATUS_KEYS.map(key => {
               const colors = { ALL: 'bg-gray-600', PENDIENTE: 'bg-gray-500', APROBADO: 'bg-green-600', RECHAZADO: 'bg-red-600', CANCELADO: 'bg-red-500', CERRADO: 'bg-emerald-700' };
-              const cnt = key === 'ALL' ? areaFiltered.length : areaFiltered.filter(r => {
-                const sm = { PENDING_VALIDATION: 'PENDIENTE', VALIDATED: 'APROBADO', REJECTED: 'RECHAZADO', CANCELLED: 'CANCELADO', CLOSED: 'CERRADO', DRAFT: 'PENDIENTE', ASSIGNED: 'APROBADO', IN_PROGRESS: 'APROBADO', COMPLETED: 'CERRADO' };
-                return (sm[r.status] || r.status) === key || r.status === key;
+              // Jorge 2026-05-12: los chips de status cuentan sobre nonStatusFiltered
+              // (mismos filtros que la tabla: fecha/área/búsqueda/prioridad) EXCEPTO
+              // status. Antes contaban sobre areaFiltered sin date filter → mostraba
+              // "Pending 22" mientras KPI cards y tabla mostraban 14.
+              const cnt = key === 'ALL' ? nonStatusFiltered.length : nonStatusFiltered.filter(r => {
+                return (STATUS_MAP[r.status] || r.status) === key || r.status === key;
               }).length;
               const isSelected = key === 'ALL' ? statusFilter.length === 0 : statusFilter.includes(key);
               return (
@@ -2354,25 +2360,38 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
             </table>
           </div>
 
-          {/* Table Footer with Pagination */}
-          <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between text-xs text-muted-foreground">
+          {/* Table Footer with Pagination — Jorge 2026-05-12: paginación SIEMPRE
+              visible con rango "X-Y de Z", primer/último page y page-size selector. */}
+          <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
             <div className="flex items-center gap-3">
-              <span>{t('workRequests.showingOf', { shown: paged.length, total: sorted.length })}</span>
+              <span className="font-medium">
+                {sorted.length === 0
+                  ? 'Sin resultados'
+                  : `Mostrando ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, sorted.length)} de ${sorted.length}`}
+              </span>
               <button onClick={handleExportWRs} disabled={!sorted.length}
                 className="flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-muted disabled:opacity-30 text-xs font-medium">
                 <Download size={12} /> Excel
               </button>
             </div>
             <div className="flex items-center gap-3">
-              {totalPages > 1 && (
-                <div className="flex items-center gap-1">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    className="p-1 rounded hover:bg-muted disabled:opacity-30"><ChevronLeft size={14} /></button>
-                  <span className="font-medium">{page} / {totalPages}</span>
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    className="p-1 rounded hover:bg-muted disabled:opacity-30"><ChevronRight size={14} /></button>
-                </div>
-              )}
+              <div className="flex items-center gap-1">
+                <button onClick={() => setPage(1)} disabled={page === 1}
+                  title="Primera página"
+                  className="px-1.5 py-1 rounded hover:bg-muted disabled:opacity-30 font-mono">«</button>
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                  title="Anterior"
+                  className="p-1 rounded hover:bg-muted disabled:opacity-30"><ChevronLeft size={14} /></button>
+                <span className="font-semibold px-2 py-1 bg-card border border-border rounded">
+                  Página {page} de {totalPages}
+                </span>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                  title="Siguiente"
+                  className="p-1 rounded hover:bg-muted disabled:opacity-30"><ChevronRight size={14} /></button>
+                <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
+                  title="Última página"
+                  className="px-1.5 py-1 rounded hover:bg-muted disabled:opacity-30 font-mono">»</button>
+              </div>
               <div className="flex items-center gap-1">
                 <Clock size={12} />
                 <span>{t('workRequests.updatedAt', { time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) })}</span>

@@ -4175,9 +4175,21 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                         cada reserva. Antes solo listaba el código sin contexto y
                         Jorge dijo "no me mostró la segunda reserva acá abajo". */}
                     {(() => {
-                      const list = Array.isArray(selectedOT?.reservation_codes) && selectedOT.reservation_codes.length > 0
-                        ? selectedOT.reservation_codes
-                        : (selectedOT?.reservation_code ? [selectedOT.reservation_code] : []);
+                      // Jorge demo 2026-05-12: en OTs legacy las reservas están
+                      // en m.reservation_code de cada material y reservation_codes
+                      // del WO solo trae la última. Defensive merge: unión de
+                      // ambas fuentes para que el panel muestre TODAS las reservas
+                      // históricas, no solo la última.
+                      const fromWO = Array.isArray(selectedOT?.reservation_codes) ? selectedOT.reservation_codes : [];
+                      const singleCode = selectedOT?.reservation_code ? [selectedOT.reservation_code] : [];
+                      const fromMats = editMats.map(m => m.reservation_code).filter(Boolean);
+                      // Mantener orden de aparición (oldest first by index in array)
+                      const seen = new Set();
+                      const list = [...fromWO, ...singleCode, ...fromMats].filter(c => {
+                        if (!c || seen.has(c)) return false;
+                        seen.add(c);
+                        return true;
+                      });
                       if (list.length === 0) return null;
                       // Agrupar materiales por reservation_code para mostrar qué va en cada reserva.
                       const byRes = {};

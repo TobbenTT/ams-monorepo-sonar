@@ -253,8 +253,13 @@ function HistoryTab({ wo }) {
   const [postingNote, setPostingNote] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [recording, setRecording] = useState(false);
+  // SF-655 (jornada VSC 2026-05-08): además de audio, permitir adjuntar fotos
+  // al comentario. La IA procesará texto + transcripción audio + imágenes en
+  // una sola llamada al agente.
+  const [photos, setPhotos] = useState([]); // [{ name, data }]
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const photoInputRef = useRef(null);
 
   const reload = () => {
     if (!wo?.wo_id) return;
@@ -275,14 +280,12 @@ function HistoryTab({ wo }) {
   }, [wo?.wo_id]);
 
   const postNote = async () => {
-    if (!newNote.trim() && !audioBlob) return;
+    if (!newNote.trim() && !audioBlob && photos.length === 0) return;
     if (!wo?.wo_id) return;
     setPostingNote(true);
     try {
-      const payload = { note: newNote.trim() || '(comentario de audio adjunto)' };
+      const payload = { note: newNote.trim() || '(comentario multimedia adjunto)' };
       if (audioBlob) {
-        // SF-674: por ahora adjuntamos audio en base64 — backend persistirá
-        // archivo + URL. Pendiente: STT (whisper) para transcripción.
         const reader = new FileReader();
         await new Promise((resolve, reject) => {
           reader.onload = () => { payload.audio_b64 = reader.result; resolve(); };
@@ -290,16 +293,40 @@ function HistoryTab({ wo }) {
           reader.readAsDataURL(audioBlob);
         });
       }
+      if (photos.length > 0) {
+        payload.photos = photos.map(p => p.data);
+      }
       await api.addManagedWONote(wo.wo_id, payload);
       setNewNote('');
       setAudioBlob(null);
+      setPhotos([]);
       reload();
     } catch (e) {
-      // toast helper no disponible acá; mostramos como error inline
       setError('Error al guardar nota: ' + (e?.message || e));
     } finally {
       setPostingNote(false);
     }
+  };
+
+  const onPhotoSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    const out = [];
+    for (const f of files) {
+      if (!f.type.startsWith('image/')) continue;
+      try {
+        const r = await compressImage(f, { maxDim: 1600, maxBytes: 1.5 * 1024 * 1024 });
+        out.push({ name: f.name, data: r.dataUrl });
+      } catch {
+        const reader = new FileReader();
+        await new Promise((resolve) => {
+          reader.onload = () => { out.push({ name: f.name, data: reader.result }); resolve(); };
+          reader.onerror = resolve;
+          reader.readAsDataURL(f);
+        });
+      }
+    }
+    setPhotos(prev => [...prev, ...out].slice(0, 5));
+    e.target.value = '';
   };
 
   const startRecording = async () => {
@@ -391,7 +418,19 @@ function HistoryTab({ wo }) {
               className="ml-auto text-[10px] text-red-500 hover:text-red-700 font-semibold">Descartar</button>
           </div>
         )}
-        <div className="flex items-center gap-2">
+        {photos.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {photos.map((p, i) => (
+              <div key={i} className="relative group">
+                <img src={p.data} alt={p.name} className="w-14 h-14 object-cover rounded border border-emerald-300" />
+                <button type="button" onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))}
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] font-bold opacity-0 group-hover:opacity-100">×</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <input ref={photoInputRef} type="file" accept="image/*" multiple onChange={onPhotoSelect} className="hidden" />
+        <div className="flex items-center gap-2 flex-wrap">
           {!recording ? (
             <button type="button" onClick={startRecording}
               className="text-[10px] font-semibold px-2.5 py-1.5 bg-white border-2 border-emerald-300 text-emerald-700 rounded hover:bg-emerald-50 flex items-center gap-1">
@@ -403,8 +442,14 @@ function HistoryTab({ wo }) {
               ⏹ Detener
             </button>
           )}
+          {/* SF-655 (Jorge): adjuntar fotos al comentario para que la IA + el
+              próximo turno tengan contexto visual del avance. */}
+          <button type="button" onClick={() => photoInputRef.current?.click()}
+            className="text-[10px] font-semibold px-2.5 py-1.5 bg-white border-2 border-blue-300 text-blue-700 rounded hover:bg-blue-50 flex items-center gap-1">
+            📷 Foto{photos.length > 0 ? ` (${photos.length})` : ''}
+          </button>
           <button type="button" onClick={postNote}
-            disabled={postingNote || (!newNote.trim() && !audioBlob)}
+            disabled={postingNote || (!newNote.trim() && !audioBlob && photos.length === 0)}
             className="ml-auto text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-40">
             {postingNote ? 'Guardando…' : 'Agregar nota'}
           </button>

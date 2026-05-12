@@ -1726,24 +1726,41 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                       return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}:00`;
                                     };
                                     const matchedWorkers = matchTechniciansForWO(wo);
+                                    const plannedStart = fmt(startDate);
+                                    const plannedEnd = fmt(endDate);
+                                    const shift = slot.shift === 'day' ? 'DAY' : 'NIGHT';
+                                    // UX 2026-05-12 (Jorge feedback "se recarga 3 veces"):
+                                    // optimistic update — movemos la OT del bucket released al
+                                    // scheduled inmediatamente sin esperar al PUT. Si el PUT
+                                    // falla, revertimos. Antes el triple onRefresh causaba
+                                    // 3 reloads visibles consecutivos del calendario.
+                                    const prevReleased = releasedWOs;
+                                    const prevScheduled = scheduledWOs;
+                                    const optimisticWO = {
+                                      ...wo,
+                                      planned_start: plannedStart,
+                                      planned_end: plannedEnd,
+                                      assigned_workers: matchedWorkers,
+                                      shift,
+                                    };
+                                    setReleasedWOs(prev => prev.filter(w => w.wo_id !== wo.wo_id));
+                                    setScheduledWOs(prev => [optimisticWO, ...prev.filter(w => w.wo_id !== wo.wo_id)]);
                                     try {
                                       await api.updateManagedWO(wo.wo_id, {
-                                        planned_start: fmt(startDate),
-                                        planned_end: fmt(endDate),
+                                        planned_start: plannedStart,
+                                        planned_end: plannedEnd,
                                         assigned_workers: matchedWorkers,
-                                        shift: slot.shift === 'day' ? 'DAY' : 'NIGHT',
+                                        shift,
                                       });
-                                      // Bug 2026-05-12: useToast() devuelve {success,error,...} no una función.
-                                      // Antes se llamaba toast({...}) → TypeError silencioso → onRefresh nunca
-                                      // se ejecutaba → UI no actualizaba después del drag-drop.
                                       toast.success(`${wo.wo_number} → ${slot.label} ${d.dateLabel} · ${matchedWorkers.length} técnico${matchedWorkers.length === 1 ? '' : 's'} asignado${matchedWorkers.length === 1 ? '' : 's'}`);
-                                      // Bug 2026-05-12: un solo onRefresh perdía el commit en el race
-                                      // de queue_notify → cliente. Mirror del Auto-Level: refresh
-                                      // inmediato + 1.5s + 3s para garantizar reconciliación visual.
-                                      onRefresh?.();
-                                      setTimeout(() => onRefresh?.(), 1500);
+                                      // WS broadcast del backend reconciliará en bg si hubo
+                                      // mutación de otro campo (p.ej. status auto-bump).
+                                      // Safety-net: un solo refresh a 3s en caso de desync.
                                       setTimeout(() => onRefresh?.(), 3000);
                                     } catch (err) {
+                                      // Rollback optimistic UI
+                                      setReleasedWOs(prevReleased);
+                                      setScheduledWOs(prevScheduled);
                                       toast.error('Error al asignar: ' + (err.message || err));
                                     }
                                   }}>

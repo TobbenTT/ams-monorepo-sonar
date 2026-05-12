@@ -877,8 +877,21 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
     // TAMBIÉN las OTs ya posicionadas en el calendario (scheduledWOs con
     // status EN_PROGRAMACION). Antes éstas vivían sólo en scheduledWOs y
     // el panel izquierdo aparecía vacío aunque hubieran 24 OTs en ese estado.
+    // Bug 2026-05-12 (Jorge "al arrastrar no se actualiza"): al hacer drop
+    // de una OT, el optimistic update mueve planned_start al slot destino
+    // PERO el status sigue EN_PROGRAMACION → este branch la volvía a meter
+    // al panel izquierdo aunque ya estaba en el calendario. Resultado: el
+    // card aparecía en ambos lados, la sensación era "no se actualizó".
+    // Fix: excluir las que tienen planned_start dentro de la semana visible.
+    const _viewedDays = new Set(days.map(d => d.str));
+    const scheduledStillToProgram = scheduledWOs.filter(w => {
+      if ((w.status || '').toUpperCase() !== 'EN_PROGRAMACION') return false;
+      if (!w.planned_start) return true;
+      const dayStr = toDateStr(new Date(w.planned_start));
+      return !_viewedDays.has(dayStr);
+    });
     const baseList = statusFilter === 'inSched'
-      ? [...releasedWOs, ...scheduledWOs.filter(w => (w.status || '').toUpperCase() === 'EN_PROGRAMACION')]
+      ? [...releasedWOs, ...scheduledStillToProgram]
       : releasedWOs;
     // Dedupe por wo_id (una OT puede aparecer en ambos arrays)
     const seen = new Set();

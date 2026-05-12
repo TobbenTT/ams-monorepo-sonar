@@ -5100,12 +5100,15 @@ export default function Scheduling() {
                 {aiScheduling ? 'Leveling...' : 'Auto-Level'}
               </button>
             </div>
-            {/* Jorge 2026-05-12 (demo Goldfields): se quitan los botones
-                "Auto-Schedule" y "Clear Assignments" del toolbar. Solo queda
-                Auto-Level como mecanismo de asignación masiva — el resto
-                confundía al planificador y permitía borrar trabajo sin
-                checkpoint. La lógica backend queda intacta por si se reactiva
-                desde otro lado o post-demo. */}
+            {/* Jorge 2026-05-12 (demo Goldfields): se quitó "Auto-Schedule"
+                porque no funcionaba bien. Clear Assignments se mantiene para
+                que el planificador pueda limpiar el tablero cuando lo necesite. */}
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            >
+              <Trash2 size={16} /> Clear Assignments
+            </button>
           </div>
         )}
       </div>

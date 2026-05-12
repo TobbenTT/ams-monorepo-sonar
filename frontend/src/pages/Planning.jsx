@@ -791,13 +791,30 @@ function CommentsTab({ wo, onUpdate }) {
         entry.photo_data_url = photoData;
       }
       const next = [...notes, entry];
-      const updated = await api.updateManagedWO(wo.wo_id, { execution_notes: next });
+      let updated;
+      try {
+        updated = await api.updateManagedWO(wo.wo_id, { execution_notes: next });
+      } catch (errFirst) {
+        // Bug 2026-05-12: si llegó un WS event entre que se abrió el modal
+        // y el submit, la OT tiene un version más nuevo → backend devuelve
+        // 409 OptimisticLockError. Re-fetch la OT y reintentamos UNA vez.
+        const status = errFirst?.status || (errFirst?.message?.match(/\b(\d{3})\b/) || [])[1];
+        if (String(status) === '409') {
+          const fresh = await api.getManagedWO(wo.wo_id).catch(() => null);
+          const baseNotes = Array.isArray(fresh?.execution_notes) ? fresh.execution_notes : notes;
+          const mergedNext = [...baseNotes, entry];
+          updated = await api.updateManagedWO(wo.wo_id, { execution_notes: mergedNext });
+          toast.info('Comentario guardado (reconciliado con cambios concurrentes)');
+        } else {
+          throw errFirst;
+        }
+      }
       onUpdate?.(updated);
       setNewComment('');
       setAudioBlob(null);
       setPhotoData(null);
     } catch (e) {
-      toast.error('Error: ' + (e.message || e));
+      toast.error('Error guardando comentario: ' + (e.message || e));
     } finally {
       setSubmitting(false);
     }

@@ -4517,15 +4517,10 @@ export default function Scheduling() {
   const [clearing, setClearing] = useState(false);
   const [capacityLimit, setCapacityLimit] = useState(85); // % max capacity for auto-level
   const [showAIModal, setShowAIModal] = useState(false);
-  // Bug 2026-05-12: wizard mostraba counts inconsistentes porque leía
-  // `releasedWOs` (state vivo). Si llegaba un WS event entre cierres y
-  // aperturas, los counts cambiaban. Snapshot al abrir → estable hasta cerrar.
+  // Snapshot al abrir el wizard Auto-Level — definido más abajo después
+  // de que `releasedWOs` y `technicians` existan (evita TDZ "Cannot access
+  // 'releasedWOs' before initialization" tras minify).
   const [aiModalSnapshot, setAiModalSnapshot] = useState(null);
-  const openAIModal = useCallback(() => {
-    setAiModalSnapshot({ wos: [...(releasedWOs || [])], techCount: technicians.length });
-    setShowAIModal(true);
-    setAiDraftPlan(null);
-  }, [releasedWOs, technicians]);
   const [aiInstructions, setAiInstructions] = useState('');
   const [aiParsed, setAiParsed] = useState(null); // Claude-parsed constraints
   const [aiParsing, setAiParsing] = useState(false);
@@ -4540,6 +4535,16 @@ export default function Scheduling() {
   const [technicians, setTechnicians] = useState([]);
   const [releasedWOs, setReleasedWOs] = useState([]);
   const [scheduledWOs, setScheduledWOs] = useState([]);
+
+  // Bug 2026-05-12: openAIModal usa releasedWOs/technicians — debe declararse
+  // DESPUÉS de los useState que las definen. Si se declara antes, en build
+  // minificado los identifiers (releasedWOs→'ge') están en TDZ y el render
+  // crashea con "Cannot access 'ge' before initialization".
+  const openAIModal = useCallback(() => {
+    setAiModalSnapshot({ wos: [...(releasedWOs || [])], techCount: technicians.length });
+    setShowAIModal(true);
+    setAiDraftPlan(null);
+  }, [releasedWOs, technicians]);
 
   // Legacy state for Gantt/HH/Materials/Inbox
   const [weeks, setWeeks] = useState([]);

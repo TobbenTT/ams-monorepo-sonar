@@ -4989,7 +4989,14 @@ export default function Scheduling() {
       'EN_PROGRAMACION', 'REPROGRAMADO',            // ya en programación
       'APROBADO',                                    // legacy
     ]);
-    const toSchedule = (releasedWOs || []).filter(wo => SCHEDULABLE.has(wo.status));
+    // Bug Jorge 2026-05-12 19:00: computeAIPlan usaba releasedWOs (=OTs sin
+    // planned_start) → plan vacío cuando todas las OTs visibles eran
+    // scheduledWOs con planned_start stale. Ahora usa el snapshot capturado
+    // al abrir el wizard que sí incluye scheduledWOs needing-replan.
+    const wosSource = (aiModalSnapshot?.wos && aiModalSnapshot.wos.length > 0)
+      ? aiModalSnapshot.wos
+      : (releasedWOs || []);
+    const toSchedule = wosSource.filter(wo => SCHEDULABLE.has(wo.status));
     const techs = technicians || [];
     if (toSchedule.length === 0) return null;
 

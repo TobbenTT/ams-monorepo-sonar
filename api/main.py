@@ -74,6 +74,7 @@ from api.routers import (
     planificador_agent,
     dms,
     preparativos,
+    cost_centers,
 )
 
 # Optional modules — loaded only if their deps are installed. Missing deps won't crash startup.
@@ -352,6 +353,8 @@ def create_app() -> FastAPI:
     app.include_router(dms.router, prefix=prefix)
     # SF-662 (Tanda 14 SP8) — Preparativos OT estilo Rappi
     app.include_router(preparativos.router, prefix=prefix)
+    # Tanda 0E (jornada VSC 2026-05-08) — Centros de costo + clases de gasto
+    app.include_router(cost_centers.router, prefix=prefix)
 
     # GAP-W03 — Serve Field PWA at /field/
     field_dist = Path("field_app/dist")

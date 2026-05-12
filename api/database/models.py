@@ -621,6 +621,12 @@ class ManagedWorkOrderModel(Base):
     cancellation_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     absorbed_by_wo_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
+    # Tanda 0E (jornada VSC 2026-05-08) — subclasificación contable.
+    # cost_center_id apunta a cost_centers.cost_center_id (FK lógica).
+    # expense_class_id apunta a expense_classes.expense_class_id (FK lógica).
+    cost_center_id: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
+    expense_class_id: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)
     # Fase 9 Jorge 2026-04-21 — optimistic concurrency lock.
@@ -1722,3 +1728,60 @@ class PreparativoOTModel(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Tanda 0E (jornada VSC 2026-05-08) — Centros de Costo + Clases de Gasto
+# ══════════════════════════════════════════════════════════════════════
+# Magdalena/Jorge: subclasificación de gastos por Ubicación Técnica + clase
+# de gasto. Permite opex/capex real vs plan agregado por CeCo en dashboards.
+# Mapea al modelo SAP CO-CCA (Cost Center Accounting).
+
+class CostCenterModel(Base):
+    """Centro de costo — agrupación contable de gastos por área/equipo/proyecto."""
+    __tablename__ = "cost_centers"
+
+    cost_center_id: Mapped[str] = mapped_column(String(20), primary_key=True)  # ej. CC-MEC-MOL
+    name: Mapped[str] = mapped_column(String(200))
+    plant_id: Mapped[str | None] = mapped_column(String(50), index=True, nullable=True)
+    # Ubicación técnica raíz que cubre este CeCo (puede ser área/sistema/equipo)
+    technical_location: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    parent_cost_center_id: Mapped[str | None] = mapped_column(String(20), nullable=True)  # jerarquía
+    responsible_user_id: Mapped[str | None] = mapped_column(String(50), nullable=True)   # supervisor responsable
+    budget_annual: Mapped[float] = mapped_column(Float, default=0.0)
+    budget_ytd: Mapped[float] = mapped_column(Float, default=0.0)
+    actual_ytd: Mapped[float] = mapped_column(Float, default=0.0)
+    currency: Mapped[str] = mapped_column(String(5), default="USD")
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")  # ACTIVE / FROZEN / ARCHIVED
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class ExpenseClassModel(Base):
+    """Clase de gasto — categoría contable (SAP G/L account).
+
+    Ejemplos típicos minería:
+      - 600100 Repuestos mecánicos
+      - 600200 Repuestos eléctricos
+      - 601000 Servicios externos mecánicos
+      - 602000 Servicios externos eléctricos
+      - 610000 Lubricantes
+      - 620000 Energía eléctrica
+      - 630000 Mano de obra interna
+      - 700100 Inversión activo fijo (CAPEX)
+    """
+    __tablename__ = "expense_classes"
+
+    expense_class_id: Mapped[str] = mapped_column(String(20), primary_key=True)  # ej. EC-600100
+    code: Mapped[str] = mapped_column(String(20), unique=True, index=True)        # SAP G/L code
+    name: Mapped[str] = mapped_column(String(200))
+    # OPEX / CAPEX / OVERHEAD
+    category: Mapped[str] = mapped_column(String(20), default="OPEX", index=True)
+    # Subtipo: MATERIAL / LABOR / SERVICE / ENERGY / OTHER
+    subtype: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # SAP fields opcionales
+    sap_account: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    tax_deductible: Mapped[bool] = mapped_column(Boolean, default=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

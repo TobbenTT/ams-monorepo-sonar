@@ -1719,10 +1719,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                         assigned_workers: matchedWorkers,
                                         shift: slot.shift === 'day' ? 'DAY' : 'NIGHT',
                                       });
-                                      toast({ kind: 'success', text: `${wo.wo_number} → ${slot.label} ${d.dateLabel} · ${matchedWorkers.length} técnico${matchedWorkers.length === 1 ? '' : 's'} asignado${matchedWorkers.length === 1 ? '' : 's'}` });
+                                      // Bug 2026-05-12: useToast() devuelve {success,error,...} no una función.
+                                      // Antes se llamaba toast({...}) → TypeError silencioso → onRefresh nunca
+                                      // se ejecutaba → UI no actualizaba después del drag-drop.
+                                      toast.success(`${wo.wo_number} → ${slot.label} ${d.dateLabel} · ${matchedWorkers.length} técnico${matchedWorkers.length === 1 ? '' : 's'} asignado${matchedWorkers.length === 1 ? '' : 's'}`);
                                       onRefresh?.();
                                     } catch (err) {
-                                      toast({ kind: 'error', text: 'Error al asignar: ' + (err.message || err) });
+                                      toast.error('Error al asignar: ' + (err.message || err));
                                     }
                                   }}>
                                   {slotWOs.length > 1 && (

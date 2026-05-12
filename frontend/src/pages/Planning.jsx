@@ -3775,7 +3775,7 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                   Tanda demo Goldfields 2026-05-12: agregado 5º cambio "Condición". */}
                               <th className="px-3 py-2 text-left">Equipo - Características</th>
                               <th className="px-3 py-2 text-left">Detalle</th>
-                              <th className="px-3 py-2 text-left">Interno/Externo</th>
+                              <th className="px-3 py-2 text-left">Propio/Externo</th>
                               <th className="px-3 py-2 text-left">Tipo</th>
                               {/* SF-675 #4 (Jorge demo 2026-05-12): Condición del equipo */}
                               <th className="px-3 py-2 text-left">Condición</th>
@@ -3899,13 +3899,15 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                       placeholder="Ej: 10T, brazo 12m, 2 ejes…"
                                       className="w-full text-sm border border-gray-300 rounded px-2 py-1" />
                                   </td>
-                                  {/* SF-675 #2: Interno/Externo + badge morado para EXT (estilo WR) */}
+                                  {/* SF-675 #2: Propio/Externo + badge morado para EXT.
+                                      Jorge demo Goldfields 2026-05-12 (00:39:53):
+                                      "Yo cambié la palabra interno por propio". */}
                                   <td className="px-3 py-2">
                                     <div className="flex items-center gap-1.5">
                                       <select value={se.ownership || 'INT'}
                                         onChange={e => updateField('ownership', e.target.value)}
                                         className="text-xs border border-gray-300 rounded px-1 py-1">
-                                        <option value="INT">Interno</option>
+                                        <option value="INT">Propio</option>
                                         <option value="EXT">Externo</option>
                                       </select>
                                       {(se.ownership === 'EXT') && (

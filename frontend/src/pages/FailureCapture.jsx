@@ -437,10 +437,16 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
         }
         // Store AI enhanced description separately — do NOT overwrite user's original text
         if (s.enhanced_description) setF('aiEnhancedDescription', stripNumericTags(s.enhanced_description));
-        // SF-673 (jornada VSC 2026-05-08): la "Sugerencia de acción" se captura
-        // manualmente, la IA ya NO autorrellena el campo. La sugerencia IA queda
-        // visible solo en el panel de Vision (read-only) para referencia. Coherente
-        // con SF-639 "IA solo manual".
+        // Jorge demo Goldfields 2026-05-12 (12:35): "fijate muestra esto pero
+        // abajo le faltó por completar". El campo "Suggested Actions" quedaba
+        // vacío aunque la IA generaba la lista de pasos. SF-673 anterior decía
+        // "captura manual", pero Jorge revirtió en demo: si la IA tiene pasos,
+        // los autocompleta y el usuario edita. Solo se respeta lo que el
+        // usuario ya escribió manualmente (no sobrescribir).
+        if ((s.suggested_action || s.suggestedAction) && !form.suggestedAction?.trim()) {
+          const raw = stripNumericTags(s.suggested_action || s.suggestedAction);
+          setF('suggestedAction', raw);
+        }
         // Auto-generate WO title = main corrective action (not step 1, but the principal action)
         // Use AI's main_action field if available, otherwise extract from original text
         if (s.main_action || s.mainAction) {
@@ -988,7 +994,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
       const derived = form.priority ? deriveActivityClassFromPriority(form.priority) : s.activityClass;
       setF('activityClass', derived);
     }
-    // SF-673: la sugerencia de acción es manual; ni Accept Vision la autorrellena.
+    // Jorge demo 2026-05-12: revert SF-673 — IA autocompleta Suggested Actions
+    // si está vacío (preserva texto manual del usuario).
+    if (s.suggestedAction && !form.suggestedAction?.trim()) {
+      setF('suggestedAction', s.suggestedAction);
+    }
     const aiCat = (s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase();
     const catData = FAILURE_CATALOG[aiCat] || FAILURE_CATALOG.MECHANICAL;
     if (catData) {
@@ -1086,7 +1096,10 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
           const derived = form.priority ? deriveActivityClassFromPriority(form.priority) : s.activityClass;
           setF('activityClass', derived);
         }
-        // SF-673: no autorrellenar 'suggestedAction' (captura manual).
+        // Jorge demo 2026-05-12: IA autocompleta Suggested Actions (revert SF-673).
+        if (s.suggestedAction && !form.suggestedAction?.trim()) {
+          setF('suggestedAction', s.suggestedAction);
+        }
         // Validate catalog values against FAILURE_CATALOG
         const aiCat = (s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase();
         const catData = FAILURE_CATALOG[aiCat] || FAILURE_CATALOG.MECANICO;

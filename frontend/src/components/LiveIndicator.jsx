@@ -6,12 +6,22 @@ import { useEffect, useState } from 'react';
 //  - compact: boolean — versión compacta para headers chicos.
 export default function LiveIndicator({ lastWsAt, compact = false }) {
   const [, force] = useState(0);
+  // Bug 2026-05-12: el `lastWsAt` que viene como prop solo se setea cuando
+  // llega un evento wo_* (Scheduling.jsx:4676). Si el ping/pong sigue vivo
+  // pero no hay eventos de OT, el indicador subía a 15s+ aunque el WS
+  // estuviera 100% conectado. Ahora escuchamos también `ws:activity`
+  // (despachado por wsSingleton en cada pong, ~15s) para reflejar salud
+  // real de la conexión, no solo actividad de OT.
+  const [activityAt, setActivityAt] = useState(null);
   useEffect(() => {
     const t = setInterval(() => force(n => n + 1), 1000);
-    return () => clearInterval(t);
+    const onActivity = () => setActivityAt(Date.now());
+    window.addEventListener('ws:activity', onActivity);
+    return () => { clearInterval(t); window.removeEventListener('ws:activity', onActivity); };
   }, []);
 
-  const sinceMs = lastWsAt ? Date.now() - lastWsAt : null;
+  const effective = Math.max(lastWsAt || 0, activityAt || 0) || null;
+  const sinceMs = effective ? Date.now() - effective : null;
   const sinceSec = sinceMs != null ? Math.floor(sinceMs / 1000) : null;
   const isLive = sinceMs == null || sinceMs < 60000; // <1 min = live
   const isStale = sinceMs != null && sinceMs > 300000; // >5 min = stale

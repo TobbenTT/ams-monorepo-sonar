@@ -280,16 +280,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
   // el banner + dejo el form en blanco. WorkManagement usa display:none para
   // ocultar tabs, así que el state se preserva — este efecto lo resetea al
   // volver explícitamente.
-  useEffect(() => {
-    // SF-722: antes este efecto sólo limpiaba cuando isActive=true, pero la
-    // página suele renderizarse standalone (route /failure-capture) y
-    // isActive llega undefined → el banner con el código AV-XXXXX se quedaba
-    // pegado para siempre. Ahora limpiamos siempre que haya createdWRId.
-    if (createdWRId) {
-      const t = setTimeout(() => setCreatedWRId(null), 1500);
-      return () => clearTimeout(t);
-    }
-  }, [isActive, createdWRId]);
+  // Jorge 2026-05-12: REVERT del auto-clear. Antes (SF-722) lo limpiaba a
+  // 1.5s pero Jorge quiere que el banner persista hasta que el user clickee
+  // "Create Another" o "View Notifications". El "campo limpio tras submit"
+  // (queja original) se resuelve en handleReset() — el formulario sí
+  // se limpia, pero la pantalla de éxito se queda hasta decisión explícita.
 
   // Equipment search
   const [equipSearch, setEquipSearch] = useState('');

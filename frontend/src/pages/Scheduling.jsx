@@ -4517,6 +4517,15 @@ export default function Scheduling() {
   const [clearing, setClearing] = useState(false);
   const [capacityLimit, setCapacityLimit] = useState(85); // % max capacity for auto-level
   const [showAIModal, setShowAIModal] = useState(false);
+  // Bug 2026-05-12: wizard mostraba counts inconsistentes porque leía
+  // `releasedWOs` (state vivo). Si llegaba un WS event entre cierres y
+  // aperturas, los counts cambiaban. Snapshot al abrir → estable hasta cerrar.
+  const [aiModalSnapshot, setAiModalSnapshot] = useState(null);
+  const openAIModal = useCallback(() => {
+    setAiModalSnapshot({ wos: [...(releasedWOs || [])], techCount: technicians.length });
+    setShowAIModal(true);
+    setAiDraftPlan(null);
+  }, [releasedWOs, technicians]);
   const [aiInstructions, setAiInstructions] = useState('');
   const [aiParsed, setAiParsed] = useState(null); // Claude-parsed constraints
   const [aiParsing, setAiParsing] = useState(false);
@@ -5430,7 +5439,7 @@ export default function Scheduling() {
                   const techs = technicians.length;
                   if (wos === 0) { toast.info('No WOs to schedule'); return; }
                   if (techs === 0) { toast.error('No technicians available — cannot auto-level'); return; }
-                  setShowAIModal(true);
+                  openAIModal();
                 }}
                 disabled={aiScheduling}
                 className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
@@ -5504,7 +5513,7 @@ export default function Scheduling() {
           publishing={publishing}
           canPublish={canPublish}
           onWeekChange={setViewedWeekStart}
-          onAutoLevel={() => setShowAIModal(true)}
+          onAutoLevel={openAIModal}
           onOpenDetail={setDetailOrder}
           lastWsAt={lastWsAt}
         />
@@ -5641,7 +5650,12 @@ export default function Scheduling() {
       )}
       {/* AI Auto-Level Modal */}
       {showAIModal && (() => {
-        const wos = releasedWOs || [];
+        // Bug 2026-05-12: usar snapshot capturado al abrir el modal (no
+        // releasedWOs live) para que las cifras "X OTs · Y técnicos · Zh"
+        // no muden entre el header y los chips si llega un WS event mientras
+        // el wizard está abierto.
+        const wos = (aiModalSnapshot?.wos) || releasedWOs || [];
+        const techCountSnap = aiModalSnapshot?.techCount ?? technicians.length;
         const prioCount = wos.reduce((a, w) => { const p = w.priority_code || 'P4'; a[p] = (a[p] || 0) + 1; return a; }, {});
         const specHours = wos.reduce((a, w) => {
           const s = (w.work_center || w.specialty || 'OTRA').toUpperCase().slice(0, 4);
@@ -5649,7 +5663,7 @@ export default function Scheduling() {
           return a;
         }, {});
         const totalHours = Object.values(specHours).reduce((a, b) => a + b, 0);
-        const weekCapacity = technicians.length * PROGRAMMABLE_HH_PER_DAY * 7 * (capacityLimit / 100);
+        const weekCapacity = techCountSnap * PROGRAMMABLE_HH_PER_DAY * 7 * (capacityLimit / 100);
         const fitPct = weekCapacity > 0 ? Math.round((totalHours / weekCapacity) * 100) : 0;
         const wontFit = Math.max(0, totalHours - weekCapacity);
         const wontFitWOs = weekCapacity > 0 && totalHours > weekCapacity ? Math.round(wos.length * (wontFit / totalHours)) : 0;
@@ -5674,7 +5688,7 @@ export default function Scheduling() {
               <div className="flex-1">
                 <h3 className="text-base font-bold">Auto-Level con IA</h3>
                 <p className="text-xs text-gray-500">
-                  {wos.length} OTs · {technicians.length} técnicos · {totalHours.toFixed(0)}h totales
+                  {wos.length} OTs · {techCountSnap} técnicos · {totalHours.toFixed(0)}h totales
                   {(CAP.dayShiftCount != null || CAP.nightShiftCount != null) && (
                     <span className="ml-1 text-purple-600">(☀️ {CAP.dayShiftCount ?? '—'} día · 🌙 {CAP.nightShiftCount ?? '—'} noche)</span>
                   )}
@@ -5824,7 +5838,7 @@ export default function Scheduling() {
                   )}
                 </div>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {wos.length} OTs → {technicians.length} técnicos al {capacityLimit}% · {Math.round(PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100))}h/persona/día
+                  {wos.length} OTs → {techCountSnap} técnicos al {capacityLimit}% · {Math.round(PROGRAMMABLE_HH_PER_DAY * (capacityLimit / 100))}h/persona/día
                 </p>
                 <p className="text-gray-500 text-[11px]">El plan se mostrará para tu aprobación antes de aplicarse.</p>
               </div>
@@ -5928,7 +5942,7 @@ export default function Scheduling() {
                 className="flex-1 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50">
                 Descartar
               </button>
-              <button onClick={() => { setShowAIModal(true); setAiDraftPlan(null); }} disabled={aiScheduling}
+              <button onClick={openAIModal} disabled={aiScheduling}
                 className="flex-1 py-2.5 text-sm font-semibold border border-purple-300 rounded-xl text-purple-700 hover:bg-purple-50 disabled:opacity-50">
                 Ajustar contexto
               </button>

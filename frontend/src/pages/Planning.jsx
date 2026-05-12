@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import HelpPopover from '../components/HelpPopover';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Eye, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Download, AlertCircle, Plus, XCircle, Ban,
   X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2, Sparkles, Lock, Loader2, FileSpreadsheet, Truck
@@ -700,6 +701,11 @@ function PreparativosTab({ woId, woNumber }) {
 // SF-674 (reunión VSC 2026-05-11): + grabación de audio adjunto + transcripción.
 function CommentsTab({ wo, onUpdate }) {
   const toast = useToast();
+  const { user: authUser } = useAuth() || {};
+  // Bug 2026-05-12: render mostraba el user_id UUID porque el backend graba
+  // user_id en transitions de status. Construimos label legible desde auth.
+  const currentUserLabel = (authUser?.full_name || authUser?.username || authUser?.email || 'supervisor');
+  const isUuid = (s) => typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s);
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -768,7 +774,11 @@ function CommentsTab({ wo, onUpdate }) {
     try {
       const entry = {
         timestamp: new Date().toISOString(),
-        user: wo._user_label || 'supervisor',
+        // Bug 2026-05-12: antes era 'supervisor' literal. Ahora usamos el
+        // nombre real del usuario logueado (full_name/username) — sin
+        // exponer el UUID al render.
+        user: currentUserLabel,
+        user_id: authUser?.user_id || authUser?.id,
         note: newComment.trim() || '(audio)',
       };
       // SF-674: adjuntar audio si fue grabado
@@ -839,7 +849,12 @@ function CommentsTab({ wo, onUpdate }) {
                 {isSystemEvent && (
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 border border-indigo-300">⚙️ Sistema</span>
                 )}
-                <span className={`font-semibold ${isSystemEvent ? 'text-indigo-700' : 'text-blue-700'}`}>{c.user || 'system'}</span>
+                <span className={`font-semibold ${isSystemEvent ? 'text-indigo-700' : 'text-blue-700'}`} title={c.user_id || c.user}>
+                  {/* Bug 2026-05-12: si el campo user es un UUID (caso de
+                      transitions persistidas por backend con user_id crudo),
+                      mostramos 'Sistema' en su lugar para no exponer IDs. */}
+                  {(c.user && !isUuid(c.user)) ? c.user : 'Sistema'}
+                </span>
                 <span className="text-gray-400">·</span>
                 <span className="text-gray-500">{c.timestamp ? new Date(c.timestamp).toLocaleString('es') : '—'}</span>
                 <span className="ml-auto text-[9px] italic text-gray-400">🔒 Congelado</span>
@@ -2466,8 +2481,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           // SF-662 — Preparativos OT estilo Rappi (tracking despacho bodega→patio)
           { id: 'preparativos', label: 'Preparativos', icon: Truck },
           { id: 'support_eq', label: 'Equipos Apoyo', icon: Wrench },
-          { id: 'costos', label: 'Costs', icon: DollarSign },
+          // Jorge 2026-05-12: Documentos antes que Costs (revisión visual demo).
           { id: 'documentos', label: 'Documentos', icon: FileText },
+          { id: 'costos', label: 'Costs', icon: DollarSign },
           // SF-647 — historial comentarios SAP-style (append-only, no editable)
           { id: 'comentarios', label: 'Comentarios', icon: MessageSquare },
           ...(isExec ? [{ id: 'notif_hh', label: 'Notif. HH', icon: Clock }] : []),
@@ -4160,7 +4176,7 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                           const u = await api.updateManagedWO(woId, { reservation_code: code, reservation_codes: nextList, materials: stamped });
                           // Use returned WO from API (avoids stale local state)
                           setSelectedOT(u || { ...selectedOT, reservation_code: code, reservation_codes: nextList, materials: stamped });
-                          toast.success(`Reserva ${code}: ${toReserve} material${toReserve > 1 ? 'es' : ''}${postRelease ? ' (segunda reserva — ' + nextList.length + ' totales)' : ''}`);
+                          toast.success(`Reserva ${code}: ${toReserve} material${toReserve > 1 ? 'es' : ''}${nextList.length > 1 ? ' (' + nextList.length + ' reservas totales)' : ''}`);
                         } catch (err) {
                           toast.error('Error al guardar reserva: ' + (err?.message || err));
                         }

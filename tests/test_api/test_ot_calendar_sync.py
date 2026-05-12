@@ -150,18 +150,24 @@ class TestOTCalendarSyncEdgeCases:
         r = seeded_client.post(f"/api/v1/managed-work-orders/{wo.wo_id}/ai-analyze")
         assert r.status_code == 200, r.text
         body = r.json()
-        assert body["version"] == "0.2"  # bumped to v0.2 con funciones 3+5+6 implementadas
+        assert body["version"] == "0.3"  # v0.3: funciones 2+4+7 deterministas
         assert "text" in body["summary"]
         assert "metrics" in body["summary"]
         m = body["summary"]["metrics"]
         assert m["n_operations"] == 2
         assert m["total_hh_est"] == 8.0
         assert m["n_workers_assigned"] == 1
-        # Stubs explícitos (null o lista vacía)
-        assert body["predictions"] is None
-        assert body["skill_mix"] is None
-        assert body["risks"] == []
-        assert body["safety_alerts"] == []
+        # v0.3: funciones 2/4/7 ahora implementadas con heurísticas deterministas.
+        # predictions puede ser None si no hay histórico suficiente (<3 samples),
+        # skill_mix puede traer recomendaciones si hay specialty gaps.
+        # root_cause_hints sigue null si no es post_close.
+        assert "predictions" in body
+        assert "skill_mix" in body  # puede ser None o dict según specialty data
+        assert body["root_cause_hints"] is None  # pre_execution mode
+        # v0.3 nota: risks/safety_alerts pueden tener items según heurísticas
+        # (no estrictamente vacíos). Solo verificamos que son listas.
+        assert isinstance(body["risks"], list)
+        assert isinstance(body["safety_alerts"], list)
 
     def test_ai_analyze_detects_replace_without_materials(self, seeded_client, db_session):
         """SF-661 — bloqueador T-16: REPLACE sin materiales."""

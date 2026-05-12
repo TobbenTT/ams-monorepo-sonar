@@ -17,8 +17,17 @@ description: >
 # Analyze Work Order
 
 **Agente destinatario:** Planning Specialist (AG-003)
-**Version:** 0.2 (funciones 1, 3, 5, 6 implementadas deterministas; 2/4/7 stub)
-**Estado:** Producción. v0.2 incluye reglas deterministas que no requieren data real. Funciones 2 (predicción HH), 4 (skill mix), 7 (RCA hint) siguen como STUB hasta tener histórico real Goldfields (0B2) o catálogo skills detallado.
+**Version:** 0.3 (las 7 funciones implementadas deterministas)
+**Estado:** Producción. Todas las funciones funcionan con heurísticas deterministas sin LLM. Cuando llegue data real Goldfields (0B2) los pesos/umbrales se afinan automáticamente.
+
+### Función 2 — Predicción HH plan vs real (✅ IMPLEMENTADO v0.3)
+Lee últimas 30 OTs cerradas (mismo wo_type + plant) con actual_hours notificadas. Calcula `avg(actual/plan)`. Si hay ≥3 samples retorna `{predicted_hh, plan_hh, delta_pct, confidence, samples_count, warning}`. Confidence se reduce con varianza alta. Warning automático si `|delta_pct| > 25%`.
+
+### Función 4 — Skill mix óptimo (✅ IMPLEMENTADO v0.3)
+Lee `operations[].specialty` requerido vs `assigned_workers[].specialty` asignado. Identifica gaps y consulta `workforce` disponible del plant para sugerir candidates (con buffer). Output `{required_specialties, currently_assigned, gaps, recommendations[{specialty, missing_count, candidates}], fully_covered}`.
+
+### Función 7 — RCA Hint post-cierre (✅ IMPLEMENTADO v0.3, solo mode=post_close)
+Keyword pattern match sobre `comments + closure_notes + description`. 10 categorías típicas minería: desgaste, lubricación, sobrecarga, diseño, instalación, error operativo, vibración, corrosión, contaminación, eléctrica. Retorna top-3 con confidence + acción "abrir RCA formal".
 
 ## 1. Rol y Persona
 

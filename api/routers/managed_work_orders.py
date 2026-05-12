@@ -1,5 +1,7 @@
 """Managed Work Orders router — full OT lifecycle (Jorge Phase 2)."""
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -7,6 +9,8 @@ from sqlalchemy.orm import Session
 from api.database.connection import get_db
 from api.dependencies.auth import get_current_user, require_role
 from api.services import managed_wo_service
+
+logger = logging.getLogger(__name__)
 
 
 class WOCreateRequest(BaseModel):
@@ -535,6 +539,130 @@ def ai_analyze_work_order(
     ]
     summary_text = " ".join(sentences)[:800]
 
+    # ── FUNCIÓN 2 — PREDICCIÓN HH plan vs real (v0.3 deterministic) ────────
+    # Heurística: traer las últimas N OTs cerradas con mismo wo_type y/o
+    # mismo equipment_class. Calcular avg(actual_hours / estimated_hours).
+    # Si tenemos al menos 3 muestras, dar predicción + confidence.
+    predictions = None
+    try:
+        from api.database.models import ManagedWorkOrderModel
+        q = db.query(ManagedWorkOrderModel).filter(
+            ManagedWorkOrderModel.status == "CERRADO",
+            ManagedWorkOrderModel.actual_hours.isnot(None),
+            ManagedWorkOrderModel.estimated_hours > 0,
+            ManagedWorkOrderModel.wo_id != wo_id,
+        )
+        if wo.get("wo_type"):
+            q = q.filter(ManagedWorkOrderModel.wo_type == wo.get("wo_type"))
+        if wo_plant:
+            q = q.filter(ManagedWorkOrderModel.plant_id == wo_plant)
+        samples = q.order_by(ManagedWorkOrderModel.actual_end.desc()).limit(30).all()
+        ratios = [
+            (s.actual_hours / s.estimated_hours)
+            for s in samples
+            if s.estimated_hours and s.actual_hours
+        ]
+        if len(ratios) >= 3 and total_hh_est > 0:
+            avg_ratio = sum(ratios) / len(ratios)
+            std_dev = (sum((r - avg_ratio) ** 2 for r in ratios) / len(ratios)) ** 0.5
+            predicted_hh = total_hh_est * avg_ratio
+            delta_pct = round((avg_ratio - 1) * 100, 1)
+            # confidence: más samples + menor std = mayor confidence
+            confidence = min(0.95, len(ratios) / 30 * (1 - min(std_dev, 1.0)))
+            predictions = {
+                "predicted_hh": round(predicted_hh, 1),
+                "plan_hh": round(total_hh_est, 1),
+                "delta_pct": delta_pct,
+                "confidence": round(confidence, 2),
+                "samples_count": len(ratios),
+                "method": f"avg(actual/plan) histórico {wo.get('wo_type', 'OT')} en planta",
+                "warning": "Δ > 25% sugiere revisar estimación" if abs(delta_pct) > 25 else None,
+            }
+    except Exception as e:
+        logger.warning("SF-661 v0.3 función 2 (predicción) falló: %s", e)
+
+    # ── FUNCIÓN 4 — SKILL MIX óptimo (v0.3 deterministic) ──────────────────
+    # Lee operations[].specialty + cruza con workforce disponible del plant.
+    # Identifica qué specialties pide la OT y compara con workers ya asignados.
+    skill_mix = None
+    try:
+        from api.database.models import WorkforceModel
+        op_specs = [str(op.get("specialty") or "").upper().strip() for op in ops if op.get("specialty")]
+        if op_specs:
+            required = {}
+            for s in op_specs:
+                required[s] = required.get(s, 0) + 1
+            assigned_specs = [str(w.get("specialty") or "").upper().strip() for w in workers]
+            covered = {s: assigned_specs.count(s) for s in required}
+            gaps = {s: required[s] - covered.get(s, 0) for s in required if required[s] > covered.get(s, 0)}
+            # Workers disponibles por specialty en la planta (no asignados a esta OT)
+            wf_q = db.query(WorkforceModel).filter(WorkforceModel.available == True)
+            if wo_plant:
+                wf_q = wf_q.filter(WorkforceModel.plant_id == wo_plant)
+            wf_by_spec = {}
+            for w in wf_q.all():
+                spec = str(w.specialty or "").upper().strip()
+                wf_by_spec.setdefault(spec, []).append({"worker_id": w.worker_id, "name": w.name})
+            recommendations = []
+            for spec, n_missing in gaps.items():
+                candidates = wf_by_spec.get(spec, [])[:n_missing + 2]  # buffer
+                if candidates:
+                    recommendations.append({
+                        "specialty": spec,
+                        "missing_count": n_missing,
+                        "candidates": candidates,
+                    })
+            skill_mix = {
+                "required_specialties": required,
+                "currently_assigned": covered,
+                "gaps": gaps,
+                "recommendations": recommendations,
+                "fully_covered": len(gaps) == 0,
+            }
+    except Exception as e:
+        logger.warning("SF-661 v0.3 función 4 (skill mix) falló: %s", e)
+
+    # ── FUNCIÓN 7 — RCA HINT post-cierre (v0.3 deterministic) ──────────────
+    # Solo activa en mode=post_close. Lee comentarios + history + busca
+    # patterns de causa raíz en lenguaje natural.
+    root_cause_hints = None
+    if mode == "post_close":
+        try:
+            comments = _as_list(wo.get("comments") or wo.get("notes_history"))
+            comments_text = " ".join(
+                str(c.get("text") or c.get("note") or c) for c in comments
+            ) if comments else ""
+            full_corpus = (comments_text + " " +
+                           str(wo.get("closure_notes") or "") + " " +
+                           str(wo.get("description") or "")).lower()
+            # Patrones causa raíz típicos minería
+            rca_patterns = [
+                (r"desgaste|degradaci|fatiga|deterioro", "Desgaste / degradación", "wear"),
+                (r"falla.*lubricaci|sin lubric|aceite|grasa.*falt", "Fallo de lubricación", "lubrication"),
+                (r"sobrecarga|sobrec|exced.*carga|exces.*peso", "Sobrecarga operacional", "overload"),
+                (r"diseño|design.*defect|cambio.*diseño", "Defecto de diseño", "design"),
+                (r"instalaci.n|ensamble.*incorrec|mal instalad", "Error de instalación", "installation"),
+                (r"operaci.n.*incorrecta|mal uso|error operad", "Error operativo", "operator_error"),
+                (r"vibraci|desbalance|alineaci.n.*mal", "Vibración / desalineación", "vibration"),
+                (r"corrosi|oxid|óxido|ataque.*químico", "Corrosión", "corrosion"),
+                (r"contaminaci.n|particul|polvo.*interior", "Contaminación", "contamination"),
+                (r"falla.*el.ctrica|cortocircu|aislaci.n", "Falla eléctrica", "electrical"),
+            ]
+            matches = []
+            for pat, label, code in rca_patterns:
+                if _re.search(pat, full_corpus):
+                    matches.append({"category": label, "code": code, "confidence": 0.6})
+            if matches:
+                # Top 3
+                root_cause_hints = {
+                    "method": "keyword_pattern_match",
+                    "top_causes": matches[:3],
+                    "recommendation": "Confirmar con técnico ejecutor + abrir RCA formal si severity ≥ MEDIUM",
+                    "open_rca_action": f"/rca/draft-from-wo?wo_id={wo_id}",
+                }
+        except Exception as e:
+            logger.warning("SF-661 v0.3 función 7 (RCA hint) falló: %s", e)
+
     # ── Quick actions sugeridas (lo que el usuario puede hacer ahora) ──────
     quick_actions = []
     if "PROGRAMADO sin técnicos asignados" in blockers:
@@ -545,20 +673,30 @@ def ai_analyze_work_order(
         quick_actions.append({"label": f"Agregar {len(missing_materials)} material(es) sugerido(s)", "action": "open_materials_tab"})
     if safety_alerts:
         quick_actions.append({"label": "Generar checklist safety", "action": "open_checklist", "items": [s["checklist"] for s in safety_alerts]})
+    if skill_mix and skill_mix.get("recommendations"):
+        quick_actions.append({"label": f"Asignar técnicos faltantes ({len(skill_mix['recommendations'])} specialties)", "action": "open_skill_mix"})
+    if root_cause_hints:
+        quick_actions.append({"label": "Abrir RCA con sugerencias IA", "action": "open_rca", "wo_id": wo_id})
 
     result = {
-        "version": "0.2",
+        "version": "0.3",
         "mode": mode,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": {"text": summary_text, "metrics": metrics, "blockers": blockers},
-        "predictions": None,          # función 2 — STUB (requiere histórico 0B2)
-        "risks": risks,               # función 3 — IMPLEMENTADO v0.2
-        "skill_mix": None,            # función 4 — STUB
-        "missing_materials": missing_materials,  # función 5 — IMPLEMENTADO v0.2
-        "safety_alerts": safety_alerts,           # función 6 — IMPLEMENTADO v0.2
-        "root_cause_hints": None,     # función 7 — STUB (solo modo post_close)
+        "predictions": predictions,                # función 2 — v0.3 deterministic
+        "risks": risks,                            # función 3 — v0.2
+        "skill_mix": skill_mix,                    # función 4 — v0.3 deterministic
+        "missing_materials": missing_materials,    # función 5 — v0.2
+        "safety_alerts": safety_alerts,            # función 6 — v0.2
+        "root_cause_hints": root_cause_hints,      # función 7 — v0.3 (solo post_close)
         "quick_actions": quick_actions,
     }
+
+    functions_run = [1, 3, 5, 6]
+    if predictions: functions_run.append(2)
+    if skill_mix: functions_run.append(4)
+    if root_cause_hints: functions_run.append(7)
+    functions_run.sort()
 
     audit_service.log_action(
         db,
@@ -567,12 +705,15 @@ def ai_analyze_work_order(
         action="AI_ANALYZE",
         user=f"agent:planning-analyze-wo|confirmed_by={getattr(user, 'user_id', '')}",
         payload={
-            "functions_run": [1, 3, 5, 6],
+            "functions_run": functions_run,
             "mode": mode,
-            "version": "0.2",
+            "version": "0.3",
             "risks_count": len(risks),
             "safety_critical_count": n_safety,
             "missing_materials_count": len(missing_materials),
+            "skill_gaps": len((skill_mix or {}).get("gaps", {})),
+            "rca_hints": len((root_cause_hints or {}).get("top_causes", [])),
+            "prediction_confidence": (predictions or {}).get("confidence"),
         },
     )
     return result

@@ -4423,6 +4423,71 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                     </section>
                   )}
 
+                  {/* 5b. Predicción HH (v0.3) */}
+                  {aiAnalysis.predictions && (
+                    <section className="px-4 py-3 border-b bg-indigo-50/40">
+                      <h4 className="text-[10px] font-bold text-indigo-700 uppercase mb-1.5 flex items-center gap-1">⏱ Predicción HH (v0.3)</h4>
+                      <div className="grid grid-cols-3 gap-2 text-[11px]">
+                        <div className="bg-white rounded px-2 py-1 border border-indigo-200">
+                          <div className="text-[9px] text-gray-500 uppercase">Plan</div>
+                          <div className="font-mono font-bold text-indigo-700">{aiAnalysis.predictions.plan_hh}h</div>
+                        </div>
+                        <div className="bg-white rounded px-2 py-1 border border-indigo-200">
+                          <div className="text-[9px] text-gray-500 uppercase">Predicho</div>
+                          <div className="font-mono font-bold text-indigo-900">{aiAnalysis.predictions.predicted_hh}h</div>
+                        </div>
+                        <div className={`bg-white rounded px-2 py-1 border ${Math.abs(aiAnalysis.predictions.delta_pct) > 25 ? 'border-red-300' : 'border-indigo-200'}`}>
+                          <div className="text-[9px] text-gray-500 uppercase">Δ</div>
+                          <div className={`font-mono font-bold ${Math.abs(aiAnalysis.predictions.delta_pct) > 25 ? 'text-red-700' : 'text-emerald-700'}`}>
+                            {aiAnalysis.predictions.delta_pct > 0 ? '+' : ''}{aiAnalysis.predictions.delta_pct}%
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        Base: {aiAnalysis.predictions.samples_count} OTs históricas · confidence {(aiAnalysis.predictions.confidence * 100).toFixed(0)}%
+                      </p>
+                      {aiAnalysis.predictions.warning && (
+                        <p className="text-[10px] text-red-700 font-semibold mt-0.5">⚠ {aiAnalysis.predictions.warning}</p>
+                      )}
+                    </section>
+                  )}
+
+                  {/* 5c. Skill mix (v0.3) */}
+                  {aiAnalysis.skill_mix && !aiAnalysis.skill_mix.fully_covered && (
+                    <section className="px-4 py-3 border-b bg-purple-50/40">
+                      <h4 className="text-[10px] font-bold text-purple-700 uppercase mb-1.5 flex items-center gap-1">👷 Skill Mix (v0.3) · {Object.keys(aiAnalysis.skill_mix.gaps).length} gap(s)</h4>
+                      <div className="space-y-1.5">
+                        {(aiAnalysis.skill_mix.recommendations || []).map((rec, i) => (
+                          <div key={i} className="text-[11px] bg-white rounded border border-purple-200 p-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-mono font-bold text-purple-700">{rec.specialty}</span>
+                              <span className="text-[9px] text-red-600 font-bold">Faltan {rec.missing_count}</span>
+                            </div>
+                            <div className="text-[10px] text-gray-600">
+                              Candidatos: {rec.candidates.map(c => c.name).join(', ')}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* 5d. RCA Hints (v0.3, post-close) */}
+                  {aiAnalysis.root_cause_hints && (
+                    <section className="px-4 py-3 border-b bg-rose-50/40">
+                      <h4 className="text-[10px] font-bold text-rose-700 uppercase mb-1.5 flex items-center gap-1">🔍 RCA Hints (v0.3)</h4>
+                      <div className="space-y-1">
+                        {aiAnalysis.root_cause_hints.top_causes.map((c, i) => (
+                          <div key={i} className="flex items-center justify-between text-[11px] bg-white rounded border border-rose-200 p-2">
+                            <span className="font-semibold text-rose-900">{c.category}</span>
+                            <span className="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">conf {(c.confidence * 100).toFixed(0)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-500 italic mt-1">{aiAnalysis.root_cause_hints.recommendation}</p>
+                    </section>
+                  )}
+
                   {/* 6. Materiales sugeridos */}
                   {(aiAnalysis.missing_materials || []).length > 0 && (
                     <section className="px-4 py-3 border-b bg-blue-50/40">
@@ -4485,11 +4550,11 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                     </section>
                   )}
 
-                  {/* 9. Footer info funciones pendientes */}
+                  {/* 9. Footer info funciones */}
                   <section className="px-4 py-2 text-[10px] text-gray-400 italic">
-                    <span className="text-emerald-600">✓ v0.2:</span> resumen + riesgos + materiales + safety alerts implementados.
+                    <span className="text-emerald-600">✓ v0.3:</span> las 7 funciones implementadas con heurísticas deterministas.
                     <br />
-                    <span className="text-gray-500">⏳ SP8:</span> predicción HH (req histórico) · skill mix (req catálogo) · RCA hint (post-cierre).
+                    <span className="text-gray-500">Mejora continua:</span> con data real de planta los pesos/umbrales se afinan automáticamente.
                   </section>
                 </div>
               </div>

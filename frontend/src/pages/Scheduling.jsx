@@ -2475,14 +2475,53 @@ function TechAssignPopover({ wo, technicians, onClose, onSave }) {
   const [selected, setSelected] = useState(new Set(initial));
   const [saving, setSaving] = useState(false);
 
+  // Jorge demo 2026-05-12 (v3): "obligar a elegir a quien pide la OT, no
+  // otros que no sean necesarios". Sumamos HH por specialty desde operations
+  // para mostrar al planner exactamente cuántos técnicos de cada skill
+  // necesita asignar, y solo permitimos seleccionar técnicos cuya specialty
+  // esté en el set requerido.
   const ops = wo.operations || [];
-  const requiredSpecs = new Set();
-  ops.forEach(op => { const s = (op.specialty || '').toUpperCase().trim(); if (s) requiredSpecs.add(s); });
-  const specHint = requiredSpecs.size > 0 ? Array.from(requiredSpecs).join(', ') : 'cualquier especialidad';
-  const filterRe = new RegExp(Array.from(requiredSpecs).map(s => s.slice(0, 4)).join('|') || '.*', 'i');
-  const matched = technicians.filter(t => filterRe.test(t.specialty || ''));
-  const others = technicians.filter(t => !filterRe.test(t.specialty || ''));
-  const list = [...matched, ...others];
+  const requiredByCanon = {}; // CANON_KEY -> { label, hh, count }
+  const CANON = (raw) => {
+    const s = (raw || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    if (!s) return null;
+    if (/MEC/i.test(s)) return 'MECANICO';
+    if (/ELEC/i.test(s)) return 'ELECTRICO';
+    if (/INSTRUM/i.test(s)) return 'INSTRUMENTISTA';
+    if (/SOLD|WELD/i.test(s)) return 'SOLDADOR';
+    if (/LUBR/i.test(s)) return 'LUBRICADOR';
+    if (/CIVIL/i.test(s)) return 'CIVIL';
+    if (/PRED/i.test(s)) return 'PREDICTIVO';
+    if (/OPERADOR/i.test(s)) return 'OPERADOR';
+    if (/AYUD|HELP/i.test(s)) return 'AYUDANTE';
+    return s;
+  };
+  ops.forEach(op => {
+    const key = CANON(op.specialty);
+    if (!key) return;
+    const qty = parseInt(op.quantity) || 1;
+    const hh = (parseFloat(op.hours || op.duration) || 0) * qty;
+    if (!requiredByCanon[key]) requiredByCanon[key] = { label: key, hh: 0, count: 0 };
+    requiredByCanon[key].hh += hh;
+    requiredByCanon[key].count += qty;
+  });
+  const requiredKeys = Object.keys(requiredByCanon);
+  const specHint = requiredKeys.length > 0
+    ? requiredKeys.map(k => `${k} (${requiredByCanon[k].count} pax · ${requiredByCanon[k].hh.toFixed(1)}HH)`).join(', ')
+    : 'la OT no define skills';
+  // Solo se listan técnicos cuya specialty calza con algún requerimiento.
+  // El resto queda OCULTO (no son necesarios para esta OT).
+  const list = technicians.filter(t => {
+    const k = CANON(t.specialty);
+    return k && requiredByCanon[k];
+  });
+  // Agrupar por specialty canónica
+  const groups = {};
+  list.forEach(t => {
+    const k = CANON(t.specialty);
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(t);
+  });
 
   const toggle = (wid) => {
     setSelected(prev => {
@@ -2513,36 +2552,98 @@ function TechAssignPopover({ wo, technicians, onClose, onSave }) {
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xl leading-none">×</button>
         </div>
         <p className="text-[11px] text-muted-foreground mb-2">
-          Skills requeridas: <strong>{specHint}</strong>. Compatibles primero (fondo verde + badge MATCH).
+          La OT requiere: <strong>{specHint}</strong>. Solo técnicos con skill compatible.
         </p>
-        <div className="flex-1 overflow-y-auto border border-border rounded-lg divide-y divide-border min-h-[200px]">
-          {list.length === 0 && <div className="p-4 text-center text-xs text-muted-foreground italic">No hay técnicos en la planta.</div>}
-          {list.map((tech, idx) => {
-            const isMatch = idx < matched.length;
-            const wid = tech.worker_id || tech.id;
-            const isSelected = selected.has(wid);
+        {/* Por specialty: contador "seleccionados / requeridos" + indicador */}
+        <div className="mb-2 flex flex-wrap gap-1">
+          {requiredKeys.map(k => {
+            const req = requiredByCanon[k].count;
+            const got = Array.from(selected).filter(wid => {
+              const t = technicians.find(x => (x.worker_id || x.id) === wid);
+              return t && CANON(t.specialty) === k;
+            }).length;
+            const okFlag = got >= req;
+            const overFlag = got > req;
             return (
-              <label key={wid || idx}
-                className={`flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/50 cursor-pointer ${isMatch ? 'bg-emerald-50/40 dark:bg-emerald-900/10' : ''} ${isSelected ? 'ring-1 ring-emerald-400' : ''}`}>
-                <input type="checkbox" checked={isSelected} onChange={() => toggle(wid)} className="w-4 h-4 accent-emerald-600" />
-                <span className={`w-1.5 h-1.5 rounded-full ${isMatch ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-                <span className="font-semibold text-foreground">{tech.name || wid?.slice(0, 8)}</span>
-                <span className="text-muted-foreground">· {tech.specialty || '—'}</span>
-                {tech.shift && <span className="text-[9px] text-muted-foreground/70">· {tech.shift}</span>}
-                {isMatch && <span className="ml-auto text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded uppercase">match</span>}
-              </label>
+              <span key={k} className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${okFlag ? (overFlag ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-emerald-50 border-emerald-300 text-emerald-800') : 'bg-rose-50 border-rose-300 text-rose-800'}`}>
+                {okFlag ? (overFlag ? '⚠' : '✓') : '○'} {k}: {got}/{req}
+              </span>
+            );
+          })}
+          {requiredKeys.length === 0 && <span className="text-[10px] italic text-muted-foreground">⚠ Sin skills definidas en operations — definí specialty en la OT primero.</span>}
+        </div>
+        <div className="flex-1 overflow-y-auto border border-border rounded-lg min-h-[200px]">
+          {list.length === 0 && (
+            <div className="p-4 text-center text-xs text-muted-foreground italic">
+              {requiredKeys.length === 0
+                ? 'La OT no tiene skills definidas. Editá las operations y agregá specialty antes de asignar.'
+                : `No hay técnicos disponibles con skills ${requiredKeys.join(' / ')} en esta planta. Revisá Settings → Staffing.`}
+            </div>
+          )}
+          {requiredKeys.map(k => {
+            const grpTechs = groups[k] || [];
+            return (
+              <div key={k} className="border-b border-border last:border-b-0">
+                <div className="px-3 py-1.5 bg-muted/40 text-[10px] font-bold uppercase tracking-wide text-foreground/70 flex items-center justify-between">
+                  <span>{k}</span>
+                  <span className="text-[9px] font-normal italic">requeridos: {requiredByCanon[k].count} pax · {requiredByCanon[k].hh.toFixed(1)} HH</span>
+                </div>
+                {grpTechs.length === 0 && <div className="px-3 py-2 text-[11px] italic text-muted-foreground">Sin técnicos con esta skill.</div>}
+                {grpTechs.map(tech => {
+                  const wid = tech.worker_id || tech.id;
+                  const isSelected = selected.has(wid);
+                  return (
+                    <label key={wid}
+                      className={`flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/50 cursor-pointer ${isSelected ? 'ring-1 ring-emerald-400 bg-emerald-50/40 dark:bg-emerald-900/10' : ''}`}>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggle(wid)} className="w-4 h-4 accent-emerald-600" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className="font-semibold text-foreground">{tech.name || wid?.slice(0, 8)}</span>
+                      <span className="text-muted-foreground">· {tech.specialty || '—'}</span>
+                      {tech.shift && <span className="text-[9px] text-muted-foreground/70">· turno {tech.shift}</span>}
+                    </label>
+                  );
+                })}
+              </div>
             );
           })}
         </div>
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{selected.size} seleccionado{selected.size === 1 ? '' : 's'}</span>
+          {(() => {
+            const allMet = requiredKeys.length > 0 && requiredKeys.every(k => {
+              const req = requiredByCanon[k].count;
+              const got = Array.from(selected).filter(wid => {
+                const t = technicians.find(x => (x.worker_id || x.id) === wid);
+                return t && CANON(t.specialty) === k;
+              }).length;
+              return got >= req;
+            });
+            return (
+              <span className={`text-xs ${allMet ? 'text-emerald-700 font-semibold' : 'text-muted-foreground'}`}>
+                {selected.size} seleccionado{selected.size === 1 ? '' : 's'} {allMet ? '· requerimientos cubiertos ✓' : '· faltan skills'}
+              </span>
+            );
+          })()}
           <div className="flex gap-2">
             <button onClick={onClose}
               className="text-xs px-3 py-1.5 rounded border border-border text-muted-foreground hover:bg-muted">Cancelar</button>
-            <button onClick={commit} disabled={saving}
-              className="text-xs font-semibold px-4 py-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">
-              {saving ? 'Guardando…' : `Asignar (${selected.size})`}
-            </button>
+            {(() => {
+              const allMet = requiredKeys.length > 0 && requiredKeys.every(k => {
+                const req = requiredByCanon[k].count;
+                const got = Array.from(selected).filter(wid => {
+                  const t = technicians.find(x => (x.worker_id || x.id) === wid);
+                  return t && CANON(t.specialty) === k;
+                }).length;
+                return got >= req;
+              });
+              return (
+                <button onClick={commit}
+                  disabled={saving || !allMet}
+                  title={allMet ? 'Persistir asignación' : 'Selecciona al menos N técnicos por skill antes de asignar'}
+                  className="text-xs font-semibold px-4 py-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {saving ? 'Guardando…' : `Asignar (${selected.size})`}
+                </button>
+              );
+            })()}
           </div>
         </div>
       </div>

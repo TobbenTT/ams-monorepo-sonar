@@ -1310,6 +1310,25 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       const avLabel = avNum ? `AV-${String(avNum).padStart(5, '0')}` : reqId;
       setCreatedWRId(avLabel);
       toast.success('Aviso creado: ' + avLabel);
+      // Jorge demo Goldfields 2026-05-12 (00:35:20): "esto debería limpiarse
+      // automáticamente cuando crea un aviso, pero sigue mostrando la información
+      // del aviso creado". Reset auto del form tras éxito — el banner de éxito
+      // con el AV-NNNNN sigue visible aparte (createdWRId).
+      setForm(prev => ({
+        ...prev,
+        whatHappens: '', whereTag: '', technicalLocation: '', technicalLocationCode: '',
+        woTitle: '', suggestedAction: '', estimatedDuration: '', priority: '',
+        activityClass: 'M001',
+        failureSymptom: '', failureObjectPart: '', failureCause: '',
+        resources: [], materials: [], specialEquipment: '', circumstances: '',
+        supportEquipment: [], aiEnhancedDescription: '',
+        planningGroup: '', areaEmpresa: '', workCenter: '', workConditions: '',
+      }));
+      setSelectedEquip(null);
+      setSelectedLoc(null);
+      setPhotos([]);
+      setAttachments([]);
+      setWizardStep(1);
       // Disparar evento para que WorkRequests refresque aunque WS esté desconectado.
       // BUG-03 (2026-05-11): doble dispatch — primero inmediato (para listeners ya
       // montados), y otro a 1.5s para que cuando el usuario navegue a /work-management
@@ -3045,20 +3064,22 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             <div className="text-[10px] text-gray-400 mt-1">Notification author</div>
           </div>
 
-          {/* 14. Adjuntos — Jorge 2026-05-05: diferenciar de "Fotos" (de la
-              falla, arriba). Acá van procedimientos, planos, PDFs de soporte. */}
+          {/* 14. Documentos — Jorge demo Goldfields 2026-05-12 (00:24:57):
+              "si hay foto acá, pedir foto después acá es como ser redundante".
+              Renombrado de "Adjuntos" a "Documentos" + solo acepta PDFs/docs
+              (sin imágenes) para que NO se duplique el flujo de cámara/foto. */}
           <div className="border rounded-xl p-4">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-              Adjuntos · documentos de soporte
-              <span className="ml-2 text-[10px] font-normal text-gray-400 normal-case">PDFs, planos, procedimientos. Las fotos de la falla van arriba con la cámara.</span>
+              Documentos de soporte
+              <span className="ml-2 text-[10px] font-normal text-gray-400 normal-case">PDFs, planos, procedimientos. Para fotos de la falla, usá el botón Cámara arriba.</span>
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer"
               onDragOver={e => e.preventDefault()} onDrop={handleDrop}
               onClick={() => document.getElementById('fc-file-input').click()}>
-              <input id="fc-file-input" type="file" multiple accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={handleFileChange} />
+              <input id="fc-file-input" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.dxf,.txt" className="hidden" onChange={handleFileChange} />
               <Upload className="w-5 h-5 mx-auto text-gray-400 mb-1" />
-              <p className="text-sm text-gray-500">Arrastra archivos o haz clic para subir</p>
-              <p className="text-xs text-gray-400 mt-0.5">JPG, PNG, PDF (max 30MB · imágenes &gt;2MB se comprimen auto)</p>
+              <p className="text-sm text-gray-500">Arrastra documentos o haz clic para subir</p>
+              <p className="text-xs text-gray-400 mt-0.5">PDF, DOC, XLS, DWG · (las fotos van con la cámara arriba)</p>
             </div>
             {attachments.length > 0 && (
               <div className="mt-2 space-y-1">

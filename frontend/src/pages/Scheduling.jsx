@@ -1670,16 +1670,13 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                   </thead>
                   <tbody>
                     {HOUR_SLOTS.map((slot, slotIdx) => {
-                      const isShiftStart = slotIdx === 0 || HOUR_SLOTS[slotIdx - 1].shift !== slot.shift;
+                      // Jorge demo Goldfields 2026-05-12 (00:53:25): "hay que
+                      // eliminar acá dice turno día, turno noche y dejar el
+                      // calendario de corrido nomás". Headers de turno
+                      // removidos; la lógica interna de shifts (asignación,
+                      // validación cruzada) sigue intacta vía slot.shift.
                       return (
                         <React.Fragment key={`slot-${slot.h}-${slot.shift}`}>
-                          {isShiftStart && (
-                            <tr className={slot.shift === 'day' ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-indigo-50 dark:bg-indigo-900/20'}>
-                              <td colSpan={days.length + 1} className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground/80">
-                                {slot.shift === 'day' ? '☀️ Turno Día' : '🌙 Turno Noche'}
-                              </td>
-                            </tr>
-                          )}
                           <tr className="border-t border-border/40 hover:bg-muted/10">
                             <td className={`px-3 py-2 border-r border-border text-xs font-mono font-semibold ${slot.shift === 'night' ? 'bg-indigo-50/30 dark:bg-indigo-900/10 text-indigo-900 dark:text-indigo-200' : 'text-foreground'}`}>
                               {slot.label}

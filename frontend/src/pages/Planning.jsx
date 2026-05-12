@@ -4146,8 +4146,12 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                         if (!Array.isArray(prev)) {
                           prev = selectedOT.reservation_code ? [selectedOT.reservation_code] : [];
                         }
-                        const postRelease = !['CREADO','PENDIENTE'].includes(selectedOT.status) && (!!selectedOT.reservation_code || prev.length > 0);
-                        const nextList = postRelease ? [...prev, code] : (prev.length === 0 ? [code] : [...prev.slice(0, -1), code]);
+                        // Jorge demo Goldfields 2026-05-12 (00:41:02): "hizo acá la
+                        // última reserva, no mantuvo la anterior que era el 46".
+                        // Bug: cuando OT estaba en CREADO/PENDIENTE el código reemplazaba
+                        // la última en vez de agregar. Ahora SIEMPRE append — el histórico
+                        // de reservas debe ser inmutable (audit trail).
+                        const nextList = prev.length === 0 ? [code] : [...prev, code];
                         try {
                           const u = await api.updateManagedWO(woId, { reservation_code: code, reservation_codes: nextList, materials: stamped });
                           // Use returned WO from API (avoids stale local state)

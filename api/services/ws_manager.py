@@ -238,7 +238,19 @@ async def flush_notifications():
     q = _pending_events_ctx.get()
     if not q:
         return
-    # Snapshot + clear — atómico dentro del mismo contexto sin awaits.
+    await flush_notifications_from_list(q)
+
+
+async def flush_notifications_from_list(q):
+    """Drain a specific event list and broadcast all items.
+
+    Bug fix WS 2026-05-12: el middleware ahora pasa explícitamente la lista
+    pre-creada para evitar que la lista quede atrapada en un threadpool
+    context. Endpoints sync (def) que llaman queue_notify desde el threadpool
+    ahora mutan la misma lista que el middleware async leerá al flush.
+    """
+    if not q:
+        return
     events = list(q)
     q.clear()
     for event, data, plant_id, origin_client_id in events:
@@ -247,7 +259,6 @@ async def flush_notifications():
                 event, data, plant_id, origin_client_id=origin_client_id
             )
         except Exception as e:
-            # Log + audit en vez de swallow silencioso (bug B2 del audit).
             logger.warning(
                 "WS broadcast failed: event=%s plant=%s err=%s",
                 event, plant_id, str(e)[:200],

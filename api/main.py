@@ -237,15 +237,30 @@ def create_app() -> FastAPI:
         # queued during this request can be tagged and filtered out by
         # the originating tab (see frontend wsSingleton.js echo suppression).
         from api.services.ws_client_context import set_client_id, reset_client_id
+        from api.services.ws_manager import _pending_events_ctx, flush_notifications_from_list
         token = set_client_id(request.headers.get("x-client-id"))
+        # WS smoke test 2026-05-12: bug detectado en DOM review. Endpoints def
+        # (sync) corren en anyio threadpool. ContextVars del middleware async
+        # se COPIAN al thread (read-only), pero set() en el thread no se
+        # propaga de vuelta. Sintoma: queue_notify desde sync endpoint mutaba
+        # un ContextVar en el thread, flush_notifications leia None desde el
+        # contexto async -> eventos perdidos -> UI no auto-refrescaba al crear WR.
+        # Fix: pre-crear la lista MUTABLE en el contexto del middleware. El
+        # thread la copia por referencia y los appends mutan el mismo objeto.
+        events_list = []
+        evt_token = _pending_events_ctx.set(events_list)
         try:
             response = await call_next(request)
         finally:
             reset_client_id(token)
+            try:
+                _pending_events_ctx.reset(evt_token)
+            except Exception:
+                pass
         try:
-            await flush_notifications()
-        except Exception:
-            pass
+            await flush_notifications_from_list(events_list)
+        except Exception as e:
+            logger.warning("WS flush_notifications error: %s", str(e)[:200])
         return response
 
     allowed_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]

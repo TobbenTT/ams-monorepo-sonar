@@ -4659,10 +4659,25 @@ export default function Scheduling() {
   // minificado los identifiers (releasedWOs→'ge') están en TDZ y el render
   // crashea con "Cannot access 'ge' before initialization".
   const openAIModal = useCallback(() => {
-    setAiModalSnapshot({ wos: [...(releasedWOs || [])], techCount: technicians.length });
+    // Bug Jorge 2026-05-12 19:00: el wizard mostraba "1 OT" cuando el panel
+    // izquierdo "OTs a Programar" tenía 12. Causa: capturaba solo
+    // releasedWOs (=OTs sin planned_start), ignorando las EN_PROGRAMACION
+    // con planned_start stale que también aparecen en el panel inSched.
+    // Fix: incluir tanto releasedWOs como scheduledWOs cuyo planned_start
+    // sea null/pasado (= necesitan programar) — la misma lógica que
+    // filteredReleased usa en el panel.
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const fromScheduled = (scheduledWOs || []).filter(w => {
+      if ((w.status || '').toUpperCase() !== 'EN_PROGRAMACION') return false;
+      if (!w.planned_start) return true;
+      try { return new Date(w.planned_start) < today; } catch { return true; }
+    });
+    const dedupe = new Map();
+    [...(releasedWOs || []), ...fromScheduled].forEach(w => { if (!dedupe.has(w.wo_id)) dedupe.set(w.wo_id, w); });
+    setAiModalSnapshot({ wos: Array.from(dedupe.values()), techCount: technicians.length });
     setShowAIModal(true);
     setAiDraftPlan(null);
-  }, [releasedWOs, technicians]);
+  }, [releasedWOs, scheduledWOs, technicians]);
 
   // Legacy state for Gantt/HH/Materials/Inbox
   const [weeks, setWeeks] = useState([]);

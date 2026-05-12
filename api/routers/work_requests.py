@@ -1045,11 +1045,22 @@ def check_duplicates(data: DuplicateCheckRequest, db: Session = Depends(get_db))
                         break
         if not equip_match:
             continue
-        # (b) Si hay título, exigir similitud — antes flaggeaba duplicado
-        # cualquier WR del mismo equipo aunque fuera trabajo distinto.
-        wr_title = wr_ai.get("wo_title") if isinstance(wr_ai, dict) else ""
-        if incoming_title and wr_title and not _title_similar(incoming_title, wr_title):
-            continue
+        # (b) Si el incoming trae título, EXIGIR similitud con el wr_title
+        # existente. Si el WR existente NO tiene wo_title (legacy), también
+        # descartamos — Jorge spec: duplicado requiere título coincidente,
+        # sin título no podemos asegurar que es el mismo trabajo.
+        wr_title = ""
+        if isinstance(wr_ai, dict):
+            wr_title = wr_ai.get("wo_title") or wr_ai.get("description") or ""
+        # Fallback al problem_description si ai_classification no tiene título
+        if not wr_title and pd:
+            pd_obj = pd if isinstance(pd, dict) else {}
+            wr_title = pd_obj.get("title") or pd_obj.get("original_text", "") or ""
+        if incoming_title:
+            if not wr_title:
+                continue  # incoming exige título, existing no lo tiene → no match
+            if not _title_similar(incoming_title, wr_title):
+                continue
         if wr.status not in open_statuses:
             continue
         if wr.created_at and wr.created_at < cutoff:

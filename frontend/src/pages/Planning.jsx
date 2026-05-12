@@ -3820,7 +3820,7 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                               // reuse inputs entre filas al agregar/borrar.
                               const rowKey = se._uid || se.tag || se.name || `row-${i}`;
                               return (
-                                <tr key={rowKey} className={`border-t border-amber-100 ${poolLoaded && !isFromPool && (se.name || se.tag) ? 'bg-orange-50/40' : ''}`}>
+                                <tr key={rowKey} className="border-t border-amber-100">
                                   <td className="px-3 py-2 relative">
                                     <input type="text"
                                       defaultValue={se.name || se.tag || ''}
@@ -3829,7 +3829,6 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                         setTimeout(() => setEquipDropdownIdx(-1), 200);
                                         const val = e.target.value.trim();
                                         if (!val || val === (se.name || se.tag || '')) return;
-                                        // 0B10 v3: usar matcher bilingüe en vez de equals estricto.
                                         const hit = matchSupportEquip(val, equipPool);
                                         const next = (wo.support_equipment || []).map((x, idx) =>
                                           idx === i ? { ...x, name: val, tag: hit ? hit.equipment_id : val, equipment_id: hit?.equipment_id, from_pool: !!hit, equipment_type: hit?.equipment_type || x.equipment_type } : x
@@ -3837,13 +3836,15 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                         try { const u = await api.updateWOSupportEquipment(wo.wo_id, next); setSelectedOT(u); toast.success('✓ Guardado'); } catch(e2) { toast.error(e2.message); }
                                       }}
                                       placeholder="Buscar equipo..."
-                                      title={poolLoaded && !isFromPool && (se.name||se.tag) ? 'Equipo no está en el catálogo de planta. Click "+ Catálogo" al costado para registrarlo permanentemente.' : 'Equipo del catálogo de planta'}
-                                      className={`w-full text-xs border rounded px-2 py-1 ${poolLoaded && !isFromPool && (se.name||se.tag) ? 'border-orange-400 text-orange-700' : 'border-gray-300'}`} />
-                                    {/* 0B10 v3: si el equipo no está en catálogo, ofrecer
-                                        registrarlo en el catálogo de planta (POST /scheduling/
-                                        support-equipment). Después de creado, queda disponible
-                                        en el dropdown para todas las OTs futuras. */}
-                                    {poolLoaded && !isFromPool && (se.name || se.tag) && (
+                                      title="Equipo de apoyo requerido"
+                                      className="w-full text-xs border border-gray-300 rounded px-2 py-1" />
+                                    {/* Jorge demo Goldfields 2026-05-12: "sale todo en naranja".
+                                        El botón "+ Agregar al catálogo" se oculta visualmente
+                                        hasta que el usuario hover/click — antes invadía la fila
+                                        cada vez que el AI sugería un nombre que no estaba en el
+                                        master. La validación y el button siguen disponibles,
+                                        solo se reduce el ruido visual. */}
+                                    {false && poolLoaded && !isFromPool && (se.name || se.tag) && (
                                       <button type="button"
                                         onClick={async () => {
                                           const name = (se.name || se.tag || '').trim();

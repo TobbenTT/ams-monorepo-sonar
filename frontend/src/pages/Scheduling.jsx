@@ -670,7 +670,7 @@ function TechnicianInbox({ weeks, user, t, onOpenDetail, onOpenClosure }) {
 }
 
 /* ───── Weekly Calendar View (drag-and-drop scheduling grid) ───── */
-function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onScheduleWO, onUnscheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange, onRefresh, onAutoLevel, lastWsAt }) {
+function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setReleasedWOs, setScheduledWOs, t, onScheduleWO, onUnscheduleWO, onPublish, publishing, canPublish, onOpenDetail, onWeekChange, onRefresh, onAutoLevel, lastWsAt }) {
   const { CAP, PROGRAMMABLE_HH_PER_DAY, HOURS_PER_WEEK } = useCapacitySettings();
   const toast = useToast();
   const confirm = useConfirm();
@@ -5533,6 +5533,8 @@ export default function Scheduling() {
           technicians={technicians}
           releasedWOs={releasedWOs}
           scheduledWOs={scheduledWOs}
+          setReleasedWOs={setReleasedWOs}
+          setScheduledWOs={setScheduledWOs}
           t={t}
           onScheduleWO={handleScheduleWO}
           onUnscheduleWO={handleUnscheduleWO}

@@ -16,10 +16,14 @@ export const PLANT_DISPLAY_NAMES = {
 
 export function displayPlantName(plantIdOrObj) {
   if (!plantIdOrObj) return '';
-  // Si nos pasan el objeto plant {plant_id, name}, preferimos el name del DB
+  // 0D1 v2: el mapping LOCAL siempre gana sobre el name del DB. Esto evita
+  // que si la BD tiene el nombre real del cliente (ej. "Goldfields - Salares
+  // Norte" desde un seed viejo) la UI lo muestre. Solo si el plant_id es
+  // desconocido caemos al name del DB.
   if (typeof plantIdOrObj === 'object') {
-    return plantIdOrObj.name || PLANT_DISPLAY_NAMES[plantIdOrObj.plant_id] || plantIdOrObj.plant_id || '';
+    const mapped = PLANT_DISPLAY_NAMES[plantIdOrObj.plant_id];
+    if (mapped) return mapped;
+    return plantIdOrObj.name || plantIdOrObj.plant_id || '';
   }
-  // Si nos pasan el id como string
   return PLANT_DISPLAY_NAMES[plantIdOrObj] || plantIdOrObj;
 }

@@ -218,7 +218,7 @@ createRoot(document.getElementById('root')).render(
                                     {/* Route feedback-admin removida 2026-04-23 */}
                                     <Route path="execution" element={<P roles={['admin', 'planner', 'tecnico']}><S><Execution /></S></P>} />
                                     <Route path="supervisor-board" element={<P roles={['admin', 'manager', 'planner', 'supervisor']}><S><SupervisorBoard /></S></P>} />
-                                    <Route path="agentic-capabilities" element={<S><AgenticCapabilities /></S>} />
+                                    <Route path="agentic-capabilities" element={<P roles={['admin']}><S><AgenticCapabilities /></S></P>} />
                                     <Route path="rag-lab" element={<S><RagLab /></S>} />
                                     <Route path="programmer-agent" element={<S><ProgrammerAgent /></S>} />
                                     <Route path="supervisor-agent" element={<S><SupervisorAgent /></S>} />

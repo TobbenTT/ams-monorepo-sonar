@@ -61,6 +61,10 @@ const PERMISSIONS = {
 
     // ─── System ───
     'admin':              { view: ['admin'], edit: ['admin'] },
+    // 0G2 (Magda 2026-05-12): "✨ Agentic Capabilities" solo se ve como admin.
+    // Antes caía al fallback isAdmin (que era admin-only por accidente),
+    // ahora está explícito y documentado.
+    'agentic-capabilities': { view: ['admin'], edit: ['admin'] },
     'ai-agents':          { view: ['admin', 'manager', 'engineer'], edit: ['admin'] },
     'team':               { view: ['admin', 'manager', 'planner'], edit: ['admin', 'manager'] },
     'settings':           { view: ALL_ROLES, edit: ALL_ROLES },

@@ -4092,36 +4092,194 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
             {/* SF-661 v0.1 — panel lateral análisis IA */}
             {aiAnalysis && (
               <div className="absolute right-4 top-20 bottom-4 w-[380px] bg-white border border-violet-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="px-4 py-3 border-b bg-violet-50 flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">🤖 Análisis IA <span className="text-[10px] font-mono bg-violet-200 px-1.5 py-0.5 rounded">v{aiAnalysis.version}</span></h3>
-                  <button onClick={() => setAiAnalysis(null)} className="text-violet-700 hover:bg-violet-200 rounded p-1"><X size={14} /></button>
+                <div className="px-4 py-3 border-b bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-between text-white">
+                  <h3 className="text-sm font-bold flex items-center gap-2">
+                    🤖 Análisis IA
+                    <span className="text-[10px] font-mono bg-white/25 backdrop-blur px-1.5 py-0.5 rounded">v{aiAnalysis.version}</span>
+                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={async () => {
+                        if (!selectedOT?.wo_id) return;
+                        const mode = selectedOT.status === 'CERRADO' ? 'post_close' : 'pre_execution';
+                        try {
+                          const r = await api.aiAnalyzeManagedWO(selectedOT.wo_id, mode);
+                          setAiAnalysis(r);
+                        } catch (e) { toast.error('Error: ' + e.message); }
+                      }}
+                      className="text-white/90 hover:bg-white/20 rounded p-1 text-[10px]"
+                      title="Re-analizar"
+                    >
+                      ↻
+                    </button>
+                    <button onClick={() => setAiAnalysis(null)} className="text-white hover:bg-white/20 rounded p-1"><X size={14} /></button>
+                  </div>
                 </div>
-                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-xs">
-                  <section>
-                    <h4 className="text-[11px] font-bold text-gray-600 uppercase mb-1">Resumen ejecutivo</h4>
+                {aiAnalysis.generated_at && (
+                  <div className="px-4 py-1 bg-violet-50 text-[10px] text-violet-600 border-b border-violet-100">
+                    ⏱ Generado {new Date(aiAnalysis.generated_at).toLocaleString('es-CL', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                  </div>
+                )}
+                <div className="flex-1 overflow-y-auto text-xs">
+                  {/* 1. Score header con visual hierarchy */}
+                  {(() => {
+                    const blockers = aiAnalysis.summary?.blockers || [];
+                    const risks = aiAnalysis.risks || [];
+                    const safety = aiAnalysis.safety_alerts || [];
+                    const totalIssues = blockers.length + risks.filter(r => r.severity === 'high').length + safety.filter(s => s.severity === 'critical').length;
+                    const score = Math.max(0, 100 - blockers.length * 30 - risks.length * 8 - safety.filter(s => s.severity === 'critical').length * 15);
+                    const scoreColor = score >= 80 ? 'bg-emerald-500' : score >= 60 ? 'bg-amber-500' : 'bg-red-500';
+                    const scoreLabel = score >= 80 ? 'Lista para ejecutar' : score >= 60 ? 'Requiere atención' : 'Bloqueada / Alto riesgo';
+                    return (
+                      <div className="px-4 py-3 border-b">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold uppercase text-gray-500">Readiness</span>
+                          <span className="font-mono font-bold text-lg">{score}<span className="text-xs text-gray-400">/100</span></span>
+                        </div>
+                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className={`h-full ${scoreColor} transition-all`} style={{ width: `${score}%` }} />
+                        </div>
+                        <p className="mt-1 text-[10px] text-gray-600">{scoreLabel} · {totalIssues} issue(s)</p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 2. Resumen ejecutivo */}
+                  <section className="px-4 py-3 border-b">
+                    <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-1.5 flex items-center gap-1">📋 Resumen ejecutivo</h4>
                     <p className="text-gray-800 leading-relaxed">{aiAnalysis.summary?.text}</p>
                   </section>
-                  <section>
-                    <h4 className="text-[11px] font-bold text-gray-600 uppercase mb-1">Métricas</h4>
-                    <table className="w-full text-[11px]">
-                      <tbody>
-                        {Object.entries(aiAnalysis.summary?.metrics || {}).map(([k, v]) => (
-                          <tr key={k} className="border-b border-gray-100"><td className="py-0.5 text-gray-500">{k}</td><td className="py-0.5 font-mono text-right">{v ?? '—'}</td></tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </section>
+
+                  {/* 3. Bloqueadores (rojos) */}
                   {(aiAnalysis.summary?.blockers || []).length > 0 && (
-                    <section>
-                      <h4 className="text-[11px] font-bold text-red-600 uppercase mb-1">Bloqueadores</h4>
-                      <ul className="list-disc list-inside text-red-700 space-y-0.5">
-                        {aiAnalysis.summary.blockers.map((b, i) => <li key={i}>{b}</li>)}
+                    <section className="px-4 py-3 border-b bg-red-50/40">
+                      <h4 className="text-[10px] font-bold text-red-700 uppercase mb-1.5 flex items-center gap-1">🚫 Bloqueadores ({aiAnalysis.summary.blockers.length})</h4>
+                      <ul className="space-y-1">
+                        {aiAnalysis.summary.blockers.map((b, i) => (
+                          <li key={i} className="flex items-start gap-1.5 text-red-800">
+                            <span className="text-red-500 mt-0.5">●</span>
+                            <span>{b}</span>
+                          </li>
+                        ))}
                       </ul>
                     </section>
                   )}
-                  <section className="text-[10px] text-gray-400 border-t pt-2">
-                    Funciones 2-7 (predicción HH, riesgos, skill mix, materiales, safety, RCA) están
-                    en SP8 backlog — requieren histórico real de la planta cliente (ticket 0B2).
+
+                  {/* 4. Alertas de seguridad (críticas primero) */}
+                  {(aiAnalysis.safety_alerts || []).length > 0 && (
+                    <section className="px-4 py-3 border-b bg-orange-50/40">
+                      <h4 className="text-[10px] font-bold text-orange-700 uppercase mb-1.5 flex items-center gap-1">⚠️ Alertas Safety ({aiAnalysis.safety_alerts.length})</h4>
+                      <div className="space-y-2">
+                        {aiAnalysis.safety_alerts.map((s, i) => {
+                          const sev = s.severity === 'critical' ? 'bg-red-100 text-red-700 border-red-300' : s.severity === 'high' ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-yellow-50 text-yellow-700 border-yellow-200';
+                          return (
+                            <div key={i} className={`p-2 rounded border ${sev}`}>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <span className="font-mono text-[10px] font-bold">{s.type}</span>
+                                <span className="text-[9px] font-bold uppercase">{s.severity}</span>
+                              </div>
+                              <p className="text-[11px] font-medium">{s.message}</p>
+                              {s.checklist && (
+                                <ul className="mt-1 text-[10px] space-y-0.5 ml-2">
+                                  {s.checklist.map((c, j) => <li key={j}>☐ {c}</li>)}
+                                </ul>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* 5. Riesgos operacionales */}
+                  {(aiAnalysis.risks || []).length > 0 && (
+                    <section className="px-4 py-3 border-b bg-amber-50/40">
+                      <h4 className="text-[10px] font-bold text-amber-700 uppercase mb-1.5 flex items-center gap-1">⚡ Riesgos operacionales ({aiAnalysis.risks.length})</h4>
+                      <div className="space-y-2">
+                        {aiAnalysis.risks.map((r, i) => {
+                          const sev = r.severity === 'critical' ? 'bg-red-50 border-red-200 text-red-800' : r.severity === 'high' ? 'bg-orange-50 border-orange-200 text-orange-800' : 'bg-yellow-50 border-yellow-200 text-yellow-800';
+                          return (
+                            <div key={i} className={`p-2 rounded border text-[11px] ${sev}`}>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <span className="font-mono text-[9px] uppercase font-bold">{r.category}</span>
+                                <span className="text-[9px] font-bold">{r.severity.toUpperCase()}</span>
+                              </div>
+                              <p className="font-medium">{r.message}</p>
+                              <p className="mt-0.5 text-[10px] opacity-80">💡 {r.mitigation}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* 6. Materiales sugeridos */}
+                  {(aiAnalysis.missing_materials || []).length > 0 && (
+                    <section className="px-4 py-3 border-b bg-blue-50/40">
+                      <h4 className="text-[10px] font-bold text-blue-700 uppercase mb-1.5 flex items-center gap-1">📦 Materiales sugeridos ({aiAnalysis.missing_materials.length})</h4>
+                      <div className="space-y-1.5">
+                        {aiAnalysis.missing_materials.map((m, i) => (
+                          <div key={i} className="text-[11px] flex items-start gap-1.5">
+                            <span className="text-blue-500 mt-0.5">+</span>
+                            <div className="flex-1">
+                              <p className="font-medium text-blue-900">{m.suggested}</p>
+                              <p className="text-[10px] text-gray-500">de: "{m.from_operation}"</p>
+                            </div>
+                            <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">conf {(m.confidence * 100).toFixed(0)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* 7. Métricas (compactas, collapsible visual) */}
+                  <section className="px-4 py-3 border-b">
+                    <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-1.5 flex items-center gap-1">📊 Métricas</h4>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                      {Object.entries(aiAnalysis.summary?.metrics || {}).map(([k, v]) => (
+                        <div key={k} className="flex justify-between border-b border-gray-100 py-0.5">
+                          <span className="text-gray-500">{k.replace(/_/g, ' ')}</span>
+                          <span className="font-mono font-semibold text-gray-800">{v ?? '—'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* 8. Quick actions */}
+                  {(aiAnalysis.quick_actions || []).length > 0 && (
+                    <section className="px-4 py-3 border-b bg-violet-50">
+                      <h4 className="text-[10px] font-bold text-violet-700 uppercase mb-1.5 flex items-center gap-1">⚡ Acciones rápidas</h4>
+                      <div className="flex flex-col gap-1.5">
+                        {aiAnalysis.quick_actions.map((a, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              if (a.action === 'open_scheduling') {
+                                window.open(`/scheduling`, '_blank');
+                              } else if (a.action === 'open_schedule_modal') {
+                                setOtModalTab('resumen');
+                                toast.info('Programar fecha en pestaña Summary');
+                              } else if (a.action === 'open_materials_tab') {
+                                setOtModalTab('materiales');
+                              } else if (a.action === 'open_checklist') {
+                                toast.info('Checklist safety: copiar a Notas');
+                              }
+                            }}
+                            className="text-left text-[11px] px-2 py-1.5 bg-white border border-violet-200 rounded hover:bg-violet-100 transition-colors flex items-center gap-2"
+                          >
+                            <span className="text-violet-600">▸</span>
+                            <span className="flex-1">{a.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* 9. Footer info funciones pendientes */}
+                  <section className="px-4 py-2 text-[10px] text-gray-400 italic">
+                    <span className="text-emerald-600">✓ v0.2:</span> resumen + riesgos + materiales + safety alerts implementados.
+                    <br />
+                    <span className="text-gray-500">⏳ SP8:</span> predicción HH (req histórico) · skill mix (req catálogo) · RCA hint (post-cierre).
                   </section>
                 </div>
               </div>

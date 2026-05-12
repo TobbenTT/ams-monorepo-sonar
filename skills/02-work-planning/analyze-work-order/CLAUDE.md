@@ -17,8 +17,8 @@ description: >
 # Analyze Work Order
 
 **Agente destinatario:** Planning Specialist (AG-003)
-**Version:** 0.1 (SF-661 partial scaffold — function #1 implemented, #2–#7 stubbed)
-**Estado:** SP8 backlog. Requiere data real de planta para tunear pesos/umbrales.
+**Version:** 0.2 (funciones 1, 3, 5, 6 implementadas deterministas; 2/4/7 stub)
+**Estado:** Producción. v0.2 incluye reglas deterministas que no requieren data real. Funciones 2 (predicción HH), 4 (skill mix), 7 (RCA hint) siguen como STUB hasta tener histórico real Goldfields (0B2) o catálogo skills detallado.
 
 ## 1. Rol y Persona
 
@@ -53,13 +53,29 @@ Output esperado: `{predicted_hh, plan_hh, delta_pct, confidence, similar_wos: [.
 Algoritmo propuesto: regresión simple sobre `(hh_actual / hh_planned)` agrupado por `wo_type`
 y `equipment_class`. Pendiente data real (0B2).
 
-### Función 3 — Detección de Riesgos Operacionales (STUB)
-Output: lista de riesgos `[{severity, category, message, mitigation_hint}]`.
-Reglas mínimas (deterministas, sin LLM):
-- Solapamiento de turno: técnico DAY asignado a slot NIGHT → `severity=HIGH`.
-- Sobrecapacidad: técnico con >40h/semana → `severity=MEDIUM`.
-- OT crítica (AA) sin LOTO en checklist → `severity=CRITICAL`.
-- Material reservado pero `reservation_code` huérfano (no existe en SAP mock) → `severity=MEDIUM`.
+### Función 3 — Detección de Riesgos Operacionales (✅ IMPLEMENTADO v0.2)
+Output: lista de riesgos `[{severity, category, message, mitigation}]`.
+Reglas deterministas activas:
+- 3.1 OT estancada >7d en estado pre-ejecución → severity=high, category=schedule.
+- 3.2 OT crítica con HH≥8 sin equipos de apoyo → severity=medium, category=resources.
+- 3.3 Operación con >24 HH (posible error estimación) → severity=medium, category=estimation.
+- 3.4 Material con quantity pero sin reservation_code → severity=medium, category=materials.
+- 3.5 Ratio HH/técnico >60h (sobrecarga probable) → severity=high, category=capacity.
+
+### Función 5 — Sugerencia de Materiales Faltantes (✅ IMPLEMENTADO v0.2)
+Si OT tiene operación REPLACE/OVERHAUL/REBUILD pero materials está vacío, busca keywords en
+operations[].description y sugiere desde catálogo:
+- `rodamiento|bearing` → Rodamiento SKF/Timken
+- `sello|retén|seal` → Sello mecánico
+- `filtro|filter` → Filtro (especificar tipo)
+- `correa|belt` → Correa transmisión
+- `cadena|chain` → Cadena (paso + eslabones)
+- `válvula|valve` → Válvula
+- `motor` → Motor repuesto
+- `acopl|coupling` → Acoplamiento
+- `manguera|hose` → Manguera hidráulica
+- `junta|gasket` → Junta/empaquetadura
+Confidence default 0.7 (heurística keyword-only).
 
 ### Función 4 — Skill Mix Óptimo (STUB)
 Input adicional: matriz de skills por operación.
@@ -71,10 +87,21 @@ Heurística: si la OT tiene operación REPLACE pero `materials` está vacío →
 Si la operación menciona "rodamiento", "sello", "filtro" en el texto y no hay material → sugerir
 desde catálogo via match por descripción.
 
-### Función 6 — Alertas Seguridad (STUB)
-- Trabajo en altura → requiere arnés + permiso (verificar checklist).
-- ATEX zone (definida en equipment) → requiere ATEX-certified tools.
-- LOTO requerido si `equipment.power_source != none` y operación NO es VISUAL_INSPECTION.
+### Función 6 — Alertas Seguridad (✅ IMPLEMENTADO v0.2)
+Output: lista de alertas `[{severity, type, message, checklist[]}]`.
+Detección por keywords en operations[].description + equipment_tag/description:
+- 6.1 WORK_AT_HEIGHT: `altura|techo|escalera|andamio|scaffold` → severity=critical
+  - Checklist: permiso firmado, arnés tipo Y, punto anclaje
+- 6.2 LOTO: `motor|bomba|compresor|transformador|alta tensión|kv|electric` → severity=critical
+  - Checklist: aislar fuente, candado/tarjeta, verificar energía cero
+- 6.3 ATEX: `atex|explosiva|gas|hidrocarburo|cianuro|reactivo` → severity=critical
+  - Checklist: permiso atm. explosivas, herramientas Ex, medición gases
+- 6.4 CONFINED_SPACE: `confinado|estanque|tanque interior|silo|chimenea|ducto interior` → severity=critical
+  - Checklist: permiso, monitor multigas, vigía + plan rescate
+- 6.5 HOT_WORK: `soldadura|oxicorte|welding|cutting` → severity=high
+  - Checklist: permiso, extintor PQS, pantalla anti-chispas
+- 6.6 REVIEW_REQUIRED: OT crítica >4h sin alertas detectadas → severity=low
+  - Indica que descripciones de operaciones son demasiado breves para detectar riesgos.
 
 ### Función 7 — Causa Raíz Post-Cierre (STUB)
 Solo se activa con `mode=post_close`.

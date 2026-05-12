@@ -298,16 +298,21 @@ def ai_analyze_work_order(
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    """SF-661 v0.1 — función 1 (resumen ejecutivo determinista, sin LLM call).
+    """SF-661 v0.2 — funciones 1 (resumen), 3 (riesgos), 5 (materiales sugeridos),
+    6 (alertas seguridad) IMPLEMENTADAS deterministas (sin LLM call, <3s).
 
-    Funciones 2-7 retornan None / [] explícitos (ver skills/02-work-planning/analyze-work-order/CLAUDE.md).
+    Funciones 2 (predicción HH), 4 (skill mix), 7 (RCA) siguen como stub porque
+    necesitan histórico real Goldfields (ticket 0B2) o catálogo skills detallado.
+    Ver skills/02-work-planning/analyze-work-order/CLAUDE.md.
     """
     from api.services import audit_service
+    from datetime import datetime
     import json as _json
+    import re as _re
     wo = managed_wo_service.get_work_order(db, wo_id)
     if not wo:
         raise HTTPException(status_code=404, detail="Work order not found")
-    # IDOR guard (mismo patrón que get_work_order)
+    # IDOR guard
     wo_plant = wo.get("plant_id")
     if getattr(user, "plant_id", None) and user.role not in ("admin", "manager"):
         if wo_plant and wo_plant != user.plant_id:
@@ -315,7 +320,6 @@ def ai_analyze_work_order(
     if mode not in ("pre_execution", "post_close"):
         raise HTTPException(status_code=400, detail="mode must be 'pre_execution' or 'post_close'")
 
-    # Parse defensive de campos que pueden venir como JSON-string
     def _as_list(v):
         if v is None: return []
         if isinstance(v, list): return v
@@ -331,17 +335,19 @@ def ai_analyze_work_order(
 
     # Métricas duras
     total_hh_est = 0.0
+    max_hh_per_op = 0.0
     for op in ops:
         try:
-            total_hh_est += float(op.get("hours", 0) or 0) * float(op.get("quantity", 1) or 1)
+            h = float(op.get("hours", 0) or 0) * float(op.get("quantity", 1) or 1)
+            total_hh_est += h
+            max_hh_per_op = max(max_hh_per_op, h)
         except Exception:
             pass
     n_materials_reserved = sum(1 for m in mats if m.get("reservation_code"))
 
-    # Días en estado actual (usando updated_at como proxy)
+    # Días en estado actual
     days_in_status = None
     try:
-        from datetime import datetime
         ts = wo.get("updated_at") or wo.get("created_at")
         if ts:
             dt = datetime.fromisoformat(str(ts).replace("Z", "")) if not isinstance(ts, datetime) else ts
@@ -360,7 +366,7 @@ def ai_analyze_work_order(
         "priority_band": wo.get("priority_band") or wo.get("risk_class"),
     }
 
-    # Bloqueadores
+    # ── BLOQUEADORES (gating) ───────────────────────────────────────
     blockers = []
     if wo.get("status") == "PROGRAMADO" and not workers:
         blockers.append("PROGRAMADO sin técnicos asignados")
@@ -373,30 +379,185 @@ def ai_analyze_work_order(
     if has_replace_op and not mats:
         blockers.append("Operación REPLACE sin materiales reservados (T-16)")
 
-    # Narrativa (4 frases máx)
+    # ── FUNCIÓN 3 — RIESGOS OPERACIONALES (determinista) ───────────────────
+    risks = []
+    is_critical = str(metrics["priority_band"] or "").upper() in ("AA", "A+", "I_LOW", "IV_CRITICAL", "III_HIGH") or wo.get("priority_code") == "P1"
+
+    # 3.1 OT estancada >7 días pre-ejecución
+    if days_in_status and days_in_status > 7 and wo.get("status") in ("CREADO", "LIBERADO", "PLANIFICADO", "EN_PROGRAMACION"):
+        risks.append({
+            "severity": "high",
+            "category": "schedule",
+            "message": f"OT estancada hace {days_in_status} días en {wo.get('status')}",
+            "mitigation": "Escalar a planner o cambiar prioridad",
+        })
+
+    # 3.2 OT crítica (AA/P1) sin ningún equipo de apoyo cuando hay HH alta
+    if is_critical and total_hh_est >= 8 and len(support) == 0:
+        risks.append({
+            "severity": "medium",
+            "category": "resources",
+            "message": f"OT crítica con {total_hh_est:.1f} HH sin equipos de apoyo declarados",
+            "mitigation": "Revisar si requiere grúas, andamios o herramienta especial",
+        })
+
+    # 3.3 Operación con HH anómalamente alta (>24h)
+    if max_hh_per_op > 24:
+        risks.append({
+            "severity": "medium",
+            "category": "estimation",
+            "message": f"Operación con {max_hh_per_op:.0f} HH (>24h) — posible error de estimación",
+            "mitigation": "Verificar si conviene dividir en sub-operaciones",
+        })
+
+    # 3.4 Material reservado pero sin reservation_code (huérfano)
+    orphan_mats = [m for m in mats if m.get("quantity", 0) and not m.get("reservation_code")]
+    if orphan_mats:
+        risks.append({
+            "severity": "medium",
+            "category": "materials",
+            "message": f"{len(orphan_mats)} material(es) con cantidad pero sin reservation_code",
+            "mitigation": "Ejecutar reserva en /materials/reserve antes de programar",
+        })
+
+    # 3.5 Pocos técnicos para mucha HH (ratio HH/tech > 60h)
+    if workers and total_hh_est / max(len(workers), 1) > 60:
+        risks.append({
+            "severity": "high",
+            "category": "capacity",
+            "message": f"Ratio HH/técnico = {total_hh_est/len(workers):.1f}h (>60h) — sobrecarga probable",
+            "mitigation": "Agregar más técnicos o redistribuir HH",
+        })
+
+    # ── FUNCIÓN 5 — SUGERENCIA DE MATERIALES FALTANTES ────────────────────
+    missing_materials = []
+    if has_replace_op and not mats:
+        # Detectar palabras clave que sugieren materiales típicos
+        kw_to_material = [
+            (r"rodamient|bearing", "Rodamiento (consultar catálogo SKF/Timken)"),
+            (r"sello|seal|retén|reten", "Sello mecánico / retén"),
+            (r"filtro|filter", "Filtro (especificar tipo y micras)"),
+            (r"correa|belt", "Correa de transmisión"),
+            (r"cadena|chain", "Cadena (paso + #eslabones)"),
+            (r"válvula|valve", "Válvula (especificar tipo y diámetro)"),
+            (r"motor", "Motor de repuesto (verificar HP y RPM)"),
+            (r"acopl|coupling", "Acoplamiento (flexible o rígido)"),
+            (r"manguera|hose", "Manguera hidráulica (presión + diámetro)"),
+            (r"junta|gasket", "Junta / empaquetadura"),
+        ]
+        for op in ops:
+            txt = (str(op.get("description") or "") + " " + str(op.get("task_type") or "")).lower()
+            for pattern, suggestion in kw_to_material:
+                if _re.search(pattern, txt):
+                    if not any(s["suggested"] == suggestion for s in missing_materials):
+                        missing_materials.append({
+                            "suggested": suggestion,
+                            "from_operation": str(op.get("description") or "")[:60],
+                            "confidence": 0.7,
+                        })
+
+    # ── FUNCIÓN 6 — ALERTAS DE SEGURIDAD (LOTO/altura/ATEX) ────────────────
+    safety_alerts = []
+    full_text = " ".join(str(op.get("description") or "") for op in ops).lower()
+    eq_full = (str(wo.get("equipment_tag") or "") + " " + str(wo.get("description") or "")).lower()
+
+    # 6.1 Trabajo en altura → arnés + permiso
+    if _re.search(r"altura|trabajo.*altura|techo|tejado|escalera|andamio|height|scaffold", full_text):
+        safety_alerts.append({
+            "severity": "critical",
+            "type": "WORK_AT_HEIGHT",
+            "message": "Detectado trabajo en altura — requiere permiso + arnés + línea de vida",
+            "checklist": ["Permiso de trabajo en altura firmado", "Arnés tipo Y certificado", "Punto de anclaje verificado"],
+        })
+
+    # 6.2 LOTO requerido si equipo con energía
+    if _re.search(r"motor|bomba|compresor|ventilador|transformador|sub.*estaci|alta.*tensi|tablero|mt|kv|electric", full_text + " " + eq_full):
+        no_visual = not all(_re.search(r"visual|inspeccion|chequeo|check", str(op.get("description") or "").lower()) for op in ops if op.get("description"))
+        if no_visual:
+            safety_alerts.append({
+                "severity": "critical",
+                "type": "LOTO",
+                "message": "Equipo con fuente de energía — requiere bloqueo/etiquetado (LOTO)",
+                "checklist": ["Aislar fuente eléctrica", "Tarjeta personal + candado", "Verificación de energía cero"],
+            })
+
+    # 6.3 ATEX / atmósfera explosiva
+    if _re.search(r"atex|explosiva|gas|hidrocarbur|combustib|cianuro|reactivo", full_text + " " + eq_full):
+        safety_alerts.append({
+            "severity": "critical",
+            "type": "ATEX",
+            "message": "Posible zona ATEX — usar herramienta antichispa + ventilación",
+            "checklist": ["Permiso atmósferas explosivas", "Herramientas Ex-certificadas", "Medición de gases inicial + continua"],
+        })
+
+    # 6.4 Espacio confinado
+    if _re.search(r"espacio.*confina|estanque|tanque.*interior|silo.*interior|chimenea|ducto.*interior|confined", full_text + " " + eq_full):
+        safety_alerts.append({
+            "severity": "critical",
+            "type": "CONFINED_SPACE",
+            "message": "Trabajo en espacio confinado — requiere rescate + monitor O2",
+            "checklist": ["Permiso espacio confinado", "Monitor multigas", "Vigía externo + plan rescate"],
+        })
+
+    # 6.5 Soldadura / trabajo en caliente
+    if _re.search(r"soldadura|soldar|oxicorte|hot.*work|welding|cutting", full_text):
+        safety_alerts.append({
+            "severity": "high",
+            "type": "HOT_WORK",
+            "message": "Trabajo en caliente — requiere permiso + extintor + retiro combustibles",
+            "checklist": ["Permiso trabajo en caliente", "Extintor PQS clase B/C en sitio", "Pantalla anti-chispas"],
+        })
+
+    # 6.6 OT crítica AA sin ninguna alerta safety → flag missing context
+    if is_critical and len(safety_alerts) == 0 and total_hh_est > 4:
+        safety_alerts.append({
+            "severity": "low",
+            "type": "REVIEW_REQUIRED",
+            "message": "OT crítica >4h sin alertas safety detectadas — revisar descripciones de operaciones",
+            "checklist": ["Verificar que las descripciones incluyan tipo de trabajo y energías presentes"],
+        })
+
+    # ── Narrativa ──────────────────────────────────────────────────────────
     eq = wo.get("equipment_tag") or wo.get("technical_location") or "equipo sin tag"
     band = metrics["priority_band"] or "sin clasificación"
     wo_type = wo.get("wo_type") or "OT"
     title = wo.get("wo_title") or wo.get("description") or ""
+    n_risks = len(risks)
+    n_safety = sum(1 for s in safety_alerts if s["severity"] == "critical")
     sentences = [
         f"OT {wo_type} sobre {eq} (riesgo {band}, prioridad {metrics['priority_code'] or '-'}).",
         f"{metrics['n_operations']} operaciones, {metrics['total_hh_est']:.1f} HH planificadas — '{title[:60]}'.",
         f"{metrics['n_workers_assigned']} técnicos asignados, {metrics['n_materials_reserved']} materiales reservados, {metrics['n_support_eq']} equipos de apoyo.",
         f"Estado {wo.get('status')} hace {days_in_status if days_in_status is not None else '?'} días."
-        + (f" Bloqueadores: {'; '.join(blockers)}." if blockers else " Sin bloqueadores detectados."),
+        + (f" Bloqueadores: {'; '.join(blockers)}." if blockers else " Sin bloqueadores duros.")
+        + (f" {n_risks} riesgo(s) operacional(es)." if n_risks else "")
+        + (f" {n_safety} alerta(s) safety crítica(s)." if n_safety else ""),
     ]
     summary_text = " ".join(sentences)[:800]
 
+    # ── Quick actions sugeridas (lo que el usuario puede hacer ahora) ──────
+    quick_actions = []
+    if "PROGRAMADO sin técnicos asignados" in blockers:
+        quick_actions.append({"label": "Asignar técnicos", "action": "open_scheduling", "wo_id": wo_id})
+    if "Sin planned_start" in blockers:
+        quick_actions.append({"label": "Programar fecha", "action": "open_schedule_modal", "wo_id": wo_id})
+    if missing_materials:
+        quick_actions.append({"label": f"Agregar {len(missing_materials)} material(es) sugerido(s)", "action": "open_materials_tab"})
+    if safety_alerts:
+        quick_actions.append({"label": "Generar checklist safety", "action": "open_checklist", "items": [s["checklist"] for s in safety_alerts]})
+
     result = {
-        "version": "0.1",
+        "version": "0.2",
         "mode": mode,
+        "generated_at": datetime.utcnow().isoformat() + "Z",
         "summary": {"text": summary_text, "metrics": metrics, "blockers": blockers},
-        "predictions": None,         # función 2 — STUB (requiere histórico real)
-        "risks": [],                 # función 3 — STUB
-        "skill_mix": None,           # función 4 — STUB
-        "missing_materials": [],     # función 5 — STUB
-        "safety_alerts": [],         # función 6 — STUB
-        "root_cause_hints": None,    # función 7 — STUB
+        "predictions": None,          # función 2 — STUB (requiere histórico 0B2)
+        "risks": risks,               # función 3 — IMPLEMENTADO v0.2
+        "skill_mix": None,            # función 4 — STUB
+        "missing_materials": missing_materials,  # función 5 — IMPLEMENTADO v0.2
+        "safety_alerts": safety_alerts,           # función 6 — IMPLEMENTADO v0.2
+        "root_cause_hints": None,     # función 7 — STUB (solo modo post_close)
+        "quick_actions": quick_actions,
     }
 
     audit_service.log_action(
@@ -405,7 +566,14 @@ def ai_analyze_work_order(
         entity_id=wo_id,
         action="AI_ANALYZE",
         user=f"agent:planning-analyze-wo|confirmed_by={getattr(user, 'user_id', '')}",
-        payload={"functions_run": [1], "mode": mode, "metrics": metrics},
+        payload={
+            "functions_run": [1, 3, 5, 6],
+            "mode": mode,
+            "version": "0.2",
+            "risks_count": len(risks),
+            "safety_critical_count": n_safety,
+            "missing_materials_count": len(missing_materials),
+        },
     )
     return result
 

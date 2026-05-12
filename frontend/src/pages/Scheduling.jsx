@@ -1692,17 +1692,40 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                       toast({ kind: 'error', text: 'Error al asignar: ' + (err.message || err) });
                                     }
                                   }}>
+                                  {slotWOs.length > 1 && (
+                                    <div className="text-[9px] text-emerald-700 font-bold mb-0.5 px-1 bg-emerald-100 rounded inline-block">
+                                      {slotWOs.length} OTs en este slot
+                                    </div>
+                                  )}
                                   {slotWOs.map(wo => {
                                     const typeMeta = TYPE_META[wo.wo_type] || TYPE_META.PM02;
                                     const prioColor = wo.priority_code === 'P1' ? 'bg-red-500 text-white' : wo.priority_code === 'P2' ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white';
+                                    // SF-661 v0.2 / spec Jorge: mostrar nombres reales de técnicos
+                                    // en vez de solo el conteo. Si son >2, mostrar "Pedro G. +2".
+                                    let aw = wo.assigned_workers || [];
+                                    if (typeof aw === 'string') {
+                                      try { aw = JSON.parse(aw); } catch { aw = []; }
+                                    }
+                                    const workerLabels = (aw || []).map(w => {
+                                      if (typeof w === 'string') return w;
+                                      const name = w.name || w.worker_id || '';
+                                      // "Pedro Gonzalez" -> "Pedro G."
+                                      const parts = String(name).split(/\s+/);
+                                      if (parts.length >= 2) return `${parts[0]} ${parts[1][0]}.`;
+                                      return parts[0] || '';
+                                    }).filter(Boolean);
+                                    const workerDisplay = workerLabels.length <= 2
+                                      ? workerLabels.join(', ')
+                                      : `${workerLabels.slice(0, 2).join(', ')} +${workerLabels.length - 2}`;
+                                    const tooltipText = workerLabels.length
+                                      ? `${wo.wo_number} — ${workerLabels.length} técnico(s): ${workerLabels.join(', ')}\n${wo.estimated_hours || 0}h · ${wo.equipment_tag || ''}`
+                                      : `${wo.wo_number} (sin técnicos asignados)\n${wo.estimated_hours || 0}h · ${wo.equipment_tag || ''}`;
                                     return (
                                       <div key={wo.wo_id}
                                         className={`p-1 mb-0.5 rounded text-[10px] cursor-pointer ${typeMeta.bg} border border-border/50 hover:border-emerald-500 hover:shadow-md transition-all`}
-                                        title="Click para abrir la OT en Planning"
+                                        title={tooltipText}
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          // Mismo patrón que el Work Orders view (Scheduling.jsx:531):
-                                          // abrir la OT en /work-management?tab=planning&openWo=...
                                           try { window.open(`/work-management?tab=planning&openWo=${wo.wo_id}`, '_blank'); } catch {}
                                         }}>
                                         <div className="flex items-center gap-1">
@@ -1710,8 +1733,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                           <span className="font-mono font-bold truncate">{wo.wo_number}</span>
                                         </div>
                                         <div className="text-[9px] text-foreground/70 truncate">{wo.equipment_tag} · {wo.estimated_hours || 0}h</div>
-                                        {(wo.assigned_workers || []).length > 0 && (
-                                          <div className="text-[8px] text-emerald-700 dark:text-emerald-400">👷 {(wo.assigned_workers || []).length}</div>
+                                        {workerLabels.length > 0 ? (
+                                          <div className="text-[8px] text-emerald-700 dark:text-emerald-400 truncate" title={workerLabels.join(', ')}>
+                                            👷 {workerDisplay}
+                                          </div>
+                                        ) : (
+                                          <div className="text-[8px] text-red-600 font-semibold">⚠ sin técnico</div>
                                         )}
                                       </div>
                                     );

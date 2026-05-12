@@ -7,6 +7,7 @@ import WsStatusIndicator from './WsStatusIndicator';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
+import { displayPlantName } from '../utils/plantDisplay';
 
 const LANG_OPTIONS = [
     { code: 'en', label: 'EN', flag: '\u{1F1EC}\u{1F1E7}' },
@@ -307,7 +308,7 @@ export default function Header({
                                     de la planta, no el plant_id (que puede contener nombre
                                     del cliente real). Tooltip muestra el id para ops/debug. */}
                                 {(plants || []).map(p => (
-                                    <SelectItem key={p.plant_id} value={p.plant_id}>{p.name || 'Planta'}</SelectItem>
+                                    <SelectItem key={p.plant_id} value={p.plant_id}>{displayPlantName(p)}</SelectItem>
                                 ))}
                                 {(!plants || plants.length === 0) && (
                                     <SelectItem value="OCP-JFC1">Main Site</SelectItem>

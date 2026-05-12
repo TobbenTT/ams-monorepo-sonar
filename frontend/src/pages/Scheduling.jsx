@@ -702,6 +702,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
   // los cluster cards de Vista Horarios (cuando auto-match no encuentra
   // técnico con skill compatible).
   const [assignPopoverWO, setAssignPopoverWO] = useState(null);
+  // José reunión 18:02: pop-up "lupa" debe abrir OT en modo lectura SIN
+  // sacar al user del módulo Scheduling. Solo comentarios editables.
+  const [previewWO, setPreviewWO] = useState(null);
   // Over-capacity popover anchored to a (workCenterKey, dayIndex) cell in the
   // Capacity by Work Center panel. Surfaces Auto-balance / Dismiss actions.
   const [capacityAlert, setCapacityAlert] = useState(null);
@@ -1768,17 +1771,25 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                                       planned_end: plannedEnd,
                                       assigned_workers: matchedWorkers,
                                       shift,
+                                      status: 'EN_PROGRAMACION',
                                     };
                                     setReleasedWOs(prev => prev.filter(w => w.wo_id !== wo.wo_id));
                                     setScheduledWOs(prev => [optimisticWO, ...prev.filter(w => w.wo_id !== wo.wo_id)]);
                                     try {
+                                      // Bug Jorge 2026-05-12 19:55: drag persistía planned_start
+                                      // PERO no cambiaba status. Si la OT era PLANIFICADO →
+                                      // PLANIFICADO + planned_start. Al recargar, loadCalendarData
+                                      // mete las PLANIFICADO en releasedWOs (panel izquierdo) sin
+                                      // mirar planned_start → la OT volvía al panel. Fix: forzar
+                                      // status=EN_PROGRAMACION cuando se hace drop.
                                       const resp = await api.updateManagedWO(wo.wo_id, {
                                         planned_start: plannedStart,
                                         planned_end: plannedEnd,
                                         assigned_workers: matchedWorkers,
                                         shift,
+                                        status: 'EN_PROGRAMACION',
                                       });
-                                      console.log('[DRAG-DEBUG] PUT OK', { resp_planned_start: resp?.planned_start, resp_workers: (resp?.assigned_workers||[]).length });
+                                      console.log('[DRAG-DEBUG] PUT OK', { resp_planned_start: resp?.planned_start, status: resp?.status, resp_workers: (resp?.assigned_workers||[]).length });
                                       toast.success(`${wo.wo_number} → ${slot.label} ${d.dateLabel} · ${matchedWorkers.length} técnico${matchedWorkers.length === 1 ? '' : 's'} asignado${matchedWorkers.length === 1 ? '' : 's'}`);
                                       // WS broadcast del backend reconciliará en bg si hubo
                                       // mutación de otro campo (p.ej. status auto-bump).
@@ -1857,8 +1868,8 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                                             👤+
                                           </button>
                                           <button type="button"
-                                            onClick={(e) => { e.stopPropagation(); try { window.open(`/work-management?tab=planning&openWo=${wo.wo_id}`, '_blank'); } catch {} }}
-                                            title="Abrir OT en pestaña nueva"
+                                            onClick={(e) => { e.stopPropagation(); setPreviewWO(wo); }}
+                                            title="Vista rápida OT (sin salir de Scheduling)"
                                             className="text-[9px] px-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 font-bold">
                                             🔍
                                           </button>

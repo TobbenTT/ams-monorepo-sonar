@@ -1091,22 +1091,58 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 title="SF-669: busca por wo_number, equipment_tag, equipment_id, technical_location, description, wo_title, planning_group, work_center, priority_code"
                 className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
             </div>
-            {/* Priority chips — multi-select (like Prometheus) */}
-            <div className="flex items-center gap-1 text-[10px] font-semibold">
+            {/* SF-669 (Jorge): cuando la búsqueda no aparece en el panel pero sí
+                está colocada en el calendario, mostramos un hint con la fecha y
+                el técnico para que el usuario sepa dónde mirar. Sin esto Jorge
+                buscaba "126" y no encontraba aunque la OT existiera. */}
+            {search && search.trim().length >= 2 && (() => {
+              const q = search.toLowerCase().replace(/[\s\-]+/g, '');
+              const matches = (scheduledWOs || []).filter(wo => {
+                const wn = (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '');
+                const tag = (wo.equipment_tag || '').toLowerCase();
+                return wn.includes(q) || tag.includes(search.toLowerCase()) || (wo.wo_title || '').toLowerCase().includes(search.toLowerCase());
+              }).slice(0, 5);
+              if (matches.length === 0) return null;
+              return (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg px-2 py-1.5 text-[10px] text-blue-800 space-y-0.5">
+                  <div className="font-bold flex items-center gap-1">📅 {matches.length} ya en calendario:</div>
+                  {matches.map(wo => (
+                    <div key={wo.wo_id} className="flex items-center gap-1 truncate" title={wo.wo_title || wo.description}>
+                      <span className="font-mono font-semibold">{wo.wo_number}</span>
+                      <span className="text-blue-600">·</span>
+                      <span>{wo.equipment_tag}</span>
+                      <span className="text-blue-600">·</span>
+                      <span>{wo.scheduled_date ? new Date(wo.scheduled_date).toLocaleDateString() : '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            {/* SF-669 (jornada VSC 2026-05-08, Jorge): chips de prioridad con
+                indicador claro del estado activo + texto resumen "Filtrando: X".
+                Antes Jorge dijo "yo no sé cuáles está seleccionado, todas". Ahora
+                el chip activo tiene anillo, el inactivo es opacado y debajo se
+                lista el filtro vigente. */}
+            <div className="flex items-center gap-1 text-[10px] font-semibold flex-wrap">
               <span className="text-muted-foreground mr-0.5">Prio:</span>
-              {/* Jorge 2026-04-21: solo P3/P4 son programables. P1/P2 son fallas
-                  correctivas y van directo al supervisor, no al tablero. */}
               {[
-                { id: 'P3', color: 'bg-blue-500 text-white border-blue-600' },
-                { id: 'P4', color: 'bg-gray-400 text-white border-gray-500' },
+                { id: 'P3', color: 'bg-blue-500 text-white border-blue-600 ring-2 ring-blue-300' },
+                { id: 'P4', color: 'bg-gray-400 text-white border-gray-500 ring-2 ring-gray-300' },
               ].map(p => (
                 <button key={p.id}
                   onClick={() => setPrioFilter(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
-                  className={`px-2 py-0.5 rounded border transition-all ${prioFilter[p.id] ? p.color + ' shadow-sm' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                  className={`px-2 py-0.5 rounded border transition-all ${prioFilter[p.id] ? p.color + ' shadow-sm' : 'border-border text-muted-foreground opacity-50 hover:opacity-100 hover:bg-muted'}`}
                   title={prioFilter[p.id] ? `Ocultar ${p.id}` : `Mostrar ${p.id}`}>
-                  {p.id}
+                  {prioFilter[p.id] ? '✓ ' : ''}{p.id}
                 </button>
               ))}
+              {(() => {
+                const active = ['P3', 'P4'].filter(p => prioFilter[p]);
+                const label = active.length === 0
+                  ? 'ninguna'
+                  : active.length === 2 ? 'P3 + P4' : active.join(' + ');
+                return <span className="ml-1 text-[9px] text-emerald-700 font-bold normal-case italic">Filtrando: {label}</span>;
+              })()}
               <button onClick={() => setPrioFilter({ P1: true, P2: true, P3: true, P4: true })}
                 className="ml-1 text-[9px] text-muted-foreground hover:text-foreground underline" title="Mostrar todas">
                 todas

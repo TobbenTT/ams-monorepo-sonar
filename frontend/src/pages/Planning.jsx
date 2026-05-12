@@ -1568,7 +1568,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
               .catch(e => toast.error('Error: ' + (e.message || '')));
           }} className="ml-2 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 group relative"
             title="Ranking IA multi-criterio. Criterios:&#10;• Criticidad del equipo (40%) — clase AA/A+/A/B desde hierarchy_nodes&#10;• Urgencia SLA (30%) — horas restantes hasta deadline P1-P4&#10;• Repetición histórica / Pareto (20%) — equipos con fallas recurrentes&#10;• Impacto productivo (10%) — clase de equipo + zona crítica&#10;&#10;Excluye automáticamente: CANCELADO · CERRADO · EN_EJECUCION&#10;Solo aplica a pendientes de programación.&#10;&#10;Es una segunda capa sobre P1-P4 — el mantenedor sigue priorizando primero (P1-P4) y este ranking diferencia entre todas las del mismo nivel.">
-            <Sparkles className="w-3 h-3" /> Priorizar nivel de riesgo con IA
+            <Sparkles className="w-3 h-3" /> Priorizar por riesgo
           </button>
         </>)}
       </div>
@@ -2816,11 +2816,39 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         </div>
                       </div>
                     </div>
-                    {/* Subtotales por disciplina — siempre visibles arriba de la lista. SF-559 */}
+                    {/* Subtotales por disciplina — siempre visibles arriba de la lista. SF-559
+                        SF-677 (Jorge 2026-05-08): normalizamos la disciplina antes de
+                        agrupar para evitar dividir un solo puesto en filas distintas
+                        cuando viene escrito con suffix de área ("mecánico molienda",
+                        "mecánico seca", "mecanico") — el HH total se consolida en una
+                        sola entrada canónica. La etiqueta canónica se elige tomando
+                        la primera forma encontrada en su grupo. */}
                     {editOps.length > 0 && (() => {
+                      const normalizeSpec = (raw) => {
+                        const s = (raw || 'Sin especialidad').toString().trim();
+                        if (!s) return { key: 'sin-especialidad', label: 'Sin especialidad' };
+                        // lowercase + sin acentos + sin sufijos de área
+                        const norm = s.toLowerCase()
+                          .normalize('NFD').replace(/[̀-ͯ]/g, '') // strip accents
+                          .replace(/\s+(seca|h[ú|u]meda|molienda|flotaci[oó]n|chancado|puerto|mina|planta)$/i, '')
+                          .replace(/\s+/g, ' ').trim();
+                        // Mapeo a canónicos comunes
+                        const CANON = {
+                          'mecanico': 'Mecánico', 'mecanica': 'Mecánico',
+                          'electrico': 'Eléctrico', 'electrica': 'Eléctrico',
+                          'instrumentista': 'Instrumentista', 'instrumentacion': 'Instrumentista',
+                          'lubricador': 'Lubricador',
+                          'soldador': 'Soldador',
+                          'operador': 'Operador',
+                          'ayudante': 'Ayudante', 'helper': 'Ayudante',
+                          'supervisor': 'Supervisor',
+                        };
+                        return { key: norm, label: CANON[norm] || s };
+                      };
                       const subtotals = {};
                       editOps.forEach(op => {
-                        const spec = (op.specialty || 'Sin especialidad').trim() || 'Sin especialidad';
+                        const { key, label } = normalizeSpec(op.specialty);
+                        const spec = label;
                         const qty = parseInt(op.quantity) || 1;
                         const hh = (parseFloat(op.hours) || 0) * qty;
                         if (!subtotals[spec]) subtotals[spec] = { hh: 0, count: 0, durSerie: 0, parGroups: {} };
@@ -3006,17 +3034,25 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                       elimina"). HH se recalcula vía el render de plannedHH abajo. */}
                                   <div className="flex items-center gap-1">
                                     <label className="text-xs text-gray-600 font-semibold">Cantidad:</label>
+                                    {/* SF-682 (Jorge 2026-05-08): al hacer click sobre el input
+                                        se selecciona el valor existente para que el primer tecleo
+                                        REEMPLACE (no concatene "02"). Sin esto, focus+tipear "2"
+                                        sobre "0" dejaba "02" hasta que parseInt corregía en el
+                                        siguiente re-render. */}
                                     <input type="number" min="0" step="1"
                                       value={op.quantity ?? 1}
+                                      onFocus={e => e.target.select()}
                                       onChange={e => {
                                         const raw = e.target.value;
-                                        const parsed = raw === '' ? 0 : parseInt(raw, 10);
+                                        // Limpieza: descarta ceros a la izquierda excepto el solitario "0".
+                                        const cleaned = raw.replace(/^0+(?=\d)/, '');
+                                        const parsed = cleaned === '' ? 0 : parseInt(cleaned, 10);
                                         const q = Number.isNaN(parsed) ? (op.quantity ?? 1) : Math.max(0, parsed);
                                         const n = [...editOps];
                                         n[idx] = { ...n[idx], quantity: q };
                                         setEditOps(n);
                                       }}
-                                      title="Cantidad de personas para esta operación. Editar reemplaza el valor (no agrega bloque). HH = Cantidad × Duración."
+                                      title="Cantidad de personas para esta operación. Click selecciona; tecleo reemplaza. HH = Cantidad × Duración."
                                       className="w-16 text-sm font-semibold border rounded px-2 py-1.5 text-center" />
                                   </div>
                                   <div className="flex items-center gap-1">
@@ -3025,6 +3061,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                                         Una op de 0h no aporta nada y rompe el cálculo de
                                         Duración total. Si el usuario tipea menos, se ajusta. */}
                                     <input type="number" min="0.5" step="0.5" value={op.hours || 0}
+                                      onFocus={e => e.target.select()}
                                       onChange={e => { const n = [...editOps]; n[idx] = {...n[idx], hours: parseFloat(e.target.value)||0}; setEditOps(n); }}
                                       onBlur={e => {
                                         const v = parseFloat(e.target.value) || 0;
@@ -3866,7 +3903,9 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1">
                                 <label className="text-[10px] text-gray-500">Qty:</label>
-                                <input type="number" min="1" value={mat.quantity || 1} onChange={e => { const n = [...editMats]; n[idx].quantity = parseInt(e.target.value)||1; setEditMats(n); }}
+                                <input type="number" min="1" value={mat.quantity || 1}
+                                  onFocus={e => e.target.select()}
+                                  onChange={e => { const n = [...editMats]; const raw = e.target.value.replace(/^0+(?=\d)/, ''); n[idx].quantity = parseInt(raw,10)||1; setEditMats(n); }}
                                   className="w-14 text-xs border rounded px-1 py-1 text-center" />
                               </div>
                               <input value={mat.unit || 'PZ'} readOnly

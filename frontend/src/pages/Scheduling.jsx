@@ -5425,14 +5425,27 @@ export default function Scheduling() {
       for (let i = 0; i < plan.assignments.length; i += BATCH) {
         const batch = plan.assignments.slice(i, i + BATCH);
         const results = await Promise.allSettled(batch.map(a => {
+          // Bug Jorge 2026-05-12 19:08: antes enviábamos `planned_start: a.day`
+          // que es solo fecha YYYY-MM-DD → backend lo parseaba como 00:00 →
+          // todas las OTs aparecían a medianoche. Ahora calculamos start a las
+          // 06:00 (inicio turno día) y end = start + hours.
+          const startHour = 6; // turno día estándar
+          const hrs = parseFloat(a.hours) || 1;
+          const startISO = `${a.day}T${String(startHour).padStart(2, '0')}:00:00`;
+          // End: si excede 12h cap diario, igual lo posteamos (el motor de
+          // continuation visual del Tech grid se encarga de wrappear visual).
+          const endDate = new Date(`${a.day}T${String(startHour).padStart(2, '0')}:00:00`);
+          endDate.setHours(endDate.getHours() + Math.ceil(hrs));
+          const pad = (n) => String(n).padStart(2, '0');
+          const endISO = `${endDate.getFullYear()}-${pad(endDate.getMonth()+1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:00:00`;
           // Auto-Level produces DRAFT (EN_PROGRAMACION). Planner must Reservar Semana to commit.
           const updateData = {
-            planned_start: a.day,
-            planned_end: a.day,
+            planned_start: startISO,
+            planned_end: endISO,
             status: 'EN_PROGRAMACION',
+            shift: 'DAY',
           };
           // Jorge fix #6: si Auto-Level produjo lista de workers (multi-tech), usarla.
-          // Fallback al worker único legacy si la lista está vacía.
           if (Array.isArray(a.workers) && a.workers.length > 0) {
             updateData.assigned_workers = a.workers;
           } else if (a.worker_id) {

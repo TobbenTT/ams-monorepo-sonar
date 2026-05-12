@@ -1702,13 +1702,23 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                     const prioColor = wo.priority_code === 'P1' ? 'bg-red-500 text-white' : wo.priority_code === 'P2' ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white';
                                     // SF-661 v0.2 / spec Jorge: mostrar nombres reales de técnicos
                                     // en vez de solo el conteo. Si son >2, mostrar "Pedro G. +2".
+                                    // Lookup en `technicians` cuando el assigned_workers solo trae worker_id.
                                     let aw = wo.assigned_workers || [];
                                     if (typeof aw === 'string') {
                                       try { aw = JSON.parse(aw); } catch { aw = []; }
                                     }
                                     const workerLabels = (aw || []).map(w => {
-                                      if (typeof w === 'string') return w;
-                                      const name = w.name || w.worker_id || '';
+                                      let name = '';
+                                      let wid = '';
+                                      if (typeof w === 'string') { wid = w; }
+                                      else { name = w.name || ''; wid = w.worker_id || w.id || ''; }
+                                      // Si no hay name pero hay worker_id, buscar en technicians
+                                      if (!name && wid) {
+                                        const t = technicians.find(t => (t.worker_id || t.id) === wid);
+                                        if (t) name = t.name || '';
+                                      }
+                                      // Fallback: usar worker_id si sigue sin name (formato uuid: cortar)
+                                      if (!name) name = wid.length > 20 ? wid.slice(0, 6) + '…' : wid;
                                       // "Pedro Gonzalez" -> "Pedro G."
                                       const parts = String(name).split(/\s+/);
                                       if (parts.length >= 2) return `${parts[0]} ${parts[1][0]}.`;

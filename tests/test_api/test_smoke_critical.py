@@ -134,6 +134,8 @@ class TestClosureSignature:
     """Group A #3 — firma del supervisor obligatoria al cerrar."""
 
     def _create_and_advance(self, client):
+        """Crea OT con 1 op, avanza hasta EN_EJECUCION, y deja la op al 100% con HH real
+        para que pasen los pre-close gates (ALL_OPS_DONE + OPS_HH_NOTIFIED + HH_VARIANCE)."""
         r = client.post("/api/v1/managed-work-orders/", json={
             "equipment_tag": "BRY-SAG-ML-001",
             "description": "Closure test",
@@ -141,11 +143,21 @@ class TestClosureSignature:
             "priority_code": "P3",
             "plant_id": "TEST-PLANT",
             "estimated_hours": 4.0,
+            "operations": [
+                {"op_number": 1, "description": "Inspect mill",
+                 "specialty": "MECHANICAL", "hours": 4.0, "quantity": 1,
+                 "completion_pct": 100, "actual_hours": 4.0},
+            ],
         })
         wo_id = r.json()["wo_id"]
-        # Advance through statuses to EN_EJECUCION
-        for status in ["LIBERADO", "PLANIFICADO", "EN_PROGRAMACION", "PROGRAMADO", "EN_EJECUCION"]:
-            client.put(f"/api/v1/managed-work-orders/{wo_id}", json={"status": status})
+        # Avanzar por endpoints dedicados (respetan TRANSITIONS + setean campos)
+        client.put(f"/api/v1/managed-work-orders/{wo_id}/release")
+        client.put(f"/api/v1/managed-work-orders/{wo_id}/plan")
+        client.put(f"/api/v1/managed-work-orders/{wo_id}/schedule", json={
+            "planned_start": "2026-05-12T08:00:00",
+            "planned_end": "2026-05-12T12:00:00",
+        })
+        client.put(f"/api/v1/managed-work-orders/{wo_id}/start")
         return wo_id
 
     def test_close_without_signature_rejects(self, seeded_client):
@@ -158,7 +170,13 @@ class TestClosureSignature:
         wo_id = self._create_and_advance(seeded_client)
         r = seeded_client.put(
             f"/api/v1/managed-work-orders/{wo_id}/close",
-            json={"signature": "Juan Perez", "actual_hours": 4.5, "notes": "OK"},
+            json={
+                "signature": "Juan Perez",
+                "actual_hours": 4.5,
+                "notes": "OK",
+                # SUPERVISOR_QA es la única gate manual blocking; ackearla para que pase
+                "gate_acks": {"SUPERVISOR_QA": True},
+            },
         )
         assert r.status_code == 200, r.text
         body = r.json()
@@ -168,10 +186,15 @@ class TestClosureSignature:
     def test_patch_after_close_returns_409(self, seeded_client):
         """OTs cerradas quedan bloqueadas para edición."""
         wo_id = self._create_and_advance(seeded_client)
-        seeded_client.put(
+        close_r = seeded_client.put(
             f"/api/v1/managed-work-orders/{wo_id}/close",
-            json={"signature": "Test User", "actual_hours": 3.0},
+            json={
+                "signature": "Test User",
+                "actual_hours": 4.0,  # plan=4.0 → variance 0% para no fallar HH_VARIANCE
+                "gate_acks": {"SUPERVISOR_QA": True},
+            },
         )
+        assert close_r.status_code == 200, f"close failed: {close_r.text}"
         r = seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}", json={"description": "illegal edit"})
         assert r.status_code == 409, "post-CERRADO edits must be blocked"
 

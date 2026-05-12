@@ -140,11 +140,14 @@ class RiskClassRequest(BaseModel):
 # ── FMEA ─────────────────────────────────────────────────────────────
 
 class FailureModeCreate(BaseModel):
-    """Passed to fmea_service.create_failure_mode — allows extra fields."""
+    """Passed to fmea_service.create_failure_mode. `extra='allow'` preserva
+    todos los campos opcionales (failure_consequence, strategy_type, is_hidden,
+    what, etc) sin duplicar el schema completo."""
+    functional_failure_id: str
     mechanism: str
     cause: str
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
 
 class FMValidateRequest(BaseModel):
@@ -256,8 +259,12 @@ class PlanningKPIRequest(BaseModel):
 
 
 class DEKPIRequest(BaseModel):
-    """Passed directly to DEKPIInput — allows extra fields."""
-    model_config = ConfigDict(extra="ignore")
+    """Passed directly to DEKPIInput. `extra='allow'` preserva campos
+    arbitrarios para el engine (sin tener que duplicar el schema acá)."""
+    model_config = ConfigDict(extra="allow")
+    plant_id: str
+    period_start: str
+    period_end: str
 
 
 # ── Reliability ──────────────────────────────────────────────────────

@@ -44,7 +44,8 @@ class TestWorkRequestEndpoints:
             "action": "APPROVE",
         })
         assert r.status_code == 200
-        assert r.json()["status"] == "VALIDATED"
+        # Backend SF-578 (jornada VSC) cambió a status en ES — APROBADO/RECHAZADO
+        assert r.json()["status"] == "APROBADO"
 
     def test_validate_reject(self, client):
         data = self._create_work_request(client)
@@ -53,7 +54,7 @@ class TestWorkRequestEndpoints:
             "action": "REJECT",
         })
         assert r.status_code == 200
-        assert r.json()["status"] == "REJECTED"
+        assert r.json()["status"] == "RECHAZADO"
 
     def test_validate_invalid_action(self, client):
         data = self._create_work_request(client)

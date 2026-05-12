@@ -31,8 +31,9 @@ class TestBacklogEndpoints:
         assert data["work_request_id"] == wr_id
 
     def test_list_backlog_after_add(self, client):
-        wr_id = self._create_validated_wr(client)
-        client.post(f"/api/v1/backlog/add/{wr_id}")
+        # validate APPROVE auto-llama backlog_service.add_to_backlog (work_request_service.py:251)
+        # entonces ya queda en backlog sin necesidad de POST /backlog/add explícito.
+        self._create_validated_wr(client)
         r = client.get("/api/v1/backlog/")
         assert r.status_code == 200
         assert len(r.json()) == 1

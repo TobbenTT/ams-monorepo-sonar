@@ -150,7 +150,7 @@ class TestOTCalendarSyncEdgeCases:
         r = seeded_client.post(f"/api/v1/managed-work-orders/{wo.wo_id}/ai-analyze")
         assert r.status_code == 200, r.text
         body = r.json()
-        assert body["version"] == "0.1"
+        assert body["version"] == "0.2"  # bumped to v0.2 con funciones 3+5+6 implementadas
         assert "text" in body["summary"]
         assert "metrics" in body["summary"]
         m = body["summary"]["metrics"]

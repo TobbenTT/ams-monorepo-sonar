@@ -306,7 +306,7 @@ def ai_analyze_work_order(
     Ver skills/02-work-planning/analyze-work-order/CLAUDE.md.
     """
     from api.services import audit_service
-    from datetime import datetime
+    from datetime import datetime, timezone
     import json as _json
     import re as _re
     wo = managed_wo_service.get_work_order(db, wo_id)
@@ -549,7 +549,7 @@ def ai_analyze_work_order(
     result = {
         "version": "0.2",
         "mode": mode,
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": {"text": summary_text, "metrics": metrics, "blockers": blockers},
         "predictions": None,          # función 2 — STUB (requiere histórico 0B2)
         "risks": risks,               # función 3 — IMPLEMENTADO v0.2

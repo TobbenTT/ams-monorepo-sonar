@@ -11,7 +11,8 @@ import pytest
 
 
 def _create_wo(client, plant_id="TEST-PLANT", priority="P3", equipment_tag="BRY-SAG-ML-001"):
-    """Helper: create a WO and return its dict."""
+    """Helper: create a WO with 1 op completa (HH real notificadas) — para que pasen
+    los pre-close gates ALL_OPS_DONE + OPS_HH_NOTIFIED automáticamente."""
     r = client.post("/api/v1/managed-work-orders/", json={
         "equipment_tag": equipment_tag,
         "description": "Test WO",
@@ -19,9 +20,19 @@ def _create_wo(client, plant_id="TEST-PLANT", priority="P3", equipment_tag="BRY-
         "priority_code": priority,
         "plant_id": plant_id,
         "estimated_hours": 4.0,
+        "operations": [{
+            "op_number": 1, "description": "Test op", "specialty": "MECHANICAL",
+            "hours": 4.0, "quantity": 1,
+            "completion_pct": 100, "actual_hours": 4.0,
+        }],
     })
     assert r.status_code == 200, r.text
     return r.json()
+
+
+def _close_payload(signature="Test Supervisor", actual_hours=4.0):
+    """Payload con signature + SUPERVISOR_QA ack para pasar pre-close gates."""
+    return {"signature": signature, "actual_hours": actual_hours, "gate_acks": {"SUPERVISOR_QA": True}}
 
 
 class TestStatusTransitions:
@@ -53,9 +64,9 @@ class TestStatusTransitions:
         assert r.status_code == 200
         assert r.json()["status"] == "EN_EJECUCION"
 
-        # EN_EJECUCION → CERRADO
-        r = seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}/close")
-        assert r.status_code == 200
+        # EN_EJECUCION → CERRADO (signature + supervisor_qa ack obligatorios)
+        r = seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}/close", json=_close_payload())
+        assert r.status_code == 200, r.text
         assert r.json()["status"] == "CERRADO"
 
     def test_invalid_transition_rejected(self, seeded_client):
@@ -68,7 +79,8 @@ class TestStatusTransitions:
         seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}", json={"status": "EN_PROGRAMACION"})
         seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}/schedule", json={})
         seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}/start")
-        seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}/close")
+        close_r = seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}/close", json=_close_payload())
+        assert close_r.status_code == 200, close_r.text
 
         # Attempt to start again — must fail (service returns None → 400)
         r = seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}/start")
@@ -128,13 +140,13 @@ class TestBatchClose:
         closed = 0
         for wo_id in ids:
             r1 = seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}", json={
-                "actual_hours": 3.5,
-                "labor_cost": 3.5 * 50,
-                "actual_total_cost": 3.5 * 50,
+                "actual_hours": 4.0,
+                "labor_cost": 4.0 * 50,
+                "actual_total_cost": 4.0 * 50,
             })
             assert r1.status_code == 200
-            r2 = seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}/close")
-            assert r2.status_code == 200
+            r2 = seeded_client.put(f"/api/v1/managed-work-orders/{wo_id}/close", json=_close_payload(actual_hours=4.0))
+            assert r2.status_code == 200, r2.text
             assert r2.json()["status"] == "CERRADO"
             closed += 1
 

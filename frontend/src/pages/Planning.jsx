@@ -1556,9 +1556,9 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                 fetchData();
               })
               .catch(e => toast.error('Error: ' + (e.message || '')));
-          }} className="ml-2 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
-            title="Ranking IA multi-criterio: criticidad del equipo (40%) + urgencia SLA (30%) + repetición histórica / Pareto (20%) + impacto productivo (10%). Prioriza primero P1/P2 fast-track, luego ordena P3/P4 por score combinado.">
-            <Sparkles className="w-3 h-3" /> Priorizar por riesgo
+          }} className="ml-2 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 group relative"
+            title="Ranking IA multi-criterio. Criterios:&#10;• Criticidad del equipo (40%) — clase AA/A+/A/B desde hierarchy_nodes&#10;• Urgencia SLA (30%) — horas restantes hasta deadline P1-P4&#10;• Repetición histórica / Pareto (20%) — equipos con fallas recurrentes&#10;• Impacto productivo (10%) — clase de equipo + zona crítica&#10;&#10;Excluye automáticamente: CANCELADO · CERRADO · EN_EJECUCION&#10;Solo aplica a pendientes de programación.&#10;&#10;Es una segunda capa sobre P1-P4 — el mantenedor sigue priorizando primero (P1-P4) y este ranking diferencia entre todas las del mismo nivel.">
+            <Sparkles className="w-3 h-3" /> Priorizar nivel de riesgo con IA
           </button>
         </>)}
       </div>
@@ -3747,7 +3747,7 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                       className="w-full text-xs border border-gray-300 rounded px-2 py-1" />
                                   </td>
                                   <td className="px-3 py-2 text-center">
-                                    <button onClick={removeRow} className="text-red-500 hover:text-red-700 text-xs">✕</button>
+                                    <IconDeleteButton onClick={removeRow} title="Eliminar equipo de apoyo" />
                                   </td>
                                 </tr>
                               );
@@ -3839,11 +3839,11 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                   className="flex-1 text-sm border rounded px-2 py-1" placeholder="Buscar material por nombre o código…" />
                               )}
                               {/* QA #12 (2026-05-08): confirmación al eliminar material. */}
-                              <button onClick={async () => {
+                              <IconDeleteButton onClick={async () => {
                                 const matDesc = (editMats[idx]?.description || editMats[idx]?.sapId || `Material #${idx + 1}`).slice(0, 40);
                                 if (!await confirm({ title: 'Eliminar material', message: `¿Eliminar "${matDesc}"?`, variant: 'danger', confirmText: 'Eliminar' })) return;
                                 setEditMats(prev => prev.filter((_,i) => i !== idx));
-                              }} className="text-red-400 hover:text-red-600 text-xs px-1" title="Eliminar material">x</button>
+                              }} title="Eliminar material" />
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1">
@@ -4170,12 +4170,14 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                 )}
                               </div>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${DOC_TYPE_COLOR[doc.type] || 'bg-gray-100 text-gray-600'}`}>{DOC_TYPE_LABEL[doc.type] || doc.type}</span>
-                              <button onClick={async (e) => {
-                                e.stopPropagation();
-                                if (!await confirm({ title: 'Quitar documento', message: `¿Quitar "${doc.name}"?`, variant: 'danger', confirmText: 'Quitar' })) return;
-                                const docs = (wo.documents || []).filter((_, j) => j !== i);
-                                try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); } catch(e2) { toast.error(e2.message); }
-                              }} className="text-red-400 hover:text-red-600 text-xs opacity-0 group-hover:opacity-100 flex-shrink-0">✕</button>
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                <IconDeleteButton onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!await confirm({ title: 'Quitar documento', message: `¿Quitar "${doc.name}"?`, variant: 'danger', confirmText: 'Quitar' })) return;
+                                  const docs = (wo.documents || []).filter((_, j) => j !== i);
+                                  try { const u = await api.updateManagedWO(wo.wo_id, { documents: docs }, wo.version); setSelectedOT(u); } catch(e2) { toast.error(e2.message); }
+                                }} title="Quitar documento" size="sm" />
+                              </span>
                             </div>
                           ))}
                         </div>

@@ -5105,7 +5105,7 @@ export default function Scheduling() {
                   toast.error('Error generando programa: ' + (e.message || ''));
                 }
               }}
-              className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
+              className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium"
               title="Generar programa semanal desde backlog (SF-344)"
             >
               <Sparkles size={16} />

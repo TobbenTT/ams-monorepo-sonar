@@ -246,6 +246,22 @@ function HistoryTab({ wo }) {
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState([]);
   const [error, setError] = useState(null);
+  // SF-674 (Jorge 2026-05-08): bitácora de comentarios estilo "muro de Facebook".
+  // El usuario puede AGREGAR nuevas notas durante la ejecución (handover entre
+  // turnos), pero las notas/entradas anteriores NO se pueden editar ni borrar.
+  const [newNote, setNewNote] = useState('');
+  const [postingNote, setPostingNote] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
+  const reload = () => {
+    if (!wo?.wo_id) return;
+    api.getManagedWOHistory(wo.wo_id)
+      .then(r => setEntries(r?.entries || []))
+      .catch(() => {});
+  };
 
   useEffect(() => {
     if (!wo?.wo_id) return;
@@ -257,6 +273,59 @@ function HistoryTab({ wo }) {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [wo?.wo_id]);
+
+  const postNote = async () => {
+    if (!newNote.trim() && !audioBlob) return;
+    if (!wo?.wo_id) return;
+    setPostingNote(true);
+    try {
+      const payload = { note: newNote.trim() || '(comentario de audio adjunto)' };
+      if (audioBlob) {
+        // SF-674: por ahora adjuntamos audio en base64 — backend persistirá
+        // archivo + URL. Pendiente: STT (whisper) para transcripción.
+        const reader = new FileReader();
+        await new Promise((resolve, reject) => {
+          reader.onload = () => { payload.audio_b64 = reader.result; resolve(); };
+          reader.onerror = reject;
+          reader.readAsDataURL(audioBlob);
+        });
+      }
+      await api.addManagedWONote(wo.wo_id, payload);
+      setNewNote('');
+      setAudioBlob(null);
+      reload();
+    } catch (e) {
+      // toast helper no disponible acá; mostramos como error inline
+      setError('Error al guardar nota: ' + (e?.message || e));
+    } finally {
+      setPostingNote(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mr = new MediaRecorder(stream);
+      mr.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      mr.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setRecording(true);
+    } catch {
+      setError('No se pudo iniciar la grabación. Verificá permisos de micrófono.');
+    }
+  };
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setRecording(false);
+  };
 
   const formatValue = (v) => {
     if (v == null || v === '') return <span className="italic text-gray-400">vacío</span>;
@@ -297,6 +366,49 @@ function HistoryTab({ wo }) {
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-800">Historial · {entries.length} eventos</h3>
         <span className="text-[10px] text-gray-400">Audit log + notas de ejecución</span>
+      </div>
+
+      {/* SF-674 (Jorge): composer de comentarios de bitácora. Estilo "muro" — los
+          comentarios anteriores son inmutables; aquí se agregan nuevos para
+          handover entre turnos. Soporta texto + audio (transcripción pendiente). */}
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-emerald-900">Agregar nota de bitácora</span>
+          <span className="text-[10px] text-emerald-700">Para handover de turno · queda inmutable en historial</span>
+        </div>
+        <textarea
+          value={newNote}
+          onChange={e => setNewNote(e.target.value)}
+          placeholder="Ej. Dejamos motor desacoplado, falta cambiar rodamiento lado libre. Continúa turno noche..."
+          rows={3}
+          className="w-full text-xs px-2 py-1.5 border border-emerald-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y"
+        />
+        {audioBlob && (
+          <div className="flex items-center gap-2 text-[10px] bg-white border border-emerald-300 rounded px-2 py-1">
+            <span className="font-bold text-emerald-700">🎙 Audio adjunto</span>
+            <audio controls src={URL.createObjectURL(audioBlob)} className="h-6" />
+            <button type="button" onClick={() => setAudioBlob(null)}
+              className="ml-auto text-[10px] text-red-500 hover:text-red-700 font-semibold">Descartar</button>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          {!recording ? (
+            <button type="button" onClick={startRecording}
+              className="text-[10px] font-semibold px-2.5 py-1.5 bg-white border-2 border-emerald-300 text-emerald-700 rounded hover:bg-emerald-50 flex items-center gap-1">
+              🎙 Grabar audio
+            </button>
+          ) : (
+            <button type="button" onClick={stopRecording}
+              className="text-[10px] font-semibold px-2.5 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 flex items-center gap-1 animate-pulse">
+              ⏹ Detener
+            </button>
+          )}
+          <button type="button" onClick={postNote}
+            disabled={postingNote || (!newNote.trim() && !audioBlob)}
+            className="ml-auto text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-40">
+            {postingNote ? 'Guardando…' : 'Agregar nota'}
+          </button>
+        </div>
       </div>
       {loading ? (
         <div className="flex items-center justify-center py-6 text-gray-400">
@@ -3981,23 +4093,58 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                         Create Reservation
                       </button>
                     </div>
-                    {/* Historial de reservas — Jorge 2026-04-20 */}
+                    {/* Historial de reservas — Jorge 2026-04-20.
+                        SF-676 (Jorge 2026-05-08): cuando se agrega un material y se
+                        crea una segunda reserva, el panel debe resaltar la NUEVA y
+                        mostrar qué materiales (códigos SAP + descripción) van en
+                        cada reserva. Antes solo listaba el código sin contexto y
+                        Jorge dijo "no me mostró la segunda reserva acá abajo". */}
                     {(() => {
                       const list = Array.isArray(selectedOT?.reservation_codes) && selectedOT.reservation_codes.length > 0
                         ? selectedOT.reservation_codes
                         : (selectedOT?.reservation_code ? [selectedOT.reservation_code] : []);
                       if (list.length === 0) return null;
+                      // Agrupar materiales por reservation_code para mostrar qué va en cada reserva.
+                      const byRes = {};
+                      editMats.forEach(m => {
+                        const c = m.reservation_code || '__unreserved__';
+                        if (!byRes[c]) byRes[c] = [];
+                        byRes[c].push(m);
+                      });
                       return (
                         <div className="mt-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
-                          <div className="text-[10px] text-indigo-600 font-semibold uppercase mb-1">
+                          <div className="text-[10px] text-indigo-600 font-semibold uppercase mb-1.5">
                             Reservas ({list.length}) {list.length > 1 && '— todas activas en bodega'}
                           </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {list.map((c, i) => (
-                              <span key={i} className="font-mono text-xs font-bold text-indigo-800 bg-white border border-indigo-200 px-1.5 py-0.5 rounded">
-                                #{i + 1} {c}
-                              </span>
-                            ))}
+                          <div className="space-y-1.5">
+                            {list.map((c, i) => {
+                              const mats = byRes[c] || [];
+                              const isLast = i === list.length - 1;
+                              return (
+                                <div key={i} className={`bg-white border rounded px-2 py-1.5 ${isLast && list.length > 1 ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-indigo-200'}`}>
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="font-mono text-xs font-bold text-indigo-800">#{i + 1} {c}</span>
+                                    {isLast && list.length > 1 && (
+                                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded uppercase">Nueva</span>
+                                    )}
+                                    <span className="text-[10px] text-gray-500 ml-auto">{mats.length} mat{mats.length !== 1 ? 's' : ''}</span>
+                                  </div>
+                                  {mats.length > 0 && (
+                                    <div className="text-[10px] text-gray-600 leading-tight pl-1 space-y-0.5">
+                                      {mats.slice(0, 4).map((m, mi) => (
+                                        <div key={mi} className="truncate">
+                                          <span className="font-mono text-blue-700 font-semibold">{m.sapId || m.code || '—'}</span>
+                                          <span className="text-gray-400 mx-1">·</span>
+                                          <span title={m.description}>{(m.description || '').slice(0, 50)}</span>
+                                          <span className="text-gray-400 ml-1">×{m.quantity || 1}</span>
+                                        </div>
+                                      ))}
+                                      {mats.length > 4 && <div className="italic text-gray-400">+ {mats.length - 4} más…</div>}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );

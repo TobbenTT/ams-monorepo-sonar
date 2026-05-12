@@ -5420,24 +5420,46 @@ export default function Scheduling() {
     let ok = 0, failed = 0;
     const failures = [];
     try {
+      // Bug Jorge 2026-05-12 19:16: distribuir OTs en distintos horarios
+      // en lugar de todas a 06:00. Pre-procesar: para cada {worker_id, day}
+      // acumulamos offset desde 06:00 → OTs apiladas secuencialmente sin
+      // overlap. Si una OT excede 18:00 del turno día, rolla al siguiente día
+      // del mismo worker (multi-day continuation).
+      const techDayOffset = new Map(); // key: `${worker_id}|${day}` → next free hour
+      for (const a of plan.assignments) {
+        const workers = (Array.isArray(a.workers) && a.workers.length > 0) ? a.workers : (a.worker_id ? [{ worker_id: a.worker_id }] : []);
+        // Tomamos el offset del worker más cargado del crew (para que la OT
+        // empiece cuando todos sus técnicos estén libres).
+        let maxOffset = 6; // turno día arranca 06:00
+        for (const w of workers) {
+          const k = `${w.worker_id || w.id}|${a.day}`;
+          maxOffset = Math.max(maxOffset, techDayOffset.get(k) || 6);
+        }
+        const hrs = parseFloat(a.hours) || 1;
+        const startHour = maxOffset;
+        const endHour = Math.min(18, startHour + Math.ceil(hrs)); // cap turno día 18:00
+        // Persistir offset post-OT para próximas asignaciones del mismo tech+día
+        const nextFree = Math.min(18, startHour + Math.ceil(hrs));
+        for (const w of workers) {
+          const k = `${w.worker_id || w.id}|${a.day}`;
+          techDayOffset.set(k, nextFree);
+        }
+        a._computed_start_hour = startHour;
+        a._computed_end_hour = endHour;
+      }
+
       // Parallel batches of 10 for speed, but track each result
       const BATCH = 10;
       for (let i = 0; i < plan.assignments.length; i += BATCH) {
         const batch = plan.assignments.slice(i, i + BATCH);
         const results = await Promise.allSettled(batch.map(a => {
-          // Bug Jorge 2026-05-12 19:08: antes enviábamos `planned_start: a.day`
-          // que es solo fecha YYYY-MM-DD → backend lo parseaba como 00:00 →
-          // todas las OTs aparecían a medianoche. Ahora calculamos start a las
-          // 06:00 (inicio turno día) y end = start + hours.
-          const startHour = 6; // turno día estándar
-          const hrs = parseFloat(a.hours) || 1;
-          const startISO = `${a.day}T${String(startHour).padStart(2, '0')}:00:00`;
-          // End: si excede 12h cap diario, igual lo posteamos (el motor de
-          // continuation visual del Tech grid se encarga de wrappear visual).
-          const endDate = new Date(`${a.day}T${String(startHour).padStart(2, '0')}:00:00`);
-          endDate.setHours(endDate.getHours() + Math.ceil(hrs));
+          // Bug Jorge 2026-05-12: distribuir start/end por technician+day.
+          // Pre-procesado arriba calcula _computed_start_hour evitando overlaps.
+          const startHour = a._computed_start_hour ?? 6;
+          const endHour = a._computed_end_hour ?? Math.min(18, startHour + (parseFloat(a.hours) || 1));
           const pad = (n) => String(n).padStart(2, '0');
-          const endISO = `${endDate.getFullYear()}-${pad(endDate.getMonth()+1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:00:00`;
+          const startISO = `${a.day}T${pad(startHour)}:00:00`;
+          const endISO = `${a.day}T${pad(endHour)}:00:00`;
           // Auto-Level produces DRAFT (EN_PROGRAMACION). Planner must Reservar Semana to commit.
           const updateData = {
             planned_start: startISO,
@@ -6149,8 +6171,17 @@ export default function Scheduling() {
                   });
                   const cleared = result?.cleared || 0;
                   toast.success(`${cleared} assignments cleared`);
-                  loadCalendarData();
-                  loadPrograms();
+                  // Bug Jorge 2026-05-12 19:16: Clear no refrescaba — el WS
+                  // event wo_bulk_clear era ignorado por el guard `clearing`.
+                  // Mirror del Auto-Level: refresh inmediato + retries.
+                  const _refreshAll = () => {
+                    try { loadCalendarData(); } catch {}
+                    try { loadPrograms(); } catch {}
+                    try { loadGantt(); } catch {}
+                  };
+                  _refreshAll();
+                  setTimeout(_refreshAll, 500);
+                  setTimeout(_refreshAll, 1800);
                 } catch { toast.error('Error clearing'); }
                 finally { setClearing(false); setShowClearConfirm(false); }
               }}

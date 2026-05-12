@@ -10,6 +10,7 @@ import SmartAssignModal from '../components/SmartAssignModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../api';
+import { shortTag } from '../utils/equipmentTag';
 import { Sparkles as SparklesIcon } from 'lucide-react';
 import {
   Calendar, Clock, Users, CheckCircle, Circle, Play, Loader2,
@@ -1114,7 +1115,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                     <div key={wo.wo_id} className="flex items-center gap-1 truncate" title={wo.wo_title || wo.description}>
                       <span className="font-mono font-semibold">{wo.wo_number}</span>
                       <span className="text-blue-600">·</span>
-                      <span>{wo.equipment_tag}</span>
+                      <span>{shortTag(wo.equipment_tag)}</span>
                       <span className="text-blue-600">·</span>
                       <span>{wo.scheduled_date ? new Date(wo.scheduled_date).toLocaleDateString() : '—'}</span>
                     </div>
@@ -1247,7 +1248,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                       </div>
                       <div className="text-sm font-semibold text-foreground leading-snug mb-2">{wo.description || '—'}</div>
                       <div className="grid grid-cols-2 gap-2 text-[11px]">
-                        {wo.equipment_tag && (<><div className="text-muted-foreground">Equipo</div><div className="text-foreground font-mono text-right truncate">{wo.equipment_tag}</div></>)}
+                        {wo.equipment_tag && (<><div className="text-muted-foreground">Equipo</div><div className="text-foreground font-mono text-right truncate">{shortTag(wo.equipment_tag)}</div></>)}
                         {wo.estimated_hours != null && (<><div className="text-muted-foreground">HH estimados</div><div className="text-foreground font-semibold tabular-nums text-right">{wo.estimated_hours}</div></>)}
                         {wo.planning_group && (<><div className="text-muted-foreground">Grupo</div><div className="text-foreground text-right">{wo.planning_group}</div></>)}
                         {wo.work_center && (<><div className="text-muted-foreground">Puesto trabajo</div><div className="text-foreground text-right">{wo.work_center}</div></>)}
@@ -1803,7 +1804,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                             🔍
                                           </button>
                                         </div>
-                                        <div className="text-[9px] text-foreground/70 truncate">{wo.equipment_tag} · {wo.estimated_hours || 0}h</div>
+                                        <div className="text-[9px] text-foreground/70 truncate">{shortTag(wo.equipment_tag)} · {wo.estimated_hours || 0}h</div>
                                         {workerLabels.length > 0 ? (
                                           <div className="text-[8px] text-emerald-700 dark:text-emerald-400 truncate" title={workerLabels.join(', ')}>
                                             👷 {workerDisplay}
@@ -1863,7 +1864,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                               <span className="font-mono text-xs font-bold text-foreground">{wo.wo_number}</span>
                               <span className={`text-[9px] font-bold px-1 py-0.5 rounded ${prioColor}`}>{wo.priority_code}</span>
                             </div>
-                            <p className="text-[10px] text-muted-foreground truncate">{wo.equipment_tag} · {wo.estimated_hours || 0}h · {ops.length} ops</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{shortTag(wo.equipment_tag)} · {wo.estimated_hours || 0}h · {ops.length} ops</p>
                           </td>
                           {days.map(d => (
                             <td key={d.str} className={`px-1 py-1 border-r border-border last:border-r-0 text-center ${d.isWeekend ? 'bg-gray-50 dark:bg-gray-800/30' : ''}`}>
@@ -2159,7 +2160,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                     onMouseLeave={() => setHoverWO(null)}
                                     className={`mb-1 p-1.5 rounded text-xs border cursor-default hover:ring-2 hover:ring-blue-400 ${woType.bg}`}>
                                     <div className="font-bold truncate">{wo.wo_number}</div>
-                                    <div className="truncate text-[0.65rem]">{wo.equipment_tag}</div>
+                                    <div className="truncate text-[0.65rem]">{shortTag(wo.equipment_tag)}</div>
                                     <div className="text-[0.6rem] mt-0.5">{wo.estimated_hours}h</div>
                                   </div>
                                 );
@@ -2544,7 +2545,7 @@ function TechAssignPopover({ wo, technicians, onClose, onSave }) {
         <div className="flex items-start justify-between mb-3">
           <div>
             <h3 className="text-sm font-bold text-foreground">Asignar técnicos · {wo.wo_number}</h3>
-            <p className="text-xs text-muted-foreground">{wo.equipment_tag} · {wo.estimated_hours || 0}h · marca uno o más</p>
+            <p className="text-xs text-muted-foreground">{shortTag(wo.equipment_tag)} · {wo.estimated_hours || 0}h · marca uno o más</p>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xl leading-none">×</button>
         </div>
@@ -3038,7 +3039,7 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
                         <span className="text-[9px] font-bold px-1 py-0.5 rounded text-white" style={{ backgroundColor: barColor }}>{wo.priority_code}</span>
                         <span className={`text-[9px] px-1 py-0.5 rounded border ${wo.status === 'PROGRAMADO' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700' : wo.status === 'EN_EJECUCION' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700' : 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}>{wo.status}</span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{wo.equipment_tag} — {(wo.description || '').substring(0, 30)}</p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{shortTag(wo.equipment_tag)} — {(wo.description || '').substring(0, 30)}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[10px] text-gray-400">{wo.estimated_hours}h · {wo.wo_type || ''}</span>
                         {workers && <span className="text-[10px] text-blue-500 truncate max-w-[100px]">👷 {workers}</span>}
@@ -3323,7 +3324,7 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
                   <tr key={wo.wo_id} className={`border-b border-border/30 transition-all ${isEdited ? 'bg-amber-50/70 dark:bg-amber-900/15 ring-1 ring-inset ring-amber-300/50' : isSel ? 'bg-blue-50/50 dark:bg-blue-900/10' : rowIdx % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-gray-50/50 dark:bg-gray-800/20'} hover:bg-blue-50/40 dark:hover:bg-blue-900/10`}>
                     <td className="px-3 py-2"><input type="checkbox" checked={isSel} onChange={() => toggleSelect(wo.wo_id)} className="rounded accent-emerald-600" /></td>
                     <td className="px-3 py-2 font-mono font-bold text-foreground text-[11px]">{wo.wo_number}</td>
-                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[160px] text-[11px]">{wo.equipment_tag}</td>
+                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[160px] text-[11px]">{shortTag(wo.equipment_tag)}</td>
                     <td className="px-3 py-2 text-center"><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${typeMeta}`}>{wo.wo_type}</span></td>
                     <td className="px-3 py-2 text-center">
                       <select value={prio} onChange={ev => updateEdit(wo.wo_id, 'priority_code', ev.target.value)}
@@ -5157,8 +5158,34 @@ export default function Scheduling() {
   };
 
   // Persists the draft plan returned by computeAIPlan.
+  // SF-668 (2026-05-12): añadimos (a) guardia de idempotencia para evitar
+  // doble-click "Generar"→"Aplicar" en rapid-fire, (b) detección básica de
+  // conflicto (worker+day+shift duplicado dentro del plan), (c) snapshot
+  // previo del calendario para rollback visual si fallan >50% de PUTs.
   const applyAIPlan = async (plan) => {
     if (!plan) return;
+    if (aiScheduling) {
+      toast.info('Auto-Level ya está aplicando — esperá a que termine.');
+      return;
+    }
+    // Conflict scan: dos assignments al mismo worker en el mismo día/shift.
+    const seen = new Set();
+    const conflicts = [];
+    for (const a of plan.assignments) {
+      const workers = Array.isArray(a.workers) && a.workers.length > 0
+        ? a.workers : (a.worker_id ? [{ worker_id: a.worker_id }] : []);
+      for (const w of workers) {
+        const key = `${w.worker_id}|${a.day}|${a.shift || 'day'}`;
+        if (seen.has(key)) conflicts.push({ wo: a.wo_number, key });
+        seen.add(key);
+      }
+    }
+    if (conflicts.length > 0) {
+      const sample = conflicts.slice(0, 3).map(c => c.wo).join(', ');
+      toast.warning(`⚠ ${conflicts.length} conflicto(s) worker+día detectados (${sample}…). Aplicando igualmente — revisá manualmente.`);
+    }
+    const prevScheduled = scheduledWOs;
+    const prevReleased = releasedWOs;
     setAiScheduling(true);
     setAiResult(null);
     let ok = 0, failed = 0;
@@ -5202,6 +5229,15 @@ export default function Scheduling() {
       else {
         toast.error(msg);
         console.warn('Auto-Level failures:', failures);
+        // SF-668: si más de la mitad falló, restaurar snapshot visual del
+        // calendario para que el planner no se quede con un estado mixto
+        // confuso (algunas OT programadas, otras no). Los PUTs exitosos
+        // siguen persistidos en DB; el refresh posterior reconcilia.
+        if (failed > Math.floor(plan.assignments.length / 2)) {
+          setScheduledWOs(prevScheduled);
+          setReleasedWOs(prevReleased);
+          toast.warning('Más del 50% falló — revertí la UI. Refrescá para ver el estado real del servidor.');
+        }
       }
       setAiResult({ assignments: plan.assignments.slice(0, ok), message: msg, failed, failures });
       // Jorge 2026-04-27: el reload anterior corría a 300ms — antes de que

@@ -795,7 +795,15 @@ export default function WorkOrdersPage() {
     setOtSaving(true);
     try {
       const mats = otMats.map(({ _id, ...rest }) => rest);
-      await api.updateManagedWO(selectedOT.wo_id, { materials: mats });
+      // SF-676 (2026-05-12): el PUT devuelve la OT actualizada con materials
+      // persistidos — usamos esa respuesta para re-hidratar la UI sin
+      // depender del refetch posterior (que tenía race con el render local).
+      const updatedWO = await api.updateManagedWO(selectedOT.wo_id, { materials: mats });
+      if (updatedWO && Array.isArray(updatedWO.materials)) {
+        // Re-hidratar otMats con _id estable basado en el material_id (o sap_id) en vez de Date.now()
+        setOtMats(updatedWO.materials.map((m, i) => ({ ...m, _id: m.material_id || m.sap_id || `mat-${i}` })));
+        setSelectedOT(prev => prev ? { ...prev, materials: updatedWO.materials } : prev);
+      }
       toast.success(t('workOrders.materialsSaved') || 'Materiales guardados');
       reloadData();
     } catch (err) { toast.error(err.message); } finally { setOtSaving(false); }
@@ -1632,9 +1640,13 @@ export default function WorkOrdersPage() {
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                     />
                     {equipSearch.length >= 2 && equipResults.length === 0 && (
-                      <button onClick={() => { selectEquip({ tag: equipSearch, name: `${equipSearch} (No catalogado)` }); }} className="w-full mt-1 p-2 text-xs text-left rounded-lg bg-yellow-50 text-yellow-800 border border-yellow-200">
-                        {(t('workOrders.useManualTag') || 'Usar TAG manual: {tag}').replace('{tag}', equipSearch)}
-                      </button>
+                      // SF-726: ya no permitimos "Usar TAG manual" desde la OT.
+                      // El planner debe registrar el equipo en el Catálogo
+                      // (Settings → Catálogo de Equipos) antes de usarlo en
+                      // una OT. Mantiene la BD limpia y evita TAGs huérfanos.
+                      <div className="w-full mt-1 p-2 text-xs rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
+                        ⚠ No se encontró ningún equipo con ese TAG. Registrá primero el equipo en <strong>Settings → Catálogo de Equipos</strong>.
+                      </div>
                     )}
                     {showEquipSearch && equipResults.length > 0 && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
@@ -2339,7 +2351,15 @@ export default function WorkOrdersPage() {
                           }
                         }} />
                     ) : (
-                      <p className="text-sm text-gray-800 bg-gray-50 rounded-lg p-2.5">{selectedOT.description || '—'}</p>
+                      // SF-724: cuando la OT no es editable la descripción se
+                      // renderizaba como <p> y aunque el texto es seleccionable
+                      // en teoría, el usuario reportaba "no puedo seleccionar para
+                      // copiar". Pasamos a <textarea readOnly> con cursor de texto
+                      // explícito — el control nativo del browser garantiza
+                      // selección/copy con shortcut estándar.
+                      <textarea readOnly rows={2} value={selectedOT.description || ''}
+                        className="w-full text-sm text-gray-800 bg-gray-50 rounded-lg p-2.5 border-0 resize-none focus:outline-none cursor-text select-text"
+                        onFocus={e => e.target.select()} />
                     )}
                   </div>
 
@@ -2809,6 +2829,17 @@ export default function WorkOrdersPage() {
                       : (selectedOT.actual_hours || 0);
                     const updateField = async (patch) => {
                       try {
+                        // SF-677 (2026-05-12): si el planner cambia el work_center
+                        // de la OT, propagamos a todas las operations que NO
+                        // tengan work_center propio. Antes quedaban inconsistentes:
+                        // header decía "Mecánico Cabeceras" pero las ops seguían
+                        // con el auto-derivado original.
+                        if (patch.work_center && Array.isArray(otOps) && otOps.length > 0) {
+                          const newWC = patch.work_center;
+                          const opsToSync = otOps.map(op => (!op.work_center || op.work_center === selectedOT.work_center)
+                            ? { ...op, work_center: newWC } : op);
+                          patch.operations = opsToSync.map(({ _id, ...rest }) => rest);
+                        }
                         await api.updateManagedWO(selectedOT.wo_id, patch);
                         toast.success('Notificación HH actualizada');
                         reloadData();

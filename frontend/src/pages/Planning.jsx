@@ -1167,7 +1167,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   // Jorge 2026-04-24 14:18: multi-select priority + P2 en Planning (antes era single "All"/P1/P3/P4)
   const [woPriorityFilter, setWoPriorityFilter] = useState([]); // [] = all
   const [woTypeFilter, setWoTypeFilter] = useState("All");
-  // AI ranking state — populated when user clicks "Priorizar con IA"
+  // AI ranking state — populated when user clicks "Priorizar por riesgo" (SF-667)
   const [aiScores, setAiScores] = useState({}); // { equipment_tag: { score, alerts, criticality, ... } }
   const [sortByAI, setSortByAI] = useState(false);
   const [filterSLARisk, setFilterSLARisk] = useState(false);
@@ -1882,7 +1882,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
               )}
             </div>
 
-            {/* AI ranking controls (visible once the user has run Priorizar con IA) */}
+            {/* AI ranking controls (visible once the user has run Priorizar por riesgo — SF-667) */}
             {Object.keys(aiScores).length > 0 && (
               <div className="flex items-center gap-2 flex-wrap px-1">
                 <span className="text-[10px] font-bold text-purple-600 uppercase">Ranking IA activo</span>

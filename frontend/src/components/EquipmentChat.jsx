@@ -220,7 +220,7 @@ export function EquipmentChatFAB({ onClick, hasEquipment }) {
       onClick={onClick}
       disabled={!hasEquipment}
       title={hasEquipment ? 'Chat con asistente IA' : 'Selecciona un equipo'}
-      className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+      className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
     >
       <MessageCircle size={24} />
     </button>

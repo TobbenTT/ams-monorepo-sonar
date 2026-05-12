@@ -352,7 +352,14 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
   // resuelva (mantener selección o cambiar al equipo detectado).
   const [equipmentMismatch, setEquipmentMismatch] = useState(null); // { detected, suggested, userTag }
 
+  // SF-673 (2026-05-12): el panel "Sugerencia IA (no aplicada)" solo se muestra
+  // cuando el usuario clickeó EXPLÍCITAMENTE el botón ✨ AI Assistant. Antes
+  // aparecía automáticamente al subir foto (Vision setea aiEnhancedDescription),
+  // lo cual molestaba al usuario que aún no quería sugerencia.
+  const [aiSuggestionRequested, setAiSuggestionRequested] = useState(false);
+
   const handleAiSuggest = async (overrideText) => {
+    setAiSuggestionRequested(true);
     // Check duplicates
     const eqTag = form.whereTag || '';
     const desc = overrideText || form.whatHappens || '';
@@ -1768,7 +1775,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
                 IA (texto o foto), guardamos su sugerencia en aiEnhancedDescription
                 y la mostramos como preview con botón "Usar" para que el usuario
                 decida si reemplazar su texto o no. */}
-            {form.aiEnhancedDescription && form.aiEnhancedDescription.trim() && form.aiEnhancedDescription.trim() !== form.whatHappens?.trim() && (
+            {aiSuggestionRequested && form.aiEnhancedDescription && form.aiEnhancedDescription.trim() && form.aiEnhancedDescription.trim() !== form.whatHappens?.trim() && (
               <div className="mt-2 p-3 bg-violet-50 border-2 border-violet-200 rounded-xl">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[11px] font-bold text-violet-700 uppercase tracking-wider">

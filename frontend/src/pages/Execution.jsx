@@ -1924,7 +1924,14 @@ export default function Execution() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Observaciones</label>
-                  <AudioDictateButton onText={(t) => setClosureNotes(prev => (prev ? prev + '\n' : '') + t)} />
+                  <AudioDictateButton onText={(t) => {
+                    // SF-674: cada entrada de audio se prefija con [YYYY-MM-DD HH:MM]
+                    // para que el historial quede trazable en el OT Summary.
+                    const ts = new Date();
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const stamp = `[${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())} ${pad(ts.getHours())}:${pad(ts.getMinutes())}]`;
+                    setClosureNotes(prev => (prev ? prev + '\n' : '') + `${stamp} ${t}`);
+                  }} />
                 </div>
                 <textarea value={closureNotes} onChange={e => setClosureNotes(e.target.value)}
                   className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30 min-h-[60px]"

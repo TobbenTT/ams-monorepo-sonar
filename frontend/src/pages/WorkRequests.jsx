@@ -1324,7 +1324,10 @@ ${materials.length ? `<div class="section">
               </>
             )}
             {/* Jorge 2026-04-24 14:18: "Ver OT" debe aparecer SÓLO cuando la OT ya
-                existe (item.wo_number / wo_id). Antes siempre aparecía, ahora condicional. */}
+                existe (item.wo_number / wo_id). Antes siempre aparecía, ahora condicional.
+                Jorge 2026-05-12: si el WR está aprobado pero todavía no tiene OT
+                creada, mostrar "Llevar a Planning" para navegar al tab donde
+                aparece como backlog ready-to-schedule. */}
             {onGoToOT && (item.wo_number || item.wo_id) && (
               <button
                 onClick={onGoToOT}
@@ -1333,6 +1336,16 @@ ${materials.length ? `<div class="section">
               >
                 <ArrowRight size={16} />
                 Ver OT {item.wo_number || ''}
+              </button>
+            )}
+            {onGoToOT && !item.wo_number && !item.wo_id && isValidated && (
+              <button
+                onClick={onGoToOT}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-sm font-semibold hover:bg-indigo-100 transition-colors"
+                title="Llevar al tab Planning para programar"
+              >
+                <ArrowRight size={16} />
+                Llevar a Planning
               </button>
             )}
             {/* Planner: Create WO from approved WR */}
@@ -2604,7 +2617,19 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
                           onCloseWR={handleClose}
                           onSaveEdit={handleSaveEdit}
                           onPlannerCreateOT={handlePlannerCreateOT}
-                          onGoToOT={() => { setSelected(null); navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(wrItem.wo_number || '')}`); }}
+                          onGoToOT={() => {
+                            setSelected(null);
+                            // Jorge 2026-05-12: si hay wo_number, abrir esa OT;
+                            // sino navegar a Planning donde el WR aparece como
+                            // backlog ready (búsqueda por AV o equipment_tag).
+                            const wo = wrItem.wo_number;
+                            if (wo) {
+                              navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(wo)}`);
+                            } else {
+                              const q = encodeURIComponent(wrItem.aviso_number ? `AV-${String(wrItem.aviso_number).padStart(5,'0')}` : (wrItem.equipment_tag || ''));
+                              navigate(`/work-management?tab=planning&q=${q}`);
+                            }
+                          }}
 
                           onAIPriorityDecision={async (id, dec) => {
                             try {

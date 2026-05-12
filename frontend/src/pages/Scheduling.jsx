@@ -3982,17 +3982,33 @@ function SupportEquipmentTab({ plantId, t }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', equipment_type: 'MOBILE_CRANE', capacity_tons: '', is_rented: false });
+  const [form, setForm] = useState({ name: '', equipment_type: 'MOBILE_CRANE', capacity_tons: '', ownership: 'INT', condition: 'OPERATIONAL' });
   const toast = useToast();
 
+  // Jorge 2026-05-12: alineado con la lista de tipos del modal Equipos Apoyo
+  // a nivel OT (Planning.jsx:3920-3940) para que catálogo y OT-level coincidan.
   const EQ_TYPES = [
-    { value: 'OVERHEAD_CRANE', label: 'Puente grúa' },
     { value: 'MOBILE_CRANE', label: 'Grúa móvil' },
-    { value: 'FORKLIFT', label: 'Grúa horquilla' },
+    { value: 'BRIDGE_CRANE', label: 'Puente grúa' },
+    { value: 'OVERHEAD_CRANE', label: 'Puente grúa taller' },
+    { value: 'HYDRAULIC_TRUCK', label: 'Mandil hidráulico' },
+    { value: 'FORKLIFT', label: 'Montacargas / Horquilla' },
     { value: 'MANLIFT', label: 'Brazo elevador' },
+    { value: 'SCAFFOLDING', label: 'Andamio' },
+    { value: 'WELDING', label: 'Soldadora' },
+    { value: 'AIR_COMPRESSOR', label: 'Compresor' },
+    { value: 'PRESSURE_WASHER', label: 'Hidrolavadora' },
     { value: 'TOOL', label: 'Herramienta especial' },
+    { value: 'OTHER', label: 'Otro' },
   ];
   const TYPE_LABEL = Object.fromEntries(EQ_TYPES.map(e => [e.value, e.label]));
+  // Condición 3-state (verde / ámbar / rojo) — alineado con OT-level.
+  const COND_OPTS = [
+    { value: 'OPERATIONAL', label: 'Operativo', dot: 'bg-emerald-500' },
+    { value: 'MAINTENANCE', label: 'En mantención', dot: 'bg-amber-500' },
+    { value: 'OUT_OF_SERVICE', label: 'Fuera de servicio', dot: 'bg-red-500' },
+  ];
+  const condMeta = (v) => COND_OPTS.find(c => c.value === v) || COND_OPTS[0];
 
   const load = async () => {
     setLoading(true);
@@ -4013,14 +4029,49 @@ function SupportEquipmentTab({ plantId, t }) {
         name: form.name.trim(),
         equipment_type: form.equipment_type,
         capacity_tons: form.capacity_tons ? Number(form.capacity_tons) : null,
-        is_rented: form.is_rented,
-        available: true,
+        // Mantenemos ambos campos por compat: is_rented (legacy boolean) +
+        // ownership (alineado con OT-level: INT=Propio / EXT=Externo).
+        is_rented: form.ownership === 'EXT',
+        ownership: form.ownership,
+        condition: form.condition,
+        available: form.condition !== 'OUT_OF_SERVICE',
       });
       toast.success('Equipo agregado');
-      setForm({ name: '', equipment_type: 'MOBILE_CRANE', capacity_tons: '', is_rented: false });
+      setForm({ name: '', equipment_type: 'MOBILE_CRANE', capacity_tons: '', ownership: 'INT', condition: 'OPERATIONAL' });
       load();
     } catch { toast.error('Error agregando equipo'); }
     setSaving(false);
+  };
+
+  // Sin nuevas columnas DB: encodeamos condition en los campos existentes.
+  //   OPERATIONAL  → available=true,  out_of_service_reason=null
+  //   MAINTENANCE  → available=true,  out_of_service_reason='MAINT:…'
+  //   OUT_OF_SERVICE → available=false, out_of_service_reason=razón
+  const condToFields = (newCondition, prevReason) => {
+    if (newCondition === 'OPERATIONAL') {
+      return { available: true, out_of_service_reason: null };
+    }
+    if (newCondition === 'MAINTENANCE') {
+      const r = window.prompt('Detalle de la mantención:', (prevReason || '').replace(/^MAINT:/, '') || 'Mantención programada') || 'Mantención';
+      return { available: true, out_of_service_reason: 'MAINT:' + r };
+    }
+    // OUT_OF_SERVICE
+    const r = window.prompt('Razón fuera de servicio:', (prevReason || '').replace(/^MAINT:/, '') || 'Fuera de servicio') || 'Fuera de servicio';
+    return { available: false, out_of_service_reason: r };
+  };
+
+  const updateCondition = async (eq, newCondition) => {
+    try {
+      await api.updateSupportEquipment(eq.equipment_id, condToFields(newCondition, eq.out_of_service_reason));
+      load();
+    } catch { toast.error('Error'); }
+  };
+
+  const updateOwnership = async (eq, newOwn) => {
+    try {
+      await api.updateSupportEquipment(eq.equipment_id, { is_rented: newOwn === 'EXT' });
+      load();
+    } catch { toast.error('Error'); }
   };
 
   const toggleAvailable = async (eq) => {
@@ -4051,36 +4102,57 @@ function SupportEquipmentTab({ plantId, t }) {
     } catch { toast.error('Error eliminando equipo'); }
   };
 
-  const availableCount = items.filter(i => i.available).length;
-  const blockedCount = items.filter(i => !i.available).length;
-  const rentedCount = items.filter(i => i.is_rented).length;
+  // Derivar condition de los campos legacy (sin migration DB):
+  // - available=false → OUT_OF_SERVICE
+  // - available=true + reason con prefijo MAINT: → MAINTENANCE
+  // - resto → OPERATIONAL
+  const getCondition = (i) => {
+    if (i.condition) return i.condition; // futuro
+    if (i.available === false) return 'OUT_OF_SERVICE';
+    if (typeof i.out_of_service_reason === 'string' && i.out_of_service_reason.startsWith('MAINT:')) return 'MAINTENANCE';
+    return 'OPERATIONAL';
+  };
+  const cleanReason = (i) => {
+    const r = i.out_of_service_reason || '';
+    return r.startsWith('MAINT:') ? r.slice(6) : r;
+  };
+  const availableCount = items.filter(i => getCondition(i) === 'OPERATIONAL').length;
+  const maintCount = items.filter(i => getCondition(i) === 'MAINTENANCE').length;
+  const blockedCount = items.filter(i => getCondition(i) === 'OUT_OF_SERVICE').length;
+  const isExt = (i) => (i.ownership === 'EXT') || (!!i.is_rented && !i.ownership);
+  const rentedCount = items.filter(isExt).length;
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
-      <div className="grid grid-cols-4 gap-3">
+      {/* Summary — Jorge 2026-05-12: agregada celda "En mantención" (ámbar)
+          + "Externos" en lugar de "Arrendados" (alineado con OT Equipos Apoyo). */}
+      <div className="grid grid-cols-5 gap-3">
         <div className="bg-card border border-border rounded-xl p-3 text-center">
           <div className="text-2xl font-extrabold text-foreground">{items.length}</div>
           <div className="text-xs text-muted-foreground">Total</div>
         </div>
         <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-xl p-3 text-center">
           <div className="text-2xl font-extrabold text-emerald-700">{availableCount}</div>
-          <div className="text-xs text-emerald-600">Disponibles</div>
+          <div className="text-xs text-emerald-600">Operativos</div>
+        </div>
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-3 text-center">
+          <div className="text-2xl font-extrabold text-amber-700">{maintCount}</div>
+          <div className="text-xs text-amber-600">En mantención</div>
         </div>
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-3 text-center">
           <div className="text-2xl font-extrabold text-red-700">{blockedCount}</div>
           <div className="text-xs text-red-600">Fuera de servicio</div>
         </div>
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-3 text-center">
-          <div className="text-2xl font-extrabold text-blue-700">{rentedCount}</div>
-          <div className="text-xs text-blue-600">Arrendados</div>
+        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-xl p-3 text-center">
+          <div className="text-2xl font-extrabold text-purple-700">{rentedCount}</div>
+          <div className="text-xs text-purple-600">Externos</div>
         </div>
       </div>
 
       {/* Add new */}
       <div className="bg-card border border-border rounded-xl p-4">
         <h3 className="text-sm font-bold text-foreground mb-3">Agregar equipo / herramienta</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
           <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
             placeholder="Nombre (ej. Grúa móvil N°3)"
             className="text-sm border border-border rounded-lg px-3 py-2 bg-background md:col-span-2" />
@@ -4090,10 +4162,17 @@ function SupportEquipmentTab({ plantId, t }) {
           </select>
           <input type="number" value={form.capacity_tons} onChange={e => setForm({ ...form, capacity_tons: e.target.value })}
             placeholder="Tonelaje" className="text-sm border border-border rounded-lg px-3 py-2 bg-background" />
-          <label className="flex items-center gap-2 text-xs text-muted-foreground px-2">
-            <input type="checkbox" checked={form.is_rented} onChange={e => setForm({ ...form, is_rented: e.target.checked })} className="accent-blue-600" />
-            Arrendado
-          </label>
+          <select value={form.ownership} onChange={e => setForm({ ...form, ownership: e.target.value })}
+            title="Propio = de la planta, Externo = arrendado"
+            className="text-sm border border-border rounded-lg px-3 py-2 bg-background">
+            <option value="INT">Propio</option>
+            <option value="EXT">Externo</option>
+          </select>
+          <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value })}
+            title="Condición inicial del equipo"
+            className="text-sm border border-border rounded-lg px-3 py-2 bg-background">
+            {COND_OPTS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
         </div>
         <button onClick={addEquipment} disabled={saving}
           className="mt-3 px-4 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5">
@@ -4115,35 +4194,47 @@ function SupportEquipmentTab({ plantId, t }) {
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border/50">
-            {items.map(eq => (
-              <div key={eq.equipment_id} className={`flex items-center gap-3 p-3 ${!eq.available ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}>
-                <div className={`w-2.5 h-2.5 rounded-full ${eq.available ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-foreground">{eq.name}</span>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{TYPE_LABEL[eq.equipment_type] || eq.equipment_type}</span>
-                    {eq.capacity_tons && <span className="text-[10px] text-muted-foreground">{eq.capacity_tons}t</span>}
-                    {eq.is_rented && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Arrendado</span>}
+            {items.map(eq => {
+              const cond = getCondition(eq);
+              const cMeta = condMeta(cond);
+              const ext = isExt(eq);
+              return (
+                <div key={eq.equipment_id} className={`flex items-center gap-3 p-3 ${cond === 'OUT_OF_SERVICE' ? 'bg-red-50/30 dark:bg-red-900/10' : cond === 'MAINTENANCE' ? 'bg-amber-50/30 dark:bg-amber-900/10' : ''}`}>
+                  <div className={`w-2.5 h-2.5 rounded-full ${cMeta.dot}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-foreground">{eq.name}</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{TYPE_LABEL[eq.equipment_type] || eq.equipment_type}</span>
+                      {eq.capacity_tons && <span className="text-[10px] text-muted-foreground">{eq.capacity_tons}t</span>}
+                      {ext && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300">EXT</span>}
+                    </div>
+                    {cond === 'OUT_OF_SERVICE' && eq.out_of_service_reason && (
+                      <p className="text-xs text-red-600 mt-0.5">🔒 {cleanReason(eq)}</p>
+                    )}
+                    {cond === 'MAINTENANCE' && (
+                      <p className="text-xs text-amber-700 mt-0.5">🔧 {cleanReason(eq) || 'En mantención'}</p>
+                    )}
                   </div>
-                  {!eq.available && eq.out_of_service_reason && (
-                    <p className="text-xs text-red-600 mt-0.5">🔒 {eq.out_of_service_reason}</p>
-                  )}
+                  {/* Jorge 2026-05-12: dropdowns inline alineados con OT-level. */}
+                  <select value={ext ? 'EXT' : 'INT'} onChange={e => updateOwnership(eq, e.target.value)}
+                    title="Propio / Externo"
+                    className="text-xs border border-border rounded-lg px-2 py-1.5 bg-background">
+                    <option value="INT">Propio</option>
+                    <option value="EXT">Externo</option>
+                  </select>
+                  <select value={cond} onChange={e => updateCondition(eq, e.target.value)}
+                    title="Condición operativa"
+                    className="text-xs border border-border rounded-lg px-2 py-1.5 bg-background">
+                    {COND_OPTS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
+                  <button onClick={() => removeEquipment(eq)}
+                    title="Eliminar definitivamente"
+                    className="text-xs p-1.5 rounded-lg text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                    <Trash2 size={14} />
+                  </button>
                 </div>
-                <button onClick={() => toggleRented(eq)}
-                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${eq.is_rented ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-border text-muted-foreground hover:bg-muted'}`}>
-                  {eq.is_rented ? 'Arrendado' : 'Propio'}
-                </button>
-                <button onClick={() => toggleAvailable(eq)}
-                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${eq.available ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/20'}`}>
-                  {eq.available ? 'Bloquear' : 'Habilitar'}
-                </button>
-                <button onClick={() => removeEquipment(eq)}
-                  title="Eliminar definitivamente"
-                  className="text-xs p-1.5 rounded-lg text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

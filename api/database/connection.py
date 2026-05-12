@@ -19,12 +19,22 @@ if not _is_sqlite:
 
 engine = create_engine(settings.DATABASE_URL, **_engine_kwargs)
 
-# Enable foreign key enforcement for SQLite
+# Enable foreign key enforcement for SQLite + WAL mode
 if _is_sqlite:
     @event.listens_for(engine, "connect")
     def _set_sqlite_pragma(dbapi_conn, connection_record):
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
+        # Bug 2026-05-12 (SF-681): sin WAL los writes no son inmediatamente
+        # visibles a otras conexiones — el PUT de validate respondía con la
+        # nueva prioridad, pero el GET inmediato siguiente leía snapshot
+        # anterior. WAL hace los commits visibles cross-connection al instante.
+        cursor.execute("PRAGMA journal_mode=WAL")
+        # synchronous=NORMAL es seguro con WAL y reduce fsync latency.
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        # busy_timeout: si otra conexión está escribiendo, esperá 5s en lugar
+        # de fallar inmediatamente con SQLITE_BUSY.
+        cursor.execute("PRAGMA busy_timeout=5000")
         cursor.close()
 
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)

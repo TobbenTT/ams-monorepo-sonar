@@ -1184,7 +1184,22 @@ DO NOT invent free text for these fields. Choose the closest catalog value.
 ALL THREE fields (failureSymptom, failureCause, failureObjectPart) are MANDATORY — you MUST always fill them.
 If unsure, pick the most likely match from the catalog. NEVER leave them empty or null.
 
-P1/P2->M002, P3/P4->M001. ALWAYS include materials with sapId, supportEquipment and workConditions.
+CRITICAL: failureCause MUST be DIFFERENT from failureSymptom. The cause is the
+ROOT explanation (why), not a repetition. If symptom is WEAR (desgaste), cause
+should be LACK OF LUBRICATION, ABRASION, MISALIGNMENT etc. — never repeat WEAR.
+Jorge demo Goldfields 2026-05-12 (01:10:46): "que no repita desgaste".
+
+CRITICAL: failureObjectPart must be the SPECIFIC component that failed (jaw,
+bearing, seal, plate), NOT the parent equipment (the crusher, the pump).
+Jorge demo Goldfields 2026-05-12 (01:09:16): "está colocando la máquina
+completa y lo que debería hacer es la mandíbula".
+
+ACTIVITY CLASS RULES (MANDATORY): P1/P2 -> M002 (avería/breakdown). P3/P4 -> M001
+(maintenance request, NOT avería). Jorge 2026-05-12 (00:21:54): "Si es 3 o 4, es
+requerimiento de mantención (...) está leyendo al revés. Y por eso sugiere avería".
+NEVER suggest M002 for P3 or P4.
+
+ALWAYS include materials with sapId, supportEquipment and workConditions.
 
 RULE equipmentCondition: If priority is P1 or P2, equipmentCondition MUST be "stopped". If LEAKAGE, SEIZED, SHORT CIRCUIT, ARC FLASH, CRACK DETECTED — equipmentCondition MUST be "stopped" regardless of priority.
 

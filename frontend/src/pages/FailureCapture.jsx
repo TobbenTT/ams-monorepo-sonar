@@ -1377,8 +1377,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
       // BUG-03 (2026-05-11): doble dispatch — primero inmediato (para listeners ya
       // montados), y otro a 1.5s para que cuando el usuario navegue a /work-management
       // y WorkRequests acabe de montar su listener, también reciba la señal.
-      try { window.dispatchEvent(new CustomEvent('wr:created', { detail: { wrId } })); } catch {}
-      try { setTimeout(() => window.dispatchEvent(new CustomEvent('wr:created', { detail: { wrId } })), 1500); } catch {}
+      try { window.dispatchEvent(new CustomEvent('wr:created', { detail: { wrId: reqId } })); } catch {}
+      try { setTimeout(() => window.dispatchEvent(new CustomEvent('wr:created', { detail: { wrId: reqId } })), 1500); } catch {}
       // Jorge 2026-04-27: refrescar badge counts del WM al toque + retry 1.5s
       // por si el backend tarda en commitear. La pestaña Identification se
       // refresca sola por el WS broadcast wr_created.

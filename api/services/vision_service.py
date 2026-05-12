@@ -105,6 +105,22 @@ STRUCTURAL:
 RULE: failureSymptom, failureCause and failureObjectPart MUST be exact copies from the catalog above.
 DO NOT use free text for these fields. Choose the closest catalog value.
 
+CRITICAL: failureCause MUST be DIFFERENT from failureSymptom. The cause is the
+ROOT explanation (why it happened), not a repetition of the symptom. Example:
+- If symptom is WEAR (desgaste), cause should be LACK OF LUBRICATION, ABRASION,
+  CONTAMINATION, MISALIGNMENT, etc. — never "WEAR" again.
+- If symptom is CRACK DETECTED, cause should be FATIGUE, OVERLOAD, POOR WELDING,
+  THERMAL EXPANSION — never "CRACK DETECTED" again.
+Jorge demo Goldfields 2026-05-12: "la causa me sigue funcionando desgaste...
+que no repita desgaste". Cause and Symptom are SEPARATE dimensions.
+
+CRITICAL — failureObjectPart: pick the SPECIFIC component that failed, not the
+parent equipment. If the description says "mandíbula del chancador", the part
+is the JAW/MANDÍBULA element from the catalog — NOT the full crusher. Jorge
+demo Goldfields 2026-05-12 (01:09:16): "me está colocando la máquina completa
+y lo que debería hacer es la mandíbula". Always prefer the most granular
+catalog item that matches the failed component.
+
 SEVERITY RULES:
 - critical = immediate danger, equipment stopped, production halted -> P1
 - high = significant risk, degraded performance, needs attention < 7 days -> P2

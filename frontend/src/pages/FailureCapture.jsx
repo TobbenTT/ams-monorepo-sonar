@@ -405,8 +405,16 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
           if (matched) setF('failureSymptom', matched);
         }
         if (s.failure_cause || s.failureCause) {
-          const matched = fuzzyMatch(s.failure_cause || s.failureCause, activeCat.causes);
-          if (matched) setF('failureCause', matched);
+          const matchedCause = fuzzyMatch(s.failure_cause || s.failureCause, activeCat.causes);
+          // Jorge demo Goldfields 2026-05-12 (01:10:46): "que no repita desgaste"
+          // — la IA tiende a poner el mismo valor en symptom y cause. Si coincide,
+          // buscamos una causa alternativa del catálogo (la primera distinta).
+          const matchedSymptom = fuzzyMatch(s.failure_symptom || s.failureSymptom, activeCat.symptoms);
+          let finalCause = matchedCause;
+          if (matchedCause && matchedSymptom && matchedCause === matchedSymptom) {
+            finalCause = (activeCat.causes || []).find(c => c !== matchedSymptom) || matchedCause;
+          }
+          if (finalCause) setF('failureCause', finalCause);
         }
         if (s.failure_object_part || s.failureObjectPart) {
           const matched = fuzzyMatch(s.failure_object_part || s.failureObjectPart, activeCat.parts);

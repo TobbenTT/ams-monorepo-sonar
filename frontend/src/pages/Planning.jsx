@@ -15,6 +15,7 @@ import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
 import { compressImage } from '../utils/imageCompress';
 import IconDeleteButton from '../components/IconDeleteButton';
+import { formatWRCode } from '../utils/wrCode';
 
 const PRIORITY_COLORS = {
   P1: 'text-red-600 font-bold',
@@ -1075,7 +1076,14 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   // Ahora: empty o 1 char NO limpia resultados previos (deja el dropdown
   // visible con lo que había), y con 1 char ya busca (no espera 2).
   useEffect(() => {
-    if (!matSearchQuery || matSearchQuery.length < 1) return; // preserva resultados previos
+    // SF-666 (jornada VSC 2026-05-08, Jorge): el dropdown de Spare Parts solo se
+    // dispara si el usuario ya escribió al menos 1 caracter. Si vacía el input,
+    // limpiamos resultados explícitamente para no dejar lista "fantasma" abierta.
+    if (!matSearchQuery || matSearchQuery.length < 1) {
+      setMatSearchResults([]);
+      setMatSearchLoading(false);
+      return;
+    }
     const timer = setTimeout(async () => {
       setMatSearchLoading(true);
       try {
@@ -1412,7 +1420,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
       const created = wr.created_at ? new Date(wr.created_at) : null;
       const days = created ? Math.max(0, Math.floor((Date.now() - created.getTime()) / 86400000)) : 0;
       return [
-        wr.work_request_id?.slice(0, 10) || wr.request_id?.slice(0, 10) || '',
+        // SF-678: usar código canónico AV-NNNNN (no truncar request_id).
+        formatWRCode(wr) || wr.work_request_id || wr.request_id || '',
         wr.equipment_tag || '', wr.problem_description?.original_text || wr.description || '',
         wr.priority || wr.priority_code || '', wr.planning_group || '', wr.work_center || '',
         wr.reported_by || wr.created_by || '', created ? created.toLocaleDateString() : '', days,
@@ -3822,6 +3831,14 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                     ))}
                                   </div>
                                 )}
+                                {/* SF-666 (Jorge): mensaje claro cuando el usuario tipea
+                                    pero la búsqueda no encuentra nada. Sin esto el dropdown
+                                    quedaba simplemente cerrado y parecía un bug. */}
+                                {activeMatIdx === idx && !matSearchLoading && matSearchQuery && matSearchQuery.length >= 2 && matSearchResults.length === 0 && (
+                                  <div className="absolute z-50 top-full left-0 mt-1 w-72 bg-white border border-amber-200 rounded-lg shadow-lg p-2.5 text-xs text-gray-500 italic">
+                                    Sin resultados para "{matSearchQuery}".
+                                  </div>
+                                )}
                                 {activeMatIdx === idx && matSearchLoading && <div className="absolute right-1 top-1.5 w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
                               </div>
                               {/* Jorge (2026-04-20): el texto del material nunca es editable
@@ -4582,9 +4599,11 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
               title={`${ot.wo_number} · ${ot.equipment_tag || ''} · ${ot.status}`}>
               <span className="text-xs font-mono font-bold text-blue-800">{ot.wo_number}</span>
               <span className="text-[10px] text-blue-600 hidden sm:inline">{ot.equipment_tag || '—'}</span>
-              <button onClick={e => { e.stopPropagation(); closeMinimizedOT(ot.wo_id); }}
-                className="ml-1 text-blue-400 hover:text-red-500 text-xs leading-none"
-                title="Descartar cambios y cerrar">×</button>
+              <IconDeleteButton
+                onClick={e => { e.stopPropagation(); closeMinimizedOT(ot.wo_id); }}
+                title="Descartar cambios y cerrar"
+                size="sm"
+                className="ml-1" />
             </div>
           ))}
         </div>

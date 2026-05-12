@@ -9,6 +9,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 import compressImage from '../utils/imageCompress';
 import { formatWRCode } from '../utils/wrCode';
+import { shortTag } from '../utils/equipmentTag';
 
 // Browser Speech Recognition (no API key needed)
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -168,6 +169,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
     ],
     A3: [],
   };
+
+  // Regla canónica priority → notification class (reunión VSC 2026-05-12, Jorge).
+  // P1/P2 = avería (M002), P3/P4 = solicitud (M001). Sin excepciones — la IA
+  // no puede sobrescribir si la prioridad ya está fijada.
+  const deriveActivityClassFromPriority = (p) => (['P1', 'P2'].includes(p) ? 'M002' : 'M001');
 
   const PLANNING_GROUPS = [
     { value: 'P01', label: 'P01 - Dry Area Plant', area: 'Plant' },
@@ -424,7 +430,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
           if (title.length > 70) title = title.substring(0, 70).replace(/\s+\S*$/, '');
           setF('woTitle', title);
         }
-        if (s.activityClass || s.activity_class) setF('activityClass', s.activityClass || s.activity_class);
+        if (s.activityClass || s.activity_class) {
+          // Si la prioridad ya está fijada, la regla canónica gana sobre la IA.
+          const derived = form.priority ? deriveActivityClassFromPriority(form.priority) : (s.activityClass || s.activity_class);
+          setF('activityClass', derived);
+        }
         // SF-681 (reunión VSC 2026-05-11): priority NO se autocarga ni por IA.
         // El usuario tiene que elegirla manualmente. La sugerencia IA queda como
         // mensaje en el banner pero no muta el form.
@@ -558,13 +568,22 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   // backend con search= (mismo patrón que equipSearch). Sin search, mostramos
   // los 15 primeros del cache local.
   useEffect(() => {
-    if (!locSearch) { setLocResults(locationNodes.slice(0, 15)); return; }
-    if (locSearch.length < 2) { setLocResults([]); return; }
+    // SF-666 (jornada VSC 2026-05-08, Jorge): el dropdown SOLO se despliega tras
+    // escribir al menos 1 caracter. Antes mostraba los 15 primeros nodos al
+    // enfocar el input — confundía porque parecía "no carga nada" cuando esos
+    // primeros 15 no contenían lo buscado (plant/area top-level, no equipos).
+    if (!locSearch || locSearch.length < 1) { setLocResults([]); return; }
+    if (locSearch.length < 2) {
+      // 1 char: filtro local rápido (sin red), feedback inmediato
+      const q = locSearch.toLowerCase();
+      setLocResults(locationNodes.filter(n =>
+        (n._funcLoc || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q) || (n.tag || '').toLowerCase().includes(q)
+      ).slice(0, 10));
+      return;
+    }
     const timer = setTimeout(() => {
       api.listNodes({ search: locSearch, limit: 20, plant_id: plant }).then(res => {
         const nodes = Array.isArray(res) ? res : res?.items || [];
-        // Mantener PLANT/AREA/SYSTEM/EQUIPMENT — si el usuario buscó un tag de equipo,
-        // que aparezca también para que pueda seleccionarlo como TL directamente.
         const nodeMap = {};
         nodes.forEach(n => { nodeMap[n.node_id] = n; });
         const enriched = nodes.map(n => ({ ...n, _funcLoc: n._funcLoc || buildFuncLocPath(n, nodeMap) }));
@@ -572,7 +591,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
       }).catch(() => {
         const q = locSearch.toLowerCase();
         setLocResults(locationNodes.filter(n =>
-          (n._funcLoc || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q)
+          (n._funcLoc || '').toLowerCase().includes(q) || (n.code || '').toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q) || (n.tag || '').toLowerCase().includes(q)
         ).slice(0, 8));
       });
     }, 300);
@@ -660,7 +679,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   // ── Equipment selection ──
   const selectEquip = (node) => {
     setSelectedEquip(node);
-    setF('whereTag', node.tag || node.code || '');
+    // SF-672 (Jorge 2026-05-08): el TAG se guarda en forma CORTA — último
+    // segmento del sap_func_loc. Antes algunos nodos legacy traían el path
+    // completo en node.tag o node.code, y el aviso quedaba con un tag distinto
+    // al que mostraba la pantalla de creación.
+    setF('whereTag', shortTag(node.tag || node.code || ''));
     setEquipSearch('');
     setShowEquipSearch(false);
     // Duplicates checked only after AI analysis (not on equipment selection per client feedback)
@@ -921,13 +944,19 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
   const acceptVisionSuggestions = () => {
     if (!visionResult?.raw) return;
     const s = visionResult.raw;
-    if (s.whatHappens) setF('whatHappens', s.whatHappens);
+    // Jorge 2026-05-12: la IA Vision NUNCA modifica whatHappens, ni siquiera al
+    // aceptar explícitamente. El campo es 100% del usuario. La descripción IA
+    // queda en aiEnhancedDescription para referencia.
+    if (s.whatHappens) setF('aiEnhancedDescription', s.whatHappens);
     if (s.failureCategory) {
       const cat = s.failureCategory.toUpperCase().trim();
       if (['MECHANICAL','ELECTRICAL','INSTRUMENTATION','HYDRAULIC','STRUCTURAL'].includes(cat)) setF('failureCategory', cat);
     }
     // SF-681 (reunión VSC 2026-05-11): priority NO se autocarga via Accept Vision.
-    if (s.activityClass) setF('activityClass', s.activityClass);
+    if (s.activityClass) {
+      const derived = form.priority ? deriveActivityClassFromPriority(form.priority) : s.activityClass;
+      setF('activityClass', derived);
+    }
     // SF-673: la sugerencia de acción es manual; ni Accept Vision la autorrellena.
     const aiCat = (s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase();
     const catData = FAILURE_CATALOG[aiCat] || FAILURE_CATALOG.MECHANICAL;
@@ -1012,13 +1041,20 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
           if (title.length > 70) title = title.substring(0, 70).replace(/\s+\S*$/, '');
           setF('woTitle', title);
         }
-        if (s.whatHappens) setF('whatHappens', s.whatHappens);
+        // Jorge 2026-05-12: la IA Vision NUNCA modifica whatHappens. El texto es
+        // 100% del usuario. La descripción IA queda guardada en aiEnhancedDescription
+        // (visible read-only en el panel "AI Suggestion") para referencia, pero no
+        // toca lo que el usuario escribió ni autorrellena si estaba vacío.
+        if (s.whatHappens) setF('aiEnhancedDescription', s.whatHappens);
         if (s.failureCategory) {
           const cat = s.failureCategory.toUpperCase().trim();
           if (['MECHANICAL', 'ELECTRICAL', 'INSTRUMENTATION'].includes(cat)) setF('failureCategory', cat);
         }
         // SF-681 (reunión VSC 2026-05-11): priority NO se autocarga por IA aquí.
-        if (s.activityClass) setF('activityClass', s.activityClass);
+        if (s.activityClass) {
+          const derived = form.priority ? deriveActivityClassFromPriority(form.priority) : s.activityClass;
+          setF('activityClass', derived);
+        }
         // SF-673: no autorrellenar 'suggestedAction' (captura manual).
         // Validate catalog values against FAILURE_CATALOG
         const aiCat = (s.failureCategory || form.failureCategory || 'MECHANICAL').toUpperCase();
@@ -1044,7 +1080,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
         if (s.supportEquipment?.length) setF("supportEquipment", s.supportEquipment);
         if (s.workConditions) setF("workConditions", s.workConditions);
         setAiSuggested(true);
-        toast.success('Photos analyzed by AI - fields auto-filled');
+        toast.success('Foto analizada — campos sugeridos. La descripción "What happened" la controlás vos.');
       }
     } catch (e) {
       console.error('Vision AI error:', e);
@@ -1259,7 +1295,9 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
         // support_equipment ya se enviou normalizado arriba — no duplicar
         technical_location: form.technicalLocationCode || '',
         notification_type: form.notificationClass || 'A1',
-        aviso_coding: form.avisoCoding || '',
+        // aviso_coding refleja la clase de notificación elegida en UI (M001/M002).
+        // Mantener en sync con activityClass evita divergencias en SAP export.
+        aviso_coding: form.activityClass || form.avisoCoding || 'M001',
         planning_group: form.planningGroup || '',
         area_empresa: form.areaEmpresa || '',
         work_center: form.workCenter || '',
@@ -1578,48 +1616,13 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
               2) invoca IA, 3) revisa el título sugerido. Antes el campo estaba
               arriba y forzaba al usuario a inventar título antes de tener datos. */}
 
-          {/* Jorge 2026-04-23: Priority + Estado del equipo ARRIBA del textbox
-              para que el AI los lea junto con la descripción. */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border rounded-xl p-4">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Estado del Equipo</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PLANT_CONDITIONS.map(opt => (
-                  <button key={opt.value}
-                    onClick={() => setF('equipmentCondition', opt.value)}
-                    className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
-                    style={{
-                      borderColor: form.equipmentCondition === opt.value ? opt.color : '#e5e7eb',
-                      backgroundColor: form.equipmentCondition === opt.value ? opt.color + '15' : 'transparent',
-                      color: form.equipmentCondition === opt.value ? opt.color : '#64748B',
-                    }}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="border rounded-xl p-4">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Priority</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PRIORITIES.map(p => (
-                  <button key={p.value}
-                    onClick={() => { setF('priority', p.value); setF('activityClass', ['P1','P2'].includes(p.value) ? 'M002' : 'M001'); }}
-                    className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${form.priority === p.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
-                    style={{ borderColor: form.priority === p.value ? p.color : '#e5e7eb', backgroundColor: form.priority === p.value ? p.bg : 'transparent' }}>
-                    <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
-                    <div className="text-[9px] text-gray-500 leading-tight">{p.sub}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* SF-680 (jornada VSC 2026-05-08, Jorge): "What Happened" se mueve al
+              PRIMER lugar del formulario. Principio UX-first del técnico: llenar
+              de arriba hacia abajo, partir por la descripción del problema. Antes
+              estaba Estado del Equipo + Priority arriba; eso forzaba al técnico
+              a clasificar antes de describir. Ahora describe → contexto → IA. */}
 
-          {/* reunión VSC 2026-05-11 (Jorge): Nivel de Riesgo se mueve DEBAJO
-              del WO Title (después del módulo IA Assistant + título). Estaba
-              acá pero confundía al ser un dato calculado mostrado antes que el
-              usuario describa el problema. */}
-
-          {/* 1. What happened? + Voice / Camera */}
+          {/* 1. What happened? + Voice / Camera — PRIMER campo */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">What happened?</label>
@@ -1690,6 +1693,32 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
               rows={5}
               className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-y ${isRecording ? 'border-red-400 bg-red-50/30' : 'border-gray-300'}`}
             />
+            {/* Jorge 2026-05-12: la IA NO modifica whatHappens. Cuando hay análisis
+                IA (texto o foto), guardamos su sugerencia en aiEnhancedDescription
+                y la mostramos como preview con botón "Usar" para que el usuario
+                decida si reemplazar su texto o no. */}
+            {form.aiEnhancedDescription && form.aiEnhancedDescription.trim() && form.aiEnhancedDescription.trim() !== form.whatHappens?.trim() && (
+              <div className="mt-2 p-3 bg-violet-50 border-2 border-violet-200 rounded-xl">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold text-violet-700 uppercase tracking-wider">
+                    Sugerencia IA (no aplicada)
+                  </span>
+                  <div className="flex gap-1.5">
+                    <button type="button"
+                      onClick={() => { setF('whatHappens', form.aiEnhancedDescription); setF('aiEnhancedDescription', ''); }}
+                      className="text-[10px] font-semibold px-2 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded-md">
+                      Usar texto IA
+                    </button>
+                    <button type="button"
+                      onClick={() => setF('aiEnhancedDescription', '')}
+                      className="text-[10px] font-semibold px-2 py-1 text-violet-700 hover:bg-violet-100 rounded-md">
+                      Descartar
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-700 leading-snug whitespace-pre-wrap">{form.aiEnhancedDescription}</p>
+              </div>
+            )}
             {/* Search-as-you-type duplicate suggestions banner */}
             {checkingDups && (
               <div className="mt-2 text-[11px] text-gray-500 italic flex items-center gap-1">
@@ -1991,6 +2020,45 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             )}
           </div>
 
+          {/* SF-680 (jornada VSC 2026-05-08, Jorge): Estado del Equipo + Priority
+              ahora aparecen DESPUÉS de "What Happened" porque el técnico primero
+              describe el problema (flujo natural de arriba hacia abajo) y recién
+              luego clasifica el contexto operacional. La IA sigue leyendo ambos
+              al disparar handleAiSuggest. */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="border rounded-xl p-4">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Estado del Equipo</label>
+              <div className="grid grid-cols-2 gap-2">
+                {PLANT_CONDITIONS.map(opt => (
+                  <button key={opt.value}
+                    onClick={() => setF('equipmentCondition', opt.value)}
+                    className="p-2.5 rounded-xl border-2 transition-all text-sm font-bold"
+                    style={{
+                      borderColor: form.equipmentCondition === opt.value ? opt.color : '#e5e7eb',
+                      backgroundColor: form.equipmentCondition === opt.value ? opt.color + '15' : 'transparent',
+                      color: form.equipmentCondition === opt.value ? opt.color : '#64748B',
+                    }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-xl p-4">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Priority</label>
+              <div className="grid grid-cols-2 gap-2">
+                {PRIORITIES.map(p => (
+                  <button key={p.value}
+                    onClick={() => { setF('priority', p.value); setF('activityClass', deriveActivityClassFromPriority(p.value)); }}
+                    className={`flex flex-col items-center p-2 rounded-lg border-2 text-center transition-all ${form.priority === p.value ? 'scale-[1.02]' : 'opacity-60 hover:opacity-100'}`}
+                    style={{ borderColor: form.priority === p.value ? p.color : '#e5e7eb', backgroundColor: form.priority === p.value ? p.bg : 'transparent' }}>
+                    <div className="text-sm font-bold" style={{ color: p.color }}>{p.value}</div>
+                    <div className="text-[9px] text-gray-500 leading-tight">{p.sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* SF-679 (jornada VSC 2026-05-08): WO Title reubicado DESPUÉS del
               módulo IA Assistant. La IA puede autogenerar el título a partir
               del análisis; el usuario lo revisa/edita acá antes de continuar. */}
@@ -2051,15 +2119,6 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                   </span>
                 )}
               </label>
-              <button
-                type="button"
-                onClick={() => handleAiSuggest()}
-                disabled={aiLoading || visionLoading || (!form.whatHappens?.trim() && photos.length === 0)}
-                className="text-[10px] font-semibold px-2.5 py-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white rounded-md flex items-center gap-1"
-                title="Generar acciones sugeridas con IA basado en el problema descrito"
-              >
-                {aiLoading ? '⚙ Pensando…' : '✨ Sugerir con IA'}
-              </button>
             </div>
             {form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? (() => {
               const parseSteps = (raw) => {
@@ -2136,8 +2195,16 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                   placeholder="Search technical location..."
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
+                {/* SF-666 (Jorge): dropdown solo si el usuario ya tipeó algo. Si
+                    está vacío sólo mostramos el botón Browse. Si tipeó pero sin
+                    resultados, mensaje claro "Sin resultados". */}
                 {showLocSearch && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
+                    {locSearch && locSearch.length >= 1 && locResults.length === 0 && (
+                      <div className="px-3 py-3 text-center text-xs text-gray-500 italic">
+                        Sin resultados para "{locSearch}". Probá con otra palabra o usá Browse.
+                      </div>
+                    )}
                     {locResults.map((node, i) => (
                       <button key={node.node_id || i} onClick={() => selectLocation(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
                         <div className="flex items-center gap-2">
@@ -3020,11 +3087,19 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                 </button>
               ))}
             </div>
-            {selectedPriority && (
-              <p className="text-xs text-gray-500 mt-2">
-                Auto-selected <strong>{form.activityClass === 'M002' ? 'M002 - Avería' : 'M001 - Maintenance Request'}</strong> based on priority {selectedPriority.value}
-              </p>
-            )}
+            {selectedPriority && (() => {
+              const derived = deriveActivityClassFromPriority(selectedPriority.value);
+              const derivedLabel = derived === 'M002' ? 'M002 - Avería' : 'M001 - Maintenance Request';
+              const mismatch = form.activityClass !== derived;
+              return (
+                <p className="text-xs text-gray-500 mt-2">
+                  Auto-selected <strong>{derivedLabel}</strong> based on priority {selectedPriority.value}
+                  {mismatch && (
+                    <span className="ml-2 text-amber-600 font-semibold">(modificado manualmente)</span>
+                  )}
+                </p>
+              );
+            })()}
           </div>
 
           {/* Jorge SF-551: bloque "Activity Class" eliminado de la captura inicial.

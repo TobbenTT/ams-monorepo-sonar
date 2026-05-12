@@ -11,6 +11,7 @@ import {
   Eye, ClipboardList, Shield, UserCheck, UserX, Pencil, Save, X,
 } from 'lucide-react';
 import * as api from '../api';
+import { formatWRCode } from '../utils/wrCode';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 
@@ -1204,7 +1205,7 @@ export default function TeamPage() {
                 <div key={wr.request_id} className="flex items-center justify-between p-3 border rounded hover:bg-gray-50">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {wr.request_id} — {wr.equipment_tag || wr.equipment_name || t('team.assignDialog.noEquipment')}
+                      {formatWRCode(wr) || wr.request_id} — {wr.equipment_tag || wr.equipment_name || t('team.assignDialog.noEquipment')}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
                       {typeof wr.problem_description === 'object'

@@ -16,6 +16,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../components/Toast';
 import { downloadExport } from '../utils/exportFile';
 import { photoUrl } from '../utils/photoUrl';
+import { shortTag } from '../utils/equipmentTag';
 import { isWRPreExecution } from '../utils/woLifecycle';
 import { useConfirm } from '../components/ConfirmDialog';
 
@@ -434,7 +435,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
               )}
             </div>
             <h2 className="text-lg font-bold text-foreground">{(() => { try { const ai = typeof item.ai_classification === 'string' ? JSON.parse(item.ai_classification) : item.ai_classification; return ai?.wo_title || item.equipment_name; } catch { return item.equipment_name; } })()}</h2>
-            <p className="text-xs font-mono text-muted-foreground">{/^\d{8,}$/.test(item.equipment_tag) ? (item.equipment_name || item.equipment_tag) : item.equipment_tag}</p>
+            <p className="text-xs font-mono text-muted-foreground" title={item.equipment_tag}>{/^\d{8,}$/.test(item.equipment_tag) ? (item.equipment_name || shortTag(item.equipment_tag)) : shortTag(item.equipment_tag)}</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => {
@@ -484,7 +485,7 @@ function DetailModal({ item, duplicates = [], onOpenDuplicate, onClose, onValida
   <div class="card"><div class="label">Status</div><div class="value">${wr.status || '-'}</div></div>
   <div class="card"><div class="label">Priority</div><div class="value"><span class="priority ${(wr.priority_requested||'p3').toLowerCase()}">${wr.priority_requested || wr.priority || '-'}</span></div></div>
   <div class="card"><div class="label">Clase Actividad</div><div class="value">${ai.activity_class || '-'}</div></div>
-  <div class="card"><div class="label">Equipo / TAG</div><div class="value">${wr.equipment_tag || '-'}</div></div>
+  <div class="card"><div class="label">Equipo / TAG</div><div class="value">${shortTag(wr.equipment_tag) || '-'}</div></div>
   <div class="card"><div class="label">Equipo Nombre</div><div class="value">${wr.equipment_name || '-'}</div></div>
   <div class="card"><div class="label">Duracion Estimada</div><div class="value">${wr.estimated_duration || ai.estimated_duration_hours || '-'}h</div></div>
   <div class="card"><div class="label">Created By</div><div class="value">${wr.created_by || '-'}</div></div>
@@ -623,55 +624,10 @@ ${materials.length ? `<div class="section">
           )}
         </div>
 
-        {/* AI Priority Suggestion Banner — Jorge: la IA sugiere, el usuario decide.
-            SF-626 NF-21 (2026-05-04): si validation.priority_locked === true (humano
-            ya validó la priority), ocultar el banner activo. La sugerencia queda en
-            audit/historial pero la UI no genera ambigüedad sobre cuál es la prioridad
-            oficial. */}
-        {/* QA #27 jornada VSC 2026-05-08: la priorización por IA solo está
-            activa antes del punto de ejecución. Una vez que la WR generó OT
-            (OT_CREADA) o quedó terminal (CERRADO/RECHAZADO/CANCELADO), la
-            sugerencia ya no es accionable — la OT está en curso o cerrada. */}
-        {!(item.validation?.priority_locked) &&
-         isWRPreExecution(item.status) &&
-         (item.ai_priority_pending || (item.priority_suggested && item.priority_suggested !== item.priority_requested)) && !item.ai_priority_decision && onAIPriorityDecision && (
-          <div className="mx-6 my-3 rounded-xl border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-fuchsia-50 overflow-hidden shadow-sm">
-            <div className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2">
-              <Brain className="w-4 h-4" />
-              <span className="text-sm font-bold">Sugerencia de la IA — requiere tu decisión</span>
-            </div>
-            <div className="p-4 space-y-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-gray-600">Tu prioridad:</span>
-                <span className={`text-sm font-bold px-2 py-0.5 rounded border ${priorityColor(item.priority_user || item.priority_requested)}`}>
-                  {item.priority_user || item.priority_requested}
-                </span>
-                <span className="text-purple-500 text-lg">→</span>
-                <span className="text-xs text-gray-600">IA sugiere:</span>
-                <span className={`text-sm font-bold px-2 py-0.5 rounded border ${priorityColor(item.priority_suggested)}`}>
-                  {item.priority_suggested}
-                </span>
-              </div>
-              <div className="text-xs text-gray-700 bg-white/70 rounded p-2 border border-purple-200">
-                <strong className="text-purple-800">¿Por qué?</strong> {safeStr(item.ai_priority_reason)}
-              </div>
-              <div className="flex flex-wrap gap-2 pt-1">
-                <button
-                  onClick={() => onAIPriorityDecision(item.id, 'accepted')}
-                  className="flex-1 min-w-[180px] px-4 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  ✓ Aceptar sugerencia ({item.priority_suggested})
-                </button>
-                <button
-                  onClick={() => onAIPriorityDecision(item.id, 'rejected')}
-                  className="flex-1 min-w-[180px] px-4 py-2.5 bg-white text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 border-2 border-gray-300 shadow-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  ✗ Mantener {item.priority_user || item.priority_requested}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Jorge 2026-05-12: eliminado banner "Sugerencia de la IA — requiere
+            tu decisión". La prioridad es 100% del usuario; la IA NO sugiere
+            cambio de prioridad en la UI. La sugerencia queda en audit log para
+            análisis posterior pero no se le pide al usuario aceptar/rechazar. */}
 
         {/* Detail Grid */}
         <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -681,7 +637,7 @@ ${materials.length ? `<div class="section">
           <DetailCard icon={MapPin} label={t('workRequests.plantArea')} value={item.area || '—'} title={item.plant} />
           {/* Jorge 2026-04-24 14:18: TL + TAG DENTRO del modal aviso */}
           <DetailCard icon={MapPin} label="Ubic. Técnica" value={item.technical_location || '—'} />
-          <DetailCard icon={Tag} label="Equipo / TAG" value={item.equipment_tag || '—'} />
+          <DetailCard icon={Tag} label="Equipo / TAG" value={shortTag(item.equipment_tag) || '—'} title={item.equipment_tag} />
           <DetailCard icon={User} label="Created By" value={item.created_by || '-'} />
             <DetailCard icon={CheckCircle} label="Approved By" value={item.approver_id || (["Approved","APROBADO","VALIDATED"].includes(item.status) ? "Supervisor" : "—")} />
           <DetailCard icon={Clock} label={t('workRequests.estimatedDuration')}>
@@ -734,51 +690,11 @@ ${materials.length ? `<div class="section">
                   <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_requested)}`}>
                     {item.priority_requested}
                   </span>
-                  {/* QA #2 jornada VSC 2026-05-08 (SF-651): consolidar la lógica
-                      de la flecha. Solo se muestra si NO hay decisión IA todavía
-                      (ni accepted ni rejected). Post-decisión backend sincroniza
-                      priority_suggested=priority_requested, pero si el sync
-                      falla por race condition, esta guarda defensa-en-profundidad
-                      evita mostrar contraste rancio. */}
-                  {item.priority_requested !== item.priority_suggested && !item.ai_priority_decision && (
-                    <>
-                      <span className="text-amber-500 text-xs">→</span>
-                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${priorityColor(item.priority_suggested)}`}>
-                        {item.priority_suggested}
-                      </span>
-                    </>
-                  )}
-                  {item.ai_priority_pending && item.priority_suggested && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300">
-                      🤖 IA sugiere {item.priority_suggested}
-                    </span>
-                  )}
                 </div>
-                {item.ai_priority_reason && !item.ai_priority_pending && (
-                  <div className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 rounded px-2 py-1 leading-snug">
-                    <strong>IA:</strong> {safeStr(item.ai_priority_reason)}
-                    {item.ai_priority_decision && (
-                      <div className="mt-1 text-[9px] italic text-purple-600">
-                        {item.ai_priority_decision === 'accepted' ? '✓ Sugerencia aceptada' : '✗ Sugerencia rechazada'}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {item.ai_priority_reason && !item.priority_suggested && (
-                  <div className="text-[10px] text-gray-600 italic leading-snug">
-                    IA confirmó {item.priority_requested}: {safeStr(item.ai_priority_reason)}
-                  </div>
-                )}
-                {(item.ai_suggested_action || item.ai_work_conditions) && (
-                  <div className="mt-1 text-[10px] text-gray-700 space-y-0.5">
-                    {item.ai_suggested_action && (
-                      <div><span className="font-semibold">🤖 Acción IA:</span> {safeStr(item.ai_suggested_action)}</div>
-                    )}
-                    {item.ai_work_conditions && (
-                      <div><span className="font-semibold">🛡 Condiciones IA:</span> {safeStr(item.ai_work_conditions)}</div>
-                    )}
-                  </div>
-                )}
+                {/* Jorge 2026-05-12: eliminados los bloques "IA sugiere", "Acción IA"
+                    y "Condiciones IA" del card de Priority. La IA no decora la UI
+                    de WR — la prioridad y las acciones las define el usuario. Los
+                    campos ai_* siguen en BD/audit pero no se renderizan acá. */}
               </div>
             )}
           </DetailCard>
@@ -1763,52 +1679,57 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
   }, [queueFiltered, selectedArea]);
 
   /* ─── Status + search filtering ─── */
-  const filtered = useMemo(() => {
-    return areaFiltered.filter((r) => {
-      const statusMap = { PENDING_VALIDATION: 'PENDIENTE', VALIDATED: 'APROBADO', REJECTED: 'RECHAZADO', CANCELLED: 'CANCELADO', CLOSED: 'CERRADO', DRAFT: 'PENDIENTE', ASSIGNED: 'APROBADO', IN_PROGRESS: 'APROBADO', COMPLETED: 'CERRADO' };
-      const normalizedStatus = statusMap[r.status] || r.status;
-      const matchesFilter = statusFilter.length === 0 || statusFilter.includes(normalizedStatus) || statusFilter.includes(r.status);
-      // Jorge 2026-04-24: búsqueda tolera prefijo "WR-" (se muestra sin él pero
-      // el ID crudo lo tiene). Normalizamos ambos lados para que "WR-2026-00146",
-      // "wr-2026-00146" y "2026-00146" encuentren lo mismo.
-      const q = search.toLowerCase().replace(/^wr-?/i, '');
-      const idNorm = (r.id || r.request_id || '').toLowerCase().replace(/^wr-?/i, '');
-      const matchesSearch =
-        !search ||
-        idNorm.includes(q) ||
-        (r.id || r.request_id || '').toLowerCase().includes(search.toLowerCase()) ||
-        (r.equipment_tag || '').toLowerCase().includes(search.toLowerCase()) ||
-        (r.equipment_name || '').toLowerCase().includes(search.toLowerCase()) ||
-        (r.failure_description || '').toLowerCase().includes(search.toLowerCase());
-      // Location filter
-      const matchesLocation = !locationFilter ||
-        (r.technical_location || '').toLowerCase().includes(locationFilter.toLowerCase()) ||
-        (r.equipment_tag || '').toLowerCase().includes(locationFilter.toLowerCase());
-      // Date filter
-      const rDate = r.created_at ? r.created_at.slice(0, 10) : '';
-      const matchesDateFrom = !dateFrom || rDate >= dateFrom;
-      const matchesDateTo = !dateTo || rDate <= dateTo;
-      // Jorge 2026-04-23: multi-select priority (P3+P4 juntos). priorityFilter puede ser
-      // string (legacy) o array.
-      const pCurrent = (r.priority_requested || r.priority_suggested || "");
-      const matchesPriority = !priorityFilter || priorityFilter.length === 0
-        || (Array.isArray(priorityFilter) ? priorityFilter.includes(pCurrent) : pCurrent === priorityFilter);
-      // Jorge SF-548: bug — los botones "7d/30d/90d" no refrescaban porque
-      // el filtro saltaba "Last 30 Days" pensando que era default. Ahora SIEMPRE
-      // aplica el rango si hay selectedTimeRange definido.
-      let matchesTimeRange = true;
-      if (selectedTimeRange && rDate) {
-        const now = new Date();
-        const daysMap = { 'Last 7 Days': 7, 'Last 30 Days': 30, 'Last 90 Days': 90, 'Last 365 Days': 365 };
-        const days = daysMap[selectedTimeRange];
-        if (days) {
-          const cutoff = new Date(now.getTime() - days * 86400000).toISOString().slice(0, 10);
-          matchesTimeRange = rDate >= cutoff;
-        }
+  // Jorge 2026-05-12: los chips de status ("Pending 22", "Approved 21"…) deben
+  // contar bajo los MISMOS filtros que la tabla visible (rango de fechas, área,
+  // búsqueda, prioridad), excluyendo SOLO el filtro de status. Antes contaban
+  // sobre queueFiltered (sin date/area/search) → mostraba "Pending 22" mientras
+  // la tabla mostraba 14 de 14.
+  const STATUS_MAP = { PENDING_VALIDATION: 'PENDIENTE', VALIDATED: 'APROBADO', REJECTED: 'RECHAZADO', CANCELLED: 'CANCELADO', CLOSED: 'CERRADO', DRAFT: 'PENDIENTE', ASSIGNED: 'APROBADO', IN_PROGRESS: 'APROBADO', COMPLETED: 'CERRADO' };
+
+  const matchesNonStatusFilters = (r) => {
+    const q = search.toLowerCase().replace(/^wr-?/i, '');
+    const idNorm = (r.id || r.request_id || '').toLowerCase().replace(/^wr-?/i, '');
+    const matchesSearch =
+      !search ||
+      idNorm.includes(q) ||
+      (r.id || r.request_id || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.equipment_tag || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.equipment_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.failure_description || '').toLowerCase().includes(search.toLowerCase());
+    const matchesLocation = !locationFilter ||
+      (r.technical_location || '').toLowerCase().includes(locationFilter.toLowerCase()) ||
+      (r.equipment_tag || '').toLowerCase().includes(locationFilter.toLowerCase());
+    const rDate = r.created_at ? r.created_at.slice(0, 10) : '';
+    const matchesDateFrom = !dateFrom || rDate >= dateFrom;
+    const matchesDateTo = !dateTo || rDate <= dateTo;
+    const pCurrent = (r.priority_requested || r.priority_suggested || "");
+    const matchesPriority = !priorityFilter || priorityFilter.length === 0
+      || (Array.isArray(priorityFilter) ? priorityFilter.includes(pCurrent) : pCurrent === priorityFilter);
+    let matchesTimeRange = true;
+    if (selectedTimeRange && rDate) {
+      const daysMap = { 'Last 7 Days': 7, 'Last 30 Days': 30, 'Last 90 Days': 90, 'Last 365 Days': 365 };
+      const days = daysMap[selectedTimeRange];
+      if (days) {
+        const cutoff = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+        matchesTimeRange = rDate >= cutoff;
       }
-      return matchesFilter && matchesSearch && matchesLocation && matchesDateFrom && matchesDateTo && matchesPriority && matchesTimeRange;
+    }
+    return matchesSearch && matchesLocation && matchesDateFrom && matchesDateTo && matchesPriority && matchesTimeRange;
+  };
+
+  // Universo para los chips de status: tabla activa con todo aplicado MENOS status.
+  const nonStatusFiltered = useMemo(() => {
+    return areaFiltered.filter(matchesNonStatusFilters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [areaFiltered, search, locationFilter, dateFrom, dateTo, priorityFilter, selectedTimeRange]);
+
+  const filtered = useMemo(() => {
+    return nonStatusFiltered.filter((r) => {
+      const normalizedStatus = STATUS_MAP[r.status] || r.status;
+      return statusFilter.length === 0 || statusFilter.includes(normalizedStatus) || statusFilter.includes(r.status);
     });
-  }, [areaFiltered, statusFilter, search, locationFilter, dateFrom, dateTo, priorityFilter, selectedTimeRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nonStatusFiltered, statusFilter]);
 
   /* ─── Sort + Paginate ─── */
   const sorted = useMemo(() => {
@@ -2123,12 +2044,14 @@ export default function WorkRequests({ onNavigateTab, onRefreshCounts, autoOpenW
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-5 gap-4">
         {[
-          { label: 'Pending', count: queueFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE', 'DRAFT'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
-          { label: 'Approved', count: queueFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO', 'IN_PROGRESS'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
-          { label: 'Rejected', count: queueFiltered.filter(r => ['REJECTED', 'RECHAZADO'].includes(r.status)).length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
-          { label: 'Cancelled', count: queueFiltered.filter(r => ['CANCELLED', 'CANCELADO'].includes(r.status)).length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
-          // Jorge 2026-04-23 17:38: agregar tarjeta "Closed" para ver cuántos avisos se cerraron (vía OT auto-close).
-          { label: 'Closed', count: queueFiltered.filter(r => ['CLOSED', 'CERRADO', 'COMPLETED'].includes(r.status)).length, borderColor: 'border-l-emerald-500', textColor: 'text-emerald-700' },
+          // Jorge 2026-05-12: los chips cuentan sobre nonStatusFiltered (mismos filtros
+          // que la tabla excepto status). Antes contaban sobre queueFiltered sin date/area/search
+          // y los números no coincidían con "Mostrando X de X" en el listado.
+          { label: 'Pending', count: nonStatusFiltered.filter(r => ['PENDING_VALIDATION', 'PENDIENTE', 'DRAFT'].includes(r.status)).length, borderColor: 'border-l-yellow-400', textColor: 'text-yellow-600' },
+          { label: 'Approved', count: nonStatusFiltered.filter(r => ['VALIDATED', 'APPROVED', 'ASSIGNED', 'APROBADO', 'IN_PROGRESS'].includes(r.status)).length, borderColor: '', textColor: 'text-gray-500' },
+          { label: 'Rejected', count: nonStatusFiltered.filter(r => ['REJECTED', 'RECHAZADO'].includes(r.status)).length, borderColor: 'border-l-red-400', textColor: 'text-red-600' },
+          { label: 'Cancelled', count: nonStatusFiltered.filter(r => ['CANCELLED', 'CANCELADO'].includes(r.status)).length, borderColor: 'border-l-gray-400', textColor: 'text-gray-500' },
+          { label: 'Closed', count: nonStatusFiltered.filter(r => ['CLOSED', 'CERRADO', 'COMPLETED'].includes(r.status)).length, borderColor: 'border-l-emerald-500', textColor: 'text-emerald-700' },
         ].map(kpi => (
           <div key={kpi.label} className={`bg-white dark:bg-card rounded-lg border border-border ${kpi.borderColor ? 'border-l-4 ' + kpi.borderColor : ''} p-5`}>
             <p className={`text-sm ${kpi.textColor} mb-1`}>{kpi.label}</p>

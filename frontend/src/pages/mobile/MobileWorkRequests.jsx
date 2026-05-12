@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import * as api from '../../api';
+import { formatWRCode } from '../../utils/wrCode';
 
 const PRIORITY_META = {
     P1: { bg: '#FEE2E2', text: '#991B1B', label: '1-Urgent', sub: '<24h' },
@@ -369,7 +370,7 @@ export default function MobileWorkRequests() {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                                                 <span className="text-xs font-semibold" style={{ color: '#64748B' }}>
-                                                    {wr.request_id || wr.id || ''}
+                                                    {formatWRCode(wr) || wr.request_id || wr.id || ''}
                                                 </span>
                                                 {wr.isDelayed && (
                                                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}>
@@ -455,7 +456,7 @@ function ProblemCard({ icon: Icon, iconBg, iconColor, gradient, border, title, s
                     <div className="flex flex-wrap gap-1">
                         {items.slice(0, 5).map(wr => (
                             <span key={wr.request_id || wr.id} className="text-xs font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: badgeBg, color: badgeColor }}>
-                                {wr.request_id || wr.id || ''}
+                                {formatWRCode(wr) || wr.request_id || wr.id || ''}
                             </span>
                         ))}
                     </div>

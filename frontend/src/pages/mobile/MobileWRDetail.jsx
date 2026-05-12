@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import * as api from '../../api';
+import { formatWRCode } from '../../utils/wrCode';
 
 const PRIORITY_META = {
     P1: { label: '1 - Urgent', color: '#EF4444', bg: '#FEE2E2', sub: '< 24 horas', claseOT: 'PM03', claseOTLabel: 'No Programado' },
@@ -382,7 +383,7 @@ export default function MobileWRDetail() {
                             )}
                         </div>
                         <p className="text-xs font-mono truncate" style={{ color: '#64748B' }}>
-                            {wr.request_id || ''}
+                            {formatWRCode(wr) || wr.request_id || ''}
                         </p>
                     </div>
                     {canApprove && !editing && (

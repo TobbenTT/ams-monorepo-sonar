@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import * as api from '../../api';
 import SmartCaptureModal from '../../components/SmartCaptureModal';
+import { formatWRCode } from '../../utils/wrCode';
 
 const PRIORITY_COLORS = {
     P1: { bg: '#FEE2E2', text: '#991B1B' },
@@ -587,7 +588,7 @@ function ApprovalModal({ wr, action, onClose, onDone }) {
                         <div className="text-sm font-bold" style={{ color: '#0F172A' }}>
                             {isApprove ? 'Approve Aviso' : 'Reject Aviso'}
                         </div>
-                        <div className="text-xs" style={{ color: '#64748B' }}>{tag} — {wr.request_id || ''}</div>
+                        <div className="text-xs" style={{ color: '#64748B' }}>{tag} — {formatWRCode(wr) || wr.request_id || ''}</div>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
                         <X className="w-5 h-5" style={{ color: '#64748B' }} />
@@ -788,7 +789,7 @@ function WRRejectedCard({ wr, onAction }) {
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{wr.request_id || wr.id || ''}</span>
+                        <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{formatWRCode(wr) || wr.request_id || wr.id || ''}</span>
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FED7AA', color: '#9A3412' }}>RECHAZADA</span>
                     </div>
                     <div className="text-sm font-bold mb-1" style={{ color: '#0F172A' }}>{tag}</div>
@@ -945,7 +946,7 @@ function PendingWRCard({ wr, onApprove, onReject, onTap }) {
                 <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{wr.request_id || wr.id || ''}</span>
+                            <span className="text-xs font-semibold" style={{ color: '#64748B' }}>{formatWRCode(wr) || wr.request_id || wr.id || ''}</span>
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>PENDIENTE</span>
                             <SLABadge priority={priority} createdAt={wr.created_at} slaDeadline={wr.sla_deadline} />
                         </div>

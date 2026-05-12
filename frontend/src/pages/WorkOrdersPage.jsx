@@ -2103,7 +2103,7 @@ export default function WorkOrdersPage() {
                     <span>{selectedOT.priority_code}</span>
                     {selectedOT.work_request_id && (
                       <span className="text-blue-600 underline cursor-pointer hover:text-blue-800" onClick={() => navigate('/work-requests', { state: { openWrId: selectedOT.work_request_id } })} title="Ver aviso origen">
-                        → Aviso {selectedOT.work_request_id.slice(0, 8)}...
+                        → {selectedOT.wr_aviso_label || `Aviso ${selectedOT.work_request_id.slice(0, 8)}…`}
                       </span>
                     )}
                   </div>

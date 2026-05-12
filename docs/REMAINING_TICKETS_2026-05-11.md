@@ -82,13 +82,12 @@
 
 ## SF-656 — Buscador OT + auditoría HH/Día-Noche/Sobrecapacidad
 
-**Estado**: parcial.
+**Estado**: ✅ **DONE** (commit a80493d + 8ad71d9).
 
 **Hecho**:
-- Buscador ✅ (SF-669)
-
-**Pendiente**:
-- Auditoría visual: indicador de sobrecapacidad por técnico (>40h/semana), bucket día/noche con violaciones de turno (técnico noche asignado a día). Ya existe parcial en Scheduling Technicians view; falta dashboard dedicado y banner alert.
+- Buscador ✅ (SF-669) — multi-campo en Scheduling.
+- Auditoría visual ✅ — tab "Auditoría" en Scheduling con banner global + tabla sobrecapacidad (severidad critical >125% / high) + tabla violaciones turno día/noche con badges ☀️/🌙. Endpoint `GET /scheduling/audit-capacity` determinista IDOR-scoped. Verificado DOM: Mauricio Olivares Tapia +600% CRITICAL en semana 4-may.
+- Tests pytest cubriendo overcapacity + shift mismatch.
 
 ---
 
@@ -100,16 +99,17 @@
 
 ---
 
-## Resumen acción inmediata
+## Resumen acción inmediata (actualizado 2026-05-12)
 
 | Ticket | Acción ahora | Bloqueado por |
 |--------|--------------|---------------|
-| SF-661 | A SP8 backlog | data real Goldfields (0B2) |
-| SF-662 | A SP8 backlog | Spec definitivo con Jorge |
+| SF-661 | ✅ Función 1/7 entregada (d5b6496) · funciones 2-7 a SP8 | data real Goldfields (0B2) |
+| SF-662 | ✅ Modelo + API + 13 tests (d5b6496) · UI a SP8 | Spec definitivo con Jorge |
 | SF-664 | Pendiente call cliente | Magdalena |
 | SF-665 | Pedir lista | Jorge |
 | SF-655 (foto+audio) | ✅ hecho | — |
-| SF-655 (agente IA) | A SP8 | — |
+| SF-655 (agente IA) | A SP8 (cubierto por SF-661) | — |
 | SF-656 (buscador) | ✅ hecho | — |
-| SF-656 (audit visual) | Próxima tanda | — |
+| SF-656 (audit visual) | ✅ hecho (a80493d) | — |
 | SF-604 | Solicitar repro QA | — |
+| 0A2 Gap Analysis Magdalena | ✅ hecho (7d61423) — 95.1% cobertura | — |

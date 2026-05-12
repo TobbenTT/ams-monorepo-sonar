@@ -767,6 +767,24 @@ def update_work_order(
         )
     if not result:
         raise HTTPException(status_code=400, detail="WO not found or not editable (must be PENDIENTE/APROBADO)")
+    # WS broadcast 2026-05-12: drag-drop en Scheduling llama PUT /{wo_id} con
+    # planned_start/_end + assigned_workers. Sin broadcast, el resto de tabs
+    # abiertos no veían el cambio hasta refresh manual.
+    try:
+        from api.services.ws_manager import queue_notify
+        queue_notify(
+            "wo_updated",
+            {
+                "wo_id": wo_id,
+                "wo_number": result.get("wo_number") if isinstance(result, dict) else None,
+                "status": result.get("status") if isinstance(result, dict) else None,
+                "planned_start": update_data.get("planned_start"),
+                "planned_end": update_data.get("planned_end"),
+            },
+            existing.plant_id if existing else None,
+        )
+    except Exception:
+        pass
     return result
 
 

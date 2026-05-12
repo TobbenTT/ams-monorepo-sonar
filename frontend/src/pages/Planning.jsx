@@ -14,6 +14,7 @@ import {
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
 import { compressImage } from '../utils/imageCompress';
+import IconDeleteButton from '../components/IconDeleteButton';
 
 const PRIORITY_COLORS = {
   P1: 'text-red-600 font-bold',

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Mic, MicOff, Camera, X, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import * as api from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { compressImage } from '../utils/imageCompress';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -63,17 +64,24 @@ export default function SmartCaptureModal({ plantId, technicianId, equipmentTagH
         rec.start();
     };
 
-    const handlePhoto = (e) => {
+    const handlePhoto = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) {
+        if (file.size > 15 * 1024 * 1024) {  // 15MB hard limit antes de comprimir
             setError(t('modals.smartCapture.fileTooLarge', { name: file.name, size: (file.size / 1024 / 1024).toFixed(1) }));
             e.target.value = '';
             return;
         }
-        const reader = new FileReader();
-        reader.onload = (ev) => setPhoto(ev.target.result);
-        reader.readAsDataURL(file);
+        try {
+            const r = await compressImage(file, { maxDim: 1600, maxBytes: 2 * 1024 * 1024 });
+            setPhoto(r.dataUrl);
+        } catch (err) {
+            // Fallback al método antiguo si la compresión falla
+            const reader = new FileReader();
+            reader.onload = (ev) => setPhoto(ev.target.result);
+            reader.readAsDataURL(file);
+        }
+        e.target.value = '';
     };
 
     const submit = async () => {

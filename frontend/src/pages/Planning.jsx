@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
+import { compressImage } from '../utils/imageCompress';
 
 const PRIORITY_COLORS = {
   P1: 'text-red-600 font-bold',
@@ -535,14 +536,25 @@ function CommentsTab({ wo, onUpdate }) {
               <button onClick={() => setPhotoData(null)} className="text-xs text-red-600 hover:underline">✕ Quitar foto</button>
             </div>
           )}
-          {/* SF-655: hidden input para foto */}
+          {/* SF-655: hidden input para foto · comprimir client-side antes de upload */}
           <input ref={photoInputRef} type="file" accept="image/*" capture="environment"
             onChange={async e => {
               const f = e.target.files?.[0];
               if (!f) return;
-              const reader = new FileReader();
-              reader.onloadend = () => setPhotoData(reader.result);
-              reader.readAsDataURL(f);
+              try {
+                // Resize a max 1600px + JPEG 0.85 → típicamente 200-400KB
+                const r = await compressImage(f);
+                setPhotoData(r.dataUrl);
+                if (r.originalBytes > 1024 * 1024) {
+                  const savedMB = ((r.originalBytes - r.sizeBytes) / 1024 / 1024).toFixed(1);
+                  toast?.success?.(`Foto optimizada (-${savedMB} MB, ${(r.ratio * 100).toFixed(0)}% del original)`);
+                }
+              } catch (err) {
+                // Fallback: si la compresión falla, mandar original
+                const reader = new FileReader();
+                reader.onloadend = () => setPhotoData(reader.result);
+                reader.readAsDataURL(f);
+              }
               e.target.value = '';
             }}
             className="hidden" />

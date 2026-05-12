@@ -810,12 +810,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
       // no calendar hours. Si hay N trabajadores asignados, cada uno absorbe
       // HH/N (división justa), capped al weekly cap del tech (no podés mostrar
       // 99h en una semana, no es físicamente posible).
-      const workers = (wo.assigned_workers || []).filter(w => w && (w.worker_id || w.user_id || w.id));
+      // Bug 2026-05-12: aceptar también workers como string (legacy / fallback
+      // del drop handler). Antes el filter excluía strings → Assigned=0.
+      const workers = (wo.assigned_workers || []).filter(w => w && (typeof w === 'string' ? w.trim() : (w.worker_id || w.user_id || w.id)));
       const N = workers.length || 1;
       const perWorker = (wo.estimated_hours || 0) / N;
       const seen = new Set();
       workers.forEach(w => {
-        const wid = w.worker_id || w.user_id || w.id;
+        const wid = typeof w === 'string' ? w : (w.worker_id || w.user_id || w.id);
         if (!wid || seen.has(wid)) return;
         seen.add(wid);
         if (h[wid] !== undefined) {
@@ -1637,10 +1639,17 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                 else if (/PRED/i.test(spec)) requiredSpecs.add('PREDICTIVO');
                 else requiredSpecs.add(spec);
               });
+              // Bug 2026-05-12: antes devolvíamos [worker_id_string] pero
+              // techHours/grid filtran por w.worker_id (objeto). Las strings
+              // pasaban la filter → workers=[] → Assigned=0 y Load=0%, aunque
+              // el toast decía "1 técnico asignado". Ahora devolvemos
+              // {worker_id, name, specialty} consistente con el popover y con
+              // lo que persiste el backend tras el sanitize de batch3.
+              const _toWorkerObj = t => ({ worker_id: t.worker_id, name: t.name, specialty: t.specialty });
               if (requiredSpecs.size === 0 && technicians.length > 0) {
                 // Fallback: si la OT no tiene specialty marcado, devolver primer técnico mecánico
                 const fallback = technicians.find(t => /MECAN/i.test(t.specialty || ''));
-                return fallback ? [fallback.worker_id] : [];
+                return fallback ? [_toWorkerObj(fallback)] : [];
               }
               const assigned = [];
               for (const spec of requiredSpecs) {
@@ -1648,7 +1657,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                   const ts = (t.specialty || '').toUpperCase().trim();
                   return ts === spec || ts.startsWith(spec.slice(0, 4));
                 });
-                if (tech) assigned.push(tech.worker_id);
+                if (tech) assigned.push(_toWorkerObj(tech));
               }
               return assigned;
             };
@@ -1728,7 +1737,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                       // Antes se llamaba toast({...}) → TypeError silencioso → onRefresh nunca
                                       // se ejecutaba → UI no actualizaba después del drag-drop.
                                       toast.success(`${wo.wo_number} → ${slot.label} ${d.dateLabel} · ${matchedWorkers.length} técnico${matchedWorkers.length === 1 ? '' : 's'} asignado${matchedWorkers.length === 1 ? '' : 's'}`);
+                                      // Bug 2026-05-12: un solo onRefresh perdía el commit en el race
+                                      // de queue_notify → cliente. Mirror del Auto-Level: refresh
+                                      // inmediato + 1.5s + 3s para garantizar reconciliación visual.
                                       onRefresh?.();
+                                      setTimeout(() => onRefresh?.(), 1500);
+                                      setTimeout(() => onRefresh?.(), 3000);
                                     } catch (err) {
                                       toast.error('Error al asignar: ' + (err.message || err));
                                     }

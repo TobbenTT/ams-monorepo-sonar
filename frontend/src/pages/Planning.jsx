@@ -1144,6 +1144,28 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
   const [otActionLoading, setOtActionLoading] = useState(null);
   const [selectedWR, setSelectedWR] = useState(null); // inline detail modal
   const [selectedOT, setSelectedOT] = useState(null);
+  // José reunión 18:02: si llegamos a Planning con ?openWo=X (desde el botón
+  // lupa de Scheduling), auto-abrir la OT en el modal completo (9 tabs).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const openWoId = params.get('openWo');
+    if (!openWoId) return;
+    (async () => {
+      try {
+        const wo = await api.getManagedWO(openWoId);
+        if (wo && wo.wo_id) {
+          setSelectedOT(wo);
+          // Limpiar el query param para que un refresh no re-abra
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('openWo');
+            window.history.replaceState({}, '', url.toString());
+          } catch {}
+        }
+      } catch {}
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Jorge (2026-04-20): ventanas de OT minimizables en paralelo.
   // minimizedOTs = lista de {wo_id, wo_number, status, equipment_tag, wo} restauradas luego.
   const [minimizedOTs, setMinimizedOTs] = useState([]);

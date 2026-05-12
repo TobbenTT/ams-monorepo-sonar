@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { CritBadge, LoadingSpinner } from '../components/Shared';
 import { useWebSocket } from '../hooks/useWebSocket';
 import LiveIndicator from '../components/LiveIndicator';
@@ -674,6 +674,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
   const { CAP, PROGRAMMABLE_HH_PER_DAY, HOURS_PER_WEEK } = useCapacitySettings();
   const toast = useToast();
   const confirm = useConfirm();
+  const navigate = useNavigate();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewRange, setViewRange] = useState(1);
   // Reunión VSC 2026-05-11: vista por defecto = HORARIOS (Jorge spec).
@@ -702,9 +703,8 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
   // los cluster cards de Vista Horarios (cuando auto-match no encuentra
   // técnico con skill compatible).
   const [assignPopoverWO, setAssignPopoverWO] = useState(null);
-  // José reunión 18:02: pop-up "lupa" debe abrir OT en modo lectura SIN
-  // sacar al user del módulo Scheduling. Solo comentarios editables.
-  const [previewWO, setPreviewWO] = useState(null);
+  // José reunión 18:02: la lupa abre la MISMA OT modal que Planning (9 tabs)
+  // navegando dentro del SPA. Ya no usamos preview simplificado.
   // Over-capacity popover anchored to a (workCenterKey, dayIndex) cell in the
   // Capacity by Work Center panel. Surfaces Auto-balance / Dismiss actions.
   const [capacityAlert, setCapacityAlert] = useState(null);
@@ -1868,8 +1868,15 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                                             👤+
                                           </button>
                                           <button type="button"
-                                            onClick={(e) => { e.stopPropagation(); setPreviewWO(wo); }}
-                                            title="Vista rápida OT (sin salir de Scheduling)"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              // José spec 18:02 revisado: abrir la OT con el MISMO modal
+                                              // completo (9 tabs) de Planning, sin nueva tab. Navegamos
+                                              // dentro del SPA al tab planning con ?openWo=X que el useEffect
+                                              // de Planning auto-abre el modal.
+                                              navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(wo.wo_id)}`);
+                                            }}
+                                            title="Abrir OT (mismo modal que Planning · 9 tabs)"
                                             className="text-[9px] px-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 font-bold">
                                             🔍
                                           </button>
@@ -2539,13 +2546,6 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
               toast.error('Error al asignar: ' + (err.message || err));
             }
           }}
-        />
-      )}
-      {previewWO && (
-        <OTPreviewModal
-          wo={previewWO}
-          onClose={() => setPreviewWO(null)}
-          onRefresh={onRefresh}
         />
       )}
     </div>

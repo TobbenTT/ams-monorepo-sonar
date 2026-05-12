@@ -2190,6 +2190,11 @@ def create_wr_manual(data: WRManualCreateRequest, user=Depends(get_current_user)
         pass
     return {
         "request_id": wr.request_id,
+        # Bug 2026-05-12 (Magdalena): el frontend mostraba "WR-2026-00179" en
+        # el success modal porque el response de /manual no incluía aviso_number.
+        # Ahora SÍ se devuelve → frontend formatea como "AV-NNNNN" consistente
+        # con la lista (mismo fix que BUG-01 en /capture/).
+        "aviso_number": getattr(wr, "aviso_number", None),
         "status": wr.status,
         "equipment_tag": wr.equipment_tag,
         "priority_code": wr.priority_code,

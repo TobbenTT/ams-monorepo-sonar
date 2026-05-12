@@ -1732,10 +1732,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
                 </p>
               </div>
             )}
-            {/* 0B5 (reunión VSC 2026-05-11): Suggested Action reubicado JUSTO
-                después de "qué pasó" (textarea whatHappens). Jorge: el flujo
-                cognitivo es describir el problema → escribir acción → invocar IA. */}
-            <div className="border rounded-xl p-4 mt-3">
+            {/* Magdalena 2026-05-12: Suggested Actions se MOVIÓ debajo del
+                Nivel de Riesgo (ver bloque más abajo). Aquí queda oculto.
+                La razón: el flujo cognitivo ahora es describir → IA analiza
+                + riesgo se calcula → SUGGESTED ACTIONS aparece autocompletado. */}
+            <div className="border rounded-xl p-4 mt-3 hidden">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Suggested Actions</label>
               {form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? (() => {
                 const parseSteps = (raw) => {
@@ -2036,9 +2037,81 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts }) {
             </p>
           </div>
 
-          {/* 0B5 (reunión VSC 2026-05-11): bloque "Suggested Action" reubicado
-              arriba — ahora aparece justo después del textarea whatHappens y
-              antes del módulo IA Assistant. */}
+          {/* Magdalena 2026-05-12: Suggested Actions reubicado DEBAJO del
+              Nivel de Riesgo (antes estaba arriba). El campo se auto-completa
+              cuando la IA termina de procesar — el usuario puede editarlo.
+              Si no hay sugerencia IA, queda vacío para entrada manual. */}
+          <div className="border rounded-xl p-4 mt-3">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Suggested Actions
+                {form.suggestedAction && (
+                  <span className="ml-2 text-[9px] font-normal italic text-emerald-600 normal-case">
+                    {form.suggestedAction.startsWith('1.') || form.suggestedAction.startsWith('1)') ? '(autocompletado por IA, editable)' : '(manual)'}
+                  </span>
+                )}
+              </label>
+              <button
+                type="button"
+                onClick={() => handleAiSuggest()}
+                disabled={aiLoading || visionLoading || (!form.whatHappens?.trim() && photos.length === 0)}
+                className="text-[10px] font-semibold px-2.5 py-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white rounded-md flex items-center gap-1"
+                title="Generar acciones sugeridas con IA basado en el problema descrito"
+              >
+                {aiLoading ? '⚙ Pensando…' : '✨ Sugerir con IA'}
+              </button>
+            </div>
+            {form.suggestedAction && /\d{1,2}[\.\)]\s/.test(form.suggestedAction) ? (() => {
+              const parseSteps = (raw) => {
+                const steps = [];
+                for (let n = 1; n <= 30; n++) {
+                  const start = raw.indexOf(`${n}. `);
+                  if (start === -1) break;
+                  const nextStart = raw.indexOf(`${n + 1}. `, start + 1);
+                  const text = raw.substring(start, nextStart > -1 ? nextStart : undefined).replace(/^\d+\.\s*/, '').trim();
+                  if (text) steps.push(text);
+                }
+                return steps;
+              };
+              const serialize = (arr) => arr.map((t, i) => `${i + 1}. ${t}`).join('\n');
+              const steps = parseSteps(form.suggestedAction);
+              return (
+                <>
+                  <div className="space-y-1.5 mb-2">
+                    {steps.map((s, i) => (
+                      <div key={i} className="flex gap-2 items-start p-2 bg-gray-50 rounded-lg border text-xs group">
+                        <span className="font-bold text-emerald-600 min-w-[20px] pt-1">{i + 1}.</span>
+                        <input
+                          value={s}
+                          onChange={(e) => {
+                            const n = [...steps]; n[i] = e.target.value;
+                            setF('suggestedAction', serialize(n));
+                          }}
+                          className="flex-1 bg-transparent border-b border-transparent focus:border-emerald-400 focus:outline-none py-1" />
+                        <button type="button" title="Eliminar"
+                          onClick={() => setF('suggestedAction', serialize(steps.filter((_, j) => j !== i)))}
+                          className="p-0.5 text-gray-400 hover:text-red-500">×</button>
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button"
+                    onClick={() => {
+                      const txt = window.prompt('Nueva acción:');
+                      if (!txt || !txt.trim()) return;
+                      setF('suggestedAction', serialize([...steps, txt.trim()]));
+                    }}
+                    className="text-[11px] font-semibold px-2.5 py-1 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">
+                    + Agregar acción
+                  </button>
+                </>
+              );
+            })() : (
+              <textarea value={form.suggestedAction} onChange={e => setF('suggestedAction', e.target.value)}
+                placeholder="What corrective action is recommended?"
+                rows={4}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y" />
+            )}
+          </div>
 
           {/* Priority+Estado movidos arriba del textbox (Jorge 2026-04-23) */}
 

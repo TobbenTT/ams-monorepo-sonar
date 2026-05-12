@@ -2091,6 +2091,9 @@ export default function WorkOrdersPage() {
           { id: 'resumen', label: 'Summary', icon: Info },
           { id: 'operaciones', label: 'Operaciones', icon: List },
           { id: 'materiales', label: 'Materials', icon: Package },
+          // SF-675 (2026-05-12): nueva pestaña "Equipo Apoyo" — exponer
+          // support_equipment con HH editable + tipo + notas en OT detail.
+          { id: 'apoyo', label: 'Equipo Apoyo', icon: Wrench },
           { id: 'costos', label: 'Costos', icon: DollarSign },
           // Jorge SF-515: pestaña HH Notification sólo activa cuando OT está En Ejecución
           ...(isInExecution ? [{ id: 'hh_notif', label: 'Notif. HH', icon: Clock }] : []),
@@ -2881,6 +2884,112 @@ export default function WorkOrdersPage() {
                   })()}
                 </div>
               )}
+
+              {/* ─── TAB: EQUIPO DE APOYO (SF-675) ─── */}
+              {otDetailTab === 'apoyo' && (() => {
+                const items = Array.isArray(selectedOT.support_equipment) ? selectedOT.support_equipment : [];
+                const totalHH = items.reduce((s, it) => s + (parseFloat(it?.hours) || 0), 0);
+                const EQUIP_TYPES = [
+                  { value: 'CRANE', label: 'Grúa' },
+                  { value: 'LIFT', label: 'Plataforma' },
+                  { value: 'TRUCK', label: 'Camión' },
+                  { value: 'SCAFFOLD', label: 'Andamio' },
+                  { value: 'OTHER', label: 'Otro' },
+                ];
+                const editLocal = (idx, patch) => {
+                  const next = items.map((it, i) => i === idx ? { ...it, ...patch } : it);
+                  setSelectedOT(prev => prev ? { ...prev, support_equipment: next } : prev);
+                };
+                const addItem = () => {
+                  const next = [...items, { tag: '', name: '', equipment_type: 'OTHER', hours: 1, notes: '' }];
+                  setSelectedOT(prev => prev ? { ...prev, support_equipment: next } : prev);
+                };
+                const removeItem = (idx) => {
+                  const next = items.filter((_, i) => i !== idx);
+                  setSelectedOT(prev => prev ? { ...prev, support_equipment: next } : prev);
+                };
+                const persist = async () => {
+                  try {
+                    const cleaned = items.filter(it => it.tag || it.name);
+                    await api.updateWOSupportEquipment(selectedOT.wo_id, cleaned);
+                    toast.success('Equipo de apoyo guardado');
+                    reloadData();
+                  } catch (e) { toast.error(e.message || 'Error al guardar'); }
+                };
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-gray-800">Equipo de Apoyo</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Total HH: {totalHH.toFixed(1)}h</span>
+                        <button type="button" onClick={addItem} className="text-xs px-2 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 flex items-center gap-1">
+                          <Plus size={12} /> Agregar
+                        </button>
+                        <button type="button" onClick={persist} className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1">
+                          <Save size={12} /> Guardar
+                        </button>
+                      </div>
+                    </div>
+                    {items.length === 0 && (
+                      <p className="text-xs text-gray-500 italic">Sin equipos de apoyo registrados. Click "Agregar" para sumar grúa, plataforma, camión, andamio o equipo especial.</p>
+                    )}
+                    {items.length > 0 && (
+                      <table className="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-2 py-1.5 text-left font-semibold text-gray-600">Tag/ID</th>
+                            <th className="px-2 py-1.5 text-left font-semibold text-gray-600">Descripción</th>
+                            <th className="px-2 py-1.5 text-left font-semibold text-gray-600">Tipo</th>
+                            <th className="px-2 py-1.5 text-center font-semibold text-gray-600">HH</th>
+                            <th className="px-2 py-1.5 text-left font-semibold text-gray-600">Notas</th>
+                            <th className="px-2 py-1.5"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.map((it, idx) => (
+                            <tr key={idx} className="border-t border-gray-100">
+                              <td className="px-2 py-1">
+                                <input type="text" value={it.tag || ''} onChange={e => editLocal(idx, { tag: e.target.value })}
+                                  className="w-full px-1.5 py-1 border border-gray-200 rounded text-xs" placeholder="GRUA-01" />
+                              </td>
+                              <td className="px-2 py-1">
+                                <input type="text" value={it.name || ''} onChange={e => editLocal(idx, { name: e.target.value })}
+                                  className="w-full px-1.5 py-1 border border-gray-200 rounded text-xs" placeholder="Grúa 50 ton" />
+                              </td>
+                              <td className="px-2 py-1">
+                                <select value={it.equipment_type || 'OTHER'} onChange={e => editLocal(idx, { equipment_type: e.target.value })}
+                                  className="w-full px-1.5 py-1 border border-gray-200 rounded text-xs bg-white">
+                                  {EQUIP_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                </select>
+                              </td>
+                              <td className="px-2 py-1">
+                                <input type="number" min="0" step="0.5" value={it.hours ?? 1}
+                                  onFocus={e => e.target.select()}
+                                  onChange={e => {
+                                    const cleaned = e.target.value.replace(/^0+(?=\d)/, '');
+                                    const parsed = cleaned === '' ? 0 : parseFloat(cleaned);
+                                    editLocal(idx, { hours: Number.isNaN(parsed) ? 1 : Math.max(0, parsed) });
+                                  }}
+                                  className="w-16 px-1.5 py-1 border border-gray-200 rounded text-xs text-center" />
+                              </td>
+                              <td className="px-2 py-1">
+                                <input type="text" value={it.notes || ''} onChange={e => editLocal(idx, { notes: e.target.value })}
+                                  className="w-full px-1.5 py-1 border border-gray-200 rounded text-xs" placeholder="…" />
+                              </td>
+                              <td className="px-2 py-1 text-center">
+                                <button type="button" onClick={() => removeItem(idx)} className="text-rose-600 hover:text-rose-800" title="Eliminar">
+                                  <X size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                    <p className="text-[10px] text-gray-500 italic">SF-675: HH se suma al total estimado de la OT al cerrar. Tipo se mapea a SAP PM ZSL (Servicio de soporte).</p>
+                  </div>
+                );
+              })()}
 
               {/* ─── TAB: HISTORIAL ─── */}
               {otDetailTab === 'historial' && (

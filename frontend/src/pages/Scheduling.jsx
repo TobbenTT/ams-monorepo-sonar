@@ -2091,8 +2091,16 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                             {crewSize > 0 && (
                                               <span className="inline-flex items-center gap-0.5"><Users size={9} /> {crewSize}</span>
                                             )}
-                                            {ops.length > 0 && !wo._continuation && crewSize === 0 && (
-                                              <span className="text-[9px] opacity-70">{ops.length} ops</span>
+                                            {/* SF-670 (2026-05-12): siempre mostrar ops badge + breakdown por specialty
+                                                en tooltip para que el planner vea la granularidad de la OT sin abrir
+                                                modal. Click expande la ExpandedWOCard con detalle por op. */}
+                                            {ops.length > 0 && !wo._continuation && (
+                                              <span
+                                                className="text-[9px] font-semibold px-1 rounded bg-sky-100 text-sky-800 border border-sky-200 cursor-help"
+                                                title={`${ops.length} operacion${ops.length > 1 ? 'es' : ''}:\n` + ops.slice(0,8).map((o, i) => `${i+1}. ${(o.specialty || '?').slice(0,12)} · ${o.quantity || 1}p × ${o.duration || o.hours || 1}h = ${((o.quantity || 1) * (parseFloat(o.duration || o.hours) || 1)).toFixed(1)}h${o.description ? '\n   ' + String(o.description).slice(0,60) : ''}`).join('\n') + (ops.length > 8 ? `\n…+${ops.length - 8} más` : '')}
+                                              >
+                                                {ops.length} ops
+                                              </span>
                                             )}
                                             {/* Jorge 2026-04-27: reservar/desreservar OT puntual sin bloquear semana entera */}
                                             {!wo._continuation && (

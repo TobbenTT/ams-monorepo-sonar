@@ -4190,7 +4190,10 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                           <div className="text-[10px] text-indigo-600 font-semibold uppercase mb-1.5">
                             Reservas ({list.length}) {list.length > 1 && '— todas activas en bodega'}
                           </div>
-                          <div className="space-y-1.5">
+                          {/* N5 Jorge 2026-05-12 (00:41:41): "no la 46 y la 48 separadas
+                              (...) acá al lado aparecía la nueva". 2-3 reservas side-by-side
+                              (grid); con más, vertical para no colapsar modal. */}
+                          <div className={list.length === 2 ? 'grid grid-cols-2 gap-1.5' : list.length === 3 ? 'grid grid-cols-3 gap-1.5' : 'space-y-1.5'}>
                             {list.map((c, i) => {
                               const mats = byRes[c] || [];
                               const isLast = i === list.length - 1;

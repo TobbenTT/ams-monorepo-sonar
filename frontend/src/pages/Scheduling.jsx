@@ -2012,12 +2012,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                     onDrop={e => {
                                       e.preventDefault();
                                       if (dragWO) {
-                                        toast({
-                                          kind: 'error',
-                                          text: wrongShift
-                                            ? `${tech.name} es de turno ${techIsNight ? 'noche' : 'día'} · no se puede asignar al ${shift.id}`
-                                            : 'Off-shift: técnico no disponible este día'
-                                        });
+                                        toast.error(wrongShift
+                                          ? `${tech.name} es de turno ${techIsNight ? 'noche' : 'día'} · no se puede asignar al ${shift.id}`
+                                          : 'Off-shift: técnico no disponible este día');
                                         setDragWO(null);
                                         setDropTarget(null);
                                       }
@@ -5524,7 +5521,7 @@ export default function Scheduling() {
         plannedHours={smartAssignFor?.plannedHours || 1}
         excludeWorkerIds={[]}
         onSelect={(c) => {
-          toast({ kind: 'info', text: `Candidato sugerido: ${c.name} (score ${c.score.toFixed(0)}). Aplicar reasignación manualmente desde la OT.` });
+          toast.info(`Candidato sugerido: ${c.name} (score ${c.score.toFixed(0)}). Aplicar reasignación manualmente desde la OT.`);
         }}
       />
 

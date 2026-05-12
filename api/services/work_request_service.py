@@ -62,7 +62,10 @@ def approve_work_request(
         return None
 
     now = datetime.now()
-    priority = priority_override or wr.priority_code or "P3"
+    # SF-681: si el planner ya bloqueó la prioridad manualmente, ignorar
+    # priority_override (ej. el bump express P2 en PM03 al aprobar/convertir).
+    locked = bool(isinstance(wr.validation, dict) and wr.validation.get("priority_locked"))
+    priority = (wr.priority_code if locked else (priority_override or wr.priority_code)) or "P3"
 
     wr.status = "APROBADO"
     wr.approver_id = approver_id
@@ -389,9 +392,20 @@ def classify_work_request(db: Session, request_id: str) -> dict | None:
 def _apply_modifications(wr: WorkRequestModel, modifications: dict):
     """Apply planner modifications to a work request."""
     if "priority" in modifications:
-        ai_class = wr.ai_classification or {}
-        ai_class["priority_suggested"] = modifications["priority"]
+        # SF-681: la prioridad manual del planner DEBE persistir en la columna
+        # DB. Antes solo se escribía en ai_classification.priority_suggested,
+        # y el list endpoint principal (línea 239) lee wr.priority_code → el
+        # cambio P1→P3 quedaba visualmente como P1. Ahora actualizamos AMBOS y
+        # marcamos validation.priority_locked para que apply_priority_engine
+        # y el bump P1/P2 PM03 respeten el override manual.
+        new_prio = modifications["priority"]
+        wr.priority_code = new_prio
+        ai_class = dict(wr.ai_classification) if isinstance(wr.ai_classification, dict) else (wr.ai_classification or {})
+        ai_class["priority_suggested"] = new_prio
         wr.ai_classification = ai_class
+        v = dict(wr.validation) if isinstance(wr.validation, dict) else {}
+        v["priority_locked"] = True
+        wr.validation = v
     if "equipment_tag" in modifications:
         wr.equipment_tag = modifications["equipment_tag"]
 

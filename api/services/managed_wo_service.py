@@ -434,14 +434,29 @@ def create_from_work_request(db: Session, request_id: str, planned_by: str = "",
         # por \n no detectaba estos casos y la OT quedaba con 1 op de 48h
         # bundleando todo. Normalizamos primero forzando salto antes de cada
         # número-punto, luego procesamos como antes.
+        # SF-720 (2026-05-12) — el parser sólo aceptaba `1.` / `1)`. Si Claude
+        # respondía con `- ...` / `* ...` / `• ...` / `Paso N:` / `Step N:`,
+        # `steps` quedaba vacío y caía al fallback que generaba 1 op por
+        # recurso (no por actividad IA). Ampliamos la detección y caemos a
+        # split por línea cuando ningún prefijo numérico/viñeta matchea.
         normalized = _re.sub(r"\s+(\d+[\.\)])\s+", r"\n\1 ", str(suggested))
+        STEP_PREFIX = _re.compile(
+            r"^(?:\d+[\.\)]|[-*•·]|paso\s*\d+\s*[:\-\.]?|step\s*\d+\s*[:\-\.]?)\s*(.+)$",
+            _re.IGNORECASE,
+        )
         for line in normalized.split("\n"):
             line = line.strip()
             if not line:
                 continue
-            m = _re.match(r"^\d+[\.\)]\s*(.+)$", line)
+            m = STEP_PREFIX.match(line)
             if m:
                 steps.append(m.group(1).strip())
+        # Fallback: ningún prefijo conocido pero la sugerencia tiene múltiples
+        # líneas → tratamos cada línea no vacía como un paso.
+        if not steps:
+            raw_lines = [ln.strip(" -*•·\t") for ln in str(suggested).split("\n") if ln.strip()]
+            if len(raw_lines) > 1:
+                steps = raw_lines
     if steps:
         # Bug 2026-04-30: si hay más steps que resources, los extras
         # replicaban resources[0] inflando HH (ej. 7 mech ops × 16 HH = 112).

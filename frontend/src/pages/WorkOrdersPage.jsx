@@ -2482,13 +2482,29 @@ export default function WorkOrdersPage() {
                               <td className="px-3 py-2 text-center">
                                 {isEditable ? (
                                   <input type="number" min="1" className="w-12 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
-                                    value={op.quantity || 1} onChange={(e) => { const q = parseInt(e.target.value) || 1; setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, quantity: q, planned_hours: q * (parseFloat(o.duration) || 1) } : o)); }} />
+                                    value={op.quantity ?? 1}
+                                    onFocus={e => e.target.select()}
+                                    onChange={(e) => {
+                                      // SF-682: focus selecciona valor; tecleo REEMPLAZA (no concatena).
+                                      const cleaned = e.target.value.replace(/^0+(?=\d)/, '');
+                                      const parsed = cleaned === '' ? 0 : parseInt(cleaned, 10);
+                                      const q = Number.isNaN(parsed) ? 1 : Math.max(0, parsed);
+                                      setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, quantity: q, planned_hours: q * (parseFloat(o.duration) || 1) } : o));
+                                    }} />
                                 ) : <span>{op.quantity || 1}</span>}
                               </td>
                               <td className="px-3 py-2 text-center">
                                 {isEditable ? (
                                   <input type="number" min="0.5" step="0.5" className="w-12 border-0 border-b border-gray-200 p-0 text-sm text-center focus:border-emerald-400 focus:ring-0 bg-transparent"
-                                    value={op.duration || 1} onChange={(e) => { const d = parseFloat(e.target.value) || 1; setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, duration: d, planned_hours: (parseInt(o.quantity) || 1) * d } : o)); }} />
+                                    value={op.duration ?? 1}
+                                    onFocus={e => e.target.select()}
+                                    onChange={(e) => {
+                                      // SF-682: replace (no sum) — select on focus + leading-zero strip.
+                                      const cleaned = e.target.value.replace(/^0+(?=\d)/, '');
+                                      const parsed = cleaned === '' ? 0 : parseFloat(cleaned);
+                                      const d = Number.isNaN(parsed) ? 1 : Math.max(0, parsed);
+                                      setOtOps(prev => prev.map(o => o._id === op._id ? { ...o, duration: d, planned_hours: (parseInt(o.quantity) || 1) * d } : o));
+                                    }} />
                                 ) : <span>{op.duration || 1}</span>}
                               </td>
                               <td className="px-3 py-2 text-center font-medium">{hhPlan}h</td>

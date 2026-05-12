@@ -281,9 +281,12 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
   // ocultar tabs, así que el state se preserva — este efecto lo resetea al
   // volver explícitamente.
   useEffect(() => {
-    if (isActive && createdWRId) {
-      // pequeño delay para que el usuario alcance a ver el banner al menos 1s
-      const t = setTimeout(() => setCreatedWRId(null), 800);
+    // SF-722: antes este efecto sólo limpiaba cuando isActive=true, pero la
+    // página suele renderizarse standalone (route /failure-capture) y
+    // isActive llega undefined → el banner con el código AV-XXXXX se quedaba
+    // pegado para siempre. Ahora limpiamos siempre que haya createdWRId.
+    if (createdWRId) {
+      const t = setTimeout(() => setCreatedWRId(null), 1500);
       return () => clearTimeout(t);
     }
   }, [isActive, createdWRId]);

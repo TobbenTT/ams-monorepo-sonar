@@ -743,6 +743,23 @@ def update_work_order(
     for field in ['planned_start', 'planned_end', 'assigned_workers']:
         if raw.get(field) == '' or raw.get(field) == []:
             update_data[field] = None
+    # Stale GET fix (2026-05-12): el cliente a veces manda assigned_workers
+    # con elementos null/vacíos ([null], [{worker_id: undefined}, ...]). Si
+    # se persistían tal cual, el _to_dict devolvía la lista cruda con None
+    # y rompía el render de la OT detail. Filtrar ahora.
+    if isinstance(update_data.get('assigned_workers'), list):
+        cleaned = []
+        for w in update_data['assigned_workers']:
+            if not w:
+                continue
+            if isinstance(w, dict):
+                wid = w.get('worker_id') or w.get('id')
+                if not wid:
+                    continue
+                cleaned.append(w)
+            elif isinstance(w, str) and w.strip():
+                cleaned.append(w)
+        update_data['assigned_workers'] = cleaned
     # Group B #2 — pass authenticated user for audit trail attribution
     update_data.setdefault("updated_by", getattr(user, "user_id", "system"))
     # Fase 9 — If-Match header para optimistic concurrency
@@ -772,15 +789,18 @@ def update_work_order(
     # abiertos no veían el cambio hasta refresh manual.
     try:
         from api.services.ws_manager import queue_notify
+        # SF-668/SF-659: broadcast con el resultado completo cuando viene como
+        # dict — antes solo mandábamos 5 campos y los tabs abiertos no veían
+        # los cambios de assigned_workers ni de cualquier otro campo.
+        wo_payload = result if isinstance(result, dict) else {
+            "wo_id": wo_id,
+            "status": None,
+            "planned_start": update_data.get("planned_start"),
+            "planned_end": update_data.get("planned_end"),
+        }
         queue_notify(
             "wo_updated",
-            {
-                "wo_id": wo_id,
-                "wo_number": result.get("wo_number") if isinstance(result, dict) else None,
-                "status": result.get("status") if isinstance(result, dict) else None,
-                "planned_start": update_data.get("planned_start"),
-                "planned_end": update_data.get("planned_end"),
-            },
+            {"wo": wo_payload, "wo_id": wo_id},
             existing.plant_id if existing else None,
         )
     except Exception:

@@ -248,7 +248,7 @@ export default function FieldCapture() {
         if (!result?.work_request_id && !result?.request_id) return;
         try {
             const id = result.work_request_id || result.request_id;
-            await api.validateWorkRequest(id, {
+            const resp = await api.validateWorkRequest(id, {
                 action: 'MODIFY',
                 modifications: {
                     equipment_tag: editEquipment,
@@ -259,8 +259,11 @@ export default function FieldCapture() {
                 },
             });
             setResult(prev => ({ ...prev, status: 'PENDING_VALIDATION' }));
-            const wrNum = 'WR-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
-            setGeneratedWR(wrNum);
+            // SF-678: antes generábamos un WR-YYYY-NNN fake client-side. Ahora
+            // mostramos el código real devuelto por el backend (AV-XXXXX) o el
+            // id existente del WR; nunca un código inventado.
+            const realCode = resp?.request_id || resp?.wr_code || resp?.aviso_id || id;
+            setGeneratedWR(realCode);
             toast.success(t('capture.wrGenerated'));
             setStage(2);
         } catch (e) {

@@ -152,16 +152,31 @@ def search_materials(q: str = "", category: str = "", limit: int = 20, db: Sessi
     query = "SELECT sap_id, description, category, unit FROM sap_materials WHERE 1=1"
     params = {}
     if q:
-        q_lower = q.lower()
-        # Check if English term, map to Spanish
-        es_term = EN_ES_MAP.get(q_lower, "")
-        if es_term:
-            query += " AND (sap_id LIKE :q OR LOWER(description) LIKE :q OR LOWER(description) LIKE :q2)"
-            params["q"] = f"%{q_lower}%"
-            params["q2"] = f"%{es_term}%"
-        else:
-            query += " AND (sap_id LIKE :q OR LOWER(description) LIKE :q)"
-            params["q"] = f"%{q_lower}%"
+        # SF-666: el query antes era un único string LIKE %q% sobre sap_id/
+        # description. Si el usuario tipeaba dos palabras ("rodamiento 6204"
+        # o "perno acero") el LIKE pegaba sólo si aparecían contiguas. Ahora
+        # partimos en tokens y exigimos que CADA token aparezca (AND) en
+        # alguno de los campos (sap_id, description o el mapeo ES).
+        import re as _re_local
+        q_lower = q.lower().strip()
+        tokens = [t for t in _re_local.split(r"\s+", q_lower) if t]
+        for i, tok in enumerate(tokens):
+            es_term = EN_ES_MAP.get(tok, "")
+            param_key = f"q{i}"
+            params[param_key] = f"%{tok}%"
+            if es_term:
+                params[f"q{i}_es"] = f"%{es_term}%"
+                query += (
+                    f" AND (LOWER(sap_id) LIKE :{param_key} "
+                    f"OR LOWER(description) LIKE :{param_key} "
+                    f"OR LOWER(description) LIKE :{param_key}_es)"
+                )
+            else:
+                query += (
+                    f" AND (LOWER(sap_id) LIKE :{param_key} "
+                    f"OR LOWER(description) LIKE :{param_key} "
+                    f"OR LOWER(COALESCE(category, '')) LIKE :{param_key})"
+                )
     if category:
         query += " AND category = :cat"
         params["cat"] = category.upper()
@@ -354,7 +369,9 @@ def get_work_request(request_id: str, user=Depends(get_current_user), db: Sessio
         "equipment_name": ai.get("wo_title") or ai.get("equipment_name") or wr.equipment_tag or "",
         "equipment_confidence": wr.equipment_confidence,
         "plant_id": ai.get("plant_id", ""),
-        "priority": ai.get("priority_suggested") or ai.get("priority", "P3"),
+        # SF-681: preferir columna DB sobre ai_classification para que la
+        # prioridad editada manualmente no quede ofuscada por una sugerencia IA antigua.
+        "priority": wr.priority_code or ai.get("priority_suggested") or ai.get("priority", "P3"),
         "clase_ot": ai.get("clase_ot", ""),
         "activity_class": ai.get("activity_class", ""),
         "technician_name": ai.get("technician_name", ""),
@@ -455,17 +472,20 @@ def convert_wr_to_pm03(
     wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
     if not wr:
         raise HTTPException(status_code=404, detail="Work request not found")
+    # SF-681: el planner puede haber bloqueado la prioridad. Respetar el
+    # override manual aunque la conversión PM03 normalmente fuerce P2.
+    prio_locked = bool(isinstance(wr.validation, dict) and wr.validation.get("priority_locked"))
     # 1. Asegurar aprobación
     if wr.status not in ("VALIDATED", "APPROVED", "ASSIGNED", "APROBADO"):
         work_request_service.approve_work_request(
             db, request_id,
             approver_id=getattr(user, "user_id", ""),
             comment=(data.comment or "Express conversion P1/P2 → PM03"),
-            priority_override="P2" if wr.priority_code not in ("P1", "P2") else None,
+            priority_override=None if prio_locked else ("P2" if wr.priority_code not in ("P1", "P2") else None),
         )
         db.refresh(wr)
-    # 2. Forzar P1/P2 si no lo es (requisito de PM03)
-    if wr.priority_code not in ("P1", "P2"):
+    # 2. Forzar P1/P2 si no lo es (requisito de PM03) — salvo lock manual
+    if not prio_locked and wr.priority_code not in ("P1", "P2"):
         wr.priority_code = "P2"
         db.commit()
         db.refresh(wr)

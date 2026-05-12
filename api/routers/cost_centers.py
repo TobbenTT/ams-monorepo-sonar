@@ -29,11 +29,14 @@ router = APIRouter(
 
 # ── Schemas ───────────────────────────────────────────────────────────
 class CostCenterCreate(BaseModel):
-    cost_center_id: str
-    name: str
+    cc_id: str
+    cc_code: str
+    cc_name: str
     plant_id: str | None = None
+    area: str | None = None
+    responsible: str | None = None
     technical_location: str | None = None
-    parent_cost_center_id: str | None = None
+    parent_cc_id: str | None = None
     responsible_user_id: str | None = None
     budget_annual: float = 0.0
     currency: str = "USD"
@@ -41,9 +44,11 @@ class CostCenterCreate(BaseModel):
 
 class CostCenterUpdate(BaseModel):
     model_config = {"extra": "ignore"}
-    name: str | None = None
+    cc_name: str | None = None
+    area: str | None = None
+    responsible: str | None = None
     technical_location: str | None = None
-    parent_cost_center_id: str | None = None
+    parent_cc_id: str | None = None
     responsible_user_id: str | None = None
     budget_annual: float | None = None
     status: str | None = None
@@ -61,18 +66,24 @@ class ExpenseClassCreate(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────
 def _cc_dict(cc: CostCenterModel) -> dict:
+    actual = cc.actual_ytd or 0
+    budget_ytd = cc.budget_ytd or 0
     return {
-        "cost_center_id": cc.cost_center_id,
-        "name": cc.name,
+        "cc_id": cc.cc_id,
+        "cc_code": cc.cc_code,
+        "cc_name": cc.cc_name,
         "plant_id": cc.plant_id,
+        "area": cc.area,
+        "responsible": cc.responsible,
         "technical_location": cc.technical_location,
-        "parent_cost_center_id": cc.parent_cost_center_id,
+        "parent_cc_id": cc.parent_cc_id,
         "responsible_user_id": cc.responsible_user_id,
         "budget_annual": cc.budget_annual,
-        "budget_ytd": cc.budget_ytd,
-        "actual_ytd": cc.actual_ytd,
-        "variance": (cc.actual_ytd or 0) - (cc.budget_ytd or 0),
-        "variance_pct": round(((cc.actual_ytd or 0) - (cc.budget_ytd or 0)) / (cc.budget_ytd or 1) * 100, 1) if cc.budget_ytd else 0,
+        "budget_ytd": budget_ytd,
+        "budget_used": cc.budget_used or 0,
+        "actual_ytd": actual,
+        "variance": actual - budget_ytd,
+        "variance_pct": round((actual - budget_ytd) / budget_ytd * 100, 1) if budget_ytd else 0,
         "currency": cc.currency,
         "status": cc.status,
     }
@@ -103,30 +114,30 @@ def list_cost_centers(plant_id: str | None = None, status: str | None = None, db
         q = q.filter(CostCenterModel.plant_id == plant_id)
     if status:
         q = q.filter(CostCenterModel.status == status)
-    items = q.order_by(CostCenterModel.cost_center_id).all()
+    items = q.order_by(CostCenterModel.cc_code).all()
     return {"items": [_cc_dict(c) for c in items], "count": len(items)}
 
 
 @router.post("/", dependencies=[Depends(require_role("admin", "manager"))])
 def create_cost_center(data: CostCenterCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    existing = db.query(CostCenterModel).filter(CostCenterModel.cost_center_id == data.cost_center_id).first()
+    existing = db.query(CostCenterModel).filter(CostCenterModel.cc_id == data.cc_id).first()
     if existing:
-        raise HTTPException(status_code=409, detail=f"CostCenter {data.cost_center_id} ya existe")
+        raise HTTPException(status_code=409, detail=f"CostCenter {data.cc_id} ya existe")
     cc = CostCenterModel(**data.model_dump())
     db.add(cc)
     db.commit()
     db.refresh(cc)
     audit_service.log_action(
-        db, entity_type="cost_center", entity_id=cc.cost_center_id,
+        db, entity_type="cost_center", entity_id=cc.cc_id,
         action="CREATE", user=getattr(user, "user_id", "system"),
-        payload={"name": cc.name, "budget_annual": cc.budget_annual},
+        payload={"cc_code": cc.cc_code, "cc_name": cc.cc_name, "budget_annual": cc.budget_annual},
     )
     return _cc_dict(cc)
 
 
-@router.put("/{cost_center_id}", dependencies=[Depends(require_role("admin", "manager"))])
-def update_cost_center(cost_center_id: str, data: CostCenterUpdate, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    cc = db.query(CostCenterModel).filter(CostCenterModel.cost_center_id == cost_center_id).first()
+@router.put("/{cc_id}", dependencies=[Depends(require_role("admin", "manager"))])
+def update_cost_center(cc_id: str, data: CostCenterUpdate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    cc = db.query(CostCenterModel).filter(CostCenterModel.cc_id == cc_id).first()
     if not cc:
         raise HTTPException(status_code=404, detail="CostCenter no encontrado")
     changes = data.model_dump(exclude_unset=True)
@@ -134,7 +145,7 @@ def update_cost_center(cost_center_id: str, data: CostCenterUpdate, db: Session 
         setattr(cc, k, v)
     db.commit()
     audit_service.log_action(
-        db, entity_type="cost_center", entity_id=cost_center_id,
+        db, entity_type="cost_center", entity_id=cc_id,
         action="UPDATE", user=getattr(user, "user_id", "system"),
         payload=changes,
     )
@@ -190,7 +201,7 @@ def report_by_cost_center(plant_id: str | None = None, db: Session = Depends(get
     rows = q.group_by(ManagedWorkOrderModel.cost_center_id).all()
 
     # Cruce con catálogo de CeCos para name
-    cc_lookup = {c.cost_center_id: c for c in db.query(CostCenterModel).all()}
+    cc_lookup = {c.cc_id: c for c in db.query(CostCenterModel).all()}
 
     result = []
     for r in rows:
@@ -199,7 +210,8 @@ def report_by_cost_center(plant_id: str | None = None, db: Session = Depends(get
         budget = float(r.budget_total or 0)
         result.append({
             "cost_center_id": r.cost_center_id,
-            "name": cc.name if cc else r.cost_center_id,
+            "cc_code": cc.cc_code if cc else None,
+            "cc_name": cc.cc_name if cc else r.cost_center_id,
             "wo_count": r.wo_count,
             "actual_total": round(actual, 2),
             "budget_total": round(budget, 2),

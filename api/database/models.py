@@ -1738,23 +1738,33 @@ class PreparativoOTModel(Base):
 # Mapea al modelo SAP CO-CCA (Cost Center Accounting).
 
 class CostCenterModel(Base):
-    """Centro de costo — agrupación contable de gastos por área/equipo/proyecto."""
+    """Centro de costo — agrupación contable de gastos por área/equipo/proyecto.
+
+    Schema alineado con la tabla `cost_centers` existente en producción
+    (creada por seed sprint6_scaffolds + sap_pm). Columnas adicionales para
+    Tanda 0E (technical_location, parent, budget_ytd, actual_ytd, updated_at)
+    se agregan via migration ALTER TABLE en api/database/connection.py."""
     __tablename__ = "cost_centers"
 
-    cost_center_id: Mapped[str] = mapped_column(String(20), primary_key=True)  # ej. CC-MEC-MOL
-    name: Mapped[str] = mapped_column(String(200))
+    cc_id: Mapped[str] = mapped_column(String(50), primary_key=True)        # ex CC-001
+    cc_code: Mapped[str] = mapped_column(String(20))                         # SAP CCR code
+    cc_name: Mapped[str] = mapped_column(String(200))
     plant_id: Mapped[str | None] = mapped_column(String(50), index=True, nullable=True)
-    # Ubicación técnica raíz que cubre este CeCo (puede ser área/sistema/equipo)
-    technical_location: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
-    parent_cost_center_id: Mapped[str | None] = mapped_column(String(20), nullable=True)  # jerarquía
-    responsible_user_id: Mapped[str | None] = mapped_column(String(50), nullable=True)   # supervisor responsable
+    area: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    responsible: Mapped[str | None] = mapped_column(String(100), nullable=True)
     budget_annual: Mapped[float] = mapped_column(Float, default=0.0)
-    budget_ytd: Mapped[float] = mapped_column(Float, default=0.0)
-    actual_ytd: Mapped[float] = mapped_column(Float, default=0.0)
+    budget_used: Mapped[float] = mapped_column(Float, default=0.0)
     currency: Mapped[str] = mapped_column(String(5), default="USD")
-    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")  # ACTIVE / FROZEN / ARCHIVED
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+    # Tanda 0E (jornada VSC 2026-05-08) — extensión schema existente.
+    # Estas columnas se auto-agregan en boot via _ensure_schema_migrations.
+    technical_location: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    parent_cc_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    responsible_user_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    budget_ytd: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
+    actual_ytd: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now)
 
 
 class ExpenseClassModel(Base):

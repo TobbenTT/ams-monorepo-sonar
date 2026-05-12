@@ -125,6 +125,17 @@ def _run_column_migrations():
         ("managed_work_orders", "support_equipment", "TEXT", None),  # JSON
         # Token versioning para invalidar JWTs en logout (pentest 2026-05-06).
         ("users", "token_version", "INTEGER", "0"),
+        # Tanda 0E (jornada VSC 2026-05-08) — centros costo + clases gasto
+        # en managed_work_orders. Subclasificación contable opex/capex por CeCo.
+        ("managed_work_orders", "cost_center_id", "VARCHAR(20)", None),
+        ("managed_work_orders", "expense_class_id", "VARCHAR(20)", None),
+        # Extensión schema cost_centers existente
+        ("cost_centers", "technical_location", "VARCHAR(100)", None),
+        ("cost_centers", "parent_cc_id", "VARCHAR(50)", None),
+        ("cost_centers", "responsible_user_id", "VARCHAR(50)", None),
+        ("cost_centers", "budget_ytd", "FLOAT", "0.0"),
+        ("cost_centers", "actual_ytd", "FLOAT", "0.0"),
+        ("cost_centers", "updated_at", "DATETIME", None),
     ]
 
     with engine.begin() as conn:

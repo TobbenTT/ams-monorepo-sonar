@@ -1772,10 +1772,11 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                       : `${wo.wo_number} (sin técnicos asignados)\n${wo.estimated_hours || 0}h · ${wo.equipment_tag || ''}`;
                                     return (
                                       <div key={wo.wo_id}
-                                        /* Jorge demo 2026-05-12: las OTs dentro
-                                           del cluster "X OTs en este slot" debían
-                                           poderse arrastrar a otra hora/día. Antes
-                                           solo onClick → bloqueaba el reagendado. */
+                                        /* Jorge demo 2026-05-12 (v2): el click sobre
+                                           la tarjeta YA NO abre la OT en nueva tab —
+                                           era muy agresivo y se gatillaba al fallar el
+                                           click en el botón 👤+. Para abrir la OT hay
+                                           que usar el botón 🔍 explícito. */
                                         draggable={true}
                                         onDragStart={(e) => {
                                           e.stopPropagation();
@@ -1784,20 +1785,22 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
                                         }}
                                         onDragEnd={() => { setDragWO(null); setDropTarget(null); }}
                                         className={`p-1 mb-0.5 rounded text-[10px] cursor-grab active:cursor-grabbing ${typeMeta.bg} border border-border/50 hover:border-emerald-500 hover:shadow-md transition-all`}
-                                        title={tooltipText + '\n(arrastrar para mover a otra hora/día)'}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          try { window.open(`/work-management?tab=planning&openWo=${wo.wo_id}`, '_blank'); } catch {}
-                                        }}>
+                                        title={tooltipText + '\n(arrastrar para mover a otra hora/día · botones 👤+ asignar técnico, 🔍 abrir OT)'}>
                                         <div className="flex items-center gap-1">
                                           <span className={`text-[8px] font-bold px-1 rounded ${prioColor}`}>{wo.priority_code}</span>
                                           <span className="font-mono font-bold truncate">{wo.wo_number}</span>
-                                          {/* Jorge 2026-05-12: botón "asignar técnico" inline */}
+                                          {/* Jorge 2026-05-12: dos botones inline. 👤+ asigna técnico, 🔍 abre OT. */}
                                           <button type="button"
                                             onClick={(e) => { e.stopPropagation(); setAssignPopoverWO(wo); }}
                                             title="Asignar / cambiar técnico"
-                                            className="ml-auto text-[9px] px-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-bold">
+                                            className="ml-auto text-[9px] px-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 font-bold">
                                             👤+
+                                          </button>
+                                          <button type="button"
+                                            onClick={(e) => { e.stopPropagation(); try { window.open(`/work-management?tab=planning&openWo=${wo.wo_id}`, '_blank'); } catch {} }}
+                                            title="Abrir OT en pestaña nueva"
+                                            className="text-[9px] px-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 font-bold">
+                                            🔍
                                           </button>
                                         </div>
                                         <div className="text-[9px] text-foreground/70 truncate">{wo.equipment_tag} · {wo.estimated_hours || 0}h</div>
@@ -2442,70 +2445,107 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, t, onSched
         </button>
       )}
 
-      {/* Jorge demo Goldfields 2026-05-12: popover de asignación manual.
-          Cuando el auto-match no encuentra técnico, el usuario puede pickear
-          uno desde la lista filtrada por especialidad sugerida. */}
+      {/* Jorge demo Goldfields 2026-05-12 (v2): popover multi-select.
+          Toggle checkboxes para agregar/quitar técnicos. Click outside cierra
+          SIN guardar. Botón "Asignar (N)" persiste cambios. */}
       {assignPopoverWO && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setAssignPopoverWO(null)}>
-          <div className="bg-card rounded-xl shadow-2xl border border-border p-4 w-[480px] max-w-[92vw] max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-bold text-foreground">Asignar técnico</h3>
-                <p className="text-xs text-muted-foreground">{assignPopoverWO.wo_number} · {assignPopoverWO.equipment_tag} · {assignPopoverWO.estimated_hours || 0}h</p>
-              </div>
-              <button onClick={() => setAssignPopoverWO(null)} className="text-muted-foreground hover:text-foreground text-lg">×</button>
-            </div>
-            {(() => {
-              const ops = assignPopoverWO.operations || [];
-              const requiredSpecs = new Set();
-              ops.forEach(op => { const s = (op.specialty || '').toUpperCase().trim(); if (s) requiredSpecs.add(s); });
-              const specHint = requiredSpecs.size > 0 ? Array.from(requiredSpecs).join(', ') : 'cualquier especialidad';
-              const filterRe = new RegExp(Array.from(requiredSpecs).map(s => s.slice(0, 4)).join('|') || '.*', 'i');
-              const matched = technicians.filter(t => filterRe.test(t.specialty || ''));
-              const others = technicians.filter(t => !filterRe.test(t.specialty || ''));
-              const list = [...matched, ...others];
-              const assignedIds = new Set((assignPopoverWO.assigned_workers || []).map(w => typeof w === 'string' ? w : (w.worker_id || w.id)));
-              return (
-                <>
-                  <p className="text-[11px] text-muted-foreground mb-2">
-                    Especialidades requeridas: <strong>{specHint}</strong>. Los técnicos compatibles aparecen primero.
-                  </p>
-                  <div className="flex-1 overflow-y-auto border border-border rounded-lg divide-y divide-border">
-                    {list.length === 0 && <div className="p-4 text-center text-xs text-muted-foreground italic">No hay técnicos en la planta.</div>}
-                    {list.map((tech, idx) => {
-                      const isMatch = idx < matched.length;
-                      const isAssigned = assignedIds.has(tech.worker_id || tech.id);
-                      return (
-                        <button key={tech.worker_id || tech.id || idx} type="button"
-                          disabled={isAssigned}
-                          onClick={async () => {
-                            try {
-                              const next = [{ worker_id: tech.worker_id, name: tech.name, specialty: tech.specialty }];
-                              await api.updateManagedWO(assignPopoverWO.wo_id, { assigned_workers: next });
-                              toast.success(`✓ ${tech.name} asignado a ${assignPopoverWO.wo_number}`);
-                              setAssignPopoverWO(null);
-                              onRefresh?.();
-                            } catch (err) {
-                              toast.error('Error al asignar: ' + (err.message || err));
-                            }
-                          }}
-                          className={`w-full text-left px-3 py-2 text-xs hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 ${isMatch ? 'bg-emerald-50/40 dark:bg-emerald-900/10' : ''}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${isMatch ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-                          <span className="font-semibold text-foreground">{tech.name || tech.worker_id?.slice(0, 8)}</span>
-                          <span className="text-muted-foreground">· {tech.specialty || '—'}</span>
-                          {tech.shift && <span className="text-[9px] text-muted-foreground/70">· {tech.shift}</span>}
-                          {isMatch && <span className="ml-auto text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded uppercase">match</span>}
-                          {isAssigned && <span className="ml-auto text-[9px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded uppercase">ya asignado</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              );
-            })()}
+        <TechAssignPopover
+          wo={assignPopoverWO}
+          technicians={technicians}
+          onClose={() => setAssignPopoverWO(null)}
+          onSave={async (workers) => {
+            try {
+              await api.updateManagedWO(assignPopoverWO.wo_id, { assigned_workers: workers });
+              toast.success(`✓ ${workers.length} técnico${workers.length === 1 ? '' : 's'} asignado${workers.length === 1 ? '' : 's'} a ${assignPopoverWO.wo_number}`);
+              setAssignPopoverWO(null);
+              onRefresh?.();
+            } catch (err) {
+              toast.error('Error al asignar: ' + (err.message || err));
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ───── Jorge demo 2026-05-12: popover multi-select para asignar técnicos ───── */
+function TechAssignPopover({ wo, technicians, onClose, onSave }) {
+  const initial = (wo.assigned_workers || []).map(w => typeof w === 'string' ? w : (w.worker_id || w.id)).filter(Boolean);
+  const [selected, setSelected] = useState(new Set(initial));
+  const [saving, setSaving] = useState(false);
+
+  const ops = wo.operations || [];
+  const requiredSpecs = new Set();
+  ops.forEach(op => { const s = (op.specialty || '').toUpperCase().trim(); if (s) requiredSpecs.add(s); });
+  const specHint = requiredSpecs.size > 0 ? Array.from(requiredSpecs).join(', ') : 'cualquier especialidad';
+  const filterRe = new RegExp(Array.from(requiredSpecs).map(s => s.slice(0, 4)).join('|') || '.*', 'i');
+  const matched = technicians.filter(t => filterRe.test(t.specialty || ''));
+  const others = technicians.filter(t => !filterRe.test(t.specialty || ''));
+  const list = [...matched, ...others];
+
+  const toggle = (wid) => {
+    setSelected(prev => {
+      const n = new Set(prev);
+      if (n.has(wid)) n.delete(wid); else n.add(wid);
+      return n;
+    });
+  };
+
+  const commit = async () => {
+    setSaving(true);
+    const workers = Array.from(selected).map(wid => {
+      const t = technicians.find(x => (x.worker_id || x.id) === wid);
+      return t ? { worker_id: t.worker_id, name: t.name, specialty: t.specialty } : { worker_id: wid };
+    });
+    await onSave(workers);
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-card rounded-xl shadow-2xl border border-border p-4 w-[520px] max-w-[92vw] max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Asignar técnicos · {wo.wo_number}</h3>
+            <p className="text-xs text-muted-foreground">{wo.equipment_tag} · {wo.estimated_hours || 0}h · marca uno o más</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xl leading-none">×</button>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-2">
+          Skills requeridas: <strong>{specHint}</strong>. Compatibles primero (fondo verde + badge MATCH).
+        </p>
+        <div className="flex-1 overflow-y-auto border border-border rounded-lg divide-y divide-border min-h-[200px]">
+          {list.length === 0 && <div className="p-4 text-center text-xs text-muted-foreground italic">No hay técnicos en la planta.</div>}
+          {list.map((tech, idx) => {
+            const isMatch = idx < matched.length;
+            const wid = tech.worker_id || tech.id;
+            const isSelected = selected.has(wid);
+            return (
+              <label key={wid || idx}
+                className={`flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/50 cursor-pointer ${isMatch ? 'bg-emerald-50/40 dark:bg-emerald-900/10' : ''} ${isSelected ? 'ring-1 ring-emerald-400' : ''}`}>
+                <input type="checkbox" checked={isSelected} onChange={() => toggle(wid)} className="w-4 h-4 accent-emerald-600" />
+                <span className={`w-1.5 h-1.5 rounded-full ${isMatch ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                <span className="font-semibold text-foreground">{tech.name || wid?.slice(0, 8)}</span>
+                <span className="text-muted-foreground">· {tech.specialty || '—'}</span>
+                {tech.shift && <span className="text-[9px] text-muted-foreground/70">· {tech.shift}</span>}
+                {isMatch && <span className="ml-auto text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded uppercase">match</span>}
+              </label>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">{selected.size} seleccionado{selected.size === 1 ? '' : 's'}</span>
+          <div className="flex gap-2">
+            <button onClick={onClose}
+              className="text-xs px-3 py-1.5 rounded border border-border text-muted-foreground hover:bg-muted">Cancelar</button>
+            <button onClick={commit} disabled={saving}
+              className="text-xs font-semibold px-4 py-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">
+              {saving ? 'Guardando…' : `Asignar (${selected.size})`}
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

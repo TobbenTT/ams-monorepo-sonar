@@ -3726,13 +3726,14 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                         <table className="w-full text-sm">
                           <thead className="bg-amber-100/60 text-xs uppercase">
                             <tr>
-                              {/* SF-675 (reunión VSC 2026-05-11): reestructuración 5 cambios */}
+                              {/* SF-675 (reunión VSC 2026-05-11 + 2026-05-08): reestructuración 5 cambios.
+                                  Tanda demo Goldfields 2026-05-12: agregado 5º cambio "Condición". */}
                               <th className="px-3 py-2 text-left">Equipo - Características</th>
                               <th className="px-3 py-2 text-left">Detalle</th>
-                              {/* SF-675 #2: Interno/Externo selector obligatorio */}
                               <th className="px-3 py-2 text-left">Interno/Externo</th>
-                              {/* SF-675 #4: Tipo condicional según categoría del equipo */}
                               <th className="px-3 py-2 text-left">Tipo</th>
+                              {/* SF-675 #4 (Jorge demo 2026-05-12): Condición del equipo */}
+                              <th className="px-3 py-2 text-left">Condición</th>
                               <th className="px-3 py-2 text-right">Cantidad</th>
                               <th className="px-3 py-2 text-left">Notas</th>
                               <th className="px-3 py-2"></th>
@@ -3853,14 +3854,19 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                       placeholder="Ej: 10T, brazo 12m, 2 ejes…"
                                       className="w-full text-sm border border-gray-300 rounded px-2 py-1" />
                                   </td>
-                                  {/* SF-675 #2: Interno/Externo */}
+                                  {/* SF-675 #2: Interno/Externo + badge morado para EXT (estilo WR) */}
                                   <td className="px-3 py-2">
-                                    <select defaultValue={se.ownership || 'INT'}
-                                      onChange={e => updateField('ownership', e.target.value)}
-                                      className="text-xs border border-gray-300 rounded px-1 py-1">
-                                      <option value="INT">Interno</option>
-                                      <option value="EXT">Externo</option>
-                                    </select>
+                                    <div className="flex items-center gap-1.5">
+                                      <select value={se.ownership || 'INT'}
+                                        onChange={e => updateField('ownership', e.target.value)}
+                                        className="text-xs border border-gray-300 rounded px-1 py-1">
+                                        <option value="INT">Interno</option>
+                                        <option value="EXT">Externo</option>
+                                      </select>
+                                      {(se.ownership === 'EXT') && (
+                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-300 uppercase">EXT</span>
+                                      )}
+                                    </div>
                                   </td>
                                   {/* SF-675 #4: Tipo CONDICIONAL según categoría/equipo seleccionado.
                                       Si el equipo del catálogo tiene equipment_type fijo (poolMatch),
@@ -3887,12 +3893,29 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                                       })()}
                                     </select>
                                   </td>
-                                  {/* SF-675 #1: HH → Cantidad (entero positivo) */}
+                                  {/* SF-675 #4 (Jorge 2026-05-12): Condición del equipo
+                                      con dot indicator de color (verde=operativo, ámbar=mantención,
+                                      rojo=fuera de servicio). */}
+                                  <td className="px-3 py-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`w-2 h-2 rounded-full ${se.condition === 'MAINTENANCE' ? 'bg-amber-500' : se.condition === 'OUT_OF_SERVICE' ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                                      <select value={se.condition || 'OPERATIONAL'}
+                                        onChange={e => updateField('condition', e.target.value)}
+                                        className="text-xs border border-gray-300 rounded px-1 py-1">
+                                        <option value="OPERATIONAL">Operativo</option>
+                                        <option value="MAINTENANCE">En mantención</option>
+                                        <option value="OUT_OF_SERVICE">Fuera de servicio</option>
+                                      </select>
+                                    </div>
+                                  </td>
+                                  {/* SF-675 #1: HH → Cantidad (entero positivo, replace on focus) */}
                                   <td className="px-3 py-2 text-right">
                                     <input type="number" min="1" step="1"
                                       defaultValue={se.quantity ?? se.hours ?? 1}
+                                      onFocus={e => e.target.select()}
                                       onBlur={e => {
-                                        const v = parseInt(e.target.value, 10);
+                                        const raw = e.target.value.replace(/^0+(?=\d)/, '');
+                                        const v = parseInt(raw, 10);
                                         const cur = se.quantity ?? se.hours ?? 1;
                                         if (!Number.isNaN(v) && v !== cur) updateField('quantity', Math.max(1, v));
                                       }}

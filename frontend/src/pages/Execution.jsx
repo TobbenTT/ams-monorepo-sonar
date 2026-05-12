@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import HelpPopover from '../components/HelpPopover';
+import { shortTag } from '../utils/equipmentTag';
+import { compressImage } from '../utils/imageCompress';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   listManagedWOs, updateManagedWO, completeManagedWO, closeManagedWO,
@@ -62,6 +64,9 @@ export default function Execution() {
   const [closureWO, setClosureWO] = useState(null);
   const [closureHours, setClosureHours] = useState('');
   const [closureNotes, setClosureNotes] = useState('');
+  // SF-655 (2026-05-12): fotos adjuntas en cierre, persistidas como dataURL
+  // comprimida. Al cerrar la OT se mandan en `closure_photos` al backend.
+  const [closurePhotos, setClosurePhotos] = useState([]);
   // Group A #3 supervisor signature + #5 per-op actuals for plan-vs-actual.
   const [closureSignature, setClosureSignature] = useState('');
   const [closurePin, setClosurePin] = useState('');
@@ -379,7 +384,7 @@ export default function Execution() {
     setClosureOps(seed);
     setClosureWO(wo);
     setClosureHours(String(wo.actual_hours || wo.estimated_hours || ''));
-    setClosureNotes('');
+    setClosureNotes(''); setClosurePhotos([]);
     setClosureSignature('');
     setClosurePin('');
     setCloseGates(null);
@@ -417,7 +422,7 @@ export default function Execution() {
         gate_overrides: gateOverrides,
       });
       toast.success(closureWO.wo_number + ' cerrada y firmada');
-      setClosureWO(null); setClosureHours(''); setClosureNotes('');
+      setClosureWO(null); setClosureHours(''); setClosureNotes(''); setClosurePhotos([]);
       setClosureSignature(''); setClosurePin(''); setClosureOps([]);
       loadData();
     } catch (e) { toast.error(e.message); }
@@ -784,7 +789,7 @@ export default function Execution() {
                       {wo.priority_code}
                     </div>
                     <span className="font-mono text-sm font-bold">{wo.wo_number}</span>
-                    <span className="text-xs text-muted-foreground">{wo.equipment_tag}</span>
+                    <span className="text-xs text-muted-foreground">{shortTag(wo.equipment_tag)}</span>
                     <span className="flex-1 text-sm font-medium">{wo.description}</span>
                     {/* Banner parcial / final */}
                     {isFinal ? (
@@ -1007,7 +1012,7 @@ export default function Execution() {
                     </div>
                     <span className="font-mono text-sm font-bold">{wo.wo_number}</span>
                     <span className="text-[10px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded">PM03</span>
-                    <span className="text-xs text-muted-foreground">{wo.equipment_tag}</span>
+                    <span className="text-xs text-muted-foreground">{shortTag(wo.equipment_tag)}</span>
                     <span className="ml-auto text-[10px] font-semibold text-muted-foreground">{wo.status}</span>
                   </div>
                   <p className="text-sm font-semibold text-foreground mt-2">{wo.description}</p>
@@ -1243,7 +1248,7 @@ export default function Execution() {
                           {isExec ? 'In Execution' : 'Scheduled'}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{wo.equipment_tag} - {wo.description?.substring(0, 50)}</p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{shortTag(wo.equipment_tag)} - {wo.description?.substring(0, 50)}</p>
                     </div>
                     {/* Progress */}
                     <div className="flex items-center gap-3 shrink-0">
@@ -1670,7 +1675,7 @@ export default function Execution() {
                         <div className={`text-[10px] font-bold px-1.5 py-1 rounded ${PRIO_STYLE[wo.priority_code] || PRIO_STYLE.P3}`}>{wo.priority_code}</div>
                         <div className="flex-1 min-w-0">
                           <span className="font-mono text-sm font-bold text-foreground">{wo.wo_number}</span>
-                          <p className="text-xs text-muted-foreground truncate">{wo.equipment_tag} · {wo.description?.substring(0, 60)}</p>
+                          <p className="text-xs text-muted-foreground truncate">{shortTag(wo.equipment_tag)} · {wo.description?.substring(0, 60)}</p>
                         </div>
                         <div className="flex items-center gap-1">
                           <input type="number" min="0" step="0.5" value={hoursVal}
@@ -1744,7 +1749,7 @@ export default function Execution() {
                           <div key={wo.wo_id} className="px-4 py-2.5 flex items-center gap-3 hover:bg-muted/20">
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${PRIO_STYLE[wo.priority_code] || PRIO_STYLE.P3}`}>{wo.priority_code}</span>
                             <span className="font-mono text-xs font-bold text-foreground shrink-0">{wo.wo_number}</span>
-                            <span className="text-xs text-muted-foreground shrink-0">{wo.equipment_tag}</span>
+                            <span className="text-xs text-muted-foreground shrink-0">{shortTag(wo.equipment_tag)}</span>
                             <span className="flex-1 text-xs text-foreground truncate">{wo.description}</span>
                             <span className="text-[11px] text-muted-foreground shrink-0">{plan}h → {actual}h</span>
                             <span className={`text-[11px] font-bold shrink-0 ${Math.abs(v) <= 10 ? 'text-emerald-700' : Math.abs(v) <= 25 ? 'text-amber-700' : 'text-rose-700'}`}>
@@ -1795,7 +1800,7 @@ export default function Execution() {
               {closedWOs.map(wo => (
                 <div key={wo.wo_id} className="px-4 py-3 flex items-center gap-3 text-xs hover:bg-muted/20">
                   <span className="font-mono font-bold text-foreground">{wo.wo_number}</span>
-                  <span className="text-muted-foreground truncate flex-1">{wo.equipment_tag} - {wo.description?.substring(0, 30)}</span>
+                  <span className="text-muted-foreground truncate flex-1">{shortTag(wo.equipment_tag)} - {wo.description?.substring(0, 30)}</span>
                   <span className="text-muted-foreground">{wo.actual_hours || 0}h</span>
                   <span className="font-bold text-emerald-600">${((wo.actual_total_cost || (wo.actual_hours || 0) * LABOR_RATE)).toFixed(0)}</span>
                   <span className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-2 py-0.5 rounded font-semibold">Closed</span>
@@ -1920,22 +1925,60 @@ export default function Execution() {
                 </div>
               )}
 
-              {/* Observations + audio — Fase 7 Jorge 2026-04-21 */}
+              {/* Observations + audio + foto — Fase 7 Jorge 2026-04-21 + SF-655 */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Observaciones</label>
-                  <AudioDictateButton onText={(t) => {
-                    // SF-674: cada entrada de audio se prefija con [YYYY-MM-DD HH:MM]
-                    // para que el historial quede trazable en el OT Summary.
-                    const ts = new Date();
-                    const pad = (n) => String(n).padStart(2, '0');
-                    const stamp = `[${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())} ${pad(ts.getHours())}:${pad(ts.getMinutes())}]`;
-                    setClosureNotes(prev => (prev ? prev + '\n' : '') + `${stamp} ${t}`);
-                  }} />
+                  <div className="flex items-center gap-2">
+                    <AudioDictateButton onText={(t) => {
+                      // SF-674: cada entrada de audio se prefija con [YYYY-MM-DD HH:MM]
+                      // para que el historial quede trazable en el OT Summary.
+                      const ts = new Date();
+                      const pad = (n) => String(n).padStart(2, '0');
+                      const stamp = `[${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())} ${pad(ts.getHours())}:${pad(ts.getMinutes())}]`;
+                      setClosureNotes(prev => (prev ? prev + '\n' : '') + `${stamp} ${t}`);
+                    }} />
+                    {/* SF-655 (2026-05-12): adjuntar foto en cierre de OT. Comprime
+                        client-side (imageCompress 1600px JPEG q0.85) y se anexa
+                        como entrada con timestamp + miniatura en closurePhotos. */}
+                    <label className="text-xs font-semibold px-2 py-1 rounded bg-sky-100 text-sky-700 border border-sky-300 hover:bg-sky-200 cursor-pointer inline-flex items-center gap-1">
+                      📷 Foto
+                      <input type="file" accept="image/*" capture="environment" className="hidden"
+                        onChange={async e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const compressed = await compressImage(file);
+                            const ts = new Date();
+                            const pad = n => String(n).padStart(2, '0');
+                            const stamp = `[${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())} ${pad(ts.getHours())}:${pad(ts.getMinutes())}]`;
+                            setClosurePhotos(prev => [...(prev || []), { stamp, dataUrl: compressed.dataUrl, size: compressed.sizeBytes }]);
+                            setClosureNotes(prev => (prev ? prev + '\n' : '') + `${stamp} [FOTO adjunta ${(compressed.sizeBytes / 1024).toFixed(0)}KB]`);
+                            toast.success('Foto adjuntada al cierre');
+                          } catch (err) {
+                            toast.error('Error subiendo foto: ' + (err.message || ''));
+                          } finally {
+                            e.target.value = '';
+                          }
+                        }} />
+                    </label>
+                  </div>
                 </div>
                 <textarea value={closureNotes} onChange={e => setClosureNotes(e.target.value)}
                   className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/30 min-h-[60px]"
                   placeholder="Desvíos, hallazgos, seguimiento... (o grabá audio con el botón)" />
+                {/* SF-655: thumbnails de fotos adjuntas con remove inline */}
+                {Array.isArray(closurePhotos) && closurePhotos.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {closurePhotos.map((p, idx) => (
+                      <div key={idx} className="relative group">
+                        <img src={p.dataUrl} alt={`Foto ${idx + 1}`} className="w-16 h-16 object-cover rounded border border-border" title={`${p.stamp} · ${(p.size / 1024).toFixed(0)}KB`} />
+                        <button type="button" onClick={() => setClosurePhotos(prev => prev.filter((_, i) => i !== idx))}
+                          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[10px] hover:bg-rose-700 flex items-center justify-center">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <ClosureClassify notes={closureNotes} />
               </div>
 

@@ -1818,7 +1818,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
                 </div>
                 <div className="space-y-1.5">
                   {dupSuggestions.slice(0, 3).map(s => {
-                    const label = s.aviso_number ? `AV-${String(s.aviso_number).padStart(5, '0')}` : (s.request_id || '').slice(0, 8);
+                    const label = formatWRCode(s) || (s.request_id || '').slice(0, 8);
                     return (
                       <div key={s.request_id} className="flex items-start gap-2 text-xs bg-white rounded-lg p-2 border border-amber-200">
                         <div className="flex-1 min-w-0">

@@ -109,6 +109,15 @@ def _to_dict(wo: ManagedWorkOrderModel, db: Session | None = None) -> dict:
         "materials": wo.materials or [],
         "tools": wo.tools or [],
         "support_equipment": getattr(wo, "support_equipment", None) or [],
+        # SF-675 (2026-05-12): exponer total HH equipo de apoyo derivado para
+        # que el frontend pueda mostrarlo en el header de la OT y rollup
+        # opcional en capacity (sin tocar estimated_hours que cascadea a la
+        # planificación). Cada item tiene `hours` o `quantity` (legacy).
+        "support_hours_total": sum(
+            float(s.get("hours") if isinstance(s, dict) and s.get("hours") is not None else (s.get("quantity") if isinstance(s, dict) else 0) or 0)
+            for s in (getattr(wo, "support_equipment", None) or [])
+            if isinstance(s, dict)
+        ),
         "documents": wo.documents or [],
         "labour_summary": wo.labour_summary or {},
         "planned_start": wo.planned_start.isoformat() if wo.planned_start else None,
@@ -761,6 +770,12 @@ def _to_light_dict(wo: ManagedWorkOrderModel, db: Session | None = None) -> dict
         "materials_count": len(raw_mats),
         "reservation_code": getattr(wo, "reservation_code", None),
         "support_equipment": getattr(wo, "support_equipment", None) or [],
+        # SF-675: HH total equipo de apoyo (ver _to_dict completo arriba).
+        "support_hours_total": sum(
+            float(s.get("hours") if isinstance(s, dict) and s.get("hours") is not None else (s.get("quantity") if isinstance(s, dict) else 0) or 0)
+            for s in (getattr(wo, "support_equipment", None) or [])
+            if isinstance(s, dict)
+        ),
         "cancellation_type": getattr(wo, "cancellation_type", None),
         "absorbed_by_wo_id": getattr(wo, "absorbed_by_wo_id", None),
         "created_at": wo.created_at.isoformat() if wo.created_at else None,

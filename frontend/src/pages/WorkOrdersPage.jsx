@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../api';
 import { displayPlantName } from '../utils/plantDisplay';
+import { shortTag } from '../utils/equipmentTag';
+import { formatWRCode } from '../utils/wrCode';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
@@ -1229,7 +1231,7 @@ export default function WorkOrdersPage() {
                         <TableCell className="text-sm">
                           {/* Jorge SF-521: TL + TAG separados en lista OT */}
                           {wo.technical_location && <div className="text-[10px] text-blue-500">TL: {wo.technical_location}</div>}
-                          <div className="font-mono">TAG: {wo.equipment_tag}</div>
+                          <div className="font-mono" title={wo.equipment_tag}>TAG: {shortTag(wo.equipment_tag)}</div>
                         </TableCell>
                         <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
                         <TableCell>
@@ -1354,7 +1356,7 @@ export default function WorkOrdersPage() {
                       <TableCell className="text-xs text-gray-400 font-mono">{idx + 1}</TableCell>
                       <TableCell className="font-medium text-sm">{wo.id}</TableCell>
                       <TableCell className="text-xs text-gray-500">{wo._raw?.created_at ? new Date(wo._raw.created_at).toLocaleDateString() : '—'}</TableCell>
-                      <TableCell className="text-sm">{wo._raw?.equipment_tag || t('workOrders.na')}</TableCell>
+                      <TableCell className="text-sm" title={wo._raw?.equipment_tag || ''}>{shortTag(wo._raw?.equipment_tag) || t('workOrders.na')}</TableCell>
                       <TableCell className="max-w-xs text-sm truncate">{wo.description}</TableCell>
                       <TableCell>
                         <Badge className={getCriticalityColor(wo.criticality)}>
@@ -1448,8 +1450,8 @@ export default function WorkOrdersPage() {
                     {approvedWRs.map(wr => (
                       <div key={wr.request_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 truncate">
-                            {wr.equipment_tag} — {wr.problem_description?.original_text || 'Sin descripción'}
+                          <div className="text-sm font-medium text-gray-900 truncate" title={wr.equipment_tag}>
+                            {shortTag(wr.equipment_tag)} — {wr.problem_description?.original_text || 'Sin descripción'}
                           </div>
                           <div className="text-xs text-gray-500">{wr.priority_code || 'P3'} · {wr.status}</div>
                         </div>
@@ -1543,7 +1545,7 @@ export default function WorkOrdersPage() {
                         <p className="text-xs font-bold text-amber-800 mb-1">⚠ Notifications similares abiertos:</p>
                         {aiDuplicates.slice(0, 3).map(d => (
                           <div key={d.request_id} className="text-xs text-amber-700 flex items-center gap-2 py-0.5">
-                            <span className="font-mono">{(d.request_id || '').slice(0, 8)}</span>
+                            <span className="font-mono" title={d.request_id}>{formatWRCode(d) || (d.request_id || '').slice(0, 8)}</span>
                             <span className="px-1.5 py-0.5 rounded bg-amber-100 text-[10px] font-bold">{d.status}</span>
                             <span className="truncate">{d.problem_description?.slice(0, 60)}</span>
                           </div>
@@ -2113,12 +2115,12 @@ export default function WorkOrdersPage() {
                     {selectedOT.is_fast_track && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300"><Zap size={8} className="inline" /> FAST TRACK</span>}
                   </div>
                   <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                    <span className="font-medium text-gray-700">{selectedOT.equipment_tag}</span>
+                    <span className="font-medium text-gray-700" title={selectedOT.equipment_tag}>{shortTag(selectedOT.equipment_tag)}</span>
                     <span>{WO_TYPE_LABELS[selectedOT.wo_type] || selectedOT.wo_type}</span>
                     <span>{selectedOT.priority_code}</span>
                     {selectedOT.work_request_id && (
                       <span className="text-blue-600 underline cursor-pointer hover:text-blue-800" onClick={() => navigate('/work-requests', { state: { openWrId: selectedOT.work_request_id } })} title="Ver aviso origen">
-                        → {selectedOT.wr_aviso_label || `Aviso ${selectedOT.work_request_id.slice(0, 8)}…`}
+                        → {selectedOT.wr_aviso_label || `Aviso ${formatWRCode({ request_id: selectedOT.work_request_id }) || selectedOT.work_request_id.slice(0, 8)}`}
                       </span>
                     )}
                   </div>

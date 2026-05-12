@@ -16,6 +16,7 @@ import { downloadExport } from '../utils/exportFile';
 import { compressImage } from '../utils/imageCompress';
 import IconDeleteButton from '../components/IconDeleteButton';
 import { formatWRCode } from '../utils/wrCode';
+import { shortTag } from '../utils/equipmentTag';
 
 const PRIORITY_COLORS = {
   P1: 'text-red-600 font-bold',
@@ -1986,7 +1987,7 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         </td>
                         <td className="px-4 py-3 text-xs">
                           {wo.technical_location && <div className="text-blue-600"><span className="font-semibold">TL:</span> {wo.technical_location}</div>}
-                          {wo.equipment_tag && <div className="font-mono text-gray-600"><span className="font-semibold">TAG:</span> {wo.equipment_tag}</div>}
+                          {wo.equipment_tag && <div className="font-mono text-gray-600" title={wo.equipment_tag}><span className="font-semibold">TAG:</span> {shortTag(wo.equipment_tag)}</div>}
                           {!wo.technical_location && !wo.equipment_tag && <span className="text-gray-300">—</span>}
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-700 max-w-xs truncate">{wo.description || wo.failure_description || '—'}</td>

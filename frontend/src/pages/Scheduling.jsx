@@ -5176,9 +5176,27 @@ export default function Scheduling() {
       toast.info('Auto-Level ya está aplicando — esperá a que termine.');
       return;
     }
-    // Conflict scan: dos assignments al mismo worker en el mismo día/shift.
+    // SF-668 (2026-05-12): doble-check de conflictos.
+    //   (1) intra-plan: dos assignments al mismo worker+día+turno dentro del plan
+    //   (2) inter-state: choque con OTs ya programadas (scheduledWOs) que
+    //       comparten worker+día. Antes solo veíamos (1) y aplicábamos pisando
+    //       silenciosamente las asignaciones previas.
     const seen = new Set();
     const conflicts = [];
+    const existingByWorkerDay = new Map(); // wid|YYYY-MM-DD → [wo_number,...]
+    (scheduledWOs || []).forEach(wo => {
+      const day = (wo.planned_start || '').slice(0, 10);
+      if (!day) return;
+      (wo.assigned_workers || []).forEach(w => {
+        const wid = (typeof w === 'string' ? w : (w?.worker_id || w?.id)) || '';
+        if (!wid) return;
+        const k = `${wid}|${day}`;
+        const list = existingByWorkerDay.get(k) || [];
+        list.push(wo.wo_number);
+        existingByWorkerDay.set(k, list);
+      });
+    });
+    const stateConflicts = [];
     for (const a of plan.assignments) {
       const workers = Array.isArray(a.workers) && a.workers.length > 0
         ? a.workers : (a.worker_id ? [{ worker_id: a.worker_id }] : []);
@@ -5186,11 +5204,29 @@ export default function Scheduling() {
         const key = `${w.worker_id}|${a.day}|${a.shift || 'day'}`;
         if (seen.has(key)) conflicts.push({ wo: a.wo_number, key });
         seen.add(key);
+        const stateKey = `${w.worker_id}|${a.day}`;
+        const existing = existingByWorkerDay.get(stateKey) || [];
+        const overlapsExisting = existing.filter(n => n && n !== a.wo_number);
+        if (overlapsExisting.length > 0) {
+          stateConflicts.push({ wo: a.wo_number, overlaps: overlapsExisting });
+        }
       }
     }
     if (conflicts.length > 0) {
       const sample = conflicts.slice(0, 3).map(c => c.wo).join(', ');
-      toast.warning(`⚠ ${conflicts.length} conflicto(s) worker+día detectados (${sample}…). Aplicando igualmente — revisá manualmente.`);
+      toast.warning(`⚠ ${conflicts.length} conflicto(s) intra-plan worker+día (${sample}…).`);
+    }
+    if (stateConflicts.length > 0) {
+      const sample = stateConflicts.slice(0, 3).map(c => `${c.wo}↔${c.overlaps[0]}`).join(', ');
+      const proceed = window.confirm(
+        `⚠ ${stateConflicts.length} OT(s) del plan chocan con asignaciones YA programadas en el calendario (${sample}…).\n\n` +
+        `Si aplicás, las nuevas asignaciones REEMPLAZAN a las existentes para esos worker+día.\n\n` +
+        `¿Continuar?`
+      );
+      if (!proceed) {
+        toast.info('Auto-Level cancelado por conflictos con calendario actual.');
+        return;
+      }
     }
     const prevScheduled = scheduledWOs;
     const prevReleased = releasedWOs;

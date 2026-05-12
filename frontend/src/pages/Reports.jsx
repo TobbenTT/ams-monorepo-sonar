@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
 import { formatWRCode } from '../utils/wrCode';
+import { shortTag } from '../utils/equipmentTag';
 import {
     FileText, BarChart3, Target, Settings, Link2, Microscope,
     Download, Eye, Calendar, CheckCircle2, ClipboardList, Package,
@@ -666,7 +667,7 @@ export default function Reports() {
                                             <table className="w-full text-sm border-collapse">
                                                 <thead className="bg-muted/50 sticky top-0"><tr><th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ID</th><th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Equipment</th><th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Status</th><th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Priority</th></tr></thead>
                                                 <tbody>{preview.detail_work_requests.slice(0, 20).map((wr, i) => (
-                                                    <tr key={i} className="hover:bg-muted/30"><td className="px-3 py-2 border-b border-border/50 font-mono text-xs">{formatWRCode(wr) || (wr.request_id || '').slice(0, 8)}</td><td className="px-3 py-2 border-b border-border/50">{wr.equipment_tag}</td><td className="px-3 py-2 border-b border-border/50"><StatusBadge status={wr.status} /></td><td className="px-3 py-2 border-b border-border/50">{wr.priority}</td></tr>
+                                                    <tr key={i} className="hover:bg-muted/30"><td className="px-3 py-2 border-b border-border/50 font-mono text-xs" title={wr.request_id}>{formatWRCode(wr)}</td><td className="px-3 py-2 border-b border-border/50" title={wr.equipment_tag}>{shortTag(wr.equipment_tag)}</td><td className="px-3 py-2 border-b border-border/50"><StatusBadge status={wr.status} /></td><td className="px-3 py-2 border-b border-border/50">{wr.priority}</td></tr>
                                                 ))}</tbody>
                                             </table>
                                         </div>
@@ -679,7 +680,7 @@ export default function Reports() {
                                             <table className="w-full text-sm border-collapse">
                                                 <thead className="bg-muted/50 sticky top-0"><tr><th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">WO #</th><th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Equipment</th><th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Status</th><th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Type</th></tr></thead>
                                                 <tbody>{preview.detail_work_orders.slice(0, 20).map((wo, i) => (
-                                                    <tr key={i} className="hover:bg-muted/30"><td className="px-3 py-2 border-b border-border/50 font-mono text-xs">{wo.wo_number}</td><td className="px-3 py-2 border-b border-border/50">{wo.equipment_tag}</td><td className="px-3 py-2 border-b border-border/50"><StatusBadge status={wo.status} /></td><td className="px-3 py-2 border-b border-border/50">{wo.wo_type}</td></tr>
+                                                    <tr key={i} className="hover:bg-muted/30"><td className="px-3 py-2 border-b border-border/50 font-mono text-xs">{wo.wo_number}</td><td className="px-3 py-2 border-b border-border/50" title={wo.equipment_tag}>{shortTag(wo.equipment_tag)}</td><td className="px-3 py-2 border-b border-border/50"><StatusBadge status={wo.status} /></td><td className="px-3 py-2 border-b border-border/50">{wo.wo_type}</td></tr>
                                                 ))}</tbody>
                                             </table>
                                         </div>

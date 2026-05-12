@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as api from '../api';
+import { formatWRCode } from '../utils/wrCode';
 import {
   TrendingUp, BarChart3, Clock, CheckCircle2, AlertTriangle,
   Users, Calendar, RefreshCw, Plus, ArrowRight, Target, Zap,
@@ -431,7 +432,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       // P1 abierto >24h
       if (pri === 'P1' && ageHours > 24 && !['CERRADO', 'CANCELADO', 'OT_CREADA'].includes(status)) {
         mismatches.push({
-          aviso: wr.aviso_number ? `AV-${String(wr.aviso_number).padStart(5, '0')}` : (wr.request_id || '').slice(0, 8),
+          aviso: formatWRCode(wr) || (wr.request_id || '').slice(0, 8),
           equipment: wr.equipment_tag,
           actual_priority: pri,
           issue: `P1 abierto ${Math.round(ageHours)}h (debería atenderse en <24h)`,
@@ -442,7 +443,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
       // P2 abierto >7d
       if (pri === 'P2' && ageHours > 168 && !['CERRADO', 'CANCELADO', 'OT_CREADA'].includes(status)) {
         mismatches.push({
-          aviso: wr.aviso_number ? `AV-${String(wr.aviso_number).padStart(5, '0')}` : (wr.request_id || '').slice(0, 8),
+          aviso: formatWRCode(wr) || (wr.request_id || '').slice(0, 8),
           equipment: wr.equipment_tag,
           actual_priority: pri,
           issue: `P2 abierto ${Math.round(ageHours/24)}d (debería atenderse en <7d)`,
@@ -519,7 +520,7 @@ export default function PerformanceAnalysis({ onNavigateTab }) {
         .sort((a, b) => b.dt - a.dt)
         .slice(0, 8)
         .map(m => ({
-          aviso: m.wr.aviso_number ? `AV-${String(m.wr.aviso_number).padStart(5, '0')}` : (m.wr.request_id || '').slice(0, 8),
+          aviso: formatWRCode(m.wr) || (m.wr.request_id || '').slice(0, 8),
           request_id: m.wr.request_id || m.wr.id,
           equipment: m.wr.equipment_tag,
           priority: m.wr.priority_code,

@@ -9,7 +9,7 @@ import HelpPopover from '../components/HelpPopover';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Eye, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Download, AlertCircle, Plus, XCircle, Ban,
-  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2, Sparkles, Lock, Loader2, FileSpreadsheet
+  X, Save, MapPin, Users, Wrench, Building2, FileText, Tag, Trash2, DollarSign, List, Package, Info, MessageSquare, Play, CheckCircle, ClipboardCheck, Search, Minimize2, Maximize2, Sparkles, Lock, Loader2, FileSpreadsheet, Truck
 } from 'lucide-react';
 import * as api from '../api';
 import { downloadExport } from '../utils/exportFile';
@@ -341,6 +341,196 @@ function HistoryTab({ wo }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+// SF-662 — Preparativos OT estilo Rappi.
+// Tracking del flow despacho bodega → patio con 4 estados visuales:
+// PENDIENTE → DESPACHADO → EN_TRANSITO → RECIBIDO (con firma conforme).
+// Estado paralelo ANOMALIA para items dañados/incorrectos.
+function PreparativosTab({ woId, woNumber }) {
+  const toast = useToast();
+  const [items, setItems] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newItem, setNewItem] = useState({ item_code: '', item_desc: '', qty: 1, unit: 'UN', notes: '' });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [list, s] = await Promise.all([
+        api.listPreparativos({ wo_id: woId }),
+        api.preparativosSummary(woId),
+      ]);
+      setItems(list?.items || []);
+      setSummary(s);
+    } catch (e) { toast.error('Error cargando preparativos: ' + (e.message || '')); }
+    setLoading(false);
+  }, [woId, toast]);
+  useEffect(() => { if (woId) load(); }, [woId, load]);
+
+  const create = async () => {
+    if (!newItem.item_code.trim() || !newItem.qty) { toast.error('Código + cantidad obligatorios'); return; }
+    try {
+      await api.createPreparativo({ wo_id: woId, ...newItem });
+      toast.success('Item agregado a preparativos');
+      setNewItem({ item_code: '', item_desc: '', qty: 1, unit: 'UN', notes: '' });
+      setShowCreate(false);
+      load();
+    } catch (e) { toast.error(e.message || 'Error'); }
+  };
+
+  const transition = async (prep, newStatus, conforme) => {
+    const body = { new_status: newStatus };
+    if (newStatus === 'RECIBIDO') {
+      if (conforme === undefined) {
+        const ok = window.confirm('¿Conforme con el item recibido? (Cancelar = No conforme)');
+        body.conforme = ok;
+      } else body.conforme = conforme;
+    }
+    try {
+      await api.transitionPreparativo(prep.prep_id, body);
+      toast.success(`${prep.item_code} → ${newStatus}`);
+      load();
+    } catch (e) { toast.error(e.message || 'Error'); }
+  };
+
+  const STATUS_META = {
+    PENDIENTE:   { label: 'PENDIENTE',   color: 'bg-gray-100 text-gray-700 border-gray-300',     icon: '📋', next: 'DESPACHADO' },
+    DESPACHADO:  { label: 'DESPACHADO',  color: 'bg-blue-100 text-blue-700 border-blue-300',     icon: '📦', next: 'EN_TRANSITO' },
+    EN_TRANSITO: { label: 'EN TRÁNSITO', color: 'bg-amber-100 text-amber-700 border-amber-300',  icon: '🚛', next: 'RECIBIDO' },
+    RECIBIDO:    { label: 'RECIBIDO',    color: 'bg-emerald-100 text-emerald-700 border-emerald-300', icon: '✅', next: null },
+    ANOMALIA:    { label: 'ANOMALÍA',    color: 'bg-red-100 text-red-700 border-red-300',        icon: '⚠️', next: 'DESPACHADO' },
+  };
+
+  if (loading) return <div className="p-6 text-sm text-gray-500 flex items-center gap-2"><Loader2 className="animate-spin" size={14} /> Cargando preparativos…</div>;
+
+  return (
+    <div className="space-y-4">
+      {/* Header con summary tipo Rappi */}
+      <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            <Truck className="w-4 h-4 text-emerald-600" />
+            Preparativos OT · Bodega → Patio
+          </h3>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-1">
+            <Plus size={12} /> Agregar item
+          </button>
+        </div>
+        {summary && (
+          <>
+            <div className="grid grid-cols-5 gap-2 text-center">
+              {['PENDIENTE', 'DESPACHADO', 'EN_TRANSITO', 'RECIBIDO', 'ANOMALIA'].map(st => {
+                const m = STATUS_META[st];
+                const n = summary.by_status?.[st] || 0;
+                return (
+                  <div key={st} className={`rounded-lg p-2 border ${n > 0 ? m.color : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+                    <div className="text-lg">{m.icon}</div>
+                    <div className="text-[9px] font-bold uppercase">{m.label}</div>
+                    <div className="text-base font-mono font-bold">{n}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className={`mt-3 text-center py-2 rounded-lg text-xs font-bold ${summary.ready_to_execute ? 'bg-emerald-600 text-white' : 'bg-amber-100 text-amber-800'}`}>
+              {summary.ready_to_execute
+                ? `✅ LISTA PARA EJECUTAR — ${summary.received_conformes}/${summary.total} items recibidos conformes`
+                : `⏳ Pendiente: ${summary.total - summary.received_conformes} item(s) sin recibir o no conformes`}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Modal crear nuevo item */}
+      {showCreate && (
+        <div className="bg-white border-2 border-emerald-400 rounded-xl p-4 space-y-3">
+          <h4 className="text-sm font-bold text-gray-800">Agregar item al preparativo</h4>
+          <div className="grid grid-cols-12 gap-2">
+            <input value={newItem.item_code} onChange={e => setNewItem({ ...newItem, item_code: e.target.value })}
+              placeholder="Código (ej. MAT-10001005)" className="col-span-4 px-2 py-1.5 text-xs border rounded" />
+            <input value={newItem.item_desc} onChange={e => setNewItem({ ...newItem, item_desc: e.target.value })}
+              placeholder="Descripción (opcional)" className="col-span-6 px-2 py-1.5 text-xs border rounded" />
+            <input type="number" value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: parseFloat(e.target.value) || 1 })}
+              className="col-span-2 px-2 py-1.5 text-xs border rounded" min={1} />
+          </div>
+          <div className="flex gap-2">
+            <select value={newItem.unit} onChange={e => setNewItem({ ...newItem, unit: e.target.value })}
+              className="px-2 py-1.5 text-xs border rounded">
+              {['UN', 'KG', 'LT', 'M', 'M2', 'M3', 'CAJA', 'ROLLO', 'PAR'].map(u => <option key={u}>{u}</option>)}
+            </select>
+            <input value={newItem.notes} onChange={e => setNewItem({ ...newItem, notes: e.target.value })}
+              placeholder="Notas (opcional)" className="flex-1 px-2 py-1.5 text-xs border rounded" />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
+            <button onClick={create} className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded hover:bg-emerald-700">Crear</button>
+          </div>
+        </div>
+      )}
+
+      {/* Lista de items */}
+      {items.length === 0 ? (
+        <div className="text-center py-8 text-sm text-gray-500 bg-gray-50 rounded-xl border border-dashed">
+          📦 No hay preparativos creados para esta OT.<br />
+          <span className="text-xs text-gray-400">Agregá items que la bodega tiene que despachar al patio.</span>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {items.map(p => {
+            const m = STATUS_META[p.status] || STATUS_META.PENDIENTE;
+            return (
+              <div key={p.prep_id} className={`border-2 rounded-xl p-3 ${m.color}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xl">{m.icon}</span>
+                      <span className="font-mono font-bold text-sm">{p.item_code}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">{m.label}</span>
+                    </div>
+                    {p.item_desc && <p className="text-xs text-gray-700">{p.item_desc}</p>}
+                    <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-600">
+                      <span><strong>{p.qty}</strong> {p.unit || 'UN'}</span>
+                      {p.dispatched_at && <span>📤 {new Date(p.dispatched_at).toLocaleString('es-CL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>}
+                      {p.received_at && <span>📥 {new Date(p.received_at).toLocaleString('es-CL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>}
+                      {p.conforme === true && <span className="text-emerald-700 font-bold">✓ Conforme</span>}
+                      {p.conforme === false && <span className="text-red-700 font-bold">✗ No conforme</span>}
+                    </div>
+                  </div>
+                  {/* Transition buttons */}
+                  <div className="flex flex-col gap-1 shrink-0">
+                    {m.next && (
+                      <button onClick={() => transition(p, m.next)}
+                        className="text-[10px] font-bold px-2 py-1 bg-white border rounded hover:bg-gray-50">
+                        → {STATUS_META[m.next]?.label}
+                      </button>
+                    )}
+                    {p.status !== 'RECIBIDO' && p.status !== 'ANOMALIA' && (
+                      <button onClick={() => transition(p, 'ANOMALIA')}
+                        className="text-[10px] font-bold px-2 py-1 bg-white border border-red-300 text-red-700 rounded hover:bg-red-50">
+                        ⚠ Anomalía
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {p.notes && (
+                  <div className="mt-2 pt-2 border-t border-gray-200 text-[10px] text-gray-600 whitespace-pre-wrap">
+                    {p.notes}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <p className="text-[10px] text-gray-400 text-center pt-2">
+        SF-662 · Tracking estilo Rappi · cada transición queda en audit_log
+      </p>
     </div>
   );
 }
@@ -2105,6 +2295,8 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
           { id: 'resumen', label: 'Summary', icon: Info },
           { id: 'operaciones', label: 'Operations', icon: List },
           { id: 'materiales', label: 'Materials', icon: Package },
+          // SF-662 — Preparativos OT estilo Rappi (tracking despacho bodega→patio)
+          { id: 'preparativos', label: 'Preparativos', icon: Truck },
           { id: 'support_eq', label: 'Equipos Apoyo', icon: Wrench },
           { id: 'costos', label: 'Costs', icon: DollarSign },
           { id: 'documentos', label: 'Documentos', icon: FileText },
@@ -3754,6 +3946,11 @@ Ejemplo: #1 (2p × 8h = 16 HH, 8h dur) + #2 (1p × 4h = 4 HH, 4h dur) en paralel
                       );
                     })()}
                   </div>
+                )}
+
+                {/* SF-662 — Preparativos OT estilo Rappi (tracking despacho bodega→patio) */}
+                {otModalTab === 'preparativos' && (
+                  <PreparativosTab woId={wo.wo_id} woNumber={wo.wo_number} />
                 )}
 
                 {otModalTab === 'costos' && (

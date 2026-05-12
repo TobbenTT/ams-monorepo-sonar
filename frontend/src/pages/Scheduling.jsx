@@ -910,9 +910,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
       if (p === 'P1' || p === 'P2') return false;
       return true;
     });
-    // Status filter Jorge 2026-04-27 — programador trabaja solo con EN_PROGRAMACION.
+    // Status filter Jorge 2026-04-27 — "En programación" debe incluir CUALQUIER
+    // OT pendiente de scheduling, no solo EN_PROGRAMACION literal. Bug Jorge
+    // 2026-05-12 19:24: tras Clear las OTs pasan a PLANIFICADO → desaparecían
+    // del panel. Ahora incluímos PLANIFICADO, LIBERADO, CREADO, EN_PROGRAMACION,
+    // REPROGRAMADO — todas las que un planner debería poder programar.
     if (statusFilter === 'inSched') {
-      list = list.filter(wo => (wo.status || '').toUpperCase() === 'EN_PROGRAMACION');
+      const schedulable = new Set(['EN_PROGRAMACION', 'PLANIFICADO', 'LIBERADO', 'CREADO', 'REPROGRAMADO']);
+      list = list.filter(wo => schedulable.has((wo.status || '').toUpperCase()));
     } else if (statusFilter === 'planned') {
       const planned = new Set(['PLANIFICADO', 'LIBERADO', 'CREADO']);
       list = list.filter(wo => planned.has((wo.status || '').toUpperCase()));

@@ -82,6 +82,10 @@ export default function WorkOrdersPage() {
   const [creatingOT, setCreatingOT] = useState(false);
   const [otCreateForm, setOtCreateForm] = useState({ description: '', wo_type: 'PM01', priority_code: 'P3', equipment_tag: '', equipment_id: '', estimated_hours: 4, failureCategory: 'MECANICO' });
   const [selectedOT, setSelectedOT] = useState(null);
+  // José 2026-05-12 21:30: click sobre OT desde WOs & Notifications abre
+  // el MISMO modal de 9 tabs que Planning (mismo pattern que Scheduling).
+  // Implementado como iframe overlay para mantener al usuario en /work-orders.
+  const [previewWOId, setPreviewWOId] = useState(null);
   const [otDetailTab, setOtDetailTab] = useState('resumen');
   const [otOps, setOtOps] = useState([]); // editable operations
   const [otMats, setOtMats] = useState([]); // editable materials
@@ -1099,23 +1103,34 @@ export default function WorkOrdersPage() {
       {/* ── OTs Table ── */}
       {woTab === 'ots' && (
         <Card className="p-6 bg-white">
-          {/* Jorge 2026-04-23 17:38: 5 pestañas CLICKABLES que filtran la tabla
-              (Created/Planificada/En Programación/En Ejecución/Cerrada) + Total. */}
-          <div className="grid grid-cols-6 gap-3 mb-4">
+          {/* Jorge 2026-04-23 17:38: pestañas CLICKABLES que filtran la tabla
+              (Created/Planificada/En Programación/En Ejecución/Cerrada) + Total.
+              José 2026-05-12 21:00: cards no cuadraban con TOTAL — faltaban
+              LIBERADO/EN_PROGRAMACION/REPROGRAMADO/CANCELADO. Ahora cada card
+              agrupa todos los status del ciclo de vida (ver utils/woLifecycle.js):
+              Creadas={CREADO,LIBERADO} · Planificadas={PLANIFICADO} ·
+              En Programación={EN_PROGRAMACION,PROGRAMADO,REPROGRAMADO} ·
+              En Ejecución={EN_EJECUCION,EN_PROGRESO,IN_PROGRESS} ·
+              Cerradas={CERRADO,COMPLETED,CLOSED} · Canceladas={CANCELADO}. */}
+          <div className="grid grid-cols-7 gap-3 mb-4">
             {[
-              { key: null, label: 'Total', color: 'bg-slate-50 text-slate-700 border-slate-300' },
-              { key: 'CREADO', label: 'Creadas', color: 'bg-gray-100 text-gray-700 border-gray-300' },
-              { key: 'PLANIFICADO', label: 'Planificadas', color: 'bg-blue-50 text-blue-700 border-blue-300' },
-              { key: 'PROGRAMADO', label: 'En Programación', color: 'bg-indigo-50 text-indigo-700 border-indigo-300' },
-              { key: 'EN_EJECUCION', label: 'En Ejecución', color: 'bg-amber-50 text-amber-700 border-amber-300' },
-              { key: 'CERRADO', label: 'Cerradas', color: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+              { key: null,                                                                  label: 'Total',           color: 'bg-slate-50 text-slate-700 border-slate-300' },
+              { key: ['CREADO','LIBERADO'],                                                  label: 'Creadas',         color: 'bg-gray-100 text-gray-700 border-gray-300' },
+              { key: ['PLANIFICADO'],                                                        label: 'Planificadas',    color: 'bg-blue-50 text-blue-700 border-blue-300' },
+              { key: ['EN_PROGRAMACION','PROGRAMADO','REPROGRAMADO'],                        label: 'En Programación', color: 'bg-indigo-50 text-indigo-700 border-indigo-300' },
+              { key: ['EN_EJECUCION','EN_PROGRESO','IN_PROGRESS'],                           label: 'En Ejecución',    color: 'bg-amber-50 text-amber-700 border-amber-300' },
+              { key: ['CERRADO','COMPLETED','CLOSED'],                                       label: 'Cerradas',        color: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+              { key: ['CANCELADO'],                                                          label: 'Canceladas',      color: 'bg-rose-50 text-rose-700 border-rose-300' },
             ].map(s => {
               const count = s.key
-                ? managedWOs.filter(w => (w.status || '').toUpperCase() === s.key).length
+                ? managedWOs.filter(w => s.key.includes((w.status || '').toUpperCase())).length
                 : managedWOs.length;
-              const active = statusFilter === s.key;
+              const cardKey = Array.isArray(s.key) ? s.key.join(',') : 'all';
+              const active = Array.isArray(statusFilter) && Array.isArray(s.key)
+                ? statusFilter.join(',') === s.key.join(',')
+                : statusFilter === s.key;
               return (
-                <button key={s.key || 'all'} type="button"
+                <button key={cardKey} type="button"
                   onClick={() => setStatusFilter(s.key)}
                   className={`text-left rounded-lg p-3 border-2 transition-all ${s.color} ${active ? 'ring-2 ring-offset-1 ring-emerald-500 border-emerald-500' : 'hover:opacity-80'}`}>
                   <div className="text-[10px] uppercase tracking-wider font-semibold opacity-80">{s.label}</div>
@@ -1210,7 +1225,11 @@ export default function WorkOrdersPage() {
                 </TableHeader>
                 <TableBody>
                   {[...managedWOs]
-                    .filter(wo => !statusFilter || wo.status === statusFilter)
+                    .filter(wo => {
+                      if (!statusFilter) return true;
+                      const s = (wo.status || '').toUpperCase();
+                      return Array.isArray(statusFilter) ? statusFilter.includes(s) : s === statusFilter;
+                    })
                     .filter(wo => woTypeFilter.length === 0 || woTypeFilter.includes(wo.wo_type))
                     .filter(wo => woPriorityFilter.length === 0 || woPriorityFilter.includes(wo.priority_code))
                     .sort((a, b) => {
@@ -1222,7 +1241,7 @@ export default function WorkOrdersPage() {
                     const nextAct = OT_NEXT_ACTION[wo.status];
                     const NextIcon = nextAct?.icon;
                     return (
-                      <TableRow key={wo.wo_id} className={`hover:bg-gray-50 cursor-pointer ${wo.is_fast_track ? 'bg-amber-50/50' : ''}`} onClick={() => openOTDetail(wo)}>
+                      <TableRow key={wo.wo_id} className={`hover:bg-gray-50 cursor-pointer ${wo.is_fast_track ? 'bg-amber-50/50' : ''}`} onClick={() => setPreviewWOId(wo.wo_id)}>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono text-sm font-medium text-emerald-700">{wo.wo_number}</span>
@@ -3247,6 +3266,24 @@ export default function WorkOrdersPage() {
       })()}
 
       </>)}
+
+      {/* José 2026-05-12 21:30: preview iframe overlay — mismo modal de 9
+          tabs que Planning, embebido para no sacar al usuario de /work-orders.
+          Mismo pattern que Scheduling.jsx (commit eb41a84). */}
+      {previewWOId && (
+        <div className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4"
+             onClick={() => setPreviewWOId(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-[95vw] h-[95vh] relative overflow-hidden"
+               onClick={e => e.stopPropagation()}>
+            <button onClick={() => setPreviewWOId(null)}
+                    className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-rose-600 text-white text-xl font-bold hover:bg-rose-700 shadow-lg flex items-center justify-center"
+                    title="Cerrar">×</button>
+            <iframe src={`/work-management?tab=planning&openWo=${encodeURIComponent(previewWOId)}&embedded=1`}
+                    className="w-full h-full border-0 rounded-2xl"
+                    title="OT Preview" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

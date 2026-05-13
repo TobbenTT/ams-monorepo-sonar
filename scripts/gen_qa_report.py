@@ -87,6 +87,16 @@ DOM_TESTS = [
     ("DOM-EX03", "Execution", "OTs cargadas en inbox", "PASS", "629 elementos OT-XXXXX en DOM"),
     ("DOM-EX04", "Execution", "Sin errores reales (reds = badges P1/Rejected/Faltan)", "PASS",
      "18 elementos rojos son badges informativos, no errores"),
+
+    # Drag-drop + Lupa (post-deploy verification)
+    ("DOM-DD01", "Scheduling · Drag-drop", "Drop persiste status=EN_PROGRAMACION", "PASS",
+     "Tras drag-drop la OT queda en calendario incluso tras reload · ya no vuelve al panel"),
+    ("DOM-DD02", "Scheduling · Drag-drop", "Backend persiste planned_start (WAL mode)", "PASS",
+     "Read ladder 0/200/500/1500ms todos consistentes · planned_start='2026-05-15T08:00:00'"),
+    ("DOM-DD03", "Scheduling · Lupa", "Botón 🔍 abre overlay iframe modal Planning", "PASS",
+     "Iframe carga /work-management?tab=planning&openWo=X · modal completo 9 tabs"),
+    ("DOM-DD04", "Scheduling · Lupa", "Cierre X queda en Scheduling sin navegar", "PASS",
+     "onClick={setPreviewWOId(null)} · iframe se desmonta · user permanece en Scheduling"),
 ]
 
 
@@ -143,6 +153,10 @@ FIXES = [
     ("2b7903d", "Hotfix UnboundLocalError en check-duplicates", "Stability"),
     ("ebda3ce", "Reunión 18:02 José/Jorge: tab order OT · Equipos Apoyo cols · comentarios firma · duplicate detector spec · Auto-Level 100% default",
      "Multiple"),
+    ("52b29d2", "Drag-drop persistencia: forzar status=EN_PROGRAMACION en drop. Antes OT volvía al panel izquierdo tras reload (PLANIFICADO+planned_start visual bug)",
+     "Stability"),
+    ("eb41a84", "Lupa OT: overlay con iframe Planning · cerrar X queda en Scheduling. Modal idéntico al de Planning (9 tabs) sin perder contexto.",
+     "UX José spec"),
 ]
 
 

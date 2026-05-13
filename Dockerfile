@@ -29,6 +29,24 @@ RUN --mount=type=cache,target=/root/.cache/pip \
         'idna>=3.7' \
         'certifi>=2024.7.4'
 
+# Slim 2026-05-13 (David): /install pesaba 6 GB. Cleanup pre-COPY para bajar
+# la imagen runtime sin tocar funcionalidad. Ahorro esperado ~1-1.5 GB.
+# 1) bytecode + tests embebidos en site-packages
+# 2) docs/man/locale/headers (no usados en runtime)
+# 3) .dist-info excepto METADATA + LICENSE (pip los necesita, lo demás no)
+# 4) strip de .so (debug symbols de torch/numpy/pyarrow son ~150-300 MB)
+RUN apt-get update && apt-get install -y --no-install-recommends binutils \
+    && rm -rf /var/lib/apt/lists/* \
+    && find /install -depth -type d -name '__pycache__' -exec rm -rf {} + \
+    && find /install -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete \
+    && find /install/lib -type d \( -name 'tests' -o -name 'test' \) -prune -exec rm -rf {} + 2>/dev/null || true \
+    && rm -rf /install/share/doc /install/share/man /install/share/locale /install/include \
+    && find /install -type d -name '*.dist-info' | while read dir; do \
+         find "$dir" -mindepth 1 -maxdepth 1 ! -name 'METADATA' ! -name 'LICENSE*' ! -name 'RECORD' ! -name 'WHEEL' ! -name 'top_level.txt' -exec rm -rf {} +; \
+       done \
+    && find /install -type f -name '*.so' -exec strip --strip-unneeded {} + 2>/dev/null || true \
+    && du -sh /install
+
 # ── Stage 2: Runtime ─────────────────────────────────────────────────
 FROM python:3.13-slim
 

@@ -704,7 +704,9 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
   // técnico con skill compatible).
   const [assignPopoverWO, setAssignPopoverWO] = useState(null);
   // José reunión 18:02: la lupa abre la MISMA OT modal que Planning (9 tabs)
-  // navegando dentro del SPA. Ya no usamos preview simplificado.
+  // como overlay iframe sobre Scheduling. Al cerrar (X) el user queda en
+  // Scheduling sin haber navegado a Planning.
+  const [previewWOId, setPreviewWOId] = useState(null);
   // Over-capacity popover anchored to a (workCenterKey, dayIndex) cell in the
   // Capacity by Work Center panel. Surfaces Auto-balance / Dismiss actions.
   const [capacityAlert, setCapacityAlert] = useState(null);
@@ -1870,11 +1872,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                                           <button type="button"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              // José spec 18:02 revisado: abrir la OT con el MISMO modal
-                                              // completo (9 tabs) de Planning, sin nueva tab. Navegamos
-                                              // dentro del SPA al tab planning con ?openWo=X que el useEffect
-                                              // de Planning auto-abre el modal.
-                                              navigate(`/work-management?tab=planning&openWo=${encodeURIComponent(wo.wo_id)}`);
+                                              // José spec 18:02 final: abrir OT con MISMO modal 9 tabs
+                                              // de Planning pero como overlay iframe — al cerrar (X)
+                                              // el user queda en Scheduling sin haber navegado.
+                                              setPreviewWOId(wo.wo_id);
                                             }}
                                             title="Abrir OT (mismo modal que Planning · 9 tabs)"
                                             className="text-[9px] px-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 font-bold">
@@ -2547,6 +2548,24 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
             }
           }}
         />
+      )}
+      {/* José reunión 18:02: lupa abre el modal completo (9 tabs) de Planning
+          como iframe overlay. Cerrar (X) queda en Scheduling sin navegación. */}
+      {previewWOId && (
+        <div className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4" onClick={() => { setPreviewWOId(null); onRefresh?.(); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-[95vw] h-[95vh] relative overflow-hidden" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => { setPreviewWOId(null); onRefresh?.(); }}
+              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-rose-600 text-white text-xl font-bold hover:bg-rose-700 shadow-lg flex items-center justify-center"
+              title="Cerrar y volver a Scheduling">
+              ×
+            </button>
+            <iframe
+              src={`/work-management?tab=planning&openWo=${encodeURIComponent(previewWOId)}&embedded=1`}
+              className="w-full h-full border-0 rounded-2xl"
+              title="OT detail" />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -2212,7 +2212,9 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
                       </div>
                     )}
                     {locResults.map((node, i) => (
-                      <button key={node.node_id || i} onClick={() => selectLocation(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
+                      <button key={node.node_id || i}
+                        onMouseDown={e => { e.preventDefault(); selectLocation(node); }}
+                        className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{node.node_type}</span>
                           <span className="text-sm font-bold text-gray-900">{node.name || node._funcLoc}</span>
@@ -2220,7 +2222,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
                         <div className="text-xs text-gray-400 pl-14">{node._funcLoc}</div>
                       </button>
                     ))}
-                    <button type="button" onClick={openBrowseModal}
+                    <button type="button"
+                      onMouseDown={e => { e.preventDefault(); openBrowseModal(); }}
                       className="w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-semibold py-2.5 hover:bg-emerald-50 transition-colors border-t border-dashed border-emerald-200">
                       Browse All Locations...
                     </button>
@@ -2304,7 +2307,8 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
                   </div>
                 )}
                 {equipSearch.length >= 2 && equipResults.length === 0 && (
-                  <button onClick={() => selectEquip({ tag: equipSearch, name: `${equipSearch} (No catalogado)` })}
+                  <button
+                    onMouseDown={e => { e.preventDefault(); selectEquip({ tag: equipSearch, name: `${equipSearch} (No catalogado)` }); }}
                     className="w-full mt-1 p-2 text-xs text-left rounded-lg bg-yellow-50 text-yellow-800 border border-yellow-200">
                     Usar TAG manual: {equipSearch}
                   </button>
@@ -2312,12 +2316,15 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
                 {showEquipSearch && equipResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto">
                     {equipResults.map((node, i) => (
-                      <button key={node.node_id || i} onClick={() => selectEquip(node)} className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
+                      <button key={node.node_id || i}
+                        onMouseDown={e => { e.preventDefault(); selectEquip(node); }}
+                        className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-gray-50">
                         <div className="text-sm font-bold text-gray-900">{node.name || node.tag || node.code}</div>
                         <div className="text-xs text-gray-500">{node.tag && !/^\d{8,}$/.test(node.tag) ? node.tag : node.code || node.tag}</div>
                       </button>
                     ))}
-                    <button type="button" onClick={openBrowseModal}
+                    <button type="button"
+                      onMouseDown={e => { e.preventDefault(); openBrowseModal(); }}
                       className="w-full text-center text-xs text-emerald-600 hover:text-emerald-700 font-semibold py-2.5 hover:bg-emerald-50 transition-colors border-t border-dashed border-emerald-200">
                       Browse All Locations...
                     </button>

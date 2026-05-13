@@ -15,7 +15,6 @@ uvicorn[standard]==0.41.0
 sqlalchemy==2.0.47
 python-dotenv==1.2.2  # CVE-2026-28684 fix: symlink TOCTOU en .env rewrite
 httpx==0.28.1
-plotly==6.5.2
 openpyxl==3.1.5
 xlrd==2.0.1  # legacy .xls (Jigsaw 2010 imports)
 
@@ -32,12 +31,10 @@ gunicorn==25.1.0
 # Authentication
 PyJWT[crypto]==2.12.0
 bcrypt==4.2.1
-psycopg2-binary==2.9.11
 pyotp==2.9.0
 qrcode==7.4.2
 
-# Phase 2 RAG (#33 RCM, #34 Shift Handover, #35 Post-Maint Learning, #40 KB Curator)
-# torch CPU-only via Dockerfile (--extra-index-url https://download.pytorch.org/whl/cpu)
-sentence-transformers==3.3.1
-lancedb==0.16.0
-pyarrow==18.1.0
+# RAG eliminado 2026-05-13 (David): el módulo nunca recibió tráfico productivo
+# y las 4 deps (torch + sentence-transformers + lancedb + pyarrow) pesaban ~3 GB.
+# Se rehará desde cero en una versión futura. Hasta entonces, el backend no
+# carga modelos ML locales — para análisis se usa la API de Anthropic.

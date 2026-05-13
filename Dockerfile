@@ -15,10 +15,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 COPY requirements.txt .
 
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --prefix=/install \
-        --extra-index-url https://download.pytorch.org/whl/cpu \
-        torch==2.5.1+cpu
+# RAG eliminado 2026-05-13 (David): torch CPU se instalaba acá como dep de
+# sentence-transformers. Como RAG ya no se incluye, no necesitamos torch.
+# Ahorro: ~750 MB.
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --prefix=/install -r requirements.txt && \

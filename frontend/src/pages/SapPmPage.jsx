@@ -464,18 +464,15 @@ function SapSyncPanel() {
   const fetchAll = () => {
     const token = localStorage.getItem('access_token');
     const H = { Authorization: `Bearer ${token}` };
-    // Endpoints viejos (info)
+    // Endpoints viejos solo para el banner Phase 2 + blockers
     sapSyncHealth().then(setHealth).catch(() => setHealth(null));
-    sapSyncQueueList({ limit: 50 }).then(r => setQueue(r?.items || [])).catch(() => setQueue([]));
-    // Endpoints nuevos (SF-728 Strategy Pattern)
+    // Endpoints nuevos (SF-728+ Strategy Pattern + Mock-SAP)
     fetch('/api/v1/sap/transport/info', { headers: H })
       .then(r => r.json()).then(setTransportInfo).catch(() => setTransportInfo(null));
     fetch('/api/v1/sap/queue', { headers: H })
       .then(r => r.json()).then(d => {
         setTransportCounts(d?.counts || {});
-        if (Array.isArray(d?.recent)) {
-          setQueue(prev => prev.length ? prev : d.recent);
-        }
+        setQueue(Array.isArray(d?.recent) ? d.recent : []);
       }).catch(() => {});
   };
   useEffect(() => { fetchAll(); }, []);
@@ -593,21 +590,25 @@ function SapSyncPanel() {
         </div>
       </div>
 
-      {/* Estadísticas cola */}
+      {/* Estadísticas cola — usa datos reales del transport (Strategy Pattern) */}
       <div className="bg-white rounded-xl border p-5">
-        <h3 className="text-sm font-bold text-gray-800 mb-3">Cola de sincronización</h3>
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <h3 className="text-sm font-bold text-gray-800 mb-3">Cola de sincronización (sap_sync_log · live)</h3>
+        <div className="grid grid-cols-4 gap-3 mb-4">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
             <div className="text-[10px] uppercase font-bold text-amber-700">Pending</div>
-            <div className="text-2xl font-bold tabular-nums">{health?.pending_count ?? 0}</div>
+            <div className="text-2xl font-bold tabular-nums">{transportCounts.PENDING || 0}</div>
           </div>
           <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
             <div className="text-[10px] uppercase font-bold text-emerald-700">Sent</div>
-            <div className="text-2xl font-bold tabular-nums">{health?.sent_count ?? 0}</div>
+            <div className="text-2xl font-bold tabular-nums">{transportCounts.SENT || 0}</div>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-            <div className="text-[10px] uppercase font-bold text-red-700">Failed</div>
-            <div className="text-2xl font-bold tabular-nums">{health?.failed_count ?? 0}</div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+            <div className="text-[10px] uppercase font-bold text-blue-700">Acked</div>
+            <div className="text-2xl font-bold tabular-nums">{transportCounts.ACKED || 0}</div>
+          </div>
+          <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-center">
+            <div className="text-[10px] uppercase font-bold text-rose-700">Dead Letter</div>
+            <div className="text-2xl font-bold tabular-nums">{transportCounts.DEAD_LETTER || 0}</div>
           </div>
         </div>
         {queue.length === 0 ? (

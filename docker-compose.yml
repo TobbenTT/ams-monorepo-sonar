@@ -10,7 +10,7 @@ services:
     environment:
       - PYTHONPATH=/app
     volumes:
-      - ocp_db_data:/app/data
+      - ./data:/app/data
       - ocp_sap_data:/app/sap_mock/data
       - ocp_or_deliverables:/app/or_deliverables
       - ocp_hf_cache:/home/appuser/.cache/huggingface
@@ -55,6 +55,37 @@ services:
     networks:
       - ocp-network
 
+  # Mock SAP S/4HANA — servicio de desarrollo + tests E2E.
+  # Solo arranca con perfil "with-sap-mock". Para activarlo:
+  #   docker compose --profile with-sap-mock up -d
+  # En el backend, set SAP_TRANSPORT=mock y SAP_MOCK_URL=http://ocp-sap-mock:8000
+  ocp-sap-mock:
+    build:
+      context: ./sap_mock/server
+      dockerfile: Dockerfile
+    container_name: ocp-sap-mock
+    profiles: ["with-sap-mock"]
+    ports:
+      - "${SAP_MOCK_PORT:-8030}:8000"
+    environment:
+      - MOCK_DB_PATH=/data/mock.db
+      - MOCK_LATENCY_MS_MIN=${MOCK_LATENCY_MS_MIN:-30}
+      - MOCK_LATENCY_MS_MAX=${MOCK_LATENCY_MS_MAX:-200}
+      - MOCK_ERROR_RATE=${MOCK_ERROR_RATE:-0}
+      - MOCK_SEED_ON_BOOT=true
+    volumes:
+      - ocp_sap_mock_data:/data
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    networks:
+      - ocp-network
+
   ocp-nginx:
     image: nginx:1.29-alpine
     container_name: ocp-nginx
@@ -95,3 +126,5 @@ volumes:
     name: ocp_dms_docs
   ocp_hf_cache:
     name: ocp_hf_cache
+  ocp_sap_mock_data:
+    name: ocp_sap_mock_data

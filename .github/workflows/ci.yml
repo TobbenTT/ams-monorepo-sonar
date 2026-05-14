@@ -16,7 +16,7 @@ jobs:
       JWT_SECRET_KEY: "ci_jwt_key_at_least_32_chars_long_for_ci_runs_only"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip

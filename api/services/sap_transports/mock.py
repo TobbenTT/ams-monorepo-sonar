@@ -104,3 +104,22 @@ class MockSAPTransport(SAPTransport):
                 return r.status_code == 200
         except Exception:
             return False
+
+    # ── Read operations ──────────────────────────────────────────
+    def _get(self, path: str, top: int = 25) -> list[dict]:
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                r = client.get(f"{self.base_url}{path}", params={"$top": top})
+                if r.status_code >= 400:
+                    return []
+                data = r.json()
+                return data if isinstance(data, list) else data.get("value", [])
+        except Exception as e:
+            logger.warning("mock GET %s → %s", path, e)
+            return []
+
+    def list_equipment(self, top: int = 25) -> list[dict]:
+        return self._get("/odata/v4/api_equipment", top)
+
+    def list_maintenance_orders(self, top: int = 25) -> list[dict]:
+        return self._get("/odata/v4/api_maintorder", top)

@@ -136,3 +136,20 @@ def sync_wo_manually(wo_id: str, db: Session = Depends(get_db)):
     if not result:
         raise HTTPException(status_code=404, detail="WO not found")
     return result
+
+
+# ── Read endpoints: traer data REAL del SAP configurado ─────────────
+@router.get("/live/equipment")
+def live_equipment(top: int = 25):
+    """Lee equipos del SAP activo (sandbox real, mock o lo que esté en SAP_TRANSPORT)."""
+    from api.services.sap_transports import get_transport
+    items = get_transport().list_equipment(top=top)
+    return {"transport": get_transport().name, "count": len(items), "items": items}
+
+
+@router.get("/live/maintenance-orders")
+def live_maintenance_orders(top: int = 25):
+    """Lee maintenance orders existentes en SAP."""
+    from api.services.sap_transports import get_transport
+    items = get_transport().list_maintenance_orders(top=top)
+    return {"transport": get_transport().name, "count": len(items), "items": items}

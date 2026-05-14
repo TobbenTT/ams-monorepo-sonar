@@ -165,3 +165,32 @@ class ODataTransport(SAPTransport):
                 return r.status_code < 400
         except Exception:
             return False
+
+    # ── Read operations ──────────────────────────────────────────
+    def _odata_get(self, entity_path: str, top: int = 25) -> list[dict]:
+        """GET helper común para listar entidades OData (v2)."""
+        if not self._configured():
+            return []
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                r = client.get(
+                    f"{self.base_url}{entity_path}",
+                    params={"$top": top, "$format": "json"},
+                    headers={**self._auth_headers(), "Accept": "application/json"},
+                )
+                if r.status_code >= 400:
+                    logger.warning("OData GET %s → HTTP %d", entity_path, r.status_code)
+                    return []
+                data = r.json()
+                # OData v2: results bajo {"d": {"results": [...]}}
+                # OData v4: bajo {"value": [...]}
+                return data.get("d", {}).get("results", []) or data.get("value", [])
+        except Exception as e:
+            logger.warning("OData GET %s → exception: %s", entity_path, e)
+            return []
+
+    def list_equipment(self, top: int = 25) -> list[dict]:
+        return self._odata_get("/sap/opu/odata/sap/API_EQUIPMENT/Equipment", top)
+
+    def list_maintenance_orders(self, top: int = 25) -> list[dict]:
+        return self._odata_get("/sap/opu/odata/sap/API_MAINTENANCEORDER/MaintenanceOrder", top)

@@ -50,5 +50,15 @@ class SAPTransport(ABC):
         """Verifica que el transporte puede alcanzar SAP. Por defecto True."""
         return True
 
+    # ── Read operations (GET) ──────────────────────────────────────
+    # Default: no soportadas. Cada transport implementa si aplica.
+    def list_equipment(self, top: int = 25) -> list[dict]:
+        """Lista equipos del master data SAP. Override según protocolo."""
+        return []
+
+    def list_maintenance_orders(self, top: int = 25) -> list[dict]:
+        """Lista órdenes de mantenimiento existentes en SAP."""
+        return []
+
     def __repr__(self) -> str:
         return f"<SAPTransport name={self.name!r}>"

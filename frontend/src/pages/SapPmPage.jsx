@@ -461,6 +461,9 @@ function SapSyncPanel() {
   const [transportInfo, setTransportInfo] = useState(null);
   const [transportCounts, setTransportCounts] = useState({});
   const [processing, setProcessing] = useState(false);
+  const [liveEquipment, setLiveEquipment] = useState([]);
+  const [liveOrders, setLiveOrders] = useState([]);
+  const [liveLoading, setLiveLoading] = useState(false);
   const fetchAll = () => {
     const token = localStorage.getItem('access_token');
     const H = { Authorization: `Bearer ${token}` };
@@ -487,6 +490,22 @@ function SapSyncPanel() {
       fetchAll();
       return r;
     } finally { setProcessing(false); }
+  };
+
+  const fetchLiveSapData = async () => {
+    setLiveLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const H = { Authorization: `Bearer ${token}` };
+      const [eqR, ordR] = await Promise.all([
+        fetch('/api/v1/sap/live/equipment?top=10', { headers: H }).then(r => r.json()),
+        fetch('/api/v1/sap/live/maintenance-orders?top=10', { headers: H }).then(r => r.json()),
+      ]);
+      setLiveEquipment(eqR?.items || []);
+      setLiveOrders(ordR?.items || []);
+    } catch (e) {
+      console.error('live SAP fetch failed', e);
+    } finally { setLiveLoading(false); }
   };
   return (
     <div className="space-y-4">
@@ -539,6 +558,78 @@ function SapSyncPanel() {
             ↻ Refrescar
           </button>
         </div>
+      </div>
+
+      {/* ── LIVE SAP DATA (lectura real via transport activo) ── */}
+      <div className="bg-white rounded-xl border-2 border-emerald-300 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+              <Database className="w-5 h-5 text-emerald-600" />
+              SAP Live Data <span className="text-[10px] font-normal bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">vía transport "{transportInfo?.name || '—'}"</span>
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">Lectura en vivo (GET /api/v1/sap/live/*). Funciona en sandbox público SAP, mock y odata productivo.</p>
+          </div>
+          <button onClick={fetchLiveSapData} disabled={liveLoading}
+            className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold">
+            {liveLoading ? 'Leyendo…' : '⬇ Leer SAP ahora'}
+          </button>
+        </div>
+
+        {liveEquipment.length === 0 && liveOrders.length === 0 ? (
+          <p className="text-xs text-gray-400 italic text-center py-6">Click "Leer SAP ahora" para traer equipos + maintenance orders del SAP configurado.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Equipment */}
+            <div>
+              <h4 className="text-xs font-bold uppercase text-emerald-700 mb-2">Equipos ({liveEquipment.length})</h4>
+              <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left font-bold">Equipment</th>
+                      <th className="px-2 py-1.5 text-left font-bold">Name</th>
+                      <th className="px-2 py-1.5 text-left font-bold">Cat</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {liveEquipment.map((e, i) => (
+                      <tr key={e.Equipment || e.equipment_id || i} className="border-t border-gray-100">
+                        <td className="px-2 py-1.5 font-mono">{e.Equipment || e.equipment_id || '—'}</td>
+                        <td className="px-2 py-1.5 truncate max-w-[200px]" title={e.EquipmentName || e.equipment_name}>{e.EquipmentName || e.equipment_name || '—'}</td>
+                        <td className="px-2 py-1.5"><span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gray-100">{e.EquipmentCategory || e.equipment_category || '—'}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {/* Maintenance Orders */}
+            <div>
+              <h4 className="text-xs font-bold uppercase text-blue-700 mb-2">Maintenance Orders ({liveOrders.length})</h4>
+              <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left font-bold">Order</th>
+                      <th className="px-2 py-1.5 text-left font-bold">Type</th>
+                      <th className="px-2 py-1.5 text-left font-bold">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {liveOrders.map((o, i) => (
+                      <tr key={o.MaintenanceOrder || o.maintenance_order || i} className="border-t border-gray-100">
+                        <td className="px-2 py-1.5 font-mono">{o.MaintenanceOrder || o.maintenance_order || '—'}</td>
+                        <td className="px-2 py-1.5"><span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">{o.MaintenanceOrderType || o.maintenance_order_type || '—'}</span></td>
+                        <td className="px-2 py-1.5 truncate max-w-[260px]" title={o.MaintenanceOrderDesc || o.short_text}>{o.MaintenanceOrderDesc || o.MaintOrderShortText || o.short_text || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Banner Phase 2 */}

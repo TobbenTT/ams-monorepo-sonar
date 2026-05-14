@@ -10,8 +10,11 @@ services:
     environment:
       - PYTHONPATH=/app/apps/core:/app/packages:/app/apps
     volumes:
-      - ./data:/app/data
-      - ocp_sap_data:/app/sap_mock/data
+      # Bug 2026-05-14: revert a named volume — bind mount ./data tenía
+      # ownership root, container appuser no podía escribir. La BD prod
+      # vive en ocp_db_data desde siempre.
+      - ocp_db_data:/app/data
+      - ocp_sap_data:/app/apps/sap_mock/data
       - ocp_or_deliverables:/app/or_deliverables
       - ocp_hf_cache:/home/appuser/.cache/huggingface
     healthcheck:

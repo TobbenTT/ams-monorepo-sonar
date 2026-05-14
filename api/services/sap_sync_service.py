@@ -130,7 +130,53 @@ def _to_dict(row: SapSyncLogModel) -> dict:
     }
 
 
-# ── Future transport — not yet implemented ──────────────────────────
-# def _transport_send(payload: dict) -> tuple[bool, str | None, str | None]:
-#     """Actually call SAP. Return (ok, sap_ref, error_message)."""
-#     raise NotImplementedError("Plug the real SAP transport here (RFC / IDoc / REST).")
+# ── Transport layer (SF-728+ Strategy Pattern) ──────────────────────
+# El transport real se selecciona en runtime por env SAP_TRANSPORT.
+# Ver api/services/sap_transports/ para implementaciones (dry_run / mock /
+# rfc / odata). Worker que procesa la cola: api/workers/sap_worker.py
+
+
+def _transport_send(payload: dict) -> tuple[bool, str | None, str | None]:
+    """Envía un payload SAP usando el transport configurado.
+
+    Devuelve ``(ok, sap_ref, error_message)``:
+      - ok=True  → sap_ref tiene el identificador devuelto por SAP
+      - ok=False → error_message describe la falla; el worker reintenta
+    """
+    from api.services.sap_transports import get_transport
+    result = get_transport().send(payload)
+    return result.ok, result.sap_ref, result.error_message
+
+
+def process_pending(db: Session, max_batch: int = 10, max_retries: int = 3) -> dict:
+    """Worker idempotente que procesa la cola sap_sync_log.
+
+    Lee filas PENDING (limit ``max_batch``), llama transport, marca
+    SENT/ERROR según resultado. Reintenta hasta ``max_retries`` veces.
+    Retorna stats del batch para logging/monitoreo.
+    """
+    rows = db.query(SapSyncLogModel).filter(
+        SapSyncLogModel.status == "PENDING",
+        SapSyncLogModel.attempts < max_retries,
+    ).order_by(SapSyncLogModel.created_at.asc()).limit(max_batch).all()
+
+    stats = {"processed": 0, "sent": 0, "errors": 0, "dead_letter": 0}
+    for row in rows:
+        row.attempts = (row.attempts or 0) + 1
+        ok, sap_ref, err = _transport_send(row.payload or {})
+        if ok:
+            row.status = "SENT"
+            row.sap_ref = sap_ref
+            row.last_error = None
+            stats["sent"] += 1
+        else:
+            row.last_error = (err or "")[:1000]
+            if row.attempts >= max_retries:
+                row.status = "DEAD_LETTER"
+                stats["dead_letter"] += 1
+            else:
+                stats["errors"] += 1  # queda PENDING, se reintenta
+        row.updated_at = datetime.now()
+        stats["processed"] += 1
+    db.commit()
+    return stats

@@ -76,3 +76,63 @@ def get_mock_data(transaction: str):
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
+
+
+# ── SAP Sync queue (Strategy Pattern transport layer) ───────────────
+from api.services import sap_sync_service
+
+
+@router.get("/transport/info")
+def transport_info():
+    """Cuál transport está activo (env SAP_TRANSPORT) + healthcheck."""
+    from api.services.sap_transports import get_transport
+    t = get_transport()
+    return {"name": t.name, "healthy": t.healthcheck()}
+
+
+@router.get("/queue")
+def queue_status(db: Session = Depends(get_db), limit: int = 50):
+    """Estado actual de la cola sap_sync_log con totales por status."""
+    from api.database.models import SapSyncLogModel
+    from sqlalchemy import func
+    counts = dict(
+        db.query(SapSyncLogModel.status, func.count(SapSyncLogModel.id))
+        .group_by(SapSyncLogModel.status).all()
+    )
+    recent = (
+        db.query(SapSyncLogModel)
+        .order_by(SapSyncLogModel.created_at.desc())
+        .limit(limit).all()
+    )
+    return {
+        "counts": counts,
+        "recent": [
+            {
+                "id": r.id,
+                "entity_id": r.entity_id,
+                "status": r.status,
+                "attempts": r.attempts,
+                "sap_ref": r.sap_ref,
+                "last_error": r.last_error,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+            }
+            for r in recent
+        ],
+    }
+
+
+@router.post("/queue/process")
+def queue_process(db: Session = Depends(get_db), max_batch: int = 10):
+    """Procesa batch de la cola (manual). En prod corre como cron/worker."""
+    stats = sap_sync_service.process_pending(db, max_batch=max_batch)
+    return stats
+
+
+@router.post("/sync-wo/{wo_id}")
+def sync_wo_manually(wo_id: str, db: Session = Depends(get_db)):
+    """Encolar una OT específica para sync a SAP."""
+    result = sap_sync_service.push_wo(db, wo_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="WO not found")
+    return result

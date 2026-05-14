@@ -498,7 +498,11 @@ def work_documents(wo_id: str, db: Session = Depends(get_db)):
 # ─── SF-613 Búsqueda equipos apoyo desde catálogo ────────────────────────────
 @router.get("/support-equipment-catalog")
 def support_equipment_catalog(plant_id: str | None = None, search: str | None = None, db: Session = Depends(get_db)):
-    """SF-613 NF-5 — Catálogo de equipos de apoyo para selector (no texto libre)."""
+    """SF-613 NF-5 — Catálogo de equipos de apoyo para selector (no texto libre).
+
+    Bug 2026-05-14 fix: SupportEquipmentModel no tiene tag/status/ownership;
+    sí tiene available/is_rented. Mapeo corregido.
+    """
     from api.database.models import SupportEquipmentModel
     q = db.query(SupportEquipmentModel)
     if plant_id:
@@ -507,19 +511,18 @@ def support_equipment_catalog(plant_id: str | None = None, search: str | None = 
         term = f"%{search.lower()}%"
         q = q.filter(
             SupportEquipmentModel.name.ilike(term) |
-            SupportEquipmentModel.tag.ilike(term) |
             SupportEquipmentModel.equipment_type.ilike(term)
         )
-    rows = q.filter(SupportEquipmentModel.status != "FUERA_SERVICIO").limit(100).all()
+    rows = q.filter(SupportEquipmentModel.available == True).limit(100).all()
     return {
         "items": [{
             "id": r.equipment_id,
-            "tag": r.tag,
+            "tag": r.equipment_id,  # tag no existe — usar id como referencia
             "name": r.name,
             "type": r.equipment_type,
             "capacity_tons": r.capacity_tons,
-            "ownership": r.ownership,
-            "status": r.status,
+            "ownership": "ARRENDADO" if r.is_rented else "PROPIO",
+            "status": "DISPONIBLE" if r.available else "FUERA_SERVICIO",
         } for r in rows],
         "count": len(rows),
     }
@@ -796,8 +799,10 @@ def canonical_data_status(plant_id: str | None = None, db: Session = Depends(get
     from sqlalchemy import text, inspect
     from api.database.models import (
         HierarchyNodeModel, WorkforceModel, SupportEquipmentModel,
-        WorkCenterModel,
     )
+    # WorkCenterModel no existe como modelo separado — work_center es columna
+    # en WorkRequest/MWO (string). Bug 2026-05-14 import roto detectado por tests.
+    WorkCenterModel = None
 
     # Counts por dimensión
     def count(model, plant_field="plant_id"):

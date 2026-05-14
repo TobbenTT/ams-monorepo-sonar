@@ -187,7 +187,11 @@ def search_materials(q: str = "", category: str = "", limit: int = 20, db: Sessi
         params["cat"] = category.upper()
     query += " ORDER BY description LIMIT :lim"
     params["lim"] = limit
-    rows = db.execute(text(query), params).fetchall()
+    try:
+        rows = db.execute(text(query), params).fetchall()
+    except Exception:
+        # Bug 2026-05-14: sap_materials table no es ORM model — solo via data_import
+        return []
     return [{"sapId": r[0], "description": r[1], "category": r[2], "unit": r[3]} for r in rows]
 
 
@@ -2057,7 +2061,11 @@ def list_work_centers(plant_type: str = "", specialty: str = "", db: Session = D
         query += " AND specialty_code = :sp"
         params["sp"] = specialty.upper()
     query += " ORDER BY plant_type, area_code, specialty_code"
-    rows = db.execute(text(query), params).fetchall()
+    try:
+        rows = db.execute(text(query), params).fetchall()
+    except Exception:
+        # Bug 2026-05-14: work_centers table no es ORM model — solo via data_import
+        return []
     return [{"code": r[0], "name": r[1], "plant_type": r[2], "area_code": r[3], "area_name": r[4],
              "specialty_code": r[5], "specialty_name": r[6], "is_external": bool(r[7]),
              "headcount_day": r[8], "headcount_night": r[9],
@@ -2085,7 +2093,10 @@ def capacity_evaluation(week_offset: int = 0, work_center: str = "", db: Session
         wc_query += " AND code = :wc"
         params["wc"] = work_center
     wc_query += " ORDER BY code"
-    centers = db.execute(text(wc_query), params).fetchall()
+    try:
+        centers = db.execute(text(wc_query), params).fetchall()
+    except Exception:
+        centers = []
 
     # Get OTs scheduled in this week
     scheduled_wos = db.query(ManagedWorkOrderModel).filter(

@@ -18,7 +18,7 @@
 
 fastapi==0.133.1
 uvicorn[standard]==0.41.0
-gunicorn==25.1.0
+gunicorn==26.0.0
 python-multipart==0.0.26
 sqlalchemy==2.0.47
 pydantic==2.12.5

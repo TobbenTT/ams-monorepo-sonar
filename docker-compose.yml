@@ -93,8 +93,8 @@ services:
       - "${NGINX_PORT:-8080}:80"
       - "${NGINX_SSL_PORT:-8443}:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./certs:/etc/nginx/certs:ro
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infrastructure/certs:/etc/nginx/certs:ro
       - ocp_dms_docs:/usr/share/nginx/dms:ro
     depends_on:
       - ocp-backend

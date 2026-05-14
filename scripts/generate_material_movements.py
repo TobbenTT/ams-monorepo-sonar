@@ -403,7 +403,7 @@ WAREHOUSES = ["ALM-CENTRAL", "ALM-SEC-01", "ALM-RIP-01", "ALM-HUM-01"]
 # ---------------------------------------------------------------------------
 print("Loading spare parts inventory (8,379 materials)...")
 wb_inv = openpyxl.load_workbook(
-    os.path.join(BASE, "seed_data", "07_spare_parts_inventory.xlsx"), read_only=True
+    os.path.join(BASE, "data", "seeds", "07_spare_parts_inventory.xlsx"), read_only=True
 )
 ws_inv = wb_inv.active
 materials = []
@@ -433,7 +433,7 @@ slow = [m for m in materials if m["fsn_class"] == "SLOW_MOVING"]
 # ---------------------------------------------------------------------------
 print("Loading equipment hierarchy...")
 wb_hier = openpyxl.load_workbook(
-    os.path.join(BASE, "seed_data", "01_equipment_hierarchy.xlsx"), read_only=True
+    os.path.join(BASE, "data", "seeds", "01_equipment_hierarchy.xlsx"), read_only=True
 )
 ws_hier = wb_hier.active
 equipments = []
@@ -455,7 +455,7 @@ print(f"  Loaded {len(equipments)} equipment locations")
 # 3. Load work orders for realistic order numbers
 # ---------------------------------------------------------------------------
 print("Loading work orders...")
-wo_path = os.path.join(BASE, "seed_data", "06_work_order_history.xlsx")
+wo_path = os.path.join(BASE, "data", "seeds", "06_work_order_history.xlsx")
 order_numbers = []
 if os.path.exists(wo_path):
     wb_wo = openpyxl.load_workbook(wo_path, read_only=True)
@@ -643,7 +643,7 @@ for col_idx in range(1, len(COLS_27) + 1):
 ws27.freeze_panes = "A2"
 ws27.auto_filter.ref = f"A1:{get_column_letter(len(COLS_27))}{len(movements) + 1}"
 
-output_27 = os.path.join(BASE, "seed_data", "27_material_movements.xlsx")
+output_27 = os.path.join(BASE, "data", "seeds", "27_material_movements.xlsx")
 wb27.save(output_27)
 print(f"  Wrote {len(movements)} rows to {output_27}")
 
@@ -751,7 +751,7 @@ for col_idx in range(1, len(COLS_37) + 1):
 ws37.freeze_panes = "A2"
 ws37.auto_filter.ref = f"A1:{get_column_letter(len(COLS_37))}{len(reservations) + 1}"
 
-output_37 = os.path.join(BASE, "seed_data", "37_material_reservations.xlsx")
+output_37 = os.path.join(BASE, "data", "seeds", "37_material_reservations.xlsx")
 wb37.save(output_37)
 print(f"  Wrote {len(reservations)} rows to {output_37}")
 

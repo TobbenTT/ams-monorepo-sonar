@@ -26,7 +26,7 @@ router = APIRouter(
     dependencies=[Depends(get_current_user)],
 )
 
-SEED_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "seed_data"
+SEED_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "seeds"
 ALLOWED_EXT = {".xlsx", ".csv"}
 
 # ── Helpers ───────────────────────────────────────────────────────

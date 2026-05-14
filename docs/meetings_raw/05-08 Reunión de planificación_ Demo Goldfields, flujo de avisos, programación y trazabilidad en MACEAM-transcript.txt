@@ -1,0 +1,1034 @@
+Gonzalo Olavarria
+Entonces eso tenemos que cuando lleguemos a las discusiones de planificación, cómo nos podemos distribuir, cuáles van a ser las prioridades, si vamos a priorizar una cosa sobre la otra, yo creo que ahí van a estar un punto importante y donde va a salir si efectivamente cada uno se queda con ciertas responsabilidades con otras, porque ahora yo podría decir algo, pero vale.
+Jose Cortinat
+Perfecto, Entonces no insisto más, ¿hay algo que lo levantan o ya no callamos para siempre? No hay nada que tengamos, somos bacanes, todo lo estamos haciendo bien, vale. Ya reforzar el tema de la coordinación, la integración y todo esto, sí, Como dimensionamos, vale, listo. Y empezar a hacer, vale. Qué viene ahora? Tenemos que pasar todo el tiempo para la demo. Ya, vale, listo. Entonces, voy a por la cinta esta. Venga, sí. Vayan conectándose en mi compu al MACEAM y veamos ahí.
+Jose Cortinat
+Quieres que te cierre la puerta?
+Jose Cortinat
+Ah, no, bueno, no te preocupes, tranquila.
+Jose Cortinat
+Ya, entonces, aquí está la cinta.
+Jose Cortinat
+Ah, lo ponemos aquí, lo podemos poner aquí, sí.
+Jose Cortinat
+Ya, no, lo que pasa es que van a salir cosas. Por eso van a ir saliendo cosas mientras. Claro, pero igual lo ponemos aquí. Hay más espacio.
+Carlos Iturra
+Igual aquí.
+Jose Cortinat
+Qué cosa?
+Jose Cortinat
+Hiciste el día colectivo. Hagamos, eso sí. David siempre.
+David
+Tiene buenas ideas, la verdad. No, tío.
+Jose Cortinat
+No, no pega. Necesita ayuda, señor? No, no, pega, pega mal. Lo estoy pegando yo mal, no sé. Si queréis intentarlo, intenta él.
+Jose Cortinat
+Listo. Lo dejamos aquí. O no? O lo dejamos aquí, aquí dentro.
+Jose Cortinat
+Eso. Ya está. Como mantel. Ah, eso, que hay unas. Si quieren, hay unas.
+Carlos Iturra
+Sí, que yo lo sé que quiero.
+Jose Cortinat
+Ah, Ya, ya.
+Jose Cortinat
+Ya, listo. Vamos.
+Jose Cortinat
+Ya. Topex. Quién presenta. Quién presenta la. El esto?
+Jose Cortinat
+A ver, la idea, la idea es. Qué pasó? Ah, hasta aquí, pero pongámoslo aquí, ¿no? A ver, si sales de allí de esa zona.
+Jose Cortinat
+Eso, eso, sacamos todo eso, eso se va hasta aquí, traemos el combo acá, ya.
+Jose Cortinat
+Venga, entonces, José, tú te sientas acá, y vamos. Cómo era la sesión de esto? Ah! Ya, mira, la idea de esto es, Jorge, mira, ¿qué aporta valor como diferencial? Qué nos funciona, que vamos a encontrar y qué le falta para que esto sea comercial, que lo podamos vender, en el fondo? Qué nos falta para ir ahí al cliente final y que diga "lo quiero"?
+Jose Cortinat
+Ah, de hecho, es eso, antes que esto, va eso! Ponemos la creación de un aviso.
+Jose Cortinat
+No voy a ir tanto a los detalles,
+Jorge Alquinta
+Sino que nos vamos a largar mucho. Sí, sí, sí. Yo voy a colocar acá, como sé que solamente hay información de planta en unos equipos minas, un molino no es un equipo, voy a elegir un molino.
+Jose Cortinat
+Claro que es un equipment además, sí, Dale.
+Jorge Alquinta
+Elijo este molino, y se fijaron.
+Jose Cortinat
+Eso no está funcionando.
+Jorge Alquinta
+Eso no está funcionando ya. Qué no está funcionando?
+Jose Cortinat
+Eso varias veces lo hemos visto ya,
+Jose Cortinat
+Si no funciona eso.
+Jose Cortinat
+Si tú escribes como buscar y te da opciones, mira ves, molino, encuentra,
+Jorge Alquinta
+Quiero seleccionar, por ejemplo, te voy a tirar de acá,
+Jose Cortinat
+Y no sé por qué aparecen tantos,
+Jorge Alquinta
+No se carga nada, bueno.
+Jorge Alquinta
+Voy a hacer lo mismo abajo, partiendo por el tag, porque uno podría partir también por el tag, si le pongo molino.
+Jose Cortinat
+No, así.
+Jorge Alquinta
+Tira ese y me cargo acá, pero no me cargo acá arriba. Debería llenarse también automáticamente la ubicación. Que no detener planta. Claro, debe estar. Entonces, ¿qué es lo que voy a hacer? Voy a ir a buscar al Broms.
+Jorge Alquinta
+Y tampoco. No, acá no me está funcionando. Voy a buscar el browser de acá abajo.
+Jose Cortinat
+Ese sí, el de abajo sí que funciona, el de arriba no.
+Jorge Alquinta
+Voy a abrir la planta, voy a ir a planta de procesos, voy a ir a planta de molienda y acá voy a seleccionar molienda SAC a los equipos que están dentro y acá voy a buscar el molino. Entonces acá está el molino SAC.
+Jose Cortinat
+Ahí sí, ves? Y este.
+Jorge Alquinta
+Es el pincho seleccionar y ahí se me cargó, partí acá abajo se me cargó arriba.
+Jorge Alquinta
+Una de las cosas.
+Jose Cortinat
+Que puede ser que sea funcional, técnica que tal y otra puede ser porque no encuentra, no hay match entre ubicación técnica y el equipo o algo así.
+Jorge Alquinta
+Y la otra cosa que tenemos que corregir acá es que el Technical Location es un código como el de abajo, que tiene cinco niveles y el tag, generalmente el tag son, Como la última parte, por ejemplo esa sección de acá, debería ser un TAG. El TAG no tiene cuatro síntomas de TAG, un código.
+Jose Cortinat
+Claro, sí. Como TAG.
+Jorge Alquinta
+Claro, Eso es un tema que corregir también seguramente desde la fuente donde está capturando la información, hay que ir a verlo ahí. Ya, voy a seguir con esto.
+Jorge Alquinta
+Next no me está.
+David
+Ah, Ese que está presionando el médico. Sí, sí, Sí.
+Jorge Alquinta
+Entonces, si yo soy un técnico, Yo voy a llenar desde arriba hacia abajo, nadie parte a carnet, nosotros sabemos que estamos partiendo acá, tenemos que ponerlo en el zapato del técnico. Entonces, ¿Qué debería cumplir? Que si queremos que parta el what happen. Al principio, Totalmente.
+Jorge Alquinta
+Deberíamos Poner el what happen al principio y esto se mantiene. Entonces yo, supongamos que el what happen al principio voy a colocar acá, eh, Mulillo, Sack,
+Jorge Alquinta
+Presenta.
+Jose Cortinat
+No pongas acentos ni nada, tú tranquilo. Da igual. Y la M y la N da igual si la IA te.
+Jorge Alquinta
+Presenta.
+Jorge Alquinta
+Alta.
+Jorge Alquinta
+Vibración.
+Jorge Alquinta
+En.
+Jorge Alquinta
+Sistema motriz, sistema motriz, se entiende que este motriz, el motor.
+Jose Cortinat
+No sé, déjalo así porque puede ser abierto.
+Jorge Alquinta
+Claro, sistema motriz, revisar condición de motor de sistema.
+Jorge Alquinta
+Y corona.
+Jorge Alquinta
+Entonces, dijimos que vamos a poner el wajap está arriba. Claro. El título está posterior. Yo sé que es una actividad detenida, como es programable, lo voy a colocar acá en el programable MP3. Y esto debería estar abajo porque esto debería estar el asistente y me va a colocar el título.
+Jose Cortinat
+Claro, Entonces en el fondo el título viene después del AI, de darle al AI Assistant. Claro, Porque el título es un resultado.
+Jorge Alquinta
+El título es un resultado, correcto. Entonces, aparece lo que me llega valor, lo primero que aporta valor es que yo al abreta ya assistant.
+Jose Cortinat
+Ya, eso lo anoto yo.
+Jorge Alquinta
+Con las construcciones de equipo, el estado del equipo y la prioridad, me está identificando el título, impresionar y reparar el sistema motor inspirador en corona, me está lanzando un listado de acciones sugeridas, me está identificando el catálogo de falla, que esto es una actividad mecánica, que el objeto a parte son los gear con engranaje, lo asume también como la parte más principal que podría ser, porque yo mezclé motor, Mezclé niño y dona, o sea, que puso síntomas alta vibración y como causa probable problema de desalineamiento.
+Jose Cortinat
+Si, en el catálogo.
+Jorge Alquinta
+Está bien. Entonces, este es el impacto, también es un resultado, es que también tiene que ir, así como dijimos que después del I-Assistant va a estar el título, que es automático, el nivel de riesgo también es automático, entonces deberían estar ambos después y después vienen las acciones sugeridas y hacia abajo. Entonces, ok con eso, Paso a lo siguiente, veo que el tipo también es la mano de obra, que interviene la actividad, eso no tengo otros puntos de agrega valor. Veo que me propone un tiempo de duración, también agrega valor.
+Jorge Alquinta
+Veo que me quiero una lista de materiales para la actividad, también me agrega valor, independiente de que es apliquen o no apliquen, pero agrega valor. Veo que también que me arroja una cantidad de equipos sugeridos de soporte, de apoyo para la actividad, también me agrega valor.
+Jorge Alquinta
+Yo puedo agregar por ejemplo mano de obra, seleccionarlo por especialidad, seleccionar las cantidades y colocarle un tiempo. No puso el mecánico.
+David
+Ah, no lo está colocando. A ver, preciona un poco más. Una pata.
+David
+A ver si ese clic, es por quien está haciendo. Entonces la otra parte que hoy está funcionando.
+David
+Por quien está haciendo línea de clic.
+Jorge Alquinta
+El tema del repuesto, llevo un repuesto, yo acá voy a colocar sello.
+Jorge Alquinta
+Veamos si acá debería lento o no?
+Jose Cortinat
+No, Tienes que ponerlo en buscar material igual o no. Yo creo que en, En buscar, en buscar material o descripción a la izquierda.
+Jorge Alquinta
+Solamente estamos dejando buscar material en base al código. No, pero también pon sellos,
+Jose Cortinat
+Pon sellos.
+David
+No hay sellos.
+Jorge Alquinta
+Voy A pedir un externo. Y va a estar.
+Jose Cortinat
+En inglés, pero debería aparecer, porque fíjate que ahí arriba tenemos sellos. Aquí hay sellos, por ejemplo, kit sellos.
+David
+Perno, como aquí hay un perno cargado. No, pero ese fue la pelea en inglés español. En la parte de ese caso.
+Jorge Alquinta
+No se llama. Pongamos.
+Jose Cortinat
+Pone Mecánical seal.
+Jorge Alquinta
+Pero por ejemplo,
+Jose Cortinat
+Un segundo, quítalo y quita este de kit sellos mecánicos piñón, quítalo, que es el 2051, ahora busca ahí. Sello o Kit, no aparece, teníamos uno identificado, ahora lo estamos buscando, no aparece, no está buscando en, no sabemos de dónde viene esto, ese tipo de cosas en QA y ahí tienes que entender todavía la arquitectura, que cómo está la arquitectura, qué estamos intentando construir, qué bases de datos deberían existir y hacerle las preguntas, David, esto lo estás tomando, ¿sabes?
+Jorge Alquinta
+Claro, claro. Yo todavía no escribo nada, solamente pongo el cursor y se me abre. O sea, en cierto rigor yo debería escribir algo para que el sistema entienda. Ah, ya.
+Jose Cortinat
+Eso Es un pequeño detalle, como que simplemente anotándose ya ha desplegado esto. Es un tema super menor ahora, vale, pero.
+Jorge Alquinta
+Entonces dejemos esto acá. Otro tema, si yo acá quiero agregar otro equipo que no está acá, se los propuestos, pongo puente de grúa. Ya, me lo está dejando buenísimo. Está funcionando yo acá puedo dejar un comentario equipo debe estar sin carga en su interior y eso debería no debería desaparecer después cuando yo salga del aviso ese comentario que ustedes ya, es el MIN y acá.
+Jorge Alquinta
+Fotos para agregar? No.
+Jose Cortinat
+Arriba estaba. En principio era, iba ahora aquí.
+Jorge Alquinta
+Pero no tengo fotos, no importante. Mira, una de las cosas que estoy testando yo, yo le puse en prioridad P3 y acá abajo me lo leyó como avería. El P3 junto con el P4 cada, De mantención, si yo la puesto P1, P2, claro.
+Jose Cortinat
+Eso me parece extraño porque es como eso no es ni siquiera, creo que no es ni IA, es como si un código era P1, P3, es que es una automatización en el fondo, una lógica, no es ni IA, no hay un LLM ahí diciendo nada, no debería, sería 100% P1, P2, tal, P2, P3, tal,
+Jorge Alquinta
+Ya está. Entonces yo voy a cambiar, Voy a crear en la notificación y me creo, te acuerdas que se habían creado unos nuevos códigos de aviso, acá sigue contando por la codificación antigua que era la que tenía inicialmente que dice que es el 177, me voy a las notificaciones, ahí apareció no,
+Jose Cortinat
+Claro le pone AB 177.
+Jorge Alquinta
+Claro, ya este es este es, claro,
+Jose Cortinat
+Aquí dijimos que tenía que aparecer la prioridad que es sus sugerencias.
+Jorge Alquinta
+Esto deberíamos eliminarlo porque esto va a tender a generar confusión Totalmente.
+Jose Cortinat
+Esto tiene que ser la prioridad. Luego, si le das aquí al ver, vimos que te podía sugerir un cambio de prioridad o lo que sea, pero aquí es la prioridad que tienes.
+Jorge Alquinta
+Pero es que mira, lo que pasa es que si nosotros dejamos que la IA proponga una prioridad, tiene que haber un criterio. Y la prioridad, generalmente, si este dos, es porque lo quieres hacer de aquí a espacio.
+Jose Cortinat
+Claro, claro.
+Jorge Alquinta
+Pero eso, la IA internamente tiene que cruzarlo con otras fuentes de información para ver que hay un riesgo de fallos mineros.
+Jose Cortinat
+Claro, y de momento nosotros no tenemos eso, entonces mejor quitarlo. Claro, si no va a generar ruido. Se entiende, sería como un versionado posterior, vendría después. En la sugerencia de prioridad, el cambio de prioridad tiene que consumir otras fuentes. Hoy en día no está tomando ninguna fuente.
+Jorge Alquinta
+Pero Tiene sustento que tiene que alimentarse de otras fuentes, tendencias, signos vitales, que son parámetros, temperaturas, corrientes. Hay efectivamente un riesgo, parémoslo antes de lo que tú.
+Jose Cortinat
+Estás proponiendo.
+Jorge Alquinta
+Pero ahora que quede manual que lo asigne a la persona porque después el planificador lo va a tomar. Y que desaparezca este mensaje acá para que no le genere conclusión.
+Jose Cortinat
+O sea, sustituir este por la prioridad que es. Punto.
+Jorge Alquinta
+Esta es la cajita carrera que se asignó en forma anual. Que ni siquiera la guía la modificó. Claro. Le vamos a entrar al aviso.
+Jorge Alquinta
+Estatus pendientes. Bueno, esto va a desaparecer, ya dijimos que debería desaparecer la sugerencia para que no genere conclusión. Voy a, Voy a dejar acá mantener PPP mientras tanto para que. Entonces tenemos acá la aplicación técnica, el tag se fijaron que acá está mostrando otro tag distinto al que vimos cuando estábamos creando el aviso que yo les dije que mostraba de cinco código y acá tiro otro número entonces cuando creamos el aviso muestra, se alimenta de unas fuentes de información pero cuando el aviso se crea, cambia, están cambiando las fuentes de información eso hay que ver también después.
+Jorge Alquinta
+De que la niña se está alimentando porque el mismo dato que había sido entendido por el asistente, ni siquiera por la búsqueda inicial.
+Jorge Alquinta
+Después tenemos, eso se va a ajustar, tenemos el nivel de riesgo, cierto que es automático, la confiabilidad del asistente guía, el tipo de aviso, programado, perfecto, el título, la descripción, La clasificación que asignó, las acciones sugeridas, aquí está, mantuvo el comentario que yo le agregué, bien, el equipo debe estar sin carga en su casa, listo, el labor, los repuestos y el equipo que había agregado, el fuente del oro, entonces eso está bien, marcamos, que chequeamos todo y ponemos acá, validar la misa.
+Jorge Alquinta
+Esto está validado. Está aprobado. Está aprobado? Puede ser que está como administrado. Sí, se cambió rápido. Acá se cambió rápido.
+David
+Sí. Ya. Me compro una Mac, Paulo. Qué? Me compro una Mac, Paulo. Una Mac? Sí, porque con Jorge hay muchos problemas con la MAC, no se la actualiza. Pero la está iterando Para ver si es problema de la MAC, porque en otros computadores está pasando al tiro Ya.
+Jorge Alquinta
+Entonces voy a entrar al aviso, soy el supervisor, o sea, perdón, soy el planificador, estoy revisando la información y le voy a dar crear la orden de trabajo entonces yo la OT 50126, Vamos a ir a ver la OK. Acá inmediatamente me.
+Jose Cortinat
+Bien, super bien.
+Jorge Alquinta
+El nivel de riesgo que habíamos visto, el titulo de la OK, la descripción que habíamos visto, hay una base de HH y de verificación y de costo, está la habitación técnica, el TAG, el glúculo de verificación, lo vamos a seleccionar acá, Desde Área Seca, el puesto de trabajo responsable, el superfesor, Área Seca mecánica, la fecha de facilitación, la fecha de término, fecha y hora, buenísimo, fecha y hora de término, la semana, eso por ahora.
+Jose Cortinat
+Pero Eso es como un dato de expectativa.
+Jorge Alquinta
+Inicial, porque esto va a cambiar en función de lo que voy a hacer acá. Claro, acá hay un resumen, Que dice mecánico, una operación 20HH, ayudante en una operación 12HH,
+Jose Cortinat
+Son todas las manos de obras que hay en asignada.
+Jorge Alquinta
+Pero mira, está súper bueno esto, que es lo que hay que corregir, porque acá tengo mecánico y acá tengo mecánico, lo está midiendo como puestos distintos, porque mecánico es muy solo, entonces esas 20 horas, 24 deberían ser 24H.
+Jose Cortinat
+Claro, Es que es más, ninguno de estos es el adecuado, Porque son mecánicos molienda, son como codificaciones específicas que tenemos ya del centro de costo. Claro, ninguno es correcto. Si tú te vas, ¿dónde podemos ver, por ejemplo, los listados de mano de obra? Mira, ves, ves que todo esto es diferente. Mecánica seca, mecánica, mecánico.
+Jorge Alquinta
+Mira, como las descripciones son en algunos casos largas, por ejemplo, esta instrumentación y el espacio. Aquí acá que aparezca el código porque el código.
+Jose Cortinat
+Ya se lo conocen ellos los planificadores se los conocen, lo ven todos los días, cada rato todos los días entonces más bien códigos.
+Jorge Alquinta
+El código es el puesto de trabajo con cantidad de operaciones bien si tienen más de operaciones la HH que suma la operación y la de operación bien porque es un resumen entonces siempre vamos a tener un puesto de trabajo, Yo voy a ver dos veces un puesto uno,
+Carlos Iturra
+Después el opuesto que está.
+Jorge Alquinta
+Sí, sí, sí.
+Carlos Iturra
+Exacto, dices que poner uno es muy largo, pero la verdad yo lo veo totalmente factible.
+Jose Cortinat
+Para el lado. No, pero uno debajo del otro. A ver, aquí el tema es que tenemos diferentes manos de obra, una que es oficial, que es la que tenemos seleccionada y otras que la IA está tomando para asignar otras. Ese es el principal punto.
+Jose Cortinat
+Si se ve todo, bien, mejor.
+Jorge Alquinta
+Son muy pocas las tareas que tienen tantos puestos de lago instinto como esta. Esto fue el caso extremo. Claro, claro. Tú a lo más puedes tener dos puestos de trabajo.
+Jose Cortinat
+Bueno, pero también puede ser que utilicemos externos, para algún tipo de tareas. Puede ser como el interno que haga una supervisión y con un apoyo externo de que haga.
+Jorge Alquinta
+No solo manteriores en los supervisores. Es absolutamente rol mantenedor.
+Jose Cortinat
+Claro, claro. Si es.
+Jorge Alquinta
+Cierto o bastante rol. Entonces, una de las cosas que hay que revisar y corregir, o porque no me guardo de memoria, pero estos son los puestos de trabajo que estaban en el Plupin ya, entonces si así está perfecto. Es que me suena civil, está en Plupin civil.
+David
+Igual en la.?
+Jose Cortinat
+Mira, una cosa es que está.
+David
+Y ahí tuve que hacer un invento para poder dejarlo más perfeccionado de un lado.
+Jose Cortinat
+Oye, una cosa que veo que es que tiene buena pinta, que fíjate que aquí, como ya estamos en una orden de trabajo, tú has seleccionado en algún momento la planificación, el área de planificación, digamos, si es molienda o flotación o lo que sea, aquí solo te está sacando las de área seca. Correcto. No las de flotación, no las de puerto, no las de no sé qué.
+Jorge Alquinta
+Pero mal las transversales, porque hay algunas, los instrumentistas son transversales, no hay instrumentistas de mecánica, solamente los eléctricos, los mecánicos, y algunos de los ubicadores, incluso de los ubicadores son.
+Jose Cortinat
+Aquí a mí, donde se, y digo yo, cómo capturamos, lo que voy a decir ahora mismo, aquí lo que hace falta es nuevamente sentarse, un experto, pero con alguien que no, porque él puede definir, pero alguien tiene que gestionar y armar las bases de datos, de, Cuándo aplica qué? La lógica. La lógica, cuándo aplica, quiero decir, estos instrumentistas es para todas, tal. Luego, entender, como de la IA, ¿de dónde chucha se está levantando esto? De dónde lo está tocando?
+Jose Cortinat
+Eliminarlo, asegurar que esta identificación siempre es en base a los. Ese tipo de cosas. No lo puede hacer sólo Jorge. David tampoco, porque igual de repente le. No tiene claridad de alguna cosa así. Entonces, esas coordinaciones son las que yo digo, ¿cómo las optimizamos como equipo? Se entiende o no? Y qué piensan sobre eso? Porque esto, venimos hablando tres semanas, un mes, ¿sí o no?
+Jorge Alquinta
+Es Que ahora que vamos a articularlo todo con distintos horas para el proyecto, debería funcionar. Lo importante es dejar claro cuál es la función.
+Jose Cortinat
+Por eso digo que cómo va a ser, ¿cómo lo hacemos?
+Carlos Iturra
+Ustedes desarrollan así como concesiones en conjunto? Cuando David hace, tú estás en una reunión con él, mientras proyecta, David lo ve al mismo tiempo,
+Jorge Alquinta
+No, él trabaja aparte y cuando juntamos yo hago lo mismo que estoy haciendo, aprovecho a correr y empezamos a ver las cosas que hay que. Claro. Pero en el momento David como que toma el.
+Gonzalo Olavarria
+No, los tres estamos los tres. Entonces Jorge va a la parte técnica y yo voy viendo todos los puntos que hay que corregir, tema de que afectan, Un dato en otro campo, todo el detalle con pantallazo y después pasamos a la transcripción y usamos el Word con los pantallazos,
+Jorge Alquinta
+Nos pasa bien. Lo que falta ahora, quizás, es que cuando David entre a trabajar solo, alguien entre también con él para decirle "ah, nos faltó esto".
+Jose Cortinat
+Claro, claro. Pero no tienes que ser tú, yo no quiero que tú estés en eso.
+Gonzalo Olavarria
+Lo que falta acá, siempre nos ha pasado esto y aquí se nota, es que hemos visto el tema de desarrollo y visualización que funcione, Pero falta meternos realmente en la lógica de los datos y cuáles son los datos, eso, cuál es la base de.
+Jose Cortinat
+Datos y cómo lo hacemos, cómo lo hacemos. Por eso es como que necesito que no solo sea porque David es producción 80% de ahí no se puede meter también en toda la lógica, alguien tiene que entender y ahí es donde tú también entras, yo creo, entender que estamos en estas reuniones, tú no has estado porque has estado en transets, pero estoy seguro que si tú estuvieras en estas reuniones entendería muy bien la lógica. Y dirías, no, pero espérate, a ver de dónde está leyendo que.
+Carlos Iturra
+En Ese caso, cuando estás haciendo, por ejemplo, la aplicación de permiso, en algún minuto tuve que hacer una base de datos de bueno, muchas cosas por este estilo y ahí me acuerdo que tuve que hacer un diagrama relacional, que es un diagrama de base de datos. Ahí es cuando tú dices este dato se cruza con este y no sé, pues una operación tiene tantos permisos y los permisos se relazan.
+Jose Cortinat
+Eso es lo que hay, eso es lo que hay que armar, hay que armar una base de datos relacional. Porque tenemos que separar muy bien, digamos, lo que son funciones exclusivamente agénticas mediante llamada de un LLM que hace no sé qué, que interpreta cosas, pero luego hay mucha cosa que es como prácticamente relacional de bases de datos y automatización, digamos, no I A.
+Gonzalo Olavarria
+Claro, hace.
+Jose Cortinat
+Falta ese diagrama, no tenemos nada así, no, David, así que tengamos, se le podría pedir alguna I A. Hay algunos en Cloud Code, yo tengo en el sistema de de marketing, tengo un, no me acuerdo cómo se llama, pero es para diagramar flujos de flujos, o sea, diagramas en el fondo.
+Carlos Iturra
+Hay una cosa que de hecho,
+Jose Cortinat
+Y seguro que hay alguna cosa para generar mapas relacionales de bases de datos, seguro.
+Carlos Iturra
+Con Magda teníamos como una reunión que teníamos que hacer como empresa, que no se hizo nunca, que tenía que ver con documentación. No sé si se acuerdan que en algún momento.
+Jose Cortinat
+Sí, Que David ha sacado aquí a colación.
+Carlos Iturra
+Claro que es lo que pasa, con la documentación uno tiene que hacerla antes de hacer la aplicación para que no pasen este tipo de problemas. Por qué? Porque nosotros hasta el momento yo me he dado cuenta que están utilizando EPMN, que son diagramas de negocio, ¿cierto?
+Jose Cortinat
+Poco, Poco, la verdad,
+Carlos Iturra
+Sí, pero.
+Jose Cortinat
+Y además que lo hacemos muy informal. Él le pasa un mensaje por aquí, por el WhatsApp, o sea, por el por el Teams, o por el sí, creo que lo hemos hecho un poco como mira, mírate esto, yo no sé si lo ha tirado, cómo nos aseguramos que está implementado, como.
+Jorge Alquinta
+Que no, sí, y.
+Jose Cortinat
+Como que pasamos ejemplos. Mira, hay un ejemplo, pero no definimos. Eso y el tema nadie ha dicho, ya esta es la tabla. Mira, esto es mira,
+Carlos Iturra
+El tema que el diagrama de negocio es un diagrama que normalmente no se hace cuando uno lo está haciendo el programa. El diagrama de negocio no lo hace cuando el programa está listo. Y se lo pasa al gerente. El problema.
+Jose Cortinat
+Ahora, ahora, ahora. También todo lo que estás diciendo es lo tradicional. Ahora hay que volver, mirar el cómo lo hacemos nosotros en el mundo de la IA, del desarrollo de software, con la IA aplicada.
+Carlos Iturra
+Qué es lo que pasa? Yo siento que igual como que al intentar como saltarnos pasos,
+Jose Cortinat
+Llegamos a un problema, que es ese mismo que estamos viendo acá, que es que las cosas no se cruzan.
+Carlos Iturra
+Y eso sucede porque antes de esto, nosotros antes, claro, hacíamos diagrama a mano y todo y la cosa salía bien lenta. Hoy en día tenemos la idea.
+Jose Cortinat
+Hay que ir colocando, ¿qué falta? El diagrama relacional. Lo voy poniendo yo.
+Carlos Iturra
+Pero no solamente el diagrama relacional, porque el diagrama relacional es solamente para ver la base de datos. Acá no es solo el tema del diagrama relacional. Qué más? Debiera haber un diagrama de casos de uso, por ejemplo, que es como un diagrama donde uno dice "yo soy operador". El operador tiene, ¿qué funciones? Esta, esta. Desde estas funciones, ¿qué funciones se desprenden? Esta, esta. Qué caminos existen? Camino feliz, camino triste, error, etc. Entonces eso igual falta, eso es lo que nosotros hablamos de documentación que no existe.
+Carlos Iturra
+No tenemos documentación y eso tenemos que se supone hacerlo antes de hacer los programas para que justamente este tipo de problemas no ocurran. Ahora, ¿es un proceso que siempre hago lento? Pero hoy en día tenemos la inteligencia artificial que igual nos puede apurar en hacer esos diagramas, pero tampoco es como algo que nos vamos a durar un mes. Son quizás un día o dos días más. Pero son días necesarios porque vamos a tener problemas re grandes porque mucho más problema.
+Jose Cortinat
+De hecho luego tú podrías utilizar esos diagramas, la documentación para hacer QA y decir oye mira en base a estos diagramas testea la página web el sistema a ver si, Y encuentra como.
+Carlos Iturra
+Claro Y todo eso es lo que se hace. El diagrama de gases de uso específicamente dicta todos los caminos posibles, caminos felices, caminos triste, caminos con error, etc. Sigamos.
+Jorge Alquinta
+Yo cambié el puesto de trabajo, estaba mecánico y lo cambié eléctrico. Acá están las flechitas para poder aumentar o disminuir la cantidad. Sería bueno que además de esa opción tuviera la otra que es con el cursor, que yo pongo el cursor ahí y quiero borrar, Para colocar el número en forma manual, pero por ejemplo, según un número a bordo.
+Jose Cortinat
+No te permite eso.
+Jorge Alquinta
+Es obligatorio. Claro, te dan ahí un desaparecer para que yo pueda colocar dos, entonces me deja como el uno.
+Jose Cortinat
+Claro, solo te permite la vía de la flecha. Igual hay gente que de repente, eso es como más experiencia de usuario, igual hay gente que está acostumbrado como a escribir las cosas.
+Jorge Alquinta
+Este otro, por ejemplo, ya me muevo con las flechas y si yo quiero borrar me lleva 0 pero le pongo la cantidad y queda 02 y después se nos queda como pegado el 02 que traía acá debería quedar sin el 0 cuando es un número redondo digamos 1 o 2, el 1 sin el 0 al lado pero que sea la noción de la flecha que está funcionando y el borrar el número y colocarle a través de acá el teclado el, La cantidad, entonces el multiplicador está funcionando, es 1x2 la HH es 2.
+Jorge Alquinta
+Si yo acá modifico, pongo 6x2 me aumenta 4, o sea está funcionando bien el multiplicado. Después vamos a ver más adelante en detalle, porque por ejemplo esta actividad, vaya detectado mecánico 1 o 10 horas, esa actividad 10 horas, con suerte es media hora.
+Jose Cortinat
+Ya, entonces, ¿cómo resolvemos eso? Porque hay que entender de dónde. De dónde viene la bata,
+Jorge Alquinta
+Claro, pero dejémoslo para el final, porque yo me preocupo donde podemos ver la capa de que los tiempos sean coherentes, cosas así.
+Jorge Alquinta
+Este dos de acá no se que.
+Jorge Alquinta
+Entonces yo voy a ir revisando cada uno de los, por ejemplo medir vibración, voy a dejar la cantidad de uno,
+Jorge Alquinta
+Acá.
+Jorge Alquinta
+Puedo probar los paralelo? Puede colocar, si no sé lo que es Sinopti, después vamos a progresar de acuerdo al tema de producción. Si, voy a colocar esta actividad en paralela con inspección de acoplamiento finalmente se le voy a colocar el Sinoptic que va a ser otro positor en paralelo, es un segundo Sinoptic.
+Jorge Alquinta
+Se la vaya a poner de horas, osea se entiende que está mirando el paralelo, es la más predominante porque es la que una más este recurso se preocupa antes y queda paralelo y un poco algo igual está funcionando bien, porque si yo acá puedo elegir hasta 1, 2, 3, 4, 5 actividades paralelo que es imposible, osea nunca hay tantas actividades paralelo pero en algún momento a lo mejor alguien, Un usuario, un cliente nos puede decir oye pero si yo tengo más de 5 se agregará una opción de cotocar N en paralelo, o sea N grupo digamos, pero nunca es tanta, entonces esa actividad en paralelo la tengo con esta, las voy a minimizar para ver tantas ventanas abiertas, paso la 4, si fijáis este tiempo que es verificar condición de minutos, entonces ahora la vamos a bajar a.
+Jose Cortinat
+Mira, por si acaso, vale, te traigo esto, que te vas a manejar como mucho mejor,
+David
+Por si acaso, vale. Que muchas veces estamos mucho rato viendo si la horas con cuerdas, no, no. Ya, vale. Siempre como si el pueblo de estadio,
+Jorge Alquinta
+Horas de vale.
+Jorge Alquinta
+En serie, se suman sus horas, una después de otra, dentro de un grupo, se toma la máxima del grupo, corran simultáneas, tenía la más larga, unos paraleros distintos, a B, ponen secuencia entre sí, fórmulas de serie, más sumatoria máxima en el número. Total, HH, bueno, todas las noches. Esto está,
+Jose Cortinat
+Me parece, buenísimo. Que se ha aplicado en general.
+David
+Hay varias funciones que cuando veo que ya se está repitiendo mucho de que estamos mucho rato, ya voy y pongo un signo de preguntas.
+Jose Cortinat
+Yo creo que eso vendría súper bien para generar confianza y credibilidad sobre los datos, más en el mundo de la IA que la gente dice "no, pero ¿y esto de dónde sale? No sé qué".
+Jose Cortinat
+Para decir si es 100% una decisión automática, lógica, O en qué momento el LLM ha hecho una interpretación de qué, sabes, o sea, me parece súper bueno.
+David
+Creo que ayer fue o el martes, cuando Gonzalo se quedó pegado de nuevo calculando toda la HH. Claro, Para que vean cómo se hacía el cálculo.
+Jorge Alquinta
+Pero mira, igual verifiquemos que lo están haciendo bien, lo están haciendo bien hasta la semana pasada, todos los ejemplos que vimos, pero, para que también sumamos, 2, 3, 5, 7, 8, 12, 16, 17.
+Jose Cortinat
+No, 14, 15, 17 y medio. Está saltado ahí, son 17 y medio. Hazlo de vuelta Ya.
+Jorge Alquinta
+3, 5, 7, 8, 12, 14, 15 17 y medio. Algo había sumado 4 en.
+Jose Cortinat
+Lugar de 2 sí.
+Jorge Alquinta
+Pero ahora eso es HH. HH es fácil porque se suma todo. Pero en duración, como tenemos dos actividades en paralelo que son estas, la 2 y la 3 son en paralelo. Hay una que es más grande, que son dos horas, entonces acá tenemos dos.
+Jose Cortinat
+Dónde ves que es en paralelo?
+Jorge Alquinta
+Acá, si la abro.
+David
+Igual, Ahí al lado. Acá.
+Jose Cortinat
+Sí, pero cómo lo veías aquí sin esto?
+David
+Dice Pear.
+Jose Cortinat
+Pear. Ah, vale.
+Jorge Alquinta
+Entonces, tenemos dos horas. Es una hora,
+Jose Cortinat
+Una HH menos.
+Jorge Alquinta
+De estas dos, mándala más. 4 horas, 6, 7, 9, 10, 11, 13 de 8,5 está bien el número que esta haciendo está bien si yo quiero agregar una actividad me la agrega acá abajo por ejemplo puedo poner acá revisarla ya y supongamos que esta actividad ah, perdón acá puede colocar ya que se la dejamos al siguiente.
+Jorge Alquinta
+Con conteo y si yo esa actividad, la guía me la tira, osea la nueva aparece en las filas, en la cola pero yo esta actividad la quiero colocar más arriba es arrastrando ahí yo arrastro y la quiero poner acá entre la 6 y la 7 creo que tienen que arramar de los puntitos que se ven ¿no? De los puntitos la arrastro y la pongo entre la 6 y la 7 que es realizar entre verificar apene y realizar la dimensión y queda entre verificar apene.
+Jorge Alquinta
+Y si no, la devuelvo abajo, si la quiero tirar hasta el final.
+David
+Tiene que ir posicionándome.
+Jose Cortinat
+Pero tienes que ponerla encima o. Ahí. Pero ponlo encima, ponlo encima.
+Jose Cortinat
+Ahí, es como encima de la tarea.
+Jose Cortinat
+Si hay que ponerle como como en verde o algo así como que parece que está OK ya ahí tal.
+Jorge Alquinta
+Bueno entonces esta gran la voy a sacar y con la x desaparece yo acá tengo 17,5 hh y 13,5 votación voy a ir a ver el salary 13,5 votación y 17,5 hh y los costos bajaron vamos a ver los costos pero antes de los costos pasemos a los materiales porque el costo tiene materiales y tiene hh y.
+Jorge Alquinta
+Tengo acá los códigos, tengo la descripción, tengo la cantidad. Esto del precio, están en cero, o están sumando por ahora. Este es un tema que después, por último, está con data sintética.
+Jose Cortinat
+Nuevamente. Temas de tablas. De dónde lo están leyendo? Esa tabla tiene precio? No.
+Jose Cortinat
+Yo estoy seguro que tenemos en el inventario que en su día yo generé con data sintética, en un principio, no estará perfecto, pero en un principio todas las tablas de las que se debían de esto.
+David
+Ahí es cuando choca con lo que mandó Jorge.
+Jose Cortinat
+Que ahí choca con lo que mandó Jorge, entonces ahí hay un popurrí de tabla.
+David
+Entonces Cloud se inventó una forma de unir los dos datos.
+Jose Cortinat
+Muy bien, pero no, pero claro, hay que.
+David
+Mira, voy a llegar a un ítem. Claro. Ese ítem. Un poco que estamos a tiempo pasado. Que Cloud que le han ordenado como 80 veces los datos y no puede porque no puede inventarse algo de la nada, porque tiene que coincidir. Pero cuando Coincides.
+Jose Cortinat
+Ahí es donde yo siento que tú tienes la lógica de lo que hay que hacer, pero no sabes el detalle de fondo. Jorge tiene el detalle de fondo, pero no tiene las habilidades para generar la lógica tal. Y David necesita como ese soporte en eso. Y alguien tiene que orquestar el ya. Hagamos esto, en este día sacamos esto, como medio PMO de esto.
+Jorge Alquinta
+Mira, acá está funcionando bien, agregué una fila para buscar un material, acá lo busqué por el texto, puse. Le presiono a jugar. En la primera? Pasaron los ejercicios? No hablo el tema de la hora. Acá puse el texto, puse perno y me tiró y. Bueno, acá me lo cambió Pero dale que como no soy guardo Ah, no soy guardo, entonces de nuevo.
+Jorge Alquinta
+Agregar Agrego, como no tengo el código, pero si voy a buscar.
+Jorge Alquinta
+Lo mismo que recién todavía no escribo nada y yo me estoy tirando lista. La idea es que aparezca un desplegable asociado a lo que yo escriba acá, pero que antes de si no hay nada que no retire porque puedes llevar lo que tiene.
+Jose Cortinat
+Bueno, es interpretable porque te da una indicación de que si tú escribes. Te van a aparecer cosas. Yo creo que. Algo está bien como está? Sí, yo lo dejaría así, dejémoslo así porque ya te da al tiro una interpretación de que si yo escribo aquí posiblemente me aparezcan cosas.
+Jorge Alquinta
+Funcionan las flechas y también funciona si yo acá le cambia uno.
+Jorge Alquinta
+Lo que sí, el signo B no me funciona, lo guapo me funciona cuando yo pongo el cursor encima y ahí sobre el.
+Jose Cortinat
+Sobre el cursor le podrías poner cero también o no?
+Jorge Alquinta
+No, pero deja poner cero.
+Jose Cortinat
+Claro, Tiene que ser una unidad o algo.
+Jorge Alquinta
+Entonces la voy a eliminar. Listo. Luego lo repuesto y yo creo la reserva.
+Jose Cortinat
+Y Ahí en esta reserva qué tendría que estar pasando? Un código. Un código y esto se supone que debería conectarse con una solicitud de.
+Jorge Alquinta
+Eso debería conectarse con el sistema que tiene supply chain.
+Jose Cortinat
+Vale, Entonces eso lo podríamos dejar como el siguiente alcance, no fuera de esto. O sí?
+Jorge Alquinta
+No, ese es otro sistema aparte. Porque el idioma está acá mostrando de que la reserva.
+Jose Cortinat
+Claro, Que quedamos las reservas y esa reserva se podría como en SAT, generar la reserva también, ¿no?
+David
+Es que no tenían ese programa, se lo hacíamos nosotros y ahí como estaba esto, solo era conectar. Esa era una idea que había ustedes, si no tenían reserva, nosotros le hacíamos un programa, se lo enviamos aparte y lo conectamos con este y ya tenían dos programas distintos. Claro, ver ellas minas que.
+Jose Cortinat
+Sí, Claro, porque no hemos sacado, abierto el melón comercial de ir a las minas.
+Jorge Alquinta
+Si, lleguemos hasta la reserva, un viejo enganchito para ver, listo, me queda la reserva, que se conecte con sal y hasta el módulo de accidente, que queda.
+David
+El mercado que dice que está preservado con colorito. Dónde? Sí, ahí abajo. Ahí dice en verde, reservado para. Dónde? Cuando crea otro material, Cómo se va a crear otra reserva aparte?
+Jose Cortinat
+Dónde está el verde?
+David
+Dice reservado, en vez de estar en gris. Porque si agrega otro se pone en gris.
+Jose Cortinat
+Ah vale.
+Jorge Alquinta
+Cambiamos otro material. Y ahí va a crear otra reserva. Si yo pongo acá, ponte tú, tornillo, juegos de tornillo, le pongo cantidad 1 y agrega otro,
+Jose Cortinat
+Agrega otro.
+Jorge Alquinta
+Claro vale. Es la segunda reserva.
+Jose Cortinat
+Claro, ahí se pasa a verde, si no se hubiese quedado en gris.
+Jorge Alquinta
+Ah, pero no me mostró la segunda reserva acá abajo.
+Jose Cortinat
+Pero no, pero porque es como que se ha actualizado. Ah, ¿ha creado otro código? No, está bien, otro código. De reserva. Estos materiales están bajo una reserva. Ah, debería almacenarse las diferentes reservas de la aplicación.
+Jorge Alquinta
+Ah, no voy a mostrarme la otra. El planificador tiene que estar siempre seguro antes que la resuelva de que están todos para que lleve una, pero puede darse el caso hipotético de que después de que había.
+Jose Cortinat
+Puta, identificaron que hacía falta otra cosa. Vale, sí, y en general, en general, igual que lo has aplicado en el Word Request, en el aviso y en la orden de trabajo, yo creo que todo código que se genera tendría que aparecer el botoncito ese de como de copiar clic, la típica como que lo copias al portapapeles en lugar de tener que venir aquí a, Seleccionar todo y copiar. Sabes?
+Jorge Alquinta
+Veamos equipos de apoyo, están los equipos de producción inicial que tiró la IA y está el que se agregó.
+Jorge Alquinta
+Cuando yo expliqué.
+Jose Cortinat
+Por qué aparecen en rojo unos?
+David
+Cómo dije? Para que lo conecten bien, Claus decidió inventarse algo distinto para ser un intermediario.
+Jose Cortinat
+Claro, y aquí sí que está solo tomando de lo que está creado. Entonces hay que resolver el decirle a Cloud, olvídate de esto de inventarte cosas, conéctate con las bases de datos.
+David
+Es que lo que mandó José era una versión muy antigua de los datos que teníamos. Luego Jorge me dio unos datos muy un poco más modernos, pero donde José ya habían inventado con Cloud.
+Jose Cortinat
+Pero Entonces lo que hay que hacer es, oye, en base a los datos en Cloud, modificar las bases de datos, confirmarlas y decir ya nos vamos con esto y ya está, ¿no?
+David
+Lo que vio Jorge el luego se unió y todo el tipo para conectarlo bien, yo invento ciertos roles, ciertas cosas que pueden hacer un intermediario.
+Jorge Alquinta
+Mira, y acá tiene que justar, porque si se fijan está repitiendo el tipo de dato dos veces. Entonces el tipo de equipo, como parece acá está bien, móvil, acá lo que deberíamos colocar acá es las características. Entonces si es model spray, acá deberían aparecer las toneladas, la capacidad, la capacidad de carga.
+Jose Cortinat
+Claro, entonces eso sería equipo. Es el la descripción, el nombre, digamos, y nombre no, descripción, toneladas, peso, lo.
+Jorge Alquinta
+Que sea, marca, modelo.
+Jorge Alquinta
+Que puede trabajar con. Tienen como dos premios, uno para cargar la chica que aguanta 5 máximo y otro para cargar más grande aguanta bien. Entonces ese tipo de información es la que agregaría valor en la segunda fila porque ahí ya saben de que tienen un puente de grúa o una grúa móvil y que tiene tal capacidad. Entonces tiene que ser equipo después? Las características. Claro, que se puede llevar características o destrucción. Son datos ya de, Que te da las especificaciones del tipo de equipo. Que podría.
+Carlos Iturra
+Ser un dato opcional, hay datos me imagino que, o sea, equipos que no tienen características específicas también. No, todos tienen que tener.
+Jorge Alquinta
+El nombre es necesario? Tiene que ser equipo.
+Jorge Alquinta
+Y todo el equipo está bien, pero la persona está bien, no tiene que ser un nombre, sino que tiene que ser acá característica o descripción, pero que te va a mostrar las características del equipo. Si es una prensa, las personas tienen capacidades, Y siempre es ahí, entonces cada equipo tiene su especificación. Entonces después acá al lado este el tipo, esto ya es remondante, porque ya acá el equipo sabemos que es una lua, que va a ser una prensa, que va a ser.
+Jose Cortinat
+Sería Más bien interno externo, algo así.
+Jorge Alquinta
+Probablemente ayudaría a eso.
+Jose Cortinat
+Sí, Interno externo. Servicio externo.
+Jorge Alquinta
+No, lo otro que podía hacer acá es si está reactivo.
+Jorge Alquinta
+Disponible fuera de servicio, entonces este fuera de servicio rock o born y no lo podía usar.
+Jose Cortinat
+Ah ya, sí. Sí, sí, sí. Claro. Y de hecho, ahí, ahí. Condición, condición de ejecutor. Ahí dentro, o sea, fuera de este primer alcance de versión, deberíamos tener una visualización de estatus de equipos. Es decir, como por ejemplo, yo puedo terminar una hoja y poder ver todos los estatus de equipos. Por ejemplo, están en servicio actualmente.
+Jose Cortinat
+No, pero imagínate yo tener una vista aquí, como en no sé, como en recursos en general, donde veo, no aquí, no, ahora mismo estamos en una o T, salte de la o T, no salgas, pero imagínate que salimos de la o T y tenemos un apartado que es de recursos y claro, en settings yo podría tendría que poder ver en vivo si una persona está trabajando en una o T. Si un recurso está en un servicio de una o T o está en reparación o está fuera de servicio, no sé si tú estuviste, pero allí en el Congreso, no sé si alguien presentó, lo tengo por ahí grabado o lo que sea, presentó como el estatus actual de los equipos, en qué estaban y tú podías decir en qué estaba un camión, una pala, un no sé qué en reparación, en operación, no sé qué lo mismo, el mismo concepto con.
+Jose Cortinat
+Dónde están mis servicios actualmente y mis equipos? Dónde está.
+Jorge Alquinta
+La persona? Dónde está?
+Jose Cortinat
+Yo podría, eso es, recursos, personas.
+Jorge Alquinta
+Eso tiene que estar en un.
+Jose Cortinat
+Equipos de apoyo.
+David
+Y cuando tengo que, Jorge muestra la mano, tengo que revisarlo con un apartado muy específico. Y dice que cuenta está trabajando con tanto.
+Jose Cortinat
+Está por ahí, pero no lo tienes como aquí a la mano, ¿cierto? Hay cosas así, yo ya me he fijado que a través de un botón, en una página, no sé qué, llegas. A otro lado? Es verdad, es verdad.
+Jorge Alquinta
+Acá decimos que esto tiene que ser retrasado por condición del equipo y acá ponemos operativo, en mantención, fuera de servicio. Esto de ATH hay que sacarlo, hay que cambiarlo por cantidad. Para decir cuántas dudas necesito una, cuántos prensas, dos, claramente de su concepto es una, pero la fatal que está necesitando para un cambio de balde en pala, Puede ser o una grúa gigante como de 350 o dos grúas de 120. Entonces en vez de HH en cantidad y los comentarios está bien porque acá se pueden colocar algunos comentarios entonces, ¿qué más podría hacer?
+Jorge Alquinta
+Creo que es eso. Ah, y en algún lado que diga si es interno o propio.
+Jorge Alquinta
+Pero se supone que todo lo que está acá es interno. Si yo quiero colocar algo interno porque le comparto agregar equipo, Ah, había puesto editar o tengo que poder editar para agregar equipo. Agregar equipo, acá pongo. Inventese algo que no esté en la nación. X.
+David
+Ok, cuando salta el externo. Prensa.
+Jose Cortinat
+Vale, prensa se le pone un cosito de externo. Prensa.
+David
+Hidráulica.
+David
+Pero como se ven los pasos del Word request, si sale un botón que dice morado y dice externo. Claro, cuando.
+Jorge Alquinta
+Me cambia la siguiente sección me.
+Jorge Alquinta
+Entonces la voy a eliminar, pero está. Ah, si que para eliminar siempre pide una confirmación Vale, quítate Es que esa misma confirmación, de acuerdo conocido cuando vi el ejercicio de quitar el repuesto no me la vino me la pido y en operación tampoco me dio la confirmación ¿Te acuerdas que es usted y usted para todos? Porque si el viejo no se pega un condoro, Que esté seguro, eh. Porque si lo borras, no se aquí lo borro.
+David
+El administrador sí sabe, porque el algún lock es una tuseta.
+Jose Cortinat
+Sí, pero no, pero. Cuál ayudar? Eh? Me gustaría que esté al lado también una tuseta. Ah, claro, el lock este. Tiene que haber una puseta. Este. Es más, luego ahí es donde vienen soluciones agénticas de mejora continua. Analizar histórico, tiempos que pasan de uno a otro, que alimentan KPIs, sugerencias y mejoras. Sabes?
+Jorge Alquinta
+El corto en estos momentos solamente me está sumando HH, claro que no tenemos materiales, valores e inmateriales y externos no tenemos ningún servicio externo, ni en algún momento externo. Así que, por lo que funciona bien, el real y el plan. Mira, el real tiene que estar cero. El real no puede tener números. Claro.
+Jose Cortinat
+Hasta que no se cierre, no se puede saber.
+Jorge Alquinta
+Porque cuando tú modificas hay una acción más.
+Jose Cortinat
+Porque esta OTE al final se cierra, porque se planifican unas HH, pero luego hay cosas que pasan. Y repuestos, igual de repente al final más HH mecánicas, un repuesto extra que no tenían en consideración y en el cierre es donde tú mides, Cuántas horas se han hecho en cada operación, cuántos repuestos y ahí ya se planificación versus ejecución final. Bueno, tú has estado en terreno. Documentos.
+David
+Hay que darle a regar o qué? Como creo que después Clicke y ya son unos documentos inventados. Buenísimo, buenísimo. Pero es lo que luego a futuro para cuando se haga, la lleva a decidir de todos los documentos que tenemos cuál se pone ahí.
+Jorge Alquinta
+Fatales, tal instrumento. Bueno, decir así, esta OT se tiene que transformar en un documento, en un resumen pdf. Lo bueno que está como información. Cómo? Hay un.
+David
+Resumen Excel al lado de esa hipo OT? Pero en otra pestaña.
+Jose Cortinat
+Oye, Jorge, Jorge, una cosa, a ver, decisión, vale, decisión, yo estoy aquí hasta, yo me voy el viernes, voy a juntarme el miércoles en la tarde con Reinaldo, Martínez, en Goldfields, allí, y con David para el tema de permisos, el otro David.
+Jose Cortinat
+Tenemos cosas aquí de Goldfields, que no es data real real, es aproximada, ¿no? Pero, puta, tenemos como casi que un showcase para él ya, casi.
+David
+Quizás haya data real, porque si hubo una filtración de sus datos, Clau la agarró y la puso ahí como el equipo.
+Jose Cortinat
+No, ya no, pero a lo que voy yo como de los tags, los functional locations, ahí hay cosas, los repuestos, ahí hay cosas, no es lo final, final, ¿vale? Mi pregunta es, ¿le damos ahí como un showcase ya el jueves con lo que tenemos o no? O sea,
+Jorge Alquinta
+Tendríamos que llegar a esta planificación, porque la programación todavía no, No sé si no le revisamos, no sé si las cosas que hablamos la semana pasada ya están.
+Jose Cortinat
+Bueno, Ahora lo vamos a ver, pero yo creo que sí, ¿no? Aprovechamos, tú te conectas online y tú presentas, y yo estoy con él allí viendo los temas, ¿vale?
+Jose Cortinat
+Ya, entonces, ya sabemos que están.
+Jorge Alquinta
+Abajo hay más cosas bien.
+Jorge Alquinta
+Porque yo decía que después automáticamente la P cuando ya está planificada, cuando está planificada, tiene que transformarse en un documento, porque la P también es un documento.
+Jose Cortinat
+Es un documento, sí, tiene que ser exportable, imprimible.
+Gonzalo Olavarria
+Estamos En ejemplos pasados, pero esto sí o sí lo tenemos que cerrar porque la herramienta, pero simplemente la aviso, porque a la una y cuarto deberíamos.
+Jose Cortinat
+Ya, ya, entonces.
+Gonzalo Olavarria
+Esa parte y la otra.
+Jose Cortinat
+Que tenemos. Ya. Deja hasta aquí. No, continúa con la programación, vamos, te escuchamos, sin entrar demasiado nosotros, venga.
+David
+Voy a guardar. Si hay algunas funciones que si son automáticas, que se guardan. Ya.
+Jorge Alquinta
+Pueden Estos los comentarios.
+Jose Cortinat
+No, Eso ya lo veremos. Yo hice la historia.
+Jorge Alquinta
+Estoy bueno porque estoy bien que uso los cambios. Eso es buenísimo. Una cosa que la otra vez la habíamos pensado es que esta sección de acá, Abierta para que aparte de lo que escribió la persona que escribió el aviso, puedan agregarse más cosas, pero como funciona SAT y que bueno, es que lo que ya se escribió antes. No se elimina, es inevitable, inevitable, se puede modificar, se pueden agregar más cosas, pero siempre es la última que hace.
+Jose Cortinat
+Entonces podría ser esto, descripción original, inevitable, descripción final, parte con la misma y es editable.
+Jorge Alquinta
+Qué es lo que hace SAP? Cómo te marca la fecha? En todo cuadro te pone la fecha acá arribita. La fecha y la hora. Fecha y la hora y el texto. Después si alguien se metió acá y corrobó otra cosa, fecha y hora, texto. Porque ha sido viendo en qué fecha fueron colocando cosas. Es como si fueron en Facebook, así una cosa así.
+Jose Cortinat
+Como un muro, una especie de loco histórico.
+Jorge Alquinta
+Pero Alguien puede venir a borrar lo que alguien escriba antes.
+Jose Cortinat
+Ya, pero una pregunta, ¿esto para qué sirve? O sea, ¿qué tanto valor agrega dentro del conjunto?
+Jorge Alquinta
+Puede Agregar comentarios el planificador y después si o así el supervisor tiene que tener espacio para llegar comentarios, que son distintos los comentarios.
+Jose Cortinat
+Pero qué tipo de comentarios?
+Jose Cortinat
+Los trabajos que se hicieron.
+Jorge Alquinta
+Entonces es que. Cuando tú termináis el trabajo, dejáis comentarios.
+Jose Cortinat
+Ya, pero eso no tendría que ser al nivel sumario descripción original. Eso es otro apartado. Eso tiene que ser ya, cuando la OTE está en ejecución, ya en ver cada operación con su apartado de comentarios.
+Jorge Alquinta
+Pero tal como les dije recién, que el primero que comentó se iba a ser borrado.
+Jose Cortinat
+Claro, exacto, Exacto.
+Jorge Alquinta
+Tal cual, porque es el histórico, eso es inamovible.
+Jose Cortinat
+Sí, sí, sí, total, total.
+Jorge Alquinta
+Y Eso te muestra quién ha hecho?
+Jose Cortinat
+Que Son casi que infinitos comentarios, como decir "oye, comenzamos a las 8:30".
+Jorge Alquinta
+Igual que lo otro, Cuando se cambió un estatus, cuando pasó, cuando surya estatus más bajo, cuando tu colocas "crear la red" y después tu le cambias a planificado, a liberado, a planificado. Siempre el histórico del sistema tiene que quedar cuando se liberó, quien lo hizo, el cuando está hecha y hora y quien lo hizo.
+Jorge Alquinta
+Cada uno tiene que también quedar registrado,
+Jose Cortinat
+Un comentario, un comentario, porque aquí esto vendemos servicios agénticos, hay un tema de cambio cultural brutal y cambio así de cómo vamos a hacer el change management. Vale, entonces, como ahora están las cosas que se pueden hacer tranquilamente, esos comentarios que son como oye, que puede ser hasta un audio y que y que ya están utilizando en los oye, partimos la del trabajo, no sé qué tal, pum. Registrado. Hemos encontrado una nueva falla, no sé qué, vamos a necesitar no sé qué.
+Jose Cortinat
+Y es como una bitácora de qué va pasando en cada operación y se van generando los relojes.
+Jorge Alquinta
+Sabes por qué? Porque cuando son trabajos que pasan el turno día de noche o pasan más días que el de día, vuelven a seguir el día siguiente y no has terminado el trabajo. Por tanto, no llegas a la parte de notificación, tú tienes que dejar tu avance al de la noche. De la noche, le dejan a Ángel que vuelve de liga y así.
+Jose Cortinat
+Y qué bueno que en vivo tú puedas ir haciendo los comentarios, como cuando haces cambio y corto con los walkies. Oye, no sé qué tal, lo mismo. Bueno, nos hemos encontrado con un cacho, esto, pum, ya está. Total, es información.
+Jose Cortinat
+Exacto. Y llega un momento en que eso, al término de la noche, una acción cargada directamente luz o qué sé yo. Genera un resumen de, Qué Pasó, qué se tiene que implementar, así como luego. Es como siguientes pasos.
+Jorge Alquinta
+Porque estamos dentro de la hotel. Qué tipo de Hotel?
+Carlos Iturra
+Como te veo, por ejemplo, haciendo la acción como con el celular. Esto cómo se ve en el celular?
+Jose Cortinat
+No, eso habrá que verlo cuando. Hay una.
+Carlos Iturra
+Vista muy antigua.
+Jose Cortinat
+Muy antigua. Una primera que desarrolló el. Pero no, Sí.
+Jose Cortinat
+Tiene Que ser cien por ciento.
+Carlos Iturra
+Dos. Hay ciertos modos.
+Jose Cortinat
+Buena pregunta. Hay dos. Hay algunos módulos que son prácticamente noventa por ciento, o sea, cien por ciento web, como la parte de planificación.
+Jorge Alquinta
+El planificador, el que planifica el terreno, el que planifica. En un computador. El 90% en un computador. El del terreno, él pasa un 80% debería. En terreno. A veces están 60-40 pero va a estar más tiempo en terreno. Por tanto, todas esas novedades están entiendo ahí en el equipo. Muchachos, ¿cómo van?
+Jose Cortinat
+Y eso va a ser más up.
+Jorge Alquinta
+El ejemplo que decía él. Después va a llegar a hacer alguna cosa al computador, pero si avanzó del terreno todo lo que él llega a hacer actualmente al computador, maravilloso.
+Carlos Iturra
+No, yo comentar eso porque es una tecnología diferente el celular a un jugador, pero son hartas aplicaciones diferentes que tienen que hablar entre sí, con una misma base de datos y todo.
+Jose Cortinat
+Dejar De alargar las reuniones. Soy muy bueno que pase.
+Jorge Alquinta
+Ya, entonces.
+Jorge Alquinta
+Di bebé, di bebé y ahora voy a dejarte como planificado. Ya terminé. La fecha, hablamos la fecha, no revisé, voy a tirar al 25 de mayo y la duración es 36 por tanto me sumó, y voy a partir acá a las 8 de la mañana 8:30 claro,
+Jose Cortinat
+Te cambia la.
+Jorge Alquinta
+Hora del término 30 listo, al sumarle 36 horas me debería terminar, Al día y a la hora en que fuga 36 horas. Por qué? Porque es la fecha y la hora, más las 36 horas de duración, tiene que decirme cuándo termina. El día y la hora.
+Jose Cortinat
+Y ahí que dice, cuadrilla, agrégalo en contratistas.
+Jorge Alquinta
+Es una opción. Mira, esto deberíamos tratarlo de acá. Por qué? Porque si nosotros vamos a. Pedir personal externo, ese personal externo tiene que estar.
+Jose Cortinat
+Aquí, es verdad.
+Jorge Alquinta
+Te acordáis que era un argumento?
+Jose Cortinat
+Si Se agregan contratistas, es aquí, al nivel de la orden de la operación, ¿sabes?
+Jorge Alquinta
+Acá tiene que haber una opción donde yo, de hecho creo que era el botón, ¿no? La verdad es que en su momento era modificable, externo. Entraba, el vendor, por ahora, no nos metamos mucho en eso, Resultamos lo otro.
+Jose Cortinat
+Sí, Eso, eso.
+Jorge Alquinta
+Por eso también, una vez lo hablamos, después lo hablé más, porque si no.
+Jose Cortinat
+Sí, sí, sal de ahí nomás.
+Jorge Alquinta
+Qué Es lo que funcione con el recurso propio? Perfecto.
+Jorge Alquinta
+Entonces ya está todo.
+Jose Cortinat
+Habría que quitar eso?
+Jorge Alquinta
+Sí.
+Jorge Alquinta
+Cambié a planificado, no lo había hecho.
+Jorge Alquinta
+Me saca de acá.
+Jose Cortinat
+Pone planet. Aparece como plan, solo tienes que salir de ella, sí.
+Jose Cortinat
+O tu scheduling.
+Jorge Alquinta
+Pero no, es que eso como tiene que ocurrir, yo como planificador terminé mi proceso. Ah claro, yo soy el programador, mi proceso no parte acá, parte primero acá, yo tengo que quitar todas las botellas que están planificadas. Así como el planificador parte con todos los avisos como están como aprobados, porque eso tiene que crear la red, él va a buscar para que se vaya también, entre una parte tiene que ser lo mismo, va a buscar acá el listado, todas las propias planificadas, tiene que hacer el ejercicio de revisarla, una revisión rápida, pero el SAE ya confía en que el planificador, esto hay que corregirlo, revisó acá y él dictó, programado en programación, entonces ya.
+Jorge Alquinta
+Es con eso, sale de acá, se va a Skeduli y acá me tiene que mostrar solamente o tes que estén con estatus. Es 3 P4? No, no, estatus, estatus dentro de la pasión, pero que sean P3 P4 si tiene razón. P3 P4 que son las que están acá. Esta planificación, este botón deberíamos sacarla porque en realidad, como dije, las planificadas tú te vayas al listado de test, donde salió que las vean acá. Porque así obligamos, así como obligamos a ir al listado de avisos a buscar las que les completen, obligamos al programador a ir al listado de OT y desde ahí alimentar su tablero.
+Jorge Alquinta
+Entonces acá está el supervisor, déjame ver el tablero, ya. Esto es lo que hay que modificar, ¿Qué es lo que hay que modificar? Te acuerdas cuando tú habías dicho, acá tiene que ser el calendario hacia abajo, 8, 9, 10, con segmento de 8, 8,30. Tal cual. Porque en el eje, En el eje y o sea en el eje x está bien los días se paran por turnos pero en el eje x ya no vamos a colocar los.
+Jose Cortinat
+Técnicos y vamos a ver las operaciones.
+Jorge Alquinta
+Vamos a colocar acá horarios porque esto el horario configurable esto es 24, 24/7 entonces de la 0, la 1, las 2 hasta las 24 horas tal cual, sería completo obviamente acá el programador, Lo va a configurar para que se quiere que en vez de parta el a cero cero, parta desde la 7 y se dé la cuenta.
+Jose Cortinat
+O sea, en el fondo ven aquí que esto pone aquí hay un bloquecito aquí que dice una o T, no va a existir la o T como un bloquecito, va a existir la operación. Una o T tiene 8 operaciones y tú vas a ver cómo las operaciones. Igual que las planificamos en serie en paralelo, las vamos a ver en el tiempo cómo se mueve.
+Jorge Alquinta
+La idea es que igual tiene que asociar la OT a la operación.
+Jose Cortinat
+Sí, eso es, pero iba a decir, ves que se ve como punteado y no sé qué, esto tendría que aglobar, digamos, todas las operaciones de una OT se deberían visualmente identificar como un bloque, me explico, como que todo esto pertenece a esta OT. Que muevo yo una operación que es en serie con la otra, la otra se le mueve. Que muevo una operación que es en paralelo con la otra pero que no afecta en el tiempo total, se mantiene.
+Jose Cortinat
+En el fondo, que sea como medio, como gran bloque, ajustable. Que muevo, oye, no vamos a poder partir a las diez, partimos hasta ahora. Se entiende, no?
+Jorge Alquinta
+En planes.
+Jose Cortinat
+De estaban, ¿no?
+Jorge Alquinta
+Esta es, Sí.
+Jose Cortinat
+La primera.
+Jorge Alquinta
+Sí.
+Jorge Alquinta
+Quiero ver si está acá. Voy a tirar solamente.
+Jose Cortinat
+Filtra, filtra por 50126 aquí arriba.
+Jose Cortinat
+El buscador.
+David
+Voy a poner 126. Pero dice que ya estaba puesto en el calendario.
+Jose Cortinat
+Igual ya está en el calendario y todo. Y por qué? Te debería poder un buscador como que te encuentre donde está, yo que sé o alguna cosa así.
+Jose Cortinat
+Fistrar por más reciente? O sea, como poder encontrarla, ¿cómo la encuentras? Si estás. Dónde está?
+Jorge Alquinta
+Es que sí o sí, cuando fuimos a canales de estatua en programación, tiene que aparecer acá. La idea es que desde ahí la tome.
+Jose Cortinat
+Ah, pero espérate! Mira, ¿y si vas a ir a planificadas?
+Jorge Alquinta
+No, no, no es esa. Ese botón tiene que desaparecer en programación, todas las que aparecen acá. Y esta,
+Jose Cortinat
+A ver, esta de aquí que pone mi vibración o algo así?
+Jorge Alquinta
+Cómo lo mueve ya? Abajo? Sí, abajo.
+Jorge Alquinta
+Debería desplazarse con él?
+Jose Cortinat
+No. Ves? No, no somos capaces de encontrar una OT, por ejemplo, ya. Eso es un cacho.
+Jorge Alquinta
+Te acordáis ahí? Pero hay que primero también.
+Jose Cortinat
+A ver, pero ve un segundo a. Porque como pusimos una fecha planificada, si es que está aquí, es que estará en esa fecha.
+Jorge Alquinta
+No, pero es que debía aparecer allá.
+Jose Cortinat
+Ya, pero ve un segundo a planificación. Para ver la fecha. Sí. Claro, no me acuerdo. Ahí, métete, ahí. 8 del 5. Vale, a las cuatro de la tarde. A ver, vamos allá a programación.
+Jorge Alquinta
+Ah, no. No, porque no modificaba nada.
+Jose Cortinat
+El scheduling. El 8 del 5, aquí, el 8 del 5, sí. Pero este no se ve. No, no, no está. Este es el 8.
+Jose Cortinat
+No, ese es el 7. Este es el 8. Claro. Acá al final, este es el 8. Ya, tira para abajo, a ver.
+Jorge Alquinta
+No, No está. Es que no tiene que estar ahí, tiene que estar acá. Por qué? Porque la idea es que acá son las que. Ya. A ver si está ahora,
+Jose Cortinat
+Porque como has salido a otro módulo y has vuelto, igual está ahora.
+Jose Cortinat
+El filtra por. Es que yo también esto del filtro P3, P4, yo no sé cuáles está seleccionado, todas. Dale a todas ahí, a ver si. El botón este de todas, del filtro de priorización.
+Jorge Alquinta
+No ha visto todas, las que son. Están todas? Si, saca por ejemplo si son P4, la nota es P3 que es la 50126 Bueno, pero hay que hacer después que parece. Esa es una cosa y la otra es el caldero, que el caldero hay que modificar el eje Y del caldero, colocar las horas.
+Jose Cortinat
+Lo que hemos dicho, si.
+Jorge Alquinta
+Nosotros que vamos a hacer, yo voy a pescar esta T, la voy a tirar acá y lo que tiene que hacerla ya es, Es en base a la fecha que viene el precio que haya por el planificador, tirarle a la fecha que corresponda.
+Jose Cortinat
+Sí, sí, es más, masivamente, con cierta priorización, ¿no?
+Jorge Alquinta
+Tiene que estar las dos opciones. O una a una,
+Jose Cortinat
+O le doy a todo y luego yo modifico y ajusto.
+Jorge Alquinta
+Eso.
+Jorge Alquinta
+Es lo que tiene que arrojar después que está acá, cierto, el título de la operación y la operación. Identificar si es mecánico o eléctrico el puesto de trabajo, porque eso después va a alimentar acá arriba, ir rebajando las olas de las dominales que tienen. Entonces si viene 120 y tiramos 10 olas de HH, va a decir 10 de 120 y va a mostrar el porcentaje y así con cada puesto de trabajo.
+Jorge Alquinta
+Y como decía recién David, porque la IA va a leer las que sean en paralelo, va a leer las que son en serie, va a leer, hasta ahí tienes tarea, tienes un solo puente de grúa, no puedes hacerlas en paralelo, porque hay un choque, esa es la pega que hoy en día tiene que ser manual el programador, esa es la parte del programador.
+Jose Cortinat
+Es que eso sí sería brutal, que además que no te permita y te diga no porque ya está en uso en esta OTP. Ah puta weón.
+Jorge Alquinta
+Cuál es el core, el proceso del programador? Usar eficientemente los recursos. El planificador identifica los recursos, identifica herramientas, equipos especiales, especialidades, tiempos, cantidades. Pero es la programación donde nos jugamos la carta de que el uso de recursos sea eficiente. Y ese es uno de los lemas que encontráis en el SOMAT, que encontráis en todo el modelo de mantenimiento de las grandes áreas. Planificación es el que hace uso eficiente de los recursos, junto con el costo.
+Jose Cortinat
+El programador.
+Jorge Alquinta
+El programa.
+Jose Cortinat
+El proceso.
+Jorge Alquinta
+Entonces El programador específicamente es de esa parte. El programador cuál es el cole? El costo. Entonces una de las cosas que lo hacían, como estábamos más en la parte operativa, es que el programador, si yo me voy a la T y estamos tirando costo en el resumen de costos acá, si bien estamos a la T, real plan, cierto, tiene que haber una sección donde se conecte con el presupuesto, Que hay para hacer esto. Claro.
+Jorge Alquinta
+Por qué? Porque si estamos asociando tareas que son de muy alto costo, no 800 dólares, sino que 25.000 dólares, hay actividades de 100.000 dólares, porque ahorita que cargamos de alto costo, eso acá tiene que tener un warning. Sí, la idea tiene que leer.
+Jose Cortinat
+Tipo, estás impactando en el badget de mantenimiento.
+Jorge Alquinta
+Esa es la ganancia del planificador, desde el punto de vista también de esa mirada.
+Jose Cortinat
+Porque Es un KPI que se le mira mucho el tema.
+Jorge Alquinta
+Tenemos identificado el riesgo, bien, tenemos la idea para reducir el tiempo de planificar, bien. Falta que le pongamos la parte de la guía para que se cruce la tarea contra el presupuesto Y, No el presupuesto teórico, sino el presupuesto real porque se ha presupuesto que ha ido bajando y estamos en mayo y ya se hizo gasto.
+Jose Cortinat
+Claro, no hay presupuesto, exacto. Claro, de forma que no llegues a una necesidad reactiva de necesito presupuesto porque es urgente y no tengo plata.
+Jorge Alquinta
+Es que eso es lo que tiene que ver, tiene que decir. Esta actividad de alto costo no está en el presupuesto y tiene que escalarse una aprobación. Claro. Inmediatamente.
+Jose Cortinat
+Ya, sigamos, sigamos, entonces, cerramos ya, ¿no? Hay que esperar ya.
+Gonzalo Olavarria
+El tema es que, aparte de lo que nos queda de eso, tenemos que ver el tema de permisos.
+Jose Cortinat
+Bueno, esa la podemos dejar ahora, porque como ya la semana que viene voy a ir a permisos, de momento, centrémonos en foco, lo hemos decidido aquí, o sea que hemos dicho foco, ¿no? Foco, olvídate de permisos, no existe. En algún minuto va a ser el foco completamente de cambio, pero cuando estén pagando, cuando haya un contrato, ¿me explico? Mientras tanto, seguimos con.
+Gonzalo Olavarria
+Cuando venden la documentación.
+Gonzalo Olavarria
+Exacto, Exacto. Esto es importante, ¿qué aporta valor diferencial? Tenemos dos solamente.
+Jose Cortinat
+Bueno, a ver, pero igual no lo hemos puesto todavía.
+Jose Cortinat
+Nada, ¿qué se nos ha pasado? A ver, yo he puesto el, La ella y asista, el tema de la del aviso.
+Gonzalo Olavarria
+Cerremos el proceso y después revisamos el.
+Jose Cortinat
+Nivel de nivel, Más la prioridad.
+Jorge Alquinta
+Yo explico que es un cálculo medio rápido. Nosotros ya estamos priorizando al principio cuando nace el aviso, que el mantenedor le pone 71.
+Jose Cortinat
+De 2 de 3 entre 4. Pero. Ya?
+Jorge Alquinta
+Acá nos jugamos el apellido, para diferenciarlo de esa priorización primaria. Ya. Priorizar nivel de riesgo con IA, priorizar según o por nivel de riesgo con IA. Claro.
+Jose Cortinat
+O aunque sea que un over. Ah, mira, ya lo dije, mira, ranking mía multi criterio, criticidad del equipo, 40 por ciento, urgencia de la solicitud de. Hay que revisarlo. Más repetición histórica, más pareja. Bueno, hay que revisar Eso.
+David
+Sí, sí.
+David
+Aquí.
+Jose Cortinat
+No, Pero no tiene sentido. Mira, una cancelada, la primera que te aparece. Luego las que están cerradas.
+Jorge Alquinta
+Claro, o sea tiene que hacerlo sola con las que están desde el creado hasta antes de cancelados Claro,
+Jose Cortinat
+Ninguna que esté en ejecución, ninguna que esté cancelada Las que están.
+Jorge Alquinta
+En ejecución ya se congeló la prioridad.
+Jose Cortinat
+Ya están en ejecución Esa ya no se puede modificar Exacto.
+Jorge Alquinta
+Y las que están cerradas venían con esa que quedó en la ejecución, está cerrada, no entran en el loop Las que tienen que entrar es.
+Jose Cortinat
+A ver, vea el estatus.
+Jorge Alquinta
+Desde que se crea y toda una prioridad, después puede ser modificable, porque agregaron nuevas o test creadas y a lo mejor cambió el ranking.
+Jose Cortinat
+Por eso, a los estatus, las que tienen que estar es las creadas, release, planet, in execution, in schedule, hasta las schedule también. Vale. Estas son, David.
+Jose Cortinat
+Sí, claro, en ejecución en adelante no se tienen que visualizar, una vez que le das al ranking ese.
+Jorge Alquinta
+El scale es cuando se congela, se congela la.
+Jose Cortinat
+Claro, entonces tendría que haber una especie de botón que es reset. Me acaba de. Yo cómo salgo de esa priorización? Que puede que haga el ejercicio, digo, vale, sí, me gusta, yo creo que es así. Vale, pero déjame ver un poco otro tema. Dónde va?
+Jorge Alquinta
+Aquí Estaba pensando, estaba pensando, aquí estamos viendo en lo que es la programación, después se va a ir con ese criterio congelado a la ejecución y si nos ponemos en el zapato de ejecución, Una de las cosas que.
+Jose Cortinat
+También Se puede priorizar.
+Jorge Alquinta
+Así Como les dije que el foco del programador es hacer lo suficiente de los recursos, el foco principal del planificador y el tema corto, el foco del profesor es priorizar, porque va a estar frente a un programa y va a estar frente a fallas, o test programada o test de falla, y ahí.
+Jose Cortinat
+A qué le damos?
+Jorge Alquinta
+A veces pasa a ser más prioritario una falla que algo que vendría al programa, hay cosas más prioritarias, pero porque está asociado al riesgo, al resto de la producción, Entonces acá en esta sección tiene que haber una recalibración del nivel de riesgo de lo que está ya en discusión con las fallas. Porque eso lo va a ver donde enfocar el recurso. Y esto.
+Carlos Iturra
+Igual contempla como todo ese tipo de mantenimientos que son como predictivos por ejemplo.
+Jose Cortinat
+Todos los tipos de especialidades. Pero sí, eso sería como un botón así de, oye, yo como supervisor, hueón, es como botón. Mira, ¿qué tengo actualmente? Tengo todas estas operaciones, está todavía en la falla y tengo este personal. Hago algún cambio? Me Mando al Miguel a que levante la falla y que deje el mantenimiento preventivo que está ejecutando? La idea.
+Jorge Alquinta
+Es que hoy en día, ¿qué es lo que tiene que ser profesor? Tomarle la decisión con poco trato con lo que ve, La urgencia, la urgencia lo que le pide es operaciones, que tengo poca gente, entonces todo eso lo va a ver en el sistema para ver cuánta gente distribuya para el programa, cuánta gente está para aprender la falla, si ya la falla colapsó en el consumo de gente, va a tener que sacar gente del programa, pero que lejos hacer. Entonces la idea que le arroje toda esa sugerencia.
+Jose Cortinat
+De Hecho puede pasar que estás haciendo un mantenimiento que pensabas que se yo y de repente se complica. Y necesitas un repuesto y en ese momento empiezas como, estaba planificado, pero ya es no planificado, porque no esperabas encontrarte con ese problema. Qué haces? Dejas en pausa el equipo? Lo pones en marcha para intervenirlo mañana?
+Jorge Alquinta
+Eso es el día a día de subrevisorve, siempre porque los equipos fallan.
+Gonzalo Olavarria
+Y una consulta técnica, por ejemplo, si hay una planificación con cierto equipo que tienen que utilizar, o herramientas, Por ejemplo, un día antes tuvo un error, un poder y esos equipos no son repuestos y ya está planificado que ese equipo va, eso me puede poner en el siguiente día. Esa planificación se actualiza, lo ocuparon un día anterior, el equipo o los materiales que ya estaba planificado.
+Jorge Alquinta
+Cómo funciona ahí? No debería estar ahí? El repuesto, cuando sale de bodega, ya es de mantención. Entonces cuando tú lanzas un programa, tú vas con una semana de antelación, a esos cinco días de antelación ya sacas todos los reportes, antes que mandarse. Existe una cosa que se llama preparativo, y eso después trabajarlo también en la parte de ejecución, no hemos hablado nada de eso, que son los preparativos. Claro, de eso no hemos hablado nada.
+Jose Cortinat
+Ya, cerremos, cerremos. Entonces, lo dejamos hasta aquí ya. Hasta dónde llega? Estábamos en scheduling, aquí esto hay que hacer un refactoring importante, el tema de las horas y tal, no sigamos. Y en execuche no sé cómo está.
+Jorge Alquinta
+No estáis que revisarlo, pero matemos esto a caraja hasta scheduling, Sí. Claro, para que esto después, porque si no, vamos a pigotear mucho datos.
+Jose Cortinat
+Claro, sí, sí, hay que cerrar esto. Yo diría que de aquí al jueves, y ahora vamos a ir a la planificación, esto tiene que estar claro.
+Jose Cortinat
+Bases de datos relacionales, el dato que corresponde, el quitar los botones que no van, la planificación está como en plan horaria, ¿sabes? Esa es mi expectativa.
+Jorge Alquinta
+El tema de los preparativos, el tema de los preparativos tiene una componente un 50% del programador y un 50% del supervisor. Y acá en programación tampoco hemos hablado bastante los preparativos, va a tener que hacer acá una de las pestañas. Los preparativos, ¿qué es lo que hay? Cuando el programa ya está definido, el programador manda abastecimiento a listado de repuestos y se programan cuándo va a ir, cuándo lo van a ir a retirar o cómo funciona hoy en día, es que las bodegas tienen delivery.
+Jorge Alquinta
+Entonces van a repartir tal día minas y tal día planta. Entonces tu tienes que mandarle las reservas, Ya se hace la banda al principio por sistema para efectos de compra, para efectos de ver si hay algo que falta según las cantidades, pero después viene ya el Delivery.
+Jose Cortinat
+Y es.
+Jorge Alquinta
+Un preparativo que lo programa el programador.
+Jose Cortinat
+Y No existe una operación para eso? No existe una preparación de retirada de repuestos, por ejemplo, no, no.
+Jorge Alquinta
+Eso lo hace la gente de Bodega. Vale, es el recurso de la bodega.
+Jose Cortinat
+Entonces, todos esos preparativos, ninguna es una operación existente de previa. Antiguamente tenían.
+Jorge Alquinta
+Que ir los mantenedores, pero eso ya mutó a que las áreas de abastecimiento que tienen camión y van a dejar, lo cual es bueno. Y mientras más anticipación sea.
+Jose Cortinat
+Qué más preparativos?
+Jorge Alquinta
+Lo que decía acá Roxatto, que como una falla no sale un revuelto de bodega. Pero el revuelto a mantención sala, que está acá, igual puede decidir piratear los revueltos que son los pasos. Ya? Esas que ya se tienen que programar.
+Jorge Alquinta
+Entonces tenemos que ver la parte de la, como dije. Preparativos. Preparativos desde la programación y coordinación con las fechas de entrega a Rosillo, hay lugares destinados donde ir a dejar, porque ahí va un camión, hay horquillas para descargar, lo que sí, las descargas las hacen.
+Jose Cortinat
+Te imaginas? Esto, pero esto viene en una versión futura, pero es que quiero que se anote. Bueno, al menos lo estoy grabando, pero. Ah, segunda fase, perfecto. Te imaginas, hueón, que como tenemos el plan de delivery súper claro, sabemos distancias, qué sé yo, sabemos cuando de repente tiene la aplicación el de bodega? Bueno, dispatch, entregado el paquete en molienda. Y ya vas viendo tú como supervisor si llega o no llega, si se está retrasando el esto.
+Jose Cortinat
+Una especie así como de cuando tú pides comida y que ves a la moto llegándote. Imagínate algo así.
+Jorge Alquinta
+Por eso lo podemos enlazar con el área de compras. Por eso. Pero el delivery funciona sólo para lo planificado. Lo planificado. Tiene que ir más.
+Jose Cortinat
+Claro, no, ese es otro tema.
+Jorge Alquinta
+Entonces ya, entonces ahí hablamos del preparativo en la etapa de programación, quedan todos los revueltos por kit, identidad con información, como una hoja imprimible, esto es para la DM de 500, para tal de mantención, esto es para la OT, claramente la OT y la reserva, y están ahí los pies de revuelto y luego ahí alojados, entonces después que es lo que viene, mantención, Se da una vuelta, un catch up, manda un superfil de supervisor, o manda un libro de mantenedor con el programador, aquí está todo.
+Jorge Alquinta
+Entonces le hace entrega el programador del tema de repuestos. Ya después de los repuestos quedan datos de responsabilidad, si tu pirateaste o sacaste algo.
+Jose Cortinat
+Espera, espera, eso al lado donde se va a hacer la mantención, ¿no?
+Jorge Alquinta
+Bueno, En el sector donde se almacenan los hits para toda la semana.
+Jose Cortinat
+Pero dónde? En la bodega o dónde?
+Jorge Alquinta
+Hay patios.
+Jose Cortinat
+En bodega? No, en las áreas de mantenimiento. En las áreas de mantenimiento. Claro. Ahí se le entrega. Es como, oye, te hago entrega.
+Jorge Alquinta
+Y hay otros jóvenes que se llaman analistas de materiales, que son gallos que tienen licencia para manejar en una horquilla. Porque si no molestáis el mantenedor, el mantenedor tiene que estar haciendo mantención. Claro. Y estás descargando cargas de un camión. Y el camión nos trae horquilla para que el camión viene con el camión. O sea, son las aves que tienen que disponer del equipo de discarne de su operador. Por eso existen los artistas de materiales que son técnicos que apoyan a los programadores, a los pelificadores. Nosotros hemos visto todo por sistema, pero también hay una componente de ir a ver el material en físico.
+Jorge Alquinta
+Y eso no hacen los analistas materiales. Entonces está la recepción por el programador, pero después está la entrega de todos esos kits del programa, que va uno o dos días antes, Que parta la del programa semanal a la ejecución, porque después de eso ya son suyos, verificamos que estaba todo listo, después no puede venir a decir, oye no puedo ejecutar porque no vino un repuesto, antes pasaba así y se sacaban los balazos de ejecución y era difícil dar respuesta porque no había evidencia, tú ahora tenéis que entregarle ese listado verificado, listo, está todo, está todo, no falta nada, si después falta algo, alguien de ejecución.
+Jose Cortinat
+Es que tú imagínate, Yo estoy seguro que todo que todos los repuestos, oye, si algunos no, pero como un perno, un no sé qué, pero en la mayoría están en su cajita o su cosa con su código del repuesto. Tú podrías hacer una lectura tac, tac. Sabes, como pam, pam. Esto es confirmado, confirmado, confirmado. Y tú vas viendo luego que pasa del estatus de, digamos, delivery, a confirmado ya y recepcionado.
+Jose Cortinat
+Una RFI.
+Jorge Alquinta
+Exacto. Entonces, esa información que está en la grabación del relativo, que está asociado la hotel con la reserva o la reserva y el detalle, Después lo ve en la pantalla de ejecución, así como tiene varias ventanas de vistas, del programa actual, del libro de falla, notificar, tiene que tener esas ventanas de los preparativos, porque ahí ve las cosas que tiene la visión general, para que no esté en una hoja.
+Jose Cortinat
+Y fíjate tú como supervisor, qué bacán sería, porque tú tienes que ejecutar, ¿no? Encontrar todos los riesgos, ¿sí o no? Y saber con qué certidumbre yo estoy dispuesto para partir mi trabajo. Y que cada recepción de ese material y cada documento que se completa, donde se analizan, cómo es el ART, riesgos.
+Jose Cortinat
+De Trabajo, que se va, en la medida que se vayan completando, como va avanzando como el nivel de, digamos, aseguramiento de la planificación para decirte, estoy listo, no me puede fallar nada ahora mismo, tengo todo. Luego pueden surgir otras cosas, pero es como que he completado y confirmo la planificación de que el trabajo está todo, materiales, repuestos, testeado la grúa.
+Jose Cortinat
+Ya todo lo que falle ya es externo a la planificación, son cosas externas y ahí ya blanco y negro.
+Jorge Alquinta
+Sí, no, después tenemos que meternos, eso hemos hablado un poco del español, español hoy en día está mutando, Ante la responsabilidad de la ejecución, hoy día está apuntando a que planificación pasa a ser como un cacho, pero ya está anotando, yo cuando estaba hablando planificaciones me han tirado el pañol.
+Jose Cortinat
+Qué es el pañol? Español es el lugar donde están cortando todas las herramientas,
+Jorge Alquinta
+Porque los mecánicos tienen algunas cajitas que van en las pick up de las escalionetas, pero hay otras herramientas especiales y manuales, Están almacenadas en los pañales. Ya hay un pañalero. Un pañalero día, noche.
+Jose Cortinat
+Oye, Necesita un desarmador. Puta weón, Toma.
+Jorge Alquinta
+El mecánico va, se registra que la sacó y después tiene que devolverla en buenas condiciones. Entonces también tiene su estatus de herramientas muestra cuando le corresponde mantención porque tiene su estrategia definida, las herramientas que se tienen que estar calibradas. Lo de la herramienta es como la lista, tienen que estar con el certificado, si no se pueden usar, lo que es la ley buena, ese tenemos que meterlo en algún momento en el segundo, porque es parte de. Eso es.
+Jose Cortinat
+Parte de segunda o tercera versión? Sí, es un tema importante. Estamos, no? Estamos ya? Dejémoslo ya aquí, yo creo, creo que ya está. Vale, listo, cerrado.
+Jose Cortinat
+Se va a cerrar esto.

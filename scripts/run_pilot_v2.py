@@ -20,7 +20,7 @@ from rcm_rules import (
 from rcm_validate import StrategyValidator
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SEED = os.path.join(BASE, "seed_data")
+SEED = os.path.join(BASE, "data", "seeds")
 
 print("=" * 60)
 print("STRATEGY PILOT v2 (RCM Functional Analysis FMs)")

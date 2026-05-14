@@ -1,6 +1,6 @@
 """Generate enriched 07_spare_parts_inventory.xlsx from MM60 feedback data.
 
-Uses the 17-column structure from client/seed_data/07_spare_parts_inventory-init.xlsx
+Uses the 17-column structure from client/data/seeds/07_spare_parts_inventory-init.xlsx
 and enriches ALL ZREP records from seed_data/feedback/MM60 06 01 16.xlsx.
 
 Every header cell gets an openpyxl Comment explaining the field.
@@ -23,9 +23,9 @@ random.seed(2026)
 AUTHOR = "AMS-Production"
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MM60_PATH = os.path.join(BASE, "seed_data", "feedback", "MM60 06 01 16.xlsx")
-HIER_PATH = os.path.join(BASE, "seed_data", "01_equipment_hierarchy.xlsx")
-OUTPUT_PATH = os.path.join(BASE, "seed_data", "07_spare_parts_inventory.xlsx")
+MM60_PATH = os.path.join(BASE, "data", "seeds", "feedback", "MM60 06 01 16.xlsx")
+HIER_PATH = os.path.join(BASE, "data", "seeds", "01_equipment_hierarchy.xlsx")
+OUTPUT_PATH = os.path.join(BASE, "data", "seeds", "07_spare_parts_inventory.xlsx")
 
 # ---------------------------------------------------------------------------
 # Column definitions and comments (data dictionary)

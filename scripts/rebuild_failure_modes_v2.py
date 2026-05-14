@@ -258,7 +258,7 @@ print("=" * 60, flush=True)
 # --- 1. Equipment Hierarchy ---
 print("Loading 01_equipment_hierarchy.xlsx ...", flush=True)
 wb_hier = openpyxl.load_workbook(
-    str(PROJECT_ROOT / "seed_data" / "01_equipment_hierarchy.xlsx"), data_only=True
+    str(PROJECT_ROOT / "data" / "seeds" / "01_equipment_hierarchy.xlsx"), data_only=True
 )
 ws_hier = wb_hier["Equipment Hierarchy"]
 h_headers = [ws_hier.cell(1, c).value for c in range(1, ws_hier.max_column + 1)]
@@ -311,7 +311,7 @@ print(f"  L4 equipment loaded: {len(equipment_l4)}", flush=True)
 # --- 2. Catalog profiles (partes / causas / sintomas by profile code) ---
 print("Loading 15_catalog_profiles.xlsx ...", flush=True)
 wb_cat = openpyxl.load_workbook(
-    str(PROJECT_ROOT / "seed_data" / "15_catalog_profiles.xlsx"), data_only=True
+    str(PROJECT_ROOT / "data" / "seeds" / "15_catalog_profiles.xlsx"), data_only=True
 )
 ws_cat = wb_cat[wb_cat.sheetnames[1]]  # "Catálogos" sheet
 
@@ -367,7 +367,7 @@ print(f"  FM-MASTER entries loaded: {len(fm_data)}", flush=True)
 # --- 4. Criticality ---
 print("Loading 02_criticality_assessment.xlsx ...", flush=True)
 wb_crit = openpyxl.load_workbook(
-    str(PROJECT_ROOT / "seed_data" / "02_criticality_assessment.xlsx"), data_only=True
+    str(PROJECT_ROOT / "data" / "seeds" / "02_criticality_assessment.xlsx"), data_only=True
 )
 ws_crit = wb_crit[wb_crit.sheetnames[0]]
 c_headers = [ws_crit.cell(1, c).value for c in range(1, ws_crit.max_column + 1)]
@@ -690,9 +690,9 @@ for eq in equipment_l4:
 # SAVE
 # ===========================================================================
 if args.pilot:
-    out_path = str(PROJECT_ROOT / "seed_data" / "03_failure_modes_v2.xlsx")
+    out_path = str(PROJECT_ROOT / "data" / "seeds" / "03_failure_modes_v2.xlsx")
 else:
-    out_path = str(PROJECT_ROOT / "seed_data" / "03_failure_modes.xlsx")
+    out_path = str(PROJECT_ROOT / "data" / "seeds" / "03_failure_modes.xlsx")
 
 print(f"\nSaving to {out_path} ...", flush=True)
 wb_out.save(out_path)

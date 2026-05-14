@@ -458,12 +458,92 @@ export default function SapPmPage() {
 function SapSyncPanel() {
   const [health, setHealth] = useState(null);
   const [queue, setQueue] = useState([]);
-  useEffect(() => {
+  const [transportInfo, setTransportInfo] = useState(null);
+  const [transportCounts, setTransportCounts] = useState({});
+  const [processing, setProcessing] = useState(false);
+  const fetchAll = () => {
+    const token = localStorage.getItem('access_token');
+    const H = { Authorization: `Bearer ${token}` };
+    // Endpoints viejos (info)
     sapSyncHealth().then(setHealth).catch(() => setHealth(null));
     sapSyncQueueList({ limit: 50 }).then(r => setQueue(r?.items || [])).catch(() => setQueue([]));
-  }, []);
+    // Endpoints nuevos (SF-728 Strategy Pattern)
+    fetch('/api/v1/sap/transport/info', { headers: H })
+      .then(r => r.json()).then(setTransportInfo).catch(() => setTransportInfo(null));
+    fetch('/api/v1/sap/queue', { headers: H })
+      .then(r => r.json()).then(d => {
+        setTransportCounts(d?.counts || {});
+        if (Array.isArray(d?.recent)) {
+          setQueue(prev => prev.length ? prev : d.recent);
+        }
+      }).catch(() => {});
+  };
+  useEffect(() => { fetchAll(); }, []);
+
+  const processQueue = async () => {
+    setProcessing(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const r = await fetch('/api/v1/sap/queue/process', {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      }).then(r => r.json());
+      fetchAll();
+      return r;
+    } finally { setProcessing(false); }
+  };
   return (
     <div className="space-y-4">
+      {/* NEW · Transport Strategy Pattern panel (commit 349916e) */}
+      <div className={`rounded-xl border-2 p-5 ${transportInfo?.name === 'dry_run' ? 'bg-slate-50 border-slate-300' : transportInfo?.healthy ? 'bg-emerald-50 border-emerald-400' : 'bg-amber-50 border-amber-300'}`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <Database className={`w-7 h-7 ${transportInfo?.healthy ? 'text-emerald-600' : 'text-slate-500'}`} />
+            <div>
+              <h3 className="text-base font-bold text-gray-900">SAP Transport activo</h3>
+              <p className="text-xs text-gray-600">Selección por env <code className="bg-white px-1 rounded">SAP_TRANSPORT</code> · cambio sin redeploy</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xl font-bold uppercase tracking-wide">
+              <span className={transportInfo?.healthy ? 'text-emerald-700' : 'text-amber-700'}>
+                {transportInfo?.name || '—'}
+              </span>
+            </div>
+            <div className="text-[10px] text-gray-500">{transportInfo?.healthy ? '✓ healthy' : '⚠ no healthy'}</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+          {['dry_run', 'mock', 'rfc', 'odata'].map(opt => (
+            <div key={opt} className={`text-center text-xs font-semibold rounded-lg px-2 py-2 border ${transportInfo?.name === opt ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white text-gray-500 border-gray-200'}`}>
+              {opt}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          <div className="bg-white rounded-lg border p-3 text-center">
+            <div className="text-[10px] uppercase font-bold text-slate-600">Pending</div>
+            <div className="text-2xl font-bold tabular-nums text-amber-700">{transportCounts.PENDING || 0}</div>
+          </div>
+          <div className="bg-white rounded-lg border p-3 text-center">
+            <div className="text-[10px] uppercase font-bold text-slate-600">Sent</div>
+            <div className="text-2xl font-bold tabular-nums text-emerald-700">{transportCounts.SENT || 0}</div>
+          </div>
+          <div className="bg-white rounded-lg border p-3 text-center">
+            <div className="text-[10px] uppercase font-bold text-slate-600">Dead Letter</div>
+            <div className="text-2xl font-bold tabular-nums text-rose-700">{transportCounts.DEAD_LETTER || 0}</div>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button onClick={processQueue} disabled={processing}
+            className="flex-1 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold disabled:opacity-50">
+            {processing ? 'Procesando…' : '⚡ Procesar batch (max 10)'}
+          </button>
+          <button onClick={fetchAll} className="px-3 py-2 rounded-lg bg-white border text-xs font-bold text-slate-700 hover:bg-slate-50">
+            ↻ Refrescar
+          </button>
+        </div>
+      </div>
+
       {/* Banner Phase 2 */}
       <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-5">
         <div className="flex items-start gap-3">

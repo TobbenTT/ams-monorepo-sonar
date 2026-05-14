@@ -20,8 +20,15 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
-FEEDBACK_UPLOAD_DIR = Path(os.environ.get("FEEDBACK_UPLOAD_DIR", "data/feedback_uploads"))
-FEEDBACK_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+FEEDBACK_UPLOAD_DIR = Path(os.environ.get("FEEDBACK_UPLOAD_DIR", "/app/data/feedback_uploads"))
+try:
+    FEEDBACK_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+except PermissionError:
+    # Bug 2026-05-14: en VPS appuser no tiene permiso para crear /app/data/...
+    # si el volume está montado con ownership root. Fallback a /tmp para no
+    # bloquear el boot.
+    FEEDBACK_UPLOAD_DIR = Path("/tmp/feedback_uploads")
+    FEEDBACK_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm", "video/quicktime"}

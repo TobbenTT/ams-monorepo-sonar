@@ -695,8 +695,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
   const setStatusFilter = () => {};
   const [filterGroup, setFilterGroup] = useState('all');
   const [sortBy, setSortBy] = useState('priority'); // 'priority' | 'hours_desc' | 'hours_asc' | 'number'
-  const [showShifts, setShowShifts] = useState(true);
-  const [includeWeekends, setIncludeWeekends] = useState(true);
+  // Jorge 2026-05-14 (transcript 12:53): minería trabaja 24/7 — siempre 7 días;
+  // shift día/noche se infiere del horario del calendario, no necesita toggle.
+  const [showShifts] = useState(false);
+  const [includeWeekends] = useState(true);
   const [dragWO, setDragWO] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
   // Jorge demo 2026-05-12: popover de asignación manual de técnico desde
@@ -1480,56 +1482,26 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                   primera opción. Eje vertical = horarios (no técnicos), eje
                   horizontal = días. Al arrastrar OT al slot, el sistema lee las
                   operaciones y matchea técnicos por puesto trabajo + capacidad. */}
+              {/* Jorge 2026-05-14: vista única "Horarios" — eliminadas
+                  Technicians, Recursos y Work Orders. Todo se opera sobre
+                  el tablero horario. */}
               <button onClick={() => setViewBy('timeslot')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'timeslot' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
+                className="px-3 py-1.5 text-xs font-medium transition-colors bg-emerald-600 text-white">
                 🕐 Horarios
               </button>
-              <button onClick={() => setViewBy('technician')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'technician' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
-                👷 Technicians
-              </button>
-              {/* Jorge (2026-04-20): vista por Puesto de Trabajo estilo Prometheus
-                  — agrupa técnicos por especialidad (Mecánico/Eléctrico/Instr/...) */}
-              <button onClick={() => setViewBy('resource')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'resource' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
-                🧰 Recursos
-              </button>
-              <button onClick={() => setViewBy('wo')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'wo' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
-                🔧 Work Orders
-              </button>
             </div>
-            <button onClick={() => setShowShifts(s => !s)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${showShifts ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
-              {showShifts ? '☀️🌙 Shifts' : '📅 No Shifts'}
-            </button>
-            <button onClick={() => setIncludeWeekends(w => !w)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${includeWeekends ? 'bg-purple-600 text-white border-purple-600' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
-              {includeWeekends ? '7 Days' : '5 Days'}
-            </button>
-            {/* Jorge 2026-04-27: agregado 4 Weeks (mes completo) — programador
-                programa typically 2 semanas adelante, pero quiere ver 1 mes. */}
-            {[{ v: 1, l: 'Week' }, { v: 2, l: '2 Weeks' }, { v: 3, l: '3 Weeks' }, { v: 4, l: 'Mes' }].map(opt => (
-              <button key={opt.v} onClick={() => setViewRange(opt.v)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${viewRange === opt.v ? 'bg-[#1B5E20] text-white border-[#1B5E20]' : 'bg-card text-foreground border-border hover:bg-muted'}`}>
-                {opt.l}
-              </button>
-            ))}
-            <button onClick={async () => {
-                const plantId = localStorage.getItem('selected_plant') || 'OCP-JFC1';
-                if (!await confirm({ title: 'Reprogramar vencidas', message: '¿Mover a REPROGRAMADO todas las OTs PROGRAMADO/EN_EJECUCION con planned_end vencido?', variant: 'danger', confirmText: 'Reprogramar' })) return;
-                try {
-                  const r = await api.rescheduleStale(plantId);
-                  toast.success(`↻ ${r.rescheduled} OTs movidas a REPROGRAMADO`);
-                  onRefresh?.();
-                } catch (e) {
-                  toast.error('Error: ' + (e.message || e));
-                }
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded-lg text-xs font-semibold transition-colors"
-              title="Mueve a REPROGRAMADO las OTs PROGRAMADO/EN_EJECUCION cuyo planned_end ya pasó">
-              <RotateCcw size={14} /> Reprogramar vencidas
-            </button>
+            {/* Jorge 2026-05-14: unificar Week/2W/3W/Mes en UN dropdown
+                ("1 semana, 2, 3, 4") — más limpio, menos botones. */}
+            <select value={viewRange} onChange={(e) => setViewRange(Number(e.target.value))}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-[#1B5E20] text-white border-[#1B5E20] focus:outline-none cursor-pointer">
+              <option value={1}>1 semana</option>
+              <option value={2}>2 semanas</option>
+              <option value={3}>3 semanas</option>
+              <option value={4}>4 semanas</option>
+            </select>
+            {/* Jorge 2026-05-14: eliminados Shift toggle, 5/7d toggle y
+                "Reprogramar vencidas". Shift se infiere del horario;
+                minería trabaja 24/7; reprogramación nace en ejecución, no acá. */}
             <button onClick={async () => {
                 // Step 2 of 2-step flow: open styled confirmation modal
                 const weekMon = weekStart;

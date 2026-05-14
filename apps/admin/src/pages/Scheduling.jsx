@@ -694,7 +694,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
   const [statusFilter] = useState('inSched');
   const setStatusFilter = () => {};
   const [filterGroup, setFilterGroup] = useState('all');
-  const [sortBy, setSortBy] = useState('priority'); // 'priority' | 'hours_desc' | 'hours_asc' | 'number'
+  // Jorge 2026-05-14 (transcript 12:53): default por número OT descendente
+  // (no por prioridad). Recientes/antiguas miden la fecha de cambio a
+  // "en programación", no la fecha de creación.
+  const [sortBy, setSortBy] = useState('number_desc');
   // Jorge 2026-05-14 (transcript 12:53): minería trabaja 24/7 — siempre 7 días;
   // shift día/noche se infiere del horario del calendario, no necesita toggle.
   const [showShifts] = useState(false);
@@ -958,12 +961,18 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
     }
     // Sort
     const order = { P1: 0, P2: 1, P3: 2, P4: 3 };
+    // Jorge 2026-05-14: número OT descendente es el orden natural por defecto.
+    // "Recientes/antiguas" usan la fecha en que la OT cambió a EN_PROGRAMACION
+    // (proxy: prefiere released_at, fallback a updated_at, fallback created_at).
+    const statusDate = (wo) => new Date(wo.released_at || wo.updated_at || wo.created_at || 0);
     if (sortBy === 'priority') list.sort((a, b) => (order[a.priority_code] ?? 9) - (order[b.priority_code] ?? 9));
     else if (sortBy === 'hours_desc') list.sort((a, b) => (parseFloat(b.estimated_hours) || 0) - (parseFloat(a.estimated_hours) || 0));
     else if (sortBy === 'hours_asc') list.sort((a, b) => (parseFloat(a.estimated_hours) || 0) - (parseFloat(b.estimated_hours) || 0));
-    else if (sortBy === 'number') list.sort((a, b) => (a.wo_number || '').localeCompare(b.wo_number || ''));
-    else if (sortBy === 'recent') list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    else if (sortBy === 'oldest') list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    else if (sortBy === 'number_desc') list.sort((a, b) => (b.wo_number || '').localeCompare(a.wo_number || ''));
+    else if (sortBy === 'number_asc') list.sort((a, b) => (a.wo_number || '').localeCompare(b.wo_number || ''));
+    else if (sortBy === 'number') list.sort((a, b) => (b.wo_number || '').localeCompare(a.wo_number || ''));
+    else if (sortBy === 'recent') list.sort((a, b) => statusDate(b) - statusDate(a));
+    else if (sortBy === 'oldest') list.sort((a, b) => statusDate(a) - statusDate(b));
     return list;
   }, [releasedWOs, scheduledWOs, search, prioFilter, filterGroup, sortBy, statusFilter]);
 
@@ -1112,15 +1121,21 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
           <div className="px-3 py-3 border-b border-border space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-foreground text-sm">OTs a Programar</h3>
+              {/* Jorge 2026-05-14: contador dinámico simple — solo número total
+                  visible. El "X de Y" confundía porque ambos valores cambian
+                  cuando se mueven OTs del panel al tablero. */}
               <span className="text-xs font-bold bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
-                {filteredReleased.length}{filteredReleased.length !== releasedWOs.length ? ` / ${releasedWOs.length}` : ''}
+                {filteredReleased.length}
               </span>
             </div>
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              {/* Jorge 2026-05-14: buscador con texto libre — no separar
+                  OT/Tag/TL/Título, todo en uno solo. Backend ya hace match
+                  multi-campo (wo_number, tag, descripción, etc.). */}
               <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="OT / Tag / TL / título / grupo planif / work center / P1-P4…"
-                title="SF-669: busca por wo_number, equipment_tag, equipment_id, technical_location, description, wo_title, planning_group, work_center, priority_code"
+                placeholder="Buscar…"
+                title="Busca en cualquier campo: número OT, tag, ubicación técnica, título, descripción, grupo planif, work center o prioridad"
                 className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" />
             </div>
             {/* SF-669 (Jorge): cuando la búsqueda no aparece en el panel pero sí
@@ -1199,12 +1214,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
               </select>
               <select value={sortBy} onChange={e => setSortBy(e.target.value)}
                 className="text-xs border border-border rounded-md px-1.5 py-1 bg-background" title="Ordenar por">
+                <option value="number_desc">N° OT (mayor → menor)</option>
+                <option value="number_asc">N° OT (menor → mayor)</option>
+                <option value="recent">Más recientes (fecha en programación)</option>
+                <option value="oldest">Más antiguas (fecha en programación)</option>
                 <option value="priority">Por prioridad</option>
-                <option value="recent">Más recientes</option>
-                <option value="oldest">Más antiguas</option>
                 <option value="hours_desc">Más HH primero</option>
-                <option value="hours_asc">Menos HH primero</option>
-                <option value="number">Por número OT</option>
               </select>
             </div>
           </div>

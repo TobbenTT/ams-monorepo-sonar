@@ -1,0 +1,128 @@
+[
+  {
+    "PLNNR": "MP-0001",
+    "KTEXT": "PM Plan for SAG Mill #1",
+    "EQUNR": "BRY-SAG-ML-001",
+    "CYCLE_VAL": 30,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0002",
+    "KTEXT": "PM Plan for Ball Mill #2",
+    "EQUNR": "BRY-BAL-ML-002",
+    "CYCLE_VAL": 180,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0003",
+    "KTEXT": "PM Plan for Classifier #3",
+    "EQUNR": "BRY-CLS-003",
+    "CYCLE_VAL": 90,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0004",
+    "KTEXT": "PM Plan for Flotation Cell #1",
+    "EQUNR": "FLT-FLC-001",
+    "CYCLE_VAL": 30,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0005",
+    "KTEXT": "PM Plan for Conditioner #2",
+    "EQUNR": "FLT-CND-002",
+    "CYCLE_VAL": 365,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0006",
+    "KTEXT": "PM Plan for Thickener #1",
+    "EQUNR": "SED-THK-001",
+    "CYCLE_VAL": 30,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0007",
+    "KTEXT": "PM Plan for Belt Filter #1",
+    "EQUNR": "FIL-BFT-001",
+    "CYCLE_VAL": 90,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0008",
+    "KTEXT": "PM Plan for Disc Filter #2",
+    "EQUNR": "FIL-DFT-002",
+    "CYCLE_VAL": 30,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0009",
+    "KTEXT": "PM Plan for Rotary Dryer #1",
+    "EQUNR": "SEQ-DRY-001",
+    "CYCLE_VAL": 365,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0010",
+    "KTEXT": "PM Plan for Belt Conveyor #1",
+    "EQUNR": "CVY-CVR-001",
+    "CYCLE_VAL": 365,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "CONDITION_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0011",
+    "KTEXT": "PM Plan for Screw Conveyor #2",
+    "EQUNR": "CVY-SCR-002",
+    "CYCLE_VAL": 30,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0012",
+    "KTEXT": "PM Plan for Stacker #1",
+    "EQUNR": "STK-STK-001",
+    "CYCLE_VAL": 365,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "CONDITION_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0013",
+    "KTEXT": "PM Plan for Slurry Pump #1",
+    "EQUNR": "PMP-SLP-001",
+    "CYCLE_VAL": 180,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "TIME_BASED",
+    "STATUS": "ACTIVE"
+  },
+  {
+    "PLNNR": "MP-0014",
+    "KTEXT": "PM Plan for Water Pump #2",
+    "EQUNR": "PMP-WTP-002",
+    "CYCLE_VAL": 90,
+    "CYCLE_UNIT": "DAYS",
+    "STRAT": "CONDITION_BASED",
+    "STATUS": "ACTIVE"
+  }
+]

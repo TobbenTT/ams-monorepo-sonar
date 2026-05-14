@@ -55,6 +55,11 @@ COPY --from=builder /install /usr/local
 
 COPY . .
 
+# Monorepo layout: imports `from api.x` y `from tools.x` se resuelven via
+# PYTHONPATH apuntando a apps/core/ (donde vive api/) y packages/ (tools,
+# agents, skills). Evita tener que refactorizar 100+ archivos de imports.
+ENV PYTHONPATH=/app/apps/core:/app/packages:/app/apps
+
 # Single-worker es requerido: WebSocket state (ws_manager) es in-process.
 # Multi-worker requeriría Redis pub/sub.
 RUN date +%s > /app/.build_timestamp \

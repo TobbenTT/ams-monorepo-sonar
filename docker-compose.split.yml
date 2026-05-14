@@ -42,7 +42,7 @@ services:
   # ── ams-admin: frontend React (build estático servido por Vite preview) ─
   ams-admin:
     build:
-      context: ./frontend
+      context: ./apps/admin
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: ""
@@ -71,7 +71,7 @@ services:
   # ── ams-sap-mock: simulador OData S/4HANA ────────────────────────
   ams-sap-mock:
     build:
-      context: ./sap_mock/server
+      context: ./apps/sap_mock/server
       dockerfile: Dockerfile
     container_name: ams-sap-mock
     profiles: ["sap", "all"]

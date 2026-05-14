@@ -33,7 +33,7 @@ services:
 
   ocp-frontend:
     build:
-      context: ./frontend
+      context: ./apps/admin
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: ""
@@ -61,7 +61,7 @@ services:
   # En el backend, set SAP_TRANSPORT=mock y SAP_MOCK_URL=http://ocp-sap-mock:8000
   ocp-sap-mock:
     build:
-      context: ./sap_mock/server
+      context: ./apps/sap_mock/server
       dockerfile: Dockerfile
     container_name: ocp-sap-mock
     profiles: ["with-sap-mock"]

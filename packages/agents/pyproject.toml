@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ams-agents"
+version = "2.0.0"
+description = "AMS — Multi-agent system (orchestrator, reliability, planning, spare-parts)."
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic==0.83.0",
+    "httpx==0.28.1",
+    "PyYAML>=6.0",
+    "ams-tools",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agents*"]

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ams-sap-mock"
+version = "1.0.0"
+description = "AMS — Mock SAP S/4HANA OData service (sin DB de AMS, solo simula)."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.133.1",
+    "uvicorn[standard]==0.41.0",
+    "sqlalchemy==2.0.47",
+    "pydantic==2.12.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["server*"]

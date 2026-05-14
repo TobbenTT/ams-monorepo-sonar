@@ -13,14 +13,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc \
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip setuptools
 
-COPY requirements.txt .
+# Fase C: pyproject.toml por servicio. Copiamos los manifests primero para
+# aprovechar cache de Docker — si solo cambia código (no deps), pip install
+# usa la capa cacheada.
+COPY apps/core/pyproject.toml /tmp/pyproject/apps/core/
+COPY apps/sap_mock/pyproject.toml /tmp/pyproject/apps/sap_mock/
+COPY packages/tools/pyproject.toml /tmp/pyproject/packages/tools/
+COPY packages/agents/pyproject.toml /tmp/pyproject/packages/agents/
+COPY packages/skills/pyproject.toml /tmp/pyproject/packages/skills/
 
-# RAG eliminado 2026-05-13 (David): torch CPU se instalaba acá como dep de
-# sentence-transformers. Como RAG ya no se incluye, no necesitamos torch.
-# Ahorro: ~750 MB.
-
+# Internal workspace packages como editable (no necesitan código todavía,
+# setuptools resuelve los pyproject; el código se monta vía COPY más adelante).
+# Para no tener que clonar el código en el builder, instalamos solo las deps
+# transitivas declaradas en cada pyproject — el código vivo se importa vía
+# PYTHONPATH en runtime.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --prefix=/install -r requirements.txt && \
+    pip install --prefix=/install \
+        # Deps explícitas de ams-core (apps/core/pyproject.toml)
+        "fastapi==0.133.1" "uvicorn[standard]==0.41.0" "gunicorn==25.1.0" \
+        "python-multipart==0.0.26" "sqlalchemy==2.0.47" "pydantic==2.12.5" \
+        "python-dotenv==1.2.2" "python-dateutil==2.9.0.post0" "httpx==0.28.1" \
+        "PyJWT[crypto]==2.12.0" "bcrypt==4.2.1" "pyotp==2.9.0" "qrcode==7.4.2" \
+        "anthropic==0.83.0" "python-docx==1.1.2" "python-pptx==1.0.2" \
+        "openpyxl==3.1.5" "xlrd==2.0.1" "sentry-sdk[fastapi]==2.19.0" \
+        "PyYAML>=6.0" \
+        # Test extras
+        "pytest==9.0.3" "pytest-asyncio>=0.23.0" && \
     pip install --prefix=/install --upgrade \
         'python-jose[cryptography]>=3.4.0' \
         'cryptography>=42.0.4' \

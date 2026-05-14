@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ams-tools"
+version = "2.0.0"
+description = "AMS — engines + schemas + processors (núcleo deterministic, sin web)."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic==2.12.5",
+    "openpyxl==3.1.5",
+    "xlrd==2.0.1",
+    "python-dateutil==2.9.0.post0",
+    "PyYAML>=6.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tools*"]

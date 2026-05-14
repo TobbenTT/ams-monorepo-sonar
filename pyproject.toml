@@ -1,0 +1,34 @@
+[project]
+name = "ams-workspace"
+version = "2.0.0"
+description = "AMS — Asset Management Software monorepo (apps/ + packages/)."
+requires-python = ">=3.11"
+
+# Workspace marker — los servicios y libs viven bajo apps/ y packages/.
+# Cada uno tiene su propio pyproject.toml con deps explícitas.
+
+[tool.uv.workspace]
+members = [
+    "apps/core",
+    "apps/sap_mock",
+    "packages/tools",
+    "packages/agents",
+    "packages/skills",
+]
+
+[tool.uv.sources]
+ams-tools = { workspace = true }
+ams-agents = { workspace = true }
+ams-skills = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --ignore=tests/e2e"
+markers = [
+    "slow: marks tests as slow",
+    "requires_api: marks tests that require an Anthropic API key",
+    "security: marks security and cybersecurity tests",
+]

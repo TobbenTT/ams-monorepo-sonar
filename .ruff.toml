@@ -1,0 +1,43 @@
+# Ruff config — stack QA local AMS (alineado con metodología Carlos)
+# Reportará "errores" = E,F (críticos + bugs)
+# Reportará "advertencias" = W,I,B,UP,SIM (estilo + buenas prácticas)
+# Excluye node_modules, .venv, dist, build, __pycache__ y generados.
+
+line-length = 120
+target-version = "py311"
+
+src = ["apps/core", "packages", "scripts"]
+
+extend-exclude = [
+    "**/.venv/**",
+    "**/node_modules/**",
+    "**/__pycache__/**",
+    "**/dist/**",
+    "**/build/**",
+    "data/**",
+    "docs/**",
+    "assets/**",
+    "infrastructure/**",
+    "tests/e2e/**",
+    "apps/admin/**",
+    "apps/field/**",
+]
+
+[lint]
+# Reglas base profesionales (PEP8 + Pyflakes + Warnings + import sort + bugbear
+# + pyupgrade + simplify + comprehensions). Es el preset típico de
+# proyectos Python serios.
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4"]
+
+# Ignores razonables — silencian falsos positivos comunes
+ignore = [
+    "E501",   # line-too-long — ruff format se encarga si lo quieres
+    "E402",   # module-import-not-at-top-of-file — tenemos imports lazy a propósito
+    "B008",   # function-call-in-default-argument — FastAPI Depends() lo usa
+    "B904",   # raise-without-from-inside-except — code style, no error
+    "SIM108", # ternary-in-place-of-if — a veces el if es más legible
+]
+
+[lint.per-file-ignores]
+"tests/**" = ["F401", "F811"]  # tests pueden re-importar libremente
+"scripts/**" = ["F401"]

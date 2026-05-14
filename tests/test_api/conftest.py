@@ -5,6 +5,9 @@ import os as _os
 _os.environ.setdefault("JWT_SECRET_KEY", "pytest_jwt_key_at_least_32_chars_long_for_local_and_ci_runs")
 _os.environ.setdefault("TESTING", "1")
 _os.environ.setdefault("DEBUG", "1")
+# Fake API key — el mock de Anthropic intercepta antes de hacer HTTP real.
+# Permite que las routes AI/agentic salgan del early-return "no configurado".
+_os.environ.setdefault("ANTHROPIC_API_KEY", "test-key-fake-for-mock")
 
 import pytest
 from sqlalchemy import create_engine, event
@@ -43,6 +46,32 @@ def test_db():
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
+
+
+@pytest.fixture(autouse=True)
+def mock_anthropic(monkeypatch):
+    """Auto-mock del SDK Anthropic — todas las llamadas devuelven un stub
+    JSON deterministico. Permite cubrir las rutas AI/agentic sin API key."""
+    try:
+        import anthropic as _anthropic
+    except ImportError:
+        return
+
+    class _MockMessage:
+        def __init__(self):
+            self.content = [type("Block", (), {"text": '{"result": "mocked", "ok": true}'})()]
+            self.usage = type("Usage", (), {"input_tokens": 100, "output_tokens": 50})()
+            self.stop_reason = "end_turn"
+
+    class _MockMessages:
+        def create(self, **kwargs):
+            return _MockMessage()
+
+    class _MockAnthropic:
+        def __init__(self, *args, **kwargs):
+            self.messages = _MockMessages()
+
+    monkeypatch.setattr(_anthropic, "Anthropic", _MockAnthropic, raising=False)
 
 
 @pytest.fixture

@@ -33,21 +33,11 @@ omit =
     */vision_service.py
     */blender_render_service.py
 
-    # AI-heavy: requieren mocks Anthropic (se cubren en tests integración separados)
-    */routers/ai_agents.py
-    */routers/agentic.py
-    */routers/programmer_agent.py
-    */routers/supervisor_agent.py
-    */routers/planificador_agent.py
-    */routers/troubleshooting.py
-    */services/agentic_*.py
-    */services/programmer_agent_service.py
-    */services/supervisor_agent_service.py
-    */services/planificador_agent_service.py
+    # Synthetic data generator — solo se usa para seed dev, no es runtime
     */services/synthetic_data_generator.py
-    */services/equipment_chat_service.py
-    */services/troubleshooting_service.py
-    */ai_core/**
+    # AI-heavy con mock Anthropic activado (autouse fixture) — ahora SÍ cuentan
+    # */routers/ai_agents.py
+    # */routers/agentic.py — etc, ahora medibles
 
     # MFA opcional (no usado en mageam.com prod)
     */routers/mfa.py

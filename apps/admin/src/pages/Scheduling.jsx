@@ -5620,7 +5620,7 @@ export default function Scheduling() {
   const applyAIPlan = async (plan) => {
     if (!plan) return;
     if (aiScheduling) {
-      toast.info('Auto-Level ya está aplicando — esperá a que termine.');
+      toast.info('Auto-Level is already running — wait for it to finish.');
       return;
     }
     // SF-668 (2026-05-12): doble-check de conflictos.
@@ -5762,7 +5762,7 @@ export default function Scheduling() {
         if (failed > Math.floor(plan.assignments.length / 2)) {
           setScheduledWOs(prevScheduled);
           setReleasedWOs(prevReleased);
-          toast.warning('Más del 50% falló — revertí la UI. Refrescá para ver el estado real del servidor.');
+          toast.warning('Over 50% failed — UI reverted. Refresh to see real server state.');
         }
       }
       setAiResult({ assignments: plan.assignments.slice(0, ok), message: msg, failed, failures });
@@ -5889,7 +5889,7 @@ export default function Scheduling() {
                   const wos = (releasedWOs || []).length;
                   const techs = technicians.length;
                   if (wos === 0) { toast.info('No hay OTs en el panel'); return; }
-                  if (techs === 0) { toast.error('No hay técnicos disponibles'); return; }
+                  if (techs === 0) { toast.error('No technicians available'); return; }
                   openAIModal();
                 }}
                 disabled={aiScheduling}
@@ -6248,8 +6248,8 @@ export default function Scheduling() {
                           week_days: weekDays,
                         });
                         setAiParsed(res?.parsed || null);
-                        if (res?.ai_used) toast.success('Claude interpretó tus instrucciones');
-                        else toast.info('Sin API key Claude — uso heurística keyword');
+                        if (res?.ai_used) toast.success('Claude interpreted your instructions');
+                        else toast.info('No Claude API key — using keyword heuristic');
                       } catch (e) {
                         toast.error('Error al interpretar: ' + (e.message || ''));
                       } finally { setAiParsing(false); }

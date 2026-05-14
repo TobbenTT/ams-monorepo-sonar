@@ -175,7 +175,7 @@ export default function FMECA() {
   const handleAddRow = async () => {
     if (!draftRow || !selectedId) return;
     if (!draftRow.function_description.trim()) {
-      toast.error('La descripción de la función es obligatoria');
+      toast.error('Function description is required');
       return;
     }
     try {

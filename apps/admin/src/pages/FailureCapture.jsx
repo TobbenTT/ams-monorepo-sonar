@@ -375,7 +375,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
       return;
     }
     if (!desc?.trim() && photos.length === 0) {
-      toast.warning('Escribe la descripción o toma una foto primero');
+      toast.warning('Enter a description or take a photo first');
       return;
     }
     setAiLoading(true);
@@ -512,7 +512,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
       }
     } catch (e) {
       console.error('AI suggest failed:', e);
-      toast.error('Error conectando con AI. Verificá la configuración del servidor.');
+      toast.error('Error connecting to AI. Check server configuration.');
     } finally {
       setAiLoading(false);
     }
@@ -949,7 +949,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
               // Jorge 2026-05-04: no auto-ejecutar IA con voz/foto. El usuario
               // aprieta "AI Assistant" cuando quiere análisis (ahorra tokens y
               // unifica UX con el flujo de texto).
-              toast.success('Voz transcrita — apretá AI Assistant cuando quieras analizar');
+              toast.success('Voice transcribed — press AI Assistant to analyze');
             } else {
               toast.error('No speech detected');
             }
@@ -1003,7 +1003,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
       if (finalTranscript.trim()) {
         setF('whatHappens', fullText);
         // Jorge 2026-05-04: idem comentario arriba — no auto-IA con voz/foto.
-        toast.success('Voz capturada — apretá AI Assistant cuando quieras analizar');
+        toast.success('Voice captured — press AI Assistant to analyze');
       }
     };
 
@@ -1025,7 +1025,7 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
     // dinámico → resultado típico 200-400KB sin pérdida visual relevante.
     try {
       if (file.size > 30 * 1024 * 1024) {
-        toast.error('Foto >30MB. Tomá otra con menor resolución.');
+        toast.error('Photo >30MB. Take another at lower resolution.');
         return;
       }
       const result = await compressImage(file, { maxDim: 1600, maxBytes: 2 * 1024 * 1024 });
@@ -1218,18 +1218,19 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
         if (s.supportEquipment?.length) setF("supportEquipment", s.supportEquipment);
         if (s.workConditions) setF("workConditions", s.workConditions);
         setAiSuggested(true);
-        toast.success('Foto analizada — campos sugeridos. La descripción "What happened" la controlás vos.');
+        toast.success('Photo analyzed — fields suggested. You control the "What happened" description.');
       }
     } catch (e) {
       console.error('Vision AI error:', e);
       // SF-639 — mensaje específico según el tipo de error que devuelve api.js
       const msg = String(e?.message || e || '');
-      if (/413|payload|too large/i.test(msg))      toast.error('Foto demasiado pesada — comprimila o tomá menor resolución');
-      else if (/timeout|abort/i.test(msg))         toast.error('IA tardó >90s — Anthropic está lento, reintentá');
-      else if (/401|sesion|expired/i.test(msg))    toast.error('Sesión expirada — recargá la página');
-      else if (/429|rate/i.test(msg))              toast.error('Muchas llamadas a la IA — esperá 30s y reintentá');
-      else if (/parse|JSON/i.test(msg))            toast.error('La IA devolvió respuesta incompleta — reintentá');
-      else                                         toast.error('Error analizando con IA: ' + msg.slice(0, 80));
+      // Jorge #17 i18n: error messages now in English (was ES hardcoded).
+      if (/413|payload|too large/i.test(msg))      toast.error('Photo too large — compress or take lower resolution');
+      else if (/timeout|abort/i.test(msg))         toast.error('AI took >90s — Anthropic is slow, retry');
+      else if (/401|sesion|expired/i.test(msg))    toast.error('Session expired — reload the page');
+      else if (/429|rate/i.test(msg))              toast.error('Too many AI calls — wait 30s and retry');
+      else if (/parse|JSON/i.test(msg))            toast.error('AI returned incomplete response — retry');
+      else                                         toast.error('Error analyzing with AI: ' + msg.slice(0, 80));
     } finally {
       setVisionLoading(false);
     }
@@ -2028,11 +2029,11 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
                         className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors">
                         ✓ Entendí, mantener mi Tag
                       </button>
-                      <button onClick={() => { setPhotos([]); setVisionResult(null); setEquipmentMismatch(null); toast.info('Foto descartada — subí otra del equipo correcto'); }}
+                      <button onClick={() => { setPhotos([]); setVisionResult(null); setEquipmentMismatch(null); toast.info('Photo discarded — upload another of the correct equipment'); }}
                         className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-400 bg-white text-amber-800 hover:bg-amber-100 transition-colors">
                         🗑️ Descartar foto y subir otra
                       </button>
-                      <button onClick={() => { setEquipmentMismatch(null); setSelectedEquip(null); setF('whereTag',''); clearLocation(); toast.info('Tag limpiado — buscá el equipo correcto'); }}
+                      <button onClick={() => { setEquipmentMismatch(null); setSelectedEquip(null); setF('whereTag',''); clearLocation(); toast.info('Tag cleared — search for the correct equipment'); }}
                         className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-400 bg-white text-amber-800 hover:bg-amber-100 transition-colors">
                         🔍 Cambiar de equipo
                       </button>

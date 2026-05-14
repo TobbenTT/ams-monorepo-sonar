@@ -1846,7 +1846,7 @@ export default function Execution() {
                 toast.info(`${matchByTag.length} OTs para equipo ${code}. Selecciona manualmente.`);
                 setView('today');
               } else {
-                toast.error('No se encontró OT activa para: ' + code);
+                toast.error('No active WO found for: ' + code);
               }
             }}
           />

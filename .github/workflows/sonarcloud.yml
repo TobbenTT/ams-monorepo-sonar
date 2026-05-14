@@ -1,0 +1,35 @@
+name: SonarCloud
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sonarcloud:
+    name: SonarCloud analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # SonarCloud necesita historial completo para blame
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install deps + run tests with coverage
+        env:
+          JWT_SECRET_KEY: "ci_jwt_key_at_least_32_chars_long_for_ci_runs_only"
+          TESTING: "1"
+        run: |
+          pip install -e packages/tools -e packages/agents -e packages/skills || true
+          pip install -r requirements.txt
+          pip install pytest-cov
+          pytest tests/test_api/test_smoke_critical.py tests/test_api/test_rbac.py tests/test_api/test_plan_lifecycle.py \
+            --cov=apps/core/api --cov=packages/tools \
+            --cov-report=xml:coverage.xml || true
+      - uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

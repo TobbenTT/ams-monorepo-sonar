@@ -15,6 +15,84 @@ const SETTINGS_KEY_BASE = 'ocp_settings';
 const settingsKeyFor = (plantId) => plantId ? `${SETTINGS_KEY_BASE}_${plantId}` : SETTINGS_KEY_BASE;
 const currentPlant = () => localStorage.getItem('selected_plant') || '';
 
+// SAP Track A — A5: panel read-only que muestra qué transport está activo
+// (env SAP_TRANSPORT) + healthcheck + sample de equipos. Credenciales nunca
+// se exponen al frontend (sólo backend lee de .env).
+function SAPConnectionPanel() {
+  const [info, setInfo] = useState(null);
+  const [eq, setEq] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = async () => {
+    setRefreshing(true);
+    const tok = localStorage.getItem('token') || localStorage.getItem('access_token') || '';
+    const fetchJSON = (path) => fetch(path, { headers: { Authorization: 'Bearer ' + tok } })
+      .then(r => r.ok ? r.json() : null).catch(() => null);
+    try {
+      setInfo(await fetchJSON('/api/v1/sap/transport/info'));
+      setEq(await fetchJSON('/api/v1/sap/live/equipment?top=5'));
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  if (loading) return <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Verificando conexión SAP…</div>;
+
+  const transport = info?.name || 'desconocido';
+  const healthy = info?.healthy;
+  const transportColor = transport === 'dry_run' ? 'bg-slate-100 text-slate-700' : transport === 'mock' ? 'bg-amber-100 text-amber-700' : transport === 'odata' ? 'bg-emerald-100 text-emerald-700' : transport === 'rfc' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700';
+  const transportLabel = {
+    dry_run: 'Dry-Run (sin SAP real)',
+    mock: 'Mock SAP S/4 (interno)',
+    odata: 'SAP S/4HANA Cloud (OData)',
+    rfc: 'SAP On-Prem (RFC/BAPI)',
+  }[transport] || transport;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="border border-border rounded-lg p-3">
+          <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground mb-1">Transport activo</div>
+          <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-bold ${transportColor}`}>{transportLabel}</span>
+        </div>
+        <div className="border border-border rounded-lg p-3">
+          <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground mb-1">Estado</div>
+          <span className={`inline-flex items-center gap-1 text-xs font-semibold ${healthy ? 'text-emerald-700' : 'text-red-700'}`}>
+            {healthy ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+            {healthy ? 'Conectado' : 'Sin conexión'}
+          </span>
+        </div>
+      </div>
+      {eq && (
+        <div className="border border-border rounded-lg p-3">
+          <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground mb-2">Sample equipos SAP ({eq.count})</div>
+          {eq.count === 0 ? (
+            <div className="text-xs text-muted-foreground italic">Sin equipos. {transport === 'dry_run' && 'Cambiar SAP_TRANSPORT a mock/odata/rfc en .env del servidor.'}</div>
+          ) : (
+            <ul className="text-xs space-y-1">
+              {(eq.items || []).slice(0, 5).map((e, i) => (
+                <li key={i} className="flex items-center gap-2 font-mono">
+                  <span className="text-emerald-600">●</span>
+                  <span className="font-semibold">{e.EquipmentID || e.equipment_id || e.id || '?'}</span>
+                  <span className="text-muted-foreground">{e.EquipmentName || e.description || e.name || ''}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      <Button variant="outline" size="sm" onClick={load} disabled={refreshing}>
+        {refreshing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
+        Test Connection
+      </Button>
+    </div>
+  );
+}
+
 const PLANT_DEFAULTS = {
   'OCP-JFC1':      { companyName: 'OCP Group',                    timezone: 'gmt+1', currency: 'mad', defaultPlant: 'OCP-JFC1' },
   // 0D1: anonimización — antes "Gold Fields — Salares Norte", ahora genérico.
@@ -362,6 +440,9 @@ export default function SettingsPage() {
           <TabsTrigger value="users">{t('settings.tabs.users')}</TabsTrigger>
           <TabsTrigger value="data">{t('settings.tabs.data')}</TabsTrigger>
           <TabsTrigger value="appearance">{t('settings.tabs.appearance')}</TabsTrigger>
+          {/* SAP Track A — A5 (workshop Andrea+Jorge): credenciales BTP+OAuth2
+              que IT del cliente entrega al firmar piloto. */}
+          <TabsTrigger value="sap">SAP Connection</TabsTrigger>
         </TabsList>
 
         {/* General Settings */}
@@ -1227,6 +1308,35 @@ export default function SettingsPage() {
                 </Select>
               </div>
             </div>
+          </Card>
+        </TabsContent>
+
+        {/* SAP Connection — A5 Track A. Status read-only (transport activo
+            via SAP_TRANSPORT env) + Test Connection. La edición de credenciales
+            es vía .env del servidor (no exponemos secrets al frontend). */}
+        <TabsContent value="sap" className="space-y-6">
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Database className="w-5 h-5 text-emerald-600" />
+              SAP Integration Status
+            </h3>
+            <SAPConnectionPanel />
+          </Card>
+          <Card className="p-6 bg-slate-50 dark:bg-slate-900/30">
+            <h4 className="font-semibold text-sm mb-2">Configuración (lado servidor)</h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Las credenciales SAP se configuran en el servidor vía variables de entorno (nunca en el frontend para no exponer secrets). Pedir a sysadmin que edite <code>.env</code> con:
+            </p>
+            <pre className="text-[10.5px] bg-slate-900 text-emerald-300 p-3 rounded-lg overflow-x-auto">
+{`SAP_TRANSPORT=odata    # dry_run | mock | odata | rfc
+SAP_ODATA_BASE_URL=https://my-customer.s4hana.cloud.sap
+SAP_ODATA_CLIENT_ID=<from BTP destination>
+SAP_ODATA_CLIENT_SECRET=<from BTP destination>
+SAP_ODATA_TOKEN_URL=<OAuth2 token endpoint>`}
+            </pre>
+            <p className="text-[11px] text-muted-foreground mt-3">
+              Stack acordado con Goldfields: <strong>MAGEAM → OData REST → BTP Destination → Cloud Connector → SAP QAS/PRD</strong>. Ver <code>docs/SAP_INTEGRATION_ROADMAP.md</code> y <code>docs/env-template-goldfields-sap.md</code>.
+            </p>
           </Card>
         </TabsContent>
       </Tabs>

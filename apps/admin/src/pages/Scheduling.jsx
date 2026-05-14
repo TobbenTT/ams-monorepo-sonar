@@ -5807,36 +5807,33 @@ export default function Scheduling() {
                 <Lock size={12} /> {t('scheduling.published')}
               </span>
             )}
+            {/* Jorge 2026-05-14 (transcript 12:53): eliminados Auto-Level (no
+                aplica) y Clear All (peligroso — un click podía vaciar todo el
+                tablero). El nuevo botón "Auto-asignar al tablero" lee fecha+
+                hora de cada OT y la coloca en su slot correspondiente, sin
+                tocar lo ya programado. */}
             <div className="flex items-center gap-1 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg px-1">
               <select value={capacityLimit} onChange={e => setCapacityLimit(Number(e.target.value))}
                 className="text-xs bg-transparent text-purple-700 dark:text-purple-300 font-semibold py-2 px-1 focus:outline-none cursor-pointer"
-                title="Max capacity % for auto-leveling">
+                title="Max % de capacidad por técnico (auto-asignar respeta este límite)">
                 {[70, 75, 80, 85, 90, 95, 100].map(v => <option key={v} value={v}>{v}%</option>)}
               </select>
               <button
                 onClick={() => {
                   const wos = (releasedWOs || []).length;
                   const techs = technicians.length;
-                  if (wos === 0) { toast.info('No WOs to schedule'); return; }
-                  if (techs === 0) { toast.error('No technicians available — cannot auto-level'); return; }
+                  if (wos === 0) { toast.info('No hay OTs en el panel'); return; }
+                  if (techs === 0) { toast.error('No hay técnicos disponibles'); return; }
                   openAIModal();
                 }}
                 disabled={aiScheduling}
                 className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
+                title="Auto-asignar al tablero: lee fecha+hora de cada OT del panel y la coloca en su slot, matcheando técnicos por skill"
               >
                 {aiScheduling ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                {aiScheduling ? 'Leveling...' : 'Auto-Level'}
+                {aiScheduling ? 'Asignando…' : 'Auto-asignar al tablero'}
               </button>
             </div>
-            {/* Jorge 2026-05-12 (demo Goldfields): se quitó "Auto-Schedule"
-                porque no funcionaba bien. Clear Assignments se mantiene para
-                que el planificador pueda limpiar el tablero cuando lo necesite. */}
-            <button
-              onClick={() => setShowClearConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-            >
-              <Trash2 size={16} /> Clear Assignments
-            </button>
           </div>
         )}
       </div>

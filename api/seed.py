@@ -5,10 +5,13 @@ then inserts into the database via SQLAlchemy models.
 Also generates SAP mock JSON files.
 """
 
+import logging
 import uuid
 from datetime import date, datetime
 
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger("ocp_maintenance.seed")
 
 from api.database.connection import create_all_tables, SessionLocal
 from api.database.models import (

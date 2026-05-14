@@ -751,30 +751,59 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
 
   // SF-728 (David 2026-05-14): heurística para identificar el "equipo principal"
   // de un SYSTEM/SUBSYSTEM cuando tiene varios hijos. Antes con N equipos hijos
-  // el campo Equipo/TAG quedaba vacío y el usuario tenía que adivinar. Ahora:
-  //   - Tipos principales (Molino, Bomba, Motor, Cinta, Trafo, Compresor) +100
-  //   - Tipos auxiliares (Tolva, Cajón, Gabinete, CCTV, PLC, etc.) -50
-  //   - Coincidencia de palabras con nombre del SYSTEM +20 por palabra
-  // Solo auto-pickea si el top tiene margen claro (≥1.5x sobre el 2do).
+  // el campo Equipo/TAG quedaba vacío y el usuario tenía que adivinar.
+  //
+  // Reglas de scoring:
+  //   - Tipo desde el TAG/code (ej "3110MI0001" → MI).
+  //     Tipos PRINCIPAL (MI, BC, MC, CO, EX, CH, HA, MO): +100
+  //     Tipos SECUNDARIO (CV, TR, HE, RD): +30 (cintas, trafos, reductores)
+  //     Tipos AUX (BN, BX, CP, CT, IO, PLC, SE, IL, VV, PI, HT): -50
+  //   - Nombre contiene "Molino"/"Bomba"/"Motor"/etc cuando SYSTEM lo sugiere: +60
+  //   - Coincidencia de palabras (>=4 chars) con nombre del SYSTEM: +15 por palabra
+  //
+  // Solo auto-pickea si el top tiene score >=100 y margen >=1.5x sobre el 2do.
   const pickPrincipalEquipment = (equipList, systemName) => {
     if (!equipList?.length) return null;
     if (equipList.length === 1) return equipList[0];
-    const PRINCIPAL = new Set(['MI', 'BC', 'MC', 'CV', 'TR', 'CO', 'EX', 'CH', 'HA']);
-    const AUX = new Set(['BN', 'BX', 'CP', 'CCTV', 'PLC', 'SE', 'IL', 'VV', 'PI']);
-    const sysWords = (systemName || '').toUpperCase().split(/\s+/).filter(w => w.length >= 3);
+    const PRINCIPAL = new Set(['MI', 'BC', 'MC', 'CO', 'EX', 'CH', 'HA', 'MO']);
+    const SECONDARY = new Set(['CV', 'TR', 'HE', 'RD']);
+    const AUX = new Set(['BN', 'BX', 'CP', 'CT', 'IO', 'PLC', 'SE', 'IL', 'VV', 'PI', 'HT', 'CCTV']);
+    // Stem matching: SYSTEM "Molienda" → buscar equipos con "Molino" en name
+    const TYPE_KEYWORDS = {
+      'MOLIENDA|MOLINO': 'MOLINO',
+      'BOMBEO|BOMBA': 'BOMBA',
+      'MOTOR': 'MOTOR',
+      'CHANCAD|CHANCADO': 'CHANCADOR',
+      'COMPRES|COMPRESOR': 'COMPRESOR',
+    };
+    const sysUpper = (systemName || '').toUpperCase();
+    let principalKeyword = null;
+    for (const [pat, kw] of Object.entries(TYPE_KEYWORDS)) {
+      if (new RegExp(pat).test(sysUpper)) { principalKeyword = kw; break; }
+    }
+    const sysWords = sysUpper.split(/\s+/).filter(w => w.length >= 4);
+    // Extrae el tipo de equipo desde el code: ".../NNNN[TYPE]NNNN" o desde tag
+    const extractType = (e) => {
+      const candidates = [e.code, e.tag, e._funcLoc, e.sap_func_loc].filter(Boolean);
+      for (const s of candidates) {
+        const m = String(s).toUpperCase().match(/(?:[-\/])?(\d{3,5})([A-Z]{2,4})(\d{2,4})/);
+        if (m) return m[2];
+      }
+      return '';
+    };
     const scored = equipList.map(e => {
-      const tag = (e.tag || e.code || '').toUpperCase();
       const name = (e.name || '').toUpperCase();
-      const m = tag.match(/\d{3,5}([A-Z]+)\d/);
-      const type = m ? m[1] : '';
+      const type = extractType(e);
       let score = 0;
       if (PRINCIPAL.has(type)) score += 100;
+      else if (SECONDARY.has(type)) score += 30;
       else if (AUX.has(type)) score -= 50;
-      sysWords.forEach(kw => { if (name.includes(kw)) score += 20; });
-      return { e, score };
+      if (principalKeyword && name.includes(principalKeyword)) score += 60;
+      sysWords.forEach(kw => { if (name.includes(kw)) score += 15; });
+      return { e, score, type, name };
     }).sort((a, b) => b.score - a.score);
     // Auto-pick si el top tiene score positivo y margen claro
-    if (scored[0].score >= 100 && (scored.length === 1 || scored[0].score >= scored[1].score * 1.5)) {
+    if (scored[0].score >= 100 && (scored.length === 1 || scored[0].score >= Math.max(scored[1].score * 1.5, scored[1].score + 30))) {
       return scored[0].e;
     }
     return null;

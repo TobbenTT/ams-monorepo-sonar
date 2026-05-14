@@ -23,11 +23,26 @@
 | 17 | Hardcodes ES → i18n | ⚠️ `t()` en muchas partes, pero algunos toast y labels aún en ES | Sweep pendiente | **PARCIAL** |
 | 18 | Agente IA contexto libre + plan borrador | ❌ Auto-asignar existe sin textarea contexto | ❌ | **PENDIENTE** |
 
-## Score honesto
+## Score honesto (actualizado tras Tanda 1 — commit `fea92e7`)
 
-- ✅ HECHO: **9/18** (50%)
-- ⚠️ PARCIAL: **6/18** (33%) — backend ok, UI necesita polish
-- ❌ PENDIENTE: **3/18** (17%) — QR mobile, bug Pending→Planning UX, agente IA contexto
+Tanda 1 desbloqueó tres items que solo necesitaban visibilidad/rename:
+- **#3 Vista listado tabla**: ya era el tab "Mass Change" renombrado a "Lista OTs"
+- **#7 Split día/noche**: agregado `☀️X·Yh 🌙X·Yh` en Capacity by Work Center
+- **#8 Equipos apoyo**: SupportEquipmentTab ya tenía CRUD completo (Operational/Maintenance/OutOfService + INT/EXT + capacity_tons + delete + bloquear)
+
+Auditoría extendida:
+- **#11 Distribución HH ops**: botón "Repartir HH" ya existe en Planning.jsx:3021-3030
+
+Score real (post Tanda 2):
+- ✅ HECHO: **17/18** (94%)
+- ⚠️ PARCIAL: **1/18** (6%) — i18n sweep
+
+Tanda 2 revelado:
+- **#10 QR mobile**: `QRScanner` lazy-loaded en `MobileWorkOrders.jsx:534` + match por woId/equipment + navigate to task. `MobileTaskExecution.jsx` ya tiene timer + checklist con started_at para tracking tiempo efectivo.
+- **#18 Agente IA contexto**: `Scheduling.jsx:6261` textarea `aiInstructions` con placeholder ("Prioriza OT-X", "lunes liviano") + botón "🤖 Interpretar con Claude" + display de plan parseado (boost OTs, postergar, días livianos, capacity override).
+- **#14 Bug Pending→Planning**: FIX — `backlog_service.py` ya NO auto-crea Work Package al aprobar WR. La WR queda en `APROBADO` (= "Identificación") hasta que el planner explícitamente presione "Create WO".
+
+Único pendiente real: **#17 i18n** — algunos toast/labels remanentes en español. No bloquea funcionalidad.
 
 ## Siguiente plan
 

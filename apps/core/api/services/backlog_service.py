@@ -46,8 +46,12 @@ def add_to_backlog(db: Session, work_request_id: str) -> dict | None:
     db.commit()
     db.refresh(item)
 
-    # Auto-create a draft Work Package from this backlog item
-    _auto_create_work_package(db, item, wr)
+    # Jorge 2026-05-14 (transcript 2026-05-04): aprobar WR NO debe auto-saltar a
+    # Planificación. La WR aprobada queda en "Identificación" (status APROBADO)
+    # y el backlog item se crea para que aparezca en la lista del planner.
+    # El Work Package se crea sólo cuando el planner explícitamente
+    # presiona "Create WO" / "Llevar a Planning" en la UI.
+    # _auto_create_work_package(db, item, wr)  # opt-in via planner action
 
     return _item_to_dict(item)
 

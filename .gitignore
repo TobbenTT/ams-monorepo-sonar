@@ -143,3 +143,8 @@ pa-snapshot.md
 Claude_Mythos_*.txt
 Transcript_Agent_*.txt
 *.jsonl
+
+# Binarios grandes que no deben commitearse
+*.exe
+*.jsonl
+

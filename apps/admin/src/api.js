@@ -550,6 +550,9 @@ export const finalizeProgram = (id) => put(`/scheduling/programs/${id}/finalize`
 export const activateProgram = (id) => put(`/scheduling/programs/${id}/activate`);
 export const completeProgram = (id) => put(`/scheduling/programs/${id}/complete`);
 export const getGantt = (id) => get(`/scheduling/programs/${id}/gantt`);
+// Jorge F (transcript 2026-05-14): disponibilidad por equipo/día/semana
+export const getEquipmentAvailability = (plantId, weekStart, weeks = 1) =>
+  get('/scheduling/availability', { plant_id: plantId, week_start: weekStart, weeks });
 // Phase 3 — Scheduling improvements
 export const publishProgram = (id) => put(`/scheduling/programs/${id}/publish`);
 export const materialCheck = (id) => get(`/scheduling/programs/${id}/material-check`);

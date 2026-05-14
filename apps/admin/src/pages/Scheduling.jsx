@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import CancelWOModal from '../components/CancelWOModal';
 import SmartAssignModal from '../components/SmartAssignModal';
+import AvailabilityPanel from '../components/scheduling/AvailabilityPanel';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../api';
@@ -1501,8 +1502,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                   Technicians, Recursos y Work Orders. Todo se opera sobre
                   el tablero horario. */}
               <button onClick={() => setViewBy('timeslot')}
-                className="px-3 py-1.5 text-xs font-medium transition-colors bg-emerald-600 text-white">
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'timeslot' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
                 🕐 Horarios
+              </button>
+              {/* Jorge F (transcript 2026-05-14): vista Disponibilidad por
+                  equipo / día / semana — input para planificación minera. */}
+              <button onClick={() => setViewBy('availability')}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'availability' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
+                📊 Disponibilidad
               </button>
             </div>
             {/* Jorge 2026-05-14: unificar Week/2W/3W/Mes en UN dropdown
@@ -1637,8 +1644,14 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
           );
         })()}
 
-        {/* Calendar grid */}
-        {viewBy === 'timeslot' ? (
+        {/* Jorge F (2026-05-14): panel Disponibilidad por equipo */}
+        {viewBy === 'availability' ? (
+          <AvailabilityPanel
+            plantId={localStorage.getItem('selected_plant') || 'OCP-JFC1'}
+            weekStart={toDateStr(weekStart)}
+            weeks={viewRange}
+          />
+        ) : viewBy === 'timeslot' ? (
           /* ═══ TIMESLOT VIEW (Reunión VSC 2026-05-11 Jorge spec)
               Eje vertical: HORARIOS (turnos día / noche con slots horarios).
               Eje horizontal: días. Solo OTs status="En Programación" (filtro
@@ -1748,6 +1761,21 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                                     if (!dragWO) { console.warn('[DRAG-DEBUG] no dragWO, aborting'); return; }
                                     const wo = dragWO;
                                     setDragWO(null);
+                                    // Jorge 2026-05-14: cuando re-arrastrás una OT que ya
+                                    // estaba programada, pedir confirmación antes de actualizar
+                                    // su fecha/hora en BD. Evita movimientos accidentales.
+                                    const wasScheduled = !!wo.planned_start;
+                                    if (wasScheduled) {
+                                      const prevDateStr = new Date(wo.planned_start).toLocaleString();
+                                      const newDateStr = `${d.dateLabel} ${String(slot.h).padStart(2,'0')}:00`;
+                                      const ok = await confirm({
+                                        title: 'Confirmar cambio de fecha',
+                                        message: `${wo.wo_number}\n\nDe: ${prevDateStr}\nA: ${newDateStr}\n\n¿Mover la OT y actualizar su fecha+hora de inicio en BD?`,
+                                        variant: 'primary',
+                                        confirmText: 'Mover',
+                                      });
+                                      if (!ok) return;
+                                    }
                                     // Calcular fecha/hora inicio + auto-match técnicos
                                     const startDate = new Date(d.date);
                                     startDate.setHours(slot.h, 0, 0, 0);
@@ -1862,7 +1890,15 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                                         onDragStart={(e) => {
                                           e.stopPropagation();
                                           setDragWO(wo);
-                                          try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', wo.wo_id); } catch {}
+                                          try {
+                                            e.dataTransfer.effectAllowed = 'move';
+                                            e.dataTransfer.setData('text/plain', wo.wo_id);
+                                            // Jorge 2026-05-14 bug fix: el browser por defecto
+                                            // pesca el contenedor padre (con 3 OTs apiladas + horas
+                                            // del calendario detrás). setDragImage fija explícito
+                                            // la card que estamos arrastrando.
+                                            e.dataTransfer.setDragImage(e.currentTarget, 10, 10);
+                                          } catch {}
                                         }}
                                         onDragEnd={() => { setDragWO(null); setDropTarget(null); }}
                                         className={`p-1 mb-0.5 rounded text-[10px] cursor-grab active:cursor-grabbing ${typeMeta.bg} border border-border/50 hover:border-emerald-500 hover:shadow-md transition-all`}

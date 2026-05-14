@@ -14,6 +14,162 @@ from api.services import scheduling_service
 router = APIRouter(prefix="/scheduling", tags=["scheduling"], dependencies=[Depends(get_current_user)])
 
 
+# ── Jorge F (transcript 2026-05-14): Disponibilidad por equipo/día/semana ──
+@router.get("/availability")
+def get_equipment_availability(
+    plant_id: str = "OCP-JFC1",
+    week_start: str | None = None,
+    weeks: int = 1,
+    db: Session = Depends(get_db),
+):
+    """Calcula disponibilidad por equipo, por día y por semana.
+
+    Disponibilidad = 100% - (horas detenido / horas calendario).
+    Detención = suma de planned_end - planned_start de OTs PROGRAMADO/
+    EN_EJECUCION/EJECUTADO que afectan al equipo en el día.
+
+    Equipos sin OTs en el día → disponibilidad = 100% - 0.5% baseline
+    (factor falla previsto que Jorge mencionó en el transcript).
+
+    Devuelve estructura tipo carta-Gantt:
+    {
+      "week_start": "2026-05-19",
+      "days": ["Lun 19", "Mar 20", ...],
+      "equipment": [
+        {
+          "tag": "BRY-SAG-ML-001",
+          "name": "SAG Mill #1",
+          "daily": [{"date": "2026-05-19", "downtime_h": 0, "available_pct": 99.5}, ...],
+          "week_available_pct": 98.2,
+          "total_downtime_h": 12,
+        },
+        ...
+      ],
+      "summary": {"equipment_count": 25, "week_available_avg": 96.8}
+    }
+    """
+    from api.database.models import (
+        ManagedWorkOrderModel,
+        HierarchyNodeModel,
+    )
+
+    HOURS_PER_DAY = 24
+    BASELINE_FAILURE_PCT = 0.5  # Jorge: ~0.5% de falla previsto
+
+    # Parse week_start o tomar lunes de esta semana
+    if week_start:
+        try:
+            start = datetime.fromisoformat(week_start)
+        except (ValueError, TypeError):
+            start = datetime.now()
+    else:
+        now = datetime.now()
+        start = now - timedelta(days=now.weekday())
+    start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = start + timedelta(days=weeks * 7)
+
+    # Equipos del plant (solo nodos EQUIPMENT)
+    equipments = (
+        db.query(HierarchyNodeModel)
+        .filter(HierarchyNodeModel.plant_id == plant_id)
+        .filter(HierarchyNodeModel.node_type == "EQUIPMENT")
+        .all()
+    )
+
+    # OTs en el rango
+    wos = (
+        db.query(ManagedWorkOrderModel)
+        .filter(ManagedWorkOrderModel.plant_id == plant_id)
+        .filter(ManagedWorkOrderModel.status.in_(
+            ["PROGRAMADO", "EN_EJECUCION", "EJECUTADO", "CERRADO",
+             "SCHEDULED", "IN_PROGRESS", "COMPLETED"]
+        ))
+        .filter(ManagedWorkOrderModel.planned_start.isnot(None))
+        .filter(ManagedWorkOrderModel.planned_end.isnot(None))
+        .filter(ManagedWorkOrderModel.planned_start < end)
+        .filter(ManagedWorkOrderModel.planned_end >= start)
+        .all()
+    )
+
+    # Indexar OTs por equipment_tag y por día
+    days = [(start + timedelta(days=i)) for i in range(weeks * 7)]
+    day_keys = [d.strftime("%Y-%m-%d") for d in days]
+    day_labels = [d.strftime("%a %d") for d in days]
+
+    by_tag_day: dict[str, dict[str, float]] = {}
+    for wo in wos:
+        tag = wo.equipment_tag or ""
+        if not tag:
+            continue
+        # Distribuir horas de OT por día
+        ps = wo.planned_start
+        pe = wo.planned_end
+        if ps >= pe:
+            continue
+        # Para cada día en el rango, calcular intersección
+        for d in days:
+            d_start = d
+            d_end = d + timedelta(days=1)
+            overlap_start = max(ps, d_start)
+            overlap_end = min(pe, d_end)
+            if overlap_end > overlap_start:
+                hours = (overlap_end - overlap_start).total_seconds() / 3600
+                by_tag_day.setdefault(tag, {}).setdefault(
+                    d.strftime("%Y-%m-%d"), 0.0
+                )
+                by_tag_day[tag][d.strftime("%Y-%m-%d")] += hours
+
+    # Armar payload por equipo
+    items = []
+    total_avail_sum = 0.0
+    eq_count = 0
+    for eq in equipments:
+        tag = eq.tag or eq.code or ""
+        if not tag:
+            continue
+        daily = []
+        total_dt = 0.0
+        for d, dkey in zip(days, day_keys):
+            dt_h = by_tag_day.get(tag, {}).get(dkey, 0.0)
+            total_dt += dt_h
+            avail_pct = max(0.0, 100.0 - BASELINE_FAILURE_PCT - (dt_h / HOURS_PER_DAY) * 100)
+            daily.append({
+                "date": dkey,
+                "downtime_h": round(dt_h, 2),
+                "available_pct": round(avail_pct, 1),
+            })
+        period_hours = HOURS_PER_DAY * weeks * 7
+        week_avail = max(0.0, 100.0 - BASELINE_FAILURE_PCT - (total_dt / period_hours) * 100)
+        items.append({
+            "tag": tag,
+            "name": eq.name,
+            "criticality": eq.criticality or "C",
+            "daily": daily,
+            "week_available_pct": round(week_avail, 1),
+            "total_downtime_h": round(total_dt, 2),
+        })
+        total_avail_sum += week_avail
+        eq_count += 1
+
+    # Ordenar por disponibilidad ascendente (los más críticos primero)
+    items.sort(key=lambda x: x["week_available_pct"])
+
+    return {
+        "plant_id": plant_id,
+        "week_start": start.strftime("%Y-%m-%d"),
+        "weeks": weeks,
+        "days": day_keys,
+        "day_labels": day_labels,
+        "equipment": items,
+        "summary": {
+            "equipment_count": eq_count,
+            "week_available_avg": round(total_avail_sum / eq_count, 1) if eq_count > 0 else 0.0,
+            "total_wos_in_period": len(wos),
+            "baseline_failure_pct": BASELINE_FAILURE_PCT,
+        },
+    }
+
+
 @router.post("/programs")
 def create_program(data: ProgramCreate, db: Session = Depends(get_db)):
     return scheduling_service.create_program(db, data.plant_id, data.week_number, data.year)

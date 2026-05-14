@@ -3,7 +3,7 @@
 # Security parcheo: confiamos en base image python:3.13-slim (Debian 13 trixie)
 # que ya trae fixes upstream. apt-get upgrade removido para no invalidar caché
 # en cada build; se vuelve a aplicar via rebuild periódico cuando sale base nueva.
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
@@ -65,7 +65,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends binutils \
     && du -sh /install
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 

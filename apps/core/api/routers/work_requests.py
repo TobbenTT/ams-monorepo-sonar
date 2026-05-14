@@ -366,8 +366,21 @@ def get_work_request(request_id: str, user=Depends(get_current_user), db: Sessio
         docs = wr.documents if isinstance(wr.documents, list) else []
         photos = [d.get("data", "") for d in docs if isinstance(d, dict) and d.get("type") == "photo" and d.get("data")]
     import json as _json
-    ai = wr.ai_classification if isinstance(wr.ai_classification, dict) else (_json.loads(wr.ai_classification) if isinstance(wr.ai_classification, str) else {})
-    pd = wr.problem_description if isinstance(wr.problem_description, dict) else (_json.loads(wr.problem_description) if isinstance(wr.problem_description, str) else {})
+    def _safe_json(v):
+        """Parsea string como JSON; si no es JSON válido, devuelve {}.
+
+        Bug 2026-05-14: si problem_description era texto libre (no JSON),
+        json.loads crasheaba con 500. Defensivo."""
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str) and v.strip().startswith(("{", "[")):
+            try:
+                return _json.loads(v)
+            except (ValueError, TypeError):
+                return {}
+        return {}
+    ai = _safe_json(wr.ai_classification)
+    pd = _safe_json(wr.problem_description)
     return {
         "request_id": wr.request_id,
         "aviso_number": getattr(wr, "aviso_number", None),

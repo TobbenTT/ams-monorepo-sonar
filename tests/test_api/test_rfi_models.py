@@ -47,7 +47,7 @@ class TestCompanySiteProfile:
         m = CompanySiteProfile(
             company_name="Test Co",
             site_name="Salares Norte",
-            country="Chile",
+            country="CL",  # country es ISO 2 chars
             industry=Industry.MINING,
         )
         assert m.company_name == "Test Co"
@@ -58,7 +58,7 @@ class TestCompanySiteProfile:
             CompanySiteProfile(
                 company_name="X" * 201,  # exceeds MAX_NAME_FIELD_LENGTH
                 site_name="X",
-                country="Chile",
+                country="CL",
                 industry=Industry.MINING,
             )
 
@@ -93,19 +93,19 @@ class TestStandardsCompliance:
 
 class TestKPIBaselineTargets:
     def test_valid_percentages(self):
-        m = KPIBaselineTargets(availability_pct=85.5, oee_pct=72.0)
-        assert m.availability_pct == 85.5
+        m = KPIBaselineTargets(current_availability=85.5, current_oee=72.0)
+        assert m.current_availability == 85.5
 
     def test_pct_out_of_range_rejected(self):
         with pytest.raises(ValidationError):
-            KPIBaselineTargets(availability_pct=150.0)
+            KPIBaselineTargets(current_availability=150.0)
 
 
 class TestScopeTimeline:
     def test_attempt_instantiation(self):
         """Cualquier shape válida o ValidationError sirve para cubrir el modelo."""
         try:
-            ScopeTimeline(scope_type=ScopeType.SINGLE_PLANT)
+            ScopeTimeline(scope_type=ScopeType.FULL_PLANT)
         except ValidationError:
             try:
                 ScopeTimeline()

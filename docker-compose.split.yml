@@ -55,18 +55,21 @@ services:
     networks:
       - ams-net
 
-  # ── ams-field: mobile app (React/Vite) ────────────────────────────
-  # NOTA: field_app/ no tiene Dockerfile aún — placeholder; pendiente Fase 1.5.
-  # ams-field:
-  #   build:
-  #     context: ./field_app
-  #     dockerfile: Dockerfile
-  #   container_name: ams-field
-  #   profiles: ["field", "all"]
-  #   ports:
-  #     - "${FIELD_PORT:-5174}:5173"
-  #   networks:
-  #     - ams-net
+  # ── ams-field: PWA mobile offline-first inspection app ────────────
+  ams-field:
+    build:
+      context: ./apps/field
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-}"
+        VITE_SENTRY_DSN: "${VITE_SENTRY_DSN:-}"
+    container_name: ams-field
+    profiles: ["field", "all"]
+    ports:
+      - "${FIELD_PORT:-5174}:5173"
+    restart: unless-stopped
+    networks:
+      - ams-net
 
   # ── ams-sap-mock: simulador OData S/4HANA ────────────────────────
   ams-sap-mock:

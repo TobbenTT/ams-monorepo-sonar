@@ -1795,3 +1795,22 @@ class ExpenseClassModel(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+# ── SF-683 — Notification delivery trace (email gateway) ────────────
+class NotificationDeliveryModel(Base):
+    __tablename__ = "notification_deliveries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str | None] = mapped_column(String(50), index=True, nullable=True)
+    event_type: Mapped[str] = mapped_column(String(50), index=True)
+    entity_type: Mapped[str] = mapped_column(String(40), index=True)
+    entity_id: Mapped[str] = mapped_column(String(50), index=True)
+    recipient: Mapped[str] = mapped_column(String(200), index=True)
+    template: Mapped[str] = mapped_column(String(80))
+    status: Mapped[str] = mapped_column(String(20), default="PENDING", index=True)
+    retries: Mapped[int] = mapped_column(Integer, default=0)
+    error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    failed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)

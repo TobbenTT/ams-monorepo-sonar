@@ -74,6 +74,7 @@ from api.routers import (
     dms,
     preparativos,
     cost_centers,
+    notification_deliveries,
 )
 
 # Optional modules — loaded only if their deps are installed. Missing deps won't crash startup.
@@ -288,6 +289,7 @@ def create_app() -> FastAPI:
     app.include_router(tasks.router, prefix=prefix)
     app.include_router(work_packages.router, prefix=prefix)
     app.include_router(sap.router, prefix=prefix)
+    app.include_router(notification_deliveries.router, prefix=prefix)
     app.include_router(analytics.router, prefix=prefix)
     app.include_router(admin.router, prefix=prefix)
     # Endpoint público para kick-all-users (usa X-Internal-Key desde deploy.sh)

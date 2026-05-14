@@ -443,6 +443,22 @@ def approve_work_request(request_id: str, data: WRApproveRequest, user=Depends(r
         raise HTTPException(status_code=404, detail="Work request not found")
     from api.services.ws_manager import queue_notify
     queue_notify("wr_approved", {"request_id": request_id}, result.get("ai_classification", {}).get("plant_id"))
+    # SF-683 — email al solicitante
+    try:
+        from api.database.models import WorkRequestModel, UserModel
+        from api.services import notification_delivery_service
+        wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+        if wr and wr.created_by:
+            requester = db.query(UserModel).filter(UserModel.user_id == wr.created_by).first()
+            email = requester.email if requester else None
+            notification_delivery_service.notify_wr_approved(
+                db, wr,
+                requester_email=email,
+                approver_username=getattr(user, "username", "system"),
+                comment=data.comment or "",
+            )
+    except Exception:
+        pass  # las notificaciones no bloquean la aprobación
     return result
 
 
@@ -559,6 +575,17 @@ def reject_work_request(request_id: str, data: WRRejectRequest, user=Depends(req
         raise HTTPException(status_code=404, detail="Work request not found")
     from api.services.ws_manager import queue_notify
     queue_notify("wr_rejected", {"request_id": request_id}, result.get("ai_classification", {}).get("plant_id"))
+    # SF-683 — email al solicitante
+    try:
+        from api.database.models import WorkRequestModel, UserModel
+        from api.services import notification_delivery_service
+        wr = db.query(WorkRequestModel).filter(WorkRequestModel.request_id == request_id).first()
+        if wr and wr.created_by:
+            requester = db.query(UserModel).filter(UserModel.user_id == wr.created_by).first()
+            email = requester.email if requester else None
+            notification_delivery_service.notify_wr_rejected(db, wr, requester_email=email, reason=data.reason or "")
+    except Exception:
+        pass
     return result
 
 

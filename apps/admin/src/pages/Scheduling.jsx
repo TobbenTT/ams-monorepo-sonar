@@ -1503,20 +1503,41 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                 "Reprogramar vencidas". Shift se infiere del horario;
                 minería trabaja 24/7; reprogramación nace en ejecución, no acá. */}
             <button onClick={async () => {
-                // Step 2 of 2-step flow: open styled confirmation modal
+                // Jorge 2026-05-14: "Reservar Semana" → "Congelar Programa".
+                // Si la vista es 1 semana, congela esa semana; si es 2/3/4
+                // semanas, pregunta cuál congelar (S1 default).
+                let freezeWeeks = 1;
+                if (viewRange > 1) {
+                  const opts = Array.from({ length: viewRange }, (_, i) => `S${i+1}`).join(', ');
+                  const ans = window.prompt(
+                    `Vas a congelar el programa. ¿Cuántas semanas congelar a partir de la actual?\n` +
+                    `Opciones: ${opts}\n\n` +
+                    `Las semanas posteriores quedan tentativas hasta que las congeles. ` +
+                    `Escribe un número del 1 al ${viewRange}:`,
+                    '1',
+                  );
+                  if (!ans) return; // cancelado
+                  const n = parseInt(ans, 10);
+                  if (!Number.isInteger(n) || n < 1 || n > viewRange) {
+                    toast.error(`Valor inválido. Debe ser entre 1 y ${viewRange}`);
+                    return;
+                  }
+                  freezeWeeks = n;
+                }
                 const weekMon = weekStart;
-                const weekSunStr = toDateStr(addDays(weekMon, 6));
+                const lastDay = addDays(weekMon, freezeWeeks * 7 - 1);
+                const lastDayStr = toDateStr(lastDay);
                 const weekMonStr = toDateStr(weekMon);
-                const inWeek = (wo) => {
+                const inRange = (wo) => {
                   const s = wo.planned_start ? toDateStr(new Date(wo.planned_start)) : null;
-                  return s && s >= weekMonStr && s <= weekSunStr;
+                  return s && s >= weekMonStr && s <= lastDayStr;
                 };
-                const drafts = scheduledWOs.filter(wo => wo.status === 'EN_PROGRAMACION' && inWeek(wo));
-                const alreadyReserved = scheduledWOs.filter(wo => wo.status === 'PROGRAMADO' && inWeek(wo)).length;
+                const drafts = scheduledWOs.filter(wo => wo.status === 'EN_PROGRAMACION' && inRange(wo));
+                const alreadyReserved = scheduledWOs.filter(wo => wo.status === 'PROGRAMADO' && inRange(wo)).length;
                 if (drafts.length === 0) {
                   toast.info(alreadyReserved > 0
-                    ? `✓ Semana ya reservada · ${alreadyReserved} OTs en PROGRAMADO`
-                    : 'No hay OTs en esta semana para reservar');
+                    ? `✓ Programa ya congelado · ${alreadyReserved} OTs en PROGRAMADO`
+                    : 'No hay OTs en este horizonte para congelar');
                   return;
                 }
                 // B3-7 Jorge 2026-04-27: bloqueo duro >100% al reservar la semana.
@@ -1544,16 +1565,16 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                   const list = overloaded.slice(0, 3).map(o => `${o.name} (${o.h}h)`).join(', ');
                   const more = overloaded.length > 3 ? ` y ${overloaded.length - 3} más` : '';
                   toast.error(
-                    `⛔ No se puede reservar: ${overloaded.length} técnico(s) sobre capacidad ${Math.round(HOURS_PER_WEEK)}h — ${list}${more}. Saca tareas o redistribuí antes.`,
+                    `⛔ No se puede congelar: ${overloaded.length} técnico(s) sobre capacidad ${Math.round(HOURS_PER_WEEK)}h — ${list}${more}. Saca tareas o redistribuí antes.`,
                     9000
                   );
                   return;
                 }
-                setReserveConfirm({ drafts, alreadyReserved });
+                setReserveConfirm({ drafts, alreadyReserved, freezeWeeks });
               }}
               className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"
-              title="Bloquea las OTs programadas esta semana como PROGRAMADO y reserva sus HH">
-              <Lock size={14} /> Reservar Semana
+              title="Congela el programa: marca como PROGRAMADO (inamovible) las OTs del horizonte elegido">
+              <Lock size={14} /> Congelar Programa
             </button>
             {canPublish && (
               <button onClick={onPublish} disabled={publishing}
@@ -2373,7 +2394,7 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
               <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Lock size={24} className="text-emerald-600" />
               </div>
-              <h3 className="text-lg font-bold text-foreground">Reservar Semana</h3>
+              <h3 className="text-lg font-bold text-foreground">Congelar Programa{reserveConfirm.freezeWeeks > 1 ? ` (${reserveConfirm.freezeWeeks} semanas)` : ''}</h3>
               <p className="text-sm text-muted-foreground mt-1">{weekLabel}</p>
             </div>
 

@@ -200,8 +200,15 @@ class PlantCreate(BaseModel):
 
 
 class NodeCreate(BaseModel):
-    """Passed to hierarchy_service.create_node — allows extra fields."""
+    """Passed to hierarchy_service.create_node — allows extra fields.
+    Bug 2026-05-14: requiere node_type y name, sino crash en BD."""
     model_config = ConfigDict(extra="allow")
+    node_type: str
+    name: str
+    plant_id: str
+    code: str | None = None
+    parent_node_id: str | None = None
+    level: int = 1
 
 
 class VendorBuildRequest(BaseModel):

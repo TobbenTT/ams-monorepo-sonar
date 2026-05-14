@@ -80,7 +80,10 @@ def client(db_session):
 
     app.dependency_overrides[get_db] = _override_get_db
     app.dependency_overrides[get_current_user] = _override_get_current_user
-    with TestClient(app) as c:
+    # raise_server_exceptions=False: el TestClient devuelve 500 en vez de
+    # re-lanzar la excepción. Permite que smoke tests verifiquen status
+    # code en vez de crashear con la traceback original.
+    with TestClient(app, raise_server_exceptions=False) as c:
         yield c
     app.dependency_overrides.clear()
 

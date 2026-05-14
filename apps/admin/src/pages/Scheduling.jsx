@@ -18,7 +18,8 @@ import {
   Calendar, Clock, Users, CheckCircle, Circle, Play, Loader2,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Inbox, Camera, Sparkles, Send, X,
   FileText, Wrench, AlertTriangle, Filter, Eye, BarChart3,
-  Package, Upload, Lock, ArrowRight, ArrowUpRight, Search, GripVertical, Trash2, CheckCircle2, Plus, RotateCcw
+  Package, Upload, Lock, ArrowRight, ArrowUpRight, Search, GripVertical, Trash2, CheckCircle2, Plus, RotateCcw,
+  List
 } from 'lucide-react';
 
 const TYPE_META = {
@@ -1053,7 +1054,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
         }
         return Math.round(hh);
       });
-      return { ...g, techIds: [...g.techIds], nominalPerDay: Math.max(1, Math.round(nominalPerDay)), perDay };
+      // Jorge 2026-05-14: exponer dotación día/noche al UI para que el
+      // programador vea el split — minería tiene 10 mec de día y 2 de noche
+      // y eso debe ser visible.
+      const dayCapHH = Math.round(dayTechs * CAP.effectiveHours * (CAP.schedulingPct / 100));
+      const nightCapHH = Math.round(nightTechs * CAP.effectiveHours * (CAP.schedulingPct / 100));
+      return { ...g, techIds: [...g.techIds], nominalPerDay: Math.max(1, Math.round(nominalPerDay)), perDay, dayTechs, nightTechs, dayCapHH, nightCapHH };
     }).sort((a, b) => b.count - a.count);
   }, [technicians, grid, days, CAP, PROGRAMMABLE_HH_PER_DAY]);
 
@@ -1393,7 +1399,15 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${accent}`}>{wc.key.slice(0,4)}</span>
                       <div className="leading-tight min-w-0">
                         <div className="text-[11.5px] font-semibold text-foreground truncate">{label}</div>
-                        <div className="text-[10px] text-muted-foreground">{wc.count} techs · nom {wc.nominalPerDay} HH/d</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {wc.count} techs · nom {wc.nominalPerDay} HH/d
+                          {(wc.dayTechs > 0 || wc.nightTechs > 0) && (
+                            <span className="ml-1 inline-flex items-center gap-1 text-[9.5px]" title="Día / Noche (dotación + HH programables)">
+                              <span className="text-amber-600">☀️{wc.dayTechs}·{wc.dayCapHH}h</span>
+                              <span className="text-indigo-600">🌙{wc.nightTechs}·{wc.nightCapHH}h</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {wc.perDay.map((hh, i) => {
@@ -5827,7 +5841,11 @@ export default function Scheduling() {
     // SF-643 — vista cronológica con eje Y horarios 00-24h
     { id: 'timeline', icon: Clock, label: 'Cronológico' },
     { id: 'gantt', icon: BarChart3, label: t('scheduling.ganttView') },
-    { id: 'masschange', icon: Wrench, label: 'Mass Change' },
+    // Jorge 2026-05-14: "Mass Change" → "Lista OTs". Es la vista tabla
+    // que Jorge pidió: ver listado completo, cambiar estatus inline (per fila
+    // o bulk), filtrar, buscar. Funcionalidad ya existía, sólo el label
+    // confundía al ser industria-jargon.
+    { id: 'masschange', icon: List, label: 'Lista OTs' },
     { id: 'hh', icon: Users, label: t('scheduling.hhBalance') },
     { id: 'materials', icon: Package, label: t('scheduling.materials') },
     { id: 'equipment', icon: Wrench, label: 'Equipos de Apoyo' },

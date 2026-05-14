@@ -2723,6 +2723,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <div className="text-3xl font-black">{d.s}</div>
                       </div>;
                     })()}
+                    {/* SF-680 (Jorge SP7-VSC #15): "What Happened" (description del WR)
+                        debe aparecer ANTES del WO Title. El supervisor lee primero
+                        QUÉ pasó, después el título de la OT que se va a planificar. */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 uppercase">What Happened</label>
+                      <p className="text-sm text-gray-800 mt-1 bg-gray-50 rounded-lg p-3">{wo.description||wo.failure_description||"No description"}</p>
+                    </div>
                     {/* WO Title (Título de Cabecera) — from AI main_action */}
                     {wo.wo_title && (
                       <div>
@@ -2730,10 +2737,6 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         <p className="text-base font-bold text-gray-900 mt-1">{wo.wo_title}</p>
                       </div>
                     )}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 uppercase">Description</label>
-                      <p className="text-sm text-gray-800 mt-1 bg-gray-50 rounded-lg p-3">{wo.description||wo.failure_description||"No description"}</p>
-                    </div>
                     {/* Jorge 2026-04-24 (obs doc): 6 tarjetas Plan/Actual × HH/Duración/Costo */}
                     <div className="grid grid-cols-3 gap-3">
                       {(() => {

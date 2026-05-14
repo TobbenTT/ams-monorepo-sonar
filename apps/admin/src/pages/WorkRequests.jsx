@@ -1316,10 +1316,11 @@ ${materials.length ? `<div class="section">
                 </button>
                 <button
                   onClick={() => onCancel(item.id)}
+                  title="Close (cancel) this Notification — does not affect any Work Order"
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
-                  Cancelar
+                  Close Notification
                 </button>
               </>
             )}
@@ -1367,10 +1368,11 @@ ${materials.length ? `<div class="section">
                 </button>
                 <button
                   onClick={() => onCancel(item.id)}
+                  title="Close (cancel) this Notification — does not affect any Work Order"
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
                 >
                   <XCircle size={16} />
-                  Cancelar
+                  Close Notification
                 </button>
               </>
             )}
@@ -1379,10 +1381,11 @@ ${materials.length ? `<div class="section">
             {!isPending && !isValidated && !['CERRADO', 'CLOSED', 'COMPLETED', 'CANCELADO', 'CANCELLED', 'RECHAZADO', 'REJECTED'].includes(item.status) && (
               <button
                 onClick={() => onCancel(item.id)}
+                title="Close (cancel) this Notification — does not affect any Work Order"
                 className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 text-sm font-semibold hover:bg-orange-100 transition-colors"
               >
                 <XCircle size={16} />
-                Cancelar
+                Close Notification
               </button>
             )}
             {/* Start Work button removed per client feedback */}

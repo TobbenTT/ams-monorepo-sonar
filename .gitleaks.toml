@@ -1,0 +1,21 @@
+# Gitleaks config — extiende defaults con allowlist para falsos positivos
+# conocidos del repo. SF-698.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist global de paths/patrones con secretos de demo o sandbox"
+paths = [
+  '''(^|/)tests?/''',
+  '''(^|/)docs?/''',
+  '''(^|/)scripts/seed_''',
+  '''(^|/)sap_mock/''',
+  '''\.env\.example$''',
+  '''package-lock\.json$''',
+]
+regexes = [
+  # Sandbox APIKey de SAP API Business Hub (publica, no es secreto productivo)
+  '''hB9CpZrjSd3odwiAT7jseMqGSzVpFG7A''',
+  # JWT placeholder de CI
+  '''ci_jwt_key_at_least_32_chars_long_for_ci_runs_only''',
+]

@@ -749,6 +749,37 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
     }
   };
 
+  // SF-728 (David 2026-05-14): heurística para identificar el "equipo principal"
+  // de un SYSTEM/SUBSYSTEM cuando tiene varios hijos. Antes con N equipos hijos
+  // el campo Equipo/TAG quedaba vacío y el usuario tenía que adivinar. Ahora:
+  //   - Tipos principales (Molino, Bomba, Motor, Cinta, Trafo, Compresor) +100
+  //   - Tipos auxiliares (Tolva, Cajón, Gabinete, CCTV, PLC, etc.) -50
+  //   - Coincidencia de palabras con nombre del SYSTEM +20 por palabra
+  // Solo auto-pickea si el top tiene margen claro (≥1.5x sobre el 2do).
+  const pickPrincipalEquipment = (equipList, systemName) => {
+    if (!equipList?.length) return null;
+    if (equipList.length === 1) return equipList[0];
+    const PRINCIPAL = new Set(['MI', 'BC', 'MC', 'CV', 'TR', 'CO', 'EX', 'CH', 'HA']);
+    const AUX = new Set(['BN', 'BX', 'CP', 'CCTV', 'PLC', 'SE', 'IL', 'VV', 'PI']);
+    const sysWords = (systemName || '').toUpperCase().split(/\s+/).filter(w => w.length >= 3);
+    const scored = equipList.map(e => {
+      const tag = (e.tag || e.code || '').toUpperCase();
+      const name = (e.name || '').toUpperCase();
+      const m = tag.match(/\d{3,5}([A-Z]+)\d/);
+      const type = m ? m[1] : '';
+      let score = 0;
+      if (PRINCIPAL.has(type)) score += 100;
+      else if (AUX.has(type)) score -= 50;
+      sysWords.forEach(kw => { if (name.includes(kw)) score += 20; });
+      return { e, score };
+    }).sort((a, b) => b.score - a.score);
+    // Auto-pick si el top tiene score positivo y margen claro
+    if (scored[0].score >= 100 && (scored.length === 1 || scored[0].score >= scored[1].score * 1.5)) {
+      return scored[0].e;
+    }
+    return null;
+  };
+
   const selectLocation = (node) => {
     setSelectedLoc(node);
     setF('technicalLocation', node.name || '');
@@ -769,10 +800,19 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
           // SF-636 — relación 1:1 (TL con un único equipo) → autollenar Tag.
           selectEquip(equipList[0]);
         } else if (equipList.length > 0) {
-          // SF-636 — relación 1:N → mostrar selector de equipos.
-          setEquipResults(equipList);
-          setEquipFromLocation(true);
-          setShowEquipSearch(true);
+          // SF-728 (David 2026-05-14): antes de mostrar la lista, intentar
+          // auto-pick del equipo principal por heurística. Si no hay un
+          // claro ganador, sí mostrar la lista para que el user elija.
+          const principal = pickPrincipalEquipment(equipList, node.name);
+          if (principal) {
+            selectEquip(principal);
+            setEquipResults(equipList);
+            setEquipFromLocation(true);  // habilita cambio rápido si quiere otro
+          } else {
+            setEquipResults(equipList);
+            setEquipFromLocation(true);
+            setShowEquipSearch(true);
+          }
         } else if (children.length > 0) {
           // Recursively search up to 3 levels deep for equipment
           const childIds = children.map(c => c.node_id);
@@ -783,9 +823,16 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
               // SF-636 — 1:1 a 2 niveles
               selectEquip(equips2[0]);
             } else if (equips2.length > 0) {
-              setEquipResults(equips2);
-              setEquipFromLocation(true);
-              setShowEquipSearch(true);
+              const principal2 = pickPrincipalEquipment(equips2, node.name);
+              if (principal2) {
+                selectEquip(principal2);
+                setEquipResults(equips2);
+                setEquipFromLocation(true);
+              } else {
+                setEquipResults(equips2);
+                setEquipFromLocation(true);
+                setShowEquipSearch(true);
+              }
             } else if (allLevel2.length > 0) {
               // Go one more level deep (level 3)
               const level2Ids = allLevel2.map(c => c.node_id);
@@ -796,9 +843,16 @@ export default function FailureCapture({ onNavigateTab, onRefreshCounts, isActiv
                   // SF-636 — 1:1 a 3 niveles
                   selectEquip(equips3[0]);
                 } else if (equips3.length > 0) {
-                  setEquipResults(equips3);
-                  setEquipFromLocation(true);
-                  setShowEquipSearch(true);
+                  const principal3 = pickPrincipalEquipment(equips3, node.name);
+                  if (principal3) {
+                    selectEquip(principal3);
+                    setEquipResults(equips3);
+                    setEquipFromLocation(true);
+                  } else {
+                    setEquipResults(equips3);
+                    setEquipFromLocation(true);
+                    setShowEquipSearch(true);
+                  }
                 }
               });
             }

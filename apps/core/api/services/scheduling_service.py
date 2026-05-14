@@ -722,13 +722,45 @@ def get_gantt_managed(db: Session, plant_id: str, weeks: int = 2) -> list[dict]:
         elif wo.labour_summary and isinstance(wo.labour_summary, dict):
             specialties = [s.get("name", "") for s in wo.labour_summary.get("specialties", []) if isinstance(s, dict)]
 
+        # Jorge G (transcript 2026-05-14): color por IMPACTO, no por prioridad.
+        # Impacto se deriva de: criticidad equipo + prioridad OT + horas estimadas.
+        # CRITICO (rojo): AA + (P1/P2) o > 8h
+        # ALTO (naranja): A + (P1/P2/P3) o > 4h
+        # MEDIO (amarillo): B + cualquier prio
+        # BAJO (verde): C o prio P4
+        crit = "C"
+        try:
+            from api.database.models import HierarchyNodeModel
+            node = (
+                db.query(HierarchyNodeModel)
+                .filter(HierarchyNodeModel.tag == wo.equipment_tag)
+                .first()
+            )
+            if node and node.criticality:
+                crit = node.criticality
+        except Exception:
+            pass
+
+        prio = (wo.priority_code or "P4").upper()
+        hrs = float(wo.estimated_hours or 0)
+        if crit == "AA" and (prio in ("P1", "P2") or hrs > 8):
+            impact = "CRITICO"
+        elif crit in ("AA", "A") and (prio in ("P1", "P2", "P3") or hrs > 4):
+            impact = "ALTO"
+        elif crit == "B" or prio in ("P1", "P2"):
+            impact = "MEDIO"
+        else:
+            impact = "BAJO"
+
         rows.append({
             "wo_id": wo.wo_id,
             "wo_number": wo.wo_number,
             "equipment_tag": wo.equipment_tag,
+            "equipment_criticality": crit,
             "description": wo.description[:80] if wo.description else "",
             "wo_type": wo.wo_type,
             "priority_code": wo.priority_code,
+            "impact_level": impact,
             "status": wo.status,
             "estimated_hours": wo.estimated_hours,
             "actual_hours": wo.actual_hours,
@@ -742,7 +774,8 @@ def get_gantt_managed(db: Session, plant_id: str, weeks: int = 2) -> list[dict]:
             "materials_ready": _wo_materials_ready(wo),
         })
 
-    return sorted(rows, key=lambda r: (r["planned_start"] or "", r["priority_code"]))
+    # Jorge G: default sort por fecha (es un calendario).
+    return sorted(rows, key=lambda r: (r["planned_start"] or "",))
 
 
 # ── Internal helpers ─────────────────────────────────────────────────

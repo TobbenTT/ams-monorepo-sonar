@@ -553,6 +553,11 @@ export const getGantt = (id) => get(`/scheduling/programs/${id}/gantt`);
 // Jorge F (transcript 2026-05-14): disponibilidad por equipo/día/semana
 export const getEquipmentAvailability = (plantId, weekStart, weeks = 1) =>
   get('/scheduling/availability', { plant_id: plantId, week_start: weekStart, weeks });
+// Jorge G: carta Gantt export Excel (getGanttManaged ya existe abajo)
+export const getGanttExportUrl = (plantId, weeks = 2) => {
+  const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+  return `${base}/scheduling/gantt/export.xlsx?plant_id=${encodeURIComponent(plantId)}&weeks=${weeks}`;
+};
 // Phase 3 — Scheduling improvements
 export const publishProgram = (id) => put(`/scheduling/programs/${id}/publish`);
 export const materialCheck = (id) => get(`/scheduling/programs/${id}/material-check`);

@@ -556,6 +556,125 @@ def update_worker_availability(
 
 # ── Phase 3: Gantt from managed WOs ─────────────────────────────────
 
+@router.get("/gantt/export.xlsx")
+def export_gantt_xlsx(
+    plant_id: str = "OCP-JFC1",
+    weeks: int = 2,
+    db: Session = Depends(get_db),
+):
+    """Jorge G (transcript 2026-05-14): export carta Gantt a Excel.
+
+    Devuelve un archivo .xlsx con una hoja por semana mostrando:
+    - Columna izquierda: equipos
+    - Columnas: cada día/turno
+    - Celdas coloreadas por impacto (CRITICO=rojo, ALTO=naranja, etc.)
+    - Hoja resumen con disponibilidad por equipo.
+    """
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Alignment, Font
+    from fastapi.responses import StreamingResponse
+
+    rows = scheduling_service.get_gantt_managed(db, plant_id, weeks)
+    availability = get_equipment_availability(
+        plant_id=plant_id, week_start=None, weeks=weeks, db=db,
+    )
+
+    wb = Workbook()
+
+    # ── Hoja 1: Carta Gantt (OT por OT) ─────────────────────────────
+    ws = wb.active
+    ws.title = "Carta Gantt"
+    headers = ["N° OT", "Equipo", "Criticidad", "Descripción", "Tipo",
+               "Prio", "Impacto", "Inicio plan", "Fin plan", "HH est.",
+               "Especialidad", "Técnicos", "Status"]
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="1B5E20")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    color_by_impact = {
+        "CRITICO": "EF4444",  # rojo
+        "ALTO": "F97316",     # naranja
+        "MEDIO": "EAB308",    # amarillo
+        "BAJO": "10B981",     # verde
+    }
+    for r in rows:
+        ws.append([
+            r.get("wo_number", ""),
+            r.get("equipment_tag", ""),
+            r.get("equipment_criticality", ""),
+            r.get("description", ""),
+            r.get("wo_type", ""),
+            r.get("priority_code", ""),
+            r.get("impact_level", ""),
+            r.get("planned_start", "")[:16] if r.get("planned_start") else "",
+            r.get("planned_end", "")[:16] if r.get("planned_end") else "",
+            r.get("estimated_hours", 0),
+            ", ".join(r.get("specialties", [])),
+            ", ".join([w.get("name", w.get("worker_id", "")) if isinstance(w, dict) else str(w)
+                       for w in (r.get("assigned_workers") or [])]),
+            r.get("status", ""),
+        ])
+        # Color cell "Impacto"
+        impact_cell = ws.cell(row=ws.max_row, column=7)
+        fill_color = color_by_impact.get(r.get("impact_level", "BAJO"), "10B981")
+        impact_cell.fill = PatternFill("solid", fgColor=fill_color)
+        impact_cell.font = Font(bold=True, color="FFFFFF")
+        impact_cell.alignment = Alignment(horizontal="center")
+
+    # Ajustar anchos
+    widths = [12, 18, 10, 35, 8, 6, 10, 18, 18, 8, 18, 25, 15]
+    from openpyxl.utils import get_column_letter
+    for i, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    # ── Hoja 2: Disponibilidad por equipo ───────────────────────────
+    ws2 = wb.create_sheet("Disponibilidad")
+    av_headers = ["Equipo", "Nombre", "Crit"] + availability["day_labels"] + ["Semana %", "Detenido (h)"]
+    ws2.append(av_headers)
+    for col in range(1, len(av_headers) + 1):
+        cell = ws2.cell(row=1, column=col)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="1B5E20")
+
+    for eq in availability["equipment"]:
+        row_vals = [eq["tag"], eq["name"], eq["criticality"]]
+        for d in eq["daily"]:
+            row_vals.append(d["available_pct"])
+        row_vals.append(eq["week_available_pct"])
+        row_vals.append(eq["total_downtime_h"])
+        ws2.append(row_vals)
+        # Color celdas % por umbral
+        for col_idx in range(4, 4 + len(eq["daily"]) + 1):
+            cell = ws2.cell(row=ws2.max_row, column=col_idx)
+            pct = cell.value
+            if isinstance(pct, (int, float)):
+                if pct >= 95:
+                    cell.fill = PatternFill("solid", fgColor="D1FAE5")
+                elif pct >= 90:
+                    cell.fill = PatternFill("solid", fgColor="FEF3C7")
+                else:
+                    cell.fill = PatternFill("solid", fgColor="FEE2E2")
+
+    widths2 = [14, 28, 6] + [10] * len(availability["day_labels"]) + [10, 12]
+    for i, w in enumerate(widths2, start=1):
+        ws2.column_dimensions[get_column_letter(i)].width = w
+
+    # Stream a memoria
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    filename = f"carta_gantt_{plant_id}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/gantt")
 def get_gantt_managed(
     plant_id: str = "OCP-JFC1",

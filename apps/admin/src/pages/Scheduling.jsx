@@ -8,6 +8,7 @@ import { useConfirm } from '../components/ConfirmDialog';
 import CancelWOModal from '../components/CancelWOModal';
 import SmartAssignModal from '../components/SmartAssignModal';
 import AvailabilityPanel from '../components/scheduling/AvailabilityPanel';
+import GanttPanel from '../components/scheduling/GanttPanel';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../api';
@@ -1511,6 +1512,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'availability' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
                 📊 Disponibilidad
               </button>
+              {/* Jorge G (transcript 2026-05-14): vista Carta Gantt visual
+                  con color por impacto + export Excel. */}
+              <button onClick={() => setViewBy('gantt')}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewBy === 'gantt' ? 'bg-emerald-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}>
+                📈 Carta Gantt
+              </button>
             </div>
             {/* Jorge 2026-05-14: unificar Week/2W/3W/Mes en UN dropdown
                 ("1 semana, 2, 3, 4") — más limpio, menos botones. */}
@@ -1649,6 +1656,11 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
           <AvailabilityPanel
             plantId={localStorage.getItem('selected_plant') || 'OCP-JFC1'}
             weekStart={toDateStr(weekStart)}
+            weeks={viewRange}
+          />
+        ) : viewBy === 'gantt' ? (
+          <GanttPanel
+            plantId={localStorage.getItem('selected_plant') || 'OCP-JFC1'}
             weeks={viewRange}
           />
         ) : viewBy === 'timeslot' ? (

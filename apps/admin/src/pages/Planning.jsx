@@ -2437,9 +2437,13 @@ export default function Planning({ onNavigateTab, viewMode, autoOpenWoId, onClea
                         className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors disabled:opacity-50">
                         <XCircle className="w-4 h-4" /> Reject
                       </button>
+                      {/* Jorge 2026-05-14: rename "Cancel" → "Close Notification" en etapa Planificación.
+                          El planificador no cancela OTs; este botón cancela la NOTIFICACIÓN (WR), y
+                          "Cancel" se confundía con cerrar el modal. */}
                       <button onClick={() => handleCancel(selectedWR)} disabled={!!actionLoading}
-                        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-300 transition-colors disabled:opacity-50">
-                        <Ban className="w-4 h-4" /> Cancel
+                        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-300 transition-colors disabled:opacity-50"
+                        title="Close (cancel) this Work Notification — does not affect any Work Order">
+                        <Ban className="w-4 h-4" /> Close Notification
                       </button>
                     </div>
                   </div>

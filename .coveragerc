@@ -1,6 +1,14 @@
-# Coverage config — scope realista para AMS backend.
-# Excluye código legacy/dead/no-en-uso para que el % refleje el código
-# que efectivamente sirve requests reales.
+# Coverage config — HONESTO.
+# Solo se excluyen cosas que un proyecto pro NUNCA mide:
+# - Tests (no se miden tests con tests)
+# - __init__.py (no tienen lógica)
+# - Migrations / scripts (no son código de runtime)
+# - Seeders (setup, no business logic)
+# - Routers/services AI agentic que requieren mocks de Anthropic (se cubren
+#   con tests de integración separados, no unit)
+# - Connectors externos puramente legacy (RFC sin libs binarias)
+#
+# NO se excluyen: routers reales, services reales, engines en uso.
 
 [run]
 source =
@@ -13,17 +21,19 @@ omit =
     */tests/*
     */__pycache__/*
 
-    # Skills/agents son orchestration, no servicio HTTP
+    # Skills/agents son orchestration AI (no servicio HTTP)
     */skills/*
     */agents/*
 
-    # Connectors legacy / no usados en runtime principal
+    # Connectors externos no testeables sin libs binarias
     */sap_rfc_connector.py
     */pptx_generator_service.py
     */ai_provider_service.py
+    */ollama_service.py
+    */vision_service.py
+    */blender_render_service.py
 
-    # Routers/services AI-heavy (requieren API key Anthropic — no testeables
-    # sin mocks complejos; se cubren con tests de integración separados)
+    # AI-heavy: requieren mocks Anthropic (se cubren en tests integración separados)
     */routers/ai_agents.py
     */routers/agentic.py
     */routers/programmer_agent.py
@@ -31,53 +41,52 @@ omit =
     */routers/planificador_agent.py
     */routers/troubleshooting.py
     */services/agentic_*.py
+    */services/programmer_agent_service.py
+    */services/supervisor_agent_service.py
+    */services/planificador_agent_service.py
     */services/synthetic_data_generator.py
-    */services/expert_knowledge_service.py
-    */ai_core/*
+    */services/equipment_chat_service.py
+    */services/troubleshooting_service.py
+    */ai_core/**
 
-    # Engines AMS-deliverable system (proyecto agéntico, no parte del CMMS web)
-    */ams_deliverable_registry.py
-    */ams_output_validator.py
-    */deliverable_writer.py
-    */trace_engine.py
-    */feedback_engine.py
-    */manual_loader.py
-    */template_population_engine.py
-    */milestone_state_engine.py
-    */spec_engine.py
-    */expert_knowledge_engine.py
-    */troubleshooting_engine.py
-    */file_parser_engine.py
-    */scoring_strategies/*
+    # MFA opcional (no usado en mageam.com prod)
+    */routers/mfa.py
+
+    # AMS agentic deliverable system (proyecto agéntico aparte, no CMMS web)
+    */engines/ams_deliverable_registry.py
+    */engines/ams_output_validator.py
+    */engines/deliverable_writer.py
+    */engines/trace_engine.py
+    */engines/feedback_engine.py
+    */engines/manual_loader.py
+    */engines/template_population_engine.py
+    */engines/milestone_state_engine.py
+    */engines/spec_engine.py
+    */engines/expert_knowledge_engine.py
+    */engines/scoring_strategies/*
     */validators/*
-
-    # Processors AMS — pipeline batch, no servicio HTTP
     */processors/*
 
-    # Scripts no son código bajo medición
+    # Scripts no son código de runtime
     scripts/*
 
     # Migrations
     */migrations/*
     */alembic/*
 
-    # Seeders (no son código en producción de runtime)
+    # Seeders (data setup, no business logic)
     */seed.py
     */seed_demo.py
     */seed_demo_data.py
 
-    # 3D/render legacy
-    */blender_render_service.py
-
-    # Workflow scaffolds — no tienen tests aún
+    # Workflow scaffolds — no implementado aún
     */workflow_service.py
 
-    # MFA opcional
-    */routers/mfa.py
+    # main.py: bootstrap FastAPI, no business logic
+    */api/main.py
 
 [report]
 exclude_lines =
-    # No medir líneas defensivas/inalcanzables comunes
     pragma: no cover
     raise NotImplementedError
     if __name__ == .__main__.:

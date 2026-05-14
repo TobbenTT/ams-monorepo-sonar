@@ -33,6 +33,10 @@ class ODataTransport(SAPTransport):
 
     def __init__(self):
         self.base_url = os.getenv("SAP_ODATA_BASE_URL", "").rstrip("/")
+        # Auth modes (en orden de preferencia):
+        # 1) API Business Hub Sandbox → solo APIKey header
+        # 2) S/4HANA Cloud productivo  → OAuth2 client_credentials
+        self.api_key = os.getenv("SAP_ODATA_API_KEY", "")
         self.client_id = os.getenv("SAP_ODATA_CLIENT_ID", "")
         self.client_secret = os.getenv("SAP_ODATA_CLIENT_SECRET", "")
         self.token_url = os.getenv(
@@ -44,7 +48,20 @@ class ODataTransport(SAPTransport):
         self._token_expires_at: float = 0
 
     def _configured(self) -> bool:
-        return all([self.base_url, self.client_id, self.client_secret])
+        if not self.base_url:
+            return False
+        # API Key mode (Business Hub sandbox) — más simple
+        if self.api_key:
+            return True
+        # OAuth2 mode (S/4HANA Cloud productivo)
+        return bool(self.client_id and self.client_secret)
+
+    def _auth_headers(self) -> dict:
+        """Headers de auth según modo configurado."""
+        if self.api_key:
+            return {"APIKey": self.api_key}
+        # OAuth2 mode → bearer token
+        return {"Authorization": f"Bearer {self._get_token()}"}
 
     def _get_token(self) -> str:
         """OAuth2 client_credentials con cache simple."""
@@ -98,20 +115,20 @@ class ODataTransport(SAPTransport):
 
     def send(self, payload: dict) -> SendResult:
         if not self._configured():
-            logger.warning("ODataTransport sin config (SAP_ODATA_BASE_URL/CLIENT_ID/SECRET) — fallback dry-run")
+            logger.warning("ODataTransport sin config (BASE_URL + APIKey o OAuth2) — fallback dry-run")
             from .dry_run import DryRunTransport
             return DryRunTransport().send(payload)
         try:
-            token = self._get_token()
+            auth = self._auth_headers()
         except Exception as e:
-            return SendResult(status=SendStatus.ERROR, error_message=f"OAuth2 token failed: {e}")
+            return SendResult(status=SendStatus.ERROR, error_message=f"Auth failed: {e}")
         try:
             odata_body = self._convert_order_payload(payload)
             with httpx.Client(timeout=self.timeout) as client:
                 r = client.post(
                     f"{self.base_url}/sap/opu/odata/sap/API_MAINTENANCEORDER/MaintenanceOrder",
                     headers={
-                        "Authorization": f"Bearer {token}",
+                        **auth,
                         "Content-Type": "application/json",
                         "Accept": "application/json",
                     },
@@ -139,7 +156,12 @@ class ODataTransport(SAPTransport):
         if not self._configured():
             return False
         try:
-            self._get_token()
-            return True
+            # GET sobre $metadata es la sonda estándar OData (sin side-effects).
+            with httpx.Client(timeout=5) as client:
+                r = client.get(
+                    f"{self.base_url}/sap/opu/odata/sap/API_MAINTENANCEORDER/$metadata",
+                    headers=self._auth_headers(),
+                )
+                return r.status_code < 400
         except Exception:
             return False

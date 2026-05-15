@@ -690,12 +690,10 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
   const [prioFilter, setPrioFilter] = useState({ P1: false, P2: false, P3: true, P4: true });
   // Jorge 2026-04-27 (reunión 18:06): el tablero del programador debe mostrar
   // SOLO OTs en estatus "en programación" — las planificadas todavía no son
-  // input válido. Toggle 'inSched' / 'planned' / 'all' para transicionar.
-  // QA #19 (2026-05-08): filtro fijo en 'inSched' — opciones planned/all removidas.
-  // setStatusFilter se mantiene como no-op para no romper otros lugares que lo
-  // llaman (ej. setStatusFilter('inSched') tras drag-drop en línea 1167).
-  const [statusFilter] = useState('inSched');
-  const setStatusFilter = () => {};
+  // input válido.
+  // SF-736 (Jorge Sprint 7): badge fijo "En programación" → contadores dinámicos
+  // tipo filtro. statusFilter = 'inSched' (default) | 'scheduled' | 'inExec'.
+  const [statusFilter, setStatusFilter] = useState('inSched');
   const [filterGroup, setFilterGroup] = useState('all');
   // Jorge 2026-05-14 (transcript 12:53): default por número OT descendente
   // (no por prioridad). Recientes/antiguas miden la fecha de cambio a
@@ -931,6 +929,12 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
     if (statusFilter === 'inSched') {
       const schedulable = new Set(['EN_PROGRAMACION', 'PLANIFICADO', 'LIBERADO', 'CREADO', 'REPROGRAMADO']);
       list = list.filter(wo => schedulable.has((wo.status || '').toUpperCase()));
+    } else if (statusFilter === 'scheduled') {
+      // SF-736: contador "Scheduled" muestra solo OTs PROGRAMADO (ya congeladas)
+      list = list.filter(wo => (wo.status || '').toUpperCase() === 'PROGRAMADO');
+    } else if (statusFilter === 'inExec') {
+      // SF-736: contador "In Execution" muestra OTs EN_EJECUCION
+      list = list.filter(wo => (wo.status || '').toUpperCase() === 'EN_EJECUCION');
     } else if (statusFilter === 'planned') {
       const planned = new Set(['PLANIFICADO', 'LIBERADO', 'CREADO']);
       list = list.filter(wo => planned.has((wo.status || '').toUpperCase()));
@@ -1203,15 +1207,37 @@ function WeeklyCalendarView({ technicians, releasedWOs, scheduledWOs, setRelease
                 todas
               </button>
             </div>
-            {/* QA #19 (2026-05-08): el programador solo trabaja con OTs en
-                "En programación". Las opciones "Planificadas" y "Todas" causaban
-                ruido y permitían operar sobre OTs aún no liberadas a programar.
-                Filtro fijo en EN_PROGRAMACION (badge informativo). */}
-            <div className="flex items-center gap-1 text-[10px] font-semibold">
+            {/* SF-736 (Jorge Sprint 7): contadores dinámicos tipo filtro
+                reemplazan el badge fijo. Programador puede alternar entre
+                "En Programación" (default backlog), "Programadas" (congeladas)
+                y "En Ejecución" para ver cada bandeja por separado. */}
+            <div className="flex items-center gap-1 text-[10px] font-semibold flex-wrap">
               <span className="text-muted-foreground mr-0.5">Estatus:</span>
-              <span className="px-2 py-0.5 rounded border bg-emerald-600 text-white border-emerald-700 shadow-sm">
-                En programación
-              </span>
+              {(() => {
+                const counts = {
+                  inSched: (releasedWOs || []).filter(w => ['EN_PROGRAMACION', 'PLANIFICADO', 'LIBERADO', 'CREADO', 'REPROGRAMADO'].includes((w.status || '').toUpperCase())).length,
+                  scheduled: (releasedWOs || []).filter(w => (w.status || '').toUpperCase() === 'PROGRAMADO').length,
+                  inExec: (releasedWOs || []).filter(w => (w.status || '').toUpperCase() === 'EN_EJECUCION').length,
+                };
+                const opts = [
+                  { id: 'inSched', label: 'En Programación', color: 'bg-emerald-600 text-white border-emerald-700' },
+                  { id: 'scheduled', label: 'Programadas', color: 'bg-indigo-600 text-white border-indigo-700' },
+                  { id: 'inExec', label: 'En Ejecución', color: 'bg-amber-600 text-white border-amber-700' },
+                ];
+                return opts.map(o => (
+                  <button key={o.id}
+                    onClick={() => setStatusFilter(o.id)}
+                    className={`px-2 py-0.5 rounded border transition-all flex items-center gap-1 ${
+                      statusFilter === o.id ? o.color + ' shadow-sm' : 'border-border text-muted-foreground hover:bg-muted'
+                    }`}
+                    title={`Mostrar OTs en estatus "${o.label}" (${counts[o.id]})`}>
+                    <span>{o.label}</span>
+                    <span className={`px-1 rounded text-[9px] ${statusFilter === o.id ? 'bg-white/20' : 'bg-muted-foreground/20'}`}>
+                      {counts[o.id]}
+                    </span>
+                  </button>
+                ));
+              })()}
             </div>
             {/* Group + Sort */}
             <div className="grid grid-cols-2 gap-1">

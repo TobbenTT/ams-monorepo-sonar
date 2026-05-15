@@ -810,6 +810,29 @@ class GapHandoverModel(Base):
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
+class MonthlyBudgetModel(Base):
+    """SF-747 — Budget anual de disponibilidad por equipo/mes.
+
+    Cargado en septiembre del año anterior (proyectado: mantenciones, tests
+    de falla, overhauls). Sirve como target para el Plan 12 Semanas: el
+    detalle del mes corriente se construye día×día, los meses futuros usan
+    este valor mensual como aproximación.
+    """
+    __tablename__ = "monthly_budget"
+
+    budget_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    plant_id: Mapped[str] = mapped_column(String(50))
+    year: Mapped[int] = mapped_column(Integer)
+    month: Mapped[int] = mapped_column(Integer)  # 1..12
+    equipment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)  # null = global planta
+    equipment_tag: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    target_availability_pct: Mapped[float] = mapped_column(Float, default=95.0)
+    planned_downtime_h: Mapped[float] = mapped_column(Float, default=0.0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+
 class TrainingHourRecordModel(Base):
     """SF-692 — Tracking de horas de capacitación de mantenimiento.
 

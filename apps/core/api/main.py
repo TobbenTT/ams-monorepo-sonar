@@ -68,6 +68,7 @@ from api.routers import (
     analytics_dashboards,
     sprint6_scaffolds,
     process_gaps,
+    plan_12_weeks,
     reports_export,
     programmer_agent,
     supervisor_agent,
@@ -299,6 +300,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics_dashboards.router, prefix=prefix)
     app.include_router(sprint6_scaffolds.router, prefix=prefix)
     app.include_router(process_gaps.router, prefix=prefix)
+    app.include_router(plan_12_weeks.router, prefix=prefix)
     app.include_router(reports_export.router, prefix=prefix)
     app.include_router(programmer_agent.router, prefix=prefix)
     app.include_router(supervisor_agent.router, prefix=prefix)

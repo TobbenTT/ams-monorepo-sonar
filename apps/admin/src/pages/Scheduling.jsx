@@ -9,6 +9,7 @@ import CancelWOModal from '../components/CancelWOModal';
 import SmartAssignModal from '../components/SmartAssignModal';
 import AvailabilityPanel from '../components/scheduling/AvailabilityPanel';
 import GanttPanel from '../components/scheduling/GanttPanel';
+import Plan12WeeksPanel from '../components/scheduling/Plan12WeeksPanel';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../api';
@@ -5949,6 +5950,8 @@ export default function Scheduling() {
     // o bulk), filtrar, buscar. Funcionalidad ya existía, sólo el label
     // confundía al ser industria-jargon.
     { id: 'masschange', icon: List, label: 'Lista OTs' },
+    // SF-746 + SF-747 (Jorge Sprint 7): Plan trimestral del planificador.
+    { id: 'plan12w', icon: Calendar, label: 'Plan 12 Sem' },
     { id: 'hh', icon: Users, label: t('scheduling.hhBalance') },
     { id: 'materials', icon: Package, label: t('scheduling.materials') },
     { id: 'equipment', icon: Wrench, label: 'Equipos de Apoyo' },
@@ -6095,6 +6098,9 @@ export default function Scheduling() {
         <MassChangeTab scheduledWOs={scheduledWOs} releasedWOs={releasedWOs} t={t} plantId={plant}
           onOpenDetail={setDetailOrder}
           onRefresh={() => { loadCalendarData(); loadGantt(); }} />
+      )}
+      {tab === 'plan12w' && (
+        <Plan12WeeksPanel plantId={plant} />
       )}
       {tab === 'hh' && (
         <HHBalanceTab programId={activeProgramId} t={t} plantId={plant} />

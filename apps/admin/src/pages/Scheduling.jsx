@@ -4111,6 +4111,21 @@ function MaterialsTab({ programId, t, plantId }) {
     });
   };
 
+  // SF-736 bugfix 2026-05-15: el useMemo de availableWeeksMat estaba después
+  // de los early returns (loading / !data), violando Rules of Hooks. Causaba
+  // React error #310 al cambiar entre tabs. Mover ANTES del return.
+  const allPackages = data?.packages || [];
+  const matPackages = allPackages.filter(p => !p.status || PROG_VISIBLE_STATUS.includes(p.status));
+  const availableWeeksMat = useMemo(() => {
+    const wks = new Set();
+    matPackages.forEach(p => { const w = isoWeekMat(p.planned_start); if (w) wks.add(w); });
+    return [...wks].sort((a,b)=>a-b);
+  }, [matPackages]);
+  let filtered = matPackages;
+  if (filterStatus !== 'all') filtered = filtered.filter(p => p.status === filterStatus);
+  if (filterWeek !== 'all') filtered = filtered.filter(p => isoWeekMat(p.planned_start) === Number(filterWeek));
+
+  // Early returns AFTER hooks (Rules of Hooks compliant)
   if (loading) return <div className="py-10 flex justify-center"><LoadingSpinner /></div>;
   if (!data) return (
     <div className="bg-card border border-border rounded-xl p-12 text-center">
@@ -4121,18 +4136,6 @@ function MaterialsTab({ programId, t, plantId }) {
 
   const byStatus = data.by_status || {};
   const allOk = data.pending === 0 && data.total_materials > 0;
-  const allPackages = data.packages || [];
-  // Jorge 2026-05-14: ocultar OTs cuyo material no esté Completado/En Area/Entregado.
-  // Pendiente y Parcial siguen siendo legítimos pero en Plan, no en Scheduling.
-  const matPackages = allPackages.filter(p => !p.status || PROG_VISIBLE_STATUS.includes(p.status));
-  const availableWeeksMat = useMemo(() => {
-    const wks = new Set();
-    matPackages.forEach(p => { const w = isoWeekMat(p.planned_start); if (w) wks.add(w); });
-    return [...wks].sort((a,b)=>a-b);
-  }, [matPackages]);
-  let filtered = matPackages;
-  if (filterStatus !== 'all') filtered = filtered.filter(p => p.status === filterStatus);
-  if (filterWeek !== 'all') filtered = filtered.filter(p => isoWeekMat(p.planned_start) === Number(filterWeek));
 
   return (
     <div className="space-y-5">

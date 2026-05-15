@@ -586,6 +586,11 @@ class ManagedWorkOrderModel(Base):
     closed_by_signature: Mapped[str | None] = mapped_column(String(120), nullable=True)
     closed_by_pin_hash: Mapped[str | None] = mapped_column(String(16), nullable=True)
     closure_notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # SF-690 — Checklist formal de devolución de herramientas y residuos al
+    # cerrar la OT. Estructura: [{item, checked, notes}].
+    # Items default: ["tools_returned", "waste_disposed", "area_cleaned",
+    #                 "lockout_removed", "safety_briefing_signed"]
+    closing_checklist: Mapped[list | None] = mapped_column(JSON, nullable=True)
     # SF-500 — audio comments al cerrar y firmar OT (data URL o ruta).
     closure_audio_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Jorge 2026-04-21 — RCM feedback post-cierre (lecciones aprendidas).
@@ -747,6 +752,82 @@ class SupportEquipmentModel(Base):
     is_rented: Mapped[bool] = mapped_column(Boolean, default=False)
     out_of_service_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
     out_of_service_until: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+
+# ── Process Gap Models (SF-685..SF-719, Sprint 7 Jorge QA 2026-05-08) ─
+# Modelos para los gaps de proceso identificados en la jornada QA:
+# additional work, budget approval, handover, training, etc.
+
+class AdditionalWorkModel(Base):
+    """SF-685/689/717/718 — Trabajo adicional detectado durante ejecución.
+
+    Caso: técnico abre OT y descubre que el daño es mayor (ej. cambio rodamiento
+    se vuelve cambio completo de eje). En vez de cerrar la OT y crear otra,
+    registra el "trabajo adicional" con descripción + presupuesto estimado.
+    Workflow: pending → feasibility_validated → budget_approved → executed.
+    """
+    __tablename__ = "additional_work"
+
+    aw_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    parent_wo_id: Mapped[str] = mapped_column(String(50))  # OT que descubrió el trabajo
+    plant_id: Mapped[str] = mapped_column(String(50))
+    equipment_tag: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    description: Mapped[str] = mapped_column(Text)
+    estimated_hours: Mapped[float] = mapped_column(Float, default=0.0)
+    estimated_cost: Mapped[float] = mapped_column(Float, default=0.0)
+    # pending | feasibility_validated | budget_approved | rejected | executed
+    status: Mapped[str] = mapped_column(String(30), default="pending")
+    feasibility_check: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # SF-718
+    budget_approved_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    budget_approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class GapHandoverModel(Base):
+    """SF-687/719 — Entrega formal de equipo a operaciones post-mantenimiento.
+
+    Registra la transferencia del equipo desde mantenedor → supervisor producción.
+    Incluye estado del equipo, repuestos sobrantes, firma y observaciones.
+
+    Distinto al EquipmentHandoverModel legacy (línea ~1588): este modela el
+    workflow formal del gap SF-687/SF-719 (pending → accepted/rejected).
+    """
+    __tablename__ = "gap_handover"
+
+    handover_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    wo_id: Mapped[str] = mapped_column(String(50))
+    equipment_tag: Mapped[str] = mapped_column(String(100))
+    handed_over_by: Mapped[str] = mapped_column(String(50))  # mantenedor
+    received_by: Mapped[str | None] = mapped_column(String(50), nullable=True)  # supervisor ops
+    handover_status: Mapped[str] = mapped_column(String(30), default="pending")  # pending | accepted | rejected
+    equipment_condition: Mapped[str] = mapped_column(String(30), default="operational")  # operational | with_observations | rejected
+    observations: Mapped[str | None] = mapped_column(Text, nullable=True)
+    remaining_parts: Mapped[list | None] = mapped_column(JSON, nullable=True)  # repuestos no usados a devolver
+    signature_text: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class TrainingHourRecordModel(Base):
+    """SF-692 — Tracking de horas de capacitación de mantenimiento.
+
+    Cada técnico acumula horas de capacitación (formal/informal). Permite
+    calcular KPI horas-capacitación/persona/mes y ver gaps de skill.
+    """
+    __tablename__ = "training_hour_record"
+
+    record_id: Mapped[str] = mapped_column(String(50), primary_key=True, default=_uuid)
+    worker_id: Mapped[str] = mapped_column(String(50))
+    plant_id: Mapped[str] = mapped_column(String(50))
+    training_date: Mapped[date] = mapped_column(Date)
+    hours: Mapped[float] = mapped_column(Float)
+    training_type: Mapped[str] = mapped_column(String(50))  # safety | technical | refresh | certification
+    topic: Mapped[str] = mapped_column(String(200))
+    provider: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    certificate_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
 # ── Shutdown Calendar ────────────────────────────────────────────────

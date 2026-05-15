@@ -1919,7 +1919,9 @@ export default {
             admin: 'Admin',
             manager: 'Manager',
             planner: 'Planificador',
+            supervisor: 'Supervisor',
             tecnico: 'Técnico',
+            technician: 'Técnico',
             unknown: 'Desconocido',
         },
         profileDialog: {

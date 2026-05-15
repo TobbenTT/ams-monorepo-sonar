@@ -2004,7 +2004,9 @@ Program adherence has improved from 78% (Sep-25) to 93.1% (Feb-26), reflecting t
             admin: 'Admin',
             manager: 'Manager',
             planner: 'Planner',
+            supervisor: 'Supervisor',
             tecnico: 'Technician',
+            technician: 'Technician',
             unknown: 'Unknown',
         },
         profileDialog: {

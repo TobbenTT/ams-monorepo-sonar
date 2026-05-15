@@ -1905,7 +1905,9 @@ export default {
             admin: 'مدير',
             manager: 'مدير صيانة',
             planner: 'مخطط',
+            supervisor: 'مشرف',
             tecnico: 'فني',
+            technician: 'فني',
             unknown: 'غير معروف',
         },
         profileDialog: {

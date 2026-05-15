@@ -10,7 +10,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Loader2, Download, AlertTriangle, BarChart3 } from 'lucide-react';
-import { getGanttManaged, getGanttExportUrl } from '../../api';
+import { getGanttManaged, getGanttExportUrl, getGanttPdfUrl } from '../../api';
 
 const _normalize = (plantId, weeks) => getGanttManaged({ plant_id: plantId, weeks });
 
@@ -103,6 +103,15 @@ export default function GanttPanel({ plantId = 'OCP-JFC1', weeks = 2 }) {
             title="Descargar carta Gantt + disponibilidad en Excel"
           >
             <Download size={14} /> Excel
+          </a>
+          {/* SF-745 (Jorge Sprint 7): Export PDF */}
+          <a
+            href={getGanttPdfUrl(plantId, weeks)}
+            download
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-xs font-medium transition-colors"
+            title="Descargar carta Gantt en PDF (horizontal A4)"
+          >
+            <Download size={14} /> PDF
           </a>
         </div>
       </div>

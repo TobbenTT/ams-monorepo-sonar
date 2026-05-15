@@ -558,6 +558,11 @@ export const getGanttExportUrl = (plantId, weeks = 2) => {
   const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
   return `${base}/scheduling/gantt/export.xlsx?plant_id=${encodeURIComponent(plantId)}&weeks=${weeks}`;
 };
+// SF-745 (Jorge Sprint 7): carta Gantt export PDF
+export const getGanttPdfUrl = (plantId, weeks = 2) => {
+  const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+  return `${base}/scheduling/gantt/export.pdf?plant_id=${encodeURIComponent(plantId)}&weeks=${weeks}`;
+};
 // Phase 3 — Scheduling improvements
 export const publishProgram = (id) => put(`/scheduling/programs/${id}/publish`);
 export const materialCheck = (id) => get(`/scheduling/programs/${id}/material-check`);

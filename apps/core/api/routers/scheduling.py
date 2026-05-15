@@ -678,6 +678,111 @@ def export_gantt_xlsx(
     )
 
 
+@router.get("/gantt/export.pdf")
+def export_gantt_pdf(
+    plant_id: str = "OCP-JFC1",
+    weeks: int = 2,
+    db: Session = Depends(get_db),
+):
+    """SF-745 (Jorge Sprint 7): export Carta Gantt a PDF.
+
+    Tabla horizontal con OTs ordenadas por fecha, colores por impacto.
+    Más liviano que el Excel — pensado para imprimir y entregar al
+    supervisor de turno.
+    """
+    import io
+    from datetime import datetime as _dt
+    from reportlab.lib import colors as rl_colors
+    from reportlab.lib.pagesizes import landscape, A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+    )
+    from reportlab.lib.enums import TA_LEFT
+    from fastapi.responses import StreamingResponse
+
+    rows = scheduling_service.get_gantt_managed(db, plant_id, weeks)
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=landscape(A4),
+        leftMargin=1*cm, rightMargin=1*cm,
+        topMargin=1*cm, bottomMargin=1*cm,
+        title=f"Carta Gantt {plant_id}",
+    )
+    styles = getSampleStyleSheet()
+    H1 = ParagraphStyle("H1", parent=styles["Heading1"], fontSize=14,
+                       textColor=rl_colors.HexColor("#0f172a"), leading=18)
+    META = ParagraphStyle("META", fontSize=8.5,
+                         textColor=rl_colors.HexColor("#64748b"))
+
+    story = []
+    story.append(Paragraph(f"<b>Carta Gantt</b> · {plant_id} · {weeks} sem · "
+                          f"{_dt.now().strftime('%Y-%m-%d %H:%M')}", H1))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph(f"{len(rows)} OTs · Generado por MAGEAM/AMS", META))
+    story.append(Spacer(1, 8))
+
+    impact_color = {
+        "CRITICO": rl_colors.HexColor("#EF4444"),
+        "ALTO": rl_colors.HexColor("#F97316"),
+        "MEDIO": rl_colors.HexColor("#EAB308"),
+        "BAJO": rl_colors.HexColor("#10B981"),
+    }
+
+    headers = ["N° OT", "Equipo", "Descripción", "Tipo", "Impacto",
+               "Inicio", "Fin", "HH", "Especialidad", "Status"]
+    data = [headers]
+    for r in rows[:200]:  # limit a 200 para evitar PDFs gigantes
+        data.append([
+            r.get("wo_number", ""),
+            r.get("equipment_tag", "")[:18],
+            (r.get("description", "") or "")[:60],
+            r.get("wo_type", ""),
+            r.get("impact_level", ""),
+            (r.get("planned_start", "") or "")[:16],
+            (r.get("planned_end", "") or "")[:16],
+            f"{r.get('estimated_hours', 0):.1f}",
+            ", ".join((r.get("specialties") or [])[:2]),
+            r.get("status", ""),
+        ])
+    tbl = Table(data, colWidths=[2.2*cm, 2.5*cm, 6*cm, 1.2*cm, 1.5*cm,
+                                  2.5*cm, 2.5*cm, 1*cm, 2.5*cm, 2.4*cm],
+                repeatRows=1)
+    style = TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), rl_colors.HexColor("#1B5E20")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), rl_colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 7.5),
+        ("GRID", (0, 0), (-1, -1), 0.3, rl_colors.HexColor("#cbd5e1")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+         [rl_colors.white, rl_colors.HexColor("#f8fafc")]),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 3),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ])
+    # Color celda Impacto por valor (col 4)
+    for i, r in enumerate(rows[:200], start=1):
+        c = impact_color.get(r.get("impact_level"), rl_colors.HexColor("#94a3b8"))
+        style.add("BACKGROUND", (4, i), (4, i), c)
+        style.add("TEXTCOLOR", (4, i), (4, i), rl_colors.white)
+        style.add("FONTNAME", (4, i), (4, i), "Helvetica-Bold")
+    tbl.setStyle(style)
+    story.append(tbl)
+
+    doc.build(story)
+    buf.seek(0)
+    filename = f"carta_gantt_{plant_id}_{_dt.now().strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/gantt")
 def get_gantt_managed(
     plant_id: str = "OCP-JFC1",

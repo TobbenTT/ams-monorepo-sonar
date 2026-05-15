@@ -3464,27 +3464,75 @@ function GanttTab({ ganttData, t, weeksRange, onWeeksChange, onReschedule }) {
 }
 
 /* ───── Phase 3b: Mass Change Tab ───── */
-function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
+// Jorge 2026-05-14 19:44 — refactor Lista OTs según feedback reunión:
+// - Solo PM01/PM02 (PM03 son imprevistos, no van acá)
+// - Solo status programable (no cerrado/cancelado)
+// - Drop columns: Priority, Shift, Work Center
+// - Status read-only (cambio se hace dentro de la OT)
+// - New column: Semana ISO (W21, W22...)
+// - HH → Duración (horas detención)
+// - Filtro por semana
+// - Fila clickable abre OT
+// - Tooltip con descripción al hover
+function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onOpenDetail, onRefresh }) {
   const toast = useToast();
   const [selected, setSelected] = useState(new Set());
   const [edits, setEdits] = useState({});
   const [saving, setSaving] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterWeek, setFilterWeek] = useState('all');
   const [searchMC, setSearchMC] = useState('');
   const [bulkField, setBulkField] = useState('');
   const [bulkValue, setBulkValue] = useState('');
 
-  const allWOs = useMemo(() => [...(scheduledWOs || []), ...(releasedWOs || [])], [scheduledWOs, releasedWOs]);
+  // ISO Week number helper (acordado Jorge: misma "W21" que aparece en OT detail)
+  const isoWeek = (d) => {
+    if (!d) return null;
+    const dt = new Date(d);
+    if (isNaN(dt)) return null;
+    const target = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+    const dayNr = (target.getUTCDay() + 6) % 7;
+    target.setUTCDate(target.getUTCDate() - dayNr + 3);
+    const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+    const diff = (target - firstThursday) / 86400000;
+    return Math.floor(diff / 7) + 1;
+  };
+
+  // Jorge 2026-05-14: filtros estrictos por defecto.
+  //   wo_type:  solo PM01/PM02 (PM03 son imprevistos del supervisor)
+  //   status:   solo programable (planificado → en_ejecucion). Cerrados/
+  //             cancelados pertenecen a Plan, no a Programación.
+  const ALLOWED_STATUSES = ['PLANIFICADO', 'EN_PROGRAMACION', 'PROGRAMADO', 'EN_EJECUCION', 'REPROGRAMADO'];
+  const baseList = useMemo(() => {
+    const merged = [...(scheduledWOs || []), ...(releasedWOs || [])];
+    return merged.filter(wo => {
+      if (wo.wo_type && !['PM01', 'PM02'].includes(wo.wo_type)) return false;
+      if (wo.status && !ALLOWED_STATUSES.includes(wo.status)) return false;
+      return true;
+    });
+  }, [scheduledWOs, releasedWOs]);
+  const allWOs = baseList;
+
+  const availableWeeks = useMemo(() => {
+    const wks = new Set();
+    allWOs.forEach(wo => { const w = isoWeek(wo.planned_start); if (w) wks.add(w); });
+    return [...wks].sort((a,b)=>a-b);
+  }, [allWOs]);
 
   const filtered = useMemo(() => {
     let list = allWOs;
     if (filterStatus !== 'all') list = list.filter(wo => wo.status === filterStatus);
+    if (filterWeek !== 'all') list = list.filter(wo => isoWeek(wo.planned_start) === Number(filterWeek));
     if (searchMC) {
       const q = searchMC.toLowerCase().replace(/[\s\-]+/g, '');
-      list = list.filter(wo => (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q) || (wo.equipment_tag || '').toLowerCase().includes(searchMC.toLowerCase()));
+      list = list.filter(wo =>
+        (wo.wo_number || '').toLowerCase().replace(/[\s\-]+/g, '').includes(q)
+        || (wo.equipment_tag || '').toLowerCase().includes(searchMC.toLowerCase())
+        || (wo.description || '').toLowerCase().includes(searchMC.toLowerCase())
+      );
     }
     return list;
-  }, [allWOs, filterStatus, searchMC]);
+  }, [allWOs, filterStatus, filterWeek, searchMC]);
 
   const toggleSelect = (woId) => {
     setSelected(prev => {
@@ -3543,20 +3591,28 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
       {/* Toolbar */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <Wrench size={16} className="text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">Mass Change</span>
-          <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{allWOs.length} WOs</span>
+          <List size={16} className="text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">Lista OTs</span>
+          <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{filtered.length} de {allWOs.length}</span>
+          <span className="text-[10px] text-muted-foreground italic">PM01/PM02 · estatus programable</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input type="text" value={searchMC} onChange={e => setSearchMC(e.target.value)} placeholder="Search..."
-              className="pl-7 pr-2 py-1 text-xs border border-border rounded-lg bg-background text-foreground w-36 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+            <input type="text" value={searchMC} onChange={e => setSearchMC(e.target.value)} placeholder="Buscar OT, tag, descripción…"
+              className="pl-7 pr-2 py-1 text-xs border border-border rounded-lg bg-background text-foreground w-52 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
           </div>
+          {/* Jorge 2026-05-14: filtro Semana — programador trabaja por semana */}
+          <select value={filterWeek} onChange={e => setFilterWeek(e.target.value)}
+            className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground"
+            title="Filtrar por semana ISO">
+            <option value="all">Todas las semanas</option>
+            {availableWeeks.map(w => <option key={w} value={w}>W{w}</option>)}
+          </select>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
             className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
-            <option value="all">All Status</option>
-            {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="all">Todos los estatus</option>
+            {ALLOWED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
       </div>
@@ -3566,45 +3622,17 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-3 flex items-center gap-3 flex-wrap">
           <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">{selected.size} selected</span>
           <div className="w-px h-6 bg-blue-200 dark:bg-blue-700" />
+          {/* Jorge 2026-05-14: bulk-edit limitado a fechas. Estatus cambia
+              dentro de la OT, Priority/Shift/WorkCenter no se editan acá. */}
           <select value={bulkField} onChange={e => setBulkField(e.target.value)}
             className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground">
-            <option value="">Select field...</option>
-            <option value="status">Status</option>
-            <option value="priority_code">Priority</option>
-            <option value="shift">Shift</option>
-            <option value="planned_start">Planned Start</option>
-            <option value="planned_end">Planned End</option>
-            <option value="work_center">Work Center</option>
+            <option value="">Campo…</option>
+            <option value="planned_start">Inicio</option>
+            <option value="planned_end">Fin</option>
           </select>
-          {bulkField === 'status' && (
-            <select value={bulkValue} onChange={e => setBulkValue(e.target.value)}
-              className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground">
-              <option value="">Select...</option>
-              {['CREADO','PLANIFICADO','PROGRAMADO','EN_EJECUCION','COMPLETADO','CERRADO'].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          )}
-          {bulkField === 'priority_code' && (
-            <select value={bulkValue} onChange={e => setBulkValue(e.target.value)}
-              className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground">
-              <option value="">Select...</option>
-              {['P1','P2','P3','P4'].map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          )}
-          {bulkField === 'shift' && (
-            <select value={bulkValue} onChange={e => setBulkValue(e.target.value)}
-              className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground">
-              <option value="">Select...</option>
-              <option value="day">Day</option>
-              <option value="night">Night</option>
-            </select>
-          )}
           {(bulkField === 'planned_start' || bulkField === 'planned_end') && (
             <input type="date" value={bulkValue} onChange={e => setBulkValue(e.target.value)}
               className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground" />
-          )}
-          {bulkField === 'work_center' && (
-            <input type="text" value={bulkValue} onChange={e => setBulkValue(e.target.value)} placeholder="e.g. PASMEC01"
-              className="text-xs border border-blue-200 dark:border-blue-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-foreground w-28" />
           )}
           <button onClick={applyBulkChange} disabled={!bulkField || !bulkValue}
             className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors">
@@ -3620,18 +3648,16 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-100 dark:bg-gray-800 border-b-2 border-border">
                 <th className="px-3 py-3 text-left w-8"><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded accent-emerald-600" /></th>
-                <th className="px-3 py-3 text-left font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">WO#</th>
-                <th className="px-3 py-3 text-left font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Equipment</th>
-                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Type</th>
-                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Priority</th>
-                {/* Jorge 2026-04-24 item 38: columna Production Impact en Scheduling */}
-                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Impact</th>
-                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Status</th>
-                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Start</th>
-                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">End</th>
-                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Shift</th>
-                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">HH</th>
-                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Work Center</th>
+                <th className="px-3 py-3 text-left font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">OT#</th>
+                <th className="px-3 py-3 text-left font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Equipo</th>
+                <th className="px-3 py-3 text-left font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Descripción</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Tipo</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Impacto</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Estatus</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Inicio</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Fin</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300" title="Horas de detención del equipo">Duración</th>
+                <th className="px-3 py-3 text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Semana</th>
               </tr>
             </thead>
             <tbody>
@@ -3639,41 +3665,39 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
                 const e = edits[wo.wo_id] || {};
                 const isEdited = Object.keys(e).length > 0;
                 const isSel = selected.has(wo.wo_id);
-                const prio = e.priority_code ?? wo.priority_code ?? 'P3';
-                const prioStyle = prio === 'P1' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300' : prio === 'P2' ? 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' : prio === 'P3' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400';
-                const stat = e.status ?? wo.status ?? '';
-                const statStyle = stat === 'PROGRAMADO' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : stat === 'EN_EJECUCION' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : stat === 'CERRADO' || stat === 'COMPLETADO' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : stat === 'PLANIFICADO' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
-                const typeMeta = wo.wo_type === 'PM01' ? 'bg-red-50 text-red-600 border-red-200' : wo.wo_type === 'PM02' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-purple-50 text-purple-600 border-purple-200';
+                const prio = wo.priority_code || 'P3';
+                const stat = wo.status || '';
+                const statStyle = stat === 'PROGRAMADO' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : stat === 'EN_EJECUCION' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : stat === 'PLANIFICADO' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' : stat === 'EN_PROGRAMACION' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+                const typeMeta = wo.wo_type === 'PM01' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200';
+                const wkNum = isoWeek(wo.planned_start);
+                const desc = wo.description || wo.wo_title || '';
+                // Jorge 2026-05-14: fila clickable abre la OT — excepto el checkbox.
+                const openOT = () => onOpenDetail?.(wo);
                 return (
-                  <tr key={wo.wo_id} className={`border-b border-border/30 transition-all ${isEdited ? 'bg-amber-50/70 dark:bg-amber-900/15 ring-1 ring-inset ring-amber-300/50' : isSel ? 'bg-blue-50/50 dark:bg-blue-900/10' : rowIdx % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-gray-50/50 dark:bg-gray-800/20'} hover:bg-blue-50/40 dark:hover:bg-blue-900/10`}>
-                    <td className="px-3 py-2"><input type="checkbox" checked={isSel} onChange={() => toggleSelect(wo.wo_id)} className="rounded accent-emerald-600" /></td>
+                  <tr key={wo.wo_id} title={desc}
+                    onClick={openOT}
+                    className={`border-b border-border/30 transition-all cursor-pointer ${isEdited ? 'bg-amber-50/70 dark:bg-amber-900/15 ring-1 ring-inset ring-amber-300/50' : isSel ? 'bg-blue-50/50 dark:bg-blue-900/10' : rowIdx % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-gray-50/50 dark:bg-gray-800/20'} hover:bg-blue-50/40 dark:hover:bg-blue-900/10`}>
+                    <td className="px-3 py-2" onClick={ev => ev.stopPropagation()}>
+                      <input type="checkbox" checked={isSel} onChange={() => toggleSelect(wo.wo_id)} className="rounded accent-emerald-600" />
+                    </td>
                     <td className="px-3 py-2 font-mono font-bold text-foreground text-[11px]">{wo.wo_number}</td>
-                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[160px] text-[11px]">{shortTag(wo.equipment_tag)}</td>
+                    <td className="px-3 py-2 text-foreground truncate max-w-[140px] text-[11px] font-mono">{shortTag(wo.equipment_tag)}</td>
+                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[260px] text-[11px]">{desc || <span className="italic text-gray-400">sin descripción</span>}</td>
                     <td className="px-3 py-2 text-center"><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${typeMeta}`}>{wo.wo_type}</span></td>
                     <td className="px-3 py-2 text-center">
-                      <select value={prio} onChange={ev => updateEdit(wo.wo_id, 'priority_code', ev.target.value)}
-                        className={`text-[10px] font-bold px-2 py-1 rounded-md border cursor-pointer ${e.priority_code ? 'ring-2 ring-amber-400' : ''} ${prioStyle}`}>
-                        {['P1','P2','P3','P4'].map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </td>
-                    {/* Jorge 2026-04-24 item 38: celda Production Impact */}
-                    <td className="px-3 py-2 text-center">
                       {(() => {
-                        const imp = wo.production_impact || ({ P1: 'CRITICAL', P2: 'HIGH', P3: 'MEDIUM', P4: 'HIGH' }[prio] || 'MEDIUM');
-                        const col = { CRITICAL: 'bg-red-100 text-red-700 border-red-300', HIGH: 'bg-orange-100 text-orange-700 border-orange-300', MEDIUM: 'bg-yellow-100 text-yellow-700 border-yellow-300', LOW: 'bg-green-100 text-green-700 border-green-300' }[imp];
-                        return <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${col}`}>{imp.slice(0,4)}</span>;
+                        const imp = wo.impact_level || wo.production_impact || ({ P1: 'CRITICO', P2: 'ALTO', P3: 'MEDIO', P4: 'BAJO' }[prio] || 'MEDIO');
+                        const k = (imp || '').toUpperCase();
+                        const col = ({ CRITICO: 'bg-red-100 text-red-700 border-red-300', CRITICAL: 'bg-red-100 text-red-700 border-red-300', ALTO: 'bg-orange-100 text-orange-700 border-orange-300', HIGH: 'bg-orange-100 text-orange-700 border-orange-300', MEDIO: 'bg-yellow-100 text-yellow-700 border-yellow-300', MEDIUM: 'bg-yellow-100 text-yellow-700 border-yellow-300', BAJO: 'bg-green-100 text-green-700 border-green-300', LOW: 'bg-green-100 text-green-700 border-green-300' })[k] || 'bg-gray-100 text-gray-600 border-gray-300';
+                        return <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${col}`}>{k.slice(0,4)}</span>;
                       })()}
                     </td>
+                    {/* Jorge 2026-05-14: estatus es read-only en Lista. Cambio se hace dentro de la OT. */}
                     <td className="px-3 py-2 text-center">
-                      <select value={stat} onChange={ev => updateEdit(wo.wo_id, 'status', ev.target.value)}
-                        className={`text-[10px] font-semibold px-2 py-1 rounded-md cursor-pointer ${e.status ? 'ring-2 ring-amber-400' : ''} ${statStyle}`}>
-                        {['CREADO','LIBERADO','PLANIFICADO','EN_PROGRAMACION','PROGRAMADO','EN_EJECUCION','COMPLETADO','CERRADO'].map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                      <span className={`text-[10px] font-semibold px-2 py-1 rounded-md ${statStyle}`}>{stat}</span>
                     </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-3 py-2 text-center" onClick={ev => ev.stopPropagation()}>
                       {(() => {
-                        // Jorge 2026-04-24 item 40: alerta si la fecha planificada queda
-                        // muy lejos de la original (>14 días = fuera de semana razonable).
                         const currentDate = e.planned_start ?? (wo.planned_start || '').slice(0, 10);
                         const originalDate = (wo.planned_start || '').slice(0, 10);
                         let outOfWindow = false;
@@ -3690,22 +3714,17 @@ function MassChangeTab({ scheduledWOs, releasedWOs, t, plantId, onRefresh }) {
                         );
                       })()}
                     </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-3 py-2 text-center" onClick={ev => ev.stopPropagation()}>
                       <input type="date" value={e.planned_end ?? (wo.planned_end || '').slice(0, 10)} onChange={ev => updateEdit(wo.wo_id, 'planned_end', ev.target.value)}
                         className={`border rounded-md px-1.5 py-1 bg-background text-foreground text-[10px] w-[105px] ${e.planned_end ? 'ring-2 ring-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700'}`} />
                     </td>
-                    <td className="px-3 py-2 text-center">
-                      <select value={e.shift ?? wo.shift ?? 'day'} onChange={ev => updateEdit(wo.wo_id, 'shift', ev.target.value)}
-                        className={`text-[10px] px-2 py-1 rounded-md border cursor-pointer ${e.shift ? 'ring-2 ring-amber-400' : 'border-gray-200 dark:border-gray-700'} bg-background text-foreground`}>
-                        <option value="day">Day</option>
-                        <option value="night">Night</option>
-                      </select>
+                    <td className="px-3 py-2 text-center" title="Duración: horas de detención del equipo">
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded text-[10px]">{wo.estimated_hours || 0}h</span>
                     </td>
-                    <td className="px-3 py-2 text-center"><span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded text-[10px]">{wo.estimated_hours || 0}h</span></td>
                     <td className="px-3 py-2 text-center">
-                      <input type="text" value={e.work_center ?? wo.work_center ?? ''} onChange={ev => updateEdit(wo.wo_id, 'work_center', ev.target.value)}
-                        className={`border rounded-md px-1.5 py-1 bg-background text-foreground text-[10px] w-24 text-center ${e.work_center ? 'ring-2 ring-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700'}`}
-                        placeholder="—" />
+                      <span className="text-[10px] font-mono font-semibold text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 rounded">
+                        {wkNum ? `W${wkNum}` : '—'}
+                      </span>
                     </td>
                   </tr>
                 );
@@ -5990,6 +6009,7 @@ export default function Scheduling() {
       )}
       {tab === 'masschange' && (
         <MassChangeTab scheduledWOs={scheduledWOs} releasedWOs={releasedWOs} t={t} plantId={plant}
+          onOpenDetail={setDetailOrder}
           onRefresh={() => { loadCalendarData(); loadGantt(); }} />
       )}
       {tab === 'hh' && (

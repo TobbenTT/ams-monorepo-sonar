@@ -4356,8 +4356,9 @@ function SupportEquipmentTab({ plantId, t }) {
     { value: 'WELDING', label: 'Soldadora' },
     { value: 'AIR_COMPRESSOR', label: 'Compresor' },
     { value: 'PRESSURE_WASHER', label: 'Hidrolavadora' },
-    { value: 'TOOL', label: 'Herramienta especial' },
-    { value: 'OTHER', label: 'Otro' },
+    // SF-755: 'TOOL' (herramienta menor) removido. Solo herramientas
+    // calibradas/críticas como llave de torque van en OTHER con flag explicit.
+    { value: 'OTHER', label: 'Otro (calibrado)' },
   ];
   const TYPE_LABEL = Object.fromEntries(EQ_TYPES.map(e => [e.value, e.label]));
   // Condición 3-state (verde / ámbar / rojo) — alineado con OT-level.
@@ -4474,11 +4475,17 @@ function SupportEquipmentTab({ plantId, t }) {
     const r = i.out_of_service_reason || '';
     return r.startsWith('MAINT:') ? r.slice(6) : r;
   };
-  const availableCount = items.filter(i => getCondition(i) === 'OPERATIONAL').length;
-  const maintCount = items.filter(i => getCondition(i) === 'MAINTENANCE').length;
-  const blockedCount = items.filter(i => getCondition(i) === 'OUT_OF_SERVICE').length;
+  // SF-755 (Jorge Sprint 7): excluir herramientas menores del registro
+  // individual. Solo se trackean equipos críticos (grúas, compresores,
+  // soldadoras, andamios, etc.) — herramientas comunes (llaves, destornilladores)
+  // se gestionan por catálogo de planta, no por item. Filtra type 'TOOL' fuera.
+  const isMinorTool = (i) => (i.equipment_type || '').toUpperCase() === 'TOOL';
+  const trackedItems = items.filter(i => !isMinorTool(i));
+  const availableCount = trackedItems.filter(i => getCondition(i) === 'OPERATIONAL').length;
+  const maintCount = trackedItems.filter(i => getCondition(i) === 'MAINTENANCE').length;
+  const blockedCount = trackedItems.filter(i => getCondition(i) === 'OUT_OF_SERVICE').length;
   const isExt = (i) => (i.ownership === 'EXT') || (!!i.is_rented && !i.ownership);
-  const rentedCount = items.filter(isExt).length;
+  const rentedCount = trackedItems.filter(isExt).length;
 
   return (
     <div className="space-y-4">
@@ -4552,7 +4559,7 @@ function SupportEquipmentTab({ plantId, t }) {
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border/50">
-            {items.map(eq => {
+            {trackedItems.map(eq => {
               const cond = getCondition(eq);
               const cMeta = condMeta(cond);
               const ext = isExt(eq);

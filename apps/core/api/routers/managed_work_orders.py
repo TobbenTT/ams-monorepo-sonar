@@ -868,7 +868,11 @@ def schedule_work_order(
     p_start = data.planned_start if data else None
     p_end = data.planned_end if data else None
     p_shift = data.shift if data else None
-    result = managed_wo_service.schedule_wo(db, wo_id, getattr(user, "user_id", ""), workers, planned_start=p_start, planned_end=p_end, shift=p_shift)
+    try:
+        result = managed_wo_service.schedule_wo(db, wo_id, getattr(user, "user_id", ""), workers, planned_start=p_start, planned_end=p_end, shift=p_shift)
+    except ValueError as ve:
+        # SF-688: gate de programación falla → 400 con mensaje claro al planner
+        raise HTTPException(status_code=400, detail=str(ve))
     if not result:
         from api.database.models import ManagedWorkOrderModel
         wo = db.query(ManagedWorkOrderModel).filter(ManagedWorkOrderModel.wo_id == wo_id).first()

@@ -1012,6 +1012,30 @@ def _transition(db: Session, wo_id: str, target_status: str, user_id: str = "", 
     if target_status not in allowed:
         return None
 
+    # SF-688 (Jorge GAP #6, due 2026-05-15): Gate completo para programación.
+    # Una OT no puede pasar a PROGRAMADO si le faltan materiales/recursos. El
+    # planificador debe completar la pega antes. Override opcional vía kwarg
+    # `force=True` para casos justificados (queda en audit log).
+    if target_status == "PROGRAMADO" and not kwargs.get("force"):
+        # Validar materiales: todos los items deben estar en estatus que permita
+        # programar (COMPLETADO / EN_AREA_ESPERA / ENTREGADO). Si hay alguno en
+        # PENDIENTE / PARCIAL → bloquear.
+        missing = []
+        for m in (wo.materials or []):
+            st = (m.get("collection_status") or "").upper()
+            if st in ("PENDIENTE", "PARCIAL", ""):
+                missing.append(m.get("code") or m.get("description") or "?")
+        if missing:
+            raise ValueError(
+                f"No se puede programar: faltan materiales ({len(missing)} items): "
+                f"{', '.join(missing[:5])}{'…' if len(missing) > 5 else ''}. "
+                f"Resolver en bandeja del planner antes de programar."
+            )
+        # Validar HH: la OT debe tener estimated_hours y al menos un worker o
+        # specialty asignados (planificación mínima completa).
+        if not wo.estimated_hours or wo.estimated_hours <= 0:
+            raise ValueError("No se puede programar: estimated_hours = 0. Definir duración en Plan.")
+
     old_status = wo.status
     wo.status = target_status
     wo.updated_at = datetime.now()

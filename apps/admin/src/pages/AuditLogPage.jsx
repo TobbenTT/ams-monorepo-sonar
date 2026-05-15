@@ -232,12 +232,12 @@ export default function AuditLogPage() {
 
         {/* SP5 — chips de filtro rápido para eventos de regla de negocio */}
         <div className="flex flex-wrap gap-2 mt-2 px-1">
-          <span className="text-xs text-gray-500 self-center">SP5 events:</span>
+          <span className="text-xs text-gray-500 self-center">Eventos:</span>
           {[
             { v: '', l: 'Todos', cls: 'bg-gray-100 text-gray-700' },
-            { v: 'BLOCKED_FAILURE_LOAD', l: '🚫 SF-570 bloqueos', cls: 'bg-rose-100 text-rose-800' },
-            { v: 'EXPRESS_PM03_CONVERSION', l: '⚡ SF-569 conversiones', cls: 'bg-purple-100 text-purple-800' },
-            { v: 'FINAL_NOTIFICATION_AUTO', l: '✅ SF-572 finales auto', cls: 'bg-emerald-100 text-emerald-800' },
+            { v: 'BLOCKED_FAILURE_LOAD', l: '🚫 Bloqueos capacidad', cls: 'bg-rose-100 text-rose-800' },
+            { v: 'EXPRESS_PM03_CONVERSION', l: '⚡ Conversiones express', cls: 'bg-purple-100 text-purple-800' },
+            { v: 'FINAL_NOTIFICATION_AUTO', l: '✅ Auto-finalizaciones', cls: 'bg-emerald-100 text-emerald-800' },
           ].map(({ v, l, cls }) => (
             <button
               key={v || 'all'}

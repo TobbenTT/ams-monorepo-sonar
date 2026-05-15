@@ -1,12 +1,21 @@
 # Dependabot config — auto-PR para updates de seguridad / minor.
-# Tanda mejoras 2026-04-25 (C5): cierra el loop de vulns viejas que aparecían
-# en el security hub porque nadie subía versiones manualmente.
+#
+# Tanda QA-Security 2026-05-14:
+#   - target-branch: feature/QA → PRs van a QA (estructura monorepo), no main.
+#   - Schedules uniformes lunes 06:00 América/Santiago (pip/npm semanal,
+#     docker/github-actions mensual).
+#   - Paths actualizados al monorepo: apps/admin (antes frontend),
+#     apps/field (antes field_app), apps/core es backend Python.
+#
+# Auto-merge: ver .github/workflows/dependabot-auto-merge.yml (solo patch+minor).
+
 version: 2
 
 updates:
-  # ── Backend Python ──────────────────────────────────────────────
+  # ── Backend Python (raíz, lee requirements.txt + pyproject.toml por app) ──
   - package-ecosystem: "pip"
     directory: "/"
+    target-branch: "feature/QA"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -24,9 +33,10 @@ updates:
           - "minor"
           - "patch"
 
-  # ── Frontend npm ────────────────────────────────────────────────
+  # ── Admin frontend (apps/admin — antes /frontend) ───────────────
   - package-ecosystem: "npm"
-    directory: "/frontend"
+    directory: "/apps/admin"
+    target-branch: "feature/QA"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -37,19 +47,44 @@ updates:
       - "dependencies"
       - "frontend"
     commit-message:
-      prefix: "deps(frontend)"
+      prefix: "deps(admin)"
     groups:
-      frontend-minor:
+      admin-minor:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── Field app PWA (apps/field — antes /field_app) ───────────────
+  - package-ecosystem: "npm"
+    directory: "/apps/field"
+    target-branch: "feature/QA"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Santiago"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "field-app"
+    commit-message:
+      prefix: "deps(field)"
+    groups:
+      field-minor:
         update-types:
           - "minor"
           - "patch"
 
   # ── Docker base images ──────────────────────────────────────────
+  # Mensual: base images (python:3.13-slim, node:20) cambian poco.
+  # CVEs igual disparan PR inmediato vía Dependabot security updates.
   - package-ecosystem: "docker"
     directory: "/"
+    target-branch: "feature/QA"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
+      time: "06:00"
+      timezone: "America/Santiago"
     labels:
       - "dependencies"
       - "docker"
@@ -58,10 +93,26 @@ updates:
       prefix: "deps(docker)"
 
   - package-ecosystem: "docker"
-    directory: "/frontend"
+    directory: "/apps/admin"
+    target-branch: "feature/QA"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
+      time: "06:00"
+      timezone: "America/Santiago"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "security"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/apps/field"
+    target-branch: "feature/QA"
+    schedule:
+      interval: "monthly"
+      time: "06:00"
+      timezone: "America/Santiago"
     labels:
       - "dependencies"
       - "docker"
@@ -72,8 +123,11 @@ updates:
   # ── GitHub Actions ──────────────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "feature/QA"
     schedule:
       interval: "monthly"
+      time: "06:00"
+      timezone: "America/Santiago"
     labels:
       - "dependencies"
       - "ci"

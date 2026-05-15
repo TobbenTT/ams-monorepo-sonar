@@ -3004,6 +3004,15 @@ function TimelineMirrorView({ scheduledWOs, technicians, viewedWeekStart, onResc
   const [slotMinutes, setSlotMinutes] = useState(60); // 30 o 60
   const [dayOffset, setDayOffset] = useState(0); // qué día de la semana mostrar (0..6)
   const [dragWO, setDragWO] = useState(null);
+  // SF-740 (Jorge Sprint 7): filtro por Puesto de Trabajo (specialty)
+  const [specFilter, setSpecFilter] = useState('all');
+  const specialties = useMemo(() => {
+    const s = new Set(technicians.map(t => (t.specialty || '').toUpperCase()).filter(Boolean));
+    return [...s].sort();
+  }, [technicians]);
+  const filteredTechnicians = useMemo(() =>
+    specFilter === 'all' ? technicians : technicians.filter(t => (t.specialty || '').toUpperCase() === specFilter),
+  [technicians, specFilter]);
 
   const slotsPerHour = 60 / slotMinutes;
   const totalSlots = 24 * slotsPerHour;
@@ -3085,6 +3094,13 @@ function TimelineMirrorView({ scheduledWOs, technicians, viewedWeekStart, onResc
             <option value="60">1 hora</option>
             <option value="30">30 min</option>
           </select>
+          {/* SF-740 (Jorge Sprint 7): filtro por Puesto de Trabajo */}
+          <select value={specFilter} onChange={e => setSpecFilter(e.target.value)}
+            className="text-xs bg-transparent border border-border rounded px-2 py-1"
+            title="Filtrar técnicos por puesto de trabajo">
+            <option value="all">Todos los puestos</option>
+            {specialties.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
       </div>
       <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
@@ -3092,7 +3108,7 @@ function TimelineMirrorView({ scheduledWOs, technicians, viewedWeekStart, onResc
           <thead className="sticky top-0 bg-card z-10 border-b border-border">
             <tr>
               <th className="px-2 py-2 text-left font-semibold w-16 border-r border-border">Hora</th>
-              {technicians.map(tech => (
+              {filteredTechnicians.map(tech => (
                 <th key={tech.worker_id} className="px-2 py-2 text-left font-semibold border-r border-border min-w-[140px]" title={tech.name}>
                   <div className="flex items-center gap-1">
                     <span className="truncate">{tech.name}</span>
@@ -3115,7 +3131,7 @@ function TimelineMirrorView({ scheduledWOs, technicians, viewedWeekStart, onResc
                   <td className={`px-2 py-1 font-mono text-[10px] text-muted-foreground border-r border-border/40 ${isHourMark ? 'font-semibold' : ''}`}>
                     {isHourMark ? `${String(h).padStart(2,'0')}:00` : ''}
                   </td>
-                  {technicians.map(tech => {
+                  {filteredTechnicians.map(tech => {
                     const wos = otsByTech[tech.worker_id] || [];
                     const woHere = wos.find(w => {
                       const { startSlot, lengthSlots } = positionFor(w);

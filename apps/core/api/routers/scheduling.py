@@ -456,7 +456,10 @@ def clear_week_assignments(
     # Clear any WO that has a planned_start in this week, OR has assigned_workers
     # but no planned_start yet (drafts sitting on technicians). Skip closed/cancelled
     # and anything already being executed (don't pull the rug on a running WO).
-    SKIP = ("CERRADO", "CANCELADO", "EN_EJECUCION")
+    # SF-743 (Jorge Sprint 7): además skip PROGRAMADO — son OTs "Congeladas" que
+    # el planner reservó explícitamente; Clear Assignment NO debe tocarlas, solo
+    # debe limpiar lo propuesto por la IA / drafts no validados.
+    SKIP = ("CERRADO", "CANCELADO", "EN_EJECUCION", "PROGRAMADO")
     rows = db.query(ManagedWorkOrderModel).filter(
         ManagedWorkOrderModel.plant_id == plant_id,
         ~ManagedWorkOrderModel.status.in_(SKIP),

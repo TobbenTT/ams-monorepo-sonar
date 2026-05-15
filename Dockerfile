@@ -36,6 +36,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
         "PyJWT[crypto]==2.12.0" "bcrypt==4.2.1" "pyotp==2.9.0" "qrcode==7.4.2" \
         "anthropic==0.83.0" "python-docx==1.1.2" "python-pptx==1.0.2" \
         "openpyxl==3.1.5" "xlrd==2.0.1" "sentry-sdk[fastapi]==2.19.0" \
+        "reportlab==4.5.1" \
         "PyYAML>=6.0" \
         # Test extras
         "pytest==9.0.3" "pytest-asyncio>=0.23.0" && \

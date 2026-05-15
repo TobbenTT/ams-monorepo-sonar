@@ -146,6 +146,8 @@ def _run_column_migrations():
         ("cost_centers", "budget_ytd", "FLOAT", "0.0"),
         ("cost_centers", "actual_ytd", "FLOAT", "0.0"),
         ("cost_centers", "updated_at", "DATETIME", None),
+        # SF-690 (Jorge Sprint 7) — closing checklist al cerrar OT
+        ("managed_work_orders", "closing_checklist", "TEXT", None),  # JSON list[{item,checked,notes}]
     ]
 
     with engine.begin() as conn:

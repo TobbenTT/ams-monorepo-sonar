@@ -3998,8 +3998,26 @@ function MaterialsTab({ programId, t, plantId }) {
   const [updating, setUpdating] = useState(null);
   const [expandedWO, setExpandedWO] = useState(new Set());
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterWeek, setFilterWeek] = useState('all');
   const [matPage, setMatPage] = useState(0);
   const MAT_PAGE_SIZE = 20;
+
+  // Jorge 2026-05-14 19:44: en vista de programación NO mostramos
+  // Pendiente/Parcial — esos pertenecen a la bandeja del planner.
+  // En programación solo: Completado, En Area Espera, Entregado.
+  const PROG_VISIBLE_STATUS = ['COMPLETADO', 'EN_AREA_ESPERA', 'ENTREGADO'];
+
+  // ISO week para filtro Semana — alineado con Lista OTs
+  const isoWeekMat = (d) => {
+    if (!d) return null;
+    const dt = new Date(d);
+    if (isNaN(dt)) return null;
+    const target = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+    const dayNr = (target.getUTCDay() + 6) % 7;
+    target.setUTCDate(target.getUTCDate() - dayNr + 3);
+    const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+    return Math.floor((target - firstThursday) / 86400000 / 7) + 1;
+  };
 
   const loadData = () => {
     setLoading(true);
@@ -4060,8 +4078,18 @@ function MaterialsTab({ programId, t, plantId }) {
 
   const byStatus = data.by_status || {};
   const allOk = data.pending === 0 && data.total_materials > 0;
-  const packages = data.packages || [];
-  const filtered = filterStatus === 'all' ? packages : packages.filter(p => p.status === filterStatus);
+  const allPackages = data.packages || [];
+  // Jorge 2026-05-14: ocultar OTs cuyo material no esté Completado/En Area/Entregado.
+  // Pendiente y Parcial siguen siendo legítimos pero en Plan, no en Scheduling.
+  const matPackages = allPackages.filter(p => !p.status || PROG_VISIBLE_STATUS.includes(p.status));
+  const availableWeeksMat = useMemo(() => {
+    const wks = new Set();
+    matPackages.forEach(p => { const w = isoWeekMat(p.planned_start); if (w) wks.add(w); });
+    return [...wks].sort((a,b)=>a-b);
+  }, [matPackages]);
+  let filtered = matPackages;
+  if (filterStatus !== 'all') filtered = filtered.filter(p => p.status === filterStatus);
+  if (filterWeek !== 'all') filtered = filtered.filter(p => isoWeekMat(p.planned_start) === Number(filterWeek));
 
   return (
     <div className="space-y-5">
@@ -4079,9 +4107,9 @@ function MaterialsTab({ programId, t, plantId }) {
           </div>
           <span className="text-xs font-semibold bg-muted px-3 py-1 rounded-full text-muted-foreground">{data.total_materials} items / {data.total_packages} WOs</span>
         </div>
-        {/* Horizontal pipeline */}
+        {/* Horizontal pipeline — Jorge 2026-05-14: solo estatus visibles en programación */}
         <div className="flex rounded-lg overflow-hidden h-8 bg-gray-100 dark:bg-gray-800">
-          {COLL_STATUS.map(s => {
+          {COLL_STATUS.filter(s => PROG_VISIBLE_STATUS.includes(s.id)).map(s => {
             const count = byStatus[s.id] || 0;
             const pct = data.total_materials > 0 ? (count / data.total_materials) * 100 : 0;
             if (pct === 0) return null;
@@ -4096,7 +4124,7 @@ function MaterialsTab({ programId, t, plantId }) {
           })}
         </div>
         <div className="flex justify-between mt-2">
-          {COLL_STATUS.map(s => {
+          {COLL_STATUS.filter(s => PROG_VISIBLE_STATUS.includes(s.id)).map(s => {
             const count = byStatus[s.id] || 0;
             return (
               <div key={s.id} className={`text-center cursor-pointer transition-opacity ${filterStatus !== 'all' && filterStatus !== s.id ? 'opacity-40' : ''}`}
@@ -4108,9 +4136,9 @@ function MaterialsTab({ programId, t, plantId }) {
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {COLL_STATUS.map(s => {
+      {/* Summary cards — Jorge 2026-05-14: solo estatus de programación */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {COLL_STATUS.filter(s => PROG_VISIBLE_STATUS.includes(s.id)).map(s => {
           const count = byStatus[s.id] || 0;
           const bgCard = s.id === 'PENDIENTE' ? 'border-gray-300 bg-gray-50 dark:bg-gray-800/50' : s.id === 'PARCIAL' ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/20' : s.id === 'COMPLETADO' ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20' : s.id === 'EN_AREA_ESPERA' ? 'border-purple-300 bg-purple-50 dark:bg-purple-900/20' : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/20';
           const numColor = s.id === 'PENDIENTE' ? 'text-gray-700 dark:text-gray-300' : s.id === 'PARCIAL' ? 'text-amber-700 dark:text-amber-300' : s.id === 'COMPLETADO' ? 'text-blue-700 dark:text-blue-300' : s.id === 'EN_AREA_ESPERA' ? 'text-purple-700 dark:text-purple-300' : 'text-emerald-700 dark:text-emerald-300';
@@ -4129,10 +4157,17 @@ function MaterialsTab({ programId, t, plantId }) {
       <div className={`border rounded-xl p-4 flex items-center gap-3 ${allOk ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-700' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-700'}`}>
         {allOk ? <CheckCircle size={20} className="text-emerald-600 dark:text-emerald-400" /> : <AlertTriangle size={20} className="text-amber-600 dark:text-amber-400" />}
         <span className={`text-sm font-medium ${allOk ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
-          {allOk ? 'All materials collected & delivered — Ready for execution' : `${data.pending} WOs with pending materials`}
+          {allOk ? 'Todos los materiales recolectados y entregados — Listo para ejecución' : `${data.pending || matPackages.length} OTs con materiales`}
         </span>
-        {filterStatus !== 'all' && (
-          <button onClick={() => setFilterStatus('all')} className="ml-auto text-xs text-blue-600 hover:underline">Clear filter</button>
+        {/* Jorge 2026-05-14: filtro por semana — programador trabaja por semana */}
+        <select value={filterWeek} onChange={e => setFilterWeek(e.target.value)}
+          className="ml-auto text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground"
+          title="Filtrar por semana ISO">
+          <option value="all">Todas las semanas</option>
+          {availableWeeksMat.map(w => <option key={w} value={w}>W{w}</option>)}
+        </select>
+        {(filterStatus !== 'all' || filterWeek !== 'all') && (
+          <button onClick={() => { setFilterStatus('all'); setFilterWeek('all'); }} className="text-xs text-blue-600 hover:underline">Limpiar</button>
         )}
       </div>
 
